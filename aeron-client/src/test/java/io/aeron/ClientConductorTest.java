@@ -28,6 +28,7 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -38,7 +39,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.Boolean.TRUE;
 import static java.nio.ByteBuffer.allocateDirect;
-import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
@@ -217,10 +217,10 @@ public class ClientConductorTest
     }
 
     @Test
+    @Timeout(5)
     public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
-        assertTimeoutPreemptively(ofSeconds(5),
-            () -> assertThrows(DriverTimeoutException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1)));
+        assertThrows(DriverTimeoutException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1));
     }
 
     @Test
@@ -416,10 +416,10 @@ public class ClientConductorTest
     }
 
     @Test
+    @Timeout(5)
     public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
-        assertTimeoutPreemptively(ofSeconds(5),
-            () -> assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1)));
+        assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1));
     }
 
     @Test

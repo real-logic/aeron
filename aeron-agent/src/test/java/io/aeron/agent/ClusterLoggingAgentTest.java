@@ -19,7 +19,9 @@ import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.*;
+import io.aeron.cluster.ClusteredMediaDriver;
+import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.Election;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver.Context;
@@ -31,6 +33,7 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 import java.util.EnumSet;
@@ -43,11 +46,10 @@ import static io.aeron.agent.ClusterEventLogger.toEventCodeId;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static java.time.Duration.ofSeconds;
 import static java.util.Collections.synchronizedSet;
 import static java.util.stream.Collectors.toSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class ClusterLoggingAgentTest
@@ -69,100 +71,102 @@ public class ClusterLoggingAgentTest
     }
 
     @Test
-    public void logAll()
+    @Timeout(20)
+    public void logAll() throws InterruptedException
     {
         testClusterEventsLogging("all", EnumSet.of(ROLE_CHANGE, STATE_CHANGE, ELECTION_STATE_CHANGE));
     }
 
     @Test
-    public void logRoleChange()
+    @Timeout(20)
+    public void logRoleChange() throws InterruptedException
     {
         testClusterEventsLogging(ROLE_CHANGE.name(), EnumSet.of(ROLE_CHANGE));
     }
 
     @Test
-    public void logStateChange()
+    @Timeout(20)
+    public void logStateChange() throws InterruptedException
     {
         testClusterEventsLogging(STATE_CHANGE.name(), EnumSet.of(STATE_CHANGE));
     }
 
     @Test
-    public void logElectionStateChange()
+    @Timeout(20)
+    public void logElectionStateChange() throws InterruptedException
     {
         testClusterEventsLogging(ELECTION_STATE_CHANGE.name(), EnumSet.of(ELECTION_STATE_CHANGE));
     }
 
-    private void testClusterEventsLogging(final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents)
+    private void testClusterEventsLogging(
+        final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents) throws InterruptedException
     {
         before(enabledEvents, expectedEvents.size());
 
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
+
+        final Context mediaDriverCtx = new Context()
+            .errorHandler(Throwable::printStackTrace)
+            .aeronDirectoryName(aeronDirectoryName)
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+
+        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
+            .controlRequestStreamId(100)
+            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
+            .controlResponseStreamId(101)
+            .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
+
+        final Archive.Context archiveCtx = new Archive.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
+            .archiveDir(new File(testDir, "archive"))
+            .deleteArchiveOnStart(true)
+            .controlChannel(aeronArchiveContext.controlRequestChannel())
+            .controlStreamId(aeronArchiveContext.controlRequestStreamId())
+            .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
+            .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
+            .clusterDir(new File(testDir, "consensus-module"))
+            .archiveContext(aeronArchiveContext.clone())
+            .clusterMemberId(0)
+            .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
+            .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
+
+        final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
+            .archiveContext(aeronArchiveContext.clone())
+            .clusterDir(new File(testDir, "service"))
+            .clusteredService(mock(ClusteredService.class));
+
+        try (ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
+            mediaDriverCtx, archiveCtx, consensusModuleCtx))
         {
-            final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
-
-            final Context mediaDriverCtx = new Context()
-                .errorHandler(Throwable::printStackTrace)
-                .aeronDirectoryName(aeronDirectoryName)
-                .dirDeleteOnStart(true)
-                .threadingMode(ThreadingMode.SHARED);
-
-            final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
-                .controlRequestStreamId(100)
-                .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
-                .controlResponseStreamId(101)
-                .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
-
-            final Archive.Context archiveCtx = new Archive.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .errorHandler(Throwable::printStackTrace)
-                .archiveDir(new File(testDir, "archive"))
-                .deleteArchiveOnStart(true)
-                .controlChannel(aeronArchiveContext.controlRequestChannel())
-                .controlStreamId(aeronArchiveContext.controlRequestStreamId())
-                .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
-                .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
-                .threadingMode(ArchiveThreadingMode.SHARED);
-
-            final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .errorHandler(Throwable::printStackTrace)
-                .clusterDir(new File(testDir, "consensus-module"))
-                .archiveContext(aeronArchiveContext.clone())
-                .clusterMemberId(0)
-                .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
-                .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
-
-            final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .errorHandler(Throwable::printStackTrace)
-                .archiveContext(aeronArchiveContext.clone())
-                .clusterDir(new File(testDir, "service"))
-                .clusteredService(mock(ClusteredService.class));
-
-            try (ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
-                mediaDriverCtx, archiveCtx, consensusModuleCtx))
+            try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
             {
-                try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
+                latch.await();
+
+                final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+                while (counter.get() != Election.State.CLOSED.code())
                 {
-                    latch.await();
-
-                    final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
-                    while (counter.get() != Election.State.CLOSED.code())
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-
-                    final Set<Integer> expected = expectedEvents
-                        .stream()
-                        .map(ClusterEventLogger::toEventCodeId)
-                        .collect(toSet());
-                    assertEquals(expected, LOGGED_EVENTS);
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
                 }
+
+                final Set<Integer> expected = expectedEvents
+                    .stream()
+                    .map(ClusterEventLogger::toEventCodeId)
+                    .collect(toSet());
+                assertEquals(expected, LOGGED_EVENTS);
             }
-        });
+        }
     }
 
     private void before(final String enabledEvents, final int expectedEvents)

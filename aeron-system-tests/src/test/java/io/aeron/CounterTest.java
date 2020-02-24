@@ -25,9 +25,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 public class CounterTest
@@ -77,93 +78,87 @@ public class CounterTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldBeAbleToAddCounter()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            launch();
+        launch();
 
-            final Counter counter = clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
-            assertFalse(counter.isClosed());
+        assertFalse(counter.isClosed());
 
-            verify(availableCounterHandlerClientA, timeout(5000L))
-                .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
-            verify(availableCounterHandlerClientB, timeout(5000L))
-                .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
-        });
+        verify(availableCounterHandlerClientA, timeout(5000L))
+            .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
+        verify(availableCounterHandlerClientB, timeout(5000L))
+            .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
     }
 
     @Test
+    @Timeout(10)
     public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        availableCounterHandlerClientB = this::createReadableCounter;
+
+        launch();
+
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
+
+        while (null == readableCounter)
         {
-            availableCounterHandlerClientB = this::createReadableCounter;
+            Tests.sleep(1);
+        }
 
-            launch();
-
-            final Counter counter = clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
-
-            while (null == readableCounter)
-            {
-                Tests.sleep(1);
-            }
-
-            assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
-            assertEquals(counter.id(), readableCounter.counterId());
-            assertEquals(counter.registrationId(), readableCounter.registrationId());
-        });
+        assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
+        assertEquals(counter.id(), readableCounter.counterId());
+        assertEquals(counter.registrationId(), readableCounter.registrationId());
     }
 
     @Test
+    @Timeout(10)
     public void shouldCloseReadableCounterOnUnavailableCounter()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        availableCounterHandlerClientB = this::createReadableCounter;
+        unavailableCounterHandlerClientB = this::unavailableCounterHandler;
+
+        launch();
+
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
+
+        while (null == readableCounter)
         {
-            availableCounterHandlerClientB = this::createReadableCounter;
-            unavailableCounterHandlerClientB = this::unavailableCounterHandler;
+            Tests.sleep(1);
+        }
 
-            launch();
+        assertFalse(readableCounter.isClosed());
+        assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
 
-            final Counter counter = clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        counter.close();
 
-            while (null == readableCounter)
-            {
-                Tests.sleep(1);
-            }
-
-            assertFalse(readableCounter.isClosed());
-            assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
-
-            counter.close();
-
-            while (!readableCounter.isClosed())
-            {
-                Tests.sleep(1);
-            }
-        });
+        while (!readableCounter.isClosed())
+        {
+            Tests.sleep(1);
+        }
     }
 
     private void createReadableCounter(

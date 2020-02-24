@@ -28,13 +28,11 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultipleClusteredServicesTest
 {
@@ -70,72 +68,70 @@ public class MultipleClusteredServicesTest
     }
 
     @Test
+    @Timeout(20)
     public void testMultiService()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();
+        final List<TestCluster.ServiceContext> serviceContexts = new ArrayList<>();
+        final List<ClusteredMediaDriver> clusteredMediaDrivers = new ArrayList<>();
+        final List<ClusteredServiceContainer> clusteredServiceContainers = new ArrayList<>();
+
+        nodeContexts.add(TestCluster.nodeContext(0, true));
+        nodeContexts.add(TestCluster.nodeContext(1, true));
+        nodeContexts.add(TestCluster.nodeContext(2, true));
+
+        serviceContexts.add(TestCluster.serviceContext(0, 0, nodeContexts.get(0), ServiceA::new));
+        serviceContexts.add(TestCluster.serviceContext(0, 1, nodeContexts.get(0), ServiceB::new));
+        serviceContexts.add(TestCluster.serviceContext(1, 0, nodeContexts.get(1), ServiceA::new));
+        serviceContexts.add(TestCluster.serviceContext(1, 1, nodeContexts.get(1), ServiceB::new));
+        serviceContexts.add(TestCluster.serviceContext(2, 0, nodeContexts.get(2), ServiceA::new));
+        serviceContexts.add(TestCluster.serviceContext(2, 1, nodeContexts.get(2), ServiceB::new));
+
+        nodeContexts.forEach((context) -> clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
+            context.mediaDriverContext, context.archiveContext, context.consensusModuleContext)));
+
+        serviceContexts.forEach(
+            (context) ->
+            {
+                final Aeron aeron = Aeron.connect(context.aeron);
+                context.aeronArchiveContext.aeron(aeron).ownsAeronClient(false);
+                context.serviceContainerContext.aeron(aeron).ownsAeronClient(true);
+                clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerContext));
+            });
+
+        final String aeronDirName = CommonContext.getAeronDirectoryName();
+
+        final MediaDriver clientMediaDriver = MediaDriver.launch(new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED)
+            .dirDeleteOnStart(true)
+            .aeronDirectoryName(aeronDirName));
+
+        final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
+            .aeronDirectoryName(aeronDirName)
+            .ingressChannel("aeron:udp")
+            .clusterMemberEndpoints(TestCluster.clientMemberEndpoints(3)));
+
+        try
         {
-            final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();
-            final List<TestCluster.ServiceContext> serviceContexts = new ArrayList<>();
-            final List<ClusteredMediaDriver> clusteredMediaDrivers = new ArrayList<>();
-            final List<ClusteredServiceContainer> clusteredServiceContainers = new ArrayList<>();
+            final DirectBuffer buffer = new ExpandableArrayBuffer(100);
 
-            nodeContexts.add(TestCluster.nodeContext(0, true));
-            nodeContexts.add(TestCluster.nodeContext(1, true));
-            nodeContexts.add(TestCluster.nodeContext(2, true));
-
-            serviceContexts.add(TestCluster.serviceContext(0, 0, nodeContexts.get(0), ServiceA::new));
-            serviceContexts.add(TestCluster.serviceContext(0, 1, nodeContexts.get(0), ServiceB::new));
-            serviceContexts.add(TestCluster.serviceContext(1, 0, nodeContexts.get(1), ServiceA::new));
-            serviceContexts.add(TestCluster.serviceContext(1, 1, nodeContexts.get(1), ServiceB::new));
-            serviceContexts.add(TestCluster.serviceContext(2, 0, nodeContexts.get(2), ServiceA::new));
-            serviceContexts.add(TestCluster.serviceContext(2, 1, nodeContexts.get(2), ServiceB::new));
-
-            nodeContexts.forEach((context) -> clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
-                context.mediaDriverContext, context.archiveContext, context.consensusModuleContext)));
-
-            serviceContexts.forEach(
-                (context) ->
-                {
-                    final Aeron aeron = Aeron.connect(context.aeron);
-                    context.aeronArchiveContext.aeron(aeron).ownsAeronClient(false);
-                    context.serviceContainerContext.aeron(aeron).ownsAeronClient(true);
-                    clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerContext));
-                });
-
-            final String aeronDirName = CommonContext.getAeronDirectoryName();
-
-            final MediaDriver clientMediaDriver = MediaDriver.launch(new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED)
-                .dirDeleteOnStart(true)
-                .aeronDirectoryName(aeronDirName));
-
-            final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
-                .aeronDirectoryName(aeronDirName)
-                .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints(TestCluster.clientMemberEndpoints(3)));
-
-            try
+            while (client.offer(buffer, 0, 100) < 0)
             {
-                final DirectBuffer buffer = new ExpandableArrayBuffer(100);
-
-                while (client.offer(buffer, 0, 100) < 0)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                TestCluster.awaitCount(serviceAMessageCount, 3);
-                TestCluster.awaitCount(serviceBMessageCount, 3);
+                Thread.yield();
+                Tests.checkInterruptStatus();
             }
-            finally
-            {
-                CloseHelper.closeAll(client, clientMediaDriver);
-                clusteredServiceContainers.forEach(CloseHelper::close);
-                clusteredMediaDrivers.forEach(CloseHelper::close);
 
-                clientMediaDriver.context().deleteDirectory();
-                clusteredMediaDrivers.forEach((driver) -> driver.mediaDriver().context().deleteDirectory());
-            }
-        });
+            TestCluster.awaitCount(serviceAMessageCount, 3);
+            TestCluster.awaitCount(serviceBMessageCount, 3);
+        }
+        finally
+        {
+            CloseHelper.closeAll(client, clientMediaDriver);
+            clusteredServiceContainers.forEach(CloseHelper::close);
+            clusteredMediaDrivers.forEach(CloseHelper::close);
+
+            clientMediaDriver.context().deleteDirectory();
+            clusteredMediaDrivers.forEach((driver) -> driver.mediaDriver().context().deleteDirectory());
+        }
     }
 }

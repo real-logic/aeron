@@ -17,98 +17,91 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultiNodeTest
 {
     @Test
-    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
+    @Timeout(20)
+    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        final int appointedLeaderIndex = 1;
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            final int appointedLeaderIndex = 1;
+            final TestNode leader = cluster.awaitLeader();
 
-            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
-            {
-                final TestNode leader = cluster.awaitLeader();
-
-                assertEquals(appointedLeaderIndex, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
-                assertEquals(Cluster.Role.FOLLOWER, cluster.node(0).role());
-                assertEquals(Cluster.Role.FOLLOWER, cluster.node(2).role());
-            }
-        });
+            assertEquals(appointedLeaderIndex, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
+            assertEquals(Cluster.Role.FOLLOWER, cluster.node(0).role());
+            assertEquals(Cluster.Role.FOLLOWER, cluster.node(2).role());
+        }
     }
 
     @Test
-    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
+    @Timeout(20)
+    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        final int appointedLeaderIndex = 1;
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            final int appointedLeaderIndex = 1;
+            TestNode leader = cluster.awaitLeader();
 
-            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
-            {
-                TestNode leader = cluster.awaitLeader();
+            assertEquals(appointedLeaderIndex, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
-                assertEquals(appointedLeaderIndex, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
+            cluster.connectClient();
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(leader, messageCount);
 
-                cluster.connectClient();
-                final int messageCount = 10;
-                cluster.sendMessages(messageCount);
-                cluster.awaitResponseMessageCount(messageCount);
-                cluster.awaitServiceMessageCount(leader, messageCount);
+            cluster.stopAllNodes();
+            cluster.restartAllNodes(false);
 
-                cluster.stopAllNodes();
-                cluster.restartAllNodes(false);
-
-                leader = cluster.awaitLeader();
-                cluster.awaitServiceMessageCount(leader, messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
-            }
-        });
+            leader = cluster.awaitLeader();
+            cluster.awaitServiceMessageCount(leader, messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+        }
     }
 
     @Test
-    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
+    @Timeout(20)
+    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        final int appointedLeaderIndex = 1;
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            final int appointedLeaderIndex = 1;
+            TestNode leader = cluster.awaitLeader();
 
-            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
-            {
-                TestNode leader = cluster.awaitLeader();
+            assertEquals(appointedLeaderIndex, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
-                assertEquals(appointedLeaderIndex, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
+            cluster.connectClient();
+            final int preCatchupMessageCount = 5;
+            final int postCatchupMessageCount = 10;
+            final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
+            cluster.sendMessages(preCatchupMessageCount);
+            cluster.awaitResponseMessageCount(preCatchupMessageCount);
+            cluster.awaitServiceMessageCount(leader, preCatchupMessageCount);
 
-                cluster.connectClient();
-                final int preCatchupMessageCount = 5;
-                final int postCatchupMessageCount = 10;
-                final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
-                cluster.sendMessages(preCatchupMessageCount);
-                cluster.awaitResponseMessageCount(preCatchupMessageCount);
-                cluster.awaitServiceMessageCount(leader, preCatchupMessageCount);
+            cluster.stopNode(cluster.node(0));
 
-                cluster.stopNode(cluster.node(0));
+            cluster.sendMessages(postCatchupMessageCount);
+            cluster.awaitResponseMessageCount(postCatchupMessageCount);
 
-                cluster.sendMessages(postCatchupMessageCount);
-                cluster.awaitResponseMessageCount(postCatchupMessageCount);
+            cluster.stopAllNodes();
+            cluster.restartAllNodes(false);
 
-                cluster.stopAllNodes();
-                cluster.restartAllNodes(false);
-
-                leader = cluster.awaitLeader();
-                cluster.awaitServiceMessageCount(leader, totalMessageCount);
-                cluster.awaitServiceMessageCount(cluster.node(0), totalMessageCount);
-                cluster.awaitServiceMessageCount(cluster.node(2), totalMessageCount);
-            }
-        });
+            leader = cluster.awaitLeader();
+            cluster.awaitServiceMessageCount(leader, totalMessageCount);
+            cluster.awaitServiceMessageCount(cluster.node(0), totalMessageCount);
+            cluster.awaitServiceMessageCount(cluster.node(2), totalMessageCount);
+        }
     }
 }

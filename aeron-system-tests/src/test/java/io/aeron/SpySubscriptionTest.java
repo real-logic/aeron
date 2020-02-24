@@ -25,16 +25,15 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 
 import static io.aeron.SystemTests.spyForChannel;
-import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class SpySubscriptionTest
 {
@@ -72,45 +71,43 @@ public class SpySubscriptionTest
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldReceivePublishedMessage(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);
+            Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
-            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-                Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);
-                Publication publication = aeron.addPublication(channel, STREAM_ID))
+            final int expectedMessageCount = 4;
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * expectedMessageCount]);
+
+            for (int i = 0; i < expectedMessageCount; i++)
             {
-                final int expectedMessageCount = 4;
-                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * expectedMessageCount]);
-
-                for (int i = 0; i < expectedMessageCount; i++)
-                {
-                    srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
-                }
-
-                for (int i = 0; i < expectedMessageCount; i++)
-                {
-                    while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-                }
-
-                int numFragments = 0;
-                int numSpyFragments = 0;
-                do
-                {
-                    Tests.checkInterruptStatus();
-
-                    numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
-                    numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);
-                }
-                while (numSpyFragments < expectedMessageCount || numFragments < expectedMessageCount);
-
-                assertEquals(expectedMessageCount, fragmentCountSpy.value);
-                assertEquals(expectedMessageCount, fragmentCountSub.value);
+                srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
             }
-        });
+
+            for (int i = 0; i < expectedMessageCount; i++)
+            {
+                while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                }
+            }
+
+            int numFragments = 0;
+            int numSpyFragments = 0;
+            do
+            {
+                Tests.checkInterruptStatus();
+
+                numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
+                numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);
+            }
+            while (numSpyFragments < expectedMessageCount || numFragments < expectedMessageCount);
+
+            assertEquals(expectedMessageCount, fragmentCountSpy.value);
+            assertEquals(expectedMessageCount, fragmentCountSub.value);
+        }
     }
 }

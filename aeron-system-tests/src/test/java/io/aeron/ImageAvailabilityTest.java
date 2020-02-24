@@ -21,6 +21,7 @@ import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,117 +63,113 @@ public class ImageAvailabilityTest
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldCallImageHandlers(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final AtomicInteger unavailableImageCount = new AtomicInteger();
+        final AtomicInteger availableImageCount = new AtomicInteger();
+        final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
+        final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
+
+        final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
+
+        try (Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
+            Subscription subTwo = aeron.addSubscription(
+                spyChannel, STREAM_ID, availableHandler, unavailableHandler);
+            Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
-            final AtomicInteger unavailableImageCount = new AtomicInteger();
-            final AtomicInteger availableImageCount = new AtomicInteger();
-            final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
-            final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
-
-            final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
-
-            try (Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
-                Subscription subTwo = aeron.addSubscription(
-                    spyChannel, STREAM_ID, availableHandler, unavailableHandler);
-                Publication publication = aeron.addPublication(channel, STREAM_ID))
+            while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
             {
-                while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                    aeron.conductorAgentInvoker().invoke();
-                }
-
-                final Image image = subOne.imageAtIndex(0);
-                final Image spyImage = subTwo.imageAtIndex(0);
-
-                assertFalse(image.isClosed());
-                assertFalse(image.isEndOfStream());
-                assertFalse(spyImage.isClosed());
-                assertFalse(spyImage.isEndOfStream());
-
-                assertEquals(2, availableImageCount.get());
-                assertEquals(0, unavailableImageCount.get());
-
-                publication.close();
-
-                while (subOne.isConnected() || subTwo.isConnected())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                    aeron.conductorAgentInvoker().invoke();
-                }
-
-                assertTrue(image.isClosed());
-                assertTrue(image.isEndOfStream());
-                assertTrue(spyImage.isClosed());
-                assertTrue(spyImage.isEndOfStream());
-
-                assertEquals(2, availableImageCount.get());
-                assertEquals(2, unavailableImageCount.get());
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                aeron.conductorAgentInvoker().invoke();
             }
-        });
+
+            final Image image = subOne.imageAtIndex(0);
+            final Image spyImage = subTwo.imageAtIndex(0);
+
+            assertFalse(image.isClosed());
+            assertFalse(image.isEndOfStream());
+            assertFalse(spyImage.isClosed());
+            assertFalse(spyImage.isEndOfStream());
+
+            assertEquals(2, availableImageCount.get());
+            assertEquals(0, unavailableImageCount.get());
+
+            publication.close();
+
+            while (subOne.isConnected() || subTwo.isConnected())
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            assertTrue(image.isClosed());
+            assertTrue(image.isEndOfStream());
+            assertTrue(spyImage.isClosed());
+            assertTrue(spyImage.isEndOfStream());
+
+            assertEquals(2, availableImageCount.get());
+            assertEquals(2, unavailableImageCount.get());
+        }
     }
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final AtomicInteger unavailableImageCount = new AtomicInteger();
+        final AtomicInteger availableImageCount = new AtomicInteger();
+        final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
+        final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
+
+        final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
+        final Aeron.Context ctx = new Aeron.Context()
+            .useConductorAgentInvoker(true)
+            .errorHandler(Throwable::printStackTrace);
+
+        try (Aeron aeronTwo = Aeron.connect(ctx);
+            Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
+            Subscription subTwo = aeron.addSubscription(
+                spyChannel, STREAM_ID, availableHandler, unavailableHandler);
+            Publication publication = aeronTwo.addPublication(channel, STREAM_ID))
         {
-            final AtomicInteger unavailableImageCount = new AtomicInteger();
-            final AtomicInteger availableImageCount = new AtomicInteger();
-            final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
-            final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
-
-            final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
-            final Aeron.Context ctx = new Aeron.Context()
-                .useConductorAgentInvoker(true)
-                .errorHandler(Throwable::printStackTrace);
-
-            try (Aeron aeronTwo = Aeron.connect(ctx);
-                Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
-                Subscription subTwo = aeron.addSubscription(
-                    spyChannel, STREAM_ID, availableHandler, unavailableHandler);
-                Publication publication = aeronTwo.addPublication(channel, STREAM_ID))
+            while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
             {
-                while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                    aeron.conductorAgentInvoker().invoke();
-                }
-
-                final Image image = subOne.imageAtIndex(0);
-                final Image spyImage = subTwo.imageAtIndex(0);
-
-                assertFalse(image.isClosed());
-                assertFalse(image.isEndOfStream());
-                assertFalse(spyImage.isClosed());
-                assertFalse(spyImage.isEndOfStream());
-
-                assertEquals(2, availableImageCount.get());
-                assertEquals(0, unavailableImageCount.get());
-
-                aeronTwo.close();
-
-                while (subOne.isConnected() || subTwo.isConnected())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                    aeron.conductorAgentInvoker().invoke();
-                }
-
-                assertTrue(image.isClosed());
-                assertTrue(image.isEndOfStream());
-                assertTrue(spyImage.isClosed());
-                assertTrue(spyImage.isEndOfStream());
-
-                assertEquals(2, availableImageCount.get());
-                assertEquals(2, unavailableImageCount.get());
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                aeron.conductorAgentInvoker().invoke();
             }
-        });
+
+            final Image image = subOne.imageAtIndex(0);
+            final Image spyImage = subTwo.imageAtIndex(0);
+
+            assertFalse(image.isClosed());
+            assertFalse(image.isEndOfStream());
+            assertFalse(spyImage.isClosed());
+            assertFalse(spyImage.isEndOfStream());
+
+            assertEquals(2, availableImageCount.get());
+            assertEquals(0, unavailableImageCount.get());
+
+            aeronTwo.close();
+
+            while (subOne.isConnected() || subTwo.isConnected())
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            assertTrue(image.isClosed());
+            assertTrue(image.isEndOfStream());
+            assertTrue(spyImage.isClosed());
+            assertTrue(spyImage.isEndOfStream());
+
+            assertEquals(2, availableImageCount.get());
+            assertEquals(2, unavailableImageCount.get());
+        }
     }
 }

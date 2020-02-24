@@ -24,6 +24,7 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -33,9 +34,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UntetheredSubscriptionTest
 {
@@ -73,123 +74,119 @@ public class UntetheredSubscriptionTest
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
+        final AtomicBoolean unavailableCalled = new AtomicBoolean();
+        final UnavailableImageHandler handler = (image) -> unavailableCalled.set(true);
+
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+        final String untetheredChannel = channel + "|tether=false";
+        final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
+        boolean pollingUntethered = true;
+
+        try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
+            Subscription untetheredSub = aeron.addSubscription(untetheredChannel, STREAM_ID, null, handler);
+            Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
         {
-            final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
-            final AtomicBoolean unavailableCalled = new AtomicBoolean();
-            final UnavailableImageHandler handler = (image) -> unavailableCalled.set(true);
-
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-            final String untetheredChannel = channel + "|tether=false";
-            final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
-            boolean pollingUntethered = true;
-
-            try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
-                Subscription untetheredSub = aeron.addSubscription(untetheredChannel, STREAM_ID, null, handler);
-                Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
+            while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
             {
-                while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            while (true)
+            {
+                if (publication.offer(srcBuffer) < 0)
                 {
                     Thread.yield();
                     Tests.checkInterruptStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
-                while (true)
+                if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
                 {
-                    if (publication.offer(srcBuffer) < 0)
+                    pollingUntethered = false;
+                }
+
+                tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+
+                if (unavailableCalled.get())
+                {
+                    assertTrue(tetheredSub.isConnected());
+                    assertFalse(untetheredSub.isConnected());
+
+                    while (publication.offer(srcBuffer) < 0)
                     {
                         Thread.yield();
                         Tests.checkInterruptStatus();
                         aeron.conductorAgentInvoker().invoke();
                     }
 
-                    if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
-                    {
-                        pollingUntethered = false;
-                    }
-
-                    tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
-
-                    if (unavailableCalled.get())
-                    {
-                        assertTrue(tetheredSub.isConnected());
-                        assertFalse(untetheredSub.isConnected());
-
-                        while (publication.offer(srcBuffer) < 0)
-                        {
-                            Thread.yield();
-                            Tests.checkInterruptStatus();
-                            aeron.conductorAgentInvoker().invoke();
-                        }
-
-                        return;
-                    }
+                    return;
                 }
             }
-        });
+        }
     }
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldRejoinAfterResting(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final AtomicInteger unavailableImageCount = new AtomicInteger();
+        final AtomicInteger availableImageCount = new AtomicInteger();
+        final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
+        final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
+
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+        final String untetheredChannel = channel + "|tether=false";
+        final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
+        boolean pollingUntethered = true;
+
+        try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
+            Subscription untetheredSub = aeron.addSubscription(
+                untetheredChannel, STREAM_ID, availableHandler, unavailableHandler);
+            Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
         {
-            final AtomicInteger unavailableImageCount = new AtomicInteger();
-            final AtomicInteger availableImageCount = new AtomicInteger();
-            final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
-            final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
-            final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
-
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-            final String untetheredChannel = channel + "|tether=false";
-            final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
-            boolean pollingUntethered = true;
-
-            try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
-                Subscription untetheredSub = aeron.addSubscription(
-                    untetheredChannel, STREAM_ID, availableHandler, unavailableHandler);
-                Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
+            while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
             {
-                while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            while (true)
+            {
+                if (publication.offer(srcBuffer) < 0)
                 {
                     Thread.yield();
                     Tests.checkInterruptStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
-                while (true)
+                if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
                 {
-                    if (publication.offer(srcBuffer) < 0)
+                    pollingUntethered = false;
+                }
+
+                tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+
+                if (unavailableImageCount.get() == 1)
+                {
+                    while (availableImageCount.get() < 2)
                     {
                         Thread.yield();
                         Tests.checkInterruptStatus();
                         aeron.conductorAgentInvoker().invoke();
                     }
 
-                    if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
-                    {
-                        pollingUntethered = false;
-                    }
-
-                    tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
-
-                    if (unavailableImageCount.get() == 1)
-                    {
-                        while (availableImageCount.get() < 2)
-                        {
-                            Thread.yield();
-                            Tests.checkInterruptStatus();
-                            aeron.conductorAgentInvoker().invoke();
-                        }
-
-                        return;
-                    }
+                    return;
                 }
             }
-        });
+        }
     }
 }

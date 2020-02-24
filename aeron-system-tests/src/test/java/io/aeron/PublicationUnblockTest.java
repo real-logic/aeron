@@ -26,16 +26,15 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class PublicationUnblockTest
 {
@@ -69,67 +68,65 @@ public class PublicationUnblockTest
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldUnblockNonCommittedMessage(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final MutableInteger fragmentCount = new MutableInteger();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
+
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Publication publicationOne = aeron.addPublication(channel, STREAM_ID);
+            Publication publicationTwo = aeron.addPublication(channel, STREAM_ID))
         {
-            final MutableInteger fragmentCount = new MutableInteger();
-            final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength()]);
+            final int length = 128;
+            srcBuffer.setMemory(0, length, (byte)66);
+            final BufferClaim bufferClaim = new BufferClaim();
 
-            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-                Publication publicationOne = aeron.addPublication(channel, STREAM_ID);
-                Publication publicationTwo = aeron.addPublication(channel, STREAM_ID))
+            while (publicationOne.tryClaim(length, bufferClaim) < 0L)
             {
-                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength()]);
-                final int length = 128;
-                srcBuffer.setMemory(0, length, (byte)66);
-                final BufferClaim bufferClaim = new BufferClaim();
-
-                while (publicationOne.tryClaim(length, bufferClaim) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                bufferClaim.buffer().setMemory(bufferClaim.offset(), length, (byte)65);
-                bufferClaim.commit();
-
-                while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                while (publicationOne.tryClaim(length, bufferClaim) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final int expectedFragments = 3;
-                int numFragments = 0;
-                do
-                {
-                    final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
-                    if (fragments == 0)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-
-                    numFragments += fragments;
-                }
-                while (numFragments < expectedFragments);
-
-                assertEquals(expectedFragments, numFragments);
-                assertEquals(expectedFragments, fragmentCount.value);
+                Thread.yield();
+                Tests.checkInterruptStatus();
             }
-        });
+
+            bufferClaim.buffer().setMemory(bufferClaim.offset(), length, (byte)65);
+            bufferClaim.commit();
+
+            while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            while (publicationOne.tryClaim(length, bufferClaim) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            final int expectedFragments = 3;
+            int numFragments = 0;
+            do
+            {
+                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                if (fragments == 0)
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                }
+
+                numFragments += fragments;
+            }
+            while (numFragments < expectedFragments);
+
+            assertEquals(expectedFragments, numFragments);
+            assertEquals(expectedFragments, fragmentCount.value);
+        }
     }
 }

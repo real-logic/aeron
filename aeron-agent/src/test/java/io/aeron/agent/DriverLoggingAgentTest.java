@@ -29,6 +29,7 @@ import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -43,11 +44,9 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static java.time.Duration.ofSeconds;
 import static java.util.Collections.synchronizedSet;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 public class DriverLoggingAgentTest
@@ -76,7 +75,8 @@ public class DriverLoggingAgentTest
     }
 
     @Test
-    public void logAll()
+    @Timeout(10)
+    public void logAll() throws InterruptedException
     {
         testLogMediaDriverEvents("all", EnumSet.of(
             FRAME_IN,
@@ -111,7 +111,8 @@ public class DriverLoggingAgentTest
         "CMD_IN_ADD_SUBSCRIPTION",
         "CMD_OUT_AVAILABLE_IMAGE"
     })
-    public void logIndividualEvents(final DriverEventCode eventCode)
+    @Timeout(10)
+    public void logIndividualEvents(final DriverEventCode eventCode) throws InterruptedException
     {
         try
         {
@@ -123,53 +124,51 @@ public class DriverLoggingAgentTest
         }
     }
 
-    private void testLogMediaDriverEvents(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
+    private void testLogMediaDriverEvents(
+        final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents) throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
+
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
+            .publicationLingerTimeoutNs(0)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
+            .aeronDirectoryName(aeronDirectoryName);
+
+        try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
         {
-            final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
+            final Aeron.Context clientCtx = new Aeron.Context()
+                .aeronDirectoryName(driverCtx.aeronDirectoryName());
 
-            final MediaDriver.Context driverCtx = new MediaDriver.Context()
-                .errorHandler(Throwable::printStackTrace)
-                .publicationLingerTimeoutNs(0)
-                .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
-                .aeronDirectoryName(aeronDirectoryName);
-
-            try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
+            try (Aeron aeron = Aeron.connect(clientCtx);
+                Subscription subscription = aeron.addSubscription(NETWORK_CHANNEL, STREAM_ID);
+                Publication publication = aeron.addPublication(NETWORK_CHANNEL, STREAM_ID))
             {
-                final Aeron.Context clientCtx = new Aeron.Context()
-                    .aeronDirectoryName(driverCtx.aeronDirectoryName());
-
-                try (Aeron aeron = Aeron.connect(clientCtx);
-                    Subscription subscription = aeron.addSubscription(NETWORK_CHANNEL, STREAM_ID);
-                    Publication publication = aeron.addPublication(NETWORK_CHANNEL, STREAM_ID))
+                final UnsafeBuffer offerBuffer = new UnsafeBuffer(new byte[32]);
+                while (publication.offer(offerBuffer) < 0)
                 {
-                    final UnsafeBuffer offerBuffer = new UnsafeBuffer(new byte[32]);
-                    while (publication.offer(offerBuffer) < 0)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-
-                    final MutableInteger counter = new MutableInteger();
-                    final FragmentHandler handler = (buffer, offset, length, header) -> counter.value++;
-
-                    while (0 == subscription.poll(handler, 1))
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-
-                    assertEquals(counter.get(), 1);
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
                 }
 
-                latch.await();
+                final MutableInteger counter = new MutableInteger();
+                final FragmentHandler handler = (buffer, offset, length, header) -> counter.value++;
+
+                while (0 == subscription.poll(handler, 1))
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                }
+
+                assertEquals(counter.get(), 1);
             }
 
-            assertEquals(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()), LOGGED_EVENTS);
-        });
+            latch.await();
+        }
+
+        assertEquals(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()), LOGGED_EVENTS);
     }
 
     private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)

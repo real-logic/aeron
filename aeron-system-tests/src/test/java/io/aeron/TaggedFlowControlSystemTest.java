@@ -26,14 +26,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.nio.ByteOrder;
-import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static io.aeron.FlowControlTests.waitForConnectionAndStatusMessages;
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -132,12 +130,12 @@ public class TaggedFlowControlSystemTest
         public String toString()
         {
             return "State{" +
-                   "numMessagesToSend=" + numMessagesToSend +
-                   ", numMessagesLeftToSend=" + numMessagesLeftToSend +
-                   ", numFragmentsReadFromA=" + numFragmentsReadFromA +
-                   ", numFragmentsReadFromB=" + numFragmentsReadFromB +
-                   ", isBClosed=" + isBClosed +
-                   '}';
+                "numMessagesToSend=" + numMessagesToSend +
+                ", numMessagesLeftToSend=" + numMessagesLeftToSend +
+                ", numFragmentsReadFromA=" + numFragmentsReadFromA +
+                ", numFragmentsReadFromB=" + numFragmentsReadFromB +
+                ", isBClosed=" + isBClosed +
+                '}';
         }
     }
 
@@ -307,6 +305,7 @@ public class TaggedFlowControlSystemTest
 
     @SuppressWarnings("methodlength")
     @Test
+    @Timeout(20)
     void shouldPreventConnectionUntilRequiredGroupSizeMatchTagIsMet()
     {
         final Long receiverTag = 2701L;
@@ -332,106 +331,104 @@ public class TaggedFlowControlSystemTest
             .taggedFlowControl(receiverTag, groupSize, null)
             .build();
 
-        assertTimeoutPreemptively(Duration.ofSeconds(20), () ->
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+
+        launch();
+
+        TestMediaDriver driverC = null;
+        Aeron clientC = null;
+
+        TestMediaDriver driverD = null;
+        Aeron clientD = null;
+
+        Publication publication = null;
+        Subscription subscription0 = null;
+        Subscription subscription1 = null;
+        Subscription subscription2 = null;
+        Subscription subscription3 = null;
+        Subscription subscription4 = null;
+        Subscription subscription5 = null;
+
+        try
         {
-            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+            driverC = TestMediaDriver.launch(
+                new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
+                    .aeronDirectoryName(ROOT_DIR + "C")
+                    .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+                    .errorHandler(Throwable::printStackTrace)
+                    .threadingMode(ThreadingMode.SHARED),
+                testWatcher);
 
-            launch();
+            clientC = Aeron.connect(
+                new Aeron.Context()
+                    .errorHandler(Throwable::printStackTrace)
+                    .aeronDirectoryName(driverC.aeronDirectoryName()));
 
-            TestMediaDriver driverC = null;
-            Aeron clientC = null;
+            driverD = TestMediaDriver.launch(
+                new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
+                    .aeronDirectoryName(ROOT_DIR + "D")
+                    .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+                    .errorHandler(Throwable::printStackTrace)
+                    .threadingMode(ThreadingMode.SHARED),
+                testWatcher);
 
-            TestMediaDriver driverD = null;
-            Aeron clientD = null;
+            clientD = Aeron.connect(
+                new Aeron.Context()
+                    .errorHandler(Throwable::printStackTrace)
+                    .aeronDirectoryName(driverD.aeronDirectoryName()));
 
-            Publication publication = null;
-            Subscription subscription0 = null;
-            Subscription subscription1 = null;
-            Subscription subscription2 = null;
-            Subscription subscription3 = null;
-            Subscription subscription4 = null;
-            Subscription subscription5 = null;
+            publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
 
-            try
+            subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
+            subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
+            subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
+            subscription3 = clientB.addSubscription(uriWithReceiverTag, STREAM_ID);
+            subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);
+
+            waitForConnectionAndStatusMessages(
+                clientA.countersReader(),
+                subscription0, subscription1, subscription2, subscription3, subscription4);
+
+            assertFalse(publication.isConnected());
+
+            subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
+
+            // Should now have 3 receivers and publication should eventually be connected.
+            while (!publication.isConnected())
             {
-                driverC = TestMediaDriver.launch(
-                    new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
-                        .aeronDirectoryName(ROOT_DIR + "C")
-                        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-                        .errorHandler(Throwable::printStackTrace)
-                        .threadingMode(ThreadingMode.SHARED),
-                    testWatcher);
-
-                clientC = Aeron.connect(
-                    new Aeron.Context()
-                        .errorHandler(Throwable::printStackTrace)
-                        .aeronDirectoryName(driverC.aeronDirectoryName()));
-
-                driverD = TestMediaDriver.launch(
-                    new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
-                        .aeronDirectoryName(ROOT_DIR + "D")
-                        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-                        .errorHandler(Throwable::printStackTrace)
-                        .threadingMode(ThreadingMode.SHARED),
-                    testWatcher);
-
-                clientD = Aeron.connect(
-                    new Aeron.Context()
-                        .errorHandler(Throwable::printStackTrace)
-                        .aeronDirectoryName(driverD.aeronDirectoryName()));
-
-                publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
-
-                subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
-                subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
-                subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
-                subscription3 = clientB.addSubscription(uriWithReceiverTag, STREAM_ID);
-                subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);
-
-                waitForConnectionAndStatusMessages(
-                    clientA.countersReader(),
-                    subscription0, subscription1, subscription2, subscription3, subscription4);
-
-                assertFalse(publication.isConnected());
-
-                subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
-
-                // Should now have 3 receivers and publication should eventually be connected.
-                while (!publication.isConnected())
-                {
-                    Tests.sleep(1);
-                }
-
-                subscription5.close();
-                subscription5 = null;
-
-                // Lost a receiver and publication should eventually be disconnected.
-                while (publication.isConnected())
-                {
-                    Tests.sleep(1);
-                }
-
-                subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
-
-                // Aaaaaand reconnect.
-                while (!publication.isConnected())
-                {
-                    Tests.sleep(1);
-                }
+                Tests.sleep(1);
             }
-            finally
+
+            subscription5.close();
+            subscription5 = null;
+
+            // Lost a receiver and publication should eventually be disconnected.
+            while (publication.isConnected())
             {
-                CloseHelper.closeAll(
-                    publication,
-                    subscription0, subscription1, subscription2, subscription3, subscription4, subscription5,
-                    clientC, clientD,
-                    driverC, driverD
-                );
+                Tests.sleep(1);
             }
-        });
+
+            subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
+
+            // Aaaaaand reconnect.
+            while (!publication.isConnected())
+            {
+                Tests.sleep(1);
+            }
+        }
+        finally
+        {
+            CloseHelper.closeAll(
+                publication,
+                subscription0, subscription1, subscription2, subscription3, subscription4, subscription5,
+                clientC, clientD,
+                driverC, driverD
+            );
+        }
     }
 
     @Test
+    @Timeout(20)
     void shouldPreventConnectionUntilAtLeastOneSubscriberConnectedWithRequiredGroupSizeZero()
     {
         final Long receiverTag = 2701L;
@@ -454,64 +451,60 @@ public class TaggedFlowControlSystemTest
             .taggedFlowControl(receiverTag, groupSize, null)
             .build();
 
-        assertTimeoutPreemptively(Duration.ofSeconds(20), () ->
+        launch();
+
+        publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
+        final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
+
+        final Subscription otherSubscription = clientA.addSubscription(plainUri, STREAM_ID + 1);
+
+        while (!otherPublication.isConnected())
         {
-            launch();
+            Tests.sleep(1);
+        }
+        // We know another publication on the same channel is connected
 
-            publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
-            final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
+        assertFalse(publication.isConnected());
 
-            final Subscription otherSubscription = clientA.addSubscription(plainUri, STREAM_ID + 1);
+        subscriptionA = clientA.addSubscription(uriWithReceiverTag, STREAM_ID);
 
-            while (!otherPublication.isConnected())
-            {
-                Tests.sleep(1);
-            }
-            // We know another publication on the same channel is connected
-
-            assertFalse(publication.isConnected());
-
-            subscriptionA = clientA.addSubscription(uriWithReceiverTag, STREAM_ID);
-
-            while (!publication.isConnected())
-            {
-                Tests.sleep(1);
-            }
-        });
+        while (!publication.isConnected())
+        {
+            Tests.sleep(1);
+        }
     }
 
     @Test
+    @Timeout(10)
     public void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
     {
         final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";
         final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|rtag=123";
         final String subscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+
+        launch();
+
+        publication = clientA.addPublication(publisherUri, STREAM_ID);
+
+        final CountersReader countersReader = clientA.countersReader();
+
+        final int senderLimitCounterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+            countersReader, SenderLimit.SENDER_LIMIT_TYPE_ID, publication.registrationId);
+        final long currentSenderLimit = countersReader.getCounterValue(senderLimitCounterId);
+
+        subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
+
+        waitForConnectionAndStatusMessages(countersReader, subscriptionA);
+
+        assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
+
+        subscriptionB = clientB.addSubscription(groupSubscriberUri, STREAM_ID);
+
+        while (currentSenderLimit == countersReader.getCounterValue(senderLimitCounterId))
         {
-            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-
-            launch();
-
-            publication = clientA.addPublication(publisherUri, STREAM_ID);
-
-            final CountersReader countersReader = clientA.countersReader();
-
-            final int senderLimitCounterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
-                countersReader, SenderLimit.SENDER_LIMIT_TYPE_ID, publication.registrationId);
-            final long currentSenderLimit = countersReader.getCounterValue(senderLimitCounterId);
-
-            subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
-
-            waitForConnectionAndStatusMessages(countersReader, subscriptionA);
-
-            assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
-
-            subscriptionB = clientB.addSubscription(groupSubscriberUri, STREAM_ID);
-
-            while (currentSenderLimit == countersReader.getCounterValue(senderLimitCounterId))
-            {
-                Tests.sleep(1);
-            }
-        });
+            Tests.sleep(1);
+        }
     }
 }

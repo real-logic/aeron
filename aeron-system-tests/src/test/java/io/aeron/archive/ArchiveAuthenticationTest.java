@@ -30,14 +30,15 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.security.NullCredentialsSupplier.NULL_CREDENTIAL;
-import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
 public class ArchiveAuthenticationTest
@@ -74,265 +75,255 @@ public class ArchiveAuthenticationTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldBeAbleToRecordWithDefaultCredentialsAndAuthenticator()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            launchArchivingMediaDriver(null);
-            connectClient(null);
+        launchArchivingMediaDriver(null);
+        connectClient(null);
 
-            createRecording();
-        });
+        createRecording();
     }
 
     @Test
+    @Timeout(10)
     public void shouldBeAbleToRecordWithAuthenticateOnConnectRequestWithCredentials()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final MutableLong authenticatorSessionId = new MutableLong(-1L);
+
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
         {
-            final MutableLong authenticatorSessionId = new MutableLong(-1L);
-
-            final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
+            public byte[] encodedCredentials()
             {
-                public byte[] encodedCredentials()
-                {
-                    return encodedCredentials;
-                }
+                return encodedCredentials;
+            }
 
-                public byte[] onChallenge(final byte[] encodedChallenge)
-                {
-                    fail();
-                    return null;
-                }
-            });
-
-            final Authenticator authenticator = spy(new Authenticator()
+            public byte[] onChallenge(final byte[] encodedChallenge)
             {
-                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    authenticatorSessionId.value = sessionId;
-                    assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
-                }
+                fail();
+                return null;
+            }
+        });
 
-                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    fail();
-                }
+        final Authenticator authenticator = spy(new Authenticator()
+        {
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                authenticatorSessionId.value = sessionId;
+                assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
+            }
 
-                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                fail();
+            }
+
+            public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
+                sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
+            }
+
+            public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                fail();
+            }
+        });
+
+        launchArchivingMediaDriver(() -> authenticator);
+        connectClient(credentialsSupplier);
+
+        assertEquals(aeronArchive.controlSessionId(), authenticatorSessionId.value);
+
+        createRecording();
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
+    {
+        final MutableLong authenticatorSessionId = new MutableLong(-1L);
+
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
+        {
+            public byte[] encodedCredentials()
+            {
+                return NULL_CREDENTIAL;
+            }
+
+            public byte[] onChallenge(final byte[] encodedChallenge)
+            {
+                assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
+                return encodedCredentials;
+            }
+        });
+
+        final Authenticator authenticator = spy(new Authenticator()
+        {
+            boolean challengeSuccessful = false;
+
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                authenticatorSessionId.value = sessionId;
+                assertEquals(0, encodedCredentials.length);
+            }
+
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                assertEquals(sessionId, authenticatorSessionId.value);
+                assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
+                challengeSuccessful = true;
+            }
+
+            public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
+                sessionProxy.challenge(encodedChallenge);
+            }
+
+            public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                if (challengeSuccessful)
                 {
                     assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
                 }
-
-                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
-                {
-                    fail();
-                }
-            });
-
-            launchArchivingMediaDriver(() -> authenticator);
-            connectClient(credentialsSupplier);
-
-            assertEquals(aeronArchive.controlSessionId(), authenticatorSessionId.value);
-
-            createRecording();
+            }
         });
+
+        launchArchivingMediaDriver(() -> authenticator);
+        connectClient(credentialsSupplier);
+
+        assertEquals(aeronArchive.controlSessionId(), authenticatorSessionId.value);
+
+        createRecording();
     }
 
     @Test
-    public void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final MutableLong authenticatorSessionId = new MutableLong(-1L);
-
-            final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
-            {
-                public byte[] encodedCredentials()
-                {
-                    return NULL_CREDENTIAL;
-                }
-
-                public byte[] onChallenge(final byte[] encodedChallenge)
-                {
-                    assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
-                    return encodedCredentials;
-                }
-            });
-
-            final Authenticator authenticator = spy(new Authenticator()
-            {
-                boolean challengeSuccessful = false;
-
-                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    authenticatorSessionId.value = sessionId;
-                    assertEquals(0, encodedCredentials.length);
-                }
-
-                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    assertEquals(sessionId, authenticatorSessionId.value);
-                    assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
-                    challengeSuccessful = true;
-                }
-
-                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
-                {
-                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
-                    sessionProxy.challenge(encodedChallenge);
-                }
-
-                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
-                {
-                    if (challengeSuccessful)
-                    {
-                        assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
-                        sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
-                    }
-                }
-            });
-
-            launchArchivingMediaDriver(() -> authenticator);
-            connectClient(credentialsSupplier);
-
-            assertEquals(aeronArchive.controlSessionId(), authenticatorSessionId.value);
-
-            createRecording();
-        });
-    }
-
-    @Test
+    @Timeout(10)
     public void shouldNotBeAbleToConnectWithRejectOnConnectRequest()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final MutableLong authenticatorSessionId = new MutableLong(-1L);
+
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
         {
-            final MutableLong authenticatorSessionId = new MutableLong(-1L);
-
-            final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
+            public byte[] encodedCredentials()
             {
-                public byte[] encodedCredentials()
-                {
-                    return NULL_CREDENTIAL;
-                }
+                return NULL_CREDENTIAL;
+            }
 
-                public byte[] onChallenge(final byte[] encodedChallenge)
-                {
-                    assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
-                    return encodedCredentials;
-                }
-            });
-
-            final Authenticator authenticator = spy(new Authenticator()
+            public byte[] onChallenge(final byte[] encodedChallenge)
             {
-                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    authenticatorSessionId.value = sessionId;
-                    assertEquals(0, encodedCredentials.length);
-                }
+                assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
+                return encodedCredentials;
+            }
+        });
 
-                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    fail();
-                }
+        final Authenticator authenticator = spy(new Authenticator()
+        {
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                authenticatorSessionId.value = sessionId;
+                assertEquals(0, encodedCredentials.length);
+            }
 
-                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                fail();
+            }
+
+            public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
+                sessionProxy.reject();
+            }
+
+            public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                fail();
+            }
+        });
+
+        launchArchivingMediaDriver(() -> authenticator);
+
+        try
+        {
+            connectClient(credentialsSupplier);
+        }
+        catch (final ArchiveException ex)
+        {
+            assertEquals(ArchiveException.AUTHENTICATION_REJECTED, ex.errorCode());
+            return;
+        }
+
+        fail("should have seen exception");
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
+    {
+        final MutableLong authenticatorSessionId = new MutableLong(-1L);
+
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
+        {
+            public byte[] encodedCredentials()
+            {
+                return NULL_CREDENTIAL;
+            }
+
+            public byte[] onChallenge(final byte[] encodedChallenge)
+            {
+                assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
+                return encodedCredentials;
+            }
+        });
+
+        final Authenticator authenticator = spy(new Authenticator()
+        {
+            boolean challengeRespondedTo = false;
+
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                authenticatorSessionId.value = sessionId;
+                assertEquals(0, encodedCredentials.length);
+            }
+
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                assertEquals(sessionId, authenticatorSessionId.value);
+                assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
+                challengeRespondedTo = true;
+            }
+
+            public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
+                sessionProxy.challenge(encodedChallenge);
+            }
+
+            public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                if (challengeRespondedTo)
                 {
                     assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.reject();
                 }
-
-                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
-                {
-                    fail();
-                }
-            });
-
-            launchArchivingMediaDriver(() -> authenticator);
-
-            try
-            {
-                connectClient(credentialsSupplier);
             }
-            catch (final ArchiveException ex)
-            {
-                assertEquals(ArchiveException.AUTHENTICATION_REJECTED, ex.errorCode());
-                return;
-            }
-
-            fail("should have seen exception");
         });
-    }
 
-    @Test
-    public void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        launchArchivingMediaDriver(() -> authenticator);
+
+        try
         {
-            final MutableLong authenticatorSessionId = new MutableLong(-1L);
+            connectClient(credentialsSupplier);
+        }
+        catch (final ArchiveException ex)
+        {
+            assertEquals(ArchiveException.AUTHENTICATION_REJECTED, ex.errorCode());
+            return;
+        }
 
-            final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
-            {
-                public byte[] encodedCredentials()
-                {
-                    return NULL_CREDENTIAL;
-                }
-
-                public byte[] onChallenge(final byte[] encodedChallenge)
-                {
-                    assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
-                    return encodedCredentials;
-                }
-            });
-
-            final Authenticator authenticator = spy(new Authenticator()
-            {
-                boolean challengeRespondedTo = false;
-
-                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    authenticatorSessionId.value = sessionId;
-                    assertEquals(0, encodedCredentials.length);
-                }
-
-                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-                {
-                    assertEquals(sessionId, authenticatorSessionId.value);
-                    assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
-                    challengeRespondedTo = true;
-                }
-
-                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
-                {
-                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
-                    sessionProxy.challenge(encodedChallenge);
-                }
-
-                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
-                {
-                    if (challengeRespondedTo)
-                    {
-                        assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
-                        sessionProxy.reject();
-                    }
-                }
-            });
-
-            launchArchivingMediaDriver(() -> authenticator);
-
-            try
-            {
-                connectClient(credentialsSupplier);
-            }
-            catch (final ArchiveException ex)
-            {
-                assertEquals(ArchiveException.AUTHENTICATION_REJECTED, ex.errorCode());
-                return;
-            }
-
-            fail("should have seen exception");
-        });
+        fail("should have seen exception");
     }
 
     private void connectClient(final CredentialsSupplier credentialsSupplier)

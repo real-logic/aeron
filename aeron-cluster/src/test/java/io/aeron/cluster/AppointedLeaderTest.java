@@ -17,51 +17,48 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AppointedLeaderTest
 {
     private static final int LEADER_ID = 1;
 
     @Test
-    public void shouldConnectAndSendKeepAlive()
+    @Timeout(20)
+    public void shouldConnectAndSendKeepAlive() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
-            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
-            {
-                final TestNode leader = cluster.awaitLeader();
-                assertEquals(LEADER_ID, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
+            final TestNode leader = cluster.awaitLeader();
+            assertEquals(LEADER_ID, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
-                cluster.connectClient();
-                assertTrue(cluster.client().sendKeepAlive());
-            }
-        });
+            cluster.connectClient();
+            assertTrue(cluster.client().sendKeepAlive());
+        }
     }
 
     @Test
-    public void shouldEchoMessagesViaService()
+    @Timeout(20)
+    public void shouldEchoMessagesViaService() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
-            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
-            {
-                final TestNode leader = cluster.awaitLeader();
-                assertEquals(LEADER_ID, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
+            final TestNode leader = cluster.awaitLeader();
+            assertEquals(LEADER_ID, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
-                cluster.connectClient();
+            cluster.connectClient();
 
-                final int messageCount = 10;
-                cluster.sendMessages(messageCount);
-                cluster.awaitResponseMessageCount(messageCount);
-                cluster.awaitServiceMessageCount(leader, messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
-            }
-        });
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(leader, messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+        }
     }
 }

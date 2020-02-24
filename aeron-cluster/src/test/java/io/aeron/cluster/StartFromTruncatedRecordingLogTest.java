@@ -43,6 +43,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +55,6 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -129,21 +129,19 @@ public class StartFromTruncatedRecordingLogTest
     }
 
     @Test
-    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog()
+    @Timeout(30)
+    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
     {
-        assertTimeoutPreemptively(ofSeconds(30), () ->
-        {
-            stopAndStartClusterWithTruncationOfRecordingLog();
-            assertClusterIsFunctioningCorrectly();
+        stopAndStartClusterWithTruncationOfRecordingLog();
+        assertClusterIsFunctioningCorrectly();
 
-            stopAndStartClusterWithTruncationOfRecordingLog();
-            assertClusterIsFunctioningCorrectly();
+        stopAndStartClusterWithTruncationOfRecordingLog();
+        assertClusterIsFunctioningCorrectly();
 
-            stopAndStartClusterWithTruncationOfRecordingLog();
-            assertClusterIsFunctioningCorrectly();
+        stopAndStartClusterWithTruncationOfRecordingLog();
+        assertClusterIsFunctioningCorrectly();
 
-            ClusterTests.failOnClusterError();
-        });
+        ClusterTests.failOnClusterError();
     }
 
     private void stopAndStartClusterWithTruncationOfRecordingLog() throws IOException

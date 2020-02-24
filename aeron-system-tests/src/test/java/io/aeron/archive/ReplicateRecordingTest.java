@@ -32,6 +32,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 
@@ -39,7 +40,6 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.generateRandomDirName;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -159,80 +159,166 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldThrowExceptionWhenDstRecordingIdUnknown()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final long unknownId = 7L;
+        try
         {
-            final long unknownId = 7L;
-            try
-            {
-                dstAeronArchive.replicate(
-                    NULL_VALUE, unknownId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
-            }
-            catch (final ArchiveException ex)
-            {
-                assertEquals(ArchiveException.UNKNOWN_RECORDING, ex.errorCode());
-                assertTrue(ex.getMessage().endsWith(Long.toString(unknownId)));
-                return;
-            }
+            dstAeronArchive.replicate(
+                NULL_VALUE, unknownId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+        }
+        catch (final ArchiveException ex)
+        {
+            assertEquals(ArchiveException.UNKNOWN_RECORDING, ex.errorCode());
+            assertTrue(ex.getMessage().endsWith(Long.toString(unknownId)));
+            return;
+        }
 
-            fail("expected archive exception");
-        });
+        fail("expected archive exception");
     }
 
     @Test
+    @Timeout(10)
     public void shouldThrowExceptionWhenSrcRecordingIdUnknown()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final long unknownId = 7L;
-            final ControlEventListener listener = mock(ControlEventListener.class);
-            final MutableLong dstRecordingId = new MutableLong();
-            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(listener, signalRef, dstRecordingId);
+        final long unknownId = 7L;
+        final ControlEventListener listener = mock(ControlEventListener.class);
+        final MutableLong dstRecordingId = new MutableLong();
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(listener, signalRef, dstRecordingId);
 
-            final long replicationId = dstAeronArchive.replicate(
-                unknownId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+        final long replicationId = dstAeronArchive.replicate(
+            unknownId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-            awaitSignalOrResponse(signalRef, adapter);
+        awaitSignalOrResponse(signalRef, adapter);
 
-            verify(listener).onResponse(
-                eq(dstAeronArchive.controlSessionId()),
-                eq(replicationId),
-                eq((long)ArchiveException.UNKNOWN_RECORDING),
-                eq(ControlResponseCode.ERROR),
-                anyString());
-        });
+        verify(listener).onResponse(
+            eq(dstAeronArchive.controlSessionId()),
+            eq(replicationId),
+            eq((long)ArchiveException.UNKNOWN_RECORDING),
+            eq(ControlResponseCode.ERROR),
+            anyString());
     }
 
     @Test
+    @Timeout(10)
     public void shouldReplicateStoppedRecording()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(counters, counterId, publication.position());
+        }
 
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        final MutableLong dstRecordingId = new MutableLong();
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+        dstAeronArchive.replicate(
+            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.REPLICATE, signalRef.get());
+
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.EXTEND, signalRef.get());
+
+        final ObjectHashSet<RecordingSignal> transitionEventsSet = new ObjectHashSet<>();
+        awaitSignal(signalRef, adapter);
+        transitionEventsSet.add(signalRef.get());
+
+        awaitSignal(signalRef, adapter);
+        transitionEventsSet.add(signalRef.get());
+
+        assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldReplicateStoppedRecordingTwiceConcurrently()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+        final long position;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            position = publication.position();
+            awaitPosition(counters, counterId, position);
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        final MutableLong dstRecordingId = new MutableLong();
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+        dstAeronArchive.replicate(
+            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+        dstAeronArchive.replicate(
+            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+        int stopCount = 0;
+        while (stopCount < 2)
+        {
+            awaitSignal(signalRef, adapter);
+            if (signalRef.get() == RecordingSignal.STOP)
             {
-                final CountersReader counters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
-
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(counters, counterId, publication.position());
+                stopCount++;
             }
+        }
 
-            srcAeronArchive.stopRecording(subscriptionId);
+        assertEquals(dstAeronArchive.getStopPosition(0), position);
+        assertEquals(dstAeronArchive.getStopPosition(1), position);
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldReplicateLiveWithoutMergingRecording()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
 
             final MutableLong dstRecordingId = new MutableLong();
             final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
             final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
-            dstAeronArchive.replicate(
+            final long replicationId = dstAeronArchive.replicate(
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
             awaitSignal(signalRef, adapter);
@@ -241,348 +327,244 @@ public class ReplicateRecordingTest
             awaitSignal(signalRef, adapter);
             assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
-            final ObjectHashSet<RecordingSignal> transitionEventsSet = new ObjectHashSet<>();
-            awaitSignal(signalRef, adapter);
-            transitionEventsSet.add(signalRef.get());
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            dstAeronArchive.stopReplication(replicationId);
 
             awaitSignal(signalRef, adapter);
-            transitionEventsSet.add(signalRef.get());
+            assertEquals(RecordingSignal.STOP, signalRef.get());
+        }
 
-            assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
-            assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
-        });
+        srcAeronArchive.stopRecording(subscriptionId);
     }
 
     @Test
-    public void shouldReplicateStoppedRecordingTwiceConcurrently()
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
-            final long position;
-
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
-
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
-            {
-                final CountersReader counters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
-
-                offer(publication, messageCount, messagePrefix);
-                position = publication.position();
-                awaitPosition(counters, counterId, position);
-            }
-
-            srcAeronArchive.stopRecording(subscriptionId);
-
-            final MutableLong dstRecordingId = new MutableLong();
-            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
-
-            dstAeronArchive.replicate(
-                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
-
-            dstAeronArchive.replicate(
-                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
-
-            int stopCount = 0;
-            while (stopCount < 2)
-            {
-                awaitSignal(signalRef, adapter);
-                if (signalRef.get() == RecordingSignal.STOP)
-                {
-                    stopCount++;
-                }
-            }
-
-            assertEquals(dstAeronArchive.getStopPosition(0), position);
-            assertEquals(dstAeronArchive.getStopPosition(1), position);
-        });
-    }
-
-    @Test
-    public void shouldReplicateLiveWithoutMergingRecording()
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
-
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
-
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
-            {
-                final CountersReader srcCounters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
-
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(srcCounters, counterId, publication.position());
-
-                final MutableLong dstRecordingId = new MutableLong();
-                final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-                final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
-
-                final long replicationId = dstAeronArchive.replicate(
-                    srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.REPLICATE, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.EXTEND, signalRef.get());
-
-                final CountersReader dstCounters = dstAeron.countersReader();
-                final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
-                awaitPosition(dstCounters, dstCounterId, publication.position());
-
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(dstCounters, dstCounterId, publication.position());
-
-                dstAeronArchive.stopReplication(replicationId);
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.STOP, signalRef.get());
-            }
-
-            srcAeronArchive.stopRecording(subscriptionId);
-        });
-    }
-
-    @Test
+    @Timeout(10)
     public void shouldReplicateMoreThanOnce()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
 
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
-            {
-                final CountersReader srcCounters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+            final MutableLong recordingIdRef = new MutableLong();
+            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, recordingIdRef);
 
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(srcCounters, counterId, publication.position());
+            long replicationId = dstAeronArchive.replicate(
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-                final MutableLong recordingIdRef = new MutableLong();
-                final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-                final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, recordingIdRef);
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
 
-                long replicationId = dstAeronArchive.replicate(
-                    srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.REPLICATE, signalRef.get());
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final long dstRecordingId = recordingIdRef.get();
+            int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
 
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.EXTEND, signalRef.get());
+            dstAeronArchive.stopReplication(replicationId);
 
-                final CountersReader dstCounters = dstAeron.countersReader();
-                final long dstRecordingId = recordingIdRef.get();
-                int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
-                awaitPosition(dstCounters, dstCounterId, publication.position());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.STOP, signalRef.get());
 
-                dstAeronArchive.stopReplication(replicationId);
+            replicationId = dstAeronArchive.replicate(
+                srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.STOP, signalRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
-                replicationId = dstAeronArchive.replicate(
-                    srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+            dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.EXTEND, signalRef.get());
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
 
-                dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            dstAeronArchive.stopReplication(replicationId);
+        }
 
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(dstCounters, dstCounterId, publication.position());
-
-                dstAeronArchive.stopReplication(replicationId);
-            }
-
-            srcAeronArchive.stopRecording(subscriptionId);
-        });
+        srcAeronArchive.stopRecording(subscriptionId);
     }
 
     @Test
+    @Timeout(10)
     public void shouldReplicateLiveRecordingAndMerge()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter;
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
-            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-            final RecordingSignalAdapter adapter;
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
 
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
-            {
-                final CountersReader srcCounters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+            final MutableLong dstRecordingId = new MutableLong();
+            adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(srcCounters, counterId, publication.position());
+            dstAeronArchive.replicate(
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
 
-                final MutableLong dstRecordingId = new MutableLong();
-                adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
-
-                dstAeronArchive.replicate(
-                    srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
-
-                offer(publication, messageCount, messagePrefix);
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.REPLICATE, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.EXTEND, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.MERGE, signalRef.get());
-
-                final CountersReader dstCounters = dstAeron.countersReader();
-                final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
-
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(dstCounters, dstCounterId, publication.position());
-            }
-
-            srcAeronArchive.stopRecording(subscriptionId);
+            offer(publication, messageCount, messagePrefix);
 
             awaitSignal(signalRef, adapter);
-            assertEquals(RecordingSignal.STOP, signalRef.get());
-        });
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.MERGE, signalRef.get());
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.STOP, signalRef.get());
     }
 
     @Test
+    @Timeout(10)
     public void shouldReplicateLiveRecordingAndMergeBeforeDataFlows()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter;
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
-            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-            final RecordingSignalAdapter adapter;
+            final MutableLong dstRecordingId = new MutableLong();
+            adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
-            {
-                final CountersReader srcCounters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
-
-                final MutableLong dstRecordingId = new MutableLong();
-                adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
-
-                dstAeronArchive.replicate(
-                    srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.REPLICATE, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.EXTEND, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.MERGE, signalRef.get());
-
-                final CountersReader dstCounters = dstAeron.countersReader();
-                final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
-
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(dstCounters, dstCounterId, publication.position());
-            }
-
-            srcAeronArchive.stopRecording(subscriptionId);
+            dstAeronArchive.replicate(
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
 
             awaitSignal(signalRef, adapter);
-            assertEquals(RecordingSignal.STOP, signalRef.get());
-        });
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.MERGE, signalRef.get());
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.STOP, signalRef.get());
     }
 
     @Test
+    @Timeout(10)
     public void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+        final long channelTagId = 333;
+        final long subscriptionTagId = 777;
+        final String taggedChannel = "aeron:udp?control-mode=manual|tags=" + channelTagId + "," + subscriptionTagId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter;
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID);
+            Subscription taggedSubscription = dstAeron.addSubscription(taggedChannel, LIVE_STREAM_ID))
         {
-            final String messagePrefix = "Message-Prefix-";
-            final int messageCount = 10;
-            final long srcRecordingId;
-            final long channelTagId = 333;
-            final long subscriptionTagId = 777;
-            final String taggedChannel = "aeron:udp?control-mode=manual|tags=" + channelTagId + "," + subscriptionTagId;
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
-            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
-            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
-            final RecordingSignalAdapter adapter;
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
 
-            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID);
-                Subscription taggedSubscription = dstAeron.addSubscription(taggedChannel, LIVE_STREAM_ID))
-            {
-                final CountersReader srcCounters = srcAeron.countersReader();
-                final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+            final MutableLong dstRecordingId = new MutableLong();
+            adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
-                offer(publication, messageCount, messagePrefix);
-                awaitPosition(srcCounters, counterId, publication.position());
+            dstAeronArchive.taggedReplicate(
+                srcRecordingId,
+                NULL_VALUE,
+                channelTagId,
+                subscriptionTagId,
+                SRC_CONTROL_STREAM_ID,
+                SRC_CONTROL_REQUEST_CHANNEL,
+                LIVE_CHANNEL);
 
-                final MutableLong dstRecordingId = new MutableLong();
-                adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+            consume(taggedSubscription, messageCount, messagePrefix);
 
-                dstAeronArchive.taggedReplicate(
-                    srcRecordingId,
-                    NULL_VALUE,
-                    channelTagId,
-                    subscriptionTagId,
-                    SRC_CONTROL_STREAM_ID,
-                    SRC_CONTROL_REQUEST_CHANNEL,
-                    LIVE_CHANNEL);
-
-                consume(taggedSubscription, messageCount, messagePrefix);
-
-                offer(publication, messageCount, messagePrefix);
-                consume(taggedSubscription, messageCount, messagePrefix);
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.REPLICATE, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.EXTEND, signalRef.get());
-
-                awaitSignal(signalRef, adapter);
-                assertEquals(RecordingSignal.MERGE, signalRef.get());
-
-                final CountersReader dstCounters = dstAeron.countersReader();
-                final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
-
-                offer(publication, messageCount, messagePrefix);
-                consume(taggedSubscription, messageCount, messagePrefix);
-                awaitPosition(dstCounters, dstCounterId, publication.position());
-
-                final Image image = taggedSubscription.imageBySessionId(publication.sessionId());
-                assertEquals(publication.position(), image.position());
-            }
-
-            srcAeronArchive.stopRecording(subscriptionId);
+            offer(publication, messageCount, messagePrefix);
+            consume(taggedSubscription, messageCount, messagePrefix);
 
             awaitSignal(signalRef, adapter);
-            assertEquals(RecordingSignal.STOP, signalRef.get());
-        });
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.MERGE, signalRef.get());
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+
+            offer(publication, messageCount, messagePrefix);
+            consume(taggedSubscription, messageCount, messagePrefix);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            final Image image = taggedSubscription.imageBySessionId(publication.sessionId());
+            assertEquals(publication.position(), image.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.STOP, signalRef.get());
     }
 
     private RecordingSignalAdapter newRecordingSignalAdapter(

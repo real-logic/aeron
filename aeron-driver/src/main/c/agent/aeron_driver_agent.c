@@ -295,7 +295,7 @@ void aeron_driver_agent_incoming_msg(
     struct iovec iov;
 
     iov.iov_base = buffer;
-    iov.iov_len = length;
+    iov.iov_len = (uint32_t)length;
     message.msg_iovlen = 1;
     message.msg_iov = &iov;
     message.msg_name = addr;
@@ -303,7 +303,7 @@ void aeron_driver_agent_incoming_msg(
     message.msg_controllen = 0;
     message.msg_namelen = sizeof(struct sockaddr_storage);
 
-    aeron_driver_agent_log_frame(AERON_FRAME_IN, &message, length, length);
+    aeron_driver_agent_log_frame(AERON_FRAME_IN, &message, (int32_t)length, (int32_t)length);
 
     delegate->incoming_func(
         delegate->interceptor_state,

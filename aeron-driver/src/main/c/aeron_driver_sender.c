@@ -61,7 +61,7 @@ int aeron_driver_sender_init(
         }
 
         sender->recv_buffers.iov[i].iov_base = sender->recv_buffers.buffers[i] + offset;
-        sender->recv_buffers.iov[i].iov_len = context->mtu_length;
+        sender->recv_buffers.iov[i].iov_len = (uint32_t)context->mtu_length;
     }
 
     if (aeron_udp_channel_data_paths_init(

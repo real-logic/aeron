@@ -392,7 +392,7 @@ int aeron_network_publication_send_data(
         if (available > 0)
         {
             iov[i].iov_base = ptr;
-            iov[i].iov_len = available;
+            iov[i].iov_len = (uint32_t)available;
             mmsghdr[i].msg_hdr.msg_iov = &iov[i];
             mmsghdr[i].msg_hdr.msg_iovlen = 1;
             mmsghdr[i].msg_hdr.msg_flags = 0;
@@ -540,7 +540,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             struct msghdr msghdr;
 
             iov[0].iov_base = ptr;
-            iov[0].iov_len = available;
+            iov[0].iov_len = (uint32_t)available;
             msghdr.msg_iov = iov;
             msghdr.msg_iovlen = 1;
             msghdr.msg_control = NULL;

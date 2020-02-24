@@ -15,8 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.CommonContext;
-import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -25,27 +23,16 @@ import java.net.InetSocketAddress;
  * Minimum multicast sender flow control strategy.  Uses the {@link AbstractMinMulticastFlowControl}, but specifies that
  * the group membership for a given receiver is always <code>true</code>, so it tracks the minimum for all receivers.
  */
-public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl implements FlowControl
+public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl
 {
     /**
      * URI param value to identify this {@link FlowControl} strategy.
      */
     public static final String FC_PARAM_VALUE = "min";
 
-    /**
-     * {@inheritDoc}
-     */
-    public void initialize(
-        final MediaDriver.Context context,
-        final UdpChannel udpChannel,
-        final int initialTermId,
-        final int termBufferLength)
+    public MinMulticastFlowControl()
     {
-        receiverTimeoutNs(context.flowControlReceiverTimeoutNs());
-        groupMinSize(context.flowControlReceiverGroupMinSize());
-
-        final String fcValue = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-        FlowControlParameterParser.parse(fcValue, this::receiverTimeoutNs, this::groupMinSize, l -> {});
+        super(false);
     }
 
     /**
@@ -59,6 +46,6 @@ public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl imp
         final int positionBitsToShift,
         final long timeNs)
     {
-        return handleStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, true);
+        return processStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, true);
     }
 }

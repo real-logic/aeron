@@ -15,8 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.CommonContext;
-import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
 
@@ -34,7 +32,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * Tracking of tagged receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver
  * tracking for that receiver will timeout after a given number of nanoseconds.
  */
-public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl implements FlowControl
+public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
 {
     /**
      * URI param value to identify this {@link FlowControl} strategy.
@@ -54,23 +52,9 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl 
     public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
-    private long groupReceiverTag;
-
-    /**
-     * {@inheritDoc}
-     */
-    public void initialize(
-        final MediaDriver.Context context,
-        final UdpChannel udpChannel,
-        final int initialTermId,
-        final int termBufferLength)
+    public TaggedMulticastFlowControl()
     {
-        receiverTimeoutNs(context.flowControlReceiverTimeoutNs());
-        receiverTag(context.flowControlGroupReceiverTag());
-        groupMinSize(context.flowControlReceiverGroupMinSize());
-
-        final String fcValue = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-        FlowControlParameterParser.parse(fcValue, this::receiverTimeoutNs, this::groupMinSize, this::receiverTag);
+        super(true);
     }
 
     /**
@@ -84,18 +68,18 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl 
         final int positionBitsToShift,
         final long timeNs)
     {
-        final boolean isTagged = isTagged(flyweight);
-        return handleStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, isTagged);
+        final boolean matchesTag = matchesTag(flyweight);
+        return processStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, matchesTag);
     }
 
-    private boolean isTagged(final StatusMessageFlyweight statusMessageFlyweight)
+    private boolean matchesTag(final StatusMessageFlyweight statusMessageFlyweight)
     {
         final int asfLength = statusMessageFlyweight.asfLength();
         boolean result = false;
 
         if (asfLength == SIZE_OF_LONG)
         {
-            if (statusMessageFlyweight.receiverTag() == groupReceiverTag)
+            if (statusMessageFlyweight.receiverTag() == super.receiverTag())
             {
                 result = true;
             }
@@ -115,15 +99,5 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl 
         }
 
         return result;
-    }
-
-    long receiverTag()
-    {
-        return groupReceiverTag;
-    }
-
-    void receiverTag(final long groupReceiverTag)
-    {
-        this.groupReceiverTag = groupReceiverTag;
     }
 }

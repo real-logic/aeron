@@ -1,78 +1,65 @@
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
+import static org.agrona.AsciiEncoding.parseIntAscii;
+import static org.agrona.AsciiEncoding.parseLongAscii;
+import static org.agrona.SystemUtil.parseDuration;
 
 /**
- * Abstract minimum multicast sender flow control strategy.  It supports the concept of only tracking the minimum of a
- * group of receivers, not all possible receivers.  However, it is agnostic of how that group is determined.
+ * Abstract minimum multicast sender flow control strategy. It supports the concept of only tracking the minimum of a
+ * group of receivers, not all possible receivers. However, it is agnostic of how that group is determined.
  * <p>
  * Tracking of receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver tracking
  * for that receiver will timeout after a given number of nanoseconds.
  */
-public class AbstractMinMulticastFlowControl
+public abstract class AbstractMinMulticastFlowControl implements FlowControl
 {
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
-    protected volatile Receiver[] receivers = EMPTY_RECEIVERS;
-    protected long receiverTimeoutNs;
-    protected int groupMinSize;
 
-    protected long handleStatusMessage(
-        final StatusMessageFlyweight flyweight,
-        final long senderLimit,
-        final int initialTermId,
-        final int positionBitsToShift,
-        final long timeNs,
-        final boolean isTagged)
+    private long receiverTimeoutNs;
+    private long receiverTag;
+    private int groupMinSize;
+    private final boolean isReceiverTagAware;
+    private volatile Receiver[] receivers = EMPTY_RECEIVERS;
+
+    public AbstractMinMulticastFlowControl(final boolean isReceiverTagAware)
     {
-        final long position = computePosition(
-            flyweight.consumptionTermId(),
-            flyweight.consumptionTermOffset(),
-            positionBitsToShift,
-            initialTermId);
+        this.isReceiverTagAware = isReceiverTagAware;
+    }
 
-        final long windowLength = flyweight.receiverWindowLength();
-        final long receiverId = flyweight.receiverId();
-        final long lastPositionPlusWindow = position + windowLength;
-        boolean isExisting = false;
-        long minPosition = Long.MAX_VALUE;
+    /**
+     * {@inheritDoc}
+     */
+    public void initialize(
+        final MediaDriver.Context context,
+        final UdpChannel udpChannel,
+        final int initialTermId,
+        final int termBufferLength)
+    {
+        receiverTimeoutNs = context.flowControlReceiverTimeoutNs();
+        receiverTag = isReceiverTagAware ? context.flowControlGroupReceiverTag() : 0;
+        groupMinSize = context.flowControlReceiverGroupMinSize();
 
-        Receiver[] receivers = this.receivers;
-
-        for (final Receiver receiver : receivers)
-        {
-            if (isTagged && receiverId == receiver.receiverId)
-            {
-                receiver.lastPosition = Math.max(position, receiver.lastPosition);
-                receiver.lastPositionPlusWindow = lastPositionPlusWindow;
-                receiver.timeOfLastStatusMessageNs = timeNs;
-                isExisting = true;
-            }
-
-            minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
-        }
-
-        if (isTagged && !isExisting)
-        {
-            final Receiver receiver = new Receiver(position, lastPositionPlusWindow, timeNs, receiverId);
-            receivers = add(receivers, receiver);
-            this.receivers = receivers;
-            minPosition = Math.min(minPosition, lastPositionPlusWindow);
-        }
-
-        if (receivers.length < groupMinSize)
-        {
-            return senderLimit;
-        }
-        else if (receivers.length == 0)
-        {
-            return Math.max(senderLimit, lastPositionPlusWindow);
-        }
-        else
-        {
-            return Math.max(senderLimit, minPosition);
-        }
+        parseUriParam(udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME));
     }
 
     /**
@@ -110,34 +97,89 @@ public class AbstractMinMulticastFlowControl
         return receivers.length < groupMinSize || receivers.length == 0 ? senderLimit : minLimitPosition;
     }
 
-    public boolean hasRequiredReceivers()
+    protected final long processStatusMessage(
+        final StatusMessageFlyweight flyweight,
+        final long senderLimit,
+        final int initialTermId,
+        final int positionBitsToShift,
+        final long timeNs,
+        final boolean matchesTag)
     {
-        return receivers.length >= groupMinSize();
+        final long position = computePosition(
+            flyweight.consumptionTermId(),
+            flyweight.consumptionTermOffset(),
+            positionBitsToShift,
+            initialTermId);
+
+        final long windowLength = flyweight.receiverWindowLength();
+        final long receiverId = flyweight.receiverId();
+        final long lastPositionPlusWindow = position + windowLength;
+        boolean isExisting = false;
+        long minPosition = Long.MAX_VALUE;
+
+        Receiver[] receivers = this.receivers;
+
+        for (final Receiver receiver : receivers)
+        {
+            if (matchesTag && receiverId == receiver.receiverId)
+            {
+                receiver.lastPosition = Math.max(position, receiver.lastPosition);
+                receiver.lastPositionPlusWindow = lastPositionPlusWindow;
+                receiver.timeOfLastStatusMessageNs = timeNs;
+                isExisting = true;
+            }
+
+            minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
+        }
+
+        if (matchesTag && !isExisting)
+        {
+            final Receiver receiver = new Receiver(position, lastPositionPlusWindow, timeNs, receiverId);
+            receivers = add(receivers, receiver);
+            this.receivers = receivers;
+            minPosition = Math.min(minPosition, lastPositionPlusWindow);
+        }
+
+        if (receivers.length < groupMinSize)
+        {
+            return senderLimit;
+        }
+        else if (receivers.length == 0)
+        {
+            return Math.max(senderLimit, lastPositionPlusWindow);
+        }
+        else
+        {
+            return Math.max(senderLimit, minPosition);
+        }
     }
 
-    long receiverTimeoutNs()
+    public boolean hasRequiredReceivers()
+    {
+        return receivers.length >= groupMinSize;
+    }
+
+    protected final long receiverTimeoutNs()
     {
         return receiverTimeoutNs;
     }
 
-    int groupMinSize()
+    protected final boolean hasReceiverTag()
+    {
+        return isReceiverTagAware;
+    }
+
+    protected final long receiverTag()
+    {
+        return receiverTag;
+    }
+
+    protected final int groupMinSize()
     {
         return groupMinSize;
     }
 
-    void receiverTimeoutNs(final long receiverTimeoutNs)
-    {
-        this.receiverTimeoutNs = receiverTimeoutNs;
-    }
-
-    void groupMinSize(final int groupMinSize)
-    {
-        this.groupMinSize = groupMinSize;
-    }
-
-    static Receiver[] add(
-        final Receiver[] receivers,
-        final Receiver receiver)
+    static Receiver[] add(final Receiver[] receivers, final Receiver receiver)
     {
         final int length = receivers.length;
         final Receiver[] newElements = new Receiver[length + 1];
@@ -147,9 +189,7 @@ public class AbstractMinMulticastFlowControl
         return newElements;
     }
 
-    static Receiver[] truncateReceivers(
-        final Receiver[] receivers,
-        final int removed)
+    static Receiver[] truncateReceivers(final Receiver[] receivers, final int removed)
     {
         final int length = receivers.length;
         final int newLength = length - removed;
@@ -166,9 +206,39 @@ public class AbstractMinMulticastFlowControl
         }
     }
 
+    private void parseUriParam(final String fcValue)
+    {
+        if (null != fcValue)
+        {
+            for (final String arg : fcValue.split(","))
+            {
+                if (arg.startsWith("t:"))
+                {
+                    receiverTimeoutNs = parseDuration("fc receiver timeout", arg.substring(2));
+                }
+                else if (arg.startsWith("g:"))
+                {
+                    final int groupMinSizeIndex = arg.indexOf('/');
+
+                    if (2 != groupMinSizeIndex && isReceiverTagAware)
+                    {
+                        final int lengthToParse = -1 == groupMinSizeIndex ? arg.length() - 2 : groupMinSizeIndex - 2;
+                        receiverTag = parseLongAscii(arg, 2, lengthToParse);
+                    }
+
+                    if (-1 != groupMinSizeIndex)
+                    {
+                        groupMinSize = parseIntAscii(
+                            arg, groupMinSizeIndex + 1, arg.length() - (groupMinSizeIndex + 1));
+                    }
+                }
+            }
+        }
+    }
 
     static class Receiver
     {
+
         long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;

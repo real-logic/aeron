@@ -920,6 +920,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         if (isAbort || aeron.isClosed())
         {
+            isAbort = true;
             throw new AgentTerminationException("unexpected Aeron close");
         }
 

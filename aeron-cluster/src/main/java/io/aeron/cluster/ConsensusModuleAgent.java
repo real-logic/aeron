@@ -2596,13 +2596,12 @@ class ConsensusModuleAgent implements Agent
 
                 recordingLog.force(ctx.fileSyncLevel());
                 recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+                ctx.snapshotCounter().incrementOrdered();
             }
             finally
             {
                 archive.stopRecording(subscriptionId);
             }
-
-            ctx.snapshotCounter().incrementOrdered();
         }
     }
 

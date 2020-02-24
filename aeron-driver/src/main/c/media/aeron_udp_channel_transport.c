@@ -83,7 +83,7 @@ int aeron_udp_channel_transport_init(
         int reuse = 1;
 
 #if defined(SO_REUSEADDR)
-        if (setsockopt(transport->fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
         {
             aeron_set_err_from_last_err_code("setsockopt(SO_REUSEADDR)");
             goto error;
@@ -91,7 +91,7 @@ int aeron_udp_channel_transport_init(
 #endif
 
 #if defined(SO_REUSEPORT)
-        if (setsockopt(transport->fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
+        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
         {
             aeron_set_err_from_last_err_code("setsockopt(SO_REUSEPORT)");
             goto error;
@@ -115,13 +115,13 @@ int aeron_udp_channel_transport_init(
             memcpy(&mreq.ipv6mr_multiaddr, &in6->sin6_addr, sizeof(in6->sin6_addr));
             mreq.ipv6mr_interface = multicast_if_index;
 
-            if (setsockopt(transport->fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
+            if (aeron_setsockopt(transport->fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
             {
                 aeron_set_err_from_last_err_code("setsockopt(IPV6_JOIN_GROUP)");
                 goto error;
             }
 
-            if (setsockopt(
+            if (aeron_setsockopt(
                 transport->fd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &multicast_if_index, sizeof(multicast_if_index)) < 0)
             {
                 aeron_set_err_from_last_err_code("setsockopt(IPV6_MULTICAST_IF)");
@@ -130,7 +130,7 @@ int aeron_udp_channel_transport_init(
 
             if (ttl > 0)
             {
-                if (setsockopt(transport->fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl)) < 0)
+                if (aeron_setsockopt(transport->fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl)) < 0)
                 {
                     aeron_set_err_from_last_err_code("setsockopt(IPV6_MULTICAST_HOPS)");
                     goto error;
@@ -155,13 +155,13 @@ int aeron_udp_channel_transport_init(
             mreq.imr_multiaddr.s_addr = in4->sin_addr.s_addr;
             mreq.imr_interface.s_addr = interface_addr->sin_addr.s_addr;
 
-            if (setsockopt(transport->fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+            if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
             {
                 aeron_set_err_from_last_err_code("setsockopt(IP_ADD_MEMBERSHIP)");
                 goto error;
             }
 
-            if (setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr->sin_addr, sizeof(struct in_addr)) < 0)
+            if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr->sin_addr, sizeof(struct in_addr)) < 0)
             {
                 aeron_set_err_from_last_err_code("setsockopt(IP_MULTICAST_IF)");
                 goto error;
@@ -169,7 +169,7 @@ int aeron_udp_channel_transport_init(
 
             if (ttl > 0)
             {
-                if (setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0)
+                if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0)
                 {
                     aeron_set_err_from_last_err_code("setsockopt(IP_MULTICAST_TTL)");
                     goto error;
@@ -180,7 +180,7 @@ int aeron_udp_channel_transport_init(
 
     if (socket_rcvbuf > 0)
     {
-        if (setsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
+        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
             aeron_set_err_from_last_err_code("setsockopt(SO_RCVBUF)");
             goto error;
@@ -189,7 +189,7 @@ int aeron_udp_channel_transport_init(
 
     if (socket_sndbuf > 0)
     {
-        if (setsockopt(transport->fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
+        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
             aeron_set_err_from_last_err_code("setsockopt(SO_SNDBUF)");
             goto error;
@@ -370,7 +370,7 @@ int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *tra
 {
     socklen_t len = sizeof(size_t);
 
-    if (getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
+    if (aeron_getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
     {
         aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
         return -1;

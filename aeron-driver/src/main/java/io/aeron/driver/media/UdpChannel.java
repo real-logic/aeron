@@ -550,12 +550,15 @@ public final class UdpChannel
      * Resolve and endpoint into a {@link InetSocketAddress}.
      *
      * @param endpoint to resolve
+     * @param uriParamName for the resolution
+     * @param isReResolution for the resolution
      * @param nameResolver to be used for hostname.
      * @return address for endpoint
      */
-    public static InetSocketAddress resolve(final String endpoint, final NameResolver nameResolver)
+    public static InetSocketAddress resolve(
+        final String endpoint, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
     {
-        return SocketAddressParser.parse(endpoint, nameResolver);
+        return SocketAddressParser.parse(endpoint, uriParamName, isReResolution, nameResolver);
     }
 
     private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
@@ -584,7 +587,7 @@ public final class UdpChannel
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
-            return SocketAddressParser.parse(endpointValue, nameResolver);
+            return SocketAddressParser.parse(endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
         }
 
         return null;
@@ -595,7 +598,7 @@ public final class UdpChannel
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
-            return SocketAddressParser.parse(controlValue, nameResolver);
+            return SocketAddressParser.parse(controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
         }
 
         return null;

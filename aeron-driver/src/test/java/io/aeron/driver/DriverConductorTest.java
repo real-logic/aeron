@@ -160,7 +160,8 @@ public class DriverConductorTest
             .systemCounters(mockSystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
-            .driverConductorProxy(driverConductorProxy);
+            .driverConductorProxy(driverConductorProxy)
+            .nameResolver(DefaultNameResolver.INSTANCE);
 
         ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 

@@ -37,7 +37,7 @@ class DriverNameResolverCache implements AutoCloseable
     {
     }
 
-    CacheEntry lookup(final String name, final byte type)
+    CacheEntry lookup(final CharSequence name, final byte type)
     {
         final int index = findEntryIndexByNameAndType(name, type);
 

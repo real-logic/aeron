@@ -120,7 +120,7 @@ public class DriverConductor implements Agent
         tempBuffer = ctx.tempBuffer();
 
         countersManager = ctx.countersManager();
-        nameResolver = DefaultNameResolver.INSTANCE;
+        nameResolver = ctx.nameResolver();
 
         clientCommandAdapter = new ClientCommandAdapter(
             ctx.systemCounters().get(ERRORS),
@@ -309,7 +309,8 @@ public class DriverConductor implements Agent
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        final InetSocketAddress newAddress = UdpChannel.resolve(endpoint, nameResolver);
+        final InetSocketAddress newAddress = UdpChannel.resolve(
+            endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
 
         if (!newAddress.isUnresolved() && !address.equals(newAddress))
         {
@@ -323,7 +324,8 @@ public class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
-        final InetSocketAddress newAddress = UdpChannel.resolve(endpoint, nameResolver);
+        final InetSocketAddress newAddress = UdpChannel.resolve(
+            endpoint, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
 
         if (!newAddress.isUnresolved() && !address.equals(newAddress))
         {

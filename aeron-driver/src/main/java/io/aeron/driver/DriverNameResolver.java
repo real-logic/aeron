@@ -121,7 +121,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return workCount;
     }
 
-    public InetAddress resolve(final String name)
+    public InetAddress resolve(final CharSequence name, final String uriParamName, final boolean isReResolution)
     {
         DriverNameResolverCache.CacheEntry entry;
 
@@ -142,7 +142,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         {
             if (null == entry)
             {
-                return InetAddress.getByName(name);
+                return InetAddress.getByName(name.toString());
             }
 
             return InetAddress.getByAddress(entry.address);
@@ -151,6 +151,12 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         {
             return null;
         }
+    }
+
+    public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
+    {
+        // here we would lookup advertised endpoints/control IP:port pairs by name. Currently, we just return name.
+        return name;
     }
 
     public int timeoutNeighbors(final long nowMs)

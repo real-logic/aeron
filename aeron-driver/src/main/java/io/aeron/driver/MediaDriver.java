@@ -496,6 +496,7 @@ public final class MediaDriver implements AutoCloseable
         private FeedbackDelayGenerator retransmitUnicastLingerGenerator;
         private TerminationValidator terminationValidator;
         private Runnable terminationHook;
+        private NameResolver nameResolver;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -2803,6 +2804,28 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the {@link NameResolver} to use for resolving endpoints and control names.
+         *
+         * @return {@link NameResolver} to use for resolving endpoints and control names.
+         */
+        public NameResolver nameResolver()
+        {
+            return nameResolver;
+        }
+
+        /**
+         * Set the {@link NameResolver} to use for resolving endpoints and control names.
+         *
+         * @param nameResolver to use for resolving endpoints and control names.
+         * @return this for fluent API.
+         */
+        public Context nameResolver(final NameResolver nameResolver)
+        {
+            this.nameResolver = nameResolver;
+            return this;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -3058,6 +3081,11 @@ public final class MediaDriver implements AutoCloseable
             {
                 terminationValidator = Configuration.terminationValidator();
             }
+
+            if (null == nameResolver)
+            {
+                nameResolver = DefaultNameResolver.INSTANCE;
+            }
         }
 
         private void concludeDependantProperties()
@@ -3293,6 +3321,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    congestionControlSupplier=" + congestionControlSupplier +
                 "\n    terminationValidator=" + terminationValidator +
                 "\n    terminationHook=" + terminationHook +
+                "\n    nameResolver=" + nameResolver +
                 "\n    sendToStatusMessagePollRatio=" + sendToStatusMessagePollRatio +
                 "\n    unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
                 "\n    multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +

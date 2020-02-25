@@ -220,7 +220,7 @@ subprojects {
     }
 
     task testJar(type: Jar, dependsOn: testClasses) {
-        archiveClassifier.set "test-${project.archivesBaseName}"
+        archiveClassifier.set("test-${project.archivesBaseName}")
         from sourceSets.test.output
     }
 
@@ -430,7 +430,7 @@ project(':aeron-archive') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
+        archiveClassifier.set('sources')
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
     }
@@ -534,7 +534,7 @@ project(':aeron-cluster') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
+        archiveClassifier.set('sources')
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
     }
@@ -606,7 +606,7 @@ project(':aeron-agent') {
     jar.finalizedBy shadowJar
 
     task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
+        archiveClassifier.set('sources')
         from files(
                 aeronClientProject.sourceSets.main.allSource,
                 aeronDriverProject.sourceSets.main.allSource,
@@ -626,7 +626,7 @@ project(':aeron-agent') {
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
+        archiveClassifier.set('javadoc')
         from javadoc.destinationDir
     }
 
@@ -733,7 +733,7 @@ project(':aeron-all') {
     }
 
     shadowJar {
-        archiveClassifier.set ''
+        archiveClassifier.set('')
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': "${aeronVersion}",
@@ -745,7 +745,7 @@ project(':aeron-all') {
     jar.finalizedBy shadowJar
 
     task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
+        archiveClassifier.set('sources')
         from files(
             aeronClientProject.sourceSets.main.allSource,
             aeronDriverProject.sourceSets.main.allSource,
@@ -767,7 +767,7 @@ project(':aeron-all') {
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
+        archiveClassifier.set('javadoc')
         from javadoc.destinationDir
     }
 

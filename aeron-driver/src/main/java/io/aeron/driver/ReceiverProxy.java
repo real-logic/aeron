@@ -177,16 +177,16 @@ public class ReceiverProxy
         }
     }
 
-    public void onReResolve(
+    public void onResolutionChange(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel, final InetSocketAddress newAddress)
     {
         if (notConcurrent())
         {
-            receiver.onReResolve(channelEndpoint, udpChannel, newAddress);
+            receiver.onResolutionChange(channelEndpoint, udpChannel, newAddress);
         }
         else
         {
-            offer(() -> receiver.onReResolve(channelEndpoint, udpChannel, newAddress));
+            offer(() -> receiver.onResolutionChange(channelEndpoint, udpChannel, newAddress));
         }
     }
 

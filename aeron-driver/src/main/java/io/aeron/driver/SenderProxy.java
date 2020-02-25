@@ -123,16 +123,16 @@ public class SenderProxy
         }
     }
 
-    public void onReResolve(
+    public void onResolutionChange(
         final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
     {
         if (notConcurrent())
         {
-            sender.onReResolve(channelEndpoint, endpoint, newAddress);
+            sender.onResolutionChange(channelEndpoint, endpoint, newAddress);
         }
         else
         {
-            offer(() -> sender.onReResolve(channelEndpoint, endpoint, newAddress));
+            offer(() -> sender.onResolutionChange(channelEndpoint, endpoint, newAddress));
         }
     }
 

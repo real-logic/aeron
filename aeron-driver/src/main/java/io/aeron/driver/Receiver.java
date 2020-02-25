@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer
@@ -45,6 +46,7 @@ public class Receiver implements Agent
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
+    private final AtomicCounter resolutionChanges;
     private final NanoClock nanoClock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
@@ -57,6 +59,7 @@ public class Receiver implements Agent
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
+        resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
         nanoClock = ctx.cachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
         reResolutionCheckTimeoutNs = RE_RESOLUTION_CHECK_TIMEOUT;
@@ -242,7 +245,7 @@ public class Receiver implements Agent
         }
     }
 
-    public void onReResolve(
+    public void onResolutionChange(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel channel, final InetSocketAddress newAddress)
     {
         final int transportIndex = channelEndpoint.hasDestinationControl() ?
@@ -255,6 +258,7 @@ public class Receiver implements Agent
                 pending.transportIndex() == transportIndex)
             {
                 pending.controlAddress(newAddress);
+                resolutionChanges.getAndAddOrdered(1);
             }
         }
     }

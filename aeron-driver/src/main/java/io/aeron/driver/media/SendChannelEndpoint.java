@@ -321,11 +321,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         multiSndDestination.removeDestination(channelUri, address);
     }
 
-    public void reResolve(final String endpoint, final InetSocketAddress newAddress)
+    public void resolutionChange(final String endpoint, final InetSocketAddress newAddress)
     {
         if (null != multiSndDestination)
         {
-            multiSndDestination.reResolveDestination(endpoint, newAddress);
+            multiSndDestination.updateDestination(endpoint, newAddress);
         }
         else
         {

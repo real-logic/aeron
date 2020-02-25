@@ -28,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
+import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 
 class SenderLhsPadding
 {
@@ -64,6 +65,7 @@ public class Sender extends SenderRhsPadding implements Agent
     private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
+    private final AtomicCounter resolutionChanges;
     private final NanoClock nanoClock;
     private final DriverConductorProxy conductorProxy;
 
@@ -74,6 +76,7 @@ public class Sender extends SenderRhsPadding implements Agent
         this.controlTransportPoller = ctx.controlTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
+        this.resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
         this.nanoClock = ctx.cachedNanoClock();
         this.statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() >> 1;
         this.reResolutionCheckTimeoutNs = RE_RESOLUTION_CHECK_TIMEOUT;
@@ -154,10 +157,11 @@ public class Sender extends SenderRhsPadding implements Agent
         channelEndpoint.removeDestination(channelUri, address);
     }
 
-    public void onReResolve(
+    public void onResolutionChange(
         final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
     {
-        channelEndpoint.reResolve(endpoint, newAddress);
+        channelEndpoint.resolutionChange(endpoint, newAddress);
+        resolutionChanges.getAndAddOrdered(1);
     }
 
     private int doSend(final long nowNs)

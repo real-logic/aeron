@@ -52,7 +52,7 @@ abstract class MultiSndDestination
     {
     }
 
-    void reResolveDestination(final String endpoint, final InetSocketAddress newAddress)
+    void updateDestination(final String endpoint, final InetSocketAddress newAddress)
     {
     }
 
@@ -211,7 +211,7 @@ class ManualSndMultiDestination extends MultiSndDestination
         }
     }
 
-    void reResolveDestination(final String endpoint, final InetSocketAddress newAddress)
+    void updateDestination(final String endpoint, final InetSocketAddress newAddress)
     {
         for (final Destination destination : destinations)
         {

@@ -313,7 +313,7 @@ public class DriverConductor implements Agent
 
         if (!newAddress.isUnresolved() && !address.equals(newAddress))
         {
-            senderProxy.onReResolve(channelEndpoint, endpoint, newAddress);
+            senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
         }
     }
 
@@ -327,7 +327,7 @@ public class DriverConductor implements Agent
 
         if (!newAddress.isUnresolved() && !address.equals(newAddress))
         {
-            receiverProxy.onReResolve(channelEndpoint, udpChannel, newAddress);
+            receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
         }
     }
 

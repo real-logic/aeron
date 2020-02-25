@@ -56,6 +56,7 @@ public final class AeronCluster implements AutoCloseable
 
     private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
+    private static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(new byte[4096]);
 
     private final long clusterSessionId;
     private long leadershipTermId;
@@ -233,6 +234,8 @@ public final class AeronCluster implements AutoCloseable
             .wrapAndApplyHeader(keepaliveMsgBuffer, 0, messageHeaderEncoder)
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(clusterSessionId);
+
+        clearDecoders();
     }
 
     /**
@@ -616,6 +619,8 @@ public final class AeronCluster implements AutoCloseable
                     sessionEventDecoder.detail());
             }
         }
+
+        clearDecoders();
     }
 
     private ControlledFragmentHandler.Action onControlledFragment(
@@ -685,6 +690,7 @@ public final class AeronCluster implements AutoCloseable
             }
         }
 
+        clearDecoders();
         return ControlledFragmentHandler.Action.CONTINUE;
     }
 
@@ -728,6 +734,14 @@ public final class AeronCluster implements AutoCloseable
         {
             return ctx.aeron().addPublication(channel, streamId);
         }
+    }
+
+    private void clearDecoders()
+    {
+        messageHeaderDecoder.wrap(EMPTY_BUFFER, 0);
+        sessionEventDecoder.wrap(EMPTY_BUFFER, 0, 0, 0);
+        newLeaderEventDecoder.wrap(EMPTY_BUFFER, 0, 0, 0);
+        sessionMessageHeaderDecoder.wrap(EMPTY_BUFFER, 0, 0, 0);
     }
 
     /**
@@ -1685,6 +1699,7 @@ public final class AeronCluster implements AutoCloseable
     {
         final int memberId;
         final String endpoint;
+
         Publication publication;
 
         MemberEndpoint(final int memberId, final String endpoint)

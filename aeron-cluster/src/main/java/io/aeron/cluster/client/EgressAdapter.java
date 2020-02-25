@@ -21,6 +21,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 
@@ -29,6 +30,8 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
  */
 public class EgressAdapter implements FragmentHandler
 {
+    private static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(new byte[4096]);
+
     private final long clusterSessionId;
     private final int fragmentLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -49,6 +52,7 @@ public class EgressAdapter implements FragmentHandler
         this.listener = listener;
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
+        clearDecoders();
     }
 
     public int poll()
@@ -87,6 +91,7 @@ public class EgressAdapter implements FragmentHandler
                     header);
             }
 
+            clearDecoders();
             return;
         }
 
@@ -134,5 +139,15 @@ public class EgressAdapter implements FragmentHandler
                 break;
             }
         }
+
+        clearDecoders();
+    }
+
+    private void clearDecoders()
+    {
+        messageHeaderDecoder.wrap(EMPTY_BUFFER, 0);
+        sessionEventDecoder.wrap(EMPTY_BUFFER, 0, 0, 0);
+        newLeaderEventDecoder.wrap(EMPTY_BUFFER, 0, 0, 0);
+        sessionMessageHeaderDecoder.wrap(EMPTY_BUFFER, 0, 0, 0);
     }
 }

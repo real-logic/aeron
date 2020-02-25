@@ -77,7 +77,7 @@ typedef struct aeron_flow_control_tagged_options_stct
     struct
     {
         bool is_present;
-        uint32_t value;
+        int32_t value;
     }
     group_min_size;
 }

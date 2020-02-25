@@ -484,11 +484,6 @@ int aeron_driver_context_set_flow_control_receiver_timeout_ns(
 uint64_t aeron_driver_context_get_flow_control_receiver_timeout_ns(aeron_driver_context_t *context);
 
 /**
- * Timeout for a tagged receiver to be tracked.
- */
-#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
-
-/**
  * Default receiver tag for publishers to group endpoints by using tagged flow control.
  */
 #define AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR "AERON_FLOW_CONTROL_GROUP_RTAG"

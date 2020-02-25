@@ -873,7 +873,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         INT64_MIN,
         INT64_MAX);
 
-    _context->flow_control.receiver_group_min_size = aeron_config_parse_uint32(
+    _context->flow_control.receiver_group_min_size = aeron_config_parse_int32(
         AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_ENV_VAR,
         getenv(AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_ENV_VAR),
         _context->flow_control.receiver_group_min_size,

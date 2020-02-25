@@ -52,7 +52,7 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     receivers;
 
     int64_t receiver_timeout_ns;
-    uint32_t group_min_size;
+    int32_t group_min_size;
     int64_t group_receiver_tag;
     aeron_distinct_error_log_t *error_log;
 }
@@ -101,8 +101,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
         }
     }
 
-    return strategy_state->receivers.length < strategy_state->group_min_size || strategy_state->receivers.length == 0 ?
-        snd_lmt : min_limit_position;
+    return strategy_state->receivers.length < (size_t)strategy_state->group_min_size ||
+        strategy_state->receivers.length == 0 ? snd_lmt : min_limit_position;
 }
 
 int64_t aeron_min_flow_control_strategy_process_sm(
@@ -170,7 +170,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
         }
     }
 
-    if (strategy_state->receivers.length < strategy_state->group_min_size)
+    if (strategy_state->receivers.length < (size_t)strategy_state->group_min_size)
     {
         return snd_lmt;
     }
@@ -258,7 +258,7 @@ bool aeron_min_flow_control_strategy_has_required_receivers(aeron_flow_control_s
         (aeron_min_flow_control_strategy_state_t *)strategy->state;
 
     size_t receivers_length = aeron_min_flow_control_strategy_state_get_length(strategy_state);
-    return strategy_state->group_min_size <= receivers_length;
+    return (size_t)strategy_state->group_min_size <= receivers_length;
 }
 
 int aeron_tagged_flow_control_strategy_supplier_init(

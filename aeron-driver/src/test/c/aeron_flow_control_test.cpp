@@ -141,7 +141,7 @@ class MaxFlowControlTest : public FlowControlTest
 };
 
 class ParameterisedSuccessfulOptionsParsingTest :
-    public testing::TestWithParam<std::tuple<const char *, const char *, uint64_t, bool, int32_t, bool, uint32_t>>
+    public testing::TestWithParam<std::tuple<const char *, const char *, uint64_t, bool, int32_t, bool, int32_t>>
 {
 };
 

@@ -459,7 +459,8 @@ class ConsensusModuleAgent implements Agent
                     logPublisher.position(),
                     recordingLog.getTermTimestamp(leadershipTermId),
                     thisMember.id(),
-                    logPublisher.sessionId());
+                    logPublisher.sessionId(),
+                    false);
             }
         }
     }
@@ -501,12 +502,13 @@ class ConsensusModuleAgent implements Agent
         final long logPosition,
         final long timestamp,
         final int leaderId,
-        final int logSessionId)
+        final int logSessionId,
+        final boolean isStartup)
     {
         if (null != election)
         {
             election.onNewLeadershipTerm(
-                logLeadershipTermId, leadershipTermId, logPosition, timestamp, leaderId, logSessionId);
+                logLeadershipTermId, leadershipTermId, logPosition, timestamp, leaderId, logSessionId, isStartup);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -1161,7 +1163,8 @@ class ConsensusModuleAgent implements Agent
         @SuppressWarnings("unused") final int leaderMemberId,
         @SuppressWarnings("unused") final int logSessionId,
         final TimeUnit timeUnit,
-        final int appVersion)
+        final int appVersion,
+        final boolean isStartup)
     {
         if (timeUnit != clusterTimeUnit)
         {
@@ -1188,7 +1191,7 @@ class ConsensusModuleAgent implements Agent
         {
             final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendPosition.counterId());
             election.onReplayNewLeadershipTermEvent(
-                recordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
+                recordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition, isStartup);
         }
     }
 
@@ -1501,7 +1504,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    session.close(CloseReason.TIMEOUT);
+//                    session.close(CloseReason.TIMEOUT);
                 }
             }
         }
@@ -1637,7 +1640,8 @@ class ConsensusModuleAgent implements Agent
                 memberId,
                 logPublisher.sessionId(),
                 clusterTimeUnit,
-                ctx.appVersion()))
+                ctx.appVersion(),
+                election.isLeaderStartup()))
             {
                 return false;
             }

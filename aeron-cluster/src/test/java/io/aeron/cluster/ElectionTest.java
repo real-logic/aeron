@@ -21,6 +21,8 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -159,7 +161,7 @@ public class ElectionTest
             logPosition,
             t6,
             candidateMember.id(),
-            LOG_SESSION_ID);
+            LOG_SESSION_ID, election.isLeaderStartup());
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             leadershipTermId,
@@ -167,7 +169,7 @@ public class ElectionTest
             logPosition,
             t6,
             candidateMember.id(),
-            LOG_SESSION_ID);
+            LOG_SESSION_ID, election.isLeaderStartup());
         verify(electionStateCounter).setOrdered(Election.State.LEADER_READY.code());
 
         when(consensusModuleAgent.electionComplete()).thenReturn(true);
@@ -211,7 +213,8 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(Election.State.FOLLOWER_BALLOT.code());
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(leadershipTermId, candidateTermId, logPosition, t2, candidateId, logSessionId);
+        election.onNewLeadershipTerm(leadershipTermId, candidateTermId, logPosition, t2, candidateId, logSessionId,
+            false);
         verify(electionStateCounter).setOrdered(Election.State.FOLLOWER_REPLAY.code());
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
@@ -379,6 +382,36 @@ public class ElectionTest
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
         verify(electionStateCounter).setOrdered(Election.State.LEADER_REPLAY.code());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"true,true", "true,false", "false,false", "false,true"})
+    public void shouldBaseStartupValueOnLeader(final boolean leaderIsStart, final boolean nodeIsStart)
+    {
+        final long leadershipTermId = Aeron.NULL_VALUE;
+        final long logPosition = 0;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember followerMember = clusterMembers[1];
+
+        when(consensusModuleAgent.logSubscriptionTags()).thenReturn("");
+        when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(any())).thenReturn(mock(Subscription.class));
+
+        final Election election = newElection(
+            nodeIsStart, leadershipTermId, logPosition, clusterMembers, followerMember);
+
+        final long t1 = 1;
+        election.doWork(t1);
+        verify(electionStateCounter).setOrdered(Election.State.CANVASS.code());
+
+        final long t2 = t1 + 1;
+        election.onNewLeadershipTerm(
+            leadershipTermId, leadershipTermId, logPosition, t2, clusterMembers[0].id(), 0, leaderIsStart);
+        election.doWork(t2);
+
+        final long t3 = t2 + 1;
+        election.doWork(t3);
+
+        verify(consensusModuleAgent).awaitServicesReady(any(), anyInt(), anyLong(), eq(leaderIsStart));
     }
 
     @Test

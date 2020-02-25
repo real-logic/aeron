@@ -154,7 +154,8 @@ class MemberStatusPublisher
         final long logPosition,
         final long timestamp,
         final int leaderMemberId,
-        final int logSessionId)
+        final int logSessionId,
+        final boolean isStartup)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEncoder.BLOCK_LENGTH;
 
@@ -171,7 +172,8 @@ class MemberStatusPublisher
                     .logPosition(logPosition)
                     .timestamp(timestamp)
                     .leaderMemberId(leaderMemberId)
-                    .logSessionId(logSessionId);
+                    .logSessionId(logSessionId)
+                    .isStartup(isStartup ? BooleanType.TRUE : BooleanType.FALSE);
 
                 bufferClaim.commit();
 

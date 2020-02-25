@@ -44,6 +44,7 @@ import static org.mockito.Mockito.*;
 public class NameReResolutionTest
 {
     private static final String ENDPOINT_NAME = "ReResTest";
+    private static final String PUBLICATION_MDC_URI = "aeron:udp?control=localhost:24327|control-mode=manual";
     private static final String PUBLICATION_URI = "aeron:udp?endpoint=" + ENDPOINT_NAME;
     private static final String FIRST_SUBSCRIPTION_URI = "aeron:udp?endpoint=localhost:24325";
     private static final String SECOND_SUBSCRIPTION_URI = "aeron:udp?endpoint=localhost:24326";
@@ -113,6 +114,84 @@ public class NameReResolutionTest
 
         firstSubscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
         publication = client.addPublication(PUBLICATION_URI, STREAM_ID);
+
+        while (!firstSubscription.isConnected())
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        final MutableInteger fragmentsRead = new MutableInteger();
+
+        SystemTests.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (i) ->
+            {
+                fragmentsRead.value += firstSubscription.poll(handler, 1);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(5900));
+
+        fragmentsRead.set(0);
+
+        // close first subscription
+        firstSubscription.close();
+
+        // wait for disconnect to ensure we stay in lock step
+        while (publication.isConnected())
+        {
+            Thread.sleep(100);
+            Tests.checkInterruptStatus();
+        }
+
+        secondSubscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
+
+        while (!secondSubscription.isConnected())
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        SystemTests.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (i) ->
+            {
+                fragmentsRead.value += secondSubscription.poll(handler, 1);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(5900));
+
+        verify(handler, times(2)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(BitUtil.SIZE_OF_INT),
+            any(Header.class));
+    }
+
+    @SlowTest
+    @Test
+    @Timeout(10)
+    public void shouldReResolveMdcManualEndpointOnNoConnected() throws Exception
+    {
+        buffer.putInt(0, 1);
+
+        firstSubscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
+        publication = client.addPublication(PUBLICATION_MDC_URI, STREAM_ID);
+        publication.addDestination(PUBLICATION_URI);
 
         while (!firstSubscription.isConnected())
         {

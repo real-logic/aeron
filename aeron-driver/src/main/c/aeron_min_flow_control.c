@@ -320,7 +320,7 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
             "Received a status message for tagged flow control that did not have 0 or 8 bytes for the receiver_tag");
     }
 
-    const bool is_tagged = was_present && sm_receiver_tag == strategy_state->group_receiver_tag;
+    const bool matches_tag = was_present && sm_receiver_tag == strategy_state->group_receiver_tag;
 
     bool is_existing = false;
     int64_t min_position = INT64_MAX;
@@ -330,7 +330,7 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
         aeron_min_flow_control_strategy_receiver_t *receiver =
             &strategy_state->min_flow_control_state.receivers.array[i];
 
-        if (is_tagged && receiver_id == receiver->receiver_id)
+        if (matches_tag && receiver_id == receiver->receiver_id)
         {
             receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
             receiver->last_position_plus_window = position + window_length;
@@ -342,7 +342,7 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
             receiver->last_position_plus_window : min_position;
     }
 
-    if (is_tagged && !is_existing)
+    if (matches_tag && !is_existing)
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(

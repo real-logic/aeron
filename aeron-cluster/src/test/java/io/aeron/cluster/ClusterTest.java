@@ -839,7 +839,6 @@ public class ClusterTest
     @Timeout(60)
     void shouldHandleMultipleElections() throws InterruptedException
     {
-        long t0 = System.currentTimeMillis();
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader0 = cluster.awaitLeader();

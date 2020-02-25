@@ -1321,9 +1321,8 @@ public class Aeron implements AutoCloseable
          */
         public void close()
         {
-            final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
-            this.cncByteBuffer = null;
             IoUtil.unmap(cncByteBuffer);
+            this.cncByteBuffer = null;
             super.close();
         }
 
@@ -1425,9 +1424,9 @@ public class Aeron implements AutoCloseable
         {
             Thread.sleep(durationMs);
         }
-        catch (final InterruptedException ignore)
+        catch (final InterruptedException ex)
         {
-            Thread.currentThread().interrupt();
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

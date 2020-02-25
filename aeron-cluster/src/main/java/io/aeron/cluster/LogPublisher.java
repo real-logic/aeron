@@ -260,8 +260,7 @@ class LogPublisher
         final int leaderMemberId,
         final int logSessionId,
         final TimeUnit timeUnit,
-        final int appVersion,
-        final boolean isStartup)
+        final int appVersion)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEventEncoder.BLOCK_LENGTH;
         final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH +
@@ -284,8 +283,7 @@ class LogPublisher
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId)
                     .timeUnit(ClusterClock.map(timeUnit))
-                    .appVersion(appVersion)
-                    .isStartup(isStartup ? BooleanType.TRUE : BooleanType.FALSE);
+                    .appVersion(appVersion);
 
                 bufferClaim.commit();
                 return true;

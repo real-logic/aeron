@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.cluster.codecs"
                    id="111"
-                   version="7"
+                   version="6"
                    semanticVersion="5.2"
                    description="Message Codecs for communicating with, and within, an Aeron Cluster."
                    byteOrder="littleEndian">
@@ -39,7 +39,6 @@
             <validValue name="CLIENT_ACTION" description="Client closed the session.">0</validValue>
             <validValue name="SERVICE_ACTION" description="Service closed the session.">1</validValue>
             <validValue name="TIMEOUT" description="Session timed out due to inactivity.">2</validValue>
-            <validValue name="TIMEOUT_ONSTART" description="Session timed out due to cluster restart.">3</validValue>
         </enum>
         <enum name="ClusterAction" encodingType="int32" description="Action to be taken by cluster nodes.">
             <validValue name="SUSPEND" description="Suspend ingress to the cluster.">0</validValue>
@@ -247,7 +246,6 @@
         <field name="logSessionId"             id="6" type="int32"/>
         <field name="timeUnit"                 id="7" type="ClusterTimeUnit" sinceVersion="4" presence="optional"/>
         <field name="appVersion"               id="8" type="version_t" sinceVersion="4" presence="optional"/>
-        <field name="isStartup"                id="9" type="BooleanType" sinceVersion="7" presence="optional"/>
     </sbe:message>
 
     <sbe:message name="MembershipChangeEvent"
@@ -431,7 +429,7 @@
         <field name="leaderMemberId"            id="5" type="int32"/>
         <field name="logSessionId"              id="6" type="int32"/>
         <field name="appVersion"                id="7" type="version_t"/>
-        <field name="isStartup"                 id="8" type="BooleanType" sinceVersion="7" presence="optional"/>
+        <field name="isStartup"                 id="8" type="BooleanType"/>
     </sbe:message>
 
     <!-- keep this under 32 - 8 = 24 bytes for efficiency -->

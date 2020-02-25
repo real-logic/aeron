@@ -1163,8 +1163,7 @@ class ConsensusModuleAgent implements Agent
         @SuppressWarnings("unused") final int leaderMemberId,
         @SuppressWarnings("unused") final int logSessionId,
         final TimeUnit timeUnit,
-        final int appVersion,
-        final boolean isStartup)
+        final int appVersion)
     {
         if (timeUnit != clusterTimeUnit)
         {
@@ -1191,7 +1190,7 @@ class ConsensusModuleAgent implements Agent
         {
             final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendPosition.counterId());
             election.onReplayNewLeadershipTermEvent(
-                recordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition, isStartup);
+                recordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
         }
     }
 
@@ -1504,7 +1503,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-//                    session.close(CloseReason.TIMEOUT);
+                    session.close(CloseReason.TIMEOUT);
                 }
             }
         }
@@ -1640,8 +1639,8 @@ class ConsensusModuleAgent implements Agent
                 memberId,
                 logPublisher.sessionId(),
                 clusterTimeUnit,
-                ctx.appVersion(),
-                election.isLeaderStartup()))
+                ctx.appVersion()
+            ))
             {
                 return false;
             }

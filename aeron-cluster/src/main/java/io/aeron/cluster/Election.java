@@ -433,8 +433,7 @@ public class Election
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        final long termBaseLogPosition,
-        final boolean isStartup)
+        final long termBaseLogPosition)
     {
         if (State.FOLLOWER_CATCHUP == state)
         {
@@ -463,7 +462,6 @@ public class Election
 
             logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
-            isLeaderStartup = isStartup;
         }
     }
 

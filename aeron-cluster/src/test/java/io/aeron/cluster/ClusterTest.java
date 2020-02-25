@@ -859,7 +859,7 @@ public class ClusterTest
             awaitAllServiceMessageCount(cluster, 3, numMessages * 2);
 
             cluster.stopNode(leader1);
-            final TestNode leader2 = cluster.awaitLeader(leader1.index());
+            cluster.awaitLeader(leader1.index());
             cluster.awaitLeadershipEvent(2);
             cluster.startStaticNode(leader1.index(), false);
 

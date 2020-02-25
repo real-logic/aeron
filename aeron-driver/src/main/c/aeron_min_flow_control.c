@@ -53,6 +53,8 @@ typedef struct aeron_min_flow_control_strategy_state_stct
 
     int64_t receiver_timeout_ns;
     uint32_t group_min_size;
+    int64_t group_receiver_tag;
+    aeron_distinct_error_log_t *error_log;
 }
 aeron_min_flow_control_strategy_state_t;
 
@@ -103,6 +105,84 @@ int64_t aeron_min_flow_control_strategy_on_idle(
         snd_lmt : min_limit_position;
 }
 
+int64_t aeron_min_flow_control_strategy_process_sm(
+    aeron_min_flow_control_strategy_state_t *strategy_state,
+    aeron_status_message_header_t *status_message_header,
+    int64_t snd_lmt,
+    int32_t initial_term_id,
+    size_t position_bits_to_shift,
+    int64_t now_ns,
+    bool is_tagged)
+{
+    const int64_t position = aeron_logbuffer_compute_position(
+        status_message_header->consumption_term_id,
+        status_message_header->consumption_term_offset,
+        position_bits_to_shift,
+        initial_term_id);
+    const int64_t window_length = status_message_header->receiver_window;
+    const int64_t receiver_id = status_message_header->receiver_id;
+    int64_t position_plus_window = position + window_length;
+
+    bool is_existing = false;
+    int64_t min_position = INT64_MAX;
+
+    for (size_t i = 0; i < strategy_state->receivers.length; i++)
+    {
+        aeron_min_flow_control_strategy_receiver_t *receiver =
+            &strategy_state->receivers.array[i];
+
+        if (is_tagged && receiver_id == receiver->receiver_id)
+        {
+            receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
+            receiver->last_position_plus_window = position + window_length;
+            receiver->time_of_last_status_message = now_ns;
+            is_existing = true;
+        }
+
+        min_position = receiver->last_position_plus_window < min_position ?
+            receiver->last_position_plus_window : min_position;
+    }
+
+    if (is_tagged && !is_existing)
+    {
+        int ensure_capacity_result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result,
+            strategy_state->receivers,
+            aeron_min_flow_control_strategy_receiver_t);
+
+        if (ensure_capacity_result >= 0)
+        {
+            const size_t receivers_length = strategy_state->receivers.length;
+            aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[receivers_length];
+            aeron_min_flow_control_strategy_state_set_length(strategy_state, receivers_length + 1);
+
+            receiver->last_position = position;
+            receiver->last_position_plus_window = position + window_length;
+            receiver->time_of_last_status_message = now_ns;
+            receiver->receiver_id = receiver_id;
+
+            min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
+        }
+        else
+        {
+            min_position = 0 == strategy_state->receivers.length ? snd_lmt : min_position;
+        }
+    }
+
+    if (strategy_state->receivers.length < strategy_state->group_min_size)
+    {
+        return snd_lmt;
+    }
+    else if (strategy_state->receivers.length == 0)
+    {
+        return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
+    }
+    else
+    {
+        return snd_lmt > min_position ? snd_lmt : min_position;
+    }
+}
 
 int64_t aeron_min_flow_control_strategy_on_sm(
     void *state,
@@ -114,62 +194,50 @@ int64_t aeron_min_flow_control_strategy_on_sm(
     size_t position_bits_to_shift,
     int64_t now_ns)
 {
+    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
     aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
 
-    const int64_t position = aeron_logbuffer_compute_position(
-        status_message_header->consumption_term_id,
-        status_message_header->consumption_term_offset,
+    return aeron_min_flow_control_strategy_process_sm(
+        strategy_state,
+        status_message_header,
+        snd_lmt,
+        initial_term_id,
         position_bits_to_shift,
-        initial_term_id);
+        now_ns,
+        true);
+}
 
-    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
-    bool is_existing = false;
-    int64_t min_position = INT64_MAX;
+int64_t aeron_tagged_flow_control_strategy_on_sm(
+    void *state,
+    const uint8_t *sm,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t snd_lmt,
+    int32_t initial_term_id,
+    size_t position_bits_to_shift,
+    int64_t now_ns)
+{
+    aeron_min_flow_control_strategy_state_t *strategy_state =
+        (aeron_min_flow_control_strategy_state_t *)state;
+    aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
 
-    for (size_t i = 0; i < strategy_state->receivers.length; i++)
+    int64_t sm_receiver_tag;
+    const int bytes_read = aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
+    const bool was_present = bytes_read == sizeof(sm_receiver_tag);
+
+    if (0 != bytes_read && !was_present)
     {
-        aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
-
-        if (status_message_header->receiver_id == receiver->receiver_id)
-        {
-            receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
-            receiver->last_position_plus_window = position + status_message_header->receiver_window;
-            receiver->time_of_last_status_message = now_ns;
-            is_existing = true;
-        }
-
-        min_position = receiver->last_position_plus_window < min_position ?
-            receiver->last_position_plus_window : min_position;
+        aeron_distinct_error_log_record(
+            strategy_state->error_log,
+            EINVAL,
+            "invalid receiver tag on status message",
+            "Received a status message for tagged flow control that did not have 0 or 8 bytes for the receiver_tag");
     }
 
-    if (!is_existing)
-    {
-        int ensure_capacity_result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
+    const bool is_tagged = was_present && sm_receiver_tag == strategy_state->group_receiver_tag;
 
-        if (ensure_capacity_result >= 0)
-        {
-            const size_t receivers_length = strategy_state->receivers.length;
-            aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[receivers_length];
-            aeron_min_flow_control_strategy_state_set_length(strategy_state, receivers_length + 1);
-
-            receiver->last_position = position;
-            receiver->last_position_plus_window = position + status_message_header->receiver_window;
-            receiver->time_of_last_status_message = now_ns;
-            receiver->receiver_id = status_message_header->receiver_id;
-
-            min_position = (position + status_message_header->receiver_window) < min_position ?
-                (position + status_message_header->receiver_window) : min_position;
-        }
-        else
-        {
-            min_position = 0 == strategy_state->receivers.length ? snd_lmt : min_position;
-        }
-    }
-
-    return strategy_state->receivers.length < strategy_state->group_min_size ? snd_lmt :
-        (snd_lmt > min_position ? snd_lmt : min_position);
+    return aeron_min_flow_control_strategy_process_sm(
+        strategy_state, status_message_header, snd_lmt, initial_term_id, position_bits_to_shift, now_ns, is_tagged);
 }
 
 int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
@@ -193,246 +261,15 @@ bool aeron_min_flow_control_strategy_has_required_receivers(aeron_flow_control_s
     return strategy_state->group_min_size <= receivers_length;
 }
 
-int aeron_min_flow_control_strategy_supplier(
+int aeron_tagged_flow_control_strategy_supplier_init(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
     aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_buffer_capacity)
-{
-    aeron_flow_control_strategy_t *_strategy;
-    aeron_flow_control_tagged_options_t options;
-
-    const char* fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_URI_FC_KEY);
-    size_t fc_options_length = NULL != fc_options ? strlen(fc_options) : 0;
-    if (aeron_flow_control_parse_tagged_options(fc_options_length, fc_options, &options) < 0)
-    {
-        return -1;
-    }
-
-    if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
-        aeron_alloc((void **)&_strategy->state, sizeof(aeron_min_flow_control_strategy_state_t)) < 0)
-    {
-        return -1;
-    }
-
-    _strategy->on_idle = aeron_min_flow_control_strategy_on_idle;
-    _strategy->on_status_message = aeron_min_flow_control_strategy_on_sm;
-    _strategy->fini = aeron_min_flow_control_strategy_fini;
-    _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
-
-    aeron_min_flow_control_strategy_state_t *state = (aeron_min_flow_control_strategy_state_t *)_strategy->state;
-
-    state->receivers.array = NULL;
-    state->receivers.capacity = 0;
-    aeron_min_flow_control_strategy_state_set_length(state, 0);
-
-    state->receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
-    state->group_min_size = options.group_min_size.is_present ?
-        options.group_min_size.value : context->flow_control.receiver_group_min_size;
-
-    *strategy = _strategy;
-
-    return 0;
-}
-
-typedef struct aeron_tagged_flow_control_strategy_state_stct
-{
-    aeron_min_flow_control_strategy_state_t min_flow_control_state;
-    int64_t group_receiver_tag;
-    aeron_distinct_error_log_t *error_log;
-}
-aeron_tagged_flow_control_strategy_state_t;
-
-int64_t aeron_tagged_flow_control_strategy_on_idle(
-    void *state,
-    int64_t now_ns,
-    int64_t snd_lmt,
-    int64_t snd_pos,
-    bool is_end_of_stream)
-{
-    aeron_tagged_flow_control_strategy_state_t *strategy_state = (aeron_tagged_flow_control_strategy_state_t *)state;
-    aeron_min_flow_control_strategy_state_t *min_strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
-    int64_t min_limit_position = INT64_MAX;
-
-    for (int last_index = (int)min_strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
-    {
-        aeron_min_flow_control_strategy_receiver_t *receiver = &min_strategy_state->receivers.array[i];
-
-        if ((receiver->time_of_last_status_message + min_strategy_state->receiver_timeout_ns) - now_ns < 0)
-        {
-            aeron_array_fast_unordered_remove(
-                (uint8_t *) min_strategy_state->receivers.array,
-                sizeof(aeron_min_flow_control_strategy_receiver_t),
-                (size_t)i,
-                (size_t)last_index);
-            last_index--;
-            aeron_min_flow_control_strategy_state_set_length(
-                min_strategy_state, min_strategy_state->receivers.length - 1);
-        }
-        else
-        {
-            min_limit_position = receiver->last_position_plus_window < min_limit_position ?
-                receiver->last_position_plus_window : min_limit_position;
-        }
-    }
-
-    return min_strategy_state->receivers.length < strategy_state->min_flow_control_state.group_min_size ||
-        min_strategy_state->receivers.length == 0 ? snd_lmt : min_limit_position;
-}
-
-int64_t aeron_tagged_flow_control_strategy_on_sm(
-    void *state,
-    const uint8_t *sm,
-    size_t length,
-    struct sockaddr_storage *recv_addr,
-    int64_t snd_lmt,
-    int32_t initial_term_id,
-    size_t position_bits_to_shift,
-    int64_t now_ns)
-{
-    aeron_tagged_flow_control_strategy_state_t *strategy_state =
-        (aeron_tagged_flow_control_strategy_state_t *)state;
-    aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
-
-    const int64_t position = aeron_logbuffer_compute_position(
-        status_message_header->consumption_term_id,
-        status_message_header->consumption_term_offset,
-        position_bits_to_shift,
-        initial_term_id);
-    const int64_t window_length = status_message_header->receiver_window;
-    const int64_t receiver_id = status_message_header->receiver_id;
-
-    int64_t sm_receiver_tag;
-    const int bytes_read = aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
-    const bool was_present = bytes_read == sizeof(sm_receiver_tag);
-    int64_t position_plus_window = position + window_length;
-
-    if (0 != bytes_read && !was_present)
-    {
-        aeron_distinct_error_log_record(
-            strategy_state->error_log,
-            EINVAL,
-            "invalid receiver tag on status message",
-            "Received a status message for tagged flow control that did not have 0 or 8 bytes for the receiver_tag");
-    }
-
-    const bool matches_tag = was_present && sm_receiver_tag == strategy_state->group_receiver_tag;
-
-    bool is_existing = false;
-    int64_t min_position = INT64_MAX;
-
-    for (size_t i = 0; i < strategy_state->min_flow_control_state.receivers.length; i++)
-    {
-        aeron_min_flow_control_strategy_receiver_t *receiver =
-            &strategy_state->min_flow_control_state.receivers.array[i];
-
-        if (matches_tag && receiver_id == receiver->receiver_id)
-        {
-            receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
-            receiver->last_position_plus_window = position + window_length;
-            receiver->time_of_last_status_message = now_ns;
-            is_existing = true;
-        }
-
-        min_position = receiver->last_position_plus_window < min_position ?
-            receiver->last_position_plus_window : min_position;
-    }
-
-    if (matches_tag && !is_existing)
-    {
-        int ensure_capacity_result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result,
-            strategy_state->min_flow_control_state.receivers,
-            aeron_min_flow_control_strategy_receiver_t);
-
-        if (ensure_capacity_result >= 0)
-        {
-            const size_t receivers_length = strategy_state->min_flow_control_state.receivers.length;
-            aeron_min_flow_control_strategy_receiver_t *receiver =
-                &strategy_state->min_flow_control_state.receivers.array[receivers_length];
-            aeron_min_flow_control_strategy_state_set_length(
-                &strategy_state->min_flow_control_state, receivers_length + 1);
-
-            receiver->last_position = position;
-            receiver->last_position_plus_window = position + window_length;
-            receiver->time_of_last_status_message = now_ns;
-            receiver->receiver_id = receiver_id;
-
-            min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
-        }
-        else
-        {
-            min_position = 0 == strategy_state->min_flow_control_state.receivers.length ? snd_lmt : min_position;
-        }
-    }
-
-    if (strategy_state->min_flow_control_state.receivers.length < strategy_state->min_flow_control_state.group_min_size)
-    {
-        return snd_lmt;
-    }
-    else if (strategy_state->min_flow_control_state.receivers.length == 0)
-    {
-        return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
-    }
-    else
-    {
-        return snd_lmt > min_position ? snd_lmt : min_position;
-    }
-}
-
-int aeron_tagged_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
-{
-    aeron_tagged_flow_control_strategy_state_t *strategy_state =
-        (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
-
-    aeron_free(strategy_state->min_flow_control_state.receivers.array);
-    aeron_free(strategy->state);
-    aeron_free(strategy);
-
-    return 0;
-}
-
-bool aeron_tagged_flow_control_strategy_has_required_receivers(aeron_flow_control_strategy_t *strategy)
-{
-    aeron_tagged_flow_control_strategy_state_t *strategy_state =
-        (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
-
-    size_t receivers_length = aeron_min_flow_control_strategy_state_get_length(&strategy_state->min_flow_control_state);
-    return strategy_state->min_flow_control_state.group_min_size <= receivers_length;
-}
-
-int aeron_tagged_flow_control_strategy_to_string(
-    aeron_flow_control_strategy_t *strategy,
-    char *buffer,
-    size_t buffer_len)
-{
-    aeron_tagged_flow_control_strategy_state_t *strategy_state =
-        (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
-
-    buffer[buffer_len - 1] = '\0';
-
-    return snprintf(
-        buffer,
-        buffer_len - 1,
-        "group_receiver_tag: %" PRId64 ", group_min_size: %" PRId32 ", receiver_count: %zu",
-        strategy_state->group_receiver_tag,
-        strategy_state->min_flow_control_state.group_min_size,
-        strategy_state->min_flow_control_state.receivers.length);
-}
-
-int aeron_tagged_flow_control_strategy_supplier(
-    aeron_flow_control_strategy_t **strategy,
-    aeron_driver_context_t *context,
-    aeron_udp_channel_t *channel,
-    int32_t stream_id,
-    int64_t registration_id,
-    int32_t initial_term_id,
-    size_t term_buffer_capacity)
+    size_t term_buffer_capacity,
+    bool is_receiver_tag_aware)
 {
     aeron_flow_control_strategy_t *_strategy;
     aeron_flow_control_tagged_options_t options;
@@ -444,34 +281,79 @@ int aeron_tagged_flow_control_strategy_supplier(
     }
 
     if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
-        aeron_alloc((void **)&_strategy->state, sizeof(aeron_tagged_flow_control_strategy_state_t)) < 0)
+        aeron_alloc((void **)&_strategy->state, sizeof(aeron_min_flow_control_strategy_state_t)) < 0)
     {
         return -1;
     }
 
-    _strategy->on_idle = aeron_tagged_flow_control_strategy_on_idle;
-    _strategy->on_status_message = aeron_tagged_flow_control_strategy_on_sm;
-    _strategy->fini = aeron_tagged_flow_control_strategy_fini;
-    _strategy->has_required_receivers = aeron_tagged_flow_control_strategy_has_required_receivers;
+    _strategy->on_idle = aeron_min_flow_control_strategy_on_idle;
+    _strategy->on_status_message = is_receiver_tag_aware ? aeron_tagged_flow_control_strategy_on_sm :
+        aeron_min_flow_control_strategy_on_sm;
+    _strategy->fini = aeron_min_flow_control_strategy_fini;
+    _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
 
-    aeron_tagged_flow_control_strategy_state_t *state =
-        (aeron_tagged_flow_control_strategy_state_t *)_strategy->state;
+    aeron_min_flow_control_strategy_state_t *state =
+        (aeron_min_flow_control_strategy_state_t *)_strategy->state;
 
-    state->min_flow_control_state.receivers.array = NULL;
-    state->min_flow_control_state.receivers.capacity = 0;
-    aeron_min_flow_control_strategy_state_set_length(&state->min_flow_control_state, 0);
+    state->receivers.array = NULL;
+    state->receivers.capacity = 0;
+    aeron_min_flow_control_strategy_state_set_length(state, 0);
 
+    state->receiver_timeout_ns = options.timeout_ns.is_present ?
+        options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
+    state->group_min_size = options.group_min_size.is_present ?
+        options.group_min_size.value : context->flow_control.receiver_group_min_size;
     state->group_receiver_tag = options.receiver_tag.is_present ?
         options.receiver_tag.value : context->flow_control.group_receiver_tag;
-    state->min_flow_control_state.group_min_size = options.group_min_size.is_present ?
-        options.group_min_size.value : context->flow_control.receiver_group_min_size;
 
     state->error_log = context->error_log;
-
-    state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
 
     *strategy = _strategy;
 
     return 0;
+}
+
+int aeron_min_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity)
+{
+    return aeron_tagged_flow_control_strategy_supplier_init(
+        strategy, context, channel, stream_id, registration_id, initial_term_id, term_buffer_capacity, false);
+}
+
+int aeron_tagged_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity)
+{
+    return aeron_tagged_flow_control_strategy_supplier_init(
+        strategy, context, channel, stream_id, registration_id, initial_term_id, term_buffer_capacity, true);
+}
+
+int aeron_tagged_flow_control_strategy_to_string(
+    aeron_flow_control_strategy_t *strategy,
+    char *buffer,
+    size_t buffer_len)
+{
+    aeron_min_flow_control_strategy_state_t *strategy_state =
+        (aeron_min_flow_control_strategy_state_t *)strategy->state;
+
+    buffer[buffer_len - 1] = '\0';
+
+    return snprintf(
+        buffer,
+        buffer_len - 1,
+        "group_receiver_tag: %" PRId64 ", group_min_size: %" PRId32 ", receiver_count: %zu",
+        strategy_state->group_receiver_tag,
+        strategy_state->group_min_size,
+        strategy_state->receivers.length);
 }

@@ -166,7 +166,7 @@ void aeron_flow_control_extract_strategy_name_length(
     size_t *strategy_length)
 {
     const char *next_option = (const char *)memchr(options, ',', options_length);
-    *strategy_length = NULL == next_option ? options_length : labs((long)(next_option - options));
+    *strategy_length = NULL == next_option ? options_length : (size_t)labs((next_option - options));
 }
 
 int aeron_default_multicast_flow_control_strategy_supplier(
@@ -258,7 +258,7 @@ int aeron_flow_control_parse_tagged_options(
     flow_control_options->receiver_tag.is_present = false;
     flow_control_options->receiver_tag.value = -1;
     flow_control_options->group_min_size.is_present = false;
-    flow_control_options->group_min_size.value = -1;
+    flow_control_options->group_min_size.value = 0;
 
     char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
 
@@ -354,7 +354,7 @@ int aeron_flow_control_parse_tagged_options(
                         0 <= group_min_size && group_min_size <= INT32_MAX)
                     {
                         flow_control_options->group_min_size.is_present = true;
-                        flow_control_options->group_min_size.value = (int32_t)group_min_size;
+                        flow_control_options->group_min_size.value = (uint32_t)group_min_size;
                     }
                     else
                     {

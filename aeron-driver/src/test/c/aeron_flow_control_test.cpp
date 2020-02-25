@@ -75,7 +75,7 @@ public:
         sm_optional->receiver_tag = rtag;
 
         return strategy->on_status_message(
-            strategy->state, (uint8_t *)sm, sm->frame_header.frame_length, &address, snd_lmt, 0, 0, now_ns);
+            strategy->state, (uint8_t *)sm, sizeof(struct sockaddr_storage), &address, snd_lmt, 0, 0, now_ns);
     }
 
     int64_t apply_old_asf_status_message(
@@ -97,7 +97,7 @@ public:
         *asf = asf_value;
 
         return strategy->on_status_message(
-            strategy->state, (uint8_t *)sm, sm->frame_header.frame_length, &address, sizeof(address), 0, 0, 0);
+            strategy->state, (uint8_t *)sm, sizeof(struct sockaddr_storage), &address, sizeof(address), 0, 0, 0);
     }
 
     void initialise_channel(const char *uri)
@@ -141,7 +141,7 @@ class MaxFlowControlTest : public FlowControlTest
 };
 
 class ParameterisedSuccessfulOptionsParsingTest :
-    public testing::TestWithParam<std::tuple<const char *, const char *, uint64_t, bool, int32_t, bool, int32_t>>
+    public testing::TestWithParam<std::tuple<const char *, const char *, uint64_t, bool, int32_t, bool, uint32_t>>
 {
 };
 
@@ -550,12 +550,12 @@ INSTANTIATE_TEST_SUITE_P(
     ParsingTests,
     ParameterisedSuccessfulOptionsParsingTest,
     testing::Values(
-        std::make_tuple("max", "max", 0, false, -1, false, -1),
-        std::make_tuple("min", "min", 0, false, -1, false, -1),
-        std::make_tuple("min,t:10s", "min", 10000000000, false, -1, false, -1),
-        std::make_tuple("tagged,g:-1", "tagged", 0, true, -1, false, -1),
-        std::make_tuple("tagged,g:100", "tagged", 0, true, 100, false, -1),
-        std::make_tuple("tagged,t:10s,g:100", "tagged", 10000000000, true, 100, false, -1),
+        std::make_tuple("max", "max", 0, false, -1, false, 0),
+        std::make_tuple("min", "min", 0, false, -1, false, 0),
+        std::make_tuple("min,t:10s", "min", 10000000000, false, -1, false, 0),
+        std::make_tuple("tagged,g:-1", "tagged", 0, true, -1, false, 0),
+        std::make_tuple("tagged,g:100", "tagged", 0, true, 100, false, 0),
+        std::make_tuple("tagged,t:10s,g:100", "tagged", 10000000000, true, 100, false, 0),
         std::make_tuple("tagged,t:10s,g:100/0", "tagged", 10000000000, true, 100, true, 0),
         std::make_tuple("tagged,t:10s,g:100/10", "tagged", 10000000000, true, 100, true, 10),
         std::make_tuple("tagged,g:/10", "tagged", 0, false, -1, true, 10)));

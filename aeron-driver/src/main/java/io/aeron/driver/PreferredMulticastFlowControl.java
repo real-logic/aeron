@@ -15,9 +15,28 @@
  */
 package io.aeron.driver;
 
+import org.agrona.BitUtil;
+
+import static java.lang.System.getProperty;
+
 /**
  * {@inheritDoc}
  */
+@Deprecated
 public class PreferredMulticastFlowControl extends TaggedMulticastFlowControl
 {
+    /**
+     * Property name used to set Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.
+     * <p>
+     * Replaced by {@link Configuration#RECEIVER_TAG_PROP_NAME}.
+     */
+    public static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
+
+    /**
+     * Default Application Specific Feedback (ASF) value.
+     */
+    public static final String PREFERRED_ASF_DEFAULT = "FFFFFFFFFFFFFFFF";
+
+    static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
+    static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 }

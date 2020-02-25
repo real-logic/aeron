@@ -83,7 +83,6 @@ public class SelectorAndTransportTest
         when(mockPublication.sessionId()).thenReturn(SESSION_ID);
 
         context
-            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .systemCounters(mockSystemCounters)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context))
             .cachedNanoClock(new CachedNanoClock());

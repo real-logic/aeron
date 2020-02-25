@@ -37,7 +37,6 @@ import org.agrona.concurrent.status.StatusIndicator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
-import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +46,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MIN_SIZE;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.fromHex;
 import static org.agrona.SystemUtil.*;
 
@@ -488,7 +488,10 @@ public class Configuration
 
     /**
      * Property name for Application Specific Feedback added to Status Messages by the driver for flow control.
+     * <p>
+     * Replaced by {@link #RECEIVER_TAG_PROP_NAME}.
      */
+    @Deprecated
     public static final String SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME =
         "aeron.flow.control.sm.applicationSpecificFeedback";
 
@@ -797,14 +800,12 @@ public class Configuration
         return getLong(RECEIVER_TAG_PROP_NAME, null);
     }
 
-    // Legacy configuration properties, will be removed once ASF is not supported.
-    static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
-    static final String PREFERRED_ASF_DEFAULT = "FFFFFFFFFFFFFFFF";
-
+    @SuppressWarnings("deprecation")
     public static long flowControlGroupReceiverTag()
     {
-        final long legacyAsfValue = new UnsafeBuffer(BitUtil.fromHex(
-            getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT))).getLong(0, ByteOrder.LITTLE_ENDIAN);
+        final String propertyValue = getProperty(
+            PreferredMulticastFlowControl.PREFERRED_ASF_PROP_NAME, PreferredMulticastFlowControl.PREFERRED_ASF_DEFAULT);
+        final long legacyAsfValue = new UnsafeBuffer(BitUtil.fromHex(propertyValue)).getLong(0, LITTLE_ENDIAN);
 
         return getLong(FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME, legacyAsfValue);
     }

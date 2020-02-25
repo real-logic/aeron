@@ -18,8 +18,10 @@ package io.aeron.driver;
 import io.aeron.driver.media.UdpChannel;
 
 /**
- * Supplier of {@link PreferredMulticastFlowControl} implementation strategies.
+ *
+ * This has been replaced by {@link TaggedMulticastFlowControlSupplier}
  */
+@Deprecated
 public class PreferredMulticastFlowControlSupplier implements FlowControlSupplier
 {
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)

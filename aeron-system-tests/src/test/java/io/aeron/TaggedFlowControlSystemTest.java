@@ -10,10 +10,7 @@ import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.SystemUtil;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -59,8 +56,9 @@ public class TaggedFlowControlSystemTest
     private Subscription subscriptionA;
     private Subscription subscriptionB;
 
-    private static final long DEFAULT_RECEIVER_TAG = new UnsafeBuffer(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES)
-        .getLong(0, ByteOrder.LITTLE_ENDIAN);
+    @SuppressWarnings("deprecation")
+    private static final long DEFAULT_RECEIVER_TAG = new UnsafeBuffer(BitUtil.fromHex(
+        PreferredMulticastFlowControl.PREFERRED_ASF_DEFAULT)).getLong(0, ByteOrder.LITTLE_ENDIAN);
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
@@ -456,7 +454,7 @@ public class TaggedFlowControlSystemTest
         publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
         final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
 
-        final Subscription otherSubscription = clientA.addSubscription(plainUri, STREAM_ID + 1);
+        clientA.addSubscription(plainUri, STREAM_ID + 1);
 
         while (!otherPublication.isConnected())
         {

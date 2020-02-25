@@ -16,11 +16,9 @@
 package io.aeron.driver;
 
 import io.aeron.protocol.StatusMessageFlyweight;
-import org.agrona.BitUtil;
 
 import java.net.InetSocketAddress;
 
-import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -38,19 +36,6 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
      * URI param value to identify this {@link FlowControl} strategy.
      */
     public static final String FC_PARAM_VALUE = "tagged";
-
-    /**
-     * Property name used to set Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.
-     */
-    public static final String PREFERRED_ASF_PROP_NAME = Configuration.PREFERRED_ASF_PROP_NAME;
-
-    /**
-     * Default Application Specific Feedback (ASF) value
-     */
-    public static final String PREFERRED_ASF_DEFAULT = Configuration.PREFERRED_ASF_DEFAULT;
-
-    public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
-    public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     public TaggedMulticastFlowControl()
     {
@@ -72,14 +57,15 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         return processStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, matchesTag);
     }
 
-    private boolean matchesTag(final StatusMessageFlyweight statusMessageFlyweight)
+    @SuppressWarnings("deprecation")
+    private boolean matchesTag(final StatusMessageFlyweight flyweight)
     {
-        final int asfLength = statusMessageFlyweight.asfLength();
+        final int asfLength = flyweight.asfLength();
         boolean result = false;
 
         if (asfLength == SIZE_OF_LONG)
         {
-            if (statusMessageFlyweight.receiverTag() == super.receiverTag())
+            if (flyweight.receiverTag() == super.receiverTag())
             {
                 result = true;
             }
@@ -89,10 +75,10 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
             // compatible check for ASF of first 4 bytes
             final int offset = StatusMessageFlyweight.receiverTagFieldOffset();
 
-            if (statusMessageFlyweight.getByte(offset) == PREFERRED_ASF_BYTES[0] &&
-                statusMessageFlyweight.getByte(offset + 1) == PREFERRED_ASF_BYTES[1] &&
-                statusMessageFlyweight.getByte(offset + 2) == PREFERRED_ASF_BYTES[2] &&
-                statusMessageFlyweight.getByte(offset + 3) == PREFERRED_ASF_BYTES[3])
+            if (flyweight.getByte(offset) == PreferredMulticastFlowControl.PREFERRED_ASF_BYTES[0] &&
+                flyweight.getByte(offset + 1) == PreferredMulticastFlowControl.PREFERRED_ASF_BYTES[1] &&
+                flyweight.getByte(offset + 2) == PreferredMulticastFlowControl.PREFERRED_ASF_BYTES[2] &&
+                flyweight.getByte(offset + 3) == PreferredMulticastFlowControl.PREFERRED_ASF_BYTES[3])
             {
                 result = true;
             }

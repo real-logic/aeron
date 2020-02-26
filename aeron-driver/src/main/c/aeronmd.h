@@ -504,9 +504,9 @@ int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_c
  */
 #define AERON_RECEIVER_GROUP_TAG_ENV_VAR "AERON_RECEIVER_GTAG"
 
-int aeron_driver_context_set_sm_group_tag(aeron_driver_context_t *context, bool is_present, int64_t value);
-bool aeron_driver_context_get_sm_group_tag_is_present(aeron_driver_context_t *context);
-int64_t aeron_driver_context_get_sm_group_tag_value(aeron_driver_context_t *context);
+int aeron_driver_context_set_receiver_group_tag(aeron_driver_context_t *context, bool is_present, int64_t value);
+bool aeron_driver_context_get_receiver_group_tag_is_present(aeron_driver_context_t *context);
+int64_t aeron_driver_context_get_receiver_group_tag_value(aeron_driver_context_t *context);
 
 /**
  * Function name to call for termination validation.

@@ -258,8 +258,8 @@ TEST_F(TaggedFlowControlTest, shouldUseFallbackToTaggedStrategy)
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=max");
     context->multicast_flow_control_supplier_func = aeron_tagged_flow_control_strategy_supplier;
-    context->sm_group_tag.is_present = true;
-    context->sm_group_tag.value = 1;
+    context->receiver_group_tag.is_present = true;
+    context->receiver_group_tag.value = 1;
     context->flow_control.receiver_group_tag = 1;
     context->flow_control.receiver_group_min_size = 0;
 

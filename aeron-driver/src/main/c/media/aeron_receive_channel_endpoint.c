@@ -40,8 +40,8 @@ int aeron_receive_channel_endpoint_set_group_tag(
 
     if (0 == rc)
     {
-        endpoint->group_tag.is_present = context->sm_group_tag.is_present;
-        endpoint->group_tag.value = context->sm_group_tag.value;
+        endpoint->group_tag.is_present = context->receiver_group_tag.is_present;
+        endpoint->group_tag.value = context->receiver_group_tag.value;
     }
     else
     {

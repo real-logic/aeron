@@ -117,12 +117,12 @@ typedef struct aeron_driver_context_stct
     int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 10000 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
 
-    struct                                                  /* aeron.sm.receiver.tag = <unset> */
+    struct                                                  /* aeron.receiver.receiver.tag = <unset> */
     {
         bool is_present;
         int64_t value;
     }
-    sm_group_tag;
+    receiver_group_tag;
     struct
     {
         int32_t receiver_group_min_size;                     /* aeron.flow.control.receiver.group.min.size = 0 */

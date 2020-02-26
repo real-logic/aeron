@@ -96,7 +96,7 @@ typedef struct aeron_rttm_header_stct
 aeron_rttm_header_t;
 #pragma pack(pop)
 
-int aeron_udp_protocol_sm_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);
+int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);
 
 #define AERON_FRAME_HEADER_VERSION (0)
 

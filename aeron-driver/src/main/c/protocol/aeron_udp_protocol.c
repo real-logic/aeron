@@ -19,7 +19,7 @@
 
 #include "aeron_udp_protocol.h"
 
-int aeron_udp_protocol_sm_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
+int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
 {
     const size_t group_tag_offset = sizeof(aeron_status_message_header_t) +
         offsetof(aeron_status_message_optional_header_t, group_tag);

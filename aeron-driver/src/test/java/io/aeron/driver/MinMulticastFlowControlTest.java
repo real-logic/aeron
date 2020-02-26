@@ -54,7 +54,7 @@ class MinMulticastFlowControlTest
         final String uri, final int groupSize, final long timeout)
     {
         flowControl.initialize(
-            new MediaDriver.Context().flowControlReceiverGroupMinSize(DEFAULT_GROUP_SIZE),
+            new MediaDriver.Context().flowControlGroupMinSize(DEFAULT_GROUP_SIZE),
             UdpChannel.parse(uri), 0, 0);
 
         assertEquals(groupSize, flowControl.groupMinSize());

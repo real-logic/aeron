@@ -57,7 +57,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
     {
         receiverTimeoutNs = context.flowControlReceiverTimeoutNs();
         groupTag = isGroupTagAware ? context.flowControlGroupTag() : 0;
-        groupMinSize = context.flowControlReceiverGroupMinSize();
+        groupMinSize = context.flowControlGroupMinSize();
 
         parseUriParam(udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME));
     }

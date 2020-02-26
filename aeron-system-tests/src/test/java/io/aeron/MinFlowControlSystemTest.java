@@ -130,7 +130,7 @@ public class MinFlowControlSystemTest
         {
             driverAContext.multicastFlowControlSupplier(flowControlSupplier);
         }
-        driverAContext.flowControlReceiverGroupMinSize(1);
+        driverAContext.flowControlGroupMinSize(1);
 
         launch();
 

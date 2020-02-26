@@ -463,7 +463,7 @@ public final class MediaDriver implements AutoCloseable
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
-        private int flowControlReceiverGroupMinSize = Configuration.flowControlReceiverGroupMinSize();
+        private int flowControlGroupMinSize = Configuration.flowControlGroupMinSize();
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
 
         private EpochClock epochClock;
@@ -2783,11 +2783,11 @@ public final class MediaDriver implements AutoCloseable
          * Get the default min group size used by flow control strategies to indicate connectivity.
          *
          * @return required group size.
-         * @see Configuration#FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME
          */
-        public int flowControlReceiverGroupMinSize()
+        public int flowControlGroupMinSize()
         {
-            return flowControlReceiverGroupMinSize;
+            return flowControlGroupMinSize;
         }
 
         /**
@@ -2795,11 +2795,11 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param groupSize minimum required group size used by the tagged flow control strategy.
          * @return this for fluent API.
-         * @see Configuration#FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME
          */
-        public Context flowControlReceiverGroupMinSize(final int groupSize)
+        public Context flowControlGroupMinSize(final int groupSize)
         {
-            this.flowControlReceiverGroupMinSize = groupSize;
+            this.flowControlGroupMinSize = groupSize;
             return this;
         }
 
@@ -3312,10 +3312,10 @@ public final class MediaDriver implements AutoCloseable
                 "\n    unicastFlowControlSupplier=" + unicastFlowControlSupplier +
                 "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
                 "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
-                "\n    groupTag=" + receiverGroupTag +
-                "\n    flowControlReceiverTimeoutNs=" + flowControlReceiverTimeoutNs +
-                "\n    flowControlReceiverGroupMinSize=" + flowControlReceiverGroupMinSize +
+                "\n    receiverGroupTag=" + receiverGroupTag +
                 "\n    flowControlGroupTag=" + flowControlGroupTag +
+                "\n    flowControlGroupMinSize=" + flowControlGroupMinSize +
+                "\n    flowControlReceiverTimeoutNs=" + flowControlReceiverTimeoutNs +
                 "\n    receiverGroupConsideration=" + receiverGroupConsideration +
                 "\n    congestionControlSupplier=" + congestionControlSupplier +
                 "\n    terminationValidator=" + terminationValidator +

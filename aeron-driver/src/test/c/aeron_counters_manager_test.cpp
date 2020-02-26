@@ -199,7 +199,7 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadCounterValue)
 {
     ASSERT_EQ(counters_manager_init(), 0);
 
-    int32_t id = -1;
+    int32_t id;
 
     ASSERT_GE((id = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3)), 0);
 

@@ -123,7 +123,7 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
     EXPECT_EQ(entry->last_observation_timestamp, 7);
 
     size_t length = AERON_ALIGN(entry->length, AERON_ERROR_LOG_RECORD_ALIGNMENT);
-    entry = (aeron_error_log_entry_t *)((uint8_t *)m_log.buffer + length);
+    entry = (aeron_error_log_entry_t *)(m_log.buffer + length);
 
     EXPECT_EQ(entry->first_observation_timestamp, 8);
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);

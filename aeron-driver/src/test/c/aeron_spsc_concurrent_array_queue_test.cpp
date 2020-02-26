@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <thread>
 #include <atomic>
-#include <limits>
 #include <exception>
 #include <functional>
 

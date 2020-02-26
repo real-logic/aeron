@@ -24,9 +24,7 @@ extern "C"
 class BitutilTest : public testing::Test
 {
 public:
-    BitutilTest()
-    {
-    }
+    BitutilTest() = default;
 };
 
 TEST_F(BitutilTest, shouldCountTrailingZeros64Bit)

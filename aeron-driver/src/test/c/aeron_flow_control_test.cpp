@@ -43,13 +43,9 @@ static void linger(void *clientd, uint8_t *resource)
 class FlowControlTest : public testing::Test
 {
 public:
-    FlowControlTest()
-    {
-    }
+    FlowControlTest() = default;
 
-    virtual ~FlowControlTest()
-    {
-    }
+    virtual ~FlowControlTest() = default;
 
     int64_t apply_status_message(
         aeron_flow_control_strategy_t *strategy,
@@ -105,11 +101,11 @@ public:
         aeron_udp_channel_parse(strlen(uri), uri, &channel);
     }
 
-    struct sockaddr_storage address;
-    aeron_udp_channel_t *channel;
-    aeron_driver_context_t *context;
-    aeron_distinct_error_log_t error_log;
-    buffer_t buffer;
+    struct sockaddr_storage address{};
+    aeron_udp_channel_t *channel{};
+    aeron_driver_context_t *context{};
+    aeron_distinct_error_log_t error_log{};
+    buffer_t buffer{};
 
 protected:
     virtual void TearDown()

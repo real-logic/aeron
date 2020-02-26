@@ -26,9 +26,7 @@ extern "C"
 class StrUtilTest : public testing::Test
 {
 public:
-    StrUtilTest()
-    {
-    }
+    StrUtilTest() = default;
 };
 
 TEST_F(StrUtilTest, shouldHandleSingleValue)

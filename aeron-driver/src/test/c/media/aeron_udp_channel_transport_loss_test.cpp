@@ -35,9 +35,7 @@ struct mmsghdr
 class UdpChannelTransportLossTest : public testing::Test
 {
 public:
-    UdpChannelTransportLossTest()
-    {
-    }
+    UdpChannelTransportLossTest() = default;
 };
 
 typedef struct delegate_recv_state_stct

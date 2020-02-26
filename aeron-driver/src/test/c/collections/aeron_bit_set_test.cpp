@@ -24,9 +24,7 @@ extern "C"
 class BitSetTest : public testing::Test
 {
 public:
-    BitSetTest()
-    {
-    }
+    BitSetTest() = default;
 
     void assertGetAndSet(aeron_bit_set_t* bit_set)
     {

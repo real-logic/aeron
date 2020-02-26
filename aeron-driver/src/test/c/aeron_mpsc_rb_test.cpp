@@ -467,9 +467,9 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
     size_t msgCount = 0;
     uint32_t counts[NUM_PUBLISHERS];
 
-    for (int i = 0; i < NUM_PUBLISHERS; i++)
+    for (unsigned int & count : counts)
     {
-        counts[i] = 0;
+        count = 0;
     }
 
     for (int i = 0; i < NUM_PUBLISHERS; i++)

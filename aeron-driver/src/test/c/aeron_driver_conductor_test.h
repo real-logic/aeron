@@ -392,7 +392,7 @@ public:
         command.correlationId(correlation_id);
         command.streamId(stream_id);
         command.registrationCorrelationId(registration_id);
-        command.channel(channel_str.c_str());
+        command.channel(channel_str);
 
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
     }
@@ -453,7 +453,7 @@ public:
         aeron_driver_context_t *ctx = m_context.m_context;
         AtomicBuffer metadata(
             ctx->counters_metadata_buffer,
-            static_cast<util::index_t>(AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length)));
+            static_cast<size_t>(AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length)));
         AtomicBuffer values(ctx->counters_values_buffer, static_cast<util::index_t>(ctx->counters_values_buffer_length));
 
         CountersReader reader(metadata, values);

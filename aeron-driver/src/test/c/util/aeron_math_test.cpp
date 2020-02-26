@@ -24,9 +24,7 @@ extern "C"
 class MathTest : public testing::Test
 {
 public:
-    MathTest()
-    {
-    }
+    MathTest() = default;
 };
 
 TEST_F(MathTest, shouldApplyBasicAdditionWrapping)
@@ -1115,9 +1113,9 @@ TEST_F(MathTest, shouldWrapMultiplyGeneratedExamples)
     };
     //</editor-fold>
 
-    for (int i = 0; i < 1000; i++)
+    for (auto & example : examples)
     {
-        EXPECT_EQ(aeron_mul_wrap_i32(examples[i][0], examples[i][1]), examples[i][2]);
+        EXPECT_EQ(aeron_mul_wrap_i32(example[0], example[1]), example[2]);
     }
 }
 

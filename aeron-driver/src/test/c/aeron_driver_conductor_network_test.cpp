@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <inttypes.h>
+#include <cinttypes>
 #include "aeron_driver_conductor_test.h"
 
 class DriverConductorNetworkTest : public DriverConductorTest

@@ -88,7 +88,6 @@ int main(int argc, char **argv)
                 printf("%s <%s> major %d minor %d patch %d\n",
                     argv[0], aeron_version_full(), aeron_version_major(), aeron_version_minor(), aeron_version_patch());
                 exit(EXIT_SUCCESS);
-                break;
             }
 
             default:

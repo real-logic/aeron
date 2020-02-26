@@ -258,7 +258,7 @@ int aeron_flow_control_parse_tagged_options(
     flow_control_options->receiver_tag.is_present = false;
     flow_control_options->receiver_tag.value = -1;
     flow_control_options->group_min_size.is_present = false;
-    flow_control_options->group_min_size.value = -1;
+    flow_control_options->group_min_size.value = 0;
 
     char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
 

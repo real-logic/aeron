@@ -16,9 +16,8 @@
 
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
-#include <signal.h>
 #include <ftw.h>
-#include <stdio.h>
+#include <cstdio>
 #else
 #error "must spawn Java archive per test"
 #endif
@@ -276,9 +275,9 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
-    std::int32_t sessionId = aeron::NULL_VALUE;
-    std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
-    std::int64_t stopPosition = aeron::NULL_VALUE;
+    std::int32_t sessionId;
+    std::int64_t recordingIdFromCounter;
+    std::int64_t stopPosition;
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
@@ -350,9 +349,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
-    std::int32_t sessionId = aeron::NULL_VALUE;
-    std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
-    std::int64_t stopPosition = aeron::NULL_VALUE;
+    std::int32_t sessionId;
+    std::int64_t recordingIdFromCounter;
+    std::int64_t stopPosition;
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
@@ -407,9 +406,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
-    std::int32_t sessionId = aeron::NULL_VALUE;
-    std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
-    std::int64_t stopPosition = aeron::NULL_VALUE;
+    std::int32_t sessionId;
+    std::int64_t recordingIdFromCounter;
+    std::int64_t stopPosition;
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
@@ -493,8 +492,8 @@ TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
-    std::int64_t recordingId = aeron::NULL_VALUE;
-    std::int64_t stopPosition = aeron::NULL_VALUE;
+    std::int64_t recordingId;
+    std::int64_t stopPosition;
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 

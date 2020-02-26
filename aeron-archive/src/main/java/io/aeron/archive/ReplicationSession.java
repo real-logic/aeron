@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 
@@ -147,8 +148,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         stopRecording(countedErrorHandler);
         stopReplaySession(countedErrorHandler);
 
-        AeronCloseHelper.close(countedErrorHandler, asyncConnect);
-        AeronCloseHelper.close(countedErrorHandler, srcArchive);
+        CloseHelper.close(countedErrorHandler, asyncConnect);
+        CloseHelper.close(countedErrorHandler, srcArchive);
         archiveConductor.removeReplicationSession(this);
     }
 
@@ -650,7 +651,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         if (NULL_VALUE != srcReplaySessionId)
         {
             final long correlationId = aeron.nextCorrelationId();
-            AeronCloseHelper.close(countedErrorHandler,
+            CloseHelper.close(countedErrorHandler,
                 () -> srcArchive.archiveProxy()
                 .stopReplay(srcReplaySessionId, correlationId, srcArchive.controlSessionId()));
             srcReplaySessionId = NULL_VALUE;
@@ -662,7 +663,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         if (null != recordingSubscription)
         {
             conductor.removeRecordingSubscription(recordingSubscription.registrationId());
-            AeronCloseHelper.close(countedErrorHandler, recordingSubscription);
+            CloseHelper.close(countedErrorHandler, recordingSubscription);
             recordingSubscription = null;
         }
     }

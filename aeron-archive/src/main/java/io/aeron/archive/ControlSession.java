@@ -16,13 +16,13 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
-import io.aeron.AeronCloseHelper;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.security.Authenticator;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -124,10 +124,10 @@ class ControlSession implements Session
         final CountedErrorHandler errorHandler = conductor.context().countedErrorHandler();
         if (null != activeListing)
         {
-            AeronCloseHelper.close(errorHandler, activeListing::abort);
+            CloseHelper.close(errorHandler, activeListing::abort);
         }
 
-        AeronCloseHelper.close(errorHandler, controlPublication);
+        CloseHelper.close(errorHandler, controlPublication);
 
         state(State.CLOSED);
         demuxer.removeControlSession(this);

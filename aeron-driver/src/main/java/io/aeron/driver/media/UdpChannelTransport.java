@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.AeronException;
@@ -163,8 +162,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
             throw new AeronException(
                 "channel error - " + ex.getMessage() +
-                " (at " + ex.getStackTrace()[0].toString() + "): " +
-                udpChannel.originalUriString(), ex);
+                    " (at " + ex.getStackTrace()[0].toString() + "): " +
+                    udpChannel.originalUriString(), ex);
         }
     }
 
@@ -244,28 +243,29 @@ public abstract class UdpChannelTransport implements AutoCloseable
             isClosed = true;
             if (null != selectionKey)
             {
-                AeronCloseHelper.close(errorHandler, selectionKey::cancel);
+                CloseHelper.close(errorHandler, selectionKey::cancel);
             }
 
             if (null != transportPoller)
             {
-                AeronCloseHelper.close(errorHandler, () ->
-                {
-                    transportPoller.cancelRead(this);
-                    transportPoller.selectNowWithoutProcessing();
-                });
+                CloseHelper.close(errorHandler,
+                    () ->
+                    {
+                        transportPoller.cancelRead(this);
+                        transportPoller.selectNowWithoutProcessing();
+                    });
             }
 
-            AeronCloseHelper.close(errorHandler, sendDatagramChannel);
+            CloseHelper.close(errorHandler, sendDatagramChannel);
 
             if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
             {
-                AeronCloseHelper.close(errorHandler, receiveDatagramChannel);
+                CloseHelper.close(errorHandler, receiveDatagramChannel);
             }
 
             if (null != transportPoller)
             {
-                AeronCloseHelper.close(errorHandler, transportPoller::selectNowWithoutProcessing);
+                CloseHelper.close(errorHandler, transportPoller::selectNowWithoutProcessing);
             }
         }
     }
@@ -348,7 +348,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     /**
      * Endpoint has moved to a new address. Handle this.
      *
-     * @param newAddress to send data to.
+     * @param newAddress      to send data to.
      * @param statusIndicator for the channel
      */
     public void updateEndpoint(final InetSocketAddress newAddress, final AtomicCounter statusIndicator)
@@ -376,8 +376,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
             throw new AeronException(
                 "re-resolve endpoint channel error - " + ex.getMessage() +
-                " (at " + ex.getStackTrace()[0].toString() + "): " +
-                udpChannel.originalUriString(), ex);
+                    " (at " + ex.getStackTrace()[0].toString() + "): " +
+                    udpChannel.originalUriString(), ex);
         }
     }
 }

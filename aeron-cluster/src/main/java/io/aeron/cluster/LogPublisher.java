@@ -63,7 +63,7 @@ class LogPublisher
     {
         if (null != publication)
         {
-            AeronCloseHelper.close(errorHandler, publication);
+            CloseHelper.close(errorHandler, publication);
             this.publication = null;
         }
     }

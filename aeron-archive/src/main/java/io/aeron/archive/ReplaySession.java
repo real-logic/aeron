@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
@@ -176,8 +175,8 @@ class ReplaySession implements Session, AutoCloseable
     public void close()
     {
         final CountedErrorHandler errorHandler = controlSession.archiveConductor().context().countedErrorHandler();
-        AeronCloseHelper.close(errorHandler, fileChannel);
-        AeronCloseHelper.close(errorHandler, publication);
+        CloseHelper.close(errorHandler, fileChannel);
+        CloseHelper.close(errorHandler, publication);
     }
 
     public long sessionId()

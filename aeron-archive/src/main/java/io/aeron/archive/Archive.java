@@ -15,7 +15,10 @@
  */
 package io.aeron.archive;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.CommonContext;
+import io.aeron.Counter;
+import io.aeron.Image;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.AeronArchive;
@@ -24,10 +27,7 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
-import org.agrona.Strings;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
@@ -776,7 +776,7 @@ public class Archive implements AutoCloseable
 
             if (deleteArchiveOnStart)
             {
-                AeronCloseHelper.delete(archiveDir, false);
+                IoUtil.delete(archiveDir, false);
             }
 
             if (!archiveDir.exists() && !archiveDir.mkdirs())
@@ -1773,7 +1773,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Delete the archive directory if the {@link #archiveDir()} value is not null.
-         *
+         * <p>
          * Use {@link #deleteDirectory()} instead.
          */
         @Deprecated
@@ -1789,7 +1789,7 @@ public class Archive implements AutoCloseable
         {
             if (null != archiveDir)
             {
-                AeronCloseHelper.delete(archiveDir, false);
+                IoUtil.delete(archiveDir, false);
             }
         }
 
@@ -2069,9 +2069,9 @@ public class Archive implements AutoCloseable
          */
         public void close()
         {
-            AeronCloseHelper.close(countedErrorHandler, catalog);
-            AeronCloseHelper.close(countedErrorHandler, markFile);
-            AeronCloseHelper.close(countedErrorHandler, archiveDirChannel);
+            CloseHelper.close(countedErrorHandler, catalog);
+            CloseHelper.close(countedErrorHandler, markFile);
+            CloseHelper.close(countedErrorHandler, archiveDirChannel);
             archiveDirChannel = null;
 
             CloseHelper.quietClose(errorCounter);
@@ -2093,9 +2093,9 @@ public class Archive implements AutoCloseable
                 this.replayBuffer = null;
                 final UnsafeBuffer recordChecksumBuffer = this.recordChecksumBuffer;
                 this.recordChecksumBuffer = null;
-                AeronCloseHelper.free(dataBuffer);
-                AeronCloseHelper.free(replayBuffer);
-                AeronCloseHelper.free(recordChecksumBuffer);
+                BufferUtil.free(dataBuffer);
+                BufferUtil.free(replayBuffer);
+                BufferUtil.free(recordChecksumBuffer);
             }
         }
     }

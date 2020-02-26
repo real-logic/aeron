@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
-import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.Archive;
@@ -1134,7 +1133,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (deleteDirOnStart)
             {
-                AeronCloseHelper.delete(clusterDir, false);
+                IoUtil.delete(clusterDir, false);
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
@@ -2901,7 +2900,7 @@ public class ConsensusModule implements AutoCloseable
         {
             if (null != clusterDir)
             {
-                AeronCloseHelper.delete(clusterDir, false);
+                IoUtil.delete(clusterDir, false);
             }
         }
 
@@ -2912,8 +2911,8 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
-            AeronCloseHelper.close(countedErrorHandler, recordingLog);
-            AeronCloseHelper.close(countedErrorHandler, markFile);
+            CloseHelper.close(countedErrorHandler, recordingLog);
+            CloseHelper.close(countedErrorHandler, markFile);
             if (errorHandler instanceof AutoCloseable)
             {
                 CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest will be closed
@@ -2925,7 +2924,7 @@ public class ConsensusModule implements AutoCloseable
             }
             else if (!aeron.isClosed())
             {
-                AeronCloseHelper.closeAll(
+                CloseHelper.closeAll(
                     moduleStateCounter,
                     clusterNodeRoleCounter,
                     electionStateCounter,

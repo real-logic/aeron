@@ -15,7 +15,7 @@
  */
 package io.aeron.driver.status;
 
-import io.aeron.AeronCloseHelper;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
@@ -58,6 +58,6 @@ public class SystemCounters implements AutoCloseable
      */
     public void close()
     {
-        AeronCloseHelper.closeAll(counterByDescriptorMap.values());
+        CloseHelper.closeAll(counterByDescriptorMap.values());
     }
 }

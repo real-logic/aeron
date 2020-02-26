@@ -142,7 +142,7 @@ class ClusterSession implements AutoCloseable
 
     void disconnect(final ErrorHandler errorHandler)
     {
-        AeronCloseHelper.close(errorHandler, responsePublication);
+        CloseHelper.close(errorHandler, responsePublication);
         responsePublication = null;
     }
 

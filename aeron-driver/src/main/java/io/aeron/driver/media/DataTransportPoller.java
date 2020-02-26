@@ -15,13 +15,13 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import org.agrona.BufferUtil;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
@@ -61,8 +61,8 @@ public class DataTransportPoller extends UdpTransportPoller
         for (final ChannelAndTransport channelEndpoint : channelAndTransports)
         {
             final ReceiveChannelEndpoint receiveChannelEndpoint = channelEndpoint.channelEndpoint;
-            AeronCloseHelper.close(errorHandler, () -> receiveChannelEndpoint.closeMultiRcvDestination(poller));
-            AeronCloseHelper.close(errorHandler, receiveChannelEndpoint);
+            CloseHelper.close(errorHandler, () -> receiveChannelEndpoint.closeMultiRcvDestination(poller));
+            CloseHelper.close(errorHandler, receiveChannelEndpoint);
         }
 
         super.close();

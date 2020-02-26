@@ -15,11 +15,11 @@
  */
 package io.aeron.driver.ext;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.driver.CongestionControl;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.PerImageIndicator;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -215,7 +215,7 @@ public class CubicCongestionControl implements CongestionControl
 
     public void close()
     {
-        AeronCloseHelper.close(errorHandler, rttIndicator);
-        AeronCloseHelper.close(errorHandler, windowIndicator);
+        CloseHelper.close(errorHandler, rttIndicator);
+        CloseHelper.close(errorHandler, windowIndicator);
     }
 }

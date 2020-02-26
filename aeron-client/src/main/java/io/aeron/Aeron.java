@@ -238,11 +238,11 @@ public class Aeron implements AutoCloseable
             final ErrorHandler errorHandler = ctx.errorHandler();
             if (null != conductorRunner)
             {
-                AeronCloseHelper.close(errorHandler, conductorRunner);
+                CloseHelper.close(errorHandler, conductorRunner);
             }
             else
             {
-                AeronCloseHelper.close(errorHandler, conductorInvoker);
+                CloseHelper.close(errorHandler, conductorInvoker);
             }
         }
     }

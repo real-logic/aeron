@@ -15,12 +15,12 @@
  */
 package io.aeron.driver;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
@@ -176,20 +176,20 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public void close()
     {
-        AeronCloseHelper.close(errorHandler, publisherPos);
-        AeronCloseHelper.close(errorHandler, publisherLimit);
-        AeronCloseHelper.closeAll(errorHandler, subscriberPositions);
+        CloseHelper.close(errorHandler, publisherPos);
+        CloseHelper.close(errorHandler, publisherLimit);
+        CloseHelper.closeAll(errorHandler, subscriberPositions);
 
         for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
         {
             final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
             if (UntetheredSubscription.RESTING == untetheredSubscription.state)
             {
-                AeronCloseHelper.close(errorHandler, untetheredSubscription.position);
+                CloseHelper.close(errorHandler, untetheredSubscription.position);
             }
         }
 
-        AeronCloseHelper.close(errorHandler, rawLog);
+        CloseHelper.close(errorHandler, rawLog);
     }
 
     public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)

@@ -25,6 +25,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ReadableCounter;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -149,9 +150,9 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                     session.disconnect(errorHandler);
                 }
 
-                AeronCloseHelper.close(errorHandler, logAdapter);
-                AeronCloseHelper.close(errorHandler, serviceAdapter);
-                AeronCloseHelper.close(errorHandler, consensusModuleProxy);
+                CloseHelper.close(errorHandler, logAdapter);
+                CloseHelper.close(errorHandler, serviceAdapter);
+                CloseHelper.close(errorHandler, consensusModuleProxy);
             }
         }
 
@@ -176,7 +177,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 if (logAdapter.isDone())
                 {
                     checkPosition(logAdapter.position(), activeLogEvent);
-                    AeronCloseHelper.close(ctx.countedErrorHandler(), logAdapter);
+                    CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
                     logAdapter = null;
                 }
             }
@@ -334,7 +335,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 throw new ClusterException("existing position " + existingPosition + " new position " + logPosition);
             }
 
-            AeronCloseHelper.close(ctx.countedErrorHandler(), logAdapter);
+            CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
             logAdapter = null;
         }
 

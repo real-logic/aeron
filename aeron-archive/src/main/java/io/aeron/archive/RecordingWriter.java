@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.Image;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.ArchiveException;
@@ -153,7 +152,7 @@ class RecordingWriter implements BlockHandler, AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            AeronCloseHelper.close(countedErrorHandler, recordingFileChannel);
+            CloseHelper.close(countedErrorHandler, recordingFileChannel);
         }
     }
 

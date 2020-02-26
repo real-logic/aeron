@@ -15,9 +15,9 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.driver.DriverConductorProxy;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
@@ -49,10 +49,10 @@ final class MultiRcvDestination
     {
         for (final ReceiveDestinationTransport transport : transports)
         {
-            AeronCloseHelper.close(errorHandler, transport);
+            CloseHelper.close(errorHandler, transport);
             if (null != poller)
             {
-                AeronCloseHelper.close(errorHandler, poller::selectNowWithoutProcessing);
+                CloseHelper.close(errorHandler, poller::selectNowWithoutProcessing);
             }
         }
     }

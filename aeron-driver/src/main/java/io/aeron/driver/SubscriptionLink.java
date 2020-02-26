@@ -15,10 +15,10 @@
  */
 package io.aeron.driver;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.status.ReadablePosition;
 
@@ -167,7 +167,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         {
             final Subscribable subscribable = entry.getKey();
             final ReadablePosition position = entry.getValue();
-            AeronCloseHelper.close(errorHandler, () -> subscribable.removeSubscriber(this, position));
+            CloseHelper.close(errorHandler, () -> subscribable.removeSubscriber(this, position));
         }
     }
 

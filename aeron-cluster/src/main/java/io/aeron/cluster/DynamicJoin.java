@@ -110,10 +110,10 @@ class DynamicJoin implements AutoCloseable
     public void close()
     {
         final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();
-        AeronCloseHelper.close(countedErrorHandler, memberStatusPublication);
-        AeronCloseHelper.close(countedErrorHandler, snapshotRetrieveSubscription);
-        AeronCloseHelper.close(countedErrorHandler, leaderArchive);
-        AeronCloseHelper.close(countedErrorHandler, leaderArchiveAsyncConnect);
+        CloseHelper.close(countedErrorHandler, memberStatusPublication);
+        CloseHelper.close(countedErrorHandler, snapshotRetrieveSubscription);
+        CloseHelper.close(countedErrorHandler, leaderArchive);
+        CloseHelper.close(countedErrorHandler, leaderArchiveAsyncConnect);
     }
 
     ClusterMember[] clusterMembers()

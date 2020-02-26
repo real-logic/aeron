@@ -216,16 +216,16 @@ class ConsensusModuleAgent implements Agent
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             for (final ClusterSession session : sessionByIdMap.values())
             {
-                AeronCloseHelper.close(errorHandler, session);
+                CloseHelper.close(errorHandler, session);
             }
 
-            AeronCloseHelper.close(errorHandler, ingressAdapter);
+            CloseHelper.close(errorHandler, ingressAdapter);
             logPublisher.disconnect(errorHandler);
             ClusterMember.closeMemberPublications(errorHandler, clusterMembers);
-            AeronCloseHelper.close(errorHandler, memberStatusAdapter);
-            AeronCloseHelper.close(errorHandler, serviceProxy);
-            AeronCloseHelper.close(errorHandler, consensusModuleAdapter);
-            AeronCloseHelper.close(errorHandler, archive);
+            CloseHelper.close(errorHandler, memberStatusAdapter);
+            CloseHelper.close(errorHandler, serviceProxy);
+            CloseHelper.close(errorHandler, consensusModuleAdapter);
+            CloseHelper.close(errorHandler, archive);
         }
 
         ctx.close();
@@ -957,13 +957,13 @@ class ConsensusModuleAgent implements Agent
             if (session.openedLogPosition() > logPosition)
             {
                 i.remove();
-                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+                CloseHelper.close(ctx.countedErrorHandler(), session);
             }
         }
 
         for (final ClusterSession session : pendingSessions)
         {
-            AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+            CloseHelper.close(ctx.countedErrorHandler(), session);
         }
 
         pendingSessions.clear();
@@ -2075,7 +2075,7 @@ class ConsensusModuleAgent implements Agent
                             ClusterMember.encodeAsString(clusterMembers)))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                            AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+                            CloseHelper.close(ctx.countedErrorHandler(), session);
                         }
                     }
                 }
@@ -2097,7 +2097,7 @@ class ConsensusModuleAgent implements Agent
             else if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+                CloseHelper.close(ctx.countedErrorHandler(), session);
                 ctx.timedOutClientCounter().incrementOrdered();
             }
         }
@@ -2119,7 +2119,7 @@ class ConsensusModuleAgent implements Agent
                 nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
-                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+                CloseHelper.close(ctx.countedErrorHandler(), session);
                 workCount++;
             }
         }
@@ -2141,7 +2141,7 @@ class ConsensusModuleAgent implements Agent
                 nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
-                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+                CloseHelper.close(ctx.countedErrorHandler(), session);
                 workCount++;
             }
         }
@@ -2237,7 +2237,7 @@ class ConsensusModuleAgent implements Agent
                 else
                 {
                     i.remove();
-                    AeronCloseHelper.close(ctx.countedErrorHandler(), session);
+                    CloseHelper.close(ctx.countedErrorHandler(), session);
                 }
 
                 workCount += 1;
@@ -2518,7 +2518,7 @@ class ConsensusModuleAgent implements Agent
 
     private void enterElection(final long nowNs)
     {
-        AeronCloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
+        CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
 
         election = new Election(
             false,
@@ -2748,7 +2748,7 @@ class ConsensusModuleAgent implements Agent
     private void closeExistingLog()
     {
         logPublisher.disconnect(ctx.countedErrorHandler());
-        AeronCloseHelper.close(ctx.countedErrorHandler(), logAdapter);
+        CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
         logAdapter = null;
     }
 

@@ -15,7 +15,7 @@
  */
 package io.aeron.archive;
 
-import io.aeron.AeronCloseHelper;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -64,8 +64,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected void closeSessionWorkers()
     {
-        AeronCloseHelper.close(errorHandler, recorderAgentRunner);
-        AeronCloseHelper.close(errorHandler, replayerAgentRunner);
+        CloseHelper.close(errorHandler, recorderAgentRunner);
+        CloseHelper.close(errorHandler, replayerAgentRunner);
 
         while (processCloseQueue() > 0 || !closeQueue.isEmpty())
         {

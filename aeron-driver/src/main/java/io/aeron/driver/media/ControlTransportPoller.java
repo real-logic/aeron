@@ -15,13 +15,13 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BufferUtil;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
@@ -57,7 +57,7 @@ public class ControlTransportPoller extends UdpTransportPoller
 
     public void close()
     {
-        AeronCloseHelper.closeAll(errorHandler, transports);
+        CloseHelper.closeAll(errorHandler, transports);
 
         super.close();
     }

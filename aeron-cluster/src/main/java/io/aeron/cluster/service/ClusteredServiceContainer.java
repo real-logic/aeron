@@ -16,7 +16,6 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
-import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
@@ -1400,7 +1399,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             if (null != clusterDir)
             {
-                AeronCloseHelper.delete(clusterDir, false);
+                IoUtil.delete(clusterDir, false);
             }
         }
 
@@ -1412,7 +1411,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public void close()
         {
             final ErrorHandler errorHandler = countedErrorHandler();
-            AeronCloseHelper.close(errorHandler, markFile);
+            CloseHelper.close(errorHandler, markFile);
 
             if (ownsAeronClient)
             {

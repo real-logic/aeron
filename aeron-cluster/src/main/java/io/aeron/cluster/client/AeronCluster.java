@@ -248,8 +248,8 @@ public final class AeronCluster implements AutoCloseable
         if (!ctx.ownsAeronClient())
         {
             final ErrorHandler errorHandler = ctx.errorHandler();
-            AeronCloseHelper.close(errorHandler, subscription);
-            AeronCloseHelper.close(errorHandler, publication);
+            CloseHelper.close(errorHandler, subscription);
+            CloseHelper.close(errorHandler, publication);
         }
 
         ctx.close();
@@ -1428,11 +1428,11 @@ public final class AeronCluster implements AutoCloseable
             if (5 != step)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
-                AeronCloseHelper.close(errorHandler, ingressPublication);
-                AeronCloseHelper.close(errorHandler, egressSubscription);
+                CloseHelper.close(errorHandler, ingressPublication);
+                CloseHelper.close(errorHandler, egressSubscription);
                 for (final MemberEndpoint memberEndpoint : endpointByMemberIdMap.values())
                 {
-                    AeronCloseHelper.close(errorHandler, memberEndpoint::disconnect);
+                    CloseHelper.close(errorHandler, memberEndpoint::disconnect);
                 }
 
                 ctx.close();

@@ -15,10 +15,10 @@
  */
 package io.aeron.archive;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.archive.checksum.Checksum;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -101,8 +101,8 @@ class RecordingSession implements Session
 
     public void close()
     {
-        AeronCloseHelper.close(countedErrorHandler, recordingWriter);
-        AeronCloseHelper.close(countedErrorHandler, position);
+        CloseHelper.close(countedErrorHandler, recordingWriter);
+        CloseHelper.close(countedErrorHandler, position);
     }
 
     public void abortClose()

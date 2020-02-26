@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -485,7 +486,7 @@ public final class ClusterMember
      */
     public void closePublication(final ErrorHandler errorHandler)
     {
-        AeronCloseHelper.close(errorHandler, publication);
+        CloseHelper.close(errorHandler, publication);
         publication = null;
     }
 
@@ -627,7 +628,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            AeronCloseHelper.close(errorHandler, member.publication);
+            CloseHelper.close(errorHandler, member.publication);
         }
     }
 

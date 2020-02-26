@@ -211,7 +211,7 @@ public class ClientSession
 
     void disconnect(final ErrorHandler errorHandler)
     {
-        AeronCloseHelper.close(errorHandler, responsePublication);
+        CloseHelper.close(errorHandler, responsePublication);
         responsePublication = null;
     }
 }

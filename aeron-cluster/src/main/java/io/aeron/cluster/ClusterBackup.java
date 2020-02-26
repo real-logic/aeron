@@ -25,6 +25,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -215,8 +216,8 @@ public final class ClusterBackup implements AutoCloseable
     public void close()
     {
         final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();
-        AeronCloseHelper.close(countedErrorHandler, clusterBackupAgentRunner);
-        AeronCloseHelper.close(countedErrorHandler, clusterBackupAgentInvoker);
+        CloseHelper.close(countedErrorHandler, clusterBackupAgentRunner);
+        CloseHelper.close(countedErrorHandler, clusterBackupAgentInvoker);
     }
 
     /**
@@ -391,7 +392,7 @@ public final class ClusterBackup implements AutoCloseable
 
             if (deleteDirOnStart)
             {
-                AeronCloseHelper.delete(clusterDir, false);
+                IoUtil.delete(clusterDir, false);
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
@@ -1271,7 +1272,7 @@ public final class ClusterBackup implements AutoCloseable
         {
             if (null != clusterDir)
             {
-                AeronCloseHelper.delete(clusterDir, false);
+                IoUtil.delete(clusterDir, false);
             }
         }
 
@@ -1284,15 +1285,15 @@ public final class ClusterBackup implements AutoCloseable
         {
             if (ownsAeronClient)
             {
-                AeronCloseHelper.close(countedErrorHandler, aeron);
+                CloseHelper.close(countedErrorHandler, aeron);
             }
             else
             {
-                AeronCloseHelper.close(countedErrorHandler, stateCounter);
-                AeronCloseHelper.close(countedErrorHandler, liveLogPositionCounter);
+                CloseHelper.close(countedErrorHandler, stateCounter);
+                CloseHelper.close(countedErrorHandler, liveLogPositionCounter);
             }
 
-            AeronCloseHelper.close(countedErrorHandler, markFile);
+            CloseHelper.close(countedErrorHandler, markFile);
         }
 
         private void concludeMarkFile()

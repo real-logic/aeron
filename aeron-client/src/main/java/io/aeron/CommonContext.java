@@ -559,7 +559,7 @@ public class CommonContext implements Cloneable
      */
     public void deleteAeronDirectory()
     {
-        AeronCloseHelper.delete(aeronDirectory, false);
+        IoUtil.delete(aeronDirectory, false);
     }
 
     /**

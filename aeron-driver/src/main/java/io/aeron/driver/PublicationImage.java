@@ -16,7 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.Aeron;
-import io.aeron.AeronCloseHelper;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.ImageConnection;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -27,6 +26,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
@@ -244,21 +244,21 @@ public class PublicationImage
      */
     public void close()
     {
-        AeronCloseHelper.close(errorHandler, hwmPosition);
-        AeronCloseHelper.close(errorHandler, rebuildPosition);
-        AeronCloseHelper.closeAll(errorHandler, subscriberPositions);
+        CloseHelper.close(errorHandler, hwmPosition);
+        CloseHelper.close(errorHandler, rebuildPosition);
+        CloseHelper.closeAll(errorHandler, subscriberPositions);
 
         for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
         {
             final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
             if (UntetheredSubscription.RESTING == untetheredSubscription.state)
             {
-                AeronCloseHelper.close(errorHandler, untetheredSubscription.position);
+                CloseHelper.close(errorHandler, untetheredSubscription.position);
             }
         }
 
-        AeronCloseHelper.close(errorHandler, congestionControl);
-        AeronCloseHelper.close(errorHandler, rawLog);
+        CloseHelper.close(errorHandler, congestionControl);
+        CloseHelper.close(errorHandler, rawLog);
     }
 
     /**

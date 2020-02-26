@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.FileStoreLogFactory;
@@ -541,7 +540,7 @@ public final class MediaDriver implements AutoCloseable
             {
                 isClosed = true;
 
-                AeronCloseHelper.close(errorHandler, logFactory);
+                CloseHelper.close(errorHandler, logFactory);
 
                 systemCounters.get(ERRORS).close();
                 if (errorHandler instanceof AutoCloseable)

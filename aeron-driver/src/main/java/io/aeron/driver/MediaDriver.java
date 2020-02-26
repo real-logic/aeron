@@ -461,7 +461,7 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
         private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
 
-        private Long groupTag = Configuration.groupTag();
+        private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
         private int flowControlReceiverGroupMinSize = Configuration.flowControlReceiverGroupMinSize();
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
@@ -2328,7 +2328,7 @@ public final class MediaDriver implements AutoCloseable
          * Application specific feedback used to identify a receiver group when using a
          * {@link TaggedMulticastFlowControl} strategy which is added to Status Messages (SMs).
          * <p>
-         * Replaced by {@link #groupTag()}.
+         * Replaced by {@link #receiverGroupTag()}.
          *
          * @return Application specific feedback used to identify receiver group for flow control.
          * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
@@ -2343,7 +2343,7 @@ public final class MediaDriver implements AutoCloseable
          * Application specific feedback used to identify a receiver group when using a
          * {@link TaggedMulticastFlowControl} strategy which is added to Status Messages (SMs).
          * <p>
-         * Replaced by {@link #groupTag(Long)}.
+         * Replaced by {@link #receiverGroupTag(Long)}.
          *
          * @param asfBytes for identifying a receiver group.
          * @return this for a fluent API.
@@ -2735,11 +2735,11 @@ public final class MediaDriver implements AutoCloseable
          * Get the group tag (gtag) to be sent in Status Messages from the Receiver.
          *
          * @return group tag value or null if not set.
-         * @see Configuration#GROUP_TAG_PROP_NAME
+         * @see Configuration#RECEIVER_GROUP_TAG_PROP_NAME
          */
-        public Long groupTag()
+        public Long receiverGroupTag()
         {
-            return groupTag;
+            return receiverGroupTag;
         }
 
         /**
@@ -2747,11 +2747,11 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param groupTag value to sent in Status Messages from the receiver or null if not set.
          * @return this for fluent API.
-         * @see Configuration#GROUP_TAG_PROP_NAME
+         * @see Configuration#RECEIVER_GROUP_TAG_PROP_NAME
          */
-        public Context groupTag(final Long groupTag)
+        public Context receiverGroupTag(final Long groupTag)
         {
-            this.groupTag = groupTag;
+            this.receiverGroupTag = groupTag;
             return this;
         }
 
@@ -3009,7 +3009,7 @@ public final class MediaDriver implements AutoCloseable
                 applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
             }
 
-            if (null == groupTag)
+            if (null == receiverGroupTag)
             {
                 if (applicationSpecificFeedback.length > 0)
                 {
@@ -3021,7 +3021,7 @@ public final class MediaDriver implements AutoCloseable
                     }
 
                     final UnsafeBuffer buffer = new UnsafeBuffer(applicationSpecificFeedback);
-                    groupTag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+                    receiverGroupTag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
                 }
             }
 
@@ -3312,7 +3312,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    unicastFlowControlSupplier=" + unicastFlowControlSupplier +
                 "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
                 "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
-                "\n    groupTag=" + groupTag +
+                "\n    groupTag=" + receiverGroupTag +
                 "\n    flowControlReceiverTimeoutNs=" + flowControlReceiverTimeoutNs +
                 "\n    flowControlReceiverGroupMinSize=" + flowControlReceiverGroupMinSize +
                 "\n    flowControlGroupTag=" + flowControlGroupTag +

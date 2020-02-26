@@ -30,7 +30,7 @@ public class PreferredMulticastFlowControl extends TaggedMulticastFlowControl
     /**
      * Property name used to set Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.
      * <p>
-     * Replaced by {@link Configuration#GROUP_TAG_PROP_NAME}.
+     * Replaced by {@link Configuration#RECEIVER_GROUP_TAG_PROP_NAME}.
      */
     public static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
 

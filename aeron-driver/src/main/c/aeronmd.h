@@ -502,7 +502,7 @@ int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_c
 /**
  * Default receiver tag to be sent on status messages from channel to handle tagged flow control.
  */
-#define AERON_SM_GROUP_TAG_ENV_VAR "AERON_SM_GTAG"
+#define AERON_RECEIVER_GROUP_TAG_ENV_VAR "AERON_RECEIVER_GTAG"
 
 int aeron_driver_context_set_sm_group_tag(aeron_driver_context_t *context, bool is_present, int64_t value);
 bool aeron_driver_context_get_sm_group_tag_is_present(aeron_driver_context_t *context);

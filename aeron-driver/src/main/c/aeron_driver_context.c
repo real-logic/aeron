@@ -853,13 +853,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         INT32_MIN,
         INT32_MAX);
 
-    const char *group_tag_str = getenv(AERON_SM_GROUP_TAG_ENV_VAR);
+    const char *group_tag_str = getenv(AERON_RECEIVER_GROUP_TAG_ENV_VAR);
     if (NULL != group_tag_str)
     {
         _context->sm_group_tag.is_present = true;
         _context->sm_group_tag.value = aeron_config_parse_int64(
-            AERON_SM_GROUP_TAG_ENV_VAR,
-            getenv(AERON_SM_GROUP_TAG_ENV_VAR),
+            AERON_RECEIVER_GROUP_TAG_ENV_VAR,
+            getenv(AERON_RECEIVER_GROUP_TAG_ENV_VAR),
             _context->sm_group_tag.value,
             INT64_MIN,
             INT64_MAX);

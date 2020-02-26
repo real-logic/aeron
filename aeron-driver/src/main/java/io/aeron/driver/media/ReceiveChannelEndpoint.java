@@ -97,7 +97,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         final String groupTagStr = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
         groupTag = null == groupTagStr ?
-            context.groupTag() :
+            context.receiverGroupTag() :
             Long.valueOf(AsciiEncoding.parseLongAscii(groupTagStr, 0, groupTagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?

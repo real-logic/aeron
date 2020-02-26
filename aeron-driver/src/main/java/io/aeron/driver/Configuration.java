@@ -489,7 +489,7 @@ public class Configuration
     /**
      * Property name for Application Specific Feedback added to Status Messages by the driver for flow control.
      * <p>
-     * Replaced by {@link #GROUP_TAG_PROP_NAME}.
+     * Replaced by {@link #RECEIVER_GROUP_TAG_PROP_NAME}.
      */
     @Deprecated
     public static final String SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME =
@@ -639,7 +639,7 @@ public class Configuration
     /**
      * Property name for default group tag (gtag) to send in all Status Messages.
      */
-    public static final String GROUP_TAG_PROP_NAME = "aeron.sm.gtag";
+    public static final String RECEIVER_GROUP_TAG_PROP_NAME = "aeron.receiver.gtag";
 
     /**
      * Property name for default group tag (gtag) used by the tagged flow control strategy to group receivers.
@@ -797,7 +797,7 @@ public class Configuration
 
     public static Long groupTag()
     {
-        return getLong(GROUP_TAG_PROP_NAME, null);
+        return getLong(RECEIVER_GROUP_TAG_PROP_NAME, null);
     }
 
     @SuppressWarnings("deprecation")

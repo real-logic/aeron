@@ -163,7 +163,7 @@ public class TaggedFlowControlSystemTest
         }
         if (null != groupTag)
         {
-            driverBContext.groupTag(groupTag);
+            driverBContext.receiverGroupTag(groupTag);
         }
         driverAContext.flowControlReceiverGroupMinSize(1);
 

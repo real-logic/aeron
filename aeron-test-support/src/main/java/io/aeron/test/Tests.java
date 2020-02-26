@@ -82,21 +82,22 @@ public class Tests
     {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("*** unexpected interrupt - test likely to have timed out%n");
+        sb.append("*** unexpected interrupt");
 
         if (null != message)
         {
-            sb.append("  ").append(message).append("%n");
+            sb.append(" - ").append(message);
         }
+
+        sb.append(System.lineSeparator());
 
         final StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
         for (int i = 1, length = stackTraceElements.length; i < length; i++)
         {
-            sb.append(stackTraceElements[i]).append("%n");
+            sb.append(stackTraceElements[i]).append(System.lineSeparator());
         }
 
-        System.out.format(sb.toString());
-        System.out.flush();
+        System.out.println(sb.toString());
     }
 
     /**

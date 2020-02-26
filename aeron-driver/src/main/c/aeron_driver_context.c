@@ -363,9 +363,9 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_SOCKET_SO_RCVBUF_DEFAULT (128 * 1024)
 #define AERON_SOCKET_SO_SNDBUF_DEFAULT (0)
 #define AERON_SOCKET_MULTICAST_TTL_DEFAULT (0)
-#define AERON_SM_RECEIVER_TAG_IS_PRESENT_DEFAULT false
-#define AERON_SM_RECEIVER_TAG_VALUE_DEFAULT (-1)
-#define AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_DEFAULT (-1)
+#define AERON_SM_GROUP_TAG_IS_PRESENT_DEFAULT false
+#define AERON_SM_GROUP_TAG_VALUE_DEFAULT (-1)
+#define AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT (0)
 #define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (2 * 1000 * 1000 * 1000LL)
 #define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
@@ -506,9 +506,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->socket_rcvbuf = AERON_SOCKET_SO_RCVBUF_DEFAULT;
     _context->socket_sndbuf = AERON_SOCKET_SO_SNDBUF_DEFAULT;
     _context->multicast_ttl = AERON_SOCKET_MULTICAST_TTL_DEFAULT;
-    _context->sm_receiver_tag.is_present = AERON_SM_RECEIVER_TAG_IS_PRESENT_DEFAULT;
-    _context->sm_receiver_tag.value = AERON_SM_RECEIVER_TAG_VALUE_DEFAULT;
-    _context->flow_control.group_receiver_tag = AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_DEFAULT;
+    _context->sm_group_tag.is_present = AERON_SM_GROUP_TAG_IS_PRESENT_DEFAULT;
+    _context->sm_group_tag.value = AERON_SM_GROUP_TAG_VALUE_DEFAULT;
+    _context->flow_control.group_receiver_tag = AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
     _context->flow_control.receiver_group_min_size = AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT;
     _context->flow_control.receiver_timeout_ns = AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT;
     _context->send_to_sm_poll_ratio = AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
@@ -854,21 +854,21 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         INT32_MIN,
         INT32_MAX);
 
-    const char *receiver_tag_str = getenv(AERON_SM_RECEIVER_TAG_ENV_VAR);
+    const char *receiver_tag_str = getenv(AERON_SM_GROUP_TAG_ENV_VAR);
     if (NULL != receiver_tag_str)
     {
-        _context->sm_receiver_tag.is_present = true;
-        _context->sm_receiver_tag.value = aeron_config_parse_int64(
-            AERON_SM_RECEIVER_TAG_ENV_VAR,
-            getenv(AERON_SM_RECEIVER_TAG_ENV_VAR),
-            _context->sm_receiver_tag.value,
+        _context->sm_group_tag.is_present = true;
+        _context->sm_group_tag.value = aeron_config_parse_int64(
+            AERON_SM_GROUP_TAG_ENV_VAR,
+            getenv(AERON_SM_GROUP_TAG_ENV_VAR),
+            _context->sm_group_tag.value,
             INT64_MIN,
             INT64_MAX);
     }
 
     _context->flow_control.group_receiver_tag = aeron_config_parse_int64(
-        AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR,
-        getenv(AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR),
+        AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR,
+        getenv(AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR),
         _context->flow_control.group_receiver_tag,
         INT64_MIN,
         INT64_MAX);
@@ -1950,7 +1950,7 @@ uint64_t aeron_driver_context_get_flow_control_receiver_timeout_ns(aeron_driver_
         context->flow_control.receiver_timeout_ns : AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT;
 }
 
-int aeron_driver_context_set_flow_control_group_receiver_tag(aeron_driver_context_t *context, int64_t value)
+int aeron_driver_context_set_flow_control_group_tag(aeron_driver_context_t *context, int64_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -1958,9 +1958,9 @@ int aeron_driver_context_set_flow_control_group_receiver_tag(aeron_driver_contex
     return 0;
 }
 
-int64_t aeron_driver_context_get_flow_control_group_receiver_tag(aeron_driver_context_t *context)
+int64_t aeron_driver_context_get_flow_control_group_tag(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->flow_control.group_receiver_tag : AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_DEFAULT;
+    return NULL != context ? context->flow_control.group_receiver_tag : AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
 }
 
 int aeron_driver_context_set_flow_control_group_required_size(aeron_driver_context_t *context, int32_t value)
@@ -1977,23 +1977,23 @@ int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_c
         AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT;
 }
 
-int aeron_driver_context_set_sm_receiver_tag(aeron_driver_context_t *context, bool is_present, int64_t value)
+int aeron_driver_context_set_sm_group_tag(aeron_driver_context_t *context, bool is_present, int64_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    context->sm_receiver_tag.is_present = is_present;
-    context->sm_receiver_tag.value = value;
+    context->sm_group_tag.is_present = is_present;
+    context->sm_group_tag.value = value;
     return 0;
 }
 
-bool aeron_driver_context_get_sm_receiver_tag_is_present(aeron_driver_context_t *context)
+bool aeron_driver_context_get_sm_group_tag_is_present(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->sm_receiver_tag.is_present : AERON_SM_RECEIVER_TAG_IS_PRESENT_DEFAULT;
+    return NULL != context ? context->sm_group_tag.is_present : AERON_SM_GROUP_TAG_IS_PRESENT_DEFAULT;
 }
 
-int64_t aeron_driver_context_get_sm_receiver_tag_value(aeron_driver_context_t *context)
+int64_t aeron_driver_context_get_sm_group_tag_value(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->sm_receiver_tag.value : AERON_SM_RECEIVER_TAG_VALUE_DEFAULT;
+    return NULL != context ? context->sm_group_tag.value : AERON_SM_GROUP_TAG_VALUE_DEFAULT;
 }
 
 int aeron_driver_context_set_driver_termination_validator(

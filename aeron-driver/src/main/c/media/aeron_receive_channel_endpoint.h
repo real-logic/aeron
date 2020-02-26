@@ -62,7 +62,7 @@ typedef struct aeron_receive_channel_endpoint_stct
         bool is_present;
         int64_t value;
     }
-    receiver_tag;
+    group_tag;
 
     int64_t *short_sends_counter;
     int64_t *possible_ttl_asymmetry_counter;

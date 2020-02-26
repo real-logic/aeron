@@ -122,12 +122,12 @@ typedef struct aeron_driver_context_stct
         bool is_present;
         int64_t value;
     }
-    sm_receiver_tag;
+    sm_group_tag;
     struct
     {
         int32_t receiver_group_min_size;                     /* aeron.flow.control.receiver.group.min.size = 0 */
         uint64_t receiver_timeout_ns;                        /* aeron.flow.control.receiver.timeout = 2s */
-        int64_t group_receiver_tag;                          /* aeron.flow.control.group.rtag = -1 */
+        int64_t group_receiver_tag;                          /* aeron.flow.control.gtag = -1 */
     }
     flow_control;
 

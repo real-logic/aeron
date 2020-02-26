@@ -67,7 +67,7 @@ typedef struct aeron_flow_control_tagged_options_stct
         bool is_present;
         int64_t value;
     }
-    receiver_tag;
+    group_tag;
     struct
     {
         bool is_present;

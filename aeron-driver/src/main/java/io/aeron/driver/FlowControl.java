@@ -52,11 +52,7 @@ public interface FlowControl
      * @param initialTermId    at which the stream started.
      * @param termBufferLength to use as the length of each term buffer.
      */
-    void initialize(
-        MediaDriver.Context context,
-        UdpChannel udpChannel,
-        int initialTermId,
-        int termBufferLength);
+    void initialize(MediaDriver.Context context, UdpChannel udpChannel, int initialTermId, int termBufferLength);
 
     /**
      * Perform any maintenance needed by the flow control strategy and return current sender limit position.

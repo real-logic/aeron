@@ -17,7 +17,7 @@
 #define AERON_COMMAND_CONNECTION_READY_FLYWEIGHT_H
 
 #include <cstdint>
-#include <stddef.h>
+#include <cstddef>
 #include <util/BitUtil.h>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
@@ -177,7 +177,7 @@ private:
     inline util::index_t sourceIdentityOffset() const
     {
         const util::index_t offset = logFileNameOffset();
-        const util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+        const auto alignment = static_cast<util::index_t>(sizeof(std::int32_t));
         const util::index_t logFileNameLength = aeron::util::BitUtil::align(stringGetLength(offset), alignment);
 
         return offset + sizeof(std::int32_t) + logFileNameLength;

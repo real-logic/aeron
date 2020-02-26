@@ -28,7 +28,7 @@ namespace aeron { namespace concurrent { namespace broadcast {
 class BroadcastReceiver
 {
 public:
-    BroadcastReceiver(AtomicBuffer& buffer) :
+    explicit BroadcastReceiver(AtomicBuffer& buffer) :
         m_buffer(buffer),
         m_capacity(buffer.capacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),

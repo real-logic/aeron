@@ -19,7 +19,7 @@
 
 #include <cstdint>
 #include <string>
-#include <stddef.h>
+#include <cstddef>
 #include <command/Flyweight.h>
 #include <concurrent/AtomicBuffer.h>
 #include <util/Index.h>

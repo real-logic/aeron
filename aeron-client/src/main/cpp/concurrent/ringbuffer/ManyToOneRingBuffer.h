@@ -17,7 +17,7 @@
 #ifndef AERON_RING_BUFFER_MANY_TO_ONE_H
 #define AERON_RING_BUFFER_MANY_TO_ONE_H
 
-#include <limits.h>
+#include <climits>
 #include <functional>
 #include <algorithm>
 #include <util/Index.h>
@@ -32,7 +32,7 @@ namespace aeron { namespace concurrent { namespace ringbuffer {
 class ManyToOneRingBuffer
 {
 public:
-    ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer) :
+    explicit ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer) :
         m_buffer(buffer)
     {
         m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
@@ -83,7 +83,7 @@ public:
     int read(const handler_t& handler, int messageCountLimit)
     {
         const std::int64_t head = m_buffer.getInt64(m_headPositionIndex);
-        const std::int32_t headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
+        const auto headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
         const std::int32_t contiguousBlockLength = m_capacity - headIndex;
         int messagesRead = 0;
         int bytesRead = 0;
@@ -189,8 +189,8 @@ public:
         }
 
         const util::index_t mask = m_capacity - 1;
-        const std::int32_t consumerIndex = static_cast<std::int32_t>(headPosition & mask);
-        const std::int32_t producerIndex = static_cast<std::int32_t>(tailPosition & mask);
+        const auto consumerIndex = static_cast<std::int32_t>(headPosition & mask);
+        const auto producerIndex = static_cast<std::int32_t>(tailPosition & mask);
 
         bool unblocked = false;
         std::int32_t length = m_buffer.getInt32Volatile(consumerIndex);
@@ -273,7 +273,7 @@ private:
 
             if (requiredCapacity > toBufferEndLength)
             {
-                std::int32_t headIndex = static_cast<std::int32_t>(head & mask);
+                auto headIndex = static_cast<std::int32_t>(head & mask);
 
                 if (requiredCapacity > headIndex)
                 {

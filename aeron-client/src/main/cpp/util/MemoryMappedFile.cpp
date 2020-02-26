@@ -22,12 +22,11 @@
 #endif
 
 #include <string>
-#include <string.h>
+#include <cstring>
 
 #include "MemoryMappedFile.h"
 #include "Exceptions.h"
 #include "ScopeUtils.h"
-#include "StringUtil.h"
 
 namespace aeron { namespace util {
 
@@ -339,7 +338,7 @@ size_t MemoryMappedFile::getPageSize() noexcept
 
 std::int64_t MemoryMappedFile::getFileSize(const char *filename)
 {
-    struct stat statInfo;
+    struct stat statInfo{};
 
     if (::stat(filename, &statInfo) < 0)
     {

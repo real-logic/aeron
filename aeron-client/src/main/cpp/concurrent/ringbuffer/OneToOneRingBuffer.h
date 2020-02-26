@@ -17,7 +17,7 @@
 #ifndef AERON_RING_BUFFER_ONE_TO_ONE_H
 #define AERON_RING_BUFFER_ONE_TO_ONE_H
 
-#include <limits.h>
+#include <climits>
 #include <functional>
 #include <algorithm>
 #include <util/Index.h>
@@ -32,7 +32,7 @@ namespace aeron { namespace concurrent { namespace ringbuffer {
 class OneToOneRingBuffer
 {
 public:
-    OneToOneRingBuffer(concurrent::AtomicBuffer &buffer) :
+    explicit OneToOneRingBuffer(concurrent::AtomicBuffer &buffer) :
         m_buffer(buffer)
     {
         m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
@@ -82,12 +82,12 @@ public:
         }
 
         util::index_t padding = 0;
-        util::index_t recordIndex = static_cast<util::index_t>(tail & mask);
+        auto recordIndex = static_cast<util::index_t>(tail & mask);
         const util::index_t toBufferEndLength = m_capacity - recordIndex;
 
         if (requiredCapacity > toBufferEndLength)
         {
-            std::int32_t headIndex = static_cast<std::int32_t>(head & mask);
+            auto headIndex = static_cast<std::int32_t>(head & mask);
 
             if (requiredCapacity > headIndex)
             {
@@ -122,7 +122,7 @@ public:
     int read(const handler_t &handler, int messageCountLimit)
     {
         const std::int64_t head = m_buffer.getInt64(m_headPositionIndex);
-        const std::int32_t headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
+        const auto headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
         const std::int32_t contiguousBlockLength = m_capacity - headIndex;
         int messagesRead = 0;
         int bytesRead = 0;

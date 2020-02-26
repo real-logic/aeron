@@ -97,7 +97,7 @@ public:
         }
         else
         {
-            const std::int32_t frameOffset = static_cast<std::int32_t>(termOffset);
+            const auto frameOffset = static_cast<std::int32_t>(termOffset);
             header.write(m_termBuffer, frameOffset, frameLength, termId);
             bufferClaim.wrap(m_termBuffer, frameOffset, frameLength);
         }
@@ -130,7 +130,7 @@ public:
         }
         else
         {
-            const std::int32_t frameOffset = static_cast<std::int32_t>(termOffset);
+            const auto frameOffset = static_cast<std::int32_t>(termOffset);
             header.write(m_termBuffer, frameOffset, frameLength, termId);
             m_termBuffer.putBytes(frameOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
 
@@ -167,7 +167,7 @@ public:
         }
         else
         {
-            const std::int32_t frameOffset = static_cast<std::int32_t>(termOffset);
+            const auto frameOffset = static_cast<std::int32_t>(termOffset);
             header.write(m_termBuffer, frameOffset, frameLength, termId);
 
             std::int32_t offset = frameOffset + DataFrameHeader::LENGTH;
@@ -220,7 +220,7 @@ public:
         {
             std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
             util::index_t remaining = length;
-            std::int32_t frameOffset = static_cast<std::int32_t>(termOffset);
+            auto frameOffset = static_cast<std::int32_t>(termOffset);
 
             do
             {
@@ -289,7 +289,7 @@ public:
         {
             std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
             util::index_t remaining = length;
-            std::int32_t frameOffset = static_cast<std::int32_t>(termOffset);
+            auto frameOffset = static_cast<std::int32_t>(termOffset);
             util::index_t currentBufferOffset = 0;
 
             do
@@ -367,7 +367,7 @@ private:
     {
         if (termOffset < termLength)
         {
-            const std::int32_t offset = static_cast<std::int32_t>(termOffset);
+            const auto offset = static_cast<std::int32_t>(termOffset);
             const std::int32_t paddingLength = termLength - offset;
             header.write(termBuffer, offset, paddingLength, termId);
             FrameDescriptor::frameType(termBuffer, offset, DataFrameHeader::HDR_TYPE_PAD);

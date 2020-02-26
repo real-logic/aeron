@@ -17,7 +17,7 @@
 #ifndef AERON_CONCURRENT_DATA_FRAME_HEADER_H
 #define AERON_CONCURRENT_DATA_FRAME_HEADER_H
 
-#include <stddef.h>
+#include <cstddef>
 #include <util/Index.h>
 
 namespace aeron { namespace concurrent { namespace logbuffer {

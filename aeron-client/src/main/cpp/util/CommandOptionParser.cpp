@@ -57,9 +57,9 @@ void CommandOptionParser::parse(int argc, char** argv)
         }
     }
 
-    for (auto opt = m_options.begin(); opt != m_options.end(); ++opt)
+    for (auto & option : m_options)
     {
-        opt->second.validate();
+        option.second.validate();
     }
 }
 
@@ -83,11 +83,11 @@ CommandOption& CommandOptionParser::getOption(char optionChar)
 
 void CommandOptionParser::displayOptionsHelp(std::ostream& out) const
 {
-    for (auto i = m_options.begin(); i != m_options.end(); ++i)
+    for (const auto & opt : m_options)
     {
-        if (i->first != CommandOption::UNNAMED)
+        if (opt.first != CommandOption::UNNAMED)
         {
-            out << "    -" << i->first << " " << i->second.getHelpText() << std::endl;
+            out << "    -" << opt.first << " " << opt.second.getHelpText() << std::endl;
         }
     }
 }

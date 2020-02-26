@@ -18,7 +18,7 @@
 
 #include <cstdint>
 #include <string>
-#include <stddef.h>
+#include <cstddef>
 #include <util/BitUtil.h>
 #include "CorrelatedMessageFlyweight.h"
 
@@ -91,7 +91,7 @@ public:
 
     inline this_t& keyBuffer(const uint8_t *key, size_t keyLength)
     {
-        std::int32_t length = static_cast<std::int32_t>(keyLength);
+        auto length = static_cast<std::int32_t>(keyLength);
 
         putBytes(keyLengthOffset(), reinterpret_cast<const uint8_t *>(&length), sizeof(length));
 
@@ -137,7 +137,7 @@ private:
     {
         const util::index_t offset = keyLengthOffset();
         const util::index_t unalignedKeyLength = keyLength();
-        const util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+        const auto alignment = static_cast<util::index_t>(sizeof(std::int32_t));
         const util::index_t alignedKeyLength = aeron::util::BitUtil::align(unalignedKeyLength, alignment);
 
         return offset + sizeof(std::int32_t) + alignedKeyLength;

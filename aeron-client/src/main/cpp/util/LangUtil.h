@@ -41,7 +41,7 @@ class InvokeOnScopeExit
 public:
     using func_t = std::function<void()>;
 
-    inline InvokeOnScopeExit(const func_t& func) :
+    inline explicit InvokeOnScopeExit(const func_t& func) :
         m_func(func)
     {
     }

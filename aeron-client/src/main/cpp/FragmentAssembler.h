@@ -48,7 +48,7 @@ public:
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    FragmentAssembler(
+    explicit FragmentAssembler(
         const fragment_handler_t& delegate, size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_initialBufferLength(initialBufferLength), m_delegate(delegate)
     {

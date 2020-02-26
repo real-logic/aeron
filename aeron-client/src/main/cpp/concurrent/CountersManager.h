@@ -72,7 +72,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
         checkMetaDataCapacity(recordOffset);
 
-        CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
+        auto& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
 
@@ -105,7 +105,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
         checkMetaDataCapacity(recordOffset);
 
-        CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
+        auto& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
         record.freeToReuseDeadline = NOT_FREE_TO_REUSE;

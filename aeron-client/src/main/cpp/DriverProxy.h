@@ -36,7 +36,7 @@ using namespace aeron::concurrent::ringbuffer;
 class DriverProxy
 {
 public:
-    DriverProxy(ManyToOneRingBuffer& toDriverCommandBuffer) :
+    explicit DriverProxy(ManyToOneRingBuffer& toDriverCommandBuffer) :
         m_toDriverCommandBuffer(toDriverCommandBuffer),
         m_clientId(toDriverCommandBuffer.nextCorrelationId())
     {

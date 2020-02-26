@@ -76,7 +76,7 @@ private:
 #ifdef _WIN32
     MemoryMappedFile(const FileHandle fd, size_t offset, size_t length, bool readOnly);
 #else
-    MemoryMappedFile(const FileHandle fd, off_t offset, size_t length, bool readOnly);
+    MemoryMappedFile(FileHandle fd, off_t offset, size_t length, bool readOnly);
 #endif
 
     uint8_t* doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly);

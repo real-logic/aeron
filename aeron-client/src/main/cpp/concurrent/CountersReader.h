@@ -105,7 +105,7 @@ public:
             }
             else if (RECORD_ALLOCATED == recordStatus)
             {
-                const struct CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
+                const auto& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
 
                 const std::string label = m_metadataBuffer.getString(i + LABEL_LENGTH_OFFSET);
                 const AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));

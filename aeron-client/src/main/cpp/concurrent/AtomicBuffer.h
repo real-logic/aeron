@@ -18,7 +18,7 @@
 #define AERON_CONCURRENT_ATOMIC_BUFFER_H
 
 #include <cstdint>
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <array>
 #include <util/Exceptions.h>
@@ -87,7 +87,7 @@ public:
     }
 
     template<size_t N>
-    AtomicBuffer(std::array<std::uint8_t, N>& buffer)
+    explicit AtomicBuffer(std::array<std::uint8_t, N>& buffer)
     {
         wrap(buffer);
     }
@@ -431,7 +431,7 @@ public:
 
     std::int32_t putString(util::index_t offset, const std::string &value)
     {
-        std::int32_t length = static_cast<std::int32_t>(value.length());
+        auto length = static_cast<std::int32_t>(value.length());
 
         boundsCheck(offset, value.length() + sizeof(length));
 

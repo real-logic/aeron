@@ -35,7 +35,7 @@ typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_
 class CopyBroadcastReceiver
 {
 public:
-    CopyBroadcastReceiver(BroadcastReceiver& receiver) :
+    explicit CopyBroadcastReceiver(BroadcastReceiver& receiver) :
         m_receiver(receiver),
         m_scratchBuffer(m_scratch)
     {

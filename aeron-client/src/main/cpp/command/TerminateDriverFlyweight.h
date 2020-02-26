@@ -19,7 +19,7 @@
 
 #include <cstdint>
 #include <string>
-#include <stddef.h>
+#include <cstddef>
 #include <util/BitUtil.h>
 #include "CorrelatedMessageFlyweight.h"
 

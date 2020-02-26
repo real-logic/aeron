@@ -150,7 +150,7 @@ inline void defaultErrorHandler(const std::exception& exception)
 
     try
     {
-        const SourcedException& sourcedException = dynamic_cast<const SourcedException&>(exception);
+        const auto& sourcedException = dynamic_cast<const SourcedException&>(exception);
         std::cerr << " : " << sourcedException.where();
     }
     catch (const std::bad_cast&)
@@ -232,7 +232,7 @@ public:
      *
      * @return path of the CnC file
      */
-    inline const std::string cncFileName()
+    inline std::string cncFileName()
     {
         return m_dirName + "/" + CncFileDescriptor::CNC_FILE;
     }

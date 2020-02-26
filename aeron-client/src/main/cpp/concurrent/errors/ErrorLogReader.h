@@ -54,8 +54,7 @@ inline static int read(
 
         if (lastObservationTimestamp >= sinceTimestamp)
         {
-            ErrorLogDescriptor::ErrorLogEntryDefn& entry =
-                buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
+            auto& entry = buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
 
             ++entries;
 

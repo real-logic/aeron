@@ -24,7 +24,7 @@ class OnScopeExit
 {
 public:
     template<typename func_t>
-    inline OnScopeExit(const func_t &func) : m_holder(new FuncHolder<func_t>(func))
+    inline explicit OnScopeExit(const func_t &func) : m_holder(new FuncHolder<func_t>(func))
     {
     }
 
@@ -41,7 +41,7 @@ private:
     {
         func_t f;
 
-        inline FuncHolder(const func_t &func) : f(func)
+        inline explicit FuncHolder(const func_t &func) : f(func)
         {
         }
 

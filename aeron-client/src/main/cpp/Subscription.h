@@ -477,11 +477,11 @@ private:
     ClientConductor& m_conductor;
     const std::string m_channel;
     std::int32_t m_channelStatusId;
-    char m_paddingBefore[util::BitUtil::CACHE_LINE_LENGTH];
+    char m_paddingBefore[util::BitUtil::CACHE_LINE_LENGTH]{};
     std::size_t m_roundRobinIndex = 0;
     AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray;
     std::atomic<bool> m_isClosed;
-    char m_paddingAfter[util::BitUtil::CACHE_LINE_LENGTH];
+    char m_paddingAfter[util::BitUtil::CACHE_LINE_LENGTH]{};
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
 };

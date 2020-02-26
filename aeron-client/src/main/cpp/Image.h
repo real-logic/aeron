@@ -402,7 +402,7 @@ public:
         }
 
         const std::int64_t position = m_subscriberPosition.get();
-        const std::int32_t offset = static_cast<std::int32_t>(position & m_termLengthMask);
+        const auto offset = static_cast<std::int32_t>(position & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
         AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -441,7 +441,7 @@ public:
 
         int fragmentsRead = 0;
         const std::int64_t initialPosition = m_subscriberPosition.get();
-        const std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
+        const auto initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
         AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -518,7 +518,7 @@ public:
 
         int fragmentsRead = 0;
         std::int64_t initialPosition = m_subscriberPosition.get();
-        std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
+        auto initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
         AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -611,7 +611,7 @@ public:
 
         int fragmentsRead = 0;
         std::int64_t initialPosition = m_subscriberPosition.get();
-        std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
+        auto initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
         AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -710,7 +710,7 @@ public:
             return initialPosition;
         }
 
-        std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
+        auto initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
         std::int32_t offset = initialOffset;
         std::int64_t position = initialPosition;
         std::int64_t resultingPosition = initialPosition;
@@ -806,7 +806,7 @@ public:
         }
 
         const std::int64_t position = m_subscriberPosition.get();
-        const std::int32_t termOffset = static_cast<std::int32_t>(position & m_termLengthMask);
+        const auto termOffset = static_cast<std::int32_t>(position & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
         AtomicBuffer &termBuffer = m_termBuffers[index];

@@ -22,7 +22,7 @@
 #include <type_traits>
 #include <iomanip>
 #include <locale>
-#include <stdarg.h>
+#include <cstdarg>
 #include "Exceptions.h"
 
 namespace aeron { namespace util {

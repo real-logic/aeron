@@ -45,7 +45,7 @@ public:
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for rebuilding.
      */
-    ImageFragmentAssembler(
+    explicit ImageFragmentAssembler(
         const fragment_handler_t& delegate,
         size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_delegate(delegate),

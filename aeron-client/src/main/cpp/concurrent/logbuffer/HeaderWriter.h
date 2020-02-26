@@ -27,7 +27,7 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class HeaderWriter
 {
 public:
-    HeaderWriter(AtomicBuffer defaultHdr) :
+    explicit HeaderWriter(AtomicBuffer defaultHdr) :
         m_sessionId(defaultHdr.getInt32(DataFrameHeader::SESSION_ID_FIELD_OFFSET)),
         m_streamId(defaultHdr.getInt32(DataFrameHeader::STREAM_ID_FIELD_OFFSET))
     {
@@ -41,8 +41,7 @@ public:
         termBuffer.putInt32Ordered(offset, -length);
         atomic::release();
 
-        struct DataFrameHeader::DataFrameHeaderDefn* hdr =
-            (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);
+        auto* hdr = (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);
 
         hdr->version = DataFrameHeader::CURRENT_VERSION;
         hdr->flags = FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG;

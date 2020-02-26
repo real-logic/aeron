@@ -18,7 +18,7 @@
 #define AERON_ERROR_FLYWEIGHT_H
 
 #include <cstdint>
-#include <stddef.h>
+#include <cstddef>
 #include "Flyweight.h"
 
 namespace aeron { namespace command {

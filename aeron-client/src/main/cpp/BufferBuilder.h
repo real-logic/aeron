@@ -28,7 +28,7 @@ class BufferBuilder
 public:
     using this_t = BufferBuilder;
 
-    BufferBuilder(std::uint32_t initialLength) :
+    explicit BufferBuilder(std::uint32_t initialLength) :
         m_capacity(BitUtil::findNextPowerOfTwo(initialLength)),
         m_limit(static_cast<std::uint32_t>(DataFrameHeader::LENGTH)),
         m_buffer(new std::uint8_t[m_capacity])

@@ -47,7 +47,7 @@ public:
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    ControlledFragmentAssembler(
+    explicit ControlledFragmentAssembler(
         const controlled_poll_fragment_handler_t& delegate,
         size_t initialBufferLength = DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_initialBufferLength(initialBufferLength),

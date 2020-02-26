@@ -17,7 +17,7 @@
 #define AERON_COMMAND_PUBLICATION_MESSAGE_FLYWEIGHT_H
 
 #include <cstdint>
-#include <stddef.h>
+#include <cstddef>
 #include "Flyweight.h"
 
 #include "CorrelatedMessageFlyweight.h"

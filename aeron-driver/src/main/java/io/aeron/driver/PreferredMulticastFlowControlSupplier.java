@@ -20,6 +20,8 @@ import io.aeron.driver.media.UdpChannel;
 /**
  *
  * This has been replaced by {@link TaggedMulticastFlowControlSupplier}
+ *
+ * @deprecated Use {@link TaggedMulticastFlowControlSupplier} instead
  */
 @Deprecated
 public class PreferredMulticastFlowControlSupplier implements FlowControlSupplier

@@ -21,6 +21,8 @@ import static java.lang.System.getProperty;
 
 /**
  * {@inheritDoc}
+ *
+ * @deprecated Use {@link TaggedMulticastFlowControl} instead
  */
 @Deprecated
 public class PreferredMulticastFlowControl extends TaggedMulticastFlowControl

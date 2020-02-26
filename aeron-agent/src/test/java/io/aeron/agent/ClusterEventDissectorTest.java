@@ -44,11 +44,12 @@ class ClusterEventDissectorTest
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG * 3, 4, LITTLE_ENDIAN);
         buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_LONG * 4, 100, LITTLE_ENDIAN);
         buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_LONG * 4 + SIZE_OF_INT, 200, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_LONG * 4 + SIZE_OF_INT + SIZE_OF_INT, 1, LITTLE_ENDIAN);
 
         ClusterEventDissector.dissectNewLeadershipTerm(buffer, 0, builder);
 
         assertEquals("[33.0] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: logLeadershipTermId=1" +
-            ", leadershipTermId=2, logPosition=3, timestamp=4, leaderMemberId=100, logSessionId=200",
+            ", leadershipTermId=2, logPosition=3, timestamp=4, leaderMemberId=100, logSessionId=200, isStartup=true",
             builder.toString());
     }
 

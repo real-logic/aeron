@@ -836,6 +836,40 @@ public class ClusterTest
     }
 
     @Test
+    @Timeout(60)
+    void shouldHandleMultipleElections() throws InterruptedException
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader0 = cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int numMessages = 3;
+            cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages);
+            awaitAllServiceMessageCount(cluster, 3, numMessages);
+
+            cluster.stopNode(leader0);
+            final TestNode leader1 = cluster.awaitLeader(leader0.index());
+            cluster.awaitLeadershipEvent(1);
+            cluster.startStaticNode(leader0.index(), false);
+
+            cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages * 2);
+            awaitAllServiceMessageCount(cluster, 3, numMessages * 2);
+
+            cluster.stopNode(leader1);
+            cluster.awaitLeader(leader1.index());
+            cluster.awaitLeadershipEvent(2);
+            cluster.startStaticNode(leader1.index(), false);
+
+            cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages * 3);
+            awaitAllServiceMessageCount(cluster, 3, numMessages * 3);
+        }
+    }
+
+    @Test
     @Timeout(50)
     void shouldRecoverWhenLastSnapshotIsInvalidAndWasBetweenTwoElections() throws InterruptedException
     {

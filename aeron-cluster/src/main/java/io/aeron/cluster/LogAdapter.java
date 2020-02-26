@@ -170,7 +170,8 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     newLeadershipTermEventDecoder.leaderMemberId(),
                     newLeadershipTermEventDecoder.logSessionId(),
                     ClusterClock.map(newLeadershipTermEventDecoder.timeUnit()),
-                    newLeadershipTermEventDecoder.appVersion());
+                    newLeadershipTermEventDecoder.appVersion()
+                );
                 break;
 
             case MembershipChangeEventDecoder.TEMPLATE_ID:

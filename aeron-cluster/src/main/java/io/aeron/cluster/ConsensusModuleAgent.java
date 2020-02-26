@@ -459,7 +459,8 @@ class ConsensusModuleAgent implements Agent
                     logPublisher.position(),
                     recordingLog.getTermTimestamp(leadershipTermId),
                     thisMember.id(),
-                    logPublisher.sessionId());
+                    logPublisher.sessionId(),
+                    false);
             }
         }
     }
@@ -501,12 +502,13 @@ class ConsensusModuleAgent implements Agent
         final long logPosition,
         final long timestamp,
         final int leaderId,
-        final int logSessionId)
+        final int logSessionId,
+        final boolean isStartup)
     {
         if (null != election)
         {
             election.onNewLeadershipTerm(
-                logLeadershipTermId, leadershipTermId, logPosition, timestamp, leaderId, logSessionId);
+                logLeadershipTermId, leadershipTermId, logPosition, timestamp, leaderId, logSessionId, isStartup);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -1637,7 +1639,8 @@ class ConsensusModuleAgent implements Agent
                 memberId,
                 logPublisher.sessionId(),
                 clusterTimeUnit,
-                ctx.appVersion()))
+                ctx.appVersion()
+            ))
             {
                 return false;
             }

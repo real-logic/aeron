@@ -53,13 +53,17 @@ final class ClusterEventDissector
         absoluteOffset += SIZE_OF_INT;
 
         final int logSessionId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        final boolean isStartup = 1 == buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId)
             .append(", leadershipTermId=").append(leadershipTermId)
             .append(", logPosition=").append(logPosition)
             .append(", timestamp=").append(timestamp)
             .append(", leaderMemberId=").append(leaderMemberId)
-            .append(", logSessionId=").append(logSessionId);
+            .append(", logSessionId=").append(logSessionId)
+            .append(", isStartup=").append(isStartup);
     }
 
     static void dissectStateChange(

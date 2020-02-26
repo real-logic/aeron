@@ -100,7 +100,8 @@ public class Election
         }
     }
 
-    private boolean isStartup;
+    private boolean isNodeStartup;
+    private boolean isLeaderStartup;
     private boolean isExtendedCanvass;
     private boolean shouldReplay;
     private final ClusterMember[] clusterMembers;
@@ -129,7 +130,7 @@ public class Election
     private LogReplay logReplay = null;
 
     public Election(
-        final boolean isStartup,
+        final boolean isNodeStartup,
         final long leadershipTermId,
         final long logPosition,
         final ClusterMember[] clusterMembers,
@@ -140,9 +141,9 @@ public class Election
         final ConsensusModule.Context ctx,
         final ConsensusModuleAgent consensusModuleAgent)
     {
-        this.isStartup = isStartup;
-        this.shouldReplay = isStartup;
-        this.isExtendedCanvass = isStartup;
+        this.isNodeStartup = isNodeStartup;
+        this.shouldReplay = isNodeStartup;
+        this.isExtendedCanvass = isNodeStartup;
         this.logPosition = logPosition;
         this.logLeadershipTermId = leadershipTermId;
         this.leadershipTermId = leadershipTermId;
@@ -171,6 +172,11 @@ public class Election
     public long logPosition()
     {
         return logPosition;
+    }
+
+    public boolean isLeaderStartup()
+    {
+        return isLeaderStartup;
     }
 
     int doWork(final long nowNs)
@@ -271,7 +277,8 @@ public class Election
                         this.logPosition,
                         timestamp,
                         thisMember.id(),
-                        logSessionId);
+                        logSessionId,
+                        isLeaderStartup);
                 }
             }
             else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
@@ -340,7 +347,8 @@ public class Election
         final long logPosition,
         final long timestamp,
         final int leaderMemberId,
-        final int logSessionId)
+        final int logSessionId,
+        final boolean isStartup)
     {
         final ClusterMember leader = clusterMemberByIdMap.get(leaderMemberId);
         if (null == leader)
@@ -349,6 +357,7 @@ public class Election
         }
 
         leaderMember = leader;
+        this.isLeaderStartup = isStartup;
 
         if (this.logPosition > logPosition && logLeadershipTermId == this.logLeadershipTermId)
         {
@@ -458,7 +467,7 @@ public class Election
 
     private int init()
     {
-        if (!isStartup)
+        if (!isNodeStartup)
         {
             cleanupReplay();
             consensusModuleAgent.prepareForNewLeadership(logPosition);
@@ -636,7 +645,8 @@ public class Election
 
     private int leaderTransition(final long nowNs)
     {
-        consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId, isStartup);
+        isLeaderStartup = isNodeStartup;
+        consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId, isLeaderStartup);
 
         final long recordingId = consensusModuleAgent.logRecordingId();
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
@@ -725,7 +735,7 @@ public class Election
                 ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isStartup);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isLeaderStartup);
 
             final String replayDestination = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -792,7 +802,7 @@ public class Election
                 ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isStartup);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isLeaderStartup);
         }
 
         if (null == liveLogDestination)
@@ -878,7 +888,8 @@ public class Election
             logPosition,
             timestamp,
             thisMember.id(),
-            logSessionId);
+            logSessionId,
+            isLeaderStartup);
     }
 
     private boolean catchupPosition(final long leadershipTermId, final long logPosition)

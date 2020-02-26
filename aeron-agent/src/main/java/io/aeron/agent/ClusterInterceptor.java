@@ -46,7 +46,8 @@ class ClusterInterceptor
             final long logPosition,
             final long timestamp,
             final int leaderMemberId,
-            final int logSessionId)
+            final int logSessionId,
+            final boolean isStartup)
         {
             LOGGER.logNewLeadershipTerm(
                 logLeadershipTermId,
@@ -54,7 +55,8 @@ class ClusterInterceptor
                 logPosition,
                 timestamp,
                 leaderMemberId,
-                logSessionId);
+                logSessionId,
+                isStartup);
         }
     }
 

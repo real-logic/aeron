@@ -48,7 +48,8 @@ public final class ClusterEventLogger
         final long logPosition,
         final long timestamp,
         final int leaderMemberId,
-        final int logSessionId)
+        final int logSessionId,
+        final boolean isStartup)
     {
         final int length = newLeaderShipTermLength();
         final int captureLength = captureLength(length);
@@ -69,7 +70,8 @@ public final class ClusterEventLogger
                     logPosition,
                     timestamp,
                     leaderMemberId,
-                    logSessionId);
+                    logSessionId,
+                    isStartup);
             }
             finally
             {

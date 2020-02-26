@@ -429,6 +429,7 @@
         <field name="leaderMemberId"            id="5" type="int32"/>
         <field name="logSessionId"              id="6" type="int32"/>
         <field name="appVersion"                id="7" type="version_t"/>
+        <field name="isStartup"                 id="8" type="BooleanType"/>
     </sbe:message>
 
     <!-- keep this under 32 - 8 = 24 bytes for efficiency -->

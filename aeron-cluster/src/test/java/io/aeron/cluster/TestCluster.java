@@ -984,7 +984,7 @@ public class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .localControlStreamId(100)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .shouldFreeBuffersOnClose(true)
+            .shouldFreeBuffersOnClose(Tests.isJdk8())
             .deleteArchiveOnStart(cleanStart);
 
         context.aeronArchiveContext

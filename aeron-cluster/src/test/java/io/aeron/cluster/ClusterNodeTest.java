@@ -60,7 +60,7 @@ public class ClusterNodeTest
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
-                .shouldFreeBuffersOnClose(true)
+                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))

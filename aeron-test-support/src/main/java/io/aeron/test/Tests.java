@@ -16,6 +16,7 @@
 package io.aeron.test;
 
 import org.agrona.LangUtil;
+import org.junit.jupiter.api.condition.JRE;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -66,7 +67,7 @@ public class Tests
      *
      * @param format A format string, {@link java.util.Formatter} to use as additional context information in the
      *               failure message
-     * @param args arguments to the format string
+     * @param args   arguments to the format string
      */
     public static void checkInterruptStatus(final String format, final Object... args)
     {
@@ -154,5 +155,10 @@ public class Tests
     {
         Thread.yield();
         checkInterruptStatus(format, params);
+    }
+
+    public static boolean isJdk8()
+    {
+        return JRE.JAVA_8.isCurrentVersion();
     }
 }

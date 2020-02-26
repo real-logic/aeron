@@ -146,7 +146,7 @@ public class ArchiveTest
                 .segmentFileLength(segmentFileLength)
                 .threadingMode(archiveThreadingMode)
                 .idleStrategySupplier(YieldingIdleStrategy::new)
-                .shouldFreeBuffersOnClose(true)
+                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 

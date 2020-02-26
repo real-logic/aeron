@@ -36,6 +36,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
@@ -55,6 +56,7 @@ import static io.aeron.archive.ArchiveThreadingMode.SHARED;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.condition.JRE.JAVA_8;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.*;
 
@@ -442,6 +444,7 @@ public class ArchiveTest
     }
 
     @Test
+    @EnabledOnJre(JAVA_8)
     void closeFreesBuffersIfShouldFreeBuffersOnCloseIsSetToTrue()
     {
         final UnsafeBuffer dataBuffer = mock(UnsafeBuffer.class);

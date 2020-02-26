@@ -23,6 +23,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
@@ -72,7 +73,7 @@ public class ManageRecordingHistoryTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
-                .shouldFreeBuffersOnClose(true)
+                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
         aeron = Aeron.connect();

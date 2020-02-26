@@ -29,13 +29,13 @@
 #include "aeron_driver_receiver.h"
 #include "aeron_receive_channel_endpoint.h"
 
-int aeron_receive_channel_endpoint_set_receiver_tag(
+int aeron_receive_channel_endpoint_set_group_tag(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_udp_channel_t *channel,
     aeron_driver_context_t *context)
 {
     int64_t receiver_tag = 0;
-    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_RTAG_KEY, &receiver_tag);
+    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_GTAG_KEY, &receiver_tag);
     if (rc < 0)
     {
         return -1;
@@ -43,13 +43,13 @@ int aeron_receive_channel_endpoint_set_receiver_tag(
 
     if (0 == rc)
     {
-        endpoint->receiver_tag.is_present = context->sm_receiver_tag.is_present;
-        endpoint->receiver_tag.value = context->sm_receiver_tag.value;
+        endpoint->group_tag.is_present = context->sm_group_tag.is_present;
+        endpoint->group_tag.value = context->sm_group_tag.value;
     }
     else
     {
-        endpoint->receiver_tag.is_present = true;
-        endpoint->receiver_tag.value = receiver_tag;
+        endpoint->group_tag.is_present = true;
+        endpoint->group_tag.value = receiver_tag;
     }
 
     return 0;
@@ -123,7 +123,7 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->receiver_id = context->next_receiver_id++;
     _endpoint->receiver_proxy = context->receiver_proxy;
 
-    if (aeron_receive_channel_endpoint_set_receiver_tag(_endpoint, channel, context) < 0)
+    if (aeron_receive_channel_endpoint_set_group_tag(_endpoint, channel, context) < 0)
     {
         aeron_receive_channel_endpoint_delete(NULL, _endpoint);
         return -1;
@@ -187,7 +187,7 @@ int aeron_receive_channel_endpoint_send_sm(
     struct iovec iov[1];
     struct msghdr msghdr;
 
-    const int32_t frame_length = endpoint->receiver_tag.is_present ?
+    const int32_t frame_length = endpoint->group_tag.is_present ?
         sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
         sizeof(aeron_status_message_header_t);
 
@@ -201,7 +201,7 @@ int aeron_receive_channel_endpoint_send_sm(
     sm_header->consumption_term_offset = term_offset;
     sm_header->receiver_window = receiver_window;
     sm_header->receiver_id = endpoint->receiver_id;
-    sm_optional_header->receiver_tag = endpoint->receiver_tag.value;
+    sm_optional_header->group_tag = endpoint->group_tag.value;
 
     iov[0].iov_base = buffer;
     iov[0].iov_len = frame_length;

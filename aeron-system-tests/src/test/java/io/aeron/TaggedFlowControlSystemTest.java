@@ -57,7 +57,7 @@ public class TaggedFlowControlSystemTest
     private Subscription subscriptionB;
 
     @SuppressWarnings("deprecation")
-    private static final long DEFAULT_RECEIVER_TAG = new UnsafeBuffer(BitUtil.fromHex(
+    private static final long DEFAULT_GROUP_TAG = new UnsafeBuffer(BitUtil.fromHex(
         PreferredMulticastFlowControl.PREFERRED_ASF_DEFAULT)).getLong(0, ByteOrder.LITTLE_ENDIAN);
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
@@ -109,12 +109,12 @@ public class TaggedFlowControlSystemTest
     private static Stream<Arguments> strategyConfigurations()
     {
         return Stream.of(
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), DEFAULT_RECEIVER_TAG, null, "", ""),
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, null, "", "|rtag=-1"),
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, 2004L, "", "|rtag=2004"),
-            Arguments.of(null, DEFAULT_RECEIVER_TAG, null, "|fc=tagged", ""),
+            Arguments.of(new TaggedMulticastFlowControlSupplier(), DEFAULT_GROUP_TAG, null, "", ""),
+            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, null, "", "|gtag=-1"),
+            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, 2004L, "", "|gtag=2004"),
+            Arguments.of(null, DEFAULT_GROUP_TAG, null, "|fc=tagged", ""),
             Arguments.of(null, 2020L, 2020L, "|fc=tagged", ""),
-            Arguments.of(null, null, null, "|fc=tagged,g:123", "|rtag=123"));
+            Arguments.of(null, null, null, "|fc=tagged,g:123", "|gtag=123"));
     }
 
     private static class State
@@ -142,8 +142,8 @@ public class TaggedFlowControlSystemTest
     @Timeout(10)
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
-        final Long receiverTag,
-        final Long flowControlGroupReceiverTag,
+        final Long groupTag,
+        final Long flowControlGroupTag,
         final String publisherUriParams,
         final String subscriptionBUriParams)
     {
@@ -157,13 +157,13 @@ public class TaggedFlowControlSystemTest
         {
             driverAContext.multicastFlowControlSupplier(flowControlSupplier);
         }
-        if (null != flowControlGroupReceiverTag)
+        if (null != flowControlGroupTag)
         {
-            driverAContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
+            driverAContext.flowControlGroupTag(flowControlGroupTag);
         }
-        if (null != receiverTag)
+        if (null != groupTag)
         {
-            driverBContext.receiverTag(receiverTag);
+            driverBContext.groupTag(groupTag);
         }
         driverAContext.flowControlReceiverGroupMinSize(1);
 
@@ -228,7 +228,7 @@ public class TaggedFlowControlSystemTest
 
     @Test
     @Timeout(10)
-    public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
+    public void shouldRemoveDeadReceiver()
     {
         final State state = new State();
         state.numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -241,8 +241,8 @@ public class TaggedFlowControlSystemTest
 
         launch();
 
-        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|rtag=123", STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|rtag=123", STREAM_ID);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + "|fc=tagged,g:123,t:1s", STREAM_ID);
 
         Tests.yieldUntilDone(subscriptionA::isConnected);
@@ -306,7 +306,7 @@ public class TaggedFlowControlSystemTest
     @Timeout(20)
     void shouldPreventConnectionUntilRequiredGroupSizeMatchTagIsMet()
     {
-        final Long receiverTag = 2701L;
+        final Long groupTag = 2701L;
         final Integer groupSize = 3;
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
@@ -314,19 +314,19 @@ public class TaggedFlowControlSystemTest
             .endpoint("224.20.30.39:24326")
             .networkInterface("localhost");
 
-        final String uriWithReceiverTag = builder
-            .receiverTag(receiverTag)
+        final String uriWithGroupTag = builder
+            .groupTag(groupTag)
             .flowControl((String)null)
             .build();
 
         final String uriPlain = builder
-            .receiverTag((Long)null)
+            .groupTag((Long)null)
             .flowControl((String)null)
             .build();
 
         final String uriWithTaggedFlowControl = builder
-            .receiverTag((Long)null)
-            .taggedFlowControl(receiverTag, groupSize, null)
+            .groupTag((Long)null)
+            .taggedFlowControl(groupTag, groupSize, null)
             .build();
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
@@ -380,8 +380,8 @@ public class TaggedFlowControlSystemTest
             subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
             subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
             subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
-            subscription3 = clientB.addSubscription(uriWithReceiverTag, STREAM_ID);
-            subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);
+            subscription3 = clientB.addSubscription(uriWithGroupTag, STREAM_ID);
+            subscription4 = clientC.addSubscription(uriWithGroupTag, STREAM_ID);
 
             waitForConnectionAndStatusMessages(
                 clientA.countersReader(),
@@ -389,7 +389,7 @@ public class TaggedFlowControlSystemTest
 
             assertFalse(publication.isConnected());
 
-            subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
+            subscription5 = clientD.addSubscription(uriWithGroupTag, STREAM_ID);
 
             // Should now have 3 receivers and publication should eventually be connected.
             while (!publication.isConnected())
@@ -406,7 +406,7 @@ public class TaggedFlowControlSystemTest
                 Tests.sleep(1);
             }
 
-            subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
+            subscription5 = clientD.addSubscription(uriWithGroupTag, STREAM_ID);
 
             // Aaaaaand reconnect.
             while (!publication.isConnected())
@@ -429,7 +429,7 @@ public class TaggedFlowControlSystemTest
     @Timeout(20)
     void shouldPreventConnectionUntilAtLeastOneSubscriberConnectedWithRequiredGroupSizeZero()
     {
-        final Long receiverTag = 2701L;
+        final Long groupTag = 2701L;
         final Integer groupSize = 0;
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
@@ -439,14 +439,14 @@ public class TaggedFlowControlSystemTest
 
         final String plainUri = builder.build();
 
-        final String uriWithReceiverTag = builder
-            .receiverTag(receiverTag)
+        final String uriWithGroupTag = builder
+            .groupTag(groupTag)
             .flowControl((String)null)
             .build();
 
         final String uriWithTaggedFlowControl = builder
-            .receiverTag((Long)null)
-            .taggedFlowControl(receiverTag, groupSize, null)
+            .groupTag((Long)null)
+            .taggedFlowControl(groupTag, groupSize, null)
             .build();
 
         launch();
@@ -464,7 +464,7 @@ public class TaggedFlowControlSystemTest
 
         assertFalse(publication.isConnected());
 
-        subscriptionA = clientA.addSubscription(uriWithReceiverTag, STREAM_ID);
+        subscriptionA = clientA.addSubscription(uriWithGroupTag, STREAM_ID);
 
         while (!publication.isConnected())
         {
@@ -477,7 +477,7 @@ public class TaggedFlowControlSystemTest
     public void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
     {
         final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";
-        final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|rtag=123";
+        final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|gtag=123";
         final String subscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));

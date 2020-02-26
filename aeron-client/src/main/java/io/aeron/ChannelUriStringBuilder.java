@@ -54,7 +54,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
-    private Long receiverTag;
+    private Long groupTag;
     private Long linger;
     private Boolean sparse;
     private Boolean eos;
@@ -88,7 +88,7 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
-        receiverTag = null;
+        groupTag = null;
         linger = null;
         sparse = null;
         eos = null;
@@ -1193,24 +1193,24 @@ public class ChannelUriStringBuilder
      * Set tagged flow control settings to be used on channel.  All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
-     * @param receiverTag  receiver tag for this channel.
+     * @param groupTag  receiver tag for this channel.
      * @param minGroupSize group size required to allow publications for this channel to be move to connected status.
      * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
      */
     public ChannelUriStringBuilder taggedFlowControl(
-        final Long receiverTag, final Integer minGroupSize, final String timeout)
+        final Long groupTag, final Integer minGroupSize, final String timeout)
     {
         String flowControlValue = "tagged";
 
-        if (null != receiverTag || null != minGroupSize)
+        if (null != groupTag || null != minGroupSize)
         {
             flowControlValue += ",g:";
         }
 
-        if (null != receiverTag)
+        if (null != groupTag)
         {
-            flowControlValue += receiverTag;
+            flowControlValue += groupTag;
         }
 
         if (null != minGroupSize)
@@ -1280,15 +1280,15 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the receiver tag (rtag) to be sent in SMs.
+     * Set the group tag (gtag) to be sent in SMs.
      *
-     * @param rtag to be sent in SMs
+     * @param groupTag to be sent in SMs
      * @return this for fluent API.
-     * @see CommonContext#RECEIVER_TAG_PARAM_NAME
+     * @see CommonContext#GROUP_TAG_PARAM_NAME
      */
-    public ChannelUriStringBuilder receiverTag(final Long rtag)
+    public ChannelUriStringBuilder groupTag(final Long groupTag)
     {
-        this.receiverTag = rtag;
+        this.groupTag = groupTag;
         return this;
     }
 
@@ -1297,31 +1297,31 @@ public class ChannelUriStringBuilder
      *
      * @param channelUri to read the value from.
      * @return this for a fluent API.
-     * @see CommonContext#RECEIVER_TAG_PARAM_NAME
+     * @see CommonContext#GROUP_TAG_PARAM_NAME
      */
-    public ChannelUriStringBuilder receiverTag(final ChannelUri channelUri)
+    public ChannelUriStringBuilder groupTag(final ChannelUri channelUri)
     {
-        final String receiverTagValue = channelUri.get(RECEIVER_TAG_PARAM_NAME);
-        if (null == receiverTagValue)
+        final String groupTagValue = channelUri.get(GROUP_TAG_PARAM_NAME);
+        if (null == groupTagValue)
         {
-            receiverTag = null;
+            groupTag = null;
             return this;
         }
         else
         {
-            return receiverTag(Long.valueOf(receiverTagValue));
+            return groupTag(Long.valueOf(groupTagValue));
         }
     }
 
     /**
-     * Get the receiver tag (rtag) to be sent in SMs.
+     * Get the group tag (gtag) to be sent in SMs.
      *
      * @return receiver tag to be sent in SMs.
-     * @see CommonContext#RECEIVER_TAG_PARAM_NAME
+     * @see CommonContext#GROUP_TAG_PARAM_NAME
      */
-    public Long receiverTag()
+    public Long groupTag()
     {
-        return receiverTag;
+        return groupTag;
     }
 
     /**
@@ -1496,9 +1496,9 @@ public class ChannelUriStringBuilder
             sb.append(FLOW_CONTROL_PARAM_NAME).append('=').append(fc).append('|');
         }
 
-        if (null != receiverTag)
+        if (null != groupTag)
         {
-            sb.append(RECEIVER_TAG_PARAM_NAME).append('=').append(receiverTag).append('|');
+            sb.append(GROUP_TAG_PARAM_NAME).append('=').append(groupTag).append('|');
         }
 
         if (null != sparse)

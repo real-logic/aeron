@@ -20,22 +20,22 @@
 #include "aeron_udp_protocol.h"
 #include "util/aeron_error.h"
 
-int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int64_t *receiver_tag)
+int aeron_udp_protocol_sm_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
 {
     const size_t receiver_tag_offset = sizeof(aeron_status_message_header_t) +
-        offsetof(aeron_status_message_optional_header_t, receiver_tag);
-    const size_t receiver_tag_size = sizeof(*receiver_tag);
+        offsetof(aeron_status_message_optional_header_t, group_tag);
+    const size_t receiver_tag_size = sizeof(*group_tag);
     const size_t frame_length_with_receiver_tag = receiver_tag_offset + receiver_tag_size;
 
     if (sm->frame_header.frame_length == (int32_t)frame_length_with_receiver_tag)
     {
         const uint8_t *sm_ptr = (const uint8_t *)sm + receiver_tag_offset;
-        memcpy(receiver_tag, sm_ptr, receiver_tag_size);
+        memcpy(group_tag, sm_ptr, receiver_tag_size);
 
         return (int)receiver_tag_size;
     }
 
-    *receiver_tag = 0;
+    *group_tag = 0;
 
     return (int)((size_t)sm->frame_header.frame_length - receiver_tag_offset);
 }

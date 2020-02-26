@@ -489,7 +489,7 @@ public class Configuration
     /**
      * Property name for Application Specific Feedback added to Status Messages by the driver for flow control.
      * <p>
-     * Replaced by {@link #RECEIVER_TAG_PROP_NAME}.
+     * Replaced by {@link #GROUP_TAG_PROP_NAME}.
      */
     @Deprecated
     public static final String SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME =
@@ -637,14 +637,14 @@ public class Configuration
     public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
 
     /**
-     * Property name for default receiver tag (rtag) to send in all Status Messages.
+     * Property name for default group tag (gtag) to send in all Status Messages.
      */
-    public static final String RECEIVER_TAG_PROP_NAME = "aeron.sm.rtag";
+    public static final String GROUP_TAG_PROP_NAME = "aeron.sm.gtag";
 
     /**
-     * Property name for default receiver tag (rtag) used by the tagged flow control strategy to group receivers.
+     * Property name for default group tag (gtag) used by the tagged flow control strategy to group receivers.
      */
-    public static final String FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME = "aeron.flow.control.group.rtag";
+    public static final String FLOW_CONTROL_GROUP_TAG_PROP_NAME = "aeron.flow.control.gtag";
 
     /**
      * Default value for the receiver timeout used to determine if the receiver should still be monitored for
@@ -795,19 +795,19 @@ public class Configuration
         return "true".equalsIgnoreCase(getProperty(REJOIN_STREAM_PROP_NAME, "true"));
     }
 
-    public static Long receiverTag()
+    public static Long groupTag()
     {
-        return getLong(RECEIVER_TAG_PROP_NAME, null);
+        return getLong(GROUP_TAG_PROP_NAME, null);
     }
 
     @SuppressWarnings("deprecation")
-    public static long flowControlGroupReceiverTag()
+    public static long flowControlGroupTag()
     {
         final String propertyValue = getProperty(
             PreferredMulticastFlowControl.PREFERRED_ASF_PROP_NAME, PreferredMulticastFlowControl.PREFERRED_ASF_DEFAULT);
         final long legacyAsfValue = new UnsafeBuffer(BitUtil.fromHex(propertyValue)).getLong(0, LITTLE_ENDIAN);
 
-        return getLong(FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME, legacyAsfValue);
+        return getLong(FLOW_CONTROL_GROUP_TAG_PROP_NAME, legacyAsfValue);
     }
 
     public static int flowControlReceiverGroupMinSize()

@@ -65,7 +65,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
     private final NanoClock nanoClock;
-    private final Long receiverTag;
+    private final Long groupTag;
 
     private final long receiverId;
     private long timeOfLastActivityNs;
@@ -95,10 +95,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         timeOfLastActivityNs = nanoClock.nanoTime();
         receiverId = threadLocals.receiverId();
 
-        final String receiverTagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
-        receiverTag = null == receiverTagStr ?
-            context.receiverTag() :
-            Long.valueOf(AsciiEncoding.parseLongAscii(receiverTagStr, 0, receiverTagStr.length()));
+        final String groupTagStr = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
+        groupTag = null == groupTagStr ?
+            context.groupTag() :
+            Long.valueOf(AsciiEncoding.parseLongAscii(groupTagStr, 0, groupTagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
@@ -440,7 +440,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .consumptionTermOffset(0)
                 .receiverWindowLength(0)
                 .receiverId(receiverId)
-                .receiverTag(receiverTag)
+                .groupTag(groupTag)
                 .flags(SEND_SETUP_FLAG);
             smBuffer.limit(statusMessageFlyweight.frameLength());
 
@@ -491,7 +491,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .consumptionTermOffset(termOffset)
                 .receiverWindowLength(windowLength)
                 .receiverId(receiverId)
-                .receiverTag(receiverTag)
+                .groupTag(groupTag)
                 .flags(flags);
             smBuffer.limit(statusMessageFlyweight.frameLength());
 

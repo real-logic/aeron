@@ -462,8 +462,8 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
         private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
 
-        private Long receiverTag = Configuration.receiverTag();
-        private long flowControlGroupReceiverTag = Configuration.flowControlGroupReceiverTag();
+        private Long groupTag = Configuration.groupTag();
+        private long flowControlGroupTag = Configuration.flowControlGroupTag();
         private int flowControlReceiverGroupMinSize = Configuration.flowControlReceiverGroupMinSize();
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
 
@@ -2329,7 +2329,7 @@ public final class MediaDriver implements AutoCloseable
          * Application specific feedback used to identify a receiver group when using a
          * {@link TaggedMulticastFlowControl} strategy which is added to Status Messages (SMs).
          * <p>
-         * Replaced by {@link #receiverTag()}.
+         * Replaced by {@link #groupTag()}.
          *
          * @return Application specific feedback used to identify receiver group for flow control.
          * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
@@ -2344,7 +2344,7 @@ public final class MediaDriver implements AutoCloseable
          * Application specific feedback used to identify a receiver group when using a
          * {@link TaggedMulticastFlowControl} strategy which is added to Status Messages (SMs).
          * <p>
-         * Replaced by {@link #receiverTag(Long)}.
+         * Replaced by {@link #groupTag(Long)}.
          *
          * @param asfBytes for identifying a receiver group.
          * @return this for a fluent API.
@@ -2733,50 +2733,50 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Get the receiver tag (rtag) to be sent in Status Messages from the Receiver.
+         * Get the group tag (gtag) to be sent in Status Messages from the Receiver.
          *
-         * @return receiver tag value or null if not set.
-         * @see Configuration#RECEIVER_TAG_PROP_NAME
+         * @return group tag value or null if not set.
+         * @see Configuration#GROUP_TAG_PROP_NAME
          */
-        public Long receiverTag()
+        public Long groupTag()
         {
-            return receiverTag;
+            return groupTag;
         }
 
         /**
-         * Set the receiver tag (rtag) to be sent in Status Messages from the Receiver.
+         * Set the group tag (gtag) to be sent in Status Messages from the Receiver.
          *
-         * @param receiverTag value to sent in Status Messages from the receiver or null if not set.
+         * @param groupTag value to sent in Status Messages from the receiver or null if not set.
          * @return this for fluent API.
-         * @see Configuration#RECEIVER_TAG_PROP_NAME
+         * @see Configuration#GROUP_TAG_PROP_NAME
          */
-        public Context receiverTag(final Long receiverTag)
+        public Context groupTag(final Long groupTag)
         {
-            this.receiverTag = receiverTag;
+            this.groupTag = groupTag;
             return this;
         }
 
         /**
-         * Get the default receiver tag (rtag) to be used by the tagged flow control strategy.
+         * Get the default group tag (gtag) to be used by the tagged flow control strategy.
          *
-         * @return group receiver tag value or null if not set.
-         * @see Configuration#FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME
+         * @return group group tag value or null if not set.
+         * @see Configuration#FLOW_CONTROL_GROUP_TAG_PROP_NAME
          */
-        public long flowControlGroupReceiverTag()
+        public long flowControlGroupTag()
         {
-            return flowControlGroupReceiverTag;
+            return flowControlGroupTag;
         }
 
         /**
-         * Set the default receiver tag (rtag) to be used by the tagged flow control strategy.
+         * Set the default group tag (gtag) to be used by the tagged flow control strategy.
          *
-         * @param receiverTag value to use by default by the tagged flow control strategy.
+         * @param groupTag value to use by default by the tagged flow control strategy.
          * @return this for fluent API.
-         * @see Configuration#FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_GROUP_TAG_PROP_NAME
          */
-        public Context flowControlGroupReceiverTag(final long receiverTag)
+        public Context flowControlGroupTag(final long groupTag)
         {
-            this.flowControlGroupReceiverTag = receiverTag;
+            this.flowControlGroupTag = groupTag;
             return this;
         }
 
@@ -3010,7 +3010,7 @@ public final class MediaDriver implements AutoCloseable
                 applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
             }
 
-            if (null == receiverTag)
+            if (null == groupTag)
             {
                 if (applicationSpecificFeedback.length > 0)
                 {
@@ -3022,7 +3022,7 @@ public final class MediaDriver implements AutoCloseable
                     }
 
                     final UnsafeBuffer buffer = new UnsafeBuffer(applicationSpecificFeedback);
-                    receiverTag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+                    groupTag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
                 }
             }
 
@@ -3313,10 +3313,10 @@ public final class MediaDriver implements AutoCloseable
                 "\n    unicastFlowControlSupplier=" + unicastFlowControlSupplier +
                 "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
                 "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
-                "\n    receiverTag=" + receiverTag +
+                "\n    groupTag=" + groupTag +
                 "\n    flowControlReceiverTimeoutNs=" + flowControlReceiverTimeoutNs +
                 "\n    flowControlReceiverGroupMinSize=" + flowControlReceiverGroupMinSize +
-                "\n    flowControlGroupReceiverTag=" + flowControlGroupReceiverTag +
+                "\n    flowControlGroupTag=" + flowControlGroupTag +
                 "\n    receiverGroupConsideration=" + receiverGroupConsideration +
                 "\n    congestionControlSupplier=" + congestionControlSupplier +
                 "\n    terminationValidator=" + terminationValidator +

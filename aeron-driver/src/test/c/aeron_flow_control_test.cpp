@@ -55,9 +55,9 @@ public:
         aeron_flow_control_strategy_t *strategy,
         int64_t receiver_id,
         int32_t term_offset,
-        int64_t rtag,
+        int64_t gtag,
         int64_t now_ns = 0,
-        bool send_rtag = true,
+        bool send_gtag = true,
         int64_t snd_lmt = 0)
     {
         uint8_t msg[1024];
@@ -65,14 +65,14 @@ public:
         aeron_status_message_optional_header_t *sm_optional =
             (aeron_status_message_optional_header_t *) (msg + sizeof(aeron_status_message_header_t));
 
-        sm->frame_header.frame_length = send_rtag ?
+        sm->frame_header.frame_length = send_gtag ?
             sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
             sizeof(aeron_status_message_header_t);
         sm->consumption_term_id = 0;
         sm->consumption_term_offset = term_offset;
         sm->receiver_window = WINDOW_LENGTH;
         sm->receiver_id = receiver_id;
-        sm_optional->receiver_tag = rtag;
+        sm_optional->group_tag = gtag;
 
         return strategy->on_status_message(
             strategy->state, (uint8_t *)sm, sizeof(struct sockaddr_storage), &address, snd_lmt, 0, 0, now_ns);
@@ -262,8 +262,8 @@ TEST_F(TaggedFlowControlTest, shouldUseFallbackToTaggedStrategy)
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=max");
     context->multicast_flow_control_supplier_func = aeron_tagged_flow_control_strategy_supplier;
-    context->sm_receiver_tag.is_present = true;
-    context->sm_receiver_tag.value = 1;
+    context->sm_group_tag.is_present = true;
+    context->sm_group_tag.value = 1;
     context->flow_control.group_receiver_tag = 1;
     context->flow_control.receiver_group_min_size = 0;
 
@@ -517,15 +517,15 @@ TEST_F(TaggedFlowControlTest, shouldUseSenderLimitWhenRequiredReceiversNotMet)
 
     int sender_limit = 500;
     int term_offset = 1000;
-    int rtag = 123;
+    int gtag = 123;
 
-    ASSERT_EQ(sender_limit, apply_status_message(strategy, 1, term_offset, rtag, 0, true, sender_limit));
+    ASSERT_EQ(sender_limit, apply_status_message(strategy, 1, term_offset, gtag, 0, true, sender_limit));
     ASSERT_EQ(sender_limit, strategy->on_idle(strategy->state, 0, sender_limit, 0, false));
 
-    ASSERT_EQ(sender_limit, apply_status_message(strategy, 2, term_offset, rtag, 0, true, sender_limit));
+    ASSERT_EQ(sender_limit, apply_status_message(strategy, 2, term_offset, gtag, 0, true, sender_limit));
     ASSERT_EQ(sender_limit, strategy->on_idle(strategy->state, 0, sender_limit, 0, false));
 
-    ASSERT_EQ(term_offset + WINDOW_LENGTH, apply_status_message(strategy, 3, term_offset, rtag, 0, true, sender_limit));
+    ASSERT_EQ(term_offset + WINDOW_LENGTH, apply_status_message(strategy, 3, term_offset, gtag, 0, true, sender_limit));
     ASSERT_EQ(term_offset + WINDOW_LENGTH, strategy->on_idle(strategy->state, 0, sender_limit, 0, false));
 }
 
@@ -540,8 +540,8 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     ASSERT_EQ(strlen(strategy), options.strategy_name_length);
     ASSERT_TRUE(0 == strncmp(strategy, options.strategy_name, options.strategy_name_length));
     ASSERT_EQ(std::get<2>(GetParam()), options.timeout_ns.value);
-    ASSERT_EQ(std::get<3>(GetParam()), options.receiver_tag.is_present);
-    ASSERT_EQ(std::get<4>(GetParam()), options.receiver_tag.value);
+    ASSERT_EQ(std::get<3>(GetParam()), options.group_tag.is_present);
+    ASSERT_EQ(std::get<4>(GetParam()), options.group_tag.value);
     ASSERT_EQ(std::get<5>(GetParam()), options.group_min_size.is_present);
     ASSERT_EQ(std::get<6>(GetParam()), options.group_min_size.value);
 }
@@ -569,8 +569,8 @@ TEST_F(FlowControlTest, shouldParseNull)
     ASSERT_EQ(NULL, options.strategy_name);
     ASSERT_EQ(false, options.timeout_ns.is_present);
     ASSERT_EQ(0U, options.timeout_ns.value);
-    ASSERT_EQ(false, options.receiver_tag.is_present);
-    ASSERT_EQ(-1, options.receiver_tag.value);
+    ASSERT_EQ(false, options.group_tag.is_present);
+    ASSERT_EQ(-1, options.group_tag.value);
 }
 
 TEST_F(FlowControlTest, shouldFallWithInvalidStrategyName)

@@ -280,7 +280,7 @@ public class CommonContext implements Cloneable
     /**
      * Parameter name for Subscription URI param to indicate the receiver tag to be sent in SMs.
      */
-    public static final String RECEIVER_TAG_PARAM_NAME = "rtag";
+    public static final String GROUP_TAG_PARAM_NAME = "gtag";
 
     /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

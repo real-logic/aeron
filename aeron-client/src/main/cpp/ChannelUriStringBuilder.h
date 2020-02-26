@@ -46,7 +46,7 @@ public:
         m_alias.reset(nullptr);
         m_cc.reset(nullptr);
         m_fc.reset(nullptr);
-        m_rtag.reset(nullptr);
+        m_gtag.reset(nullptr);
         m_reliable.reset(nullptr);
         m_ttl.reset(nullptr);
         m_mtu.reset(nullptr);
@@ -146,9 +146,9 @@ public:
         return *this;
     }
 
-    inline this_t& receiverTag(std::int64_t rtag)
+    inline this_t& groupTag(std::int64_t gtag)
     {
-        m_rtag.reset(new Value(rtag));
+        m_gtag.reset(new Value(gtag));
         return *this;
     }
 
@@ -378,9 +378,9 @@ public:
             sb << FLOW_CONTROL_PARAM_NAME << '=' << *m_fc << '|';
         }
 
-        if (m_rtag)
+        if (m_gtag)
         {
-            sb << RECEIVER_TAG_PARAM_NAME << '=' << std::to_string(m_rtag->value) << '|';
+            sb << GROUP_TAG_PARAM_NAME << '=' << std::to_string(m_gtag->value) << '|';
         }
 
         if (m_sparse)
@@ -447,7 +447,7 @@ private:
     std::unique_ptr<Value> m_termId;
     std::unique_ptr<Value> m_termOffset;
     std::unique_ptr<Value> m_sessionId;
-    std::unique_ptr<Value> m_rtag;
+    std::unique_ptr<Value> m_gtag;
     std::unique_ptr<Value> m_linger;
     std::unique_ptr<Value> m_sparse;
     std::unique_ptr<Value> m_eos;

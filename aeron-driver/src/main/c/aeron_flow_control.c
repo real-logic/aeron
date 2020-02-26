@@ -255,8 +255,8 @@ int aeron_flow_control_parse_tagged_options(
     flow_control_options->strategy_name_length = 0;
     flow_control_options->timeout_ns.is_present = false;
     flow_control_options->timeout_ns.value = 0;
-    flow_control_options->receiver_tag.is_present = false;
-    flow_control_options->receiver_tag.value = -1;
+    flow_control_options->group_tag.is_present = false;
+    flow_control_options->group_tag.value = -1;
     flow_control_options->group_min_size.is_present = false;
     flow_control_options->group_min_size.value = 0;
 
@@ -326,8 +326,8 @@ int aeron_flow_control_parse_tagged_options(
 
                 if (0 == errno && number_buffer != end_ptr && ('\0' == *end_ptr || has_group_min_size))
                 {
-                    flow_control_options->receiver_tag.is_present = true;
-                    flow_control_options->receiver_tag.value = (int64_t)receiver_tag;
+                    flow_control_options->group_tag.is_present = true;
+                    flow_control_options->group_tag.value = (int64_t)receiver_tag;
                 }
                 else if (number_buffer != end_ptr && !has_group_min_size) // Allow empty values if we have a group count
                 {

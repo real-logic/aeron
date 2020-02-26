@@ -49,7 +49,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
     private static final int RECEIVER_ID_FIELD_OFFSET = 28;
     private static final int APP_SPECIFIC_FEEDBACK_FIELD_OFFSET = 36;
-    private static final int RECEIVER_TAG_FIELD_OFFSET = APP_SPECIFIC_FEEDBACK_FIELD_OFFSET;
+    private static final int GROUP_TAG_FIELD_OFFSET = APP_SPECIFIC_FEEDBACK_FIELD_OFFSET;
 
     public StatusMessageFlyweight()
     {
@@ -202,9 +202,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * The length of the Application Specific Feedback (or rtag).
+     * The length of the Application Specific Feedback (or gtag).
      *
-     * @return length, in bytes, of the Application Specific Feedback (or rtag).
+     * @return length, in bytes, of the Application Specific Feedback (or gtag).
      */
     public int asfLength()
     {
@@ -212,11 +212,11 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * The rtag (if present) from the Status Message.
+     * The group tag (if present) from the Status Message.
      *
-     * @return the rtag value or 0 if not present.
+     * @return the group tag value or 0 if not present.
      */
-    public long receiverTag()
+    public long groupTag()
     {
         final int frameLength = frameLength();
 
@@ -225,10 +225,10 @@ public class StatusMessageFlyweight extends HeaderFlyweight
             if (frameLength > (HEADER_LENGTH + SIZE_OF_LONG))
             {
                 throw new AeronException(
-                    "SM has longer application specific feedback (" + (frameLength - HEADER_LENGTH) + ") than rtag");
+                    "SM has longer application specific feedback (" + (frameLength - HEADER_LENGTH) + ") than gtag");
             }
 
-            return getLongUnaligned(RECEIVER_TAG_FIELD_OFFSET);
+            return getLongUnaligned(GROUP_TAG_FIELD_OFFSET);
         }
 
         return 0;
@@ -237,15 +237,15 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     /**
      * Set the Receiver Tag for the Status Message.
      *
-     * @param rtag value to set if not null
+     * @param groupTag value to set if not null
      * @return flyweight
      */
-    public StatusMessageFlyweight receiverTag(final Long rtag)
+    public StatusMessageFlyweight groupTag(final Long groupTag)
     {
-        if (null != rtag)
+        if (null != groupTag)
         {
             frameLength(HEADER_LENGTH + SIZE_OF_LONG);
-            putLongUnaligned(RECEIVER_TAG_FIELD_OFFSET, rtag);
+            putLongUnaligned(GROUP_TAG_FIELD_OFFSET, groupTag);
         }
 
         return this;
@@ -256,9 +256,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      *
      * @return offset of receiver tag field
      */
-    public static int receiverTagFieldOffset()
+    public static int groupTagFieldOffset()
     {
-        return RECEIVER_TAG_FIELD_OFFSET;
+        return GROUP_TAG_FIELD_OFFSET;
     }
 
     /**

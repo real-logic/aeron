@@ -36,14 +36,14 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
 
     private long receiverTimeoutNs;
-    private long receiverTag;
+    private long groupTag;
     private int groupMinSize;
-    private final boolean isReceiverTagAware;
+    private final boolean isGroupTagAware;
     private volatile Receiver[] receivers = EMPTY_RECEIVERS;
 
-    public AbstractMinMulticastFlowControl(final boolean isReceiverTagAware)
+    public AbstractMinMulticastFlowControl(final boolean isGroupTagAware)
     {
-        this.isReceiverTagAware = isReceiverTagAware;
+        this.isGroupTagAware = isGroupTagAware;
     }
 
     /**
@@ -56,7 +56,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         final int termBufferLength)
     {
         receiverTimeoutNs = context.flowControlReceiverTimeoutNs();
-        receiverTag = isReceiverTagAware ? context.flowControlGroupReceiverTag() : 0;
+        groupTag = isGroupTagAware ? context.flowControlGroupTag() : 0;
         groupMinSize = context.flowControlReceiverGroupMinSize();
 
         parseUriParam(udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME));
@@ -164,14 +164,14 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         return receiverTimeoutNs;
     }
 
-    protected final boolean hasReceiverTag()
+    protected final boolean hasGroupTag()
     {
-        return isReceiverTagAware;
+        return isGroupTagAware;
     }
 
-    protected final long receiverTag()
+    protected final long groupTag()
     {
-        return receiverTag;
+        return groupTag;
     }
 
     protected final int groupMinSize()
@@ -220,10 +220,10 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
                 {
                     final int groupMinSizeIndex = arg.indexOf('/');
 
-                    if (2 != groupMinSizeIndex && isReceiverTagAware)
+                    if (2 != groupMinSizeIndex && isGroupTagAware)
                     {
                         final int lengthToParse = -1 == groupMinSizeIndex ? arg.length() - 2 : groupMinSizeIndex - 2;
-                        receiverTag = parseLongAscii(arg, 2, lengthToParse);
+                        groupTag = parseLongAscii(arg, 2, lengthToParse);
                     }
 
                     if (-1 != groupMinSizeIndex)

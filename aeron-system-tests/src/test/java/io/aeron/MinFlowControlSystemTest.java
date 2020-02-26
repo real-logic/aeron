@@ -263,7 +263,7 @@ public class MinFlowControlSystemTest
             .build();
 
         final String uriWithMinFlowControl = builder
-            .receiverTag((Long)null)
+            .groupTag((Long)null)
             .minFlowControl(groupSize, null)
             .build();
 
@@ -355,7 +355,7 @@ public class MinFlowControlSystemTest
             .build();
 
         final String uriWithMinFlowControl = builder
-            .receiverTag((Long)null)
+            .groupTag((Long)null)
             .minFlowControl(groupSize, null)
             .build();
 
@@ -387,7 +387,7 @@ public class MinFlowControlSystemTest
     public void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
     {
         final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";
-        final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|rtag=123";
+        final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|gtag=123";
         final String subscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));

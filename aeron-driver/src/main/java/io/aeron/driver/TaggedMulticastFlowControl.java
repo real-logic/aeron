@@ -65,7 +65,7 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
 
         if (asfLength == SIZE_OF_LONG)
         {
-            if (flyweight.receiverTag() == super.receiverTag())
+            if (flyweight.groupTag() == super.groupTag())
             {
                 result = true;
             }
@@ -73,7 +73,7 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         else if (asfLength >= SIZE_OF_INT)
         {
             // compatible check for ASF of first 4 bytes
-            final int offset = StatusMessageFlyweight.receiverTagFieldOffset();
+            final int offset = StatusMessageFlyweight.groupTagFieldOffset();
 
             if (flyweight.getByte(offset) == PreferredMulticastFlowControl.PREFERRED_ASF_BYTES[0] &&
                 flyweight.getByte(offset + 1) == PreferredMulticastFlowControl.PREFERRED_ASF_BYTES[1] &&

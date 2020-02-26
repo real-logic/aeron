@@ -34,7 +34,7 @@ import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
 import static io.aeron.agent.EventConfiguration.*;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
-import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
@@ -47,10 +47,9 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 class ArchiveEventLoggerTest
 {
     private static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 8;
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocate(CAPACITY + TRAILER_LENGTH));
     private final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(logBuffer));
-    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(
-        allocateDirect(align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 3));
+    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH * 3]);
 
     @AfterEach
     void after()

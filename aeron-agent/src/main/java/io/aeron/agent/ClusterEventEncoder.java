@@ -71,7 +71,7 @@ final class ClusterEventEncoder
 
     static int newLeaderShipTermLength()
     {
-        return SIZE_OF_LONG * 4 + SIZE_OF_INT * 3;
+        return (SIZE_OF_LONG * 4) + (SIZE_OF_INT * 3);
     }
 
     static <T extends Enum<T>> int encodeStateChange(
@@ -88,7 +88,7 @@ final class ClusterEventEncoder
         encodingBuffer.putInt(offset + relativeOffset, memberId, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, captureLength - SIZE_OF_INT * 2, LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_INT * 2), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, from.name());
@@ -100,7 +100,7 @@ final class ClusterEventEncoder
 
     static <T extends Enum<T>> int stateChangeLength(final T from, final T to)
     {
-        return stateTransitionStringLength(from, to) + SIZE_OF_INT * 2;
+        return stateTransitionStringLength(from, to) + (SIZE_OF_INT * 2);
     }
 
     private static <T extends Enum<T>> int stateTransitionStringLength(final T from, final T to)

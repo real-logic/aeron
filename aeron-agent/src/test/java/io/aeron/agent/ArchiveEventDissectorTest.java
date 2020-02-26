@@ -27,13 +27,11 @@ import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.archive.codecs.ControlResponseCode.NULL_VAL;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveEventDissectorTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH]);
     private final StringBuilder builder = new StringBuilder();
     private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
 

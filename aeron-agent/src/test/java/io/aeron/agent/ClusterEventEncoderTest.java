@@ -26,13 +26,12 @@ import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class ClusterEventEncoderTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH]);
 
     @Test
     void testEncodeStateChange()
@@ -117,6 +116,6 @@ class ClusterEventEncoderTest
         final ChronoUnit from = ChronoUnit.CENTURIES;
         final ChronoUnit to = ChronoUnit.HALF_DAYS;
         final String payload = from.name() + SEPARATOR + to.name();
-        assertEquals(payload.length() + SIZE_OF_INT * 2, stateChangeLength(from, to));
+        assertEquals(payload.length() + (SIZE_OF_INT * 2), stateChangeLength(from, to));
     }
 }

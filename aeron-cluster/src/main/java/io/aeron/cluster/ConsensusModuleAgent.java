@@ -1639,8 +1639,7 @@ class ConsensusModuleAgent implements Agent
                 memberId,
                 logPublisher.sessionId(),
                 clusterTimeUnit,
-                ctx.appVersion()
-            ))
+                ctx.appVersion()))
             {
                 return false;
             }

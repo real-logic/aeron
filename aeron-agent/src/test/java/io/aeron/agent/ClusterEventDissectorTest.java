@@ -26,12 +26,11 @@ import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClusterEventDissectorTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH]);
     private final StringBuilder builder = new StringBuilder();
 
     @Test
@@ -40,11 +39,11 @@ class ClusterEventDissectorTest
         internalEncodeLogHeader(buffer, 0, 8, 9, () -> 33_000_000_000L);
         buffer.putLong(LOG_HEADER_LENGTH, 1, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 2, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG * 2, 3, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG * 3, 4, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_LONG * 4, 100, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_LONG * 4 + SIZE_OF_INT, 200, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_LONG * 4 + SIZE_OF_INT + SIZE_OF_INT, 1, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 2), 3, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 3), 4, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 4), 100, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 4) + SIZE_OF_INT, 200, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 4) + SIZE_OF_INT + SIZE_OF_INT, 1, LITTLE_ENDIAN);
 
         ClusterEventDissector.dissectNewLeadershipTerm(buffer, 0, builder);
 

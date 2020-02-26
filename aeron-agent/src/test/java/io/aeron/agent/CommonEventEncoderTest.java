@@ -37,8 +37,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class CommonEventEncoderTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(
-        allocateDirectAligned(MAX_EVENT_LENGTH * 10, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH * 10]);
 
     @Test
     void encodeLogHeader()
@@ -197,7 +196,6 @@ class CommonEventEncoderTest
             arguments(0, LOG_HEADER_LENGTH),
             arguments(2, LOG_HEADER_LENGTH + 2),
             arguments(-LOG_HEADER_LENGTH, 0),
-            arguments(Integer.MAX_VALUE, Integer.MIN_VALUE + LOG_HEADER_LENGTH - 1)
-        );
+            arguments(Integer.MAX_VALUE, Integer.MIN_VALUE + LOG_HEADER_LENGTH - 1));
     }
 }

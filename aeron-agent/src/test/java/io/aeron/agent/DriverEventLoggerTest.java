@@ -45,7 +45,7 @@ class DriverEventLoggerTest
     private static final int CAPACITY = 32 * 1024;
     private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocate(CAPACITY + TRAILER_LENGTH));
     private final DriverEventLogger logger = new DriverEventLogger(new ManyToOneRingBuffer(logBuffer));
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocate(align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 3));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocate(MAX_EVENT_LENGTH * 3));
 
     @AfterEach
     void after()

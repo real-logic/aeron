@@ -24,16 +24,14 @@ import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CommonEventDissectorTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH]);
     private final StringBuilder builder = new StringBuilder();
 
     @Test
@@ -83,7 +81,7 @@ class CommonEventDissectorTest
         final int offset = 16;
         buffer.putInt(offset, 7777, LITTLE_ENDIAN);
         buffer.putInt(offset + SIZE_OF_INT, 16, LITTLE_ENDIAN);
-        buffer.putBytes(offset + SIZE_OF_INT * 2,
+        buffer.putBytes(offset + (SIZE_OF_INT * 2),
             new byte[]{ -100, 124, 0, 18, 120, -128, 44, 44, 10, -80, 80, 22, 122, 5, 5, -99 });
 
         final int decodedLength = CommonEventDissector.dissectSocketAddress(buffer, offset, builder);

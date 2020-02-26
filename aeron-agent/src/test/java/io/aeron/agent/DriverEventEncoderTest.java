@@ -25,14 +25,12 @@ import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
 import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class DriverEventEncoderTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(
-        allocateDirectAligned(MAX_EVENT_LENGTH * 10, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH * 10]);
 
     @Test
     void encodePublicationRemovalShouldWriteUriLast()

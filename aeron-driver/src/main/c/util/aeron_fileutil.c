@@ -150,7 +150,6 @@ int aeron_is_directory(const char* path)
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/statvfs.h>
-#include <errno.h>
 #include <ftw.h>
 #include <stdio.h>
 

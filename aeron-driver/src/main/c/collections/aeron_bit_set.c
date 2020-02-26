@@ -15,7 +15,6 @@
  */
 
 #include <string.h>
-#include <errno.h>
 #include "aeron_bit_set.h"
 
 extern int aeron_bit_set_stack_alloc(

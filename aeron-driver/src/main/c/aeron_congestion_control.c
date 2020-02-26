@@ -21,7 +21,6 @@
 
 #include <errno.h>
 #include "protocol/aeron_udp_protocol.h"
-#include "concurrent/aeron_logbuffer_descriptor.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "aeron_congestion_control.h"
@@ -113,7 +112,7 @@ int aeron_static_window_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t *_strategy;
 
     if (aeron_alloc((void **)&_strategy, sizeof(aeron_congestion_control_strategy_t)) < 0 ||
-        aeron_alloc((void **)&_strategy->state, sizeof(aeron_static_window_congestion_control_strategy_state_t)) < 0)
+        aeron_alloc(&_strategy->state, sizeof(aeron_static_window_congestion_control_strategy_state_t)) < 0)
     {
         return -1;
     }

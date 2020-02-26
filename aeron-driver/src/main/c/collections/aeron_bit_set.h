@@ -17,6 +17,7 @@
 #ifndef AERON_AERON_BIT_SET_H
 #define AERON_AERON_BIT_SET_H
 
+#include <errno.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>

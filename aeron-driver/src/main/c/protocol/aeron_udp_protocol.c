@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "aeron_udp_protocol.h"
-#include "util/aeron_error.h"
 
 int aeron_udp_protocol_sm_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
 {

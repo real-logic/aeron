@@ -15,7 +15,6 @@
  */
 
 #include "aeron_socket.h"
-#include "aeron_driver_conductor_proxy.h"
 
 #if defined(AERON_COMPILER_GCC)
 

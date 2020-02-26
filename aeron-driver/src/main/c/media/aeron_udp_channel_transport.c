@@ -34,7 +34,6 @@
 #include "util/aeron_error.h"
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"
-#include "concurrent/aeron_thread.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr

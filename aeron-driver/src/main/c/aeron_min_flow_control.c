@@ -281,7 +281,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     }
 
     if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
-        aeron_alloc((void **)&_strategy->state, sizeof(aeron_min_flow_control_strategy_state_t)) < 0)
+        aeron_alloc(&_strategy->state, sizeof(aeron_min_flow_control_strategy_state_t)) < 0)
     {
         return -1;
     }

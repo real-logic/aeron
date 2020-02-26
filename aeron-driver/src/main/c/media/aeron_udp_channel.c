@@ -17,13 +17,11 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <stdlib.h>
 #include "aeron_socket.h"
 #include <stdio.h>
 #include <uri/aeron_uri.h>
 #include "aeron_alloc.h"
 #include "util/aeron_strutil.h"
-#include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "media/aeron_udp_channel.h"

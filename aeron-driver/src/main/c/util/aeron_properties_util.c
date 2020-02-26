@@ -165,7 +165,7 @@ int aeron_properties_setenv(const char *name, const char *value)
         }
         else
         {
-            env_name[i] = toupper(c);
+            env_name[i] = (char)toupper(c);
         }
     }
 
@@ -371,7 +371,7 @@ int aeron_properties_http_load(const char *url)
 
 int aeron_properties_load(const char *url_or_filename)
 {
-    int result = -1;
+    int result;
 
     if (strncmp("file://", url_or_filename, strlen("file://")) == 0)
     {

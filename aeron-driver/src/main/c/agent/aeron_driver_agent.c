@@ -31,12 +31,9 @@
 
 #include <time.h>
 #include <inttypes.h>
-#include <stdarg.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
-#include "aeron_driver_agent.h"
 #include "util/aeron_dlopen.h"
-#include "util/aeron_strutil.h"
 #include "concurrent/aeron_thread.h"
 #include "aeron_windows.h"
 
@@ -277,7 +274,7 @@ int aeron_driver_agent_outgoing_msg(
     int result = delegate->outgoing_msg_func(
         delegate->interceptor_state, delegate->next_interceptor, transport, message);
 
-    aeron_driver_agent_log_frame(AERON_FRAME_OUT, message, (int)result, (int32_t)message->msg_iov[0].iov_len);
+    aeron_driver_agent_log_frame(AERON_FRAME_OUT, message, result, (int32_t)message->msg_iov[0].iov_len);
 
     return result;
 }

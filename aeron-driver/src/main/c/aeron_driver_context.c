@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
 
 #include "util/aeron_platform.h"
 #if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)

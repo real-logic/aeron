@@ -45,7 +45,7 @@ void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 
 int aeron_idle_strategy_sleeping_init_args(void **state, const char *env_var, const char *init_args)
 {
-    if (aeron_alloc((void **)state, sizeof(uint64_t)) < 0)
+    if (aeron_alloc(state, sizeof(uint64_t)) < 0)
     {
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
@@ -164,7 +164,7 @@ void aeron_idle_strategy_backoff_idle(void *state, int work_count)
 int aeron_idle_strategy_backoff_state_init(
     void **state, uint64_t max_spins, uint64_t max_yields, uint64_t min_park_period_ns, uint64_t max_park_period_ns)
 {
-    if (aeron_alloc((void **)state, sizeof(aeron_idle_strategy_backoff_state_t)) < 0)
+    if (aeron_alloc(state, sizeof(aeron_idle_strategy_backoff_state_t)) < 0)
     {
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;

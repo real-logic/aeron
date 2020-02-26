@@ -24,7 +24,6 @@
 #include "aeron_socket.h"
 #include <inttypes.h>
 #include "concurrent/aeron_term_scanner.h"
-#include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "aeron_network_publication.h"
 #include "aeron_alloc.h"

@@ -73,10 +73,10 @@ int64_t aeron_epoch_clock()
 
 typedef struct aeron_clock_cache_stct
 {
-    uint8_t pre_pad[(2 * AERON_CACHE_LINE_LENGTH)];
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH];
     int64_t cached_epoch_time;
     int64_t cached_nano_time;
-    uint8_t post_pad[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int64_t))];
+    uint8_t post_pad[AERON_CACHE_LINE_LENGTH - (2 * sizeof(int64_t))];
 }
 aeron_clock_cache_t;
 

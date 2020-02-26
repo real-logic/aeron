@@ -22,7 +22,6 @@
 #include "aeron_ipc_publication.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_alloc.h"
-#include "protocol/aeron_udp_protocol.h"
 #include "aeron_driver_conductor.h"
 #include "util/aeron_error.h"
 

@@ -21,7 +21,6 @@
 
 #include <errno.h>
 #include <string.h>
-#include <stdio.h>
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
@@ -29,7 +28,6 @@
 
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
-#include "aeron_udp_channel_transport_loss.h"
 #include "aeron_udp_transport_poller.h"
 
 aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_default =

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <errno.h>
 #include "aeron_mpsc_rb.h"
 #include "util/aeron_error.h"

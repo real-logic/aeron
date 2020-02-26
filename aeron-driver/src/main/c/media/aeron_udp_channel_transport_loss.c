@@ -21,7 +21,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "concurrent/aeron_atomic.h"
 #include "concurrent/aeron_thread.h"

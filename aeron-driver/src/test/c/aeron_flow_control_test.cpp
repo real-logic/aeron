@@ -260,8 +260,8 @@ TEST_F(TaggedFlowControlTest, shouldUseFallbackToTaggedStrategy)
     context->multicast_flow_control_supplier_func = aeron_tagged_flow_control_strategy_supplier;
     context->receiver_group_tag.is_present = true;
     context->receiver_group_tag.value = 1;
-    context->flow_control.receiver_group_tag = 1;
-    context->flow_control.receiver_group_min_size = 0;
+    context->flow_control.group_tag = 1;
+    context->flow_control.group_min_size = 0;
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, context, channel,

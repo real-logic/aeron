@@ -365,7 +365,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_RECEIVER_GROUP_TAG_IS_PRESENT_DEFAULT false
 #define AERON_RECEIVER_GROUP_TAG_VALUE_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT (-1)
-#define AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT (0)
+#define AERON_FLOW_CONTROL_GROUP_MIN_SIZE_DEFAULT (0)
 #define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (2 * 1000 * 1000 * 1000LL)
 #define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
@@ -507,8 +507,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->multicast_ttl = AERON_SOCKET_MULTICAST_TTL_DEFAULT;
     _context->receiver_group_tag.is_present = AERON_RECEIVER_GROUP_TAG_IS_PRESENT_DEFAULT;
     _context->receiver_group_tag.value = AERON_RECEIVER_GROUP_TAG_VALUE_DEFAULT;
-    _context->flow_control.receiver_group_tag = AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
-    _context->flow_control.receiver_group_min_size = AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT;
+    _context->flow_control.group_tag = AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
+    _context->flow_control.group_min_size = AERON_FLOW_CONTROL_GROUP_MIN_SIZE_DEFAULT;
     _context->flow_control.receiver_timeout_ns = AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT;
     _context->send_to_sm_poll_ratio = AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
     _context->status_message_timeout_ns = AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT;
@@ -865,17 +865,17 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             INT64_MAX);
     }
 
-    _context->flow_control.receiver_group_tag = aeron_config_parse_int64(
+    _context->flow_control.group_tag = aeron_config_parse_int64(
         AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR,
         getenv(AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR),
-        _context->flow_control.receiver_group_tag,
+        _context->flow_control.group_tag,
         INT64_MIN,
         INT64_MAX);
 
-    _context->flow_control.receiver_group_min_size = aeron_config_parse_int32(
-        AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_ENV_VAR,
-        getenv(AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_ENV_VAR),
-        _context->flow_control.receiver_group_min_size,
+    _context->flow_control.group_min_size = aeron_config_parse_int32(
+        AERON_FLOW_CONTROL_GROUP_MIN_SIZE_ENV_VAR,
+        getenv(AERON_FLOW_CONTROL_GROUP_MIN_SIZE_ENV_VAR),
+        _context->flow_control.group_min_size,
         0,
         INT32_MAX);
 
@@ -1953,27 +1953,27 @@ int aeron_driver_context_set_flow_control_group_tag(aeron_driver_context_t *cont
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    context->flow_control.receiver_group_tag = value;
+    context->flow_control.group_tag = value;
     return 0;
 }
 
 int64_t aeron_driver_context_get_flow_control_group_tag(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->flow_control.receiver_group_tag : AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
+    return NULL != context ? context->flow_control.group_tag : AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
 }
 
-int aeron_driver_context_set_flow_control_group_required_size(aeron_driver_context_t *context, int32_t value)
+int aeron_driver_context_set_flow_control_group_min_size(aeron_driver_context_t *context, int32_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    context->flow_control.receiver_group_min_size = value;
+    context->flow_control.group_min_size = value;
     return 0;
 }
 
-int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_context_t *context)
+int32_t aeron_driver_context_get_flow_control_group_min_size(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->flow_control.receiver_group_min_size :
-        AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT;
+    return NULL != context ? context->flow_control.group_min_size :
+        AERON_FLOW_CONTROL_GROUP_MIN_SIZE_DEFAULT;
 }
 
 int aeron_driver_context_set_receiver_group_tag(aeron_driver_context_t *context, bool is_present, int64_t value)

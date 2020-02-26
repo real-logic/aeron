@@ -486,7 +486,7 @@ uint64_t aeron_driver_context_get_flow_control_receiver_timeout_ns(aeron_driver_
 /**
  * Default receiver tag for publishers to group endpoints by using tagged flow control.
  */
-#define AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR "AERON_FLOW_CONTROL_GTAG"
+#define AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR "AERON_FLOW_CONTROL_GROUP_TAG"
 
 int aeron_driver_context_set_flow_control_group_tag(aeron_driver_context_t *context, int64_t value);
 int64_t aeron_driver_context_get_flow_control_group_tag(aeron_driver_context_t *context);
@@ -494,15 +494,15 @@ int64_t aeron_driver_context_get_flow_control_group_tag(aeron_driver_context_t *
 /**
  * Default required group size to use in tagged multicast flow control.
  */
-#define AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_ENV_VAR "AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE"
+#define AERON_FLOW_CONTROL_GROUP_MIN_SIZE_ENV_VAR "AERON_FLOW_CONTROL_GROUP_MIN_SIZE"
 
-int aeron_driver_context_set_flow_control_group_required_size(aeron_driver_context_t *context, int32_t value);
-int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_context_t *context);
+int aeron_driver_context_set_flow_control_group_min_size(aeron_driver_context_t *context, int32_t value);
+int32_t aeron_driver_context_get_flow_control_group_min_size(aeron_driver_context_t *context);
 
 /**
  * Default receiver tag to be sent on status messages from channel to handle tagged flow control.
  */
-#define AERON_RECEIVER_GROUP_TAG_ENV_VAR "AERON_RECEIVER_GTAG"
+#define AERON_RECEIVER_GROUP_TAG_ENV_VAR "AERON_RECEIVER_GROUP_TAG"
 
 int aeron_driver_context_set_receiver_group_tag(aeron_driver_context_t *context, bool is_present, int64_t value);
 bool aeron_driver_context_get_receiver_group_tag_is_present(aeron_driver_context_t *context);

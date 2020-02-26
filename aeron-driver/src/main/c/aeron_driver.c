@@ -629,12 +629,12 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    multicast_flow_control_supplier_func=%p%s",
         (void *)context->multicast_flow_control_supplier_func,
         aeron_dlinfo((const void *)context->multicast_flow_control_supplier_func, buffer, sizeof(buffer)));
-    fprintf(fpout, "\n    receiver_group_tag.is_present=%d",
+    fprintf(fpout, "\n    group_tag.is_present=%d",
         context->receiver_group_tag.is_present);
     fprintf(fpout, "\n    receiver_group_tag.value=%" PRId64, context->receiver_group_tag.value);
+    fprintf(fpout, "\n    flow_control.group_tag=%" PRId64, context->flow_control.group_tag);
+    fprintf(fpout, "\n    flow_control.group_min_size=%" PRId32, context->flow_control.group_min_size);
     fprintf(fpout, "\n    flow_control_receiver_timeout_ns=%" PRIu64, context->flow_control.receiver_timeout_ns);
-    fprintf(fpout, "\n    flow_control.receiver_group_min_size=%" PRId32, context->flow_control.receiver_group_min_size);
-    fprintf(fpout, "\n    flow_control.group_tag=%" PRId64, context->flow_control.receiver_group_tag);
     fprintf(fpout, "\n    congestion_control_supplier_func=%p%s",
         (void *)context->congestion_control_supplier_func,
         aeron_dlinfo((const void *)context->congestion_control_supplier_func, buffer, sizeof(buffer)));

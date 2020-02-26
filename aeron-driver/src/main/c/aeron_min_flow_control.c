@@ -302,9 +302,9 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->receiver_timeout_ns = options.timeout_ns.is_present ?
         options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
     state->group_min_size = options.group_min_size.is_present ?
-        options.group_min_size.value : context->flow_control.receiver_group_min_size;
+        options.group_min_size.value : context->flow_control.group_min_size;
     state->group_tag = options.group_tag.is_present ?
-        options.group_tag.value : context->flow_control.receiver_group_tag;
+        options.group_tag.value : context->flow_control.group_tag;
 
     state->error_log = context->error_log;
 

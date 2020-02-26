@@ -272,7 +272,6 @@ public class ExtendRecordingTest
                 .aeronDirectoryName(aeronDirectoryName)
                 .archiveDir(archiveDir)
                 .fileSyncLevel(0)
-                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
         aeron = Aeron.connect(

@@ -75,7 +75,6 @@ public class BasicArchiveTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
-                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
         aeron = Aeron.connect(

@@ -729,11 +729,9 @@ public class Archive implements AutoCloseable
         private Checksum recordChecksum;
         private Checksum replayChecksum;
 
-        UnsafeBuffer dataBuffer;
-        UnsafeBuffer replayBuffer;
-        UnsafeBuffer recordChecksumBuffer;
-
-        private boolean shouldFreeBuffersOnClose;
+        private UnsafeBuffer dataBuffer;
+        private UnsafeBuffer replayBuffer;
+        private UnsafeBuffer recordChecksumBuffer;
 
         /**
          * Perform a shallow copy of the object.
@@ -1954,36 +1952,6 @@ public class Archive implements AutoCloseable
             return this;
         }
 
-        /**
-         * Should all direct {@link java.nio.ByteBuffer}s that are allocated by this context be explicitly freed upon
-         * {@link #close()}.
-         *
-         * @return {@code true} if direct {@link java.nio.ByteBuffer}s should be freed upon {@link #close()}.
-         */
-        public boolean shouldFreeBuffersOnClose()
-        {
-            return shouldFreeBuffersOnClose;
-        }
-
-        /**
-         * Should all direct {@link java.nio.ByteBuffer}s that are allocated by this context be explicitly freed upon
-         * {@link #close()}.
-         * <p>
-         * The default is to rely on GC to free the resources associated with the direct {@link java.nio.ByteBuffer}s.
-         * Also the {@link java.nio.ByteBuffer}s from the memory-mapped files are always unmapped.
-         * <p>
-         * <em>WARNING: Use at your own risk!</em>
-         *
-         * @param shouldFreeBuffersOnClose {@code true} if direct {@link java.nio.ByteBuffer}s should be freed
-         *                                 upon {@link #close()}.
-         * @return this for a fluent API.
-         */
-        public Context shouldFreeBuffersOnClose(final boolean shouldFreeBuffersOnClose)
-        {
-            this.shouldFreeBuffersOnClose = shouldFreeBuffersOnClose;
-            return this;
-        }
-
         CountDownLatch abortLatch()
         {
             return abortLatch;
@@ -2013,6 +1981,12 @@ public class Archive implements AutoCloseable
             }
         }
 
+        Context dataBuffer(final UnsafeBuffer dataBuffer)
+        {
+            this.dataBuffer = dataBuffer;
+            return this;
+        }
+
         UnsafeBuffer dataBuffer()
         {
             if (null == dataBuffer)
@@ -2020,6 +1994,12 @@ public class Archive implements AutoCloseable
                 dataBuffer = allocateBuffer();
             }
             return dataBuffer;
+        }
+
+        Context replayBuffer(final UnsafeBuffer replayBuffer)
+        {
+            this.replayBuffer = replayBuffer;
+            return this;
         }
 
         UnsafeBuffer replayBuffer()
@@ -2035,6 +2015,12 @@ public class Archive implements AutoCloseable
             }
 
             return replayBuffer;
+        }
+
+        Context recordChecksumBuffer(final UnsafeBuffer recordChecksumBuffer)
+        {
+            this.recordChecksumBuffer = recordChecksumBuffer;
+            return this;
         }
 
         UnsafeBuffer recordChecksumBuffer()
@@ -2083,19 +2069,6 @@ public class Archive implements AutoCloseable
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
-            }
-
-            if (shouldFreeBuffersOnClose)
-            {
-                final UnsafeBuffer dataBuffer = this.dataBuffer;
-                this.dataBuffer = null;
-                final UnsafeBuffer replayBuffer = this.replayBuffer;
-                this.replayBuffer = null;
-                final UnsafeBuffer recordChecksumBuffer = this.recordChecksumBuffer;
-                this.recordChecksumBuffer = null;
-                BufferUtil.free(dataBuffer);
-                BufferUtil.free(replayBuffer);
-                BufferUtil.free(recordChecksumBuffer);
             }
         }
     }

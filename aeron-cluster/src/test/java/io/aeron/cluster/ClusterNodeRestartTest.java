@@ -645,7 +645,6 @@ public class ClusterNodeRestartTest
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))

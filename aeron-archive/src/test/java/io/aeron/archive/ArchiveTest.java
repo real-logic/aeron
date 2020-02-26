@@ -36,10 +36,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.InOrder;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -56,9 +54,8 @@ import static io.aeron.archive.ArchiveThreadingMode.SHARED;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.condition.JRE.JAVA_8;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class ArchiveTest
 {
@@ -308,13 +305,12 @@ public class ArchiveTest
     void dataBufferIsAllocatedOnDemand()
     {
         final Context context = new Context();
-        assertNull(context.dataBuffer);
 
         final UnsafeBuffer buffer = context.dataBuffer();
 
         assertNotNull(buffer);
         assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
-        assertSame(buffer, context.dataBuffer);
+        assertSame(buffer, context.dataBuffer());
     }
 
     @Test
@@ -322,7 +318,7 @@ public class ArchiveTest
     {
         final UnsafeBuffer buffer = mock(UnsafeBuffer.class);
         final Context context = new Context();
-        context.dataBuffer = buffer;
+        context.dataBuffer(buffer);
 
         assertSame(buffer, context.dataBuffer());
     }
@@ -331,13 +327,12 @@ public class ArchiveTest
     void replayBufferIsAllocatedOnDemandIfThreadingModeIsDEDICATED()
     {
         final Context context = new Context().threadingMode(DEDICATED);
-        assertNull(context.replayBuffer);
 
         final UnsafeBuffer buffer = context.replayBuffer();
 
         assertNotNull(buffer);
         assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
-        assertSame(buffer, context.replayBuffer);
+        assertSame(buffer, context.replayBuffer());
         assertNotSame(context.dataBuffer(), buffer);
     }
 
@@ -346,9 +341,9 @@ public class ArchiveTest
     {
         final UnsafeBuffer buffer = mock(UnsafeBuffer.class);
         final Context context = new Context().threadingMode(DEDICATED);
-        context.replayBuffer = buffer;
+        context.replayBuffer(buffer);
 
-        assertSame(buffer, context.replayBuffer);
+        assertSame(buffer, context.replayBuffer());
     }
 
     @ParameterizedTest
@@ -356,19 +351,16 @@ public class ArchiveTest
     void replayBufferReturnsDataBufferIfThreadingModeIsNotDEDICATED(final ArchiveThreadingMode threadingMode)
     {
         final Context context = new Context().threadingMode(threadingMode);
-        assertNull(context.replayBuffer);
 
         final UnsafeBuffer buffer = context.replayBuffer();
 
         assertSame(context.dataBuffer(), buffer);
-        assertNull(context.replayBuffer);
     }
 
     @Test
     void recordChecksumBufferReturnsNullIfRecordChecksumIsNull()
     {
         final Context context = new Context();
-        assertNull(context.recordChecksumBuffer);
         assertNull(context.recordChecksumBuffer());
     }
 
@@ -377,13 +369,12 @@ public class ArchiveTest
     {
         final Checksum recordChecksum = mock(Checksum.class);
         final Context context = new Context().recordChecksum(recordChecksum).threadingMode(DEDICATED);
-        assertNull(context.recordChecksumBuffer);
 
         final UnsafeBuffer buffer = context.recordChecksumBuffer();
 
         assertNotNull(buffer);
         assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
-        assertSame(buffer, context.recordChecksumBuffer);
+        assertSame(buffer, context.recordChecksumBuffer());
         assertNotSame(context.dataBuffer(), buffer);
     }
 
@@ -393,7 +384,7 @@ public class ArchiveTest
         final UnsafeBuffer buffer = mock(UnsafeBuffer.class);
         final Checksum recordChecksum = mock(Checksum.class);
         final Context context = new Context().recordChecksum(recordChecksum).threadingMode(DEDICATED);
-        context.recordChecksumBuffer = buffer;
+        context.recordChecksumBuffer(buffer);
 
         assertSame(buffer, context.recordChecksumBuffer());
     }
@@ -404,69 +395,10 @@ public class ArchiveTest
     {
         final Checksum recordChecksum = mock(Checksum.class);
         final Context context = new Context().recordChecksum(recordChecksum).threadingMode(threadingMode);
-        assertNull(context.recordChecksumBuffer);
 
         final UnsafeBuffer buffer = context.recordChecksumBuffer();
 
         assertSame(context.dataBuffer(), buffer);
-        assertNull(context.recordChecksumBuffer);
-    }
-
-    @Test
-    void shouldFreeBuffersOnClose()
-    {
-        final Context context = new Context();
-        assertFalse(context.shouldFreeBuffersOnClose());
-
-        context.shouldFreeBuffersOnClose(true);
-        assertTrue(context.shouldFreeBuffersOnClose());
-    }
-
-    @Test
-    void closeDoesNotFreeBuffersIfShouldFreeBuffersOnCloseIsSetToFalse()
-    {
-        final UnsafeBuffer dataBuffer = mock(UnsafeBuffer.class);
-        final UnsafeBuffer replayBuffer = mock(UnsafeBuffer.class);
-        final UnsafeBuffer recordChecksumBuffer = mock(UnsafeBuffer.class);
-        final Context context = new Context()
-            .recordChecksum(mock(Checksum.class))
-            .shouldFreeBuffersOnClose(false);
-        context.dataBuffer = dataBuffer;
-        context.replayBuffer = replayBuffer;
-        context.recordChecksumBuffer = recordChecksumBuffer;
-
-        context.close();
-
-        assertSame(dataBuffer, context.dataBuffer);
-        assertSame(replayBuffer, context.replayBuffer);
-        assertSame(recordChecksumBuffer, context.recordChecksumBuffer);
-        verifyNoInteractions(dataBuffer, replayBuffer, recordChecksumBuffer);
-    }
-
-    @Test
-    @EnabledOnJre(JAVA_8)
-    void closeFreesBuffersIfShouldFreeBuffersOnCloseIsSetToTrue()
-    {
-        final UnsafeBuffer dataBuffer = mock(UnsafeBuffer.class);
-        final UnsafeBuffer replayBuffer = mock(UnsafeBuffer.class);
-        final UnsafeBuffer recordChecksumBuffer = mock(UnsafeBuffer.class);
-        final Context context = new Context()
-            .recordChecksum(mock(Checksum.class))
-            .shouldFreeBuffersOnClose(true);
-        context.dataBuffer = dataBuffer;
-        context.replayBuffer = replayBuffer;
-        context.recordChecksumBuffer = recordChecksumBuffer;
-
-        context.close();
-
-        assertNull(context.dataBuffer);
-        assertNull(context.replayBuffer);
-        assertNull(context.recordChecksumBuffer);
-        final InOrder inOrder = inOrder(dataBuffer, replayBuffer, recordChecksumBuffer);
-        inOrder.verify(dataBuffer).byteBuffer();
-        inOrder.verify(replayBuffer).byteBuffer();
-        inOrder.verify(recordChecksumBuffer).byteBuffer();
-        inOrder.verifyNoMoreInteractions();
     }
 
     static final class SubscriptionDescriptor

@@ -114,7 +114,6 @@ public class ReplayMergeTest
                 .errorHandler(Throwable::printStackTrace)
                 .archiveDir(archiveDir)
                 .recordingEventsEnabled(false)
-                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true));
 

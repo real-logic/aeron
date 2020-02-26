@@ -16,7 +16,6 @@
 package io.aeron.test;
 
 import org.agrona.LangUtil;
-import org.junit.jupiter.api.condition.JRE;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -155,10 +154,5 @@ public class Tests
     {
         Thread.yield();
         checkInterruptStatus(format, params);
-    }
-
-    public static boolean isJdk8()
-    {
-        return JRE.JAVA_8.isCurrentVersion();
     }
 }

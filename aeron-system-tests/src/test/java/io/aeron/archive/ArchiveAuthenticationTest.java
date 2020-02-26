@@ -24,7 +24,6 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
@@ -355,7 +354,6 @@ public class ArchiveAuthenticationTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
-                .shouldFreeBuffersOnClose(Tests.isJdk8())
                 .authenticatorSupplier(authenticatorSupplier)
                 .threadingMode(ArchiveThreadingMode.SHARED));
     }

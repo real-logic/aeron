@@ -19,6 +19,8 @@
     #include <sys/stat.h>
     #include <fcntl.h>
     #include <unistd.h>
+#else
+    #include "StringUtil.h"
 #endif
 
 #include <string>
@@ -296,7 +298,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length, b
 {
     if (0 == length && 0 == offset)
     {
-        struct stat statInfo;
+        struct stat statInfo{};
         ::fstat(fd.handle, &statInfo);
         length = statInfo.st_size;
     }

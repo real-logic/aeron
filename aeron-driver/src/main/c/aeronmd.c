@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <signal.h>
+#include <time.h>
 #include <stdbool.h>
 #include <stdio.h>
 

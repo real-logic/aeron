@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.UdpChannel;
-import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -31,6 +30,7 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.net.InetAddress.getByName;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -133,7 +133,7 @@ public class UdpChannelTest
         assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 0)));
         assertThat(udpChannel.remoteData(), isMulticastAddress("224.10.9.9", 40124));
         assertThat(udpChannel.localInterface(),
-            is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
+            is(NetworkInterface.getByInetAddress(getByName("localhost"))));
     }
 
     @ParameterizedTest
@@ -151,13 +151,13 @@ public class UdpChannelTest
         assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 0)));
         assertThat(udpChannel.remoteData(), isMulticastAddress("224.10.9.9", 40124));
         assertThat(udpChannel.localInterface(),
-            is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
+            is(NetworkInterface.getByInetAddress(getByName("localhost"))));
     }
 
     private Matcher<InetSocketAddress> isMulticastAddress(final String addressName, final int port)
         throws UnknownHostException
     {
-        final InetAddress inetAddress = InetAddress.getByName(addressName);
+        final InetAddress inetAddress = getByName(addressName);
         return is(new InetSocketAddress(inetAddress, port));
     }
 
@@ -263,10 +263,10 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocalhost = UdpChannel.parse(
             "aeron:udp?interface=localhost|endpoint=localhost:40456");
 
-        assertThat(udpChannel.canonicalForm(), is("UDP-00000000-0-c0a80001-40456"));
-        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
-        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-c0a80001-40456"));
-        assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
+        assertThat(udpChannel.canonicalForm(), is("UDP-0.0.0.0:0-192.168.0.1:40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-127.0.0.1:0-192.168.0.1:40456"));
+        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-127.0.0.1:40455-192.168.0.1:40456"));
+        assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-127.0.0.1:0-localhost:40456"));
     }
 
     @ParameterizedTest
@@ -280,9 +280,12 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocalPort =
             UdpChannel.parse(uri(endpointKey, "[fe80::5246:5dff:fe73:df06]:40456", interfaceKey, "127.0.0.1:40455"));
 
-        assertThat(udpChannelLocal.canonicalForm(), is("UDP-00000000000000000000000000000001-0-c0a80001-40456"));
-        assertThat(udpChannelLocalPort.canonicalForm(),
-            is("UDP-7f000001-40455-fe8000000000000052465dfffe73df06-40456"));
+        assertThat(
+            udpChannelLocal.canonicalForm(),
+            is("UDP-" + udpChannelLocal.localData().getHostString() + ":0-192.168.0.1:40456"));
+        assertThat(
+            udpChannelLocalPort.canonicalForm(),
+            is("UDP-127.0.0.1:40455-[fe80::5246:5dff:fe73:df06]:40456"));
     }
 
     @ParameterizedTest
@@ -299,10 +302,10 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocalhost =
             UdpChannel.parse(uri(endpointKey, "localhost:40456", interfaceKey, "localhost"));
 
-        assertThat(udpChannel.canonicalForm(), is("UDP-00000000-0-c0a80001-40456"));
-        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
-        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-c0a80001-40456"));
-        assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
+        assertThat(udpChannel.canonicalForm(), is("UDP-0.0.0.0:0-192.168.0.1:40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-127.0.0.1:0-192.168.0.1:40456"));
+        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-127.0.0.1:40455-192.168.0.1:40456"));
+        assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-127.0.0.1:0-localhost:40456"));
     }
 
     @Test
@@ -334,12 +337,10 @@ public class UdpChannelTest
     }
 
     @Test
-    public void shouldHandleCanonicalFormWithNsLookup() throws Exception
+    public void shouldHandleCanonicalFormWithNsLookup()
     {
-        final String localhostIpAsHex = resolveToHexAddress("localhost");
-
         final UdpChannel udpChannelExampleCom = UdpChannel.parse("aeron:udp?endpoint=localhost:40456");
-        assertThat(udpChannelExampleCom.canonicalForm(), is("UDP-00000000-0-" + localhostIpAsHex + "-40456"));
+        assertThat(udpChannelExampleCom.canonicalForm(), is("UDP-0.0.0.0:0-localhost:40456"));
     }
 
     @Test
@@ -347,11 +348,11 @@ public class UdpChannelTest
     {
         final UdpChannel udpChannelLocalPort = UdpChannel.parse(
             "aeron:udp?interface=127.0.0.1:40455|endpoint=224.0.1.1:40456");
-        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
+        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-127.0.0.1:40455-224.0.1.1:40456"));
 
         final UdpChannel udpChannelSubnetLocalPort =
             UdpChannel.parse("aeron:udp?interface=127.0.0.0:40455/24|endpoint=224.0.1.1:40456");
-        assertThat(udpChannelSubnetLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
+        assertThat(udpChannelSubnetLocalPort.canonicalForm(), is("UDP-127.0.0.1:40455-224.0.1.1:40456"));
     }
 
     @Test
@@ -368,11 +369,11 @@ public class UdpChannelTest
         final UdpChannel udpChannelSubnetLocal = UdpChannel.parse(
             "aeron:udp?interface=127.0.0.0/24|endpoint=224.0.1.1:40456");
 
-        assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
-        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(udpChannel.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-127.0.0.1:0-224.0.0.1:40456"));
+        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
 
         assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
@@ -394,11 +395,11 @@ public class UdpChannelTest
         final UdpChannel udpChannelSubnetLocal =
             UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "127.0.0.0/24"));
 
-        assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
-        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(udpChannel.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-127.0.0.1:0-224.0.0.1:40456"));
+        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
         assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
 
@@ -415,18 +416,17 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocal =
             UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "[::1]:54321/64"));
 
-        assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-ff0100000000000000000000000000fd-40456"));
-        assertThat(udpChannelLocal.canonicalForm(), is("UDP-00000000000000000000000000000001-54321-e0000101-40456"));
+        assertThat(
+            udpChannel.canonicalForm(),
+            is("UDP-127.0.0.1:0-" + udpChannel.remoteData().getHostString() + ":40456"));
+        assertThat(
+            udpChannelLocal.canonicalForm(),
+            is("UDP-" + udpChannelLocal.localData().getHostString() + ":54321-224.0.1.1:40456"));
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()
     {
         return new NetworkInterfaceTypeSafeMatcher();
-    }
-
-    private String resolveToHexAddress(final String host) throws UnknownHostException
-    {
-        return BitUtil.toHex(InetAddress.getByName(host).getAddress());
     }
 
     private static String uri(

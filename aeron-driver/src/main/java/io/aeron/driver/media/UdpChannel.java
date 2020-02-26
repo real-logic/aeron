@@ -178,7 +178,7 @@ public final class UdpChannel
                     .remoteDataAddress(endpointAddress)
                     .localInterface(localInterface)
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
-                    .canonicalForm(canonicalise(resolvedAddress, endpointAddress));
+                    .canonicalForm(canonicalise(null, resolvedAddress, null, endpointAddress));
 
                 final String ttlValue = channelUri.get(CommonContext.TTL_PARAM_NAME);
                 if (null != ttlValue)
@@ -188,6 +188,9 @@ public final class UdpChannel
             }
             else if (null != explicitControlAddress)
             {
+                final String controlVal = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
+                final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+
                 context
                     .hasExplicitControl(true)
                     .remoteControlAddress(endpointAddress)
@@ -195,7 +198,7 @@ public final class UdpChannel
                     .localControlAddress(explicitControlAddress)
                     .localDataAddress(explicitControlAddress)
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
-                    .canonicalForm(canonicalise(explicitControlAddress, endpointAddress));
+                    .canonicalForm(canonicalise(controlVal, explicitControlAddress, endpointVal, endpointAddress));
             }
             else
             {
@@ -205,7 +208,8 @@ public final class UdpChannel
                     searchAddress.getAddress() :
                     resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
 
-                final String uniqueCanonicalFormSuffix = hasNoDistinguishingCharacteristic ?
+                final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+                final String suffix = hasNoDistinguishingCharacteristic ?
                     ("-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1)) : "";
 
                 context
@@ -214,7 +218,7 @@ public final class UdpChannel
                     .localControlAddress(localAddress)
                     .localDataAddress(localAddress)
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
-                    .canonicalForm(canonicalise(localAddress, endpointAddress) + uniqueCanonicalFormSuffix);
+                    .canonicalForm(canonicalise(null, localAddress, endpointVal, endpointAddress) + suffix);
             }
 
             return new UdpChannel(context);
@@ -229,35 +233,48 @@ public final class UdpChannel
      * Return a string which is a canonical form of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
      * <p>
-     * A canonical form:
-     * <ul>
-     *     <li>begins with the string "UDP-"</li>
-     *     <li>has all addresses converted to hexadecimal</li>
-     *     <li>uses "-" as field separator</li>
-     * </ul>
-     * <p>
      * The general format is:
-     * UDP-interface-localPort-remoteAddress-remotePort
+     * UDP-interface:localPort-remoteAddress:remotePort
      *
+     * @param localParamValue interface or MDC control param value or null for not set.
      * @param localData  address/interface for the channel.
+     * @param remoteParamValue endpoint param value or null if not set.
      * @param remoteData address for the channel.
      * @return canonical representation as a string.
      */
-    public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
+    public static String canonicalise(
+        final String localParamValue,
+        final InetSocketAddress localData,
+        final String remoteParamValue,
+        final InetSocketAddress remoteData)
     {
         final StringBuilder builder = new StringBuilder(48);
 
         builder.append("UDP-");
 
-        toHex(builder, localData.getAddress().getAddress())
-            .append('-')
-            .append(localData.getPort());
+        if (null == localParamValue)
+        {
+            builder.append(localData.getHostString())
+                .append(':')
+                .append(localData.getPort());
+        }
+        else
+        {
+            builder.append(localParamValue);
+        }
 
         builder.append('-');
 
-        toHex(builder, remoteData.getAddress().getAddress())
-            .append('-')
-            .append(remoteData.getPort());
+        if (null == remoteParamValue)
+        {
+            builder.append(remoteData.getHostString())
+                .append(':')
+                .append(remoteData.getPort());
+        }
+        else
+        {
+            builder.append(remoteParamValue);
+        }
 
         return builder.toString();
     }
@@ -335,7 +352,7 @@ public final class UdpChannel
     /**
      * The canonical form for the channel
      * <p>
-     * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
+     * {@link UdpChannel#canonicalise}
      *
      * @return canonical form for channel.
      */

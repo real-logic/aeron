@@ -18,7 +18,6 @@
 
 #include <gmock/gmock.h>
 
-#include <thread>
 #include <concurrent/errors/ErrorLogReader.h>
 #include <concurrent/errors/DistinctErrorLog.h>
 

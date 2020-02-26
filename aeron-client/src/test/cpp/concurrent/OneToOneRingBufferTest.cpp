@@ -436,27 +436,28 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
 
     std::vector<std::thread> threads;
 
-    threads.push_back(std::thread([&]()
-    {
-        AERON_DECL_ALIGNED(buffer_t srcBuffer, 16);
-        srcBuffer.fill(0);
-        AtomicBuffer srcAb(&srcBuffer[0], srcBuffer.size());
-
-        countDown--;
-        while (countDown > 0)
+    threads.push_back(std::thread(
+        [&]()
         {
-            std::this_thread::yield(); // spin until we is ready
-        }
+            AERON_DECL_ALIGNED(buffer_t srcBuffer, 16);
+            srcBuffer.fill(0);
+            AtomicBuffer srcAb(&srcBuffer[0], srcBuffer.size());
 
-        for (int m = 0; m < NUM_MESSAGES; m++)
-        {
-            srcAb.putInt32(0, m);
-            while (!ringBuffer.write(MSG_TYPE_ID, srcAb, 0, 4))
+            countDown--;
+            while (countDown > 0)
             {
-                std::this_thread::yield();
+                std::this_thread::yield(); // spin until we is ready
             }
-        }
-    }));
+
+            for (int m = 0; m < NUM_MESSAGES; m++)
+            {
+                srcAb.putInt32(0, m);
+                while (!ringBuffer.write(MSG_TYPE_ID, srcAb, 0, 4))
+                {
+                    std::this_thread::yield();
+                }
+            }
+        }));
 
     try
     {

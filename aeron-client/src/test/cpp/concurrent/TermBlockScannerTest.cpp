@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/TermBlockScanner.h>
 

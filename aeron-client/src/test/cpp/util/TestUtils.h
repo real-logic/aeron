@@ -19,7 +19,7 @@
 
 #if !defined(_MSC_VER)
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #else
 #include <windows.h>
 #endif

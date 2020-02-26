@@ -17,7 +17,6 @@
 #include <array>
 #include <vector>
 #include <map>
-#include <thread>
 #include <string>
 
 #include <gtest/gtest.h>

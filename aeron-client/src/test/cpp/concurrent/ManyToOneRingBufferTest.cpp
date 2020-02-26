@@ -354,7 +354,8 @@ TEST_F(ManyToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
 
     int timesCalled = 0;
-    auto handler = [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+    auto handler =
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
         {
             timesCalled++;
             if (2 == timesCalled)
@@ -506,19 +507,20 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCorrelationIds)
 
     for (int i = 0; i < NUM_PUBLISHERS; i++)
     {
-        threads.push_back(std::thread([&]()
-        {
-            countDown--;
-            while (countDown > 0)
+        threads.push_back(std::thread(
+            [&]()
             {
-                std::this_thread::yield(); // spin until we is ready
-            }
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield(); // spin until we is ready
+                }
 
-            for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
-            {
-                ringBuffer.nextCorrelationId();
-            }
-        }));
+                for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
+                {
+                    ringBuffer.nextCorrelationId();
+                }
+            }));
     }
 
     for (std::thread &thr: threads)
@@ -543,33 +545,34 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
 
     for (int i = 0; i < NUM_PUBLISHERS; i++)
     {
-        threads.push_back(std::thread([&]()
-        {
-            AERON_DECL_ALIGNED(buffer_t srcBuffer, 16);
-            srcBuffer.fill(0);
-            AtomicBuffer srcAb(&srcBuffer[0], srcBuffer.size());
-            int id = publisherId.fetch_add(1);
-
-            countDown--;
-            while (countDown > 0)
+        threads.push_back(std::thread(
+            [&]()
             {
-                std::this_thread::yield(); // spin until we is ready
-            }
+                AERON_DECL_ALIGNED(buffer_t srcBuffer, 16);
+                srcBuffer.fill(0);
+                AtomicBuffer srcAb(&srcBuffer[0], srcBuffer.size());
+                int id = publisherId.fetch_add(1);
 
-            const int messageLength = 4 + 4;
-            const int messageNumOffset = 4;
-
-            srcAb.putInt32(0, id);
-
-            for (int m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
-            {
-                srcAb.putInt32(messageNumOffset, m);
-                while (!ringBuffer.write(MSG_TYPE_ID, srcAb, 0, messageLength))
+                countDown--;
+                while (countDown > 0)
                 {
-                    std::this_thread::yield();
+                    std::this_thread::yield(); // spin until we is ready
                 }
-            }
-        }));
+
+                const int messageLength = 4 + 4;
+                const int messageNumOffset = 4;
+
+                srcAb.putInt32(0, id);
+
+                for (int m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
+                {
+                    srcAb.putInt32(messageNumOffset, m);
+                    while (!ringBuffer.write(MSG_TYPE_ID, srcAb, 0, messageLength))
+                    {
+                        std::this_thread::yield();
+                    }
+                }
+            }));
     }
 
     try
@@ -577,25 +580,29 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
         int msgCount = 0;
         int counts[NUM_PUBLISHERS];
 
-        for (int i = 0; i < NUM_PUBLISHERS; i++)
+        for (int & count : counts)
         {
-            counts[i] = 0;
+            count = 0;
         }
 
         while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
         {
-            const int readCount = ringBuffer.read([&counts](
-                std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t index, util::index_t length)
-                {
-                    const std::int32_t id = buffer.getInt32(index);
-                    const std::int32_t messageNumber = buffer.getInt32(index + 4);
+            const int readCount = ringBuffer.read(
+                [&counts](
+                        std::int32_t msgTypeId,
+                        concurrent::AtomicBuffer &buffer,
+                        util::index_t index,
+                        util::index_t length)
+                    {
+                        const std::int32_t id = buffer.getInt32(index);
+                        const std::int32_t messageNumber = buffer.getInt32(index + 4);
 
-                    EXPECT_EQ(length, 4 + 4);
-                    ASSERT_EQ(msgTypeId, MSG_TYPE_ID);
+                        EXPECT_EQ(length, 4 + 4);
+                        ASSERT_EQ(msgTypeId, MSG_TYPE_ID);
 
-                    EXPECT_EQ(counts[id], messageNumber);
-                    counts[id]++;
-                });
+                        EXPECT_EQ(counts[id], messageNumber);
+                        counts[id]++;
+                    });
 
             if (0 == readCount)
             {

@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/TermReader.h>
 
@@ -99,7 +98,7 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    TermReader::ReadOutcome readOutcome;
+    TermReader::ReadOutcome readOutcome{};
 
     TermReader::read(readOutcome, m_log, termOffset, m_handler_func, INT_MAX, m_fragmentHeader, rethrowHandler);
 
@@ -121,7 +120,7 @@ TEST_F(TermReaderTest, shouldNotReadPastTail)
     EXPECT_CALL(m_handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, testing::_, testing::_))
         .Times(0);
 
-    TermReader::ReadOutcome readOutcome;
+    TermReader::ReadOutcome readOutcome{};
 
     TermReader::read(readOutcome, m_log, termOffset, m_handler_func, INT_MAX, m_fragmentHeader, rethrowHandler);
 
@@ -149,7 +148,7 @@ TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
         .Times(1)
         .InSequence(sequence);
 
-    TermReader::ReadOutcome readOutcome;
+    TermReader::ReadOutcome readOutcome{};
 
     TermReader::read(readOutcome, m_log, termOffset, m_handler_func, 1, m_fragmentHeader, rethrowHandler);
 
@@ -192,7 +191,7 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    TermReader::ReadOutcome readOutcome;
+    TermReader::ReadOutcome readOutcome{};
 
     TermReader::read(readOutcome, m_log, termOffset, m_handler_func, INT_MAX, m_fragmentHeader, rethrowHandler);
 
@@ -220,7 +219,7 @@ TEST_F(TermReaderTest, shouldReadLastMessage)
         .Times(1)
         .InSequence(sequence);
 
-    TermReader::ReadOutcome readOutcome;
+    TermReader::ReadOutcome readOutcome{};
 
     TermReader::read(readOutcome, m_log, startOfMessage, m_handler_func, INT_MAX, m_fragmentHeader, rethrowHandler);
 
@@ -247,7 +246,7 @@ TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
     EXPECT_CALL(m_handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(0);
 
-    TermReader::ReadOutcome readOutcome;
+    TermReader::ReadOutcome readOutcome{};
 
     TermReader::read(readOutcome, m_log, startOfMessage, m_handler_func, INT_MAX, m_fragmentHeader, rethrowHandler);
 

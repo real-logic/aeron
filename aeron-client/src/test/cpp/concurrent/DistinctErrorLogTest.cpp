@@ -18,7 +18,7 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
+
 #include "MockAtomicBuffer.h"
 #include <concurrent/errors/DistinctErrorLog.h>
 

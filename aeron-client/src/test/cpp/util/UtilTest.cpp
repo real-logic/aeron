@@ -76,7 +76,6 @@ TEST(utilTests, stringUtilstrPrintfTest)
 {
     std::string val = strPrintf("%s %s", "hello", "world");
     ASSERT_EQ(val, "hello world");
-
 }
 
 TEST(utilTests, findNextPowerOfTwo)

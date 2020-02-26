@@ -18,10 +18,8 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/TermAppender.h>
-#include <concurrent/logbuffer/ExclusiveTermAppender.h>
 
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::mock;

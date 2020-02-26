@@ -22,20 +22,20 @@
 
 int aeron_udp_protocol_sm_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
 {
-    const size_t receiver_tag_offset = sizeof(aeron_status_message_header_t) +
+    const size_t group_tag_offset = sizeof(aeron_status_message_header_t) +
         offsetof(aeron_status_message_optional_header_t, group_tag);
-    const size_t receiver_tag_size = sizeof(*group_tag);
-    const size_t frame_length_with_receiver_tag = receiver_tag_offset + receiver_tag_size;
+    const size_t group_tag_size = sizeof(*group_tag);
+    const size_t frame_length_with_group_tag = group_tag_offset + group_tag_size;
 
-    if (sm->frame_header.frame_length == (int32_t)frame_length_with_receiver_tag)
+    if (sm->frame_header.frame_length == (int32_t)frame_length_with_group_tag)
     {
-        const uint8_t *sm_ptr = (const uint8_t *)sm + receiver_tag_offset;
-        memcpy(group_tag, sm_ptr, receiver_tag_size);
+        const uint8_t *sm_ptr = (const uint8_t *)sm + group_tag_offset;
+        memcpy(group_tag, sm_ptr, group_tag_size);
 
-        return (int)receiver_tag_size;
+        return (int)group_tag_size;
     }
 
     *group_tag = 0;
 
-    return (int)((size_t)sm->frame_header.frame_length - receiver_tag_offset);
+    return (int)((size_t)sm->frame_header.frame_length - group_tag_offset);
 }

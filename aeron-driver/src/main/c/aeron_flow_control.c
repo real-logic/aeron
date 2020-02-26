@@ -321,13 +321,13 @@ int aeron_flow_control_parse_tagged_options(
                 char *end_ptr = "";
                 errno = 0;
 
-                const long long receiver_tag = strtoll(number_buffer, &end_ptr, 10);
+                const long long group_tag = strtoll(number_buffer, &end_ptr, 10);
                 const bool has_group_min_size = '/' == *end_ptr;
 
                 if (0 == errno && number_buffer != end_ptr && ('\0' == *end_ptr || has_group_min_size))
                 {
                     flow_control_options->group_tag.is_present = true;
-                    flow_control_options->group_tag.value = (int64_t)receiver_tag;
+                    flow_control_options->group_tag.value = (int64_t)group_tag;
                 }
                 else if (number_buffer != end_ptr && !has_group_min_size) // Allow empty values if we have a group count
                 {

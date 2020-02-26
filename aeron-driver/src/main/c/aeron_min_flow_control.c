@@ -221,20 +221,20 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
         (aeron_min_flow_control_strategy_state_t *)state;
     aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
 
-    int64_t sm_receiver_tag;
-    const int bytes_read = aeron_udp_protocol_sm_group_tag(status_message_header, &sm_receiver_tag);
-    const bool was_present = bytes_read == sizeof(sm_receiver_tag);
+    int64_t sm_group_tag;
+    const int bytes_read = aeron_udp_protocol_sm_group_tag(status_message_header, &sm_group_tag);
+    const bool was_present = bytes_read == sizeof(sm_group_tag);
 
     if (0 != bytes_read && !was_present)
     {
         aeron_distinct_error_log_record(
             strategy_state->error_log,
             EINVAL,
-            "invalid receiver tag on status message",
+            "invalid group tag on status message",
             "Received a status message for tagged flow control that did not have 0 or 8 bytes for the group_tag");
     }
 
-    const bool matches_tag = was_present && sm_receiver_tag == strategy_state->group_tag;
+    const bool matches_tag = was_present && sm_group_tag == strategy_state->group_tag;
 
     return aeron_min_flow_control_strategy_process_sm(
         strategy_state, status_message_header, snd_lmt, initial_term_id, position_bits_to_shift, now_ns, matches_tag);
@@ -269,7 +269,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_buffer_capacity,
-    bool is_receiver_tag_aware)
+    bool is_group_tag_aware)
 {
     aeron_flow_control_strategy_t *_strategy;
     aeron_flow_control_tagged_options_t options;
@@ -287,7 +287,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     }
 
     _strategy->on_idle = aeron_min_flow_control_strategy_on_idle;
-    _strategy->on_status_message = is_receiver_tag_aware ? aeron_tagged_flow_control_strategy_on_sm :
+    _strategy->on_status_message = is_group_tag_aware ? aeron_tagged_flow_control_strategy_on_sm :
         aeron_min_flow_control_strategy_on_sm;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
@@ -304,7 +304,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->group_min_size = options.group_min_size.is_present ?
         options.group_min_size.value : context->flow_control.receiver_group_min_size;
     state->group_tag = options.group_tag.is_present ?
-        options.group_tag.value : context->flow_control.group_receiver_tag;
+        options.group_tag.value : context->flow_control.receiver_group_tag;
 
     state->error_log = context->error_log;
 

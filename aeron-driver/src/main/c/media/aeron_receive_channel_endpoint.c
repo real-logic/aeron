@@ -16,26 +16,23 @@
 
 #include <stdio.h>
 #include <inttypes.h>
-#include <stdlib.h>
 #include <aeron_driver_context.h>
 #include "aeron_socket.h"
 #include "aeron_system_counters.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
-#include "aeron_driver_context.h"
 #include "aeron_alloc.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_receiver.h"
-#include "aeron_receive_channel_endpoint.h"
 
 int aeron_receive_channel_endpoint_set_group_tag(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_udp_channel_t *channel,
     aeron_driver_context_t *context)
 {
-    int64_t receiver_tag = 0;
-    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_GTAG_KEY, &receiver_tag);
+    int64_t group_tag = 0;
+    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_GTAG_KEY, &group_tag);
     if (rc < 0)
     {
         return -1;
@@ -49,7 +46,7 @@ int aeron_receive_channel_endpoint_set_group_tag(
     else
     {
         endpoint->group_tag.is_present = true;
-        endpoint->group_tag.value = receiver_tag;
+        endpoint->group_tag.value = group_tag;
     }
 
     return 0;

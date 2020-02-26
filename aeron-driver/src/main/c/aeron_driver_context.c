@@ -508,7 +508,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->multicast_ttl = AERON_SOCKET_MULTICAST_TTL_DEFAULT;
     _context->sm_group_tag.is_present = AERON_SM_GROUP_TAG_IS_PRESENT_DEFAULT;
     _context->sm_group_tag.value = AERON_SM_GROUP_TAG_VALUE_DEFAULT;
-    _context->flow_control.group_receiver_tag = AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
+    _context->flow_control.receiver_group_tag = AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
     _context->flow_control.receiver_group_min_size = AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_DEFAULT;
     _context->flow_control.receiver_timeout_ns = AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT;
     _context->send_to_sm_poll_ratio = AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
@@ -854,8 +854,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         INT32_MIN,
         INT32_MAX);
 
-    const char *receiver_tag_str = getenv(AERON_SM_GROUP_TAG_ENV_VAR);
-    if (NULL != receiver_tag_str)
+    const char *group_tag_str = getenv(AERON_SM_GROUP_TAG_ENV_VAR);
+    if (NULL != group_tag_str)
     {
         _context->sm_group_tag.is_present = true;
         _context->sm_group_tag.value = aeron_config_parse_int64(
@@ -866,10 +866,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             INT64_MAX);
     }
 
-    _context->flow_control.group_receiver_tag = aeron_config_parse_int64(
+    _context->flow_control.receiver_group_tag = aeron_config_parse_int64(
         AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR,
         getenv(AERON_FLOW_CONTROL_GROUP_TAG_ENV_VAR),
-        _context->flow_control.group_receiver_tag,
+        _context->flow_control.receiver_group_tag,
         INT64_MIN,
         INT64_MAX);
 
@@ -1954,13 +1954,13 @@ int aeron_driver_context_set_flow_control_group_tag(aeron_driver_context_t *cont
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    context->flow_control.group_receiver_tag = value;
+    context->flow_control.receiver_group_tag = value;
     return 0;
 }
 
 int64_t aeron_driver_context_get_flow_control_group_tag(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->flow_control.group_receiver_tag : AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
+    return NULL != context ? context->flow_control.receiver_group_tag : AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT;
 }
 
 int aeron_driver_context_set_flow_control_group_required_size(aeron_driver_context_t *context, int32_t value)

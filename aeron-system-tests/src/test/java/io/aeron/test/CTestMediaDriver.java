@@ -129,7 +129,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_FLOW_CONTROL_GROUP_TAG", String.valueOf(context.flowControlGroupTag()));
         pb.environment().put(
             "AERON_FLOW_CONTROL_GROUP_MIN_SIZE", String.valueOf(context.flowControlGroupMinSize()));
-        pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
+//        pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
         pb.environment().put("AERON_EVENT_LOG", "0xFFFF");
 
         setFlowControlStrategy(pb.environment(), context);
@@ -149,7 +149,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             else
             {
                 stdoutFile = File.createTempFile("CTestMediaDriver-", ".out");
-                stderrFile = File.createTempFile("CTestMediaDriver-", ".err");
+                final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
+                stderrFile = new File(stdoutFile.getParent(), tmpName);
                 driverOutputConsumer.outputFiles(context.aeronDirectoryName(), stdoutFile, stderrFile);
             }
 

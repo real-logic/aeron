@@ -195,7 +195,7 @@ public class DriverNameResolverTest
     @SlowTest
     @Test
     @Timeout(20)
-    public void shouldTimeoutNeighborsAndCacheEntries()
+    public void shouldTimeoutAllNeighborsAndCacheEntries()
     {
         drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
@@ -224,6 +224,50 @@ public class DriverNameResolverTest
 
         awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 0);
         assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 0);
+    }
+
+    @SlowTest
+    @Test
+    @Timeout(20)
+    public void shouldTimeoutNeighborsAndCacheEntriesThatAreSeenViaGossip()
+    {
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-A")
+            .resolverName("A")
+            .resolverInterface("0.0.0.0:8050")));
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8051")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-C")
+            .resolverName("C")
+            .resolverInterface("0.0.0.0:8052")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
+        final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
+        final int cNeighborsCounterId = neighborsCounterId(drivers.get(2));
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
+
+        final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
+
+        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 2);
+
+        drivers.get(1).close();
+        drivers.get(1).context().deleteDirectory();
+        drivers.remove(1);
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
+        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+        awaitCounterValue(drivers.get(1).context().countersManager(), aNeighborsCounterId, 1);
+        assertEquals(drivers.get(1).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
     }
 
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)

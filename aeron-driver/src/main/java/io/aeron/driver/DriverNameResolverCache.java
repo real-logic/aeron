@@ -42,7 +42,7 @@ class DriverNameResolverCache implements AutoCloseable
     {
         final int index = findEntryIndexByNameAndType(name, type);
 
-        return (INVALID_INDEX == index) ? null : listOfEntries.get(index);
+        return INVALID_INDEX == index ? null : listOfEntries.get(index);
     }
 
     void addOrUpdateEntry(
@@ -105,7 +105,7 @@ class DriverNameResolverCache implements AutoCloseable
         return iterator;
     }
 
-    static class Iterator
+    static final class Iterator
     {
         int index = -1;
         DriverNameResolverCache cache;
@@ -198,12 +198,12 @@ class DriverNameResolverCache implements AutoCloseable
 
     static class CacheEntry
     {
-        byte[] name;
-        long timeOfLastActivityMs;
         long deadlineMs;
-        byte[] address;
-        byte type;
+        long timeOfLastActivityMs;
         int port;
+        byte type;
+        byte[] name;
+        byte[] address;
 
         CacheEntry(
             final byte[] name,

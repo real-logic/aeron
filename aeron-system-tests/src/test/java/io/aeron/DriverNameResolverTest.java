@@ -34,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 public class DriverNameResolverTest
 {
     private final String baseDir = CommonContext.getAeronDirectoryName();
-
     private final ArrayList<MediaDriver> drivers = new ArrayList<>();
 
     @AfterEach
@@ -55,7 +54,7 @@ public class DriverNameResolverTest
             .resolverInterface("0.0.0.0:0"))));
 
         final int neighborsCounterId = neighborsCounterId(drivers.get(0));
-        assertNotEquals(neighborsCounterId, -1);
+        assertNotEquals(neighborsCounterId, NULL_VALUE);
     }
 
     @Test
@@ -138,30 +137,12 @@ public class DriverNameResolverTest
         return id.value;
     }
 
-    private static int cacheEntriesCounterId(final MediaDriver driver)
-    {
-        final CountersReader countersReader = driver.context().countersManager();
-        final MutableInteger id = new MutableInteger(NULL_VALUE);
-
-        countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                if (label.startsWith("Resolver cache entries"))
-                {
-                    id.value = counterId;
-                }
-            });
-
-        return id.value;
-    }
-
     private static void awaitCounterValue(
         final CountersReader countersReader, final int counterId, final long expectedValue)
     {
         while (countersReader.getCounterValue(counterId) != expectedValue)
         {
-            Tests.sleep(100);
-            Tests.checkInterruptStatus();
+            Tests.sleep(50);
         }
     }
 }

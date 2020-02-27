@@ -61,7 +61,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
     private final UdpNameResolutionTransport transport;
     private final DriverNameResolverCache cache;
-    private final NameResolver delegrateResolver;
+    private final NameResolver delegateResolver;
     private final AtomicCounter invalidPackets;
     private final AtomicCounter neighborsCounter;
     private final AtomicCounter cacheEntriesCounter;
@@ -94,7 +94,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         this.neighborResolutionIntervalMs = NEIGHBOR_RESOLUTION_INTERVAL_MS;
         this.mtuLength = context.mtuLength();
         invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
-        delegrateResolver = context.nameResolver();
+        delegateResolver = context.nameResolver();
 
         bootstrapNeighborAddr = null == bootstrapNeighbor ?
             null : UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
@@ -135,13 +135,12 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         transport.openDatagramChannel(null);
 
         final InetSocketAddress boundAddress = transport.boundAddress();
-        final StringBuilder builder = new StringBuilder(" ");
-
         if (null != boundAddress)
         {
             localSocketAddress = boundAddress;
             localAddress = boundAddress.getAddress().getAddress();
 
+            final StringBuilder builder = new StringBuilder(" ");
             builder.append(transport.bindAddressAndPort());
 
             if (null != bootstrapNeighborAddr)
@@ -209,7 +208,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
                     return localSocketAddress.getAddress();
                 }
 
-                return delegrateResolver.resolve(name, uriParamName, isReResolution);
+                return delegateResolver.resolve(name, uriParamName, isReResolution);
             }
 
             return InetAddress.getByAddress(entry.address);
@@ -223,7 +222,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
     {
         // here we would lookup advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
-        return delegrateResolver.lookup(name, uriParamName, isReLookup);
+        return delegateResolver.lookup(name, uriParamName, isReLookup);
     }
 
     public int timeoutNeighbors(final long nowMs)
@@ -279,8 +278,9 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         }
         else
         {
-            for (final Neighbor neighbor : neighborList)
+            for (int i = 0, size = neighborList.size(); i < size; i++)
             {
+                final Neighbor neighbor = neighborList.get(i);
                 sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
             }
         }
@@ -329,8 +329,9 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             headerFlyweight.frameLength(currentOffset);
             byteBuffer.limit(currentOffset);
 
-            for (final Neighbor neighbor : neighborList)
+            for (int i = 0, size = neighborList.size(); i < size; i++)
             {
+                final Neighbor neighbor = neighborList.get(i);
                 sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
             }
         }

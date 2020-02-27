@@ -137,6 +137,23 @@ public class DriverNameResolverTest
         return id.value;
     }
 
+    private static int cacheEntriesCounterId(final MediaDriver driver)
+    {
+        final CountersReader countersReader = driver.context().countersManager();
+        final MutableInteger id = new MutableInteger(NULL_VALUE);
+
+        countersReader.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (label.startsWith("Resolver cache entries"))
+                {
+                    id.value = counterId;
+                }
+            });
+
+        return id.value;
+    }
+
     private static void awaitCounterValue(
         final CountersReader countersReader, final int counterId, final long expectedValue)
     {

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Timeout;
 import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class DriverNameResolverTest
@@ -150,6 +151,44 @@ public class DriverNameResolverTest
         awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 3);
         awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 3);
         awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 3);
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldResolveDriverNameAndAllowConnection()
+    {
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-A")
+            .resolverName("A")
+            .resolverInterface("0.0.0.0:8050")));
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8051")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
+        final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
+
+        final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
+
+        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+
+        try (
+            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-A"));
+            Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-B"));
+            Subscription subscription = clientB.addSubscription("aeron:udp?endpoint=localhost:24325", 1);
+            Publication publication = clientA.addPublication("aeron:udp?endpoint=B:24325", 1))
+        {
+            while (!publication.isConnected() || !subscription.isConnected())
+            {
+                Tests.sleep(50);
+            }
+        }
     }
 
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)

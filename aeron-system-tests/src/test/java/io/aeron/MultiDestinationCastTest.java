@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -32,6 +33,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.UUID;
@@ -78,10 +80,11 @@ public class MultiDestinationCastTest
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
     private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class);
 
+    @RegisterExtension
+    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     private void launch()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-destination-cast not available");
-
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
 
@@ -98,8 +101,8 @@ public class MultiDestinationCastTest
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = TestMediaDriver.launch(driverAContext);
-        driverB = TestMediaDriver.launch(driverBContext);
+        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }

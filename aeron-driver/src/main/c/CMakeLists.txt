@@ -164,6 +164,7 @@ SET(SOURCE
     aeron_retransmit_handler.c
     aeron_windows.c
     aeron_termination_validator.c
+    aeron_name_resolver.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -229,6 +230,7 @@ SET(HEADERS
     aeron_driver_receiver.h
     aeron_driver_common.h
     aeron_ipc_publication.h
+    aeron_name_resolver.h
     aeron_network_publication.h
     aeron_position.h
     aeron_driver_sender_proxy.h

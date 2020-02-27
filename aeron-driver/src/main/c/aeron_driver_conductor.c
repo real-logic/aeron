@@ -32,6 +32,7 @@
 #include "aeron_publication_image.h"
 #include "collections/aeron_bit_set.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
+#include "aeron_name_resolver.h"
 
 #define STATIC_BIT_SET_U64_LEN (512)
 
@@ -2133,7 +2134,7 @@ int aeron_driver_conductor_on_add_network_publication(
     size_t uri_length = command->channel_length;
     aeron_uri_publication_params_t params;
 
-    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, conductor->context->name_resolver, &udp_channel) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
         return -1;
@@ -2350,7 +2351,8 @@ int aeron_driver_conductor_on_add_spy_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(command->channel_length - strlen(AERON_SPY_PREFIX), uri, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(
+        command->channel_length - strlen(AERON_SPY_PREFIX), uri, conductor->context->name_resolver, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         return -1;
@@ -2430,7 +2432,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, conductor->context->name_resolver, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         return -1;
@@ -2665,7 +2667,11 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
         }
 
         struct sockaddr_storage destination_addr;
-        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint, &destination_addr) < 0)
+        if (aeron_name_resolver_resolve_host_and_port(
+            conductor->context->name_resolver,
+            uri_params.params.udp.endpoint,
+            AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            &destination_addr) < 0)
         {
             aeron_set_err(
                 aeron_errcode(),
@@ -2737,7 +2743,11 @@ int aeron_driver_conductor_on_remove_destination(
         }
 
         struct sockaddr_storage destination_addr;
-        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint, &destination_addr) < 0)
+        if (aeron_name_resolver_resolve_host_and_port(
+            conductor->context->name_resolver,
+            uri_params.params.udp.endpoint,
+            AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            &destination_addr) < 0)
         {
             aeron_set_err(
                 aeron_errcode(),

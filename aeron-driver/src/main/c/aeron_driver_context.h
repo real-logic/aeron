@@ -29,6 +29,7 @@
 #include "aeron_flow_control.h"
 #include "aeron_congestion_control.h"
 #include "aeron_agent.h"
+#include "aeron_name_resolver.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
@@ -209,6 +210,8 @@ typedef struct aeron_driver_context_stct
 
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;
+
+    aeron_name_resolver_t *name_resolver;
 }
 aeron_driver_context_t;
 

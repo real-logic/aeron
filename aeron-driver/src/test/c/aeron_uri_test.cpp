@@ -26,6 +26,7 @@ extern "C"
 #include "util/aeron_error.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
+#include "aeron_name_resolver.h"
 }
 
 class UriTest : public testing::Test
@@ -362,7 +363,8 @@ public:
     UriResolverTest() :
         addr_in((struct sockaddr_in *)&m_addr),
         addr_in6((struct sockaddr_in6 *)&m_addr),
-        m_prefixlen(0)
+        m_prefixlen(0),
+        m_resolver(nullptr)
     {
     }
 
@@ -415,20 +417,26 @@ public:
         return aeron_ipv4_netmask_to_prefixlen(&addr.sin_addr);
     }
 
+    int resolve_host_and_port(const char *address_str, struct sockaddr_storage *address)
+    {
+        return aeron_name_resolver_resolve_host_and_port(m_resolver, address_str, "endpoint", address);
+    }
+
 protected:
     aeron_uri_t m_uri;
     struct sockaddr_storage m_addr;
     struct sockaddr_in *addr_in;
     struct sockaddr_in6 *addr_in6;
     size_t m_prefixlen;
+    aeron_name_resolver_t *m_resolver;
 };
 
 TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
 {
     char buffer[AERON_MAX_PATH];
 
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("127.0.0.1:1234", &m_addr), 0) << aeron_errmsg();
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:55", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("127.0.0.1:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("192.168.1.20:55", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET);
     EXPECT_EQ(addr_in->sin_family, AF_INET);
     EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "192.168.1.20");
@@ -437,37 +445,37 @@ TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
 
 TEST_F(UriResolverTest, shouldResolveIpv4MulticastDottedDecimalAndPort)
 {
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("223.255.255.255:1234", &m_addr), 0) << aeron_errmsg();
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("224.0.0.0:1234", &m_addr), 0) << aeron_errmsg();
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("239.255.255.255:1234", &m_addr), 0) << aeron_errmsg();
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("240.0.0.0:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("223.255.255.255:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("224.0.0.0:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("239.255.255.255:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("240.0.0.0:1234", &m_addr), 0) << aeron_errmsg();
 }
 
 TEST_F(UriResolverTest, shouldResolveIpv6AndPort)
 {
     char buffer[AERON_MAX_PATH];
 
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("[::1]:1234", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET6);
     EXPECT_EQ(addr_in6->sin6_family, AF_INET6);
     EXPECT_STREQ(inet_ntop(AF_INET6, &addr_in6->sin6_addr, buffer, sizeof(buffer)), "::1");
     EXPECT_EQ(addr_in->sin_port, htons(1234));
 
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("[::1%eth0]:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("[::1%eth0]:1234", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET6);
     EXPECT_EQ(addr_in6->sin6_family, AF_INET6);
     EXPECT_STREQ(inet_ntop(AF_INET6, &addr_in6->sin6_addr, buffer, sizeof(buffer)), "::1");
     EXPECT_EQ(addr_in->sin_port, htons(1234));
 
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("[::1%12~_.-34]:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("[::1%12~_.-34]:1234", &m_addr), 0) << aeron_errmsg();
 }
 
 TEST_F(UriResolverTest, shouldResolveIpv6MulticastAndPort)
 {
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve(
+    ASSERT_EQ(resolve_host_and_port(
         "[FEFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:1234", &m_addr), 0) << aeron_errmsg();
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("[FF00::]:1234", &m_addr), 0) << aeron_errmsg();
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve(
+    ASSERT_EQ(resolve_host_and_port("[FF00::]:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port(
         "[FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:1234", &m_addr), 0) << aeron_errmsg();
 }
 
@@ -475,7 +483,7 @@ TEST_F(UriResolverTest, shouldResolveLocalhost)
 {
     char buffer[AERON_MAX_PATH];
 
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("localhost:1234", &m_addr), 0) << aeron_errmsg();
+    ASSERT_EQ(resolve_host_and_port("localhost:1234", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET);
     EXPECT_EQ(addr_in->sin_family, AF_INET);
     EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "127.0.0.1");
@@ -484,18 +492,18 @@ TEST_F(UriResolverTest, shouldResolveLocalhost)
 
 TEST_F(UriResolverTest, shouldNotResolveInvalidPort)
 {
-    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:aa", &m_addr), -1);
+    EXPECT_EQ(resolve_host_and_port("192.168.1.20:aa", &m_addr), -1);
 
     // Regex is ? for port so it's not mandatory
-    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20", &m_addr), -1);
+    EXPECT_EQ(resolve_host_and_port("192.168.1.20", &m_addr), -1);
 
-    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:", &m_addr), -1);
-    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:aa", &m_addr), -1);
+    EXPECT_EQ(resolve_host_and_port("192.168.1.20:", &m_addr), -1);
+    EXPECT_EQ(resolve_host_and_port("[::1]:aa", &m_addr), -1);
 
     // Regex is ? for port so it's not mandatory
-    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]", &m_addr), -1);
+    EXPECT_EQ(resolve_host_and_port("[::1]", &m_addr), -1);
 
-    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:", &m_addr), -1);
+    EXPECT_EQ(resolve_host_and_port("[::1]:", &m_addr), -1);
 }
 
 TEST_F(UriResolverTest, shouldResolveIpv4Interface)

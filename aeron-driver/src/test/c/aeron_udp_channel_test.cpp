@@ -28,7 +28,7 @@ class UdpChannelTest : public testing::Test
 {
 public:
     UdpChannelTest() :
-        m_channel(NULL)
+        m_channel(NULL), m_resolver(NULL)
     {
     }
 
@@ -82,12 +82,13 @@ public:
             aeron_udp_channel_delete(m_channel);
         }
 
-        return aeron_udp_channel_parse(strlen(uri), uri, &m_channel);
+        return aeron_udp_channel_parse(strlen(uri), uri, m_resolver, &m_channel);
     }
 
 protected:
     char m_buffer[AERON_MAX_PATH];
     aeron_udp_channel_t *m_channel;
+    aeron_name_resolver_t *m_resolver;
 };
 
 TEST_F(UdpChannelTest, shouldParseExplicitLocalAddressAndPortFormat)

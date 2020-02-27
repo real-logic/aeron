@@ -198,7 +198,11 @@ int aeron_uri_udp_canonicalise(
         local_data_str, local_data_port, remote_data_str, remote_data_port, unique_suffix);
 }
 
-int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channel_t **channel)
+int aeron_udp_channel_parse(
+    size_t uri_length,
+    const char *uri,
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_t **channel)
 {
     aeron_udp_channel_t *_channel = NULL;
     struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
@@ -266,7 +270,8 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
 
     if (NULL != _channel->uri.params.udp.endpoint)
     {
-        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.endpoint, &endpoint_addr) < 0)
+        if (aeron_name_resolver_resolve_host_and_port(
+            resolver, _channel->uri.params.udp.endpoint, AERON_UDP_CHANNEL_ENDPOINT_KEY, &endpoint_addr) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,
@@ -282,7 +287,8 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
 
     if (NULL != _channel->uri.params.udp.control)
     {
-        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.control, &explicit_control_addr) < 0)
+        if (aeron_name_resolver_resolve_host_and_port(
+            resolver, _channel->uri.params.udp.control, AERON_UDP_CHANNEL_CONTROL_KEY, &explicit_control_addr) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,

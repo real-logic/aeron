@@ -93,6 +93,19 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     return result;
 }
 
+bool aeron_try_parse_ipv4(const char *host, struct sockaddr_storage *sockaddr)
+{
+    struct sockaddr_in *addr = (struct sockaddr_in *)sockaddr;
+
+    if (inet_pton(AF_INET, host, &addr->sin_addr))
+    {
+        sockaddr->ss_family = AF_INET;
+        return true;
+    }
+
+    return false;
+}
+
 int aeron_ipv4_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr)
 {
     struct sockaddr_in *addr = (struct sockaddr_in *)sockaddr;
@@ -104,6 +117,19 @@ int aeron_ipv4_addr_resolver(const char *host, int protocol, struct sockaddr_sto
     }
 
     return aeron_ip_addr_resolver(host, sockaddr, AF_INET, protocol);
+}
+
+bool aeron_try_parse_ipv6(const char *host, struct sockaddr_storage *sockaddr)
+{
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)sockaddr;
+
+    if (inet_pton(AF_INET6, host, &addr->sin6_addr))
+    {
+        sockaddr->ss_family = AF_INET6;
+        return true;
+    }
+
+    return false;
 }
 
 int aeron_ipv6_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr)
@@ -150,45 +176,6 @@ int aeron_udp_port_resolver(const char *port_str, bool optional)
     }
 
     return (int)value;
-}
-
-int aeron_host_and_port_resolver(
-    const char *host_str, const char *port_str, struct sockaddr_storage *sockaddr, int family_hint)
-{
-    int result = -1, port = aeron_udp_port_resolver(port_str, false);
-
-    if (port >= 0)
-    {
-        if (AF_INET == family_hint)
-        {
-            result = aeron_ipv4_addr_resolver(host_str, IPPROTO_UDP, sockaddr);
-            ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port);
-        }
-        else if (AF_INET6 == family_hint)
-        {
-            result = aeron_ipv6_addr_resolver(host_str, IPPROTO_UDP, sockaddr);
-            ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);
-        }
-    }
-
-    return result;
-}
-
-int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr)
-{
-    aeron_parsed_address_t parsed_address;
-
-    if (-1 == aeron_address_split(address_str, &parsed_address))
-    {
-        return -1;
-    }
-
-    if (6  == parsed_address.ip_version_hint)
-    {
-        return aeron_host_and_port_resolver(parsed_address.host, parsed_address.port, sockaddr, AF_INET6);
-    }
-
-    return aeron_host_and_port_resolver(parsed_address.host, parsed_address.port, sockaddr, AF_INET);
 }
 
 int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)

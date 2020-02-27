@@ -20,6 +20,7 @@
 #include "aeron_socket.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
+#include "aeron_name_resolver.h"
 
 typedef struct aeron_udp_channel_stct
 {
@@ -42,7 +43,11 @@ typedef struct aeron_udp_channel_stct
 }
 aeron_udp_channel_t;
 
-int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channel_t **channel);
+int aeron_udp_channel_parse(
+    size_t uri_length,
+    const char *uri,
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_t **channel);
 
 void aeron_udp_channel_delete(aeron_udp_channel_t *channel);
 

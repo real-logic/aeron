@@ -432,16 +432,16 @@ public class NameReResolutionTest
             }
         }
 
-        public InetAddress resolve(final CharSequence name, final String uriParamName, final boolean isReResolution)
+        public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
         {
             return DefaultNameResolver.INSTANCE.resolve(name, uriParamName, isReResolution);
         }
 
-        public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
+        public String lookup(final String name, final String uriParamName, final boolean isReLookup)
         {
             for (final String[] lookupName : lookupNames)
             {
-                if (lookupName[0].equals(uriParamName) && lookupName[1].equals(name.toString()))
+                if (lookupName[0].equals(uriParamName) && lookupName[1].equals(name))
                 {
                     return isReLookup ? lookupName[2] : lookupName[3];
                 }

@@ -29,11 +29,11 @@ public class DefaultNameResolver implements NameResolver
      * {@inheritDoc}
      */
     @SuppressWarnings("unused")
-    public InetAddress resolve(final CharSequence name, final String uriParamName, final boolean isReResolution)
+    public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
         try
         {
-            return InetAddress.getByName(name.toString());
+            return InetAddress.getByName(name);
         }
         catch (final UnknownHostException ex)
         {

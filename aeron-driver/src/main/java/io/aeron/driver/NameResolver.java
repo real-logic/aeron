@@ -25,26 +25,26 @@ public interface NameResolver
     /**
      * Resolve a name and return the most up to date {@link InetAddress} that represents the name.
      *
-     * @param name to resolve.
-     * @param uriParamName that the resolution is for.
+     * @param name           to resolve.
+     * @param uriParamName   that the resolution is for.
      * @param isReResolution true if this is a re-resolution or false if initial resolution.
      * @return address for the name that most recently represents the name or null if not resolvable currently.
      * @see io.aeron.CommonContext#ENDPOINT_PARAM_NAME
      * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
      */
-    InetAddress resolve(CharSequence name, String uriParamName, boolean isReResolution);
+    InetAddress resolve(String name, String uriParamName, boolean isReResolution);
 
     /**
-     * Lookup the name and return a string of the form name:port that represents the endpoint or control portion
+     * Lookup the name and return a string of the form name:port that represents the endpoint or control param
      * of the URI.
      *
-     * @param name to lookup
+     * @param name         to lookup
      * @param uriParamName that the lookup is for.
-     * @param isReLookup true if this is a re-lookup or false if initial lookup.
+     * @param isReLookup   true if this is a re-lookup or false if initial lookup.
      * @return string in name:port form.
      */
     @SuppressWarnings("unused")
-    default CharSequence lookup(CharSequence name, String uriParamName, boolean isReLookup)
+    default String lookup(String name, String uriParamName, boolean isReLookup)
     {
         return name;
     }

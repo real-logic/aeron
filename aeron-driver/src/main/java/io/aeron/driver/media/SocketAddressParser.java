@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.NameResolver;
 import org.agrona.AsciiEncoding;
+import org.agrona.Strings;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,25 +35,24 @@ class SocketAddressParser
     }
 
     /**
-     * Parse socket addresses from a {@link CharSequence}. Supports
+     * Parse socket addresses from a {@link String}. Supports
      * hostname:port, ipV4Address:port, [ipV6Address]:port, and name
      *
-     * @param cs to be parsed for the socket address.
-     * @param uriParamName for the parse.
+     * @param value          to be parsed for the socket address.
+     * @param uriParamName   for the parse.
      * @param isReResolution for the parse.
-     * @param nameResolver to be used for resolving hostnames.
+     * @param nameResolver   to be used for resolving hostnames.
      * @return An {@link InetSocketAddress} for the parsed input.
      */
     static InetSocketAddress parse(
-        final CharSequence cs, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+        final String value, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
     {
-        if (null == cs || cs.length() == 0)
+        if (Strings.isEmpty(value))
         {
             throw new NullPointerException("input string must not be null or empty");
         }
 
-        final CharSequence nameAndPort = nameResolver.lookup(cs, uriParamName, isReResolution);
-
+        final String nameAndPort = nameResolver.lookup(value, uriParamName, isReResolution);
         InetSocketAddress address = tryParseIpV4(nameAndPort, uriParamName, isReResolution, nameResolver);
 
         if (null == address)
@@ -62,22 +62,22 @@ class SocketAddressParser
 
         if (null == address)
         {
-            throw new IllegalArgumentException("invalid format: " + cs);
+            throw new IllegalArgumentException("invalid format: " + value);
         }
 
         return address;
     }
 
     private static InetSocketAddress tryParseIpV4(
-        final CharSequence cs, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+        final String str, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
     {
         IpV4State state = IpV4State.HOST;
         int separatorIndex = -1;
-        final int length = cs.length();
+        final int length = str.length();
 
         for (int i = 0; i < length; i++)
         {
-            final char c = cs.charAt(i);
+            final char c = str.charAt(i);
             switch (state)
             {
                 case HOST:
@@ -102,30 +102,30 @@ class SocketAddressParser
 
         if (-1 != separatorIndex && 1 < length - separatorIndex)
         {
-            final CharSequence hostname = cs.subSequence(0, separatorIndex);
+            final String hostname = str.substring(0, separatorIndex);
             final int portIndex = separatorIndex + 1;
-            final int port = AsciiEncoding.parseIntAscii(cs, portIndex, length - portIndex);
+            final int port = AsciiEncoding.parseIntAscii(str, portIndex, length - portIndex);
             final InetAddress inetAddress = nameResolver.resolve(hostname, uriParamName, isReResolution);
 
             return (null == inetAddress) ?
-                InetSocketAddress.createUnresolved(hostname.toString(), port) :
+                InetSocketAddress.createUnresolved(hostname, port) :
                 new InetSocketAddress(inetAddress, port);
         }
 
-        throw new IllegalArgumentException("'port' part of the address is required for ipv4: " + cs);
+        throw new IllegalArgumentException("'port' part of the address is required for ipv4: " + str);
     }
 
     private static InetSocketAddress tryParseIpV6(
-        final CharSequence cs, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+        final String str, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
     {
         IpV6State state = IpV6State.START_ADDR;
         int portIndex = -1;
         int scopeIndex = -1;
-        final int length = cs.length();
+        final int length = str.length();
 
         for (int i = 0; i < length; i++)
         {
-            final char c = cs.charAt(i);
+            final char c = str.charAt(i);
 
             switch (state)
             {
@@ -194,16 +194,16 @@ class SocketAddressParser
 
         if (-1 != portIndex && 1 < length - portIndex)
         {
-            final CharSequence hostname = cs.subSequence(1, scopeIndex != -1 ? scopeIndex : portIndex - 1);
+            final String hostname = str.substring(1, scopeIndex != -1 ? scopeIndex : portIndex - 1);
             portIndex++;
-            final int port = AsciiEncoding.parseIntAscii(cs, portIndex, length - portIndex);
+            final int port = AsciiEncoding.parseIntAscii(str, portIndex, length - portIndex);
             final InetAddress inetAddress = nameResolver.resolve(hostname, uriParamName, isReResolution);
 
-            return (null == inetAddress) ?
-                InetSocketAddress.createUnresolved(hostname.toString(), port) :
+            return null == inetAddress ?
+                InetSocketAddress.createUnresolved(hostname, port) :
                 new InetSocketAddress(inetAddress, port);
         }
 
-        throw new IllegalArgumentException("'port' part of the address is required for ipv6: " + cs);
+        throw new IllegalArgumentException("'port' part of the address is required for ipv6: " + str);
     }
 }

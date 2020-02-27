@@ -182,7 +182,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return workCount;
     }
 
-    public InetAddress resolve(final CharSequence name, final String uriParamName, final boolean isReResolution)
+    public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
         DriverNameResolverCache.CacheEntry entry;
 
@@ -219,7 +219,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         }
     }
 
-    public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
+    public String lookup(final String name, final String uriParamName, final boolean isReLookup)
     {
         // here we would lookup advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
         return delegateResolver.lookup(name, uriParamName, isReLookup);

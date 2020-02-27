@@ -19,11 +19,13 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.SlowTest;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -36,14 +38,20 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 public class DriverNameResolverTest
 {
     private final String baseDir = CommonContext.getAeronDirectoryName();
-    private final ArrayList<MediaDriver> drivers = new ArrayList<>();
+    private final ArrayList<TestMediaDriver> drivers = new ArrayList<>();
+
+    @BeforeEach
+    public void before()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Name Resolver");
+    }
 
     @AfterEach
     public void after()
     {
         CloseHelper.closeAll(drivers);
 
-        for (final MediaDriver driver : drivers)
+        for (final TestMediaDriver driver : drivers)
         {
             driver.context().deleteDirectory();
         }
@@ -52,7 +60,7 @@ public class DriverNameResolverTest
     @Test
     public void shouldInitializeWithDefaultsAndHaveResolverCounters()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context()
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context()
             .resolverInterface("0.0.0.0:0"))));
 
         final int neighborsCounterId = neighborsCounterId(drivers.get(0));
@@ -63,12 +71,12 @@ public class DriverNameResolverTest
     @Timeout(10)
     public void shouldSeeNeighbor()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")
             .resolverInterface("0.0.0.0:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-B")
             .resolverName("B")
             .resolverInterface("0.0.0.0:8051")
@@ -85,18 +93,18 @@ public class DriverNameResolverTest
     @Timeout(10)
     public void shouldSeeNeighborsViaGossip()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")
             .resolverInterface("0.0.0.0:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-B")
             .resolverName("B")
             .resolverInterface("0.0.0.0:8051")
             .resolverBootstrapNeighbor("localhost:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-C")
             .resolverName("C")
             .resolverInterface("0.0.0.0:8052")
@@ -112,21 +120,21 @@ public class DriverNameResolverTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(15)
     public void shouldSeeNeighborsViaGossipAsLateJoiningDriver()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")
             .resolverInterface("0.0.0.0:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-B")
             .resolverName("B")
             .resolverInterface("0.0.0.0:8051")
             .resolverBootstrapNeighbor("localhost:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-C")
             .resolverName("C")
             .resolverInterface("0.0.0.0:8052")
@@ -140,7 +148,7 @@ public class DriverNameResolverTest
         awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 2);
         awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-D")
             .resolverName("C")
             .resolverInterface("0.0.0.0:8053")
@@ -158,12 +166,12 @@ public class DriverNameResolverTest
     @Timeout(10)
     public void shouldResolveDriverNameAndAllowConnection()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")
             .resolverInterface("0.0.0.0:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-B")
             .resolverName("B")
             .resolverInterface("0.0.0.0:8051")
@@ -197,12 +205,12 @@ public class DriverNameResolverTest
     @Timeout(20)
     public void shouldTimeoutAllNeighborsAndCacheEntries()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")
             .resolverInterface("0.0.0.0:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-B")
             .resolverName("B")
             .resolverInterface("0.0.0.0:8051")
@@ -231,18 +239,18 @@ public class DriverNameResolverTest
     @Timeout(20)
     public void shouldTimeoutNeighborsAndCacheEntriesThatAreSeenViaGossip()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")
             .resolverInterface("0.0.0.0:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-B")
             .resolverName("B")
             .resolverInterface("0.0.0.0:8051")
             .resolverBootstrapNeighbor("localhost:8050")));
 
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+        drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-C")
             .resolverName("C")
             .resolverInterface("0.0.0.0:8052")
@@ -266,7 +274,7 @@ public class DriverNameResolverTest
 
         awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
         assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
-        awaitCounterValue(drivers.get(1).context().countersManager(), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
         assertEquals(drivers.get(1).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
     }
 
@@ -281,7 +289,7 @@ public class DriverNameResolverTest
         return context;
     }
 
-    private static int neighborsCounterId(final MediaDriver driver)
+    private static int neighborsCounterId(final TestMediaDriver driver)
     {
         final CountersReader countersReader = driver.context().countersManager();
         final MutableInteger id = new MutableInteger(NULL_VALUE);
@@ -298,7 +306,7 @@ public class DriverNameResolverTest
         return id.value;
     }
 
-    private static int cacheEntriesCounterId(final MediaDriver driver)
+    private static int cacheEntriesCounterId(final TestMediaDriver driver)
     {
         final CountersReader countersReader = driver.context().countersManager();
         final MutableInteger id = new MutableInteger(NULL_VALUE);

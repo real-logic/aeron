@@ -87,6 +87,8 @@ public class NameReResolutionTest
     @BeforeEach
     public void before()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("ReResolution");
+
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
@@ -417,7 +419,7 @@ public class NameReResolutionTest
     {
         private final List<String[]> lookupNames = new ArrayList<>();
 
-        public StubNameResolver(final String stubLookupConfiguration)
+        StubNameResolver(final String stubLookupConfiguration)
         {
             final String[] lines = stubLookupConfiguration.split("\\|");
             for (final String line : lines)
@@ -439,7 +441,7 @@ public class NameReResolutionTest
 
         public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
         {
-            for (String[] lookupName : lookupNames)
+            for (final String[] lookupName : lookupNames)
             {
                 if (lookupName[0].equals(uriParamName) && lookupName[1].equals(name.toString()))
                 {

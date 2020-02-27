@@ -29,8 +29,7 @@ import org.agrona.AsciiEncoding;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
@@ -64,7 +63,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
-    private final NanoClock nanoClock;
+    private final CachedNanoClock cachedNanoClock;
     private final Long groupTag;
 
     private final long receiverId;
@@ -91,14 +90,14 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         nakFlyweight = threadLocals.nakFlyweight();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
-        nanoClock = context.cachedNanoClock();
-        timeOfLastActivityNs = nanoClock.nanoTime();
+        cachedNanoClock = context.cachedNanoClock();
+        timeOfLastActivityNs = cachedNanoClock.nanoTime();
         receiverId = threadLocals.receiverId();
 
-        final String groupTagStr = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
-        groupTag = null == groupTagStr ?
+        final String groupTagValue = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
+        groupTag = null == groupTagValue ?
             context.receiverGroupTag() :
-            Long.valueOf(AsciiEncoding.parseLongAscii(groupTagStr, 0, groupTagStr.length()));
+            Long.valueOf(AsciiEncoding.parseLongAscii(groupTagValue, 0, groupTagValue.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
@@ -394,8 +393,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        updateTimeOfLastAcvitity(nanoClock.nanoTime(), transportIndex);
-
+        updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress, transportIndex);
     }
 
@@ -406,8 +404,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        updateTimeOfLastAcvitity(nanoClock.nanoTime(), transportIndex);
-
+        updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
         dispatcher.onSetupMessage(this, header, srcAddress, transportIndex);
     }
 
@@ -421,8 +418,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final long requestedReceiverId = header.receiverId();
         if (requestedReceiverId == receiverId || requestedReceiverId == 0)
         {
-            updateTimeOfLastAcvitity(nanoClock.nanoTime(), transportIndex);
-
+            updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
             dispatcher.onRttMeasurement(this, header, srcAddress, transportIndex);
         }
     }
@@ -648,7 +644,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    protected void updateTimeOfLastAcvitity(final long nowNs, final int transportIndex)
+    protected void updateTimeOfLastActivityNs(final long nowNs, final int transportIndex)
     {
         if (null == multiRcvDestination)
         {
@@ -656,9 +652,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
         else
         {
-            final ReceiveDestinationTransport transport = multiRcvDestination.transport(transportIndex);
-
-            transport.timeOfLastActivityNs(nowNs);
+            multiRcvDestination.transport(transportIndex).timeOfLastActivityNs(nowNs);
         }
     }
 }

@@ -35,9 +35,7 @@ abstract class MultiSndDestination
 
     abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
-    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
-    {
-    }
+    abstract void onStatusMessage(StatusMessageFlyweight msg, InetSocketAddress address);
 
     void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
@@ -92,9 +90,9 @@ class ManualSndMultiDestination extends MultiSndDestination
     private final CachedNanoClock nanoClock;
     private Destination[] destinations = EMPTY_DESTINATIONS;
 
-    ManualSndMultiDestination(final CachedNanoClock nanoClock, final long timeout)
+    ManualSndMultiDestination(final CachedNanoClock nanoClock, final long destinationTimeoutNs)
     {
-        this.destinationTimeoutNs = timeout;
+        this.destinationTimeoutNs = destinationTimeoutNs;
         this.nanoClock = nanoClock;
     }
 
@@ -215,9 +213,7 @@ class ManualSndMultiDestination extends MultiSndDestination
     {
         for (final Destination destination : destinations)
         {
-            final String destinationEndpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-
-            if (endpoint.equals(destinationEndpoint))
+            if (endpoint.equals(destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME)))
             {
                 destination.address = newAddress;
                 destination.port = newAddress.getPort();
@@ -232,10 +228,10 @@ class DynamicSndMultiDestination extends MultiSndDestination
     private final CachedNanoClock nanoClock;
     private Destination[] destinations = EMPTY_DESTINATIONS;
 
-    DynamicSndMultiDestination(final CachedNanoClock nanoClock, final long timeout)
+    DynamicSndMultiDestination(final CachedNanoClock nanoClock, final long destinationTimeoutNs)
     {
         this.nanoClock = nanoClock;
-        this.destinationTimeoutNs = timeout;
+        this.destinationTimeoutNs = destinationTimeoutNs;
     }
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
@@ -327,9 +323,9 @@ class DynamicSndMultiDestination extends MultiSndDestination
 
 final class Destination
 {
+    long receiverId;
     long timeOfLastActivityNs;
     boolean isReceiverIdValid;
-    long receiverId;
     int port;
     InetSocketAddress address;
     final ChannelUri channelUri;

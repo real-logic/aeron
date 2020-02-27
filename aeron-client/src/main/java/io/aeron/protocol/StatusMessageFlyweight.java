@@ -235,7 +235,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Set the Receiver Tag for the Status Message.
+     * Set the Receiver Group Tag for the Status Message.
      *
      * @param groupTag value to set if not null
      * @return flyweight
@@ -252,9 +252,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Return the field offset within the flyweight for the receiver tag field.
+     * Return the field offset within the flyweight for the group tag field.
      *
-     * @return offset of receiver tag field
+     * @return offset of group tag field
      */
     public static int groupTagFieldOffset()
     {

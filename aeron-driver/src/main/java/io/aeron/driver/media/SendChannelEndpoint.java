@@ -25,8 +25,7 @@ import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.collections.BiInt2ObjectMap;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
@@ -54,7 +53,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
-    private final NanoClock nanoClock;
+    private final CachedNanoClock cachedNanoClock;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -69,8 +68,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
-        this.nanoClock = context.cachedNanoClock();
-        this.timeOfLastSmNs = nanoClock.nanoTime();
+        this.cachedNanoClock = context.cachedNanoClock();
+        this.timeOfLastSmNs = cachedNanoClock.nanoTime();
 
         MultiSndDestination multiSndDestination = null;
         if (udpChannel.isManualControlMode())
@@ -269,7 +268,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 publication.onStatusMessage(msg, srcAddress);
             }
 
-            timeOfLastSmNs = nanoClock.nanoTime();
+            timeOfLastSmNs = cachedNanoClock.nanoTime();
             statusMessagesReceived.incrementOrdered();
         }
     }

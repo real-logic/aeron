@@ -127,6 +127,8 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onClose()
     {
+        boolean isInterrupted = false;
+
         clientLock.lock();
         try
         {
@@ -167,6 +169,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final InterruptedException ignore)
                 {
+                    isInterrupted = true;
                 }
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)
@@ -181,6 +184,11 @@ class ClientConductor implements Agent, DriverEventsListener
         finally
         {
             isClosed = true;
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
             clientLock.unlock();
         }
     }

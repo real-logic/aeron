@@ -15,10 +15,12 @@
  */
 package io.aeron.protocol;
 
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
+import static java.lang.Integer.toHexString;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
 
@@ -85,15 +87,15 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
         return (short)(getByte(RES_FLAGS_FIELD_OFFSET) & 0xFF);
     }
 
-    public ResolutionEntryFlyweight udpPort(final short udpPort)
+    public ResolutionEntryFlyweight udpPort(final int udpPort)
     {
-        putShort(UDP_PORT_FIELD_OFFSET, udpPort, LITTLE_ENDIAN);
+        putShort(UDP_PORT_FIELD_OFFSET, (short)udpPort, LITTLE_ENDIAN);
         return this;
     }
 
-    public short udpPort()
+    public int udpPort()
     {
-        return getShort(UDP_PORT_FIELD_OFFSET, LITTLE_ENDIAN);
+        return (int)(getShort(UDP_PORT_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF);
     }
 
     public ResolutionEntryFlyweight ageInMs(final int ageInMsec)
@@ -139,6 +141,59 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
         throw new IllegalStateException("unknown RES_TYPE=" + resType());
     }
 
+    public void appendAddress(final Appendable appendable)
+    {
+        try
+        {
+            switch (resType())
+            {
+                case RES_TYPE_NAME_TO_IP4_MD:
+                {
+                    final int i = ADDRESS_FIELD_OFFSET;
+                    appendable
+                        .append(String.valueOf(getByte(i) & 0xFF))
+                        .append('.')
+                        .append(String.valueOf(getByte(i + 1) & 0xFF))
+                        .append('.')
+                        .append(String.valueOf(getByte(i + 2) & 0xFF))
+                        .append('.')
+                        .append(String.valueOf(getByte(i + 3) & 0xFF));
+                    return;
+                }
+
+                case RES_TYPE_NAME_TO_IP6_MD:
+                {
+                    final int i = ADDRESS_FIELD_OFFSET;
+                    appendable
+                        .append(toHexString(((getByte(i) << 8) & 0xFF00) | getByte(i + 1) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 2) << 8) & 0xFF00) | getByte(i + 3) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 4) << 8) & 0xFF00) | getByte(i + 5) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 6) << 8) & 0xFF00) | getByte(i + 7) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 8) << 8) & 0xFF00) | getByte(i + 9) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 10) << 8) & 0xFF00) | getByte(i + 11) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 12) << 8) & 0xFF00) | getByte(i + 13) & 0xFF))
+                        .append(':')
+                        .append(toHexString(((getByte(i + 14) << 8) & 0xFF00) | getByte(i + 15) & 0xFF));
+                    return;
+                }
+            }
+
+            appendable
+                .append("unknown RES_TYPE=")
+                .append(String.valueOf(resType()));
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
     public ResolutionEntryFlyweight putName(final byte[] name)
     {
         final int nameOffset = nameOffset(resType());
@@ -155,6 +210,14 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
 
         getBytes(nameOffset + SIZE_OF_SHORT, name, 0, nameLength);
         return nameLength;
+    }
+
+    public void appendName(final Appendable appendable)
+    {
+        final int nameOffset = nameOffset(resType());
+        final short nameLength = getShort(nameOffset, LITTLE_ENDIAN);
+
+        getStringWithoutLengthAscii(nameOffset + SIZE_OF_SHORT, nameLength, appendable);
     }
 
     public int entryLength()

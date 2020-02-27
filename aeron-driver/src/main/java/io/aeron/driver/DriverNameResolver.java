@@ -404,7 +404,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
         final int nameLength = resolutionEntryFlyweight.getName(nameTempBuffer);
         final long timeOfLastActivity = nowMs - resolutionEntryFlyweight.ageInMs();
-        final short port = resolutionEntryFlyweight.udpPort();
+        final int port = resolutionEntryFlyweight.udpPort();
 
         // use name and port to indicate it is from this resolver instead of searching interfaces
         if (port == localSocketAddress.getPort() && byteSubsetEquals(nameTempBuffer, localName, nameLength))
@@ -450,7 +450,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return -1;
     }
 
-    int findNeighborByAddress(final byte[] address, final int addressLength, final short port)
+    int findNeighborByAddress(final byte[] address, final int addressLength, final int port)
     {
         for (int i = 0, size = neighborList.size(); i < size; i++)
         {

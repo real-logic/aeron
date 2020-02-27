@@ -39,6 +39,8 @@ final class DriverEventDissector
     private static final NakFlyweight NAK_HEADER = new NakFlyweight();
     private static final SetupFlyweight SETUP_HEADER = new SetupFlyweight();
     private static final RttMeasurementFlyweight RTT_MEASUREMENT = new RttMeasurementFlyweight();
+    private static final HeaderFlyweight HEADER = new HeaderFlyweight();
+    private static final ResolutionEntryFlyweight RESOLUTION = new ResolutionEntryFlyweight();
     private static final PublicationMessageFlyweight PUB_MSG = new PublicationMessageFlyweight();
     private static final SubscriptionMessageFlyweight SUB_MSG = new SubscriptionMessageFlyweight();
     private static final PublicationBuffersReadyFlyweight PUB_READY = new PublicationBuffersReadyFlyweight();
@@ -103,6 +105,10 @@ final class DriverEventDissector
             case HeaderFlyweight.HDR_TYPE_RTTM:
                 RTT_MEASUREMENT.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
                 dissectRttFrame(builder);
+                break;
+
+            case HeaderFlyweight.HDR_TYPE_RES:
+                dissectResFrame(buffer, frameOffset, builder);
                 break;
 
             default:
@@ -375,6 +381,62 @@ final class DriverEventDissector
             .append(RTT_MEASUREMENT.receptionDelta())
             .append(' ')
             .append(RTT_MEASUREMENT.receiverId());
+    }
+
+    private static void dissectResFrame(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int currentOffset = offset;
+
+        HEADER.wrap(buffer, offset, buffer.capacity() - offset);
+        final int length = offset + Math.min(HEADER.frameLength(), CommonEventEncoder.MAX_CAPTURE_LENGTH);
+        currentOffset += HeaderFlyweight.MIN_HEADER_LENGTH;
+
+        builder.append("RES ");
+        HeaderFlyweight.appendFlagsAsChars(HEADER.flags(), builder);
+
+        builder
+            .append(" len ")
+            .append(HEADER.frameLength())
+            .append(' ');
+
+        while (length > currentOffset)
+        {
+            RESOLUTION.wrap(buffer, currentOffset, buffer.capacity() - currentOffset);
+
+            if ((length - offset) < RESOLUTION.entryLength())
+            {
+                builder.append(" ... ").append(length - offset).append(" bytes left");
+                break;
+            }
+
+            dissectResEntry(builder);
+
+            currentOffset += RESOLUTION.entryLength();
+        }
+    }
+
+    private static void dissectResEntry(final StringBuilder builder)
+    {
+        builder
+            .append('[')
+            .append(RESOLUTION.resType())
+            .append(' ');
+
+        HeaderFlyweight.appendFlagsAsChars(RESOLUTION.flags(), builder);
+
+        builder
+            .append(" port ")
+            .append(RESOLUTION.udpPort())
+            .append(' ')
+            .append(RESOLUTION.ageInMs())
+            .append(' ');
+
+        RESOLUTION.appendAddress(builder);
+        builder.append(' ');
+
+        RESOLUTION.appendName(builder);
+        builder.append(']');
     }
 
     private static void dissectPublication(final StringBuilder builder)

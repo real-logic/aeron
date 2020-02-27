@@ -122,7 +122,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         neighborsCounter = context.countersManager().newCounter(
             "Resolver neighbors", NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
         cacheEntriesCounter = context.countersManager().newCounter(
-            "Resolver cache entries", NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
+            "Resolver cache entries " + localDriverName, NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
     }
 
     public void close()

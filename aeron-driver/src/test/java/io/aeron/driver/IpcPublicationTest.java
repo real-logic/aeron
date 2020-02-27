@@ -64,6 +64,7 @@ public class IpcPublicationTest
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
         final CountersManager countersManager = new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII);
+        final SystemCounters systemCounters = new SystemCounters(countersManager);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
@@ -76,7 +77,8 @@ public class IpcPublicationTest
             .cachedEpochClock(new CachedEpochClock())
             .cachedNanoClock(new CachedNanoClock())
             .countersManager(countersManager)
-            .systemCounters(mock(SystemCounters.class))
+            .systemCounters(systemCounters)
+            .nameResolver(DefaultNameResolver.INSTANCE)
             .nanoClock(nanoClock);
 
         ctx.countersValuesBuffer(counterBuffer);

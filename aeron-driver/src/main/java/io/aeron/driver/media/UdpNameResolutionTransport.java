@@ -15,11 +15,15 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.CommonContext;
+import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.MediaDriver;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class UdpNameResolutionTransport extends UdpChannelTransport
@@ -37,11 +41,12 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
     private final ByteBuffer byteBuffer;
 
     public UdpNameResolutionTransport(
+        final UdpChannel udpChannel,
         final InetSocketAddress resolverAddr,
         final UnsafeBuffer unsafeBuffer,
         final MediaDriver.Context context)
     {
-        super(null, resolverAddr, null, null, context);
+        super(udpChannel, null, resolverAddr, null, context);
 
         this.unsafeBuffer = unsafeBuffer;
         this.byteBuffer = unsafeBuffer.byteBuffer();
@@ -94,5 +99,24 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
         }
 
         return bytesSent;
+    }
+
+    public static InetSocketAddress getInterfaceAddress(final String interfaceString)
+    {
+        try
+        {
+            return InterfaceSearchAddress.parse(interfaceString).getAddress();
+        }
+        catch (final UnknownHostException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+            return null;
+        }
+    }
+
+    public static InetSocketAddress getInetSocketAddress(final String hostAndPort)
+    {
+        return SocketAddressParser.parse(
+            hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, DefaultNameResolver.INSTANCE);
     }
 }

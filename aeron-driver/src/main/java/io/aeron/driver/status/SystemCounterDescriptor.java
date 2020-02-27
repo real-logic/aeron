@@ -48,7 +48,9 @@ public enum SystemCounterDescriptor
     CONTROLLABLE_IDLE_STRATEGY(22, "ControllableIdleStrategy status"),
     LOSS_GAP_FILLS(23, "Loss gap fills"),
     CLIENT_TIMEOUTS(24, "Client liveness timeouts"),
-    RESOLUTION_CHANGES(25, "Resolution Changes");
+    RESOLUTION_CHANGES(25, "Resolution changes"),
+    RESOLVER_NEIGHBORS(26, "Resolver neighbors"),
+    RESOLVER_CACHE_ENTRIES(27, "Resolver cache entries");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

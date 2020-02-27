@@ -465,6 +465,9 @@ public final class MediaDriver implements AutoCloseable
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
         private int flowControlGroupMinSize = Configuration.flowControlGroupMinSize();
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
+        private String resolverName = Configuration.resolverName();
+        private String resolverInterface = Configuration.resolverInterface();
+        private String resolverBootstrapNeighbor = Configuration.resolverBootstrapNeighbor();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2825,6 +2828,39 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public String resolverName()
+        {
+            return resolverName;
+        }
+
+        public Context resolverName(final String resolverName)
+        {
+            this.resolverName = resolverName;
+            return this;
+        }
+
+        public String resolverInterface()
+        {
+            return resolverInterface;
+        }
+
+        public Context resolverInterface(final String resolverInterface)
+        {
+            this.resolverInterface = resolverInterface;
+            return this;
+        }
+
+        public String resolverBootstrapNeighbor()
+        {
+            return resolverBootstrapNeighbor;
+        }
+
+        public Context resolverBootstrapNeighbor(final String resolverBootstrapNeighbor)
+        {
+            this.resolverBootstrapNeighbor = resolverBootstrapNeighbor;
+            return this;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -3321,6 +3357,9 @@ public final class MediaDriver implements AutoCloseable
                 "\n    terminationValidator=" + terminationValidator +
                 "\n    terminationHook=" + terminationHook +
                 "\n    nameResolver=" + nameResolver +
+                "\n    resolverName=" + resolverName +
+                "\n    resolverInterface=" + resolverInterface +
+                "\n    resolverBootstrapNeighbor=" + resolverBootstrapNeighbor +
                 "\n    sendToStatusMessagePollRatio=" + sendToStatusMessagePollRatio +
                 "\n    unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
                 "\n    multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +

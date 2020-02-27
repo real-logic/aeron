@@ -29,6 +29,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -100,6 +101,7 @@ public class DriverConductor implements Agent
     private final MutableDirectBuffer tempBuffer;
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
     private final NameResolver nameResolver;
+    private final DriverNameResolver driverNameResolver;
 
     public DriverConductor(final Context ctx)
     {
@@ -120,7 +122,18 @@ public class DriverConductor implements Agent
         tempBuffer = ctx.tempBuffer();
 
         countersManager = ctx.countersManager();
-        nameResolver = ctx.nameResolver();
+        if (null == ctx.resolverInterface())
+        {
+            driverNameResolver = null;
+            nameResolver = ctx.nameResolver();
+        }
+        else
+        {
+            driverNameResolver = new DriverNameResolver(
+                ctx.resolverName(), ctx.resolverInterface(), ctx.resolverBootstrapNeighbor(), ctx);
+            driverNameResolver.openDatagramChannel();
+            nameResolver = driverNameResolver;
+        }
 
         clientCommandAdapter = new ClientCommandAdapter(
             ctx.systemCounters().get(ERRORS),
@@ -143,6 +156,7 @@ public class DriverConductor implements Agent
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
 
+        CloseHelper.close(driverNameResolver);
         ctx.close();
     }
 
@@ -161,6 +175,7 @@ public class DriverConductor implements Agent
 
         workCount += clientCommandAdapter.receive();
         workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        workCount += nameResolver.doWork(cachedEpochClock.time());
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)

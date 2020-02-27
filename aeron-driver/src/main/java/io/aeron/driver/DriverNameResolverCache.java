@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.protocol.ResolutionEntryFlyweight;
 import org.agrona.collections.ArrayListUtil;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +51,8 @@ class DriverNameResolverCache implements AutoCloseable
         final long nowMs,
         final byte type,
         final byte[] address,
-        final int port)
+        final int port,
+        final AtomicCounter cacheEntriesCounter)
     {
         final int existingEntryIndex = findEntryIndexByNameAndType(name, nameLength, type);
         final CacheEntry entry;
@@ -65,6 +67,7 @@ class DriverNameResolverCache implements AutoCloseable
                 Arrays.copyOf(address, ResolutionEntryFlyweight.addressLength(type)),
                 port);
             listOfEntries.add(entry);
+            cacheEntriesCounter.setOrdered(listOfEntries.size());
         }
         else
         {
@@ -74,10 +77,11 @@ class DriverNameResolverCache implements AutoCloseable
         }
     }
 
-    int timeoutOldEntries(final long nowMs)
+    int timeoutOldEntries(final long nowMs, final AtomicCounter cacheEntriesCounter)
     {
         int workCount = 0;
 
+        final ArrayList<CacheEntry> listOfEntries = this.listOfEntries;
         for (int lastIndex = listOfEntries.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final CacheEntry entry = listOfEntries.get(i);
@@ -85,6 +89,7 @@ class DriverNameResolverCache implements AutoCloseable
             if (nowMs > entry.deadlineMs)
             {
                 ArrayListUtil.fastUnorderedRemove(listOfEntries, i, lastIndex--);
+                cacheEntriesCounter.setOrdered(listOfEntries.size());
                 workCount++;
             }
         }

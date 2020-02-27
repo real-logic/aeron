@@ -668,6 +668,21 @@ public class Configuration
     private static final String MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME =
         "aeron.MinMulticastFlowControl.receiverTimeout";
 
+    /**
+     * Property name for resolver name of the Media Driver.
+     */
+    public static final String RESOLVER_NAME_PROP_NAME = "aeron.driver.resolver.name";
+
+    /**
+     * Property name for resolver interface.
+     */
+    public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
+
+    /**
+     * Property name for resolver bootstrap neighbor.
+     */
+    public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";
+
     public static boolean printConfigurationOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
@@ -820,6 +835,21 @@ public class Configuration
         return getDurationInNanos(
             FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME,
             getDurationInNanos(MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME, FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS));
+    }
+
+    public static String resolverName()
+    {
+        return getProperty(RESOLVER_NAME_PROP_NAME);
+    }
+
+    public static String resolverInterface()
+    {
+        return getProperty(RESOLVER_INTERFACE_PROP_NAME);
+    }
+
+    public static String resolverBootstrapNeighbor()
+    {
+        return getProperty(RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME);
     }
 
     /**

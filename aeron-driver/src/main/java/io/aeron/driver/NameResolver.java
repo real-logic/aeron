@@ -48,4 +48,16 @@ public interface NameResolver
     {
         return name;
     }
+
+    /**
+     * Perform periodic work for the resolver.
+     *
+     * @param nowMs current epoch clock time in milliseconds
+     * @return work count
+     */
+    @SuppressWarnings("unused")
+    default int doWork(final long nowMs)
+    {
+        return 0;
+    }
 }

@@ -54,20 +54,12 @@ int aeron_send_channel_endpoint_create(
     _endpoint->destination_tracker = NULL;
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
 
-    if (channel->has_explicit_control)
+    const int64_t destination_timeout_ns = channel->is_manual_control_mode ?
+        AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS :
+        AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
+
+    if (channel->has_explicit_control || channel->is_dynamic_control_mode || channel->is_manual_control_mode)
     {
-        const char *control_mode = channel->uri.params.udp.control_mode;
-        int64_t destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
-
-        if (NULL != control_mode &&
-            strncmp(
-                control_mode,
-                AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE,
-                strlen(AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE)) == 0)
-        {
-            destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS;
-        }
-
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
             aeron_udp_destination_tracker_init(
                 _endpoint->destination_tracker,

@@ -1387,11 +1387,12 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddSubscrip
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddDestinationToManualMdcPublication)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveDestinationToManualMdcPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
     int64_t add_destination_id = nextCorrelationId();
+    int64_t remove_destination_id = nextCorrelationId();
 
     ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1, false), 0);
     doWork();
@@ -1400,7 +1401,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddDestinationToManualMdcPublic
 
     ASSERT_EQ(addDestination(client_id, add_destination_id, pub_id, CHANNEL_1), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    auto add_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
@@ -1409,7 +1410,20 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddDestinationToManualMdcPublic
         EXPECT_EQ(response.correlationId(), add_destination_id);
     };
 
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(add_handler), 1u);
+
+    ASSERT_EQ(removeDestination(client_id, remove_destination_id, pub_id, CHANNEL_1), 0);
+    doWork();
+    auto remove_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::OperationSucceededFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), remove_destination_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 1u);
 }
 
 TEST_F(DriverConductorNetworkTest, shouldNotAddDynamicSessionIdInReservedRange)

@@ -22,7 +22,9 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.SlowTest;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -33,8 +35,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
@@ -60,61 +65,37 @@ public class NameReResolutionTest
         "aeron:udp?control=" + CONTROL_NAME + "|control-mode=dynamic";
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
+    private static final String STUB_LOOKUP_CONFIGURATION =
+        ENDPOINT_PARAM_NAME + "," + ENDPOINT_NAME + ",localhost:24326,localhost:24325|" +
+        MDC_CONTROL_PARAM_NAME + "," + CONTROL_NAME + ",localhost:24328,localhost:24327|";
+
     private static final int STREAM_ID = 1001;
 
     private Aeron client;
-    private MediaDriver driver;
+    private TestMediaDriver driver;
     private Subscription subscription;
     private Publication publication;
+
+    @RegisterExtension
+    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);
 
-    private final NameResolver lookupResolver = new NameResolver()
-    {
-        public InetAddress resolve(final CharSequence name, final String uriParamName, final boolean isReResolution)
-        {
-            return DefaultNameResolver.INSTANCE.resolve(name, uriParamName, isReResolution);
-        }
-
-        public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
-        {
-            if (name.equals(ENDPOINT_NAME) && uriParamName.equals(ENDPOINT_PARAM_NAME))
-            {
-                if (isReLookup)
-                {
-                    return "localhost:" + 24326;
-                }
-                else
-                {
-                    return "localhost:" + 24325;
-                }
-            }
-            else if (name.equals(CONTROL_NAME) && uriParamName.equals(MDC_CONTROL_PARAM_NAME))
-            {
-                if (isReLookup)
-                {
-                    return "localhost:" + 24328;
-                }
-                else
-                {
-                    return "localhost:" + 24327;
-                }
-            }
-
-            return name;
-        }
-    };
+    private final NameResolver lookupResolver = new StubNameResolver(STUB_LOOKUP_CONFIGURATION);
 
     @BeforeEach
     public void before()
     {
-        driver = MediaDriver.launch(
+        TestMediaDriver.notSupportedOnCMediaDriverYet("ReResolution");
+
+        driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
-                .nameResolver(lookupResolver));
+                .nameResolver(lookupResolver),
+            testWatcher);
 
         client = Aeron.connect();
     }
@@ -360,6 +341,8 @@ public class NameReResolutionTest
     @Timeout(15)
     public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected() throws Exception
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-Destination-Subscriptions");
+
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(SUBSCRIPTION_MDS_URI, STREAM_ID);
@@ -430,5 +413,43 @@ public class NameReResolutionTest
             anyInt(),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));
+    }
+
+    private static class StubNameResolver implements NameResolver
+    {
+        private final List<String[]> lookupNames = new ArrayList<>();
+
+        StubNameResolver(final String stubLookupConfiguration)
+        {
+            final String[] lines = stubLookupConfiguration.split("\\|");
+            for (final String line : lines)
+            {
+                final String[] params = line.split(",");
+                if (4 != params.length)
+                {
+                    throw new IllegalArgumentException("Expect 4 elements per row");
+                }
+
+                lookupNames.add(params);
+            }
+        }
+
+        public InetAddress resolve(final CharSequence name, final String uriParamName, final boolean isReResolution)
+        {
+            return DefaultNameResolver.INSTANCE.resolve(name, uriParamName, isReResolution);
+        }
+
+        public CharSequence lookup(final CharSequence name, final String uriParamName, final boolean isReLookup)
+        {
+            for (final String[] lookupName : lookupNames)
+            {
+                if (lookupName[0].equals(uriParamName) && lookupName[1].equals(name.toString()))
+                {
+                    return isReLookup ? lookupName[2] : lookupName[3];
+                }
+            }
+
+            return name;
+        }
     }
 }

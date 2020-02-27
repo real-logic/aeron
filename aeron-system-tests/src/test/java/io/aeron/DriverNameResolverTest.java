@@ -17,10 +17,10 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,8 @@ import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.aeron.Aeron.NULL_VALUE;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class DriverNameResolverTest
 {
@@ -50,9 +51,11 @@ public class DriverNameResolverTest
     @Test
     public void shouldInitializeWithDefaultsAndHaveResolverCounters()
     {
-        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())));
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context()
+            .resolverInterface("0.0.0.0:0"))));
 
-        assertEquals(neighbors(drivers.get(0)), 0L);
+        final int neighborsCounterId = neighborsCounterId(drivers.get(0));
+        assertNotEquals(neighborsCounterId, -1);
     }
 
     @Test
@@ -70,8 +73,11 @@ public class DriverNameResolverTest
             .resolverInterface("0.0.0.0:8051")
             .resolverBootstrapNeighbor("localhost:8050")));
 
-        awaitNeighbors(drivers.get(0), 1);
-        awaitNeighbors(drivers.get(1), 1);
+        final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
+        final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
     }
 
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)
@@ -85,23 +91,44 @@ public class DriverNameResolverTest
         return context;
     }
 
-    private static long neighbors(final MediaDriver driver)
+    private static int neighborsCounterId(final MediaDriver driver)
     {
         final CountersReader countersReader = driver.context().countersManager();
+        final MutableInteger id = new MutableInteger(NULL_VALUE);
 
-        return countersReader.getCounterValue(SystemCounterDescriptor.RESOLVER_NEIGHBORS.id());
+        countersReader.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (label.startsWith("Resolver neighbors"))
+                {
+                    id.value = counterId;
+                }
+            });
+
+        return id.value;
     }
 
-    private static long cacheEntries(final MediaDriver driver)
+    private static int cacheEntriesCounterId(final MediaDriver driver)
     {
         final CountersReader countersReader = driver.context().countersManager();
+        final MutableInteger id = new MutableInteger(NULL_VALUE);
 
-        return countersReader.getCounterValue(SystemCounterDescriptor.RESOLVER_CACHE_ENTRIES.id());
+        countersReader.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (label.startsWith("Resolver cache entries"))
+                {
+                    id.value = counterId;
+                }
+            });
+
+        return id.value;
     }
 
-    private static void awaitNeighbors(final MediaDriver driver, final long expectedNeighbors)
+    private static void awaitCounterValue(
+        final CountersReader countersReader, final int counterId, final long expectedValue)
     {
-        while (neighbors(driver) != expectedNeighbors)
+        while (countersReader.getCounterValue(counterId) != expectedValue)
         {
             Tests.sleep(100);
             Tests.checkInterruptStatus();

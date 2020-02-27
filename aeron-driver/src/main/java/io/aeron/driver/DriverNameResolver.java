@@ -48,6 +48,9 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long DUTY_CYCLE_INTERVAL_MS = 10;
 
+    public static final int NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID = 14;
+    public static final int NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID = 15;
+
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
@@ -114,8 +117,10 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
         transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, context);
 
-        neighborsCounter = context.systemCounters().get(SystemCounterDescriptor.RESOLVER_NEIGHBORS);
-        cacheEntriesCounter = context.systemCounters().get(SystemCounterDescriptor.RESOLVER_CACHE_ENTRIES);
+        neighborsCounter = context.countersManager().newCounter(
+            "Resolver neighbors", NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
+        cacheEntriesCounter = context.countersManager().newCounter(
+            "Resolver cache entries", NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
     }
 
     public void close()

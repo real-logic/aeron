@@ -439,6 +439,9 @@ public final class MediaDriver implements AutoCloseable
         private long retransmitUnicastLingerNs = Configuration.retransmitUnicastLingerNs();
         private long nakUnicastDelayNs = Configuration.nakUnicastDelayNs();
         private long nakMulticastMaxBackoffNs = Configuration.nakMulticastMaxBackoffNs();
+        private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
+        private long reResolutionCheckIntervalNs = Configuration.reResolutionCheckIntervalNs();
+
         private int conductorBufferLength = Configuration.conductorBufferLength();
         private int toClientsBufferLength = Configuration.toClientsBufferLength();
         private int counterValuesBufferLength = Configuration.counterValuesBufferLength();
@@ -459,7 +462,6 @@ public final class MediaDriver implements AutoCloseable
         private int publicationReservedSessionIdHigh = Configuration.publicationReservedSessionIdHigh();
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
-        private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
@@ -2830,36 +2832,119 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the name of the {@link MediaDriver} for name resolver purposes.
+         *
+         * @return name of the {@link MediaDriver}.
+         * @see Configuration#RESOLVER_NAME_PROP_NAME
+         */
         public String resolverName()
         {
             return resolverName;
         }
 
+        /**
+         * Set the name of the {@link MediaDriver} for name resolver purposes.
+         *
+         * @param resolverName for the driver.
+         * @return this for a fluent API.
+         * @see Configuration#RESOLVER_NAME_PROP_NAME
+         */
         public Context resolverName(final String resolverName)
         {
             this.resolverName = resolverName;
             return this;
         }
 
+        /**
+         * Get the interface of the {@link MediaDriver} for name resolver purposes.
+         *
+         * The format is hostname:port and follows the URI format for the interface parameter. If set to null,
+         * then the name resolver will not be used.
+         *
+         * @return interface of the {@link MediaDriver}.
+         * @see Configuration#RESOLVER_INTERFACE_PROP_NAME
+         * @see CommonContext#INTERFACE_PARAM_NAME
+         */
         public String resolverInterface()
         {
             return resolverInterface;
         }
 
+        /**
+         * Set the interface of the {@link MediaDriver} for name resolver purposes.
+         *
+         * The format is hostname:port and follows the URI format for the interface parameter. If set to null,
+         * then the name resolver will not be used.
+         *
+         * @param resolverInterface to use for the name resolver.
+         * @return this for fluent API.
+         * @see Configuration#RESOLVER_INTERFACE_PROP_NAME
+         * @see CommonContext#INTERFACE_PARAM_NAME
+         */
         public Context resolverInterface(final String resolverInterface)
         {
             this.resolverInterface = resolverInterface;
             return this;
         }
 
+        /**
+         * Get the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
+         *
+         * The format is hostname:port and follows the URI format for the endpoint parameter.
+         *
+         * @return bootstrap neighbor of the {@link MediaDriver}.
+         * @see Configuration#RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
+         * @see CommonContext#ENDPOINT_PARAM_NAME
+         */
         public String resolverBootstrapNeighbor()
         {
             return resolverBootstrapNeighbor;
         }
 
+        /**
+         * Set the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
+         *
+         * The format is hostname:port and follows the URI format for the endpoint parameter.
+         *
+         * @param resolverBootstrapNeighbor to use for the name resolver.
+         * @return this for fluent API.
+         * @see Configuration#RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
+         * @see CommonContext#ENDPOINT_PARAM_NAME
+         */
         public Context resolverBootstrapNeighbor(final String resolverBootstrapNeighbor)
         {
             this.resolverBootstrapNeighbor = resolverBootstrapNeighbor;
+            return this;
+        }
+
+        /**
+         * Get the interval for checking if a re-resolution for endpoints and controls should be done.
+         *
+         * A value of 0 turns off checks and re-resolutions.
+         *
+         * @return timeout in ns.
+         * @see Configuration#RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME
+         * @see Configuration#RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS
+         */
+        public long reResolutionCheckIntervalNs()
+        {
+            return reResolutionCheckIntervalNs;
+        }
+
+        /**
+         * Set the interval for checking if a re-resolution for endpoints and controls should be done.
+         *
+         * A value of 0 turns off checks and re-resolutions.
+         *
+         * @param reResolutionCheckIntervalNs to use for check
+         * @return this for fluent API.
+         * @see Configuration#RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME
+         * @see Configuration#RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS
+         */
+        public Context reResolutionCheckIntervalNs(final long reResolutionCheckIntervalNs)
+        {
+            this.reResolutionCheckIntervalNs = reResolutionCheckIntervalNs;
             return this;
         }
 

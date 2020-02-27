@@ -84,8 +84,8 @@ public class DriverNameResolverTest
         final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
         final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 1);
     }
 
     @Test
@@ -113,9 +113,9 @@ public class DriverNameResolverTest
         final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
         final int cNeighborsCounterId = neighborsCounterId(drivers.get(2));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 2);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 2);
-        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(2), cNeighborsCounterId, 2);
     }
 
     @Test
@@ -143,9 +143,9 @@ public class DriverNameResolverTest
         final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
         final int cNeighborsCounterId = neighborsCounterId(drivers.get(2));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 2);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 2);
-        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(2), cNeighborsCounterId, 2);
 
         drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-D")
@@ -155,10 +155,10 @@ public class DriverNameResolverTest
 
         final int dNeighborsCounterId = neighborsCounterId(drivers.get(3));
 
-        awaitCounterValue(drivers.get(3).context().countersManager(), dNeighborsCounterId, 3);
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 3);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 3);
-        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(3), dNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(2), cNeighborsCounterId, 3);
     }
 
     @Test
@@ -179,12 +179,12 @@ public class DriverNameResolverTest
         final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
         final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 1);
 
         final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 1);
+        awaitCounterValue(drivers.get(0), aCacheEntriesCounterId, 1);
 
         try (
             Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-A"));
@@ -218,19 +218,19 @@ public class DriverNameResolverTest
         final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
         final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 1);
 
         final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 1);
+        awaitCounterValue(drivers.get(0), aCacheEntriesCounterId, 1);
 
         drivers.get(1).close();
         drivers.get(1).context().deleteDirectory();
         drivers.remove(1);
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 0);
-        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 0);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 0);
+        awaitCounterValue(drivers.get(0), aCacheEntriesCounterId, 0);
     }
 
     @SlowTest
@@ -259,21 +259,23 @@ public class DriverNameResolverTest
         final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
         final int cNeighborsCounterId = neighborsCounterId(drivers.get(2));
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 2);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 2);
-        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(2), cNeighborsCounterId, 2);
 
         final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
-        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 2);
+        final int bCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(1));
+        awaitCounterValue(drivers.get(0), aCacheEntriesCounterId, 2);
+        awaitCounterValue(drivers.get(1), bCacheEntriesCounterId, 2);
 
         drivers.get(1).close();
         drivers.get(1).context().deleteDirectory();
         drivers.remove(1);
 
-        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
-        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 1);
-        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
-        awaitCounterValue(drivers.get(1).context().countersManager(), aCacheEntriesCounterId, 1);
+        awaitCounterValue(drivers.get(0), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(0), aCacheEntriesCounterId, 1);
+        awaitCounterValue(drivers.get(1), bNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1), bCacheEntriesCounterId, 1);
     }
 
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)
@@ -322,8 +324,10 @@ public class DriverNameResolverTest
     }
 
     private static void awaitCounterValue(
-        final CountersReader countersReader, final int counterId, final long expectedValue)
+        final TestMediaDriver mediaDriver, final int counterId, final long expectedValue)
     {
+        final CountersReader countersReader = mediaDriver.context().countersManager();
+
         while (countersReader.getCounterValue(counterId) != expectedValue)
         {
             Tests.sleep(50);

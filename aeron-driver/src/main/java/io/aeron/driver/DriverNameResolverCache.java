@@ -56,6 +56,7 @@ class DriverNameResolverCache implements AutoCloseable
     {
         final int existingEntryIndex = findEntryIndexByNameAndType(name, nameLength, type);
         final CacheEntry entry;
+        final int addressLength = ResolutionEntryFlyweight.addressLength(type);
 
         if (INVALID_INDEX == existingEntryIndex)
         {
@@ -64,7 +65,7 @@ class DriverNameResolverCache implements AutoCloseable
                 type,
                 nowMs,
                 nowMs + timeoutMs,
-                Arrays.copyOf(address, ResolutionEntryFlyweight.addressLength(type)),
+                Arrays.copyOf(address, addressLength),
                 port);
             listOfEntries.add(entry);
             cacheEntriesCounter.setOrdered(listOfEntries.size());
@@ -74,6 +75,12 @@ class DriverNameResolverCache implements AutoCloseable
             entry = listOfEntries.get(existingEntryIndex);
             entry.timeOfLastActivityMs = nowMs;
             entry.deadlineMs = nowMs + timeoutMs;
+
+            if (port != entry.port || byteSubsetEquals(address, entry.address, addressLength))
+            {
+                entry.address = Arrays.copyOf(address, addressLength);
+                entry.port = port;
+            }
         }
     }
 

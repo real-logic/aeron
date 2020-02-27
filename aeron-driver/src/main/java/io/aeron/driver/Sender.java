@@ -25,7 +25,6 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
@@ -55,12 +54,10 @@ class SenderRhsPadding extends SenderHotFields
  */
 public class Sender extends SenderRhsPadding implements Agent
 {
-    private static final long RE_RESOLUTION_CHECK_TIMEOUT = TimeUnit.SECONDS.toNanos(1);
-
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
     private final long statusMessageReadTimeoutNs;
-    private final long reResolutionCheckTimeoutNs;
+    private final long reResolutionCheckIntervalNs;
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
@@ -79,10 +76,10 @@ public class Sender extends SenderRhsPadding implements Agent
         this.resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
         this.nanoClock = ctx.cachedNanoClock();
         this.statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() >> 1;
-        this.reResolutionCheckTimeoutNs = RE_RESOLUTION_CHECK_TIMEOUT;
+        this.reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
         this.dutyCycleRatio = ctx.sendToStatusMessagePollRatio();
         this.conductorProxy = ctx.driverConductorProxy();
-        this.reResolutionDeadlineNs = nanoClock.nanoTime() + reResolutionCheckTimeoutNs;
+        this.reResolutionDeadlineNs = nanoClock.nanoTime() + reResolutionCheckIntervalNs;
     }
 
     public void onClose()
@@ -105,11 +102,11 @@ public class Sender extends SenderRhsPadding implements Agent
             controlPollDeadlineNs = nowNs + statusMessageReadTimeoutNs;
         }
 
-        if ((reResolutionDeadlineNs - nowNs) < 0)
+        if (reResolutionCheckIntervalNs > 0 && (reResolutionDeadlineNs - nowNs) < 0)
         {
             controlTransportPoller.checkForReResolutions(nowNs, conductorProxy);
 
-            reResolutionDeadlineNs = nowNs + reResolutionCheckTimeoutNs;
+            reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
         }
 
         return workCount + bytesSent + bytesReceived;

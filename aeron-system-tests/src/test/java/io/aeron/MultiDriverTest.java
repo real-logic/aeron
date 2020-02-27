@@ -136,7 +136,7 @@ public class MultiDriverTest
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -162,7 +162,7 @@ public class MultiDriverTest
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -173,7 +173,7 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
 
             fragmentsRead.set(0);
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -221,7 +221,7 @@ public class MultiDriverTest
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -232,7 +232,7 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
 
             fragmentsRead.set(0);
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {

@@ -17,8 +17,7 @@ package io.aeron.test;
 
 import org.agrona.LangUtil;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -154,5 +153,32 @@ public class Tests
     {
         Thread.yield();
         checkInterruptStatus(format, params);
+    }
+
+    /**
+     * Execute a task until a condition is satisfied, or a maximum number of iterations, or a timeout is reached.
+     *
+     * @param condition         keep executing while true.
+     * @param iterationConsumer to be invoked with the iteration count.
+     * @param maxIterations     to be executed.
+     * @param timeoutNs         to stay within.
+     */
+    public static void executeUntil(
+        final BooleanSupplier condition,
+        final IntConsumer iterationConsumer,
+        final int maxIterations,
+        final long timeoutNs)
+    {
+        final long startNs = System.nanoTime();
+        long nowNs;
+        int i = 0;
+
+        do
+        {
+            checkInterruptStatus();
+            iterationConsumer.accept(i);
+            nowNs = System.nanoTime();
+        }
+        while (!condition.getAsBoolean() && ((nowNs - startNs) < timeoutNs) && i++ < maxIterations);
     }
 }

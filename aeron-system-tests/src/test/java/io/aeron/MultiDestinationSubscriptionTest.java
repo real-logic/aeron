@@ -528,7 +528,7 @@ public class MultiDestinationSubscriptionTest
     private void pollForFragment(
         final Subscription subscription, final FragmentHandler handler, final MutableInteger fragmentsRead)
     {
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (j) ->
             {

@@ -159,7 +159,7 @@ public class MaxFlowControlStrategySystemTest
 
             // A keeps up
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -174,7 +174,7 @@ public class MaxFlowControlStrategySystemTest
             // B receives slowly and eventually can't keep up
             if (i % 10 == 0)
             {
-                SystemTests.executeUntil(
+                Tests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {

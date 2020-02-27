@@ -35,7 +35,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.SystemTests.spyForChannel;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -145,7 +144,7 @@ public class SpySimulatedConnectionTest
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTests.executeUntil(
+            Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -295,5 +294,10 @@ public class SpySimulatedConnectionTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
+    }
+
+    private static String spyForChannel(final String channel)
+    {
+        return CommonContext.SPY_PREFIX + channel;
     }
 }

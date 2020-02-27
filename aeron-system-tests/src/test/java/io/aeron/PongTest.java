@@ -95,7 +95,7 @@ public class PongTest
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -107,7 +107,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -138,7 +138,7 @@ public class PongTest
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -150,7 +150,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -183,7 +183,7 @@ public class PongTest
             Tests.checkInterruptStatus();
         }
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -195,7 +195,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {

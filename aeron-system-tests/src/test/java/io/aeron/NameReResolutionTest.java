@@ -129,7 +129,7 @@ public class NameReResolutionTest
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -164,7 +164,7 @@ public class NameReResolutionTest
             Tests.checkInterruptStatus();
         }
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -206,7 +206,7 @@ public class NameReResolutionTest
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -241,7 +241,7 @@ public class NameReResolutionTest
             Tests.checkInterruptStatus();
         }
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -282,7 +282,7 @@ public class NameReResolutionTest
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -317,7 +317,7 @@ public class NameReResolutionTest
             Tests.checkInterruptStatus();
         }
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -361,7 +361,7 @@ public class NameReResolutionTest
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -396,7 +396,7 @@ public class NameReResolutionTest
             Tests.checkInterruptStatus();
         }
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {

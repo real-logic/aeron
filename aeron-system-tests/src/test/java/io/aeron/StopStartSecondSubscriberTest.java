@@ -131,7 +131,7 @@ public class StopStartSecondSubscriberTest
 
         final MutableInteger fragmentsRead1 = new MutableInteger();
         final MutableInteger fragmentsRead2 = new MutableInteger();
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
             (i) ->
             {
@@ -209,7 +209,7 @@ public class StopStartSecondSubscriberTest
         final BooleanSupplier fragmentsReadCondition =
             () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages;
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             fragmentsReadCondition,
             (i) ->
             {
@@ -230,7 +230,7 @@ public class StopStartSecondSubscriberTest
 
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
 
-        SystemTests.executeUntil(
+        Tests.executeUntil(
             fragmentsReadCondition,
             (i) ->
             {

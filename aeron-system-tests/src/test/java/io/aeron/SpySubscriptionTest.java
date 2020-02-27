@@ -31,7 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 
-import static io.aeron.SystemTests.spyForChannel;
+import static io.aeron.CommonContext.SPY_PREFIX;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -75,7 +75,7 @@ public class SpySubscriptionTest
     public void shouldReceivePublishedMessage(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);
+            Subscription spy = aeron.addSubscription(SPY_PREFIX + channel, STREAM_ID);
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             final int expectedMessageCount = 4;

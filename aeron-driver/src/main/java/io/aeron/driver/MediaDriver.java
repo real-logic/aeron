@@ -545,7 +545,9 @@ public final class MediaDriver implements AutoCloseable
 
                 CloseHelper.close(errorHandler, logFactory);
 
-                systemCounters.get(ERRORS).close();
+                final AtomicCounter errorCounter = systemCounters.get(ERRORS);
+                errorCounter.disconnectCountersManager();
+                errorCounter.close();
                 if (errorHandler instanceof AutoCloseable)
                 {
                     CloseHelper.quietClose((AutoCloseable)errorHandler);
@@ -557,7 +559,7 @@ public final class MediaDriver implements AutoCloseable
                 IoUtil.unmap(cncByteBuffer);
                 this.cncByteBuffer = null;
 
-                if (dirDeleteOnShutdown && null != aeronDirectory())
+                if (dirDeleteOnShutdown)
                 {
                     this.deleteDirectory();
                 }

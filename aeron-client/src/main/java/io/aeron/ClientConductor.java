@@ -167,7 +167,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final InterruptedException ignore)
                 {
-                    Thread.currentThread().interrupt();
                 }
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)

@@ -46,8 +46,6 @@ import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;

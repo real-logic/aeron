@@ -72,7 +72,6 @@ public class MultiDestinationSubscriptionTest
     private Publication publicationA;
     private Publication publicationB;
     private Subscription subscription;
-    private Subscription copySubscription;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
@@ -247,7 +246,7 @@ public class MultiDestinationSubscriptionTest
         final String subscriptionChannel = builder.build();
 
         subscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
-        copySubscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
+        final Subscription copySubscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
         publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);

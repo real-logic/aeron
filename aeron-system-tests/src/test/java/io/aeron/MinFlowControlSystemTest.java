@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 
 import static io.aeron.FlowControlTests.waitForConnectionAndStatusMessages;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 public class MinFlowControlSystemTest

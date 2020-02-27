@@ -643,13 +643,12 @@ public class TestCluster implements AutoCloseable
         return findLeader(NULL_VALUE);
     }
 
-    TestNode awaitLeader(final int skipIndex) throws InterruptedException
+    TestNode awaitLeader(final int skipIndex)
     {
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
             Tests.sleep(1000);
-            Tests.checkInterruptStatus();
         }
 
         return leaderNode;
@@ -682,7 +681,6 @@ public class TestCluster implements AutoCloseable
             while (backupNode.state() != targetState)
             {
                 Tests.sleep(100);
-                Tests.checkInterruptStatus();
             }
 
             return;
@@ -691,14 +689,13 @@ public class TestCluster implements AutoCloseable
         throw new IllegalStateException("no backup node present");
     }
 
-    void awaitBackupLiveLogPosition(final long position) throws InterruptedException
+    void awaitBackupLiveLogPosition(final long position)
     {
         if (null != backupNode)
         {
             while (backupNode.liveLogPosition() != position)
             {
                 Tests.sleep(100);
-                Tests.checkInterruptStatus();
             }
 
             return;

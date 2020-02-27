@@ -109,6 +109,49 @@ public class DriverNameResolverTest
         awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
     }
 
+    @Test
+    @Timeout(10)
+    public void shouldSeeNeighborsViaGossipAsLateJoiningDriver()
+    {
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-A")
+            .resolverName("A")
+            .resolverInterface("0.0.0.0:8050")));
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8051")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-C")
+            .resolverName("C")
+            .resolverInterface("0.0.0.0:8052")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
+        final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
+        final int cNeighborsCounterId = neighborsCounterId(drivers.get(2));
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 2);
+        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-D")
+            .resolverName("C")
+            .resolverInterface("0.0.0.0:8053")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        final int dNeighborsCounterId = neighborsCounterId(drivers.get(3));
+
+        awaitCounterValue(drivers.get(3).context().countersManager(), aNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 3);
+    }
+
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)
     {
         context

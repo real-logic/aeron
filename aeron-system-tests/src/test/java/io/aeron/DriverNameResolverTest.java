@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -189,6 +190,40 @@ public class DriverNameResolverTest
                 Tests.sleep(50);
             }
         }
+    }
+
+    @SlowTest
+    @Test
+    @Timeout(20)
+    public void shouldTimeoutNeighborsAndCacheEntries()
+    {
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-A")
+            .resolverName("A")
+            .resolverInterface("0.0.0.0:8050")));
+
+        drivers.add(MediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8051")
+            .resolverBootstrapNeighbor("localhost:8050")));
+
+        final int aNeighborsCounterId = neighborsCounterId(drivers.get(0));
+        final int bNeighborsCounterId = neighborsCounterId(drivers.get(1));
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
+        awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
+
+        final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
+
+        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+
+        drivers.get(1).close();
+        drivers.get(1).context().deleteDirectory();
+        drivers.remove(1);
+
+        awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 0);
+        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 0);
     }
 
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)

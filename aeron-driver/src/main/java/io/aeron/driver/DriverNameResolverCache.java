@@ -74,6 +74,8 @@ class DriverNameResolverCache implements AutoCloseable
             entry = listOfEntries.get(existingEntryIndex);
             entry.timeOfLastActivityMs = nowMs;
             entry.deadlineMs = nowMs + timeoutMs;
+            entry.address = address;
+            entry.port = port;
         }
     }
 

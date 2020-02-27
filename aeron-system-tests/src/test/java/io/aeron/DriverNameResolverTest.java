@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Timeout;
 import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class DriverNameResolverTest
@@ -185,7 +184,7 @@ public class DriverNameResolverTest
 
         final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
 
-        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 1);
 
         try (
             Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-A"));
@@ -224,14 +223,14 @@ public class DriverNameResolverTest
 
         final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
 
-        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 1);
 
         drivers.get(1).close();
         drivers.get(1).context().deleteDirectory();
         drivers.remove(1);
 
         awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 0);
-        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 0);
+        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 0);
     }
 
     @SlowTest
@@ -265,17 +264,16 @@ public class DriverNameResolverTest
         awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 2);
 
         final int aCacheEntriesCounterId = cacheEntriesCounterId(drivers.get(0));
-
-        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 2);
+        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 2);
 
         drivers.get(1).close();
         drivers.get(1).context().deleteDirectory();
         drivers.remove(1);
 
         awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 1);
-        assertEquals(drivers.get(0).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+        awaitCounterValue(drivers.get(0).context().countersManager(), aCacheEntriesCounterId, 1);
         awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 1);
-        assertEquals(drivers.get(1).context().countersManager().getCounterValue(aCacheEntriesCounterId), 1);
+        awaitCounterValue(drivers.get(1).context().countersManager(), aCacheEntriesCounterId, 1);
     }
 
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)

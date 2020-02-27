@@ -68,9 +68,10 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private final byte[] nameTempBuffer = new byte[ResolutionEntryFlyweight.MAX_NAME_LENGTH];
     private final byte[] addressTempBuffer = new byte[ResolutionEntryFlyweight.ADDRESS_LENGTH_IP6];
 
-    private final InetSocketAddress localSocketAddress;
     private final byte[] localName;
-    private final byte[] localAddress;
+    private final String localDriverName;
+    private InetSocketAddress localSocketAddress;
+    private byte[] localAddress;
 
     private final long neighborTimeoutMs;
     private final long selfResolutionIntervalMs;
@@ -104,6 +105,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
         final String driverName = null != name ? name : getCanonicalName();
 
+        localDriverName = driverName;
         localName = driverName.getBytes(StandardCharsets.US_ASCII);
         localAddress = localSocketAddress.getAddress().getAddress();
 
@@ -132,20 +134,27 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     {
         transport.openDatagramChannel(null);
 
+        final InetSocketAddress boundAddress = transport.boundAddress();
         final StringBuilder builder = new StringBuilder(" ");
 
-        builder.append(transport.bindAddressAndPort());
-
-        if (null != bootstrapNeighborAddr)
+        if (null != boundAddress)
         {
-            builder
-                .append(' ')
-                .append(bootstrapNeighborAddr.getHostString())
-                .append(':')
-                .append(bootstrapNeighborAddr.getPort());
-        }
+            localSocketAddress = boundAddress;
+            localAddress = boundAddress.getAddress().getAddress();
 
-        neighborsCounter.appendToLabel(builder.toString());
+            builder.append(transport.bindAddressAndPort());
+
+            if (null != bootstrapNeighborAddr)
+            {
+                builder
+                    .append(' ')
+                    .append(bootstrapNeighborAddr.getHostString())
+                    .append(':')
+                    .append(bootstrapNeighborAddr.getPort());
+            }
+
+            neighborsCounter.appendToLabel(builder.toString());
+        }
     }
 
     public int doWork(final long nowMs)
@@ -195,6 +204,11 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         {
             if (null == entry)
             {
+                if (name.equals(localDriverName))
+                {
+                    return localSocketAddress.getAddress();
+                }
+
                 return delegrateResolver.resolve(name, uriParamName, isReResolution);
             }
 
@@ -283,7 +297,6 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             byteBuffer.clear();
 
             int currentOffset = HeaderFlyweight.MIN_HEADER_LENGTH;
-            final byte resType = preferIPv6 ? RES_TYPE_NAME_TO_IP6_MD : RES_TYPE_NAME_TO_IP4_MD;
 
             headerFlyweight
                 .headerType(HeaderFlyweight.HDR_TYPE_RES)
@@ -309,7 +322,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
                     .putAddress(entry.address)
                     .putName(entry.name);
 
-                final int length = resolutionEntryFlyweight.entryLength() + MIN_HEADER_LENGTH;
+                final int length = resolutionEntryFlyweight.entryLength();
                 currentOffset += length;
             }
 
@@ -379,6 +392,12 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         final int nameLength = resolutionEntryFlyweight.getName(nameTempBuffer);
         final long timeOfLastActivity = nowMs - resolutionEntryFlyweight.ageInMs();
         final short port = resolutionEntryFlyweight.udpPort();
+
+        // use name and port to indicate it is from this resolver instead of searching interfaces
+        if (port == localSocketAddress.getPort() && byteSubsetEquals(nameTempBuffer, localName, nameLength))
+        {
+            return;
+        }
 
         cache.addOrUpdateEntry(
             nameTempBuffer, nameLength, timeOfLastActivity, resType, addr, port, cacheEntriesCounter);

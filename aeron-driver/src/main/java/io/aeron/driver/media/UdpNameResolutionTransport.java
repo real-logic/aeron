@@ -101,6 +101,18 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
         return bytesSent;
     }
 
+    public InetSocketAddress boundAddress()
+    {
+        try
+        {
+            return (InetSocketAddress)receiveDatagramChannel.getLocalAddress();
+        }
+        catch (final IOException ex)
+        {
+            return null;
+        }
+    }
+
     public static InetSocketAddress getInterfaceAddress(final String interfaceString)
     {
         try

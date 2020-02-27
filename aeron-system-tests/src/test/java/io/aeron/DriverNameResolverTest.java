@@ -155,7 +155,7 @@ public class DriverNameResolverTest
 
         final int dNeighborsCounterId = neighborsCounterId(drivers.get(3));
 
-        awaitCounterValue(drivers.get(3).context().countersManager(), aNeighborsCounterId, 3);
+        awaitCounterValue(drivers.get(3).context().countersManager(), dNeighborsCounterId, 3);
         awaitCounterValue(drivers.get(0).context().countersManager(), aNeighborsCounterId, 3);
         awaitCounterValue(drivers.get(1).context().countersManager(), bNeighborsCounterId, 3);
         awaitCounterValue(drivers.get(2).context().countersManager(), cNeighborsCounterId, 3);

@@ -442,8 +442,7 @@ public class AeronArchive implements AutoCloseable
                     throw new ArchiveException(NOT_CONNECTED_MSG);
                 }
             }
-
-            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
                 if (controlResponsePoller.controlSessionId() == controlSessionId &&
                     controlResponsePoller.code() == ControlResponseCode.ERROR)

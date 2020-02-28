@@ -1946,8 +1946,7 @@ class ConsensusModuleAgent implements Agent
             ctx.countedErrorHandler().onError(new ClusterException(
                 "local archive not connected", AeronException.Category.FATAL));
         }
-
-        if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+        else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
         {
             if (controlResponsePoller.controlSessionId() == archive.controlSessionId() &&
                 controlResponsePoller.code() == ControlResponseCode.ERROR)

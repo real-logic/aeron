@@ -1,4 +1,4 @@
-#
+ #
 # Copyright 2014-2020 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

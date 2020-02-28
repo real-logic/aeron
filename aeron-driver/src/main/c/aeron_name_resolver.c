@@ -19,19 +19,26 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
 #include <string.h>
 #include "util/aeron_parse_util.h"
 #include "util/aeron_netutil.h"
 #include "aeron_name_resolver.h"
+#include "aeron_driver_context.h"
 
-typedef struct aeron_name_resolver_stct
+int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
 {
-    void *state;
+    return aeron_name_resolver_init_default(context, resolver);
 }
-aeron_name_resolver_t;
 
-int aeron_name_resolver_resolve(
+int aeron_name_resolver_init_default(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+{
+    resolver->lookup_func = aeron_name_resolver_lookup_default;
+    resolver->resolve_func = aeron_name_resolver_resolve_default;
+    resolver->state = NULL;
+    return 0;
+}
+
+int aeron_name_resolver_resolve_default(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -41,7 +48,7 @@ int aeron_name_resolver_resolve(
     return aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
 }
 
-int aeron_name_resolver_lookup(
+int aeron_name_resolver_lookup_default(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -61,7 +68,7 @@ int aeron_name_resolver_resolve_host_and_port(
     aeron_parsed_address_t parsed_address;
     const char *address_str;
 
-    if (aeron_name_resolver_lookup(resolver, name, uri_param_name, false, &address_str) < 0)
+    if (resolver->lookup_func(resolver, name, uri_param_name, false, &address_str) < 0)
     {
         return -1;
     }
@@ -86,7 +93,7 @@ int aeron_name_resolver_resolve_host_and_port(
             }
             else
             {
-                result = aeron_name_resolver_resolve(resolver, parsed_address.host, uri_param_name, false, sockaddr);
+                result = resolver->resolve_func(resolver, parsed_address.host, uri_param_name, false, sockaddr);
             }
 
             ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port);
@@ -99,7 +106,7 @@ int aeron_name_resolver_resolve_host_and_port(
             }
             else
             {
-                result = aeron_name_resolver_resolve(resolver, parsed_address.host, uri_param_name, false, sockaddr);
+                result = resolver->resolve_func(resolver, parsed_address.host, uri_param_name, false, sockaddr);
             }
 
             ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);

@@ -363,9 +363,9 @@ public:
     UriResolverTest() :
         addr_in((struct sockaddr_in *)&m_addr),
         addr_in6((struct sockaddr_in6 *)&m_addr),
-        m_prefixlen(0),
-        m_resolver(nullptr)
+        m_prefixlen(0)
     {
+        aeron_name_resolver_init_default(NULL, &m_resolver);
     }
 
     bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
@@ -419,7 +419,7 @@ public:
 
     int resolve_host_and_port(const char *address_str, struct sockaddr_storage *address)
     {
-        return aeron_name_resolver_resolve_host_and_port(m_resolver, address_str, "endpoint", address);
+        return aeron_name_resolver_resolve_host_and_port(&m_resolver, address_str, "endpoint", address);
     }
 
 protected:
@@ -428,7 +428,7 @@ protected:
     struct sockaddr_in *addr_in;
     struct sockaddr_in6 *addr_in6;
     size_t m_prefixlen;
-    aeron_name_resolver_t *m_resolver;
+    aeron_name_resolver_t m_resolver;
 };
 
 TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)

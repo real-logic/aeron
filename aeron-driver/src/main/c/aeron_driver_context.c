@@ -526,7 +526,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nak_unicast_delay_ns = AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
     _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
     _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
-    _context->name_resolver = NULL;
 
     char *value = NULL;
 

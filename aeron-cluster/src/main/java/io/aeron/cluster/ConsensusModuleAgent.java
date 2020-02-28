@@ -16,7 +16,8 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.*;
+import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
@@ -527,7 +528,6 @@ class ConsensusModuleAgent implements Agent
         else if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
             if (null != follower)
             {
                 follower
@@ -562,7 +562,7 @@ class ConsensusModuleAgent implements Agent
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
-            if (null != follower && follower.catchupReplaySessionId() == Aeron.NULL_VALUE)
+            if (null != follower && follower.catchupReplaySessionId() == NULL_VALUE)
             {
                 final String replayChannel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
@@ -575,6 +575,8 @@ class ConsensusModuleAgent implements Agent
 
                 follower.catchupReplaySessionId(archive.startReplay(
                     logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+
+                follower.catchupReplayCorrelationId(archive.lastCorrelationId());
             }
         }
     }
@@ -1305,7 +1307,7 @@ class ConsensusModuleAgent implements Agent
 
         final ClusterMember[] snapshotClusterMembers = ClusterMember.parse(members);
 
-        if (Aeron.NULL_VALUE == this.memberId)
+        if (NULL_VALUE == this.memberId)
         {
             this.memberId = memberId;
             ctx.clusterMarkFile().memberId(memberId);
@@ -1610,15 +1612,25 @@ class ConsensusModuleAgent implements Agent
 
     public void trackCatchupCompletion(final ClusterMember follower)
     {
-        if (null != follower && Aeron.NULL_VALUE != follower.catchupReplaySessionId())
+        if (null != follower && NULL_VALUE != follower.catchupReplaySessionId())
         {
             if (follower.logPosition() >= logPublisher.position())
             {
-                archive.stopReplay(follower.catchupReplaySessionId());
+                if (NULL_VALUE != follower.catchupReplayCorrelationId())
+                {
+                    if (archive.archiveProxy().stopReplay(
+                        follower.catchupReplaySessionId(),
+                        aeron.nextCorrelationId(),
+                        archive.controlSessionId()))
+                    {
+                        follower.catchupReplayCorrelationId(NULL_VALUE);
+                    }
+                }
+
                 if (memberStatusPublisher.stopCatchup(
                     follower.publication(), leadershipTermId, logPublisher.position(), follower.id()))
                 {
-                    follower.catchupReplaySessionId(Aeron.NULL_VALUE);
+                    follower.catchupReplaySessionId(NULL_VALUE);
                 }
             }
         }
@@ -1785,18 +1797,22 @@ class ConsensusModuleAgent implements Agent
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.catchupReplaySessionId() != Aeron.NULL_VALUE)
+            if (member.catchupReplaySessionId() != NULL_VALUE)
             {
-                try
+                if (member.catchupReplayCorrelationId() != NULL_VALUE)
                 {
-                    archive.stopReplay(member.catchupReplaySessionId());
-                }
-                catch (final Exception ex)
-                {
-                    ctx.countedErrorHandler().onError(ex);
+                    try
+                    {
+                        archive.stopReplay(member.catchupReplaySessionId());
+                    }
+                    catch (final Exception ex)
+                    {
+                        ctx.countedErrorHandler().onError(ex);
+                    }
                 }
 
-                member.catchupReplaySessionId(Aeron.NULL_VALUE);
+                member.catchupReplaySessionId(NULL_VALUE);
+                member.catchupReplayCorrelationId(NULL_VALUE);
             }
         }
     }
@@ -1858,7 +1874,7 @@ class ConsensusModuleAgent implements Agent
 
         if (null != archive)
         {
-            archive.checkForErrorResponse();
+            checkForArchiveErrors();
         }
 
         if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
@@ -1920,6 +1936,43 @@ class ConsensusModuleAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private void checkForArchiveErrors()
+    {
+        final ControlResponsePoller controlResponsePoller = archive.controlResponsePoller();
+        if (!controlResponsePoller.subscription().isConnected())
+        {
+            ctx.countedErrorHandler().onError(new ClusterException(
+                "local archive not connected", AeronException.Category.FATAL));
+        }
+
+        if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+        {
+            if (controlResponsePoller.controlSessionId() == archive.controlSessionId() &&
+                controlResponsePoller.code() == ControlResponseCode.ERROR)
+            {
+                for (final ClusterMember member : clusterMembers)
+                {
+                    if (member.catchupReplayCorrelationId() != NULL_VALUE &&
+                        member.catchupReplayCorrelationId() == controlResponsePoller.correlationId())
+                    {
+                        member.catchupReplaySessionId(NULL_VALUE);
+                        member.catchupReplayCorrelationId(NULL_VALUE);
+
+                        ctx.countedErrorHandler().onError(new ClusterException(
+                            "catchup replay failed - " + controlResponsePoller.errorMessage(),
+                            AeronException.Category.WARN));
+                        return;
+                    }
+                }
+
+                ctx.countedErrorHandler().onError(new ArchiveException(
+                    controlResponsePoller.errorMessage(),
+                    (int)controlResponsePoller.relevantId(),
+                    controlResponsePoller.correlationId()));
+            }
+        }
     }
 
     private int consensusWork(final long timestamp, final long nowNs)
@@ -2155,7 +2208,7 @@ class ConsensusModuleAgent implements Agent
 
         for (final ClusterMember member : passiveMembers)
         {
-            if (member.correlationId() != Aeron.NULL_VALUE)
+            if (member.correlationId() != NULL_VALUE)
             {
                 if (memberStatusPublisher.clusterMemberChange(
                     member.publication(),
@@ -2164,7 +2217,7 @@ class ConsensusModuleAgent implements Agent
                     ClusterMember.encodeAsString(clusterMembers),
                     ClusterMember.encodeAsString(passiveMembers)))
                 {
-                    member.correlationId(Aeron.NULL_VALUE);
+                    member.correlationId(NULL_VALUE);
                     workCount++;
                 }
             }

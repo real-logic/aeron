@@ -43,6 +43,7 @@ public final class ClusterMember
     private long logPosition = NULL_POSITION;
     private long candidateTermId = Aeron.NULL_VALUE;
     private long catchupReplaySessionId = Aeron.NULL_VALUE;
+    private long catchupReplayCorrelationId = Aeron.NULL_VALUE;
     private long changeCorrelationId = Aeron.NULL_VALUE;
     private long removalPosition = NULL_POSITION;
     private long timeOfLastAppendPositionNs = Aeron.NULL_VALUE;
@@ -352,6 +353,28 @@ public final class ClusterMember
     public long catchupReplaySessionId()
     {
         return catchupReplaySessionId;
+    }
+
+    /**
+     * The correlation id for the replay when catching up to the leader.
+     *
+     * @param correlationId for the replay when catching up to the leader.
+     * @return this for a fluent API.
+     */
+    public ClusterMember catchupReplayCorrelationId(final long correlationId)
+    {
+        this.catchupReplayCorrelationId = correlationId;
+        return this;
+    }
+
+    /**
+     * The correlation id for the replay when catching up to the leader.
+     *
+     * @return the correlation id for the replay when catching up to the leader.
+     */
+    public long catchupReplayCorrelationId()
+    {
+        return catchupReplayCorrelationId;
     }
 
     /**

@@ -29,8 +29,7 @@ namespace aeron { namespace protocol {
 
 
 /**
- * Flow/Congestion control message to send feedback from subscriptions to publications.
- *
+ * Flow/Congestion control message to send feedback from receivers to sender.
  * <p>
  *    0                   1                   2                   3
  *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -49,9 +48,13 @@ namespace aeron { namespace protocol {
  *   +---------------------------------------------------------------+
  *   |                        Receiver Window                        |
  *   +---------------------------------------------------------------+
- *   |                  Application Specific Feedback               ...
+ *   |                  Receiver Group Tag Length                    |
+ *   +---------------------------------------------------------------+
+ *   |             Receiver Group Tag (8 bytes is standard)         ...
  *  ...                                                              |
  *   +---------------------------------------------------------------+
+ *
+ * <a href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#status-messages">Status Messages</a>
  */
 
 #pragma pack(push)

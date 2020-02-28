@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
+import static io.aeron.exceptions.AeronException.Category.WARN;
 
 /**
  * Election process to determine a new cluster leader and catch up followers.
@@ -779,7 +780,7 @@ public class Election
         {
             if (consensusModuleAgent.hasCatchupStalled(nowNs, ctx.leaderHeartbeatTimeoutNs()))
             {
-                ctx.countedErrorHandler().onError(new ClusterException("no catchup progress"));
+                ctx.countedErrorHandler().onError(new ClusterException("no catchup progress", WARN));
                 logPosition = ctx.commitPositionCounter().get();
                 state(State.INIT);
                 workCount += 1;

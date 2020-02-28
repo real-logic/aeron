@@ -61,12 +61,12 @@ int aeron_name_resolver_resolve_host_and_port(
     aeron_parsed_address_t parsed_address;
     const char *address_str;
 
-    if (0 > aeron_name_resolver_lookup(resolver, name, uri_param_name, false, &address_str))
+    if (aeron_name_resolver_lookup(resolver, name, uri_param_name, false, &address_str) < 0)
     {
         return -1;
     }
 
-    if (-1 == aeron_address_split(name, &parsed_address))
+    if (aeron_address_split(name, &parsed_address) < 0)
     {
         return -1;
     }
@@ -76,7 +76,7 @@ int aeron_name_resolver_resolve_host_and_port(
     int result = -1;
     int port = aeron_udp_port_resolver(parsed_address.port, false);
 
-    if (port >= 0)
+    if (0 <= port)
     {
         if (AF_INET == family_hint)
         {

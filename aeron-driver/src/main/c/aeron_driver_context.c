@@ -572,6 +572,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
+    if ((value = getenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR)))
+    {
+        if ((_context->name_resolver_supplier_func = aeron_name_resolver_supplier_load(value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
     _context->dirs_delete_on_start = aeron_config_parse_bool(
         getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),
         _context->dirs_delete_on_start);

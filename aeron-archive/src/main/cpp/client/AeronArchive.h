@@ -267,18 +267,17 @@ public:
 
         if (!m_controlResponsePoller->subscription()->isConnected())
         {
-                if (m_ctx->errorHandler() != nullptr)
-                {
-                    ArchiveException ex(NOT_CONNECTED_MSG, SOURCEINFO);
-                    m_ctx->errorHandler()(ex);
-                }
-                else
-                {
-                    throw ArchiveException(NOT_CONNECTED_MSG, SOURCEINFO);
-                }
+            if (m_ctx->errorHandler() != nullptr)
+            {
+                ArchiveException ex(NOT_CONNECTED_MSG, SOURCEINFO);
+                m_ctx->errorHandler()(ex);
+            }
+            else
+            {
+                throw ArchiveException(NOT_CONNECTED_MSG, SOURCEINFO);
+            }
         }
-
-        if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
+        else if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
         {
             if (m_controlResponsePoller->controlSessionId() == m_controlSessionId &&
                 m_controlResponsePoller->isControlResponse() &&

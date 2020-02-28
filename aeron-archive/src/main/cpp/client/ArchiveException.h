@@ -38,6 +38,7 @@ class ArchiveException : public SourcedException
 {
 private:
     std::int32_t m_errorCode = ARCHIVE_ERROR_CODE_GENERIC;
+    std::int64_t m_correlationId = NULL_VALUE;
 
 public:
     ArchiveException(
@@ -60,6 +61,19 @@ public:
     {
     }
 
+    ArchiveException(
+        std::int32_t errorCode,
+        std::int64_t correlationId,
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line) :
+        SourcedException(what, function, file, line),
+        m_errorCode(errorCode),
+        m_correlationId(correlationId)
+    {
+    }
+
     /**
      * Error code providing more detail into what went wrong.
      *
@@ -68,6 +82,16 @@ public:
     std::int32_t errorCode() const
     {
         return m_errorCode;
+    }
+
+    /**
+     * Correlation id of request that triggered the exception.
+     *
+     * @return correlation id of request that triggered the exception.
+     */
+    std::int64_t correlationId() const
+    {
+        return m_correlationId;
     }
 };
 

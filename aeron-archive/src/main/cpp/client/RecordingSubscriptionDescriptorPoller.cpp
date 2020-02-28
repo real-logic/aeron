@@ -93,6 +93,7 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
                 {
                     ArchiveException ex(
                         static_cast<std::int32_t>(response.relevantId()),
+                        correlationId,
                         "response for correlationId=" + std::to_string(m_correlationId) +
                         ", error: " + response.errorMessage(),
                         SOURCEINFO);

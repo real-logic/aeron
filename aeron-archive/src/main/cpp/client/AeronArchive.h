@@ -287,6 +287,7 @@ public:
                 {
                     ArchiveException ex(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->correlationId(),
                         m_controlResponsePoller->errorMessage(),
                         SOURCEINFO);
                     m_ctx->errorHandler()(ex);
@@ -295,6 +296,7 @@ public:
                 {
                     throw ArchiveException(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->correlationId(),
                         m_controlResponsePoller->errorMessage(),
                         SOURCEINFO);
                 }
@@ -1416,6 +1418,7 @@ private:
                 {
                     throw ArchiveException(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->correlationId(),
                         "response for correlationId=" + std::to_string(correlationId) +
                         ", error: " + m_controlResponsePoller->errorMessage(),
                         SOURCEINFO);
@@ -1424,6 +1427,7 @@ private:
                 {
                     ArchiveException ex(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->correlationId(),
                         "response for correlationId=" + std::to_string(correlationId) +
                         ", error: " + m_controlResponsePoller->errorMessage(),
                         SOURCEINFO);

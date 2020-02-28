@@ -25,12 +25,22 @@
 #include "aeron_name_resolver.h"
 #include "aeron_driver_context.h"
 
-int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char *name)
 {
-    return aeron_name_resolver_init_default(context, resolver);
+    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, strlen(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)))
+    {
+        return aeron_name_resolver_supplier_default;
+    }
+
+    return NULL;
 }
 
-int aeron_name_resolver_init_default(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+{
+    return context->name_resolver_supplier_func(context, resolver);
+}
+
+int aeron_name_resolver_supplier_default(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
 {
     resolver->lookup_func = aeron_name_resolver_lookup_default;
     resolver->resolve_func = aeron_name_resolver_resolve_default;

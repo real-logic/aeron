@@ -23,35 +23,33 @@
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 
-typedef struct aeron_name_resolver_stct aeron_name_resolver_t;
-
-typedef int (aeron_name_resolver_resolve_func_t)(
+typedef int (*aeron_name_resolver_resolve_func_t)(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     struct sockaddr_storage *address);
 
-typedef int (aeron_name_resolver_lookup_func_t)(
+typedef int (*aeron_name_resolver_lookup_func_t)(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     const char **resolved_name);
 
-typedef int (aeron_name_resolver_init_func_t)(aeron_driver_context_t *context, aeron_name_resolver_t *resolver);
-
 typedef struct aeron_name_resolver_stct
 {
-    aeron_name_resolver_lookup_func_t *lookup_func;
-    aeron_name_resolver_resolve_func_t *resolve_func;
+    aeron_name_resolver_lookup_func_t lookup_func;
+    aeron_name_resolver_resolve_func_t resolve_func;
     void *state;
 }
 aeron_name_resolver_t;
 
+aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char *name);
+
 int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver);
 
-int aeron_name_resolver_init_default(aeron_driver_context_t *context, aeron_name_resolver_t *resolver);
+int aeron_name_resolver_supplier_default(aeron_driver_context_t *context, aeron_name_resolver_t *resolver);
 
 int aeron_name_resolver_resolve_default(
     aeron_name_resolver_t *resolver,

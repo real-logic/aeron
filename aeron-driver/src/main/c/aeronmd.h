@@ -686,6 +686,11 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_low(aeron_drive
 int aeron_driver_context_set_publication_reserved_session_id_high(aeron_driver_context_t *context, int32_t value);
 int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driver_context_t *context);
 
+#define AERON_NAME_RESOLVER_SUPPLIER_DEFAULT "default"
+
+typedef struct aeron_name_resolver_stct aeron_name_resolver_t;
+typedef int (*aeron_name_resolver_supplier_func_t)(aeron_driver_context_t *context, aeron_name_resolver_t *resolver);
+
 /**
  * Return full version and build string.
  *

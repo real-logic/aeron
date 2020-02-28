@@ -464,6 +464,12 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    if ((_context->name_resolver_supplier_func = aeron_name_resolver_supplier_load(
+        AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)) == NULL)
+    {
+        return -1;
+    }
+
 #if defined(__linux__)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
 #elif defined(_MSC_VER)

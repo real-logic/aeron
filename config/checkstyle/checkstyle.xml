@@ -6,6 +6,12 @@
         <property name="file" value="${config_loc}/suppressions.xml"/>
     </module>
 
+    <module name="SuppressWithPlainTextCommentFilter">
+        <property name="offCommentFormat" value="CHECKSTYLE\:OFF\:(\w+)"/>
+        <property name="onCommentFormat" value="CHECKSTYLE\:ON\:(\w+)"/>
+        <property name="checkFormat" value="$1"/>
+    </module>
+
     <module name="SuppressWarningsFilter"/>
 
     <module name="SeverityMatchFilter">

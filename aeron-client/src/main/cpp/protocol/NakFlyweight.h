@@ -30,7 +30,7 @@ namespace aeron { namespace protocol {
 /**
  * Data recovery retransmit message:
  *
- * https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request
+ * https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#data-recovery-via-retransmit-request
  */
 
 #pragma pack(push)

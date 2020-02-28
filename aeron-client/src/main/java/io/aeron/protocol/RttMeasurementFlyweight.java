@@ -24,7 +24,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * Flyweight for an RTT Measurement Frame Header.
  * <p>
- * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Protocol-Specification#rtt-measurement-header">
+ * <a target="_blank"
+ *    href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#rtt-measurement-header">
  * RTT Measurement Frame Header</a> wiki page.
  */
 public class RttMeasurementFlyweight extends HeaderFlyweight
@@ -53,9 +54,9 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return session id field
+     * The session-id for the stream.
      *
-     * @return session id field
+     * @return session-id for the stream.
      */
     public int sessionId()
     {
@@ -63,10 +64,10 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set session id field
+     * Set session-id for the stream.
      *
-     * @param sessionId field value
-     * @return flyweight
+     * @param sessionId session-id for the stream.
+     * @return this for a fluent API.
      */
     public RttMeasurementFlyweight sessionId(final int sessionId)
     {
@@ -76,9 +77,9 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return stream id field
+     * The stream-id for the stream.
      *
-     * @return stream id field
+     * @return stream-id for the stream.
      */
     public int streamId()
     {
@@ -86,10 +87,10 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set stream id field
+     * Set stream-id for the stream.
      *
-     * @param streamId field value
-     * @return flyweight
+     * @param streamId stream-id for the stream.
+     * @return this for a fluent API.
      */
     public RttMeasurementFlyweight streamId(final int streamId)
     {
@@ -98,11 +99,22 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * Timestamp to echo in a reply or the timestamp in the original RTT Measurement.
+     *
+     * @return timestamp to echo in a reply or the timestamp in the original RTT Measurement.
+     */
     public long echoTimestampNs()
     {
         return getLong(ECHO_TIMESTAMP_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
+    /**
+     * Set timestamp to echo in a reply or the timestamp in the original RTT Measurement.
+     *
+     * @param timestampNs to echo in a reply or the timestamp in the original RTT Measurement.
+     * @return this for a fluent API.
+     */
     public RttMeasurementFlyweight echoTimestampNs(final long timestampNs)
     {
         putLong(ECHO_TIMESTAMP_FIELD_OFFSET, timestampNs, LITTLE_ENDIAN);
@@ -110,23 +122,45 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * Time in nanoseconds between receiving original RTT Measurement and sending Reply RTT Measurement.
+     *
+     * @return time in nanoseconds between receiving original RTT Measurement and sending Reply RTT Measurement.
+     */
     public long receptionDelta()
     {
         return getLong(RECEPTION_DELTA_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public RttMeasurementFlyweight receptionDelta(final long delta)
+    /**
+     * Set time in nanoseconds between receiving original RTT Measurement and sending Reply RTT Measurement.
+     *
+     * @param deltaNs in nanoseconds between receiving original RTT Measurement and sending Reply RTT Measurement.
+     * @return this for a fluent API.
+     */
+    public RttMeasurementFlyweight receptionDelta(final long deltaNs)
     {
-        putLong(RECEPTION_DELTA_FIELD_OFFSET, delta, LITTLE_ENDIAN);
+        putLong(RECEPTION_DELTA_FIELD_OFFSET, deltaNs, LITTLE_ENDIAN);
 
         return this;
     }
 
+    /**
+     * The receiver-id which uniquely identifies a receiver of a stream.
+     *
+     * @return receiver-id which uniquely identifies a receiver of a stream.
+     */
     public long receiverId()
     {
         return getLong(RECEIVER_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
+    /**
+     * Set receiver-id which uniquely identifies a receiver of a stream.
+     *
+     * @param id for the receiver of the stream.
+     * @return this for a fluent API.
+     */
     public RttMeasurementFlyweight receiverId(final long id)
     {
         putLong(RECEIVER_ID_FIELD_OFFSET, id, LITTLE_ENDIAN);

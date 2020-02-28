@@ -27,7 +27,8 @@ import static org.agrona.BitUtil.*;
 /**
  * Flyweight for Resolution Entry header.
  * <p>
- * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Protocol-Specification">Protocol Specification</a>
+ * <a target="_blank"
+ *    href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification">Protocol Specification</a>
  * wiki page.
  */
 public class ResolutionEntryFlyweight extends HeaderFlyweight
@@ -95,12 +96,12 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
 
     public int udpPort()
     {
-        return (int)(getShort(UDP_PORT_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF);
+        return getShort(UDP_PORT_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
     }
 
-    public ResolutionEntryFlyweight ageInMs(final int ageInMsec)
+    public ResolutionEntryFlyweight ageInMs(final int ageInMs)
     {
-        putInt(AGE_IN_MS_FIELD_OFFSET, ageInMsec, LITTLE_ENDIAN);
+        putInt(AGE_IN_MS_FIELD_OFFSET, ageInMs, LITTLE_ENDIAN);
         return this;
     }
 
@@ -109,16 +110,16 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
         return getInt(AGE_IN_MS_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public ResolutionEntryFlyweight putAddress(final byte[] addr)
+    public ResolutionEntryFlyweight putAddress(final byte[] address)
     {
         switch (resType())
         {
             case RES_TYPE_NAME_TO_IP4_MD:
-                putBytes(ADDRESS_FIELD_OFFSET, addr, 0, 4);
+                putBytes(ADDRESS_FIELD_OFFSET, address, 0, 4);
                 return this;
 
             case RES_TYPE_NAME_TO_IP6_MD:
-                putBytes(ADDRESS_FIELD_OFFSET, addr, 0, 16);
+                putBytes(ADDRESS_FIELD_OFFSET, address, 0, 16);
                 return this;
         }
 

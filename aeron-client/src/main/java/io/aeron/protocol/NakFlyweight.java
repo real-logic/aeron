@@ -21,13 +21,15 @@ import java.nio.ByteBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
+// CHECKSTYLE:OFF:LineLength
 /**
  * Flyweight for a NAK Message Frame.
  * <p>
  * <a target="_blank"
- *    href="https://github.com/real-logic/aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">
- * Data Recovery</a> wiki page.
+ *    href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#data-recovery-via-retransmit-request">
+ *    Data Loss Recovery</a> wiki page.
  */
+// CHECKSTYLE:ON:LineLength
 public class NakFlyweight extends HeaderFlyweight
 {
     public static final int HEADER_LENGTH = 28;
@@ -53,9 +55,9 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return session id field
+     * The session-id for the stream.
      *
-     * @return session id field
+     * @return session-id for the stream.
      */
     public int sessionId()
     {
@@ -63,10 +65,10 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set session id field
+     * Set session-id for the stream.
      *
-     * @param sessionId field value
-     * @return flyweight
+     * @param sessionId session-id for the stream.
+     * @return this for a fluent API.
      */
     public NakFlyweight sessionId(final int sessionId)
     {
@@ -76,9 +78,9 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return stream id field
+     * The stream-id for the stream.
      *
-     * @return stream id field
+     * @return stream-id for the stream.
      */
     public int streamId()
     {
@@ -86,10 +88,10 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set stream id field
+     * Set stream-id for the stream.
      *
-     * @param streamId field value
-     * @return flyweight
+     * @param streamId stream-id for the stream.
+     * @return this for a fluent API.
      */
     public NakFlyweight streamId(final int streamId)
     {
@@ -99,9 +101,9 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term id field
+     * The term-id for the stream.
      *
-     * @return term id field
+     * @return term-id for the stream.
      */
     public int termId()
     {
@@ -109,10 +111,10 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set term id field
+     * Set term-id for the stream.
      *
-     * @param termId field value
-     * @return flyweight
+     * @param termId term-id for the stream.
+     * @return this for a fluent API.
      */
     public NakFlyweight termId(final int termId)
     {
@@ -122,9 +124,9 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term offset field
+     * The term-offset for the stream.
      *
-     * @return term offset field
+     * @return term-offset for the stream.
      */
     public int termOffset()
     {
@@ -132,10 +134,10 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set term offset field
+     * Set term-offset for the stream.
      *
-     * @param termOffset field value
-     * @return flyweight
+     * @param termOffset term-offset for the stream.
+     * @return for a fluent API.
      */
     public NakFlyweight termOffset(final int termOffset)
     {
@@ -145,9 +147,9 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * The length field
+     * The length of the encoded frame.
      *
-     * @return length field
+     * @return length of the encoded frame.
      */
     public int length()
     {
@@ -155,10 +157,10 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set length field
+     * Set length of the encoded frame.
      *
-     * @param length field value
-     * @return flyweight
+     * @param length of the encoded frame.
+     * @return this for a fluent API.
      */
     public NakFlyweight length(final int length)
     {

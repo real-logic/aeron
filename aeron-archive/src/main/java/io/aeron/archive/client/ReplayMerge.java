@@ -523,7 +523,9 @@ public class ReplayMerge implements AutoCloseable
                 if (poller.code() == ControlResponseCode.ERROR)
                 {
                     throw new ArchiveException("archive response for correlationId=" + poller.correlationId() +
-                        ", error: " + poller.errorMessage(), (int)poller.relevantId());
+                        ", error: " + poller.errorMessage(),
+                        (int)poller.relevantId(),
+                        poller.correlationId());
                 }
 
                 return poller.correlationId() == correlationId;

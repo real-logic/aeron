@@ -592,7 +592,7 @@ public class ReplicateRecordingTest
             {
                 if (code == ControlResponseCode.ERROR)
                 {
-                    throw new ArchiveException(errorMessage, (int)relevantId);
+                    throw new ArchiveException(errorMessage, (int)relevantId, correlationId);
                 }
             };
 

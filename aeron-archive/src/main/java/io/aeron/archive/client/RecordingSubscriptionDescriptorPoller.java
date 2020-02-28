@@ -177,7 +177,8 @@ public class RecordingSubscriptionDescriptorPoller implements ControlledFragment
                         final ArchiveException ex = new ArchiveException(
                             "response for correlationId=" + this.correlationId +
                             ", error: " + controlResponseDecoder.errorMessage(),
-                            (int)controlResponseDecoder.relevantId());
+                            (int)controlResponseDecoder.relevantId(),
+                            correlationId);
 
                         if (correlationId == this.correlationId)
                         {

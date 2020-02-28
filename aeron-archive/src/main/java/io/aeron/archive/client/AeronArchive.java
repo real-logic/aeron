@@ -1633,8 +1633,10 @@ public class AeronArchive implements AutoCloseable
             final ControlResponseCode code = poller.code();
             if (ControlResponseCode.ERROR == code)
             {
-                final ArchiveException ex = new ArchiveException("response for correlationId=" + correlationId +
-                    ", error: " + poller.errorMessage(), (int)poller.relevantId());
+                final ArchiveException ex = new ArchiveException(
+                    "response for correlationId=" + correlationId + ", error: " + poller.errorMessage(),
+                    (int)poller.relevantId(),
+                    poller.correlationId());
 
                 if (poller.correlationId() == correlationId)
                 {

@@ -284,6 +284,7 @@ bool ReplayMerge::pollForResponse(AeronArchive& archive, std::int64_t correlatio
             if (poller.isCodeError())
             {
                 throw ArchiveException(static_cast<std::int32_t>(poller.relevantId()),
+                    poller.correlationId(),
                     "archive response for correlationId=" + std::to_string(poller.correlationId()) +
                     ", error: " + poller.errorMessage(), SOURCEINFO);
             }

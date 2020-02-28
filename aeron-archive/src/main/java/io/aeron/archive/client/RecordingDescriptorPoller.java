@@ -171,7 +171,8 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                         final ArchiveException ex = new ArchiveException(
                             "response for correlationId=" + this.correlationId +
                             ", error: " + controlResponseDecoder.errorMessage(),
-                            (int)controlResponseDecoder.relevantId());
+                            (int)controlResponseDecoder.relevantId(),
+                            correlationId);
 
                         if (correlationId == this.correlationId)
                         {

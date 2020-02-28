@@ -15,6 +15,7 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.Aeron;
 import io.aeron.exceptions.AeronException;
 
 /**
@@ -35,29 +36,41 @@ public class ArchiveException extends AeronException
     public static final int AUTHENTICATION_REJECTED = 10;
 
     private final int errorCode;
+    private final long correlationId;
 
     public ArchiveException()
     {
         super();
         errorCode = GENERIC;
+        correlationId = Aeron.NULL_VALUE;
     }
 
     public ArchiveException(final String message)
     {
         super(message);
         errorCode = GENERIC;
+        correlationId = Aeron.NULL_VALUE;
     }
 
     public ArchiveException(final String message, final int errorCode)
     {
         super(message);
         this.errorCode = errorCode;
+        correlationId = Aeron.NULL_VALUE;
     }
 
     public ArchiveException(final String message, final Throwable cause, final int errorCode)
     {
         super(message, cause);
         this.errorCode = errorCode;
+        correlationId = Aeron.NULL_VALUE;
+    }
+
+    public ArchiveException(final String message, final int errorCode, final long correlationId)
+    {
+        super(message);
+        this.errorCode = errorCode;
+        this.correlationId = correlationId;
     }
 
     /**
@@ -68,5 +81,16 @@ public class ArchiveException extends AeronException
     public int errorCode()
     {
         return errorCode;
+    }
+
+    /**
+     * Optional correlation-id associated with a control protocol request. Will be {@link Aeron#NULL_VALUE} if
+     * not set.
+     *
+     * @return correlation-id associated with a control protocol request.
+     */
+    public long correlationId()
+    {
+        return correlationId;
     }
 }

@@ -173,13 +173,23 @@ public:
     }
 
     /**
-     * The control session id allocated for this connection to the archive.
+     * The control session id allocated for this control session to the archive.
      *
-     * @return control session id allocated for this connection to the archive.
+     * @return control session id allocated for this control session to the archive.
      */
-    inline std::int64_t controlSessionId()
+    inline std::int64_t controlSessionId() const
     {
         return m_controlSessionId;
+    }
+
+    /**
+     * The last used correlation id for this control session to the archive.
+     *
+     * @return last used correlation id for this connection to the archive.
+     */
+    inline std::int64_t lastCorrelationId() const
+    {
+        return m_lastCorrelationId;
     }
 
     /**
@@ -187,7 +197,7 @@ public:
      *
      * @return the ArchiveProxy for send asynchronous messages to the connected archive.
      */
-    inline ArchiveProxy& archiveProxy()
+    inline ArchiveProxy& archiveProxy() const
     {
         return *m_archiveProxy;
     }
@@ -197,7 +207,7 @@ public:
      *
      * @return the ControlResponsePoller for polling additional events on the control channel.
      */
-    inline ControlResponsePoller& controlResponsePoller()
+    inline ControlResponsePoller& controlResponsePoller() const
     {
         return *m_controlResponsePoller;
     }
@@ -207,7 +217,7 @@ public:
      *
      * @return the RecordingDescriptorPoller for polling recording descriptors on the control channel.
      */
-    inline RecordingDescriptorPoller& recordingDescriptorPoller()
+    inline RecordingDescriptorPoller& recordingDescriptorPoller() const
     {
         return *m_recordingDescriptorPoller;
     }
@@ -218,7 +228,7 @@ public:
      * @return the RecordingSubscriptionDescriptorPoller for polling subscription descriptors on the control
      * channel.
      */
-    inline RecordingSubscriptionDescriptorPoller& recordingSubscriptionDescriptorPoller()
+    inline RecordingSubscriptionDescriptorPoller& recordingSubscriptionDescriptorPoller() const
     {
         return *m_recordingSubscriptionDescriptorPoller;
     }
@@ -403,15 +413,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->startRecording<IdleStrategy>(
-            channel, streamId, sourceLocation == SourceLocation::LOCAL, correlationId, m_controlSessionId))
+            channel, streamId, sourceLocation == SourceLocation::LOCAL, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send start recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -436,15 +446,20 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->extendRecording<IdleStrategy>(
-            channel, streamId, sourceLocation == SourceLocation::LOCAL, recordingId, correlationId, m_controlSessionId))
+            channel,
+            streamId,
+            sourceLocation == SourceLocation::LOCAL,
+            recordingId,
+            m_lastCorrelationId,
+            m_controlSessionId))
         {
             throw ArchiveException("failed to send extend recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -465,15 +480,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->stopRecording<IdleStrategy>(
-            channel, streamId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->stopRecording<IdleStrategy>(channel, streamId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -521,14 +535,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->stopRecording<IdleStrategy>(subscriptionId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->stopRecording<IdleStrategy>(subscriptionId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -561,15 +575,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->replay<IdleStrategy>(
-            recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
+            recordingId, position, length, replayChannel, replayStreamId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -604,7 +618,7 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->boundedReplay<IdleStrategy>(
             recordingId,
@@ -613,13 +627,13 @@ public:
             limitCounterId,
             replayChannel,
             replayStreamId,
-            correlationId,
+            m_lastCorrelationId,
             m_controlSessionId))
         {
             throw ArchiveException("failed to send bounded replay request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -635,14 +649,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->stopReplay<IdleStrategy>(replaySessionId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->stopReplay<IdleStrategy>(replaySessionId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send stop replay request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -658,14 +672,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->stopAllReplays<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->stopAllReplays<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send stop all replays request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -694,15 +708,15 @@ public:
         ensureNotReentrant();
 
         std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->replay<IdleStrategy>(
-            recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
+            recordingId, position, length, replayChannel, replayStreamId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(correlationId));
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(m_lastCorrelationId));
         replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
 
         const std::int64_t subscriptionId = m_aeron->addSubscription(replayChannelUri->toString(), replayStreamId);
@@ -748,15 +762,15 @@ public:
         ensureNotReentrant();
 
         std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->replay<IdleStrategy>(
-            recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
+            recordingId, position, length, replayChannel, replayStreamId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(correlationId));
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(m_lastCorrelationId));
         replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
 
         const std::int64_t subscriptionId = m_aeron->addSubscription(
@@ -792,16 +806,16 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
         CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecordings<IdleStrategy>(
-            fromRecordingId, recordCount, correlationId, m_controlSessionId))
+            fromRecordingId, recordCount, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send list recordings request", SOURCEINFO);
         }
 
-        return pollForDescriptors<IdleStrategy>(correlationId, recordCount, consumer);
+        return pollForDescriptors<IdleStrategy>(m_lastCorrelationId, recordCount, consumer);
     }
 
     /**
@@ -830,16 +844,16 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
         CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecordingsForUri<IdleStrategy>(
-            fromRecordingId, recordCount, channelFragment, streamId, correlationId, m_controlSessionId))
+            fromRecordingId, recordCount, channelFragment, streamId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send list recordings request", SOURCEINFO);
         }
 
-        return pollForDescriptors<IdleStrategy>(correlationId, recordCount, consumer);
+        return pollForDescriptors<IdleStrategy>(m_lastCorrelationId, recordCount, consumer);
     }
 
     /**
@@ -859,15 +873,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
         CallbackGuard callbackGuard(m_isInCallback);
 
-        if (!m_archiveProxy->listRecording<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->listRecording<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send list recording request", SOURCEINFO);
         }
 
-        return pollForDescriptors<IdleStrategy>(correlationId, 1, consumer);
+        return pollForDescriptors<IdleStrategy>(m_lastCorrelationId, 1, consumer);
     }
 
     /**
@@ -886,14 +900,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->getStartPosition<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->getStartPosition<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send get start position request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -911,14 +925,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->getRecordingPosition<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->getRecordingPosition<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send get recording position request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -936,14 +950,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->getStopPosition<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->getStopPosition<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send get stop position request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -967,15 +981,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->findLastMatchingRecording<IdleStrategy>(
-            minRecordingId, channelFragment, streamId, sessionId, correlationId, m_controlSessionId))
+            minRecordingId, channelFragment, streamId, sessionId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send find last matching recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -993,14 +1007,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId= m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->truncateRecording<IdleStrategy>(recordingId, position, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->truncateRecording<IdleStrategy>(
+            recordingId, position, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send truncate recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1031,16 +1046,22 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
         CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecordingSubscriptions<IdleStrategy>(
-            pseudoIndex, subscriptionCount, channelFragment, streamId, applyStreamId, correlationId, m_controlSessionId))
+            pseudoIndex,
+            subscriptionCount,
+            channelFragment,
+            streamId,
+            applyStreamId,
+            m_lastCorrelationId,
+            m_controlSessionId))
         {
             throw ArchiveException("failed to send list recording subscriptions request", SOURCEINFO);
         }
 
-        return pollForSubscriptionDescriptors<IdleStrategy>(correlationId, subscriptionCount, consumer);
+        return pollForSubscriptionDescriptors<IdleStrategy>(m_lastCorrelationId, subscriptionCount, consumer);
     }
 
     /**
@@ -1075,7 +1096,7 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->replicate<IdleStrategy>(
             srcRecordingId,
@@ -1083,13 +1104,13 @@ public:
             srcControlStreamId,
             srcControlChannel,
             liveDestination,
-            correlationId,
+            m_lastCorrelationId,
             m_controlSessionId))
         {
             throw ArchiveException("failed to send replicate request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1128,7 +1149,7 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->taggedReplicate<IdleStrategy>(
             srcRecordingId,
@@ -1138,13 +1159,13 @@ public:
             srcControlStreamId,
             srcControlChannel,
             liveDestination,
-            correlationId,
+            m_lastCorrelationId,
             m_controlSessionId))
         {
             throw ArchiveException("failed to send tagged replicate request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1160,14 +1181,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->stopReplication<IdleStrategy>(replicationId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->stopReplication<IdleStrategy>(replicationId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send stop replication request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1188,15 +1209,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->detachSegments<IdleStrategy>(
-            recordingId, newStartPosition, correlationId, m_controlSessionId))
+            recordingId, newStartPosition, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send detach segments request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(correlationId);
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1213,14 +1234,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->deleteDetachedSegments<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->deleteDetachedSegments<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send delete segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1242,15 +1263,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->purgeSegments<IdleStrategy>(
-            recordingId, newStartPosition, correlationId, m_controlSessionId))
+            recordingId, newStartPosition, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send purge segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1270,14 +1291,14 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->attachSegments<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->attachSegments<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send attach segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1301,15 +1322,15 @@ public:
         ensureOpen();
         ensureNotReentrant();
 
-        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->migrateSegments<IdleStrategy>(
-            srcRecordingId, dstRecordingId, correlationId, m_controlSessionId))
+            srcRecordingId, dstRecordingId, m_lastCorrelationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send migrate segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(correlationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1331,6 +1352,7 @@ private:
     nano_clock_t m_nanoClock;
 
     const std::int64_t m_controlSessionId;
+    std::int64_t m_lastCorrelationId = NULL_VALUE;
     const long long m_messageTimeoutNs;
     bool m_isClosed = false;
     bool m_isInCallback = false;
@@ -1539,4 +1561,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_AERON_ARCHIVE_H

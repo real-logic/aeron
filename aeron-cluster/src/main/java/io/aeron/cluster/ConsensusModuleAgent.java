@@ -72,7 +72,7 @@ class ConsensusModuleAgent implements Agent
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
     private long terminationPosition = NULL_POSITION;
-    private long followerCommitPosition = 0;
+    private long notifiedCommitPosition = 0;
     private long lastAppendPosition = 0;
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionNs = 0;
@@ -548,7 +548,7 @@ class ConsensusModuleAgent implements Agent
         else if (Cluster.Role.FOLLOWER == role && leadershipTermId == this.leadershipTermId)
         {
             timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(clusterClock.time());
-            followerCommitPosition = logPosition;
+            notifiedCommitPosition = logPosition;
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -891,7 +891,7 @@ class ConsensusModuleAgent implements Agent
         }
 
         lastAppendPosition = logPosition;
-        followerCommitPosition = logPosition;
+        notifiedCommitPosition = logPosition;
 
         commitPosition.setOrdered(logPosition);
         pendingServiceMessageHeadOffset = 0;
@@ -1374,9 +1374,9 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void followerCommitPosition(final long position)
+    void notifiedCommitPosition(final long logPosition)
     {
-        followerCommitPosition = position;
+        notifiedCommitPosition = logPosition;
     }
 
     void updateMemberDetails(final Election election)
@@ -1673,7 +1673,7 @@ class ConsensusModuleAgent implements Agent
         }
 
         election = null;
-        followerCommitPosition = termBaseLogPosition;
+        notifiedCommitPosition = termBaseLogPosition;
         commitPosition.setOrdered(termBaseLogPosition);
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
 
@@ -1991,7 +1991,7 @@ class ConsensusModuleAgent implements Agent
         {
             workCount += ingressAdapter.poll();
 
-            final int count = logAdapter.poll(min(followerCommitPosition, appendPosition.get()));
+            final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
             if (0 == count && logAdapter.isImageClosed())
             {
                 ctx.countedErrorHandler().onError(new ClusterException(

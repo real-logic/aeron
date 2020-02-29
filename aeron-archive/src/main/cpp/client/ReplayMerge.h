@@ -128,26 +128,6 @@ public:
     }
 
     /**
-     * Is the live stream merged and the replay stopped?
-     *
-     * @return true if live stream is merged and the replay stopped or false if not.
-     */
-    inline bool isMerged()
-    {
-        return m_state == State::MERGED;
-    }
-
-    /**
-     * Has the replay merge failed due to an error?
-     *
-     * @return true if replay merge has failed due to an error.
-     */
-    inline bool hasFailed()
-    {
-        return m_state == State::FAILED;
-    }
-
-    /**
      * The Image used for the replay and live stream.
      *
      * @return the Image used for the replay and live stream.
@@ -158,11 +138,31 @@ public:
     }
 
     /**
+     * Is the live stream merged and the replay stopped?
+     *
+     * @return true if live stream is merged and the replay stopped or false if not.
+     */
+    inline bool isMerged() const
+    {
+        return m_state == State::MERGED;
+    }
+
+    /**
+     * Has the replay merge failed due to an error?
+     *
+     * @return true if replay merge has failed due to an error.
+     */
+    inline bool hasFailed() const
+    {
+        return m_state == State::FAILED;
+    }
+
+    /**
      * Is the live destination added to the subscription?
      *
      * @return true if live destination added or false if not.
      */
-    inline bool isLiveAdded()
+    inline bool isLiveAdded() const
     {
         return m_isLiveAdded;
     }

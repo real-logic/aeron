@@ -53,6 +53,7 @@ import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
+import static java.lang.Math.min;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
 class ConsensusModuleAgent implements Agent
@@ -1522,7 +1523,7 @@ class ConsensusModuleAgent implements Agent
         {
             final RecordingLog.Log log = plan.log;
             final long startPosition = log.startPosition;
-            final long stopPosition = Math.min(log.stopPosition, electionCommitPosition);
+            final long stopPosition = min(log.stopPosition, electionCommitPosition);
             initialiseLeadershipTermId(log.leadershipTermId);
 
             if (log.logPosition < 0)
@@ -1748,7 +1749,7 @@ class ConsensusModuleAgent implements Agent
             }
         }
 
-        final long appendPosition = Math.min(image.position(), this.appendPosition.get());
+        final long appendPosition = min(image.position(), this.appendPosition.get());
         if (appendPosition != lastAppendPosition)
         {
             commitPosition.setOrdered(appendPosition);
@@ -1990,7 +1991,7 @@ class ConsensusModuleAgent implements Agent
         {
             workCount += ingressAdapter.poll();
 
-            final int count = logAdapter.poll(followerCommitPosition);
+            final int count = logAdapter.poll(min(followerCommitPosition, appendPosition.get()));
             if (0 == count && logAdapter.isImageClosed())
             {
                 ctx.countedErrorHandler().onError(new ClusterException(
@@ -2508,7 +2509,7 @@ class ConsensusModuleAgent implements Agent
         if (Cluster.Role.LEADER == role)
         {
             thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
-            final long commitPosition = Math.min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
+            final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
 
             if (this.commitPosition.proposeMaxOrdered(commitPosition) ||
                 nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
@@ -2547,7 +2548,7 @@ class ConsensusModuleAgent implements Agent
                 workCount += 1;
             }
 
-            commitPosition.proposeMaxOrdered(Math.min(logAdapter.position(), appendPosition));
+            commitPosition.proposeMaxOrdered(logAdapter.position());
         }
 
         return workCount;

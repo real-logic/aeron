@@ -23,7 +23,7 @@
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 
-#define AERON_NAME_RESOLVER_STATIC_TABLE_LOOKUP_PREFIX "static_table_lookup:"
+#define AERON_NAME_RESOLVER_CSV_TABLE "csv_table"
 
 typedef int (*aeron_name_resolver_resolve_func_t)(
     aeron_name_resolver_t *resolver,

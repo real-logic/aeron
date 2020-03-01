@@ -24,6 +24,8 @@ extern "C"
 }
 
 
+static const char *const csv_table_args_env_var = "AERON_NAME_RESOLVER_CSV_LOOKUP_TABLE_ARGS";
+
 class NameResolverTest : public testing::Test
 {
 public:
@@ -35,6 +37,7 @@ protected:
     void TearDown() override
     {
         unsetenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR);
+        unsetenv(csv_table_args_env_var);
         if (NULL != m_context)
         {
             aeron_driver_context_close(m_context);
@@ -54,12 +57,14 @@ protected:
 
 TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 {
-    const char *config_param = AERON_NAME_RESOLVER_STATIC_TABLE_LOOKUP_PREFIX
+    const char *config_param =
         NAME_0 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_0A "," HOST_0B "|"
         NAME_1 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B;
     aeron_name_resolver_t resolver;
 
-    setenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, config_param, 1);
+    setenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, AERON_NAME_RESOLVER_CSV_TABLE, 1);
+    setenv(csv_table_args_env_var, config_param, 1);
+    
     ASSERT_GE(0, aeron_driver_context_init(&m_context));
 
     ASSERT_TRUE(NULL != m_context->name_resolver_supplier_func);

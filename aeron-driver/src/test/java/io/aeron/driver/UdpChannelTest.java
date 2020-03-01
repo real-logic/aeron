@@ -419,6 +419,9 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource({
         "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",
+        "localhost:41024,127.0.0.1,,,UDP-127.0.0.1:0-localhost:41024",
+        "[fe80::5246:5dff:fe73:df06]:40456,[fe80::5246:5dff:fe73:df06],,," +
+            "UDP-127.0.0.1:0-[fe80::5246:5dff:fe73:df06]:40456",
         "NAME_ENDPOINT,224.0.1.1,,,UDP-127.0.0.1:0-224.0.1.1:40124",
         "NAME_ENDPOINT,192.168.1.1,NAME_CONTROL,192.168.1.2,UDP-NAME_CONTROL-NAME_ENDPOINT",
         "NAME_ENDPOINT,224.0.1.1,NAME_CONTROL,127.0.0.1,UDP-127.0.0.1:0-224.0.1.1:40124",
@@ -473,18 +476,6 @@ public class UdpChannelTest
         final UdpChannel udpChannel = UdpChannel.parse(uriBuilder.build(), resolver);
 
         assertThat(udpChannel.canonicalForm(), is(canonicalForm));
-
-        if (!Strings.isEmpty(endpointName))
-        {
-            assertThat(udpChannel.remoteData().getHostString(), is(endpointAddress));
-            assertThat(udpChannel.channelUri().get("endpoint"), is(endpointName));
-        }
-
-        if (!Strings.isEmpty(controlName))
-        {
-            assertThat(udpChannel.localData().getHostString(), is(controlAddress));
-            assertThat(udpChannel.channelUri().get("control"), is(controlName));
-        }
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

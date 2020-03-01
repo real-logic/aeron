@@ -64,8 +64,8 @@ public class NameReResolutionTest
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
     private static final String STUB_LOOKUP_CONFIGURATION =
-        ENDPOINT_PARAM_NAME + "," + ENDPOINT_NAME + ",localhost:24326,localhost:24325|" +
-        MDC_CONTROL_PARAM_NAME + "," + CONTROL_NAME + ",localhost:24328,localhost:24327|";
+        ENDPOINT_NAME + "," + ENDPOINT_PARAM_NAME + "," + "localhost:24326,localhost:24325|" +
+        CONTROL_NAME + "," + MDC_CONTROL_PARAM_NAME + "," + "localhost:24328,localhost:24327|";
 
     private static final int STREAM_ID = 1001;
 
@@ -441,7 +441,7 @@ public class NameReResolutionTest
         {
             for (final String[] lookupName : lookupNames)
             {
-                if (lookupName[0].equals(uriParamName) && lookupName[1].equals(name))
+                if (lookupName[1].equals(uriParamName) && lookupName[0].equals(name))
                 {
                     return isReLookup ? lookupName[2] : lookupName[3];
                 }

@@ -59,7 +59,7 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 {
     const char *config_param =
         NAME_0 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_0A "," HOST_0B "|"
-        NAME_1 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B;
+        NAME_1 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|";
     aeron_name_resolver_t resolver;
 
     setenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, AERON_NAME_RESOLVER_CSV_TABLE, 1);

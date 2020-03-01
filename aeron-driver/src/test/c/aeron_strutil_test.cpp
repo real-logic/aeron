@@ -96,6 +96,19 @@ TEST_F(StrUtilTest, shouldHandleMaxRangeWithConsequtiveDelimeters)
     EXPECT_STREQ(tokens[2], "token_a");
 }
 
+TEST_F(StrUtilTest, shouldHandleTrailingTokens)
+{
+    const int max_tokens = 6;
+    char *tokens[max_tokens];
+    char input[] = "token_a,token_b,token_c,,,,";
+
+    int num_tokens = aeron_tokenise(input, ',', max_tokens, tokens);
+
+    EXPECT_EQ(num_tokens, 3);
+    EXPECT_STREQ(tokens[0], "token_c");
+    EXPECT_STREQ(tokens[1], "token_b");
+    EXPECT_STREQ(tokens[2], "token_a");
+}
 
 TEST_F(StrUtilTest, shouldHandleNull)
 {

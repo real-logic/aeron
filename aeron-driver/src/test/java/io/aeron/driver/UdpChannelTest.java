@@ -440,7 +440,7 @@ public class UdpChannelTest
         final String endpointAddress,
         final String controlName,
         final String controlAddress,
-        final String canonicalForm) throws UnknownHostException
+        final String canonicalForm)
     {
         final int port = 40124;
 

@@ -15,9 +15,11 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -422,6 +424,77 @@ public class UdpChannelTest
         assertThat(
             udpChannelLocal.canonicalForm(),
             is("UDP-" + udpChannelLocal.localData().getHostString() + ":54321-224.0.1.1:40456"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",
+        "NAME_ENDPOINT,224.0.1.1,,,UDP-127.0.0.1:0-224.0.1.1:40124",
+        "NAME_ENDPOINT,192.168.1.1,NAME_CONTROL,192.168.1.2,UDP-NAME_CONTROL-NAME_ENDPOINT",
+        "NAME_ENDPOINT,224.0.1.1,NAME_CONTROL,127.0.0.1,UDP-127.0.0.1:0-224.0.1.1:40124",
+        "192.168.1.1:40124,192.168.1.1,NAME_CONTROL,192.168.1.2,UDP-NAME_CONTROL-192.168.1.1:40124",
+        "192.168.1.1:40124,192.168.1.1,192.168.1.2:40192,192.168.1.2,UDP-192.168.1.2:40192-192.168.1.1:40124",
+    })
+    void shouldParseWithNameResolver(
+        final String endpointName,
+        final String endpointAddress,
+        final String controlName,
+        final String controlAddress,
+        final String canonicalForm) throws UnknownHostException
+    {
+        final int port = 40124;
+
+        final NameResolver resolver = new NameResolver()
+        {
+            public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
+            {
+                return DefaultNameResolver.INSTANCE.resolve(name, uriParamName, isReResolution);
+            }
+
+            public String lookup(final String name, final String uriParamName, final boolean isReLookup)
+            {
+                if (endpointName.equals(name))
+                {
+                    return endpointAddress + ":" + port;
+                }
+                else if (controlName.equals(name))
+                {
+                    return controlAddress + ":" + port;
+                }
+
+                return name;
+            }
+        };
+
+        final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()
+            .media("udp")
+            .networkInterface("localhost");
+
+        if (!Strings.isEmpty(endpointName))
+        {
+            uriBuilder.endpoint(endpointName);
+        }
+
+        if (!Strings.isEmpty(controlName))
+        {
+            uriBuilder.controlEndpoint(controlName);
+        }
+
+        final UdpChannel udpChannel = UdpChannel.parse(uriBuilder.build(), resolver);
+
+        assertThat(udpChannel.canonicalForm(), is(canonicalForm));
+
+        if (!Strings.isEmpty(endpointName))
+        {
+            assertThat(udpChannel.remoteData().getHostString(), is(endpointAddress));
+            assertThat(udpChannel.channelUri().get("endpoint"), is(endpointName));
+        }
+
+        if (!Strings.isEmpty(controlName))
+        {
+            assertThat(udpChannel.localData().getHostString(), is(controlAddress));
+            assertThat(udpChannel.channelUri().get("control"), is(controlName));
+        }
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

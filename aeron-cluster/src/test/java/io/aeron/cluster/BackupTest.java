@@ -29,7 +29,7 @@ public class BackupTest
 {
     @Test
     @Timeout(30)
-    public void shouldBackupClusterNoSnapshotsAndEmptyLog() throws InterruptedException
+    public void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -51,7 +51,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLog() throws InterruptedException
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -81,7 +81,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBackupClusterNoSnapshotsAndThenSendMessages() throws InterruptedException
+    public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -111,7 +111,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBackupClusterWithSnapshot() throws InterruptedException
+    public void shouldBackupClusterWithSnapshot()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -146,7 +146,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBackupClusterWithSnapshotAndNonEmptyLog() throws InterruptedException
+    public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -189,7 +189,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBackupClusterWithSnapshotThenSend() throws InterruptedException
+    public void shouldBackupClusterWithSnapshotThenSend()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -232,7 +232,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBeAbleToGetTimeOfNextBackupQuery() throws InterruptedException
+    public void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -248,7 +248,7 @@ public class BackupTest
 
     @Test
     @Timeout(30)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery() throws InterruptedException
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -287,7 +287,7 @@ public class BackupTest
 
     @Test
     @Timeout(40)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure() throws InterruptedException
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -321,7 +321,7 @@ public class BackupTest
 
     @Test
     @Timeout(40)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure() throws InterruptedException
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

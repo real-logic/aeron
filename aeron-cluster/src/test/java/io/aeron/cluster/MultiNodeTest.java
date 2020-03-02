@@ -25,7 +25,7 @@ public class MultiNodeTest
 {
     @Test
     @Timeout(20)
-    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot() throws InterruptedException
+    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 
@@ -42,7 +42,7 @@ public class MultiNodeTest
 
     @Test
     @Timeout(20)
-    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws InterruptedException
+    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 
@@ -71,7 +71,7 @@ public class MultiNodeTest
 
     @Test
     @Timeout(20)
-    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws InterruptedException
+    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 

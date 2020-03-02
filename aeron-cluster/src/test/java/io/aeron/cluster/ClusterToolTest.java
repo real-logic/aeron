@@ -37,7 +37,7 @@ class ClusterToolTest
 
     @Test
     @Timeout(30)
-    void shouldHandleSnapshotOnLeaderOnly() throws InterruptedException
+    void shouldHandleSnapshotOnLeaderOnly()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -69,7 +69,7 @@ class ClusterToolTest
 
     @Test
     @Timeout(30)
-    void shouldNotSnapshotWhenSuspendedOnly() throws InterruptedException
+    void shouldNotSnapshotWhenSuspendedOnly()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -98,7 +98,7 @@ class ClusterToolTest
 
     @Test
     @Timeout(30)
-    void shouldSuspendAndResume() throws InterruptedException
+    void shouldSuspendAndResume()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.status.CountersReader;
 
 public class TestBackupNode implements AutoCloseable
 {
@@ -72,11 +71,6 @@ public class TestBackupNode implements AutoCloseable
     long liveLogPosition()
     {
         return clusterBackupMediaDriver.clusterBackup().context().liveLogPositionCounter().get();
-    }
-
-    CountersReader countersReader()
-    {
-        return clusterBackupMediaDriver.clusterBackup().context().aeron().countersReader();
     }
 
     EpochClock epochClock()

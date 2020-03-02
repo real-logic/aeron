@@ -28,7 +28,7 @@ public class AppointedLeaderTest
 
     @Test
     @Timeout(20)
-    public void shouldConnectAndSendKeepAlive() throws InterruptedException
+    public void shouldConnectAndSendKeepAlive()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
@@ -43,7 +43,7 @@ public class AppointedLeaderTest
 
     @Test
     @Timeout(20)
-    public void shouldEchoMessagesViaService() throws InterruptedException
+    public void shouldEchoMessagesViaService()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {

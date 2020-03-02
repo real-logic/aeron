@@ -31,7 +31,7 @@ public class DynamicMembershipTest
 {
     @Test
     @Timeout(30)
-    public void shouldQueryClusterMembers() throws InterruptedException
+    public void shouldQueryClusterMembers()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -46,7 +46,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldDynamicallyJoinClusterOfThreeNoSnapshots() throws InterruptedException
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshots()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -65,7 +65,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend() throws InterruptedException
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -86,7 +86,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup() throws InterruptedException
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -106,7 +106,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot() throws InterruptedException
+    public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -128,7 +128,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldDynamicallyJoinClusterOfThreeWithSnapshot() throws InterruptedException
+    public void shouldDynamicallyJoinClusterOfThreeWithSnapshot()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -156,7 +156,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend() throws InterruptedException
+    public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -190,7 +190,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldRemoveFollower() throws InterruptedException
+    public void shouldRemoveFollower()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -210,7 +210,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldRemoveLeader() throws InterruptedException
+    public void shouldRemoveLeader()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -232,7 +232,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldRemoveLeaderAfterDynamicNodeJoined() throws InterruptedException
+    public void shouldRemoveLeaderAfterDynamicNodeJoined()
     {
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
@@ -257,7 +257,7 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
-    public void shouldJoinDynamicNodeToSingleStaticLeader() throws InterruptedException
+    public void shouldJoinDynamicNodeToSingleStaticLeader()
     {
         try (TestCluster cluster = TestCluster.startCluster(1, 1))
         {

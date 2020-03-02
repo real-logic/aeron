@@ -376,11 +376,13 @@ class TestNode implements AutoCloseable
                     idleStrategy.idle();
                 }
             }
+
             if (message.equals(TestMessages.POISON_MESSAGE))
             {
                 hasReceivedUnexpectedMessage = true;
                 throw new IllegalStateException("Poison message received.");
             }
+
             if (message.equals(TestMessages.ECHO_IPC_INGRESS))
             {
                 if (null != session)
@@ -419,7 +421,6 @@ class TestNode implements AutoCloseable
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(SNAPSHOT_MSG_LENGTH);
-
             buffer.putInt(0, messageCount);
 
             for (int i = 0; i < SNAPSHOT_FRAGMENT_COUNT; i++)

@@ -25,7 +25,7 @@ public class SingleNodeTest
 {
     @Test
     @Timeout(20)
-    public void shouldStartCluster() throws InterruptedException
+    public void shouldStartCluster()
     {
         try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
@@ -38,7 +38,7 @@ public class SingleNodeTest
 
     @Test
     @Timeout(20)
-    public void shouldSendMessagesToCluster() throws InterruptedException
+    public void shouldSendMessagesToCluster()
     {
         try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
@@ -56,7 +56,7 @@ public class SingleNodeTest
 
     @Test
     @Timeout(20)
-    public void shouldReplayLog() throws InterruptedException
+    public void shouldReplayLog()
     {
         try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {

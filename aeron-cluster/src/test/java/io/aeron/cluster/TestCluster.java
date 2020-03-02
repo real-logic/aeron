@@ -552,8 +552,7 @@ public class TestCluster implements AutoCloseable
 
     void closeClient()
     {
-        client.close();
-        clientMediaDriver.close();
+        CloseHelper.closeAll(client, clientMediaDriver);
     }
 
     void sendMessages(final int messageCount)
@@ -669,7 +668,7 @@ public class TestCluster implements AutoCloseable
         return leaderNode;
     }
 
-    TestNode awaitLeader() throws InterruptedException
+    TestNode awaitLeader()
     {
         return awaitLeader(NULL_VALUE);
     }
@@ -776,7 +775,7 @@ public class TestCluster implements AutoCloseable
 
             if (node.service().hasReceivedUnexpectedMessage())
             {
-                fail("Service errored");
+                fail("service received unexpected message");
             }
 
             final long nowMs = epochClock.time();

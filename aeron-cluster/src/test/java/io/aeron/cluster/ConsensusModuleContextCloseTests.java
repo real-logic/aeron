@@ -97,6 +97,7 @@ class ConsensusModuleContextCloseTests
         final AeronException ex = assertThrows(AeronException.class, context::close);
 
         assertSame(aeronException, ex);
+
         final InOrder inOrder = inOrder(countedErrorHandler, errorHandler, aeron);
         inOrder.verify(countedErrorHandler).onError(recodingLogException);
         inOrder.verify(countedErrorHandler).onError(markFileException);
@@ -123,6 +124,7 @@ class ConsensusModuleContextCloseTests
             invalidRequestCounterException,
             timedOutClientCounterException
             }, ex.getSuppressed());
+
         final InOrder inOrder = inOrder(countedErrorHandler, errorHandler, aeron);
         inOrder.verify(countedErrorHandler).onError(recodingLogException);
         inOrder.verify(countedErrorHandler).onError(markFileException);

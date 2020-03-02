@@ -276,7 +276,6 @@ public class ClusterNodeRestartTest
             while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
             {
                 Tests.sleep(1);
-                Tests.checkInterruptStatus();
             }
         }
 

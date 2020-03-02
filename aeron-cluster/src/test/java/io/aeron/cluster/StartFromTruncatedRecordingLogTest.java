@@ -190,7 +190,6 @@ public class StartFromTruncatedRecordingLogTest
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
             Tests.sleep(200);
-            Tests.checkInterruptStatus();
         }
 
         return leaderMemberId;

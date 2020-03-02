@@ -24,7 +24,7 @@ public class ServiceIpcIngressTest
 {
     @Test
     @Timeout(20)
-    public void shouldEchoIpcMessages() throws InterruptedException
+    public void shouldEchoIpcMessages()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

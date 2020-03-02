@@ -44,7 +44,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldStopFollowerAndRestartFollower() throws InterruptedException
+    public void shouldStopFollowerAndRestartFollower()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -65,7 +65,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldNotifyClientOfNewLeader() throws InterruptedException
+    public void shouldNotifyClientOfNewLeader()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -79,7 +79,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot() throws InterruptedException
+    public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -105,7 +105,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldShutdownClusterAndRestartWithSnapshots() throws InterruptedException
+    public void shouldShutdownClusterAndRestartWithSnapshots()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -139,7 +139,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldAbortClusterAndRestart() throws InterruptedException
+    public void shouldAbortClusterAndRestart()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -173,7 +173,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldAbortClusterOnTerminationTimeout() throws InterruptedException
+    public void shouldAbortClusterOnTerminationTimeout()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -206,7 +206,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldEchoMessagesThenContinueOnNewLeader() throws InterruptedException
+    public void shouldEchoMessagesThenContinueOnNewLeader()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -241,7 +241,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldStopLeaderAndRestartAsFollower() throws InterruptedException
+    public void shouldStopLeaderAndRestartAsFollower()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -259,7 +259,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter() throws InterruptedException
+    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -283,7 +283,7 @@ public class ClusterTest
 
     @Test
     @Timeout(60)
-    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader() throws InterruptedException
+    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -313,7 +313,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldAcceptMessagesAfterSingleNodeCleanRestart() throws InterruptedException
+    public void shouldAcceptMessagesAfterSingleNodeCleanRestart()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -341,7 +341,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldReplaySnapshotTakenWhileDown() throws InterruptedException
+    public void shouldReplaySnapshotTakenWhileDown()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -375,7 +375,7 @@ public class ClusterTest
 
     @Test
     @Timeout(50)
-    public void shouldTolerateMultipleLeaderFailures() throws InterruptedException
+    public void shouldTolerateMultipleLeaderFailures()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -404,7 +404,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldAcceptMessagesAfterTwoNodeCleanRestart() throws InterruptedException
+    public void shouldAcceptMessagesAfterTwoNodeCleanRestart()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -441,7 +441,6 @@ public class ClusterTest
     @Disabled
     @Timeout(30)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos()
-        throws InterruptedException
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -498,7 +497,6 @@ public class ClusterTest
     @Disabled
     @Timeout(30)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
-        throws InterruptedException
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -532,7 +530,7 @@ public class ClusterTest
 
             final TestNode leaderNode2 = cluster.startStaticNode(leaderNode.index(), false);
 
-            Thread.sleep(1000);
+            Tests.sleep(1000);
 
             cluster.connectClient();
 
@@ -548,7 +546,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldHaveOnlyOneCommitPositionCounter() throws InterruptedException
+    public void shouldHaveOnlyOneCommitPositionCounter()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -568,7 +566,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldCallOnRoleChangeOnBecomingLeader() throws InterruptedException
+    public void shouldCallOnRoleChangeOnBecomingLeader()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -596,7 +594,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers() throws InterruptedException
+    public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -658,7 +656,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldCatchupFromEmptyLog() throws InterruptedException
+    public void shouldCatchupFromEmptyLog()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -683,7 +681,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart() throws InterruptedException
+    public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -732,21 +730,21 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldCatchUpAfterFollowerMissesOneMessage() throws InterruptedException
+    public void shouldCatchUpAfterFollowerMissesOneMessage()
     {
         shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
     }
 
     @Test
     @Timeout(30)
-    public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws InterruptedException
+    public void shouldCatchUpAfterFollowerMissesTimerRegistration()
     {
         shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER);
     }
 
     @Test
     @Timeout(30)
-    public void shouldCatchUpTwoFreshNodesAfterRestart() throws InterruptedException
+    public void shouldCatchUpTwoFreshNodesAfterRestart()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -789,7 +787,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog() throws InterruptedException
+    public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -869,7 +867,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne() throws InterruptedException
+    public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -898,7 +896,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    void shouldRecoverWhenLastSnapshotIsMarkedInvalid() throws InterruptedException
+    void shouldRecoverWhenLastSnapshotIsMarkedInvalid()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -948,7 +946,7 @@ public class ClusterTest
 
     @Test
     @Timeout(60)
-    void shouldHandleMultipleElections() throws InterruptedException
+    void shouldHandleMultipleElections()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -982,7 +980,7 @@ public class ClusterTest
 
     @Test
     @Timeout(50)
-    void shouldRecoverWhenLastSnapshotIsInvalidAndWasBetweenTwoElections() throws InterruptedException
+    void shouldRecoverWhenLastSnapshotIsInvalidAndWasBetweenTwoElections()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -1041,7 +1039,7 @@ public class ClusterTest
         }
     }
 
-    private void shouldCatchUpAfterFollowerMissesMessage(final String message) throws InterruptedException
+    private void shouldCatchUpAfterFollowerMissesMessage(final String message)
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

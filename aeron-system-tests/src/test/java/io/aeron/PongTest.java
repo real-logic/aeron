@@ -126,7 +126,7 @@ public class PongTest
 
     @SlowTest
     @Test
-    public void playPingPongWithRestart() throws Exception
+    public void playPingPongWithRestart()
     {
         buffer.putInt(0, 1);
 
@@ -167,8 +167,7 @@ public class PongTest
         // wait for disconnect to ensure we stay in lock step
         while (pingPublication.isConnected())
         {
-            Thread.sleep(100);
-            Tests.checkInterruptStatus();
+            Tests.sleep(100);
         }
 
         // restart Pong side

@@ -108,7 +108,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(10)
-    public void shouldReResolveEndpointOnNoConnected() throws Exception
+    public void shouldReResolveEndpointOnNoConnected()
     {
         buffer.putInt(0, 1);
 
@@ -146,8 +146,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())
         {
-            Thread.sleep(100);
-            Tests.checkInterruptStatus();
+            Tests.sleep(100);
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
@@ -184,7 +183,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(10)
-    public void shouldReResolveMdcManualEndpointOnNoConnected() throws Exception
+    public void shouldReResolveMdcManualEndpointOnNoConnected()
     {
         buffer.putInt(0, 1);
 
@@ -223,8 +222,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())
         {
-            Thread.sleep(100);
-            Tests.checkInterruptStatus();
+            Tests.sleep(100);
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
@@ -261,7 +259,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(15)
-    public void shouldReResolveMdcDynamicControlOnNoConnected() throws Exception
+    public void shouldReResolveMdcDynamicControlOnNoConnected()
     {
         buffer.putInt(0, 1);
 
@@ -299,8 +297,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (subscription.isConnected())
         {
-            Thread.sleep(100);
-            Tests.checkInterruptStatus();
+            Tests.sleep(100);
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
@@ -337,7 +334,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(15)
-    public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected() throws Exception
+    public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected()
     {
         TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-Destination-Subscriptions");
 
@@ -378,8 +375,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (subscription.isConnected())
         {
-            Thread.sleep(100);
-            Tests.checkInterruptStatus();
+            Tests.sleep(100);
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);

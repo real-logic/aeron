@@ -28,6 +28,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,8 +72,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleExplicitLocalAddressAndPortFormatWithAeronUri(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(
             uri(endpointKey, "localhost:40124", interfaceKey, "localhost:40123"));
@@ -96,8 +96,7 @@ public class UdpChannelTest
 
     @ParameterizedTest
     @CsvSource("endpoint,interface")
-    public void shouldHandleImpliedLocalAddressAndPortFormatWithAeronUri(
-        final String endpointKey)
+    public void shouldHandleImpliedLocalAddressAndPortFormatWithAeronUri(final String endpointKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124"));
 
@@ -126,7 +125,7 @@ public class UdpChannelTest
     }
 
     @Test
-    public void shouldParseValidMulticastAddress() throws Exception
+    public void shouldParseValidMulticastAddress() throws IOException
     {
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|endpoint=224.10.9.9:40124");
 
@@ -141,9 +140,8 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldParseValidMulticastAddressWithAeronUri(
-        final String endpointKey,
-        final String interfaceKey)
-        throws Exception
+        final String endpointKey, final String interfaceKey)
+        throws IOException
     {
         final UdpChannel udpChannel = UdpChannel.parse(
             uri(endpointKey, "224.10.9.9:40124", interfaceKey, "localhost"));
@@ -177,8 +175,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleImpliedLocalPortFormatWithAeronUri(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(
             uri(endpointKey, "localhost:40124", interfaceKey, "localhost"));
@@ -192,8 +189,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleIPv4AnyAddressAsInterfaceAddressForUnicast(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(
             uri(endpointKey, "localhost:40124", interfaceKey, "0.0.0.0"));
@@ -207,8 +203,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleIPv6AnyAddressAsInterfaceAddressForUnicast(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "[::1]:40124", interfaceKey, "[::]"));
 
@@ -274,8 +269,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleIpV6CanonicalFormForUnicastCorrectly(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannelLocal =
             UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456", interfaceKey, "[::1]"));
@@ -293,8 +287,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleCanonicalFormForUnicastCorrectlyWithAeronUri(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456"));
         final UdpChannel udpChannelLocal =
@@ -383,8 +376,7 @@ public class UdpChannelTest
     @ParameterizedTest
     @CsvSource("endpoint,interface")
     public void shouldHandleCanonicalFormForMulticastCorrectlyWithAeronUri(
-        final String endpointKey,
-        final String interfaceKey)
+        final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "localhost"));
         final UdpChannel udpChannelLocal =
@@ -407,9 +399,7 @@ public class UdpChannelTest
 
     @ParameterizedTest
     @CsvSource("endpoint,interface")
-    public void shouldHandleIpV6CanonicalFormForMulticastCorrectly(
-        final String endpointKey,
-        final String interfaceKey)
+    public void shouldHandleIpV6CanonicalFormForMulticastCorrectly(final String endpointKey, final String interfaceKey)
     {
         assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
 
@@ -520,12 +510,12 @@ public class UdpChannelTest
             description.appendText("Interface supports multicast or is loopack");
         }
 
-        protected boolean matchesSafely(final NetworkInterface item)
+        protected boolean matchesSafely(final NetworkInterface networkInterface)
         {
             boolean matchesSafely = false;
             try
             {
-                matchesSafely = item.supportsMulticast() || item.isLoopback();
+                matchesSafely = networkInterface.supportsMulticast() || networkInterface.isLoopback();
             }
             catch (final SocketException ex)
             {

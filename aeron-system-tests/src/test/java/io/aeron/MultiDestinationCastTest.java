@@ -321,6 +321,7 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
+            fragmentsRead.set(0);
             pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
             fragmentsRead.set(0);

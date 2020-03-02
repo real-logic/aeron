@@ -186,7 +186,7 @@ public class Tests
         while (!condition.getAsBoolean() && ((nowNs - startNs) < timeoutNs) && i++ < maxIterations);
     }
 
-    public static void pollForFragments(
+    public static int pollForFragments(
         final Subscription subscription,
         final FragmentHandler handler,
         final int minFragments,
@@ -194,15 +194,21 @@ public class Tests
     {
         final long startNs = System.nanoTime();
 
-        long nowNs;
-        int numFragments;
+        long nowNs = startNs;
+        int totalFragments = 0;
         do
         {
-            numFragments = subscription.poll(handler, 10);
-            Thread.yield();
-            Tests.checkInterruptStatus();
-            nowNs = System.nanoTime();
+            final int numFragments = subscription.poll(handler, 10);
+            if (numFragments <= 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                nowNs = System.nanoTime();
+            }
+            totalFragments += numFragments;
         }
-        while (numFragments < minFragments && ((nowNs - startNs) < timeoutNs));
+        while (totalFragments < minFragments && ((nowNs - startNs) < timeoutNs));
+
+        return totalFragments;
     }
 }

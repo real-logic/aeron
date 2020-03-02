@@ -257,6 +257,9 @@ public class MultiDestinationSubscriptionTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+        final MutableInteger copyFragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -265,10 +268,10 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-            final MutableInteger copyFragmentsRead = new MutableInteger();
-
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
+
+            copyFragmentsRead.set(0);
             pollForFragment(copySubscription, copyFragmentHandler, copyFragmentsRead);
         }
 
@@ -295,6 +298,8 @@ public class MultiDestinationSubscriptionTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -303,7 +308,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 
@@ -329,6 +334,8 @@ public class MultiDestinationSubscriptionTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -337,7 +344,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 
@@ -377,6 +384,8 @@ public class MultiDestinationSubscriptionTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSendForA; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -385,7 +394,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 
@@ -427,7 +436,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 
@@ -477,6 +486,7 @@ public class MultiDestinationSubscriptionTest
             .endpoint(UNICAST_ENDPOINT_B);
 
         final String publicationChannelB = builder.build();
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         publicationB = clientB.addExclusivePublication(publicationChannelB, STREAM_ID);
 
@@ -488,7 +498,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
 
             while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -508,7 +518,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
 
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)

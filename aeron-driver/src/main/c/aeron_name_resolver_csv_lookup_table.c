@@ -23,6 +23,7 @@
 #include <string.h>
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_arrayutil.h"
 #include "aeron_name_resolver.h"
 #include "aeron_driver_context.h"
 
@@ -33,10 +34,17 @@
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
 #define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (4)
 
+typedef struct aeron_name_resolver_csv_table_row_stct
+{
+    const char* row[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
+}
+aeron_name_resolver_csv_table_row_t;
+
 typedef struct aeron_name_resolver_csv_table_stct
 {
-    const char *content[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE][AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
+    aeron_name_resolver_csv_table_row_t *array;
     size_t length;
+    size_t capacity;
 }
 aeron_name_resolver_csv_table_t;
 
@@ -56,10 +64,10 @@ int aeron_name_resolver_lookup_csv_table(
 
     for (size_t i = 0; i < table->length; i++)
     {
-        if (strcmp(name, table->content[i][0]) == 0 && strcmp(uri_param_name, table->content[i][1]) == 0)
+        if (strcmp(name, table->array[i].row[0]) == 0 && strcmp(uri_param_name, table->array[i].row[1]) == 0)
         {
             int address_idx = is_re_resolution ? 3 : 2;
-            *resolved_name = table->content[i][address_idx];
+            *resolved_name = table->array[i].row[address_idx];
             return 1;
         }
     }
@@ -86,9 +94,7 @@ int aeron_name_resolver_supplier_csv_table(
     }
 
     aeron_name_resolver_csv_table_t *lookup_table;
-    const size_t lookup_table_size = AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE *
-        AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS * sizeof(char *);
-    if (aeron_alloc((void**) &lookup_table, lookup_table_size) < 0)
+    if (aeron_alloc((void**) &lookup_table, sizeof(lookup_table)) < 0)
     {
         aeron_set_err_from_last_err_code("Allocating lookup table - %s:%d", __FILE__, __LINE__);
         aeron_free(config_csv);
@@ -105,12 +111,24 @@ int aeron_name_resolver_supplier_csv_table(
     lookup_table->length = 0;
     for (int i = num_rows; -1 < --i;)
     {
+        int ensure_capacity_result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, (*lookup_table), aeron_name_resolver_csv_table_row_t)
+        if (ensure_capacity_result < 0)
+        {
+            aeron_set_err_from_last_err_code(
+                "Failed to allocate rows for lookup table (%zu,%zu) - %s:%d",
+                lookup_table->length, lookup_table->capacity, __FILE__, __LINE__);
+            free(lookup_table->array);
+            free(lookup_table);
+            return -1;
+        }
+
         int num_columns = aeron_tokenise(rows[i], ',', AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS, columns);
         if (AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS == num_columns)
         {
             for (int k = num_columns, l = 0; -1 < --k; l++)
             {
-                lookup_table->content[lookup_table->length][l] = columns[k];
+                lookup_table->array[lookup_table->length].row[l] = columns[k];
             }
             lookup_table->length++;
         }

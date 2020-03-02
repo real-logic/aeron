@@ -64,7 +64,8 @@ int aeron_name_resolver_lookup_csv_table(
 
     for (size_t i = 0; i < table->length; i++)
     {
-        if (strcmp(name, table->array[i].row[0]) == 0 && strcmp(uri_param_name, table->array[i].row[1]) == 0)
+        if (strncmp(name, table->array[i].row[0], strlen(table->array[i].row[0]) + 1) == 0 &&
+            strncmp(uri_param_name, table->array[i].row[1], strlen(table->array[i].row[1]) + 1) == 0)
         {
             int address_idx = is_re_resolution ? 3 : 2;
             *resolved_name = table->array[i].row[address_idx];

@@ -200,6 +200,7 @@ public class MultiDestinationSubscriptionTest
     public void shouldSendToSingleDestinationSubscriptionWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -213,8 +214,6 @@ public class MultiDestinationSubscriptionTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -237,6 +236,8 @@ public class MultiDestinationSubscriptionTest
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final String tags = "1,2";
+        final MutableInteger fragmentsRead = new MutableInteger();
+        final MutableInteger copyFragmentsRead = new MutableInteger();
 
         launch();
 
@@ -258,9 +259,6 @@ public class MultiDestinationSubscriptionTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
-        final MutableInteger copyFragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -286,6 +284,7 @@ public class MultiDestinationSubscriptionTest
     public void shouldSendToSingleDestinationSubscriptionWithMulticast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -299,8 +298,6 @@ public class MultiDestinationSubscriptionTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -322,6 +319,7 @@ public class MultiDestinationSubscriptionTest
     public void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -335,8 +333,6 @@ public class MultiDestinationSubscriptionTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -362,11 +358,11 @@ public class MultiDestinationSubscriptionTest
         final int numMessagesToSendForB = numMessagesToSend / 2;
         final String tags = "1,2";
         final int pubTag = 2;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
-
         builder
             .clear()
             .tags(tags)
@@ -385,8 +381,6 @@ public class MultiDestinationSubscriptionTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSendForA; i++)
         {

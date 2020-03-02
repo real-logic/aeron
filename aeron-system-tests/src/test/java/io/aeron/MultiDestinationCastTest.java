@@ -160,6 +160,7 @@ public class MultiDestinationCastTest
     public void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -173,8 +174,6 @@ public class MultiDestinationCastTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -204,6 +203,7 @@ public class MultiDestinationCastTest
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -217,8 +217,6 @@ public class MultiDestinationCastTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -248,6 +246,7 @@ public class MultiDestinationCastTest
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -263,8 +262,6 @@ public class MultiDestinationCastTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -292,6 +289,7 @@ public class MultiDestinationCastTest
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
         final CountDownLatch unavailableImage = new CountDownLatch(1);
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
 
@@ -310,8 +308,6 @@ public class MultiDestinationCastTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -355,6 +351,7 @@ public class MultiDestinationCastTest
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
         final CountDownLatch availableImage = new CountDownLatch(1);
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -370,8 +367,6 @@ public class MultiDestinationCastTest
             Thread.yield();
             Tests.checkInterruptStatus();
         }
-
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {

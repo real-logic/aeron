@@ -23,9 +23,6 @@ extern "C"
 #include "util/aeron_parse_util.h"
 }
 
-
-static const char *const csv_table_args_env_var = "AERON_NAME_RESOLVER_CSV_LOOKUP_TABLE_ARGS";
-
 class NameResolverTest : public testing::Test
 {
 public:
@@ -37,7 +34,7 @@ protected:
     void TearDown() override
     {
         unsetenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR);
-        unsetenv(csv_table_args_env_var);
+        unsetenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
         if (NULL != m_context)
         {
             aeron_driver_context_close(m_context);
@@ -63,7 +60,7 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
     aeron_name_resolver_t resolver;
 
     setenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, AERON_NAME_RESOLVER_CSV_TABLE, 1);
-    setenv(csv_table_args_env_var, config_param, 1);
+    setenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param, 1);
     
     ASSERT_GE(0, aeron_driver_context_init(&m_context));
 

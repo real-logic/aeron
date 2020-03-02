@@ -24,6 +24,7 @@
 #include "aeron_driver_context.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE "csv_table"
+#define AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR "AERON_NAME_RESOLVER_CSV_LOOKUP_TABLE_ARGS"
 
 typedef int (*aeron_name_resolver_resolve_func_t)(
     aeron_name_resolver_t *resolver,

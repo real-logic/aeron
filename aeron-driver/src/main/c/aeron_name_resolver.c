@@ -81,7 +81,7 @@ int aeron_name_resolver_resolve_host_and_port(
         return -1;
     }
 
-    if (aeron_address_split(name, &parsed_address) < 0)
+    if (aeron_address_split(address_str, &parsed_address) < 0)
     {
         return -1;
     }

@@ -532,6 +532,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nak_unicast_delay_ns = AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
     _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
     _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
+    _context->name_resolver_init_args = NULL;
 
     char *value = NULL;
 
@@ -579,6 +580,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             return -1;
         }
     }
+
+    _context->name_resolver_init_args = getenv(AERON_NAME_RESOLVER_INIT_ARGS);
 
     _context->dirs_delete_on_start = aeron_config_parse_bool(
         getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),

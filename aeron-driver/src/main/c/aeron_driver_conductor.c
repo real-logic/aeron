@@ -230,7 +230,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
-    aeron_name_resolver_init(context, &conductor->name_resolver);
+    aeron_name_resolver_init(context, &conductor->name_resolver, context->name_resolver_init_args);
 
     conductor->context = context;
 

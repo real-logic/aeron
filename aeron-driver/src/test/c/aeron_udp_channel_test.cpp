@@ -30,7 +30,7 @@ public:
     UdpChannelTestBase() :
         m_channel(NULL)
     {
-        aeron_name_resolver_supplier_default(NULL, &m_resolver);
+        aeron_name_resolver_supplier_default(NULL, &m_resolver, "");
     }
 
     virtual ~UdpChannelTestBase()
@@ -308,11 +308,10 @@ TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
     const char *config_param =
         "NAME_0," AERON_UDP_CHANNEL_ENDPOINT_KEY ",localhost:9001,localhost:9001|"
         "NAME_1," AERON_UDP_CHANNEL_CONTROL_KEY ",localhost:9002,localhost:9002|";
-    aeron_env_set(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param);
 
     aeron_name_resolver_supplier_func_t csv_supplier_func = aeron_name_resolver_supplier_load(
         AERON_NAME_RESOLVER_CSV_TABLE);
-    csv_supplier_func(NULL, &m_resolver);
+    csv_supplier_func(NULL, &m_resolver, config_param);
     
     ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=NAME_0|control=NAME_1"), 0) << aeron_errmsg();
     EXPECT_STREQ(m_channel->uri.params.udp.endpoint, "NAME_0");
@@ -348,11 +347,9 @@ TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
     const std::string params_string = params_ss.str();
     const char *config_params = params_string.c_str();
 
-    aeron_env_set(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_params);
-
     aeron_name_resolver_supplier_func_t csv_supplier_func = aeron_name_resolver_supplier_load(
         AERON_NAME_RESOLVER_CSV_TABLE);
-    csv_supplier_func(NULL, &m_resolver);
+    csv_supplier_func(NULL, &m_resolver, config_params);
 
     uri_ss << "aeron:udp?interface=localhost";
 

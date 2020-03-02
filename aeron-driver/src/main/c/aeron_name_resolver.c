@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "util/aeron_error.h"
-#include "util/aeron_strutil.h"
 #include "util/aeron_parse_util.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_dlopen.h"
@@ -33,12 +32,15 @@
 #define strdup _strdup
 #endif
 
-int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args)
 {
-    return context->name_resolver_supplier_func(context, resolver);
+    return context->name_resolver_supplier_func(context, resolver, args);
 }
 
-int aeron_name_resolver_supplier_default(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+int aeron_name_resolver_supplier_default(
+    aeron_driver_context_t *context,
+    aeron_name_resolver_t *resolver,
+    const char *args)
 {
     resolver->lookup_func = aeron_name_resolver_lookup_default;
     resolver->resolve_func = aeron_name_resolver_resolve_default;

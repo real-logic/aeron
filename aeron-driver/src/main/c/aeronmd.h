@@ -693,8 +693,16 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driv
  */
 #define AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR "AERON_NAME_RESOLVER_SUPPLIER"
 
+/**
+ * Specify the name of the name resolver (supplier) to be used by this media driver
+ */
+#define AERON_NAME_RESOLVER_INIT_ARGS "AERON_NAME_RESOLVER_INIT_ARGS"
+
 typedef struct aeron_name_resolver_stct aeron_name_resolver_t;
-typedef int (*aeron_name_resolver_supplier_func_t)(aeron_driver_context_t *context, aeron_name_resolver_t *resolver);
+typedef int (*aeron_name_resolver_supplier_func_t)(
+    aeron_driver_context_t *context,
+    aeron_name_resolver_t *resolver,
+    const char *args);
 
 /**
  * Return full version and build string.

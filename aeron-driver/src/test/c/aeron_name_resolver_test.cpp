@@ -35,7 +35,6 @@ protected:
     void TearDown() override
     {
         aeron_env_unset(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR);
-        aeron_env_unset(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
         if (NULL != m_context)
         {
             aeron_driver_context_close(m_context);
@@ -61,13 +60,12 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
     aeron_name_resolver_t resolver;
 
     aeron_env_set(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, AERON_NAME_RESOLVER_CSV_TABLE);
-    aeron_env_set(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param);
-    
+
     ASSERT_GE(0, aeron_driver_context_init(&m_context));
 
     ASSERT_TRUE(NULL != m_context->name_resolver_supplier_func);
 
-    m_context->name_resolver_supplier_func(NULL, &resolver);
+    m_context->name_resolver_supplier_func(NULL, &resolver, config_param);
     const char *resolved_name;
 
     ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));

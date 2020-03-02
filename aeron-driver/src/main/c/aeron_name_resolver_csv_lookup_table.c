@@ -67,7 +67,10 @@ int aeron_name_resolver_lookup_csv_table(
     return aeron_name_resolver_lookup_default(resolver, name, uri_param_name, is_re_resolution, resolved_name);
 }
 
-int aeron_name_resolver_supplier_csv_table(aeron_driver_context_t *context, aeron_name_resolver_t *resolver)
+int aeron_name_resolver_supplier_csv_table(
+    aeron_driver_context_t *context,
+    aeron_name_resolver_t *resolver,
+    const char *args)
 {
     resolver->resolve_func = aeron_name_resolver_resolve_default;
     resolver->lookup_func = aeron_name_resolver_lookup_csv_table;
@@ -75,15 +78,8 @@ int aeron_name_resolver_supplier_csv_table(aeron_driver_context_t *context, aero
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
     
-    const char *config_str = getenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
-    if (NULL == config_str)
-    {
-        aeron_set_err(errno, "%s", "No configuration specified for name_resolver_csv_lookup_table");
-        return -1;
-    }
-
-    char *config_str_dup = strdup(config_str);
-    if (NULL == config_str_dup)
+    char *config_csv = strdup(args);
+    if (NULL == config_csv)
     {
         aeron_set_err_from_last_err_code("Duplicating config string - %s:%d", __FILE__, __LINE__);
         return -1;
@@ -95,11 +91,11 @@ int aeron_name_resolver_supplier_csv_table(aeron_driver_context_t *context, aero
     if (aeron_alloc((void**) &lookup_table, lookup_table_size) < 0)
     {
         aeron_set_err_from_last_err_code("Allocating lookup table - %s:%d", __FILE__, __LINE__);
-        aeron_free(config_str_dup);
+        aeron_free(config_csv);
         return -1;
     }
 
-    int num_rows = aeron_tokenise(config_str_dup, '|', AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE, rows);
+    int num_rows = aeron_tokenise(config_csv, '|', AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE, rows);
     if (num_rows < 0)
     {
         aeron_set_err(num_rows, "%s", "Failed to parse rows for lookup table");

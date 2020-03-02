@@ -365,7 +365,7 @@ public:
         addr_in6((struct sockaddr_in6 *)&m_addr),
         m_prefixlen(0)
     {
-        aeron_name_resolver_supplier_default(NULL, &m_resolver);
+        aeron_name_resolver_supplier_default(NULL, &m_resolver, "");
     }
 
     bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)

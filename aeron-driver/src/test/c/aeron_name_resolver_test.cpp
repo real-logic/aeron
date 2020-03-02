@@ -21,6 +21,7 @@ extern "C"
 #include <stdlib.h>
 #include "aeron_name_resolver.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_env.h"
 }
 
 class NameResolverTest : public testing::Test
@@ -33,8 +34,8 @@ public:
 protected:
     void TearDown() override
     {
-        unsetenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR);
-        unsetenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
+        aeron_env_unset(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR);
+        aeron_env_unset(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
         if (NULL != m_context)
         {
             aeron_driver_context_close(m_context);
@@ -59,8 +60,8 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
         NAME_1 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|";
     aeron_name_resolver_t resolver;
 
-    setenv(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, AERON_NAME_RESOLVER_CSV_TABLE, 1);
-    setenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param, 1);
+    aeron_env_set(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR, AERON_NAME_RESOLVER_CSV_TABLE);
+    aeron_env_set(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param);
     
     ASSERT_GE(0, aeron_driver_context_init(&m_context));
 

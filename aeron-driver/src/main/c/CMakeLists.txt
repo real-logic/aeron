@@ -140,6 +140,7 @@ SET(SOURCE
     util/aeron_properties_util.c
     util/aeron_http_util.c
     util/aeron_clock.c
+    util/aeron_env.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -197,6 +198,7 @@ SET(HEADERS
     util/aeron_properties_util.h
     util/aeron_http_util.h
     util/aeron_clock.h
+    util/aeron_env.h
     concurrent/aeron_thread.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h

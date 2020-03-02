@@ -21,6 +21,7 @@ extern "C"
 #include "media/aeron_udp_channel.h"
 #include "util/aeron_error.h"
 #include "uri/aeron_uri.h"
+#include "util/aeron_env.h"
 }
 
 class UdpChannelTestBase
@@ -97,7 +98,7 @@ protected:
     void TearDown() override
     {
         Test::TearDown();
-        unsetenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
+        aeron_env_unset(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR);
     }
 };
 
@@ -307,7 +308,7 @@ TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
     const char *config_param =
         "NAME_0," AERON_UDP_CHANNEL_ENDPOINT_KEY ",localhost:9001,localhost:9001|"
         "NAME_1," AERON_UDP_CHANNEL_CONTROL_KEY ",localhost:9002,localhost:9002|";
-    setenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param, 1);
+    aeron_env_set(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_param);
 
     aeron_name_resolver_supplier_func_t csv_supplier_func = aeron_name_resolver_supplier_load(
         AERON_NAME_RESOLVER_CSV_TABLE);
@@ -347,7 +348,7 @@ TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
     const std::string params_string = params_ss.str();
     const char *config_params = params_string.c_str();
 
-    setenv(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_params, 1);
+    aeron_env_set(AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR, config_params);
 
     aeron_name_resolver_supplier_func_t csv_supplier_func = aeron_name_resolver_supplier_load(
         AERON_NAME_RESOLVER_CSV_TABLE);

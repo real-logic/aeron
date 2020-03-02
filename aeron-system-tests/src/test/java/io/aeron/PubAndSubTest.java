@@ -164,6 +164,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -172,7 +174,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
 
             Tests.executeUntil(
                 () -> fragmentsRead.value > 0,
@@ -212,6 +214,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         // lock step reception until we get to within 8 messages of the end
         for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
         {
@@ -221,7 +225,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
 
             Tests.executeUntil(
                 () -> fragmentsRead.value > 0,
@@ -261,7 +265,7 @@ public class PubAndSubTest
             Tests.checkInterruptStatus();
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
+        fragmentsRead.set(0);
 
         Tests.executeUntil(
             () -> fragmentsRead.value == 9,
@@ -319,6 +323,7 @@ public class PubAndSubTest
         TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
 
         launch(channel);
+        final MutableInteger fragmentRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -328,9 +333,10 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger mutableInteger = new MutableInteger();
+            fragmentRead.set(0);
+
             Tests.executeUntil(
-                () -> mutableInteger.value > 0,
+                () -> fragmentRead.value > 0,
                 (j) ->
                 {
                     final int fragments = subscription.poll(fragmentHandler, 10);
@@ -338,7 +344,7 @@ public class PubAndSubTest
                     {
                         Thread.yield();
                     }
-                    mutableInteger.value += fragments;
+                    fragmentRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -379,6 +385,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numBatches; i++)
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
@@ -390,7 +398,7 @@ public class PubAndSubTest
                 }
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
 
             Tests.executeUntil(
                 () -> fragmentsRead.value >= numMessagesPerBatch,
@@ -432,6 +440,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
@@ -443,7 +453,7 @@ public class PubAndSubTest
                 }
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
 
             Tests.executeUntil(
                 () -> fragmentsRead.value >= numMessagesPerBatch,
@@ -466,7 +476,7 @@ public class PubAndSubTest
             Tests.checkInterruptStatus();
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
+        fragmentsRead.set(0);
 
         Tests.executeUntil(
             () -> fragmentsRead.value > 0,
@@ -508,6 +518,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -516,8 +528,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-
+            fragmentsRead.set(0);
             Tests.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
@@ -561,6 +572,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
@@ -572,8 +585,7 @@ public class PubAndSubTest
                 }
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-
+            fragmentsRead.set(0);
             Tests.executeUntil(
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
@@ -686,6 +698,8 @@ public class PubAndSubTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSendStageOne; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -694,7 +708,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
 
             Tests.executeUntil(
                 () -> fragmentsRead.value > 0,
@@ -732,7 +746,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
 
             Tests.executeUntil(
                 () -> fragmentsRead.value > 0,

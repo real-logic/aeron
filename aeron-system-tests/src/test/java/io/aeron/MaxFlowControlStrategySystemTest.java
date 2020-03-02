@@ -149,6 +149,8 @@ public class MaxFlowControlStrategySystemTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -157,8 +159,9 @@ public class MaxFlowControlStrategySystemTest
                 Tests.checkInterruptStatus();
             }
 
+            fragmentsRead.set(0);
+
             // A keeps up
-            final MutableInteger fragmentsRead = new MutableInteger();
             Tests.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->

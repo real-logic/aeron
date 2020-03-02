@@ -214,6 +214,8 @@ public class MultiDestinationSubscriptionTest
             Tests.checkInterruptStatus();
         }
 
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -222,7 +224,7 @@ public class MultiDestinationSubscriptionTest
                 Tests.checkInterruptStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 

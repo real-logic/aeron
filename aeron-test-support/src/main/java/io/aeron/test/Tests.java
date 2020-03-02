@@ -15,8 +15,11 @@
  */
 package io.aeron.test;
 
+import io.aeron.Subscription;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.*;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -180,5 +183,25 @@ public class Tests
             nowNs = System.nanoTime();
         }
         while (!condition.getAsBoolean() && ((nowNs - startNs) < timeoutNs) && i++ < maxIterations);
+    }
+
+    public static void pollForFragments(
+        final Subscription subscription,
+        final FragmentHandler handler,
+        final int minFragments,
+        final long timeoutNs)
+    {
+        final long startNs = System.nanoTime();
+
+        long nowNs;
+        int numFragments;
+        do
+        {
+            numFragments = subscription.poll(handler, 10);
+            Thread.yield();
+            Tests.checkInterruptStatus();
+            nowNs = System.nanoTime();
+        }
+        while (numFragments < minFragments && ((nowNs - startNs) < timeoutNs));
     }
 }

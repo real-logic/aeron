@@ -160,7 +160,6 @@ public class MultiDestinationCastTest
     public void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -183,14 +182,9 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
-
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
-
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
+            pollForFragment(subscriptionA, fragmentHandlerA);
+            pollForFragment(subscriptionB, fragmentHandlerB);
+            pollForFragment(subscriptionC, fragmentHandlerC);
         }
 
         verifyFragments(fragmentHandlerA, numMessagesToSend);
@@ -203,7 +197,6 @@ public class MultiDestinationCastTest
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -226,14 +219,9 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
-
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
-
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
+            pollForFragment(subscriptionA, fragmentHandlerA);
+            pollForFragment(subscriptionB, fragmentHandlerB);
+            pollForFragment(subscriptionC, fragmentHandlerC);
         }
 
         verifyFragments(fragmentHandlerA, numMessagesToSend);
@@ -246,7 +234,6 @@ public class MultiDestinationCastTest
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -271,11 +258,8 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
-
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+            pollForFragment(subscriptionA, fragmentHandlerA);
+            pollForFragment(subscriptionB, fragmentHandlerB);
         }
 
         verifyFragments(fragmentHandlerA, numMessagesToSend);
@@ -289,7 +273,6 @@ public class MultiDestinationCastTest
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
         final CountDownLatch unavailableImage = new CountDownLatch(1);
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
 
@@ -317,18 +300,15 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
-
-            fragmentsRead.set(0);
+            pollForFragment(subscriptionA, fragmentHandlerA);
 
             if (i < numMessageForSub2)
             {
-                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+                pollForFragment(subscriptionB, fragmentHandlerB);
             }
             else
             {
-                fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
+                subscriptionB.poll(fragmentHandlerB, 10);
                 Thread.yield();
             }
 
@@ -351,7 +331,6 @@ public class MultiDestinationCastTest
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
         final CountDownLatch availableImage = new CountDownLatch(1);
-        final MutableInteger fragmentsRead = new MutableInteger();
 
         launch();
 
@@ -376,17 +355,15 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
+            pollForFragment(subscriptionA, fragmentHandlerA);
 
-            fragmentsRead.set(0);
             if (i > (numMessagesToSend - numMessageForSub2))
             {
-                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+                pollForFragment(subscriptionB, fragmentHandlerB);
             }
             else
             {
-                fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
+                subscriptionB.poll(fragmentHandlerB, 10);
                 Thread.yield();
             }
 
@@ -401,18 +378,9 @@ public class MultiDestinationCastTest
         verifyFragments(fragmentHandlerB, numMessageForSub2);
     }
 
-    private void pollForFragment(
-        final Subscription subscription, final FragmentHandler handler, final MutableInteger fragmentsRead)
+    private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)
     {
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (j) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 10);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(500));
+        Tests.pollForFragments(subscription, handler, 1, TimeUnit.MILLISECONDS.toNanos(500));
     }
 
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)

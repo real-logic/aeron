@@ -708,6 +708,7 @@ project(':aeron-test-support') {
     dependencies {
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         api "org.agrona:agrona:${agronaVersion}"
+        api project(':aeron-client')
         implementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     }
 }

@@ -421,7 +421,7 @@ public class UdpChannelTest
         "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",
         "localhost:41024,127.0.0.1,,,UDP-127.0.0.1:0-localhost:41024",
         "[fe80::5246:5dff:fe73:df06]:40456,[fe80::5246:5dff:fe73:df06],,," +
-            "UDP-127.0.0.1:0-[fe80::5246:5dff:fe73:df06]:40456",
+        "UDP-127.0.0.1:0-[fe80::5246:5dff:fe73:df06]:40456",
         "NAME_ENDPOINT,224.0.1.1,,,UDP-127.0.0.1:0-224.0.1.1:40124",
         "NAME_ENDPOINT,192.168.1.1,NAME_CONTROL,192.168.1.2,UDP-NAME_CONTROL-NAME_ENDPOINT",
         "NAME_ENDPOINT,224.0.1.1,NAME_CONTROL,127.0.0.1,UDP-127.0.0.1:0-224.0.1.1:40124",

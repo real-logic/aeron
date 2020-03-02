@@ -20,4 +20,5 @@ class TestMessages
     static final String NO_OP = "No op!           ";
     static final String REGISTER_TIMER = "Register a timer!";
     static final String ECHO_IPC_INGRESS = "Echo as IPC ingress";
+    static final String POISON_MESSAGE = "You should never get this message!";
 }

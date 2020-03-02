@@ -19,6 +19,7 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -177,6 +178,23 @@ class TestNode implements AutoCloseable
         return commitPosition.value;
     }
 
+    long appendPosition()
+    {
+        final MutableLong appendPosition = new MutableLong(NULL_VALUE);
+
+        countersReader().forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                // Doesn't work if there with multiple recordings
+                if (typeId == RecordingPos.RECORDING_POSITION_TYPE_ID)
+                {
+                    appendPosition.value = countersReader().getCounterValue(counterId);
+                }
+            });
+
+        return appendPosition.value;
+    }
+
     boolean isLeader()
     {
         return role() == Cluster.Role.LEADER;
@@ -250,6 +268,7 @@ class TestNode implements AutoCloseable
         private volatile boolean wasSnapshotLoaded = false;
         private volatile boolean wasOnStartCalled = false;
         private volatile Cluster.Role roleChangedTo = null;
+        private volatile boolean hasReceivedUnexpectedMessage = false;
 
         TestService index(final int index)
         {
@@ -295,6 +314,11 @@ class TestNode implements AutoCloseable
         Cluster cluster()
         {
             return cluster;
+        }
+
+        boolean hasReceivedUnexpectedMessage()
+        {
+            return hasReceivedUnexpectedMessage;
         }
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
@@ -352,7 +376,11 @@ class TestNode implements AutoCloseable
                     idleStrategy.idle();
                 }
             }
-
+            if (message.equals(TestMessages.POISON_MESSAGE))
+            {
+                hasReceivedUnexpectedMessage = true;
+                throw new IllegalStateException("Poison message received.");
+            }
             if (message.equals(TestMessages.ECHO_IPC_INGRESS))
             {
                 if (null != session)

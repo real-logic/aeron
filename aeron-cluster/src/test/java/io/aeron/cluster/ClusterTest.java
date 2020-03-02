@@ -24,6 +24,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -437,6 +438,115 @@ public class ClusterTest
     }
 
     @Test
+    @Disabled
+    @Timeout(30)
+    public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos()
+        throws InterruptedException
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leaderNode = cluster.awaitLeader();
+
+            final List<TestNode> followers = cluster.followers();
+            TestNode followerA = followers.get(0), followerB = followers.get(1);
+
+            cluster.connectClient();
+
+            // Makes it easier to have the leader have appended messages without consensus
+            cluster.stopNode(followerA);
+            cluster.stopNode(followerB);
+
+            cluster.sendPoisonMessages(10);
+
+            while (leaderNode.appendPosition() <= leaderNode.commitPosition())
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            cluster.closeClient();
+
+            final long targetPosition = leaderNode.appendPosition();
+
+            cluster.stopNode(leaderNode);
+
+            followerA = cluster.startStaticNode(followerA.index(), false);
+            followerB = cluster.startStaticNode(followerB.index(), false);
+
+            cluster.awaitLeader();
+
+            cluster.connectClient();
+
+            int messageCount = 0;
+            while (followerA.commitPosition() < targetPosition)
+            {
+                cluster.sendMessage(128);
+                messageCount++;
+            }
+
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(followerA, messageCount);
+            cluster.awaitServiceMessageCount(followerB, messageCount);
+
+            final TestNode leaderNode2 = cluster.startStaticNode(leaderNode.index(), false);
+
+            cluster.awaitServiceMessageCount(leaderNode2, messageCount);
+        }
+    }
+
+    @Test
+    @Disabled
+    @Timeout(30)
+    public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
+        throws InterruptedException
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leaderNode = cluster.awaitLeader();
+
+            final List<TestNode> followers = cluster.followers();
+            TestNode followerA = followers.get(0), followerB = followers.get(1);
+
+            cluster.connectClient();
+
+            // Makes it easier to have the leader have appended messages without consensus
+            cluster.stopNode(followerA);
+            cluster.stopNode(followerB);
+
+            cluster.sendPoisonMessages(10);
+
+            while (leaderNode.appendPosition() <= leaderNode.commitPosition())
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            cluster.closeClient();
+
+            cluster.stopNode(leaderNode);
+
+            followerA = cluster.startStaticNode(followerA.index(), false);
+            followerB = cluster.startStaticNode(followerB.index(), false);
+
+            cluster.awaitLeader();
+
+            final TestNode leaderNode2 = cluster.startStaticNode(leaderNode.index(), false);
+
+            Thread.sleep(1000);
+
+            cluster.connectClient();
+
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(followerA, messageCount);
+            cluster.awaitServiceMessageCount(followerB, messageCount);
+            cluster.awaitServiceMessageCount(leaderNode2, messageCount);
+        }
+    }
+
+    @Test
     @Timeout(40)
     public void shouldHaveOnlyOneCommitPositionCounter() throws InterruptedException
     {
@@ -482,6 +592,7 @@ public class ClusterTest
             assertNull(follower.service().roleChangedTo());
         }
     }
+
 
     @Test
     @Timeout(40)

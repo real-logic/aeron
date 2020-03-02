@@ -50,8 +50,7 @@ import java.util.stream.Stream;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCluster implements AutoCloseable
 {
@@ -262,6 +261,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(staticClusterMembers)
+            .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
             .appointedLeaderId(appointedLeaderId)
             .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "consensus-module"))
@@ -550,12 +550,27 @@ public class TestCluster implements AutoCloseable
                 .clusterMemberEndpoints(staticClusterMemberEndpoints));
     }
 
+    void closeClient()
+    {
+        client.close();
+        clientMediaDriver.close();
+    }
+
     void sendMessages(final int messageCount)
     {
         for (int i = 0; i < messageCount; i++)
         {
             msgBuffer.putInt(0, i);
             sendMessage(BitUtil.SIZE_OF_INT);
+        }
+    }
+
+    void sendPoisonMessages(final int messageCount)
+    {
+        final int length = msgBuffer.putStringWithoutLengthAscii(0, TestMessages.POISON_MESSAGE);
+        for (int i = 0; i < messageCount; i++)
+        {
+            sendMessage(length);
         }
     }
 
@@ -758,6 +773,11 @@ public class TestCluster implements AutoCloseable
         {
             Thread.yield();
             Tests.checkInterruptStatus();
+
+            if (node.service().hasReceivedUnexpectedMessage())
+            {
+                fail("Service errored");
+            }
 
             final long nowMs = epochClock.time();
             if (nowMs > deadlineMs)

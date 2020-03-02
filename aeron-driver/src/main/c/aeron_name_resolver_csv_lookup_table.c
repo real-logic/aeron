@@ -102,6 +102,7 @@ int aeron_name_resolver_supplier_csv_table(
         return -1;
     }
 
+    lookup_table->length = 0;
     for (int i = num_rows; -1 < --i;)
     {
         int num_columns = aeron_tokenise(rows[i], ',', AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS, columns);

@@ -205,7 +205,10 @@ public class Tests
                 Tests.checkInterruptStatus();
                 nowNs = System.nanoTime();
             }
-            totalFragments += numFragments;
+            else
+            {
+                totalFragments += numFragments;
+            }
         }
         while (totalFragments < minFragments && ((nowNs - startNs) < timeoutNs));
 

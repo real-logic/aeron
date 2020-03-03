@@ -568,7 +568,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                     "claim exceeds maxPayloadLength of " + maxPayloadLength + ", length=" + length);
             }
 
-            bufferClaim.wrap(headerBuffer, 0, length);
+            bufferClaim.wrap(headerBuffer, SESSION_HEADER_LENGTH, length);
             return ClientSession.MOCKED_OFFER;
         }
 

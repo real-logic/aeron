@@ -86,6 +86,12 @@ int aeron_name_resolver_supplier_csv_table(
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
+
+    if (NULL == args)
+    {
+        aeron_set_err(EINVAL, "No CSV configuration, please specify: %s", AERON_NAME_RESOLVER_INIT_ARGS);
+        return -1;
+    }
     
     char *config_csv = strdup(args);
     if (NULL == config_csv)

@@ -123,8 +123,8 @@ public class ClientSession
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
-     * otherwise {@link #MOCKED_OFFER}.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER},
+     * otherwise {@link #MOCKED_OFFER} when a follower.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -137,8 +137,8 @@ public class ClientSession
      *
      * @param vectors which make up the message.
      * @return the same as {@link Publication#offer(DirectBufferVector[])}.
-     * @see Publication#offer(DirectBufferVector[]) when in {@link Cluster.Role#LEADER}
-     * otherwise {@link #MOCKED_OFFER}.
+     * @see Publication#offer(DirectBufferVector[]) when in {@link Cluster.Role#LEADER},
+     * otherwise {@link #MOCKED_OFFER} when a follower.
      */
     public long offer(final DirectBufferVector[] vectors)
     {
@@ -173,7 +173,8 @@ public class ClientSession
      * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise a negative error value as specified in
-     *         {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
+     *         {@link io.aeron.Publication#tryClaim(int, BufferClaim)} when in {@link Cluster.Role#LEADER},
+     *         otherwise {@link #MOCKED_OFFER} when a follower.
      * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()}.
      * @see Publication#tryClaim(int, BufferClaim)
      * @see BufferClaim#commit()

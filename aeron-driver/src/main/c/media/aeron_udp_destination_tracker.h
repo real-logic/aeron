@@ -28,6 +28,7 @@ typedef struct aeron_udp_destination_entry_stct
 {
     int64_t time_of_last_activity_ns;
     int64_t receiver_id;
+    bool is_receiver_id_valid;
     struct sockaddr_storage addr;
 }
 aeron_udp_destination_entry_t;
@@ -65,8 +66,10 @@ int aeron_udp_destination_tracker_sendmsg(
 int aeron_udp_destination_tracker_on_status_message(
     aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr);
 
-int aeron_udp_destination_tracker_add_destination(
-    aeron_udp_destination_tracker_t *tracker, int64_t receiver_id, int64_t now_ns, struct sockaddr_storage *addr);
+int aeron_udp_destination_tracker_manual_add_destination(
+    aeron_udp_destination_tracker_t *tracker,
+    int64_t now_ns,
+    struct sockaddr_storage *addr);
 int aeron_udp_destination_tracker_remove_destination(
     aeron_udp_destination_tracker_t *tracker, struct sockaddr_storage *addr);
 

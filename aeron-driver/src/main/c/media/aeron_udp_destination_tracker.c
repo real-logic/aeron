@@ -159,45 +159,34 @@ bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struc
     return result;
 }
 
-int aeron_udp_destination_tracker_on_status_message(
-    aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr)
+bool aeron_udp_destination_tracker_same_addr(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
 {
-    int result = 0;
+    bool result = false;
 
-    if (tracker->is_manual_control_mode)
+    if (AF_INET6 == lhs->ss_family)
     {
-        // do stuff relating to name resolution timeouts....
+        struct sockaddr_in6 *lhs_in6_addr = (struct sockaddr_in6 *)lhs;
+        struct sockaddr_in6 *rhs_in6_addr = (struct sockaddr_in6 *)rhs;
+
+        return 0 == memcmp(&lhs_in6_addr->sin6_addr, &rhs_in6_addr->sin6_addr, sizeof(struct in6_addr));
     }
-    else
+    else if (AF_INET == lhs->ss_family)
     {
-        aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)buffer;
-        const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
-        const int64_t receiver_id = status_message_header->receiver_id;
-        bool is_existing = false;
+        struct sockaddr_in *lhs_in_addr = (struct sockaddr_in *)lhs;
+        struct sockaddr_in *rhs_in_addr = (struct sockaddr_in *)rhs;
 
-        for (size_t i = 0, size = tracker->destinations.length; i < size; i++)
-        {
-            aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
-
-            if (receiver_id == entry->receiver_id && aeron_udp_destination_tracker_same_port(&entry->addr, addr))
-            {
-                entry->time_of_last_activity_ns = now_ns;
-                is_existing = true;
-                break;
-            }
-        }
-
-        if (!is_existing)
-        {
-            result = aeron_udp_destination_tracker_add_destination(tracker, receiver_id, now_ns, addr);
-        }
+        return 0 == memcmp(&lhs_in_addr->sin_addr, &rhs_in_addr->sin_addr, sizeof(struct in_addr));
     }
 
     return result;
 }
 
 int aeron_udp_destination_tracker_add_destination(
-    aeron_udp_destination_tracker_t *tracker, int64_t receiver_id, int64_t now_ns, struct sockaddr_storage *addr)
+    aeron_udp_destination_tracker_t *tracker,
+    int64_t receiver_id,
+    bool is_receiver_id_valid,
+    int64_t now_ns,
+    struct sockaddr_storage *addr)
 {
     int result = 0;
 
@@ -207,11 +196,67 @@ int aeron_udp_destination_tracker_add_destination(
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[tracker->destinations.length++];
 
         entry->receiver_id = receiver_id;
+        entry->is_receiver_id_valid = is_receiver_id_valid;
         entry->time_of_last_activity_ns = now_ns;
         memcpy(&entry->addr, addr, sizeof(struct sockaddr_storage));
     }
 
     return result;
+}
+
+int aeron_udp_destination_tracker_on_status_message(
+    aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr)
+{
+    const aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)buffer;
+    const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
+    const int64_t receiver_id = status_message_header->receiver_id;
+    const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
+
+    int result = 0;
+    bool is_existing = false;
+
+    for (size_t i = 0, size = tracker->destinations.length; i < size; i++)
+    {
+        aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
+
+        if (entry->is_receiver_id_valid && receiver_id == entry->receiver_id &&
+            aeron_udp_destination_tracker_same_port(&entry->addr, addr))
+        {
+            entry->time_of_last_activity_ns = now_ns;
+            is_existing = true;
+            break;
+        }
+        else if (!entry->is_receiver_id_valid &&
+            aeron_udp_destination_tracker_same_addr(&entry->addr, addr) &&
+            aeron_udp_destination_tracker_same_port(&entry->addr, addr))
+        {
+            entry->time_of_last_activity_ns = now_ns;
+            entry->receiver_id = receiver_id;
+            entry->is_receiver_id_valid = true;
+            is_existing = true;
+            break;
+        }
+    }
+
+    if (is_dynamic_control_mode && !is_existing)
+    {
+        result = aeron_udp_destination_tracker_add_destination(tracker, receiver_id, true, now_ns, addr);
+    }
+
+    return result;
+}
+
+int aeron_udp_destination_tracker_manual_add_destination(
+    aeron_udp_destination_tracker_t *tracker,
+    int64_t now_ns,
+    struct sockaddr_storage *addr)
+{
+    if (!tracker->is_manual_control_mode)
+    {
+        return 0;
+    }
+
+    return aeron_udp_destination_tracker_add_destination(tracker, now_ns, 0, false, addr);
 }
 
 int aeron_udp_destination_tracker_address_compare(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)

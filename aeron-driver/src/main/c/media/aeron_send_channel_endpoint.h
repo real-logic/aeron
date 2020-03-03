@@ -110,8 +110,8 @@ inline bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_e
 inline int aeron_send_channel_endpoint_add_destination(
     aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
 {
-    return aeron_udp_destination_tracker_add_destination(
-        endpoint->destination_tracker, 0,
+    return aeron_udp_destination_tracker_manual_add_destination(
+        endpoint->destination_tracker,
         aeron_clock_cached_nano_time(endpoint->destination_tracker->cached_clock), addr);
 }
 

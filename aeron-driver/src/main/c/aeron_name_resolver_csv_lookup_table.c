@@ -95,7 +95,7 @@ int aeron_name_resolver_supplier_csv_table(
     }
 
     aeron_name_resolver_csv_table_t *lookup_table;
-    if (aeron_alloc((void**) &lookup_table, sizeof(lookup_table)) < 0)
+    if (aeron_alloc((void**) &lookup_table, sizeof(aeron_name_resolver_csv_table_t)) < 0)
     {
         aeron_set_err_from_last_err_code("Allocating lookup table - %s:%d", __FILE__, __LINE__);
         aeron_free(config_csv);
@@ -109,7 +109,6 @@ int aeron_name_resolver_supplier_csv_table(
         return -1;
     }
 
-    lookup_table->length = 0;
     for (int i = num_rows; -1 < --i;)
     {
         int ensure_capacity_result = 0;

@@ -53,6 +53,7 @@ int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_clock_cache_t *cached_clock,
+    bool is_manual_control_model,
     int64_t timeout_ns);
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);
 

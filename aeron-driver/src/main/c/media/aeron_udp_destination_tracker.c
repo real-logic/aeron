@@ -36,6 +36,7 @@ int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_clock_cache_t *cached_clock,
+    bool is_manual_control_model,
     int64_t timeout_ns)
 {
     tracker->cached_clock = cached_clock;
@@ -44,8 +45,7 @@ int aeron_udp_destination_tracker_init(
     tracker->destinations.array = NULL;
     tracker->destinations.length = 0;
     tracker->destinations.capacity = 0;
-    tracker->is_manual_control_mode =
-        timeout_ns == AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS ? true : false;
+    tracker->is_manual_control_mode = is_manual_control_model;
 
     return 0;
 }
@@ -65,14 +65,15 @@ int aeron_udp_destination_tracker_sendmmsg(
     aeron_udp_channel_transport_t *transport,
     struct mmsghdr *mmsghdr, size_t vlen)
 {
-    int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
+    const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
+    const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
     int min_msgs_sent = (int)vlen;
 
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
 
-        if (now_ns > (entry->time_of_last_activity_ns + tracker->destination_timeout_ns))
+        if (is_dynamic_control_mode && now_ns > (entry->time_of_last_activity_ns + tracker->destination_timeout_ns))
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)tracker->destinations.array,
@@ -104,14 +105,15 @@ int aeron_udp_destination_tracker_sendmmsg(
 int aeron_udp_destination_tracker_sendmsg(
     aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct msghdr *msghdr)
 {
-    int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
+    const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
+    const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
     int min_bytes_sent = (int)msghdr->msg_iov->iov_len;
 
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
 
-        if (now_ns > (entry->time_of_last_activity_ns + tracker->destination_timeout_ns))
+        if (is_dynamic_control_mode && now_ns > (entry->time_of_last_activity_ns + tracker->destination_timeout_ns))
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)tracker->destinations.array,
@@ -162,7 +164,11 @@ int aeron_udp_destination_tracker_on_status_message(
 {
     int result = 0;
 
-    if (tracker->destination_timeout_ns > 0)
+    if (tracker->is_manual_control_mode)
+    {
+        // do stuff relating to name resolution timeouts....
+    }
+    else
     {
         aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)buffer;
         const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);

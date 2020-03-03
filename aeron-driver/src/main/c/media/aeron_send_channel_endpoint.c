@@ -54,10 +54,6 @@ int aeron_send_channel_endpoint_create(
     _endpoint->destination_tracker = NULL;
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
 
-    const int64_t destination_timeout_ns = channel->is_manual_control_mode ?
-        AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS :
-        AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
-
     if (channel->has_explicit_control || channel->is_dynamic_control_mode || channel->is_manual_control_mode)
     {
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
@@ -65,7 +61,8 @@ int aeron_send_channel_endpoint_create(
                 _endpoint->destination_tracker,
                 _endpoint->data_paths,
                 context->cached_clock,
-                destination_timeout_ns) < 0)
+                channel->is_manual_control_mode,
+                AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS) < 0)
         {
             return -1;
         }

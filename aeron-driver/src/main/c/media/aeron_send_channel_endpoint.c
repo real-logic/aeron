@@ -362,7 +362,9 @@ extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoi
 extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint);
 
 extern int aeron_send_channel_endpoint_add_destination(
-    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_uri_t *uri,
+    struct sockaddr_storage *addr);
 
 extern int aeron_send_channel_endpoint_remove_destination(
     aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);

@@ -270,7 +270,7 @@ void aeron_driver_sender_on_add_destination(void *clientd, void *command)
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_destination_t *cmd = (aeron_command_destination_t *)command;
 
-    if (aeron_send_channel_endpoint_add_destination(cmd->endpoint, &cmd->control_address) < 0)
+    if (aeron_send_channel_endpoint_add_destination(cmd->endpoint, cmd->uri, &cmd->control_address) < 0)
     {
         AERON_DRIVER_SENDER_ERROR(sender, "sender on_add_destination: %s", aeron_errmsg());
     }

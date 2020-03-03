@@ -54,6 +54,12 @@ int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker
 {
     if (NULL != tracker)
     {
+        for (size_t i = 0; i < tracker->destinations.length; i++)
+        {
+            aeron_uri_close(tracker->destinations.array[i].uri);
+            aeron_free(tracker->destinations.array[i].uri);
+        }
+
         aeron_free(tracker->destinations.array);
     }
 
@@ -186,6 +192,7 @@ int aeron_udp_destination_tracker_add_destination(
     int64_t receiver_id,
     bool is_receiver_id_valid,
     int64_t now_ns,
+    aeron_uri_t *uri,
     struct sockaddr_storage *addr)
 {
     int result = 0;
@@ -198,6 +205,7 @@ int aeron_udp_destination_tracker_add_destination(
         entry->receiver_id = receiver_id;
         entry->is_receiver_id_valid = is_receiver_id_valid;
         entry->time_of_last_activity_ns = now_ns;
+        entry->uri = uri;
         memcpy(&entry->addr, addr, sizeof(struct sockaddr_storage));
     }
 
@@ -240,7 +248,7 @@ int aeron_udp_destination_tracker_on_status_message(
 
     if (is_dynamic_control_mode && !is_existing)
     {
-        result = aeron_udp_destination_tracker_add_destination(tracker, receiver_id, true, now_ns, addr);
+        result = aeron_udp_destination_tracker_add_destination(tracker, receiver_id, true, now_ns, NULL, addr);
     }
 
     return result;
@@ -249,6 +257,7 @@ int aeron_udp_destination_tracker_on_status_message(
 int aeron_udp_destination_tracker_manual_add_destination(
     aeron_udp_destination_tracker_t *tracker,
     int64_t now_ns,
+    aeron_uri_t *uri,
     struct sockaddr_storage *addr)
 {
     if (!tracker->is_manual_control_mode)
@@ -256,7 +265,7 @@ int aeron_udp_destination_tracker_manual_add_destination(
         return 0;
     }
 
-    return aeron_udp_destination_tracker_add_destination(tracker, now_ns, 0, false, addr);
+    return aeron_udp_destination_tracker_add_destination(tracker, now_ns, 0, false, uri, addr);
 }
 
 int aeron_udp_destination_tracker_address_compare(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)

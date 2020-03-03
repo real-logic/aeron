@@ -49,11 +49,15 @@ typedef struct aeron_command_destination_stct
     aeron_command_base_t base;
     struct sockaddr_storage control_address;
     void *endpoint;
+    void *uri;
 }
 aeron_command_destination_t;
 
 void aeron_driver_sender_proxy_on_add_destination(
-    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+    aeron_driver_sender_proxy_t *sender_proxy,
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_uri_t *uri,
+    struct sockaddr_storage *addr);
 
 void aeron_driver_sender_proxy_on_remove_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);

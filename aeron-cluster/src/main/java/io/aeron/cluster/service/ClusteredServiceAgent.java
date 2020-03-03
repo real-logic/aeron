@@ -561,11 +561,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         if (role != Cluster.Role.LEADER)
         {
-            if (length < 0)
-            {
-                throw new IllegalArgumentException("invalid length: " + length);
-            }
-
             final int maxPayloadLength = headerBuffer.capacity() - SESSION_HEADER_LENGTH;
             if (length > maxPayloadLength)
             {

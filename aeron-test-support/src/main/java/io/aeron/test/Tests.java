@@ -18,6 +18,8 @@ package io.aeron.test;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
@@ -147,16 +149,26 @@ public class Tests
         }
     }
 
+    public static void wait(final IdleStrategy idleStrategy, final Supplier<String> messageSupplier)
+    {
+        idleStrategy.idle();
+        checkInterruptStatus(messageSupplier);
+    }
+
+    public static void wait(final IdleStrategy idleStrategy, final String format, final Object... params)
+    {
+        idleStrategy.idle();
+        checkInterruptStatus(format, params);
+    }
+
     public static void yieldingWait(final Supplier<String> messageSupplier)
     {
-        Thread.yield();
-        checkInterruptStatus(messageSupplier);
+        wait(YieldingIdleStrategy.INSTANCE, messageSupplier);
     }
 
     public static void yieldingWait(final String format, final Object... params)
     {
-        Thread.yield();
-        checkInterruptStatus(format, params);
+        wait(YieldingIdleStrategy.INSTANCE, format, params);
     }
 
     /**

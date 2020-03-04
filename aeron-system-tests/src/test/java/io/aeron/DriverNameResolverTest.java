@@ -23,6 +23,7 @@ import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,12 +31,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
+import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class DriverNameResolverTest
 {
+    private static final SleepingMillisIdleStrategy SLEEP_50_MS = new SleepingMillisIdleStrategy(50);
     private final String baseDir = CommonContext.getAeronDirectoryName();
     private final ArrayList<TestMediaDriver> drivers = new ArrayList<>();
 
@@ -324,13 +327,17 @@ public class DriverNameResolverTest
     }
 
     private static void awaitCounterValue(
-        final TestMediaDriver mediaDriver, final int counterId, final long expectedValue)
+        final TestMediaDriver mediaDriver,
+        final int counterId,
+        final long expectedValue)
     {
         final CountersReader countersReader = mediaDriver.context().countersManager();
+        final Supplier<String> messageSupplier =
+            () -> "Counter value: " + countersReader.getCounterValue(counterId) + ", expected: " + expectedValue;
 
         while (countersReader.getCounterValue(counterId) != expectedValue)
         {
-            Tests.sleep(50);
+            Tests.wait(SLEEP_50_MS, messageSupplier);
         }
     }
 }

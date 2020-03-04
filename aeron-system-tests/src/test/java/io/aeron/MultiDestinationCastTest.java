@@ -39,7 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
@@ -75,9 +75,9 @@ public class MultiDestinationCastTest
     private Subscription subscriptionC;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
-    private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
-    private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class);
+    private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class, "fragmentHandlerA");
+    private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class, "fragmentHandlerB");
+    private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class, "fragmentHandlerC");
 
     @RegisterExtension
     public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
@@ -329,6 +329,11 @@ public class MultiDestinationCastTest
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
+        final CountingFragmentHandler fragmentHandlerA = new CountingFragmentHandler(
+            "fragmentHandlerA", numMessagesToSend);
+        final CountingFragmentHandler fragmentHandlerB = new CountingFragmentHandler(
+            "fragmentHandlerB", numMessageForSub2);
+
         final CountDownLatch availableImage = new CountDownLatch(1);
 
         launch();
@@ -354,32 +359,47 @@ public class MultiDestinationCastTest
                 Tests.checkInterruptStatus();
             }
 
-            pollForFragment(subscriptionA, fragmentHandlerA);
+            subscriptionA.poll(fragmentHandlerA, 10);
 
             if (i > (numMessagesToSend - numMessageForSub2))
             {
-                pollForFragment(subscriptionB, fragmentHandlerB);
-            }
-            else
-            {
                 subscriptionB.poll(fragmentHandlerB, 10);
-                Thread.yield();
             }
 
             if (i == (numMessagesToSend - numMessageForSub2 - 1))
             {
+                // If we add B before A has reached i number of messages
+                // then B will receive more than the expected `numMessageForSub2`.
+                while (!fragmentHandlerA.hasReached(i))
+                {
+                    if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+                    {
+                        Tests.yieldingWait(subscriptionA::toString);
+                    }
+                }
+
                 publication.addDestination(SUB2_MDC_MANUAL_URI);
                 availableImage.await();
             }
         }
 
-        verifyFragments(fragmentHandlerA, numMessagesToSend);
-        verifyFragments(fragmentHandlerB, numMessageForSub2);
+        while (!fragmentHandlerA.isComplete() || !fragmentHandlerB.isComplete())
+        {
+            if (!fragmentHandlerA.isComplete() && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+            {
+                Tests.yieldingWait(fragmentHandlerA::toString);
+            }
+
+            if (!fragmentHandlerB.isComplete() && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
+            {
+                Tests.yieldingWait(fragmentHandlerB::toString);
+            }
+        }
     }
 
-    private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)
+    private static int pollForFragment(final Subscription subscription, final FragmentHandler handler)
     {
-        Tests.pollForFragments(subscription, handler, 1, TimeUnit.MILLISECONDS.toNanos(500));
+        return Tests.pollForFragments(subscription, handler, 1, TimeUnit.MILLISECONDS.toNanos(500));
     }
 
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)
@@ -389,5 +409,42 @@ public class MultiDestinationCastTest
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
+    }
+
+    private static final class CountingFragmentHandler implements FragmentHandler
+    {
+        private final String name;
+        private final int expected;
+        private int received = 0;
+
+        private CountingFragmentHandler(final String name, final int expected)
+        {
+            this.name = name;
+            this.expected = expected;
+        }
+
+        public boolean isComplete()
+        {
+            return expected == received;
+        }
+
+        public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+        {
+            received++;
+        }
+
+        public String toString()
+        {
+            return "CountingFragmentHandler{" +
+                "name='" + name + '\'' +
+                ", expected=" + expected +
+                ", received=" + received +
+                '}';
+        }
+
+        public boolean hasReached(final int i)
+        {
+            return i == received;
+        }
     }
 }

@@ -347,7 +347,7 @@ public final class AeronCluster implements AutoCloseable
      *     }
      * }</pre>
      *
-     * @param length      of the range to claim, in bytes.
+     * @param length      of the range to claim in bytes. The additional bytes for the session header will be added.
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise a negative error value as specified in
      * {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.

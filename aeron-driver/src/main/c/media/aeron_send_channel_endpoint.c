@@ -112,7 +112,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->sender_proxy = context->sender_proxy;
     _endpoint->cached_clock = context->cached_clock;
     _endpoint->time_of_last_sm_ns = aeron_clock_cached_nano_time(_endpoint->cached_clock);
-    _endpoint->remote_data_addr = channel->remote_data;
+    memcpy(&_endpoint->remote_data_addr, &channel->remote_data, sizeof(_endpoint->remote_data_addr));
 
     *endpoint = _endpoint;
     return 0;

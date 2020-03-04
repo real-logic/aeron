@@ -369,7 +369,8 @@ int aeron_send_channel_endpoint_check_for_re_resolution(
 {
     if (endpoint->conductor_fields.udp_channel->is_manual_control_mode)
     {
-        // check destination tracker
+        aeron_udp_destination_tracker_check_for_re_resolution(
+            endpoint->destination_tracker, endpoint, now_ns, conductor_proxy);
     }
     else if (!endpoint->conductor_fields.udp_channel->is_multicast &&
         !endpoint->conductor_fields.udp_channel->is_dynamic_control_mode &&
@@ -389,8 +390,14 @@ void aeron_send_channel_endpoint_resolution_change(
     const char *endpoint_name,
     struct sockaddr_storage *new_addr)
 {
-    // TODO handle multi-destination.
-    memcpy(&endpoint->remote_data_addr, new_addr, sizeof(endpoint->remote_data_addr));
+    if (NULL != endpoint->destination_tracker)
+    {
+        aeron_udp_destination_tracker_resolution_change(endpoint->destination_tracker, endpoint_name, new_addr);
+    }
+    else
+    {
+        memcpy(&endpoint->remote_data_addr, new_addr, sizeof(endpoint->remote_data_addr));
+    }
 }
 
 extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);

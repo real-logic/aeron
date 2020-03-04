@@ -2647,14 +2647,14 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
     {
         size_t uri_length = command->channel_length;
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
-        aeron_uri_t *uri_params; // Ownership is transferred to destination, no need to close...
-        if (aeron_alloc((void **)&uri_params, sizeof(aeron_uri_t)) < 0)
+        aeron_uri_t *uri; // Ownership is transferred to destination, no need to close...
+        if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
         {
             aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
             goto error_cleanup;
         }
 
-        if (aeron_uri_parse(uri_length, command_uri, uri_params) < 0)
+        if (aeron_uri_parse(uri_length, command_uri, uri) < 0)
         {
             goto error_cleanup;
         }
@@ -2668,7 +2668,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             goto error_cleanup;
         }
 
-        if (uri_params->type != AERON_URI_UDP || NULL == uri_params->params.udp.endpoint)
+        if (uri->type != AERON_URI_UDP || NULL == uri->params.udp.endpoint)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             goto error_cleanup;
@@ -2677,7 +2677,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
         struct sockaddr_storage destination_addr;
         if (aeron_name_resolver_resolve_host_and_port(
             &conductor->name_resolver,
-            uri_params->params.udp.endpoint,
+            uri->params.udp.endpoint,
             AERON_UDP_CHANNEL_ENDPOINT_KEY,
             false,
             &destination_addr) < 0)
@@ -2685,20 +2685,20 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             aeron_set_err(
                 aeron_errcode(),
                 "could not resolve destination address=(%s): %s",
-                uri_params->params.udp.endpoint,
+                uri->params.udp.endpoint,
                 aeron_errmsg());
             goto error_cleanup;
         }
 
         aeron_driver_sender_proxy_on_add_destination(
-            conductor->context->sender_proxy, endpoint, NULL, &destination_addr);
+            conductor->context->sender_proxy, endpoint, uri, &destination_addr);
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
         return 0;
 
         error_cleanup:
-        aeron_uri_close(uri_params);
-        aeron_free(uri_params);
+        aeron_uri_close(uri);
+        aeron_free(uri);
         return -1;
     }
 

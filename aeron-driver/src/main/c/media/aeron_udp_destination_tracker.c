@@ -19,9 +19,12 @@
 #define _GNU_SOURCE
 #endif
 
+#include <uri/aeron_uri.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_arrayutil.h"
+#include "media/aeron_send_channel_endpoint.h"
+#include "aeron_driver_conductor.h"
 #include "media/aeron_udp_destination_tracker.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
@@ -205,6 +208,7 @@ int aeron_udp_destination_tracker_add_destination(
         entry->receiver_id = receiver_id;
         entry->is_receiver_id_valid = is_receiver_id_valid;
         entry->time_of_last_activity_ns = now_ns;
+        entry->destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
         entry->uri = uri;
         memcpy(&entry->addr, addr, sizeof(struct sockaddr_storage));
     }
@@ -301,4 +305,50 @@ int aeron_udp_destination_tracker_remove_destination(
     }
 
     return 0;
+}
+
+void aeron_udp_destination_tracker_check_for_re_resolution(
+    aeron_udp_destination_tracker_t *tracker,
+    aeron_send_channel_endpoint_t *endpoint,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy)
+{
+    if (!tracker->is_manual_control_mode)
+    {
+        return;
+    }
+
+    for (size_t i = 0; i < tracker->destinations.length; i++)
+    {
+        aeron_udp_destination_entry_t *destination = &tracker->destinations.array[i];
+
+        if (now_ns > (destination->time_of_last_activity_ns + destination->destination_timeout_ns))
+        {
+            assert(NULL != destination->uri);
+
+            aeron_driver_conductor_proxy_on_re_resolve_endpoint(
+                conductor_proxy, destination->uri->params.udp.endpoint, endpoint, &destination->addr);
+            destination->time_of_last_activity_ns = now_ns;
+        }
+    }
+}
+
+void aeron_udp_destination_tracker_resolution_change(
+    aeron_udp_destination_tracker_t *tracker, const char *endpoint_name, struct sockaddr_storage *addr)
+{
+    if (!tracker->is_manual_control_mode)
+    {
+        return;
+    }
+
+    for (size_t i = 0; i < tracker->destinations.length; i++)
+    {
+        aeron_udp_destination_entry_t *destination = &tracker->destinations.array[i];
+        const size_t endpoint_name_len = strlen(endpoint_name);
+
+        if (0 == strncmp(endpoint_name, destination->uri->params.udp.endpoint, endpoint_name_len + 1))
+        {
+            memcpy(&destination->addr, addr, sizeof(destination->addr));
+        }
+    }
 }

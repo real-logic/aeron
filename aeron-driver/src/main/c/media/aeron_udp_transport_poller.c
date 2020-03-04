@@ -24,6 +24,7 @@
 #include "util/aeron_arrayutil.h"
 #include "aeron_alloc.h"
 #include "media/aeron_udp_transport_poller.h"
+#include "aeron_send_channel_endpoint.h"
 
 int aeron_udp_transport_poller_init(
     aeron_udp_transport_poller_t *poller,
@@ -281,4 +282,20 @@ int aeron_udp_transport_poller_poll(
     }
 
     return work_count;
+}
+
+int aeron_udp_transport_poller_check_re_resolutions(
+    aeron_udp_transport_poller_t *poller,
+    int64_t now_ns,
+    struct aeron_driver_conductor_proxy_stct *conductor_proxy)
+{
+    for (size_t i = 0; i < poller->transports.length; i++)
+    {
+        aeron_udp_channel_transport_t *transport = poller->transports.array[i].transport;
+        aeron_send_channel_endpoint_t *endpoint = transport->dispatch_clientd;
+
+        aeron_send_channel_endpoint_check_for_re_resolution(endpoint, now_ns, conductor_proxy);
+    }
+
+    return 0;
 }

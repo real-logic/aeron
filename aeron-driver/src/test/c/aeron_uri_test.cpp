@@ -419,7 +419,7 @@ public:
 
     int resolve_host_and_port(const char *address_str, struct sockaddr_storage *address)
     {
-        return aeron_name_resolver_resolve_host_and_port(&m_resolver, address_str, "endpoint", address);
+        return aeron_name_resolver_resolve_host_and_port(&m_resolver, address_str, "endpoint", false, address);
     }
 
 protected:

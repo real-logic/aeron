@@ -964,7 +964,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     bool is_exclusive)
 {
     aeron_network_publication_t *publication = NULL;
-    aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+    const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
     uint64_t bits[STATIC_BIT_SET_U64_LEN];
     aeron_bit_set_t session_id_offsets;
@@ -2679,6 +2679,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             &conductor->name_resolver,
             uri_params->params.udp.endpoint,
             AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            false,
             &destination_addr) < 0)
         {
             aeron_set_err(
@@ -2756,6 +2757,7 @@ int aeron_driver_conductor_on_remove_destination(
             &conductor->name_resolver,
             uri_params.params.udp.endpoint,
             AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            true,
             &destination_addr) < 0)
         {
             aeron_set_err(
@@ -3066,6 +3068,28 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
     {
         aeron_free(command);
         /* do not know where it came from originally, so just free command on the conductor duty cycle */
+    }
+}
+
+void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_re_resolve_endpoint_t *cmd = item;
+    struct sockaddr_storage resolved_addr;
+    memset(&resolved_addr, 0, sizeof(resolved_addr));
+
+    if (aeron_name_resolver_resolve_host_and_port(
+        &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
+    {
+        // TODO: What is the best error handling here, error counter for re-resolution failures???
+        // Or distinct error logger...
+        return;
+    }
+
+    if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    {
+        aeron_driver_sender_proxy_on_resolution_change(
+            conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
     }
 }
 

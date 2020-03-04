@@ -67,7 +67,7 @@ int aeron_name_resolver_lookup_csv_table(
         if (strncmp(name, table->array[i].row[0], strlen(table->array[i].row[0]) + 1) == 0 &&
             strncmp(uri_param_name, table->array[i].row[1], strlen(table->array[i].row[1]) + 1) == 0)
         {
-            int address_idx = is_re_resolution ? 3 : 2;
+            int address_idx = is_re_resolution ? 2 : 3;
             *resolved_name = table->array[i].row[address_idx];
             return 1;
         }
@@ -89,7 +89,7 @@ int aeron_name_resolver_supplier_csv_table(
 
     if (NULL == args)
     {
-        aeron_set_err(EINVAL, "No CSV configuration, please specify: %s", AERON_NAME_RESOLVER_INIT_ARGS);
+        aeron_set_err(EINVAL, "No CSV configuration, please specify: %s", AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
         return -1;
     }
     

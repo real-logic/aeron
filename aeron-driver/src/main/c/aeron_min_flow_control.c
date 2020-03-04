@@ -264,7 +264,7 @@ bool aeron_min_flow_control_strategy_has_required_receivers(aeron_flow_control_s
 int aeron_tagged_flow_control_strategy_supplier_init(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
-    aeron_udp_channel_t *channel,
+    const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -316,7 +316,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
-    aeron_udp_channel_t *channel,
+    const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -329,7 +329,7 @@ int aeron_min_flow_control_strategy_supplier(
 int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
-    aeron_udp_channel_t *channel,
+    const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,

@@ -27,6 +27,8 @@
 #include "aeron_udp_destination_tracker.h"
 #include "aeron_driver_sender_proxy.h"
 
+#define AERON_SEND_CHANNEL_ENDPOINT_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000LL)
+
 typedef enum aeron_send_channel_endpoint_status_enum
 {
     AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE,
@@ -41,7 +43,7 @@ typedef struct aeron_send_channel_endpoint_stct
         aeron_driver_managed_resource_t managed_resource;
         int32_t refcnt;
         bool has_reached_end_of_life;
-        aeron_udp_channel_t *udp_channel;
+        const aeron_udp_channel_t *udp_channel;
         aeron_send_channel_endpoint_status_t status;
     }
     conductor_fields;
@@ -54,6 +56,9 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_udp_channel_data_paths_t *data_paths;
+    struct sockaddr_storage remote_data_addr;
+    aeron_clock_cache_t *cached_clock;
+    int64_t time_of_last_sm_ns;
 }
 aeron_send_channel_endpoint_t;
 
@@ -93,6 +98,16 @@ void aeron_send_channel_endpoint_on_status_message(
 
 void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+
+int aeron_send_channel_endpoint_check_for_re_resolution(
+    aeron_send_channel_endpoint_t *endpoint,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy);
+
+void aeron_send_channel_endpoint_resolution_change(
+    aeron_send_channel_endpoint_t *endpoint,
+    const char *endpoint_name,
+    struct sockaddr_storage *new_addr);
 
 inline void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint)
 {

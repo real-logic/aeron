@@ -73,12 +73,13 @@ int aeron_name_resolver_resolve_host_and_port(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
+    bool is_re_resolution,
     struct sockaddr_storage *sockaddr)
 {
     aeron_parsed_address_t parsed_address;
     const char *address_str;
 
-    if (resolver->lookup_func(resolver, name, uri_param_name, false, &address_str) < 0)
+    if (resolver->lookup_func(resolver, name, uri_param_name, is_re_resolution, &address_str) < 0)
     {
         return -1;
     }
@@ -103,7 +104,8 @@ int aeron_name_resolver_resolve_host_and_port(
             }
             else
             {
-                result = resolver->resolve_func(resolver, parsed_address.host, uri_param_name, false, sockaddr);
+                result = resolver->resolve_func(
+                    resolver, parsed_address.host, uri_param_name, is_re_resolution, sockaddr);
             }
 
             ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port);
@@ -116,7 +118,8 @@ int aeron_name_resolver_resolve_host_and_port(
             }
             else
             {
-                result = resolver->resolve_func(resolver, parsed_address.host, uri_param_name, false, sockaddr);
+                result = resolver->resolve_func(
+                    resolver, parsed_address.host, uri_param_name, is_re_resolution, sockaddr);
             }
 
             ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);

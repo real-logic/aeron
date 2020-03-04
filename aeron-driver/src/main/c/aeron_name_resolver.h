@@ -80,6 +80,7 @@ int aeron_name_resolver_resolve_host_and_port(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
+    bool is_re_resolution,
     struct sockaddr_storage *sockaddr);
 
 #endif //AERON_NAME_RESOLVER_H

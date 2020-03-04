@@ -309,7 +309,7 @@ int aeron_udp_channel_parse(
     if (NULL != _channel->uri.params.udp.endpoint)
     {
         if (aeron_name_resolver_resolve_host_and_port(
-            resolver, _channel->uri.params.udp.endpoint, AERON_UDP_CHANNEL_ENDPOINT_KEY, &endpoint_addr) < 0)
+            resolver, _channel->uri.params.udp.endpoint, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &endpoint_addr) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,
@@ -326,7 +326,7 @@ int aeron_udp_channel_parse(
     if (NULL != _channel->uri.params.udp.control)
     {
         if (aeron_name_resolver_resolve_host_and_port(
-            resolver, _channel->uri.params.udp.control, AERON_UDP_CHANNEL_CONTROL_KEY, &explicit_control_addr) < 0)
+            resolver, _channel->uri.params.udp.control, AERON_UDP_CHANNEL_CONTROL_KEY, false, &explicit_control_addr) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,
@@ -428,12 +428,12 @@ int aeron_udp_channel_parse(
         return -1;
 }
 
-void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
+void aeron_udp_channel_delete(const aeron_udp_channel_t *channel)
 {
     if (NULL != channel)
     {
-        aeron_uri_close(&channel->uri);
-        aeron_free(channel);
+        aeron_uri_close((aeron_uri_t *)&channel->uri);
+        aeron_free((void *)channel);
     }
 }
 

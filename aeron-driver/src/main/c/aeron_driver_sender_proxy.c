@@ -217,3 +217,42 @@ void aeron_driver_sender_proxy_on_remove_destination(
         aeron_driver_sender_proxy_offer(sender_proxy, cmd);
     }
 }
+
+void aeron_driver_sender_proxy_on_resolution_change(
+    aeron_driver_sender_proxy_t *sender_proxy,
+    const char *endpoint_name,
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *new_addr)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
+    {
+        aeron_command_resolution_change_t cmd =
+            {
+                .base = { .func = aeron_driver_sender_on_resolution_change, .item = NULL },
+                .endpoint = endpoint,
+                .endpoint_name = endpoint_name,
+            };
+        memcpy(&cmd.new_addr, new_addr, sizeof(cmd.new_addr));
+
+        aeron_driver_sender_on_resolution_change(sender_proxy->sender, &cmd);
+    }
+    else
+    {
+        aeron_command_resolution_change_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_resolution_change_t)) < 0)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_sender_on_resolution_change;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        cmd->endpoint_name = endpoint_name;
+        memcpy(&cmd->new_addr, new_addr, sizeof(cmd->new_addr));
+
+        aeron_driver_sender_proxy_offer(sender_proxy, cmd);
+    }
+}
+

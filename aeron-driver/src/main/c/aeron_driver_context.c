@@ -395,6 +395,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_REJOIN_STREAM_DEFAULT (true)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT (-1)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT (10000)
+#define AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_DEFAULT (1 * 1000 * 1000 * 1000LL)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -533,6 +534,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
     _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
     _context->name_resolver_init_args = NULL;
+    _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_DEFAULT;
 
     char *value = NULL;
 
@@ -581,7 +583,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
-    _context->name_resolver_init_args = getenv(AERON_NAME_RESOLVER_INIT_ARGS);
+    _context->name_resolver_init_args = getenv(AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
 
     _context->dirs_delete_on_start = aeron_config_parse_bool(
         getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),
@@ -898,6 +900,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR,
         getenv(AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR),
         _context->flow_control.receiver_timeout_ns,
+        0,
+        INT64_MAX);
+
+    _context->re_resolution_check_interval_ns = aeron_config_parse_duration_ns(
+        AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_ENV_VAR,
+        getenv(AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_ENV_VAR),
+        _context->re_resolution_check_interval_ns,
         0,
         INT64_MAX);
 
@@ -2292,8 +2301,51 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driv
         context->publication_reserved_session_id_high : AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
 }
 
-
 bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
 {
     return NULL != context ? context->rejoin_stream : AERON_REJOIN_STREAM_DEFAULT;
 }
+
+int aeron_driver_context_set_name_resolver_supplier(
+    aeron_driver_context_t *context,
+    aeron_name_resolver_supplier_func_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->name_resolver_supplier_func = value;
+    return 0;
+}
+
+aeron_name_resolver_supplier_func_t aeron_driver_context_get_name_resolver_supplier(aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->name_resolver_supplier_func : aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT);
+}
+
+int aeron_driver_context_set_name_resolver_init_args(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->name_resolver_init_args = value;
+    return 0;
+}
+
+const char *aeron_driver_context_get_name_resolver_init_args(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->name_resolver_init_args : NULL;
+}
+
+int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->re_resolution_check_interval_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->re_resolution_check_interval_ns : AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_DEFAULT;
+}
+

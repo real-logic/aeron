@@ -371,10 +371,10 @@ public class MultiDestinationCastTest
             {
                 // If we add B before A has reached i number of messages
                 // then B will receive more than the expected `numMessageForSub2`.
-                final int published = i;
+                final int published = i + 1;
                 final Supplier<String> message =
                     () -> "Handler: " + fragmentHandlerA.toString() + ", published: " + published;
-                while (!fragmentHandlerA.hasReached(i + 1))
+                while (!fragmentHandlerA.hasReached(published))
                 {
                     if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
                     {

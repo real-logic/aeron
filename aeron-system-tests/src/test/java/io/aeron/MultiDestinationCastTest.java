@@ -374,7 +374,7 @@ public class MultiDestinationCastTest
                 {
                     if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
                     {
-                        Tests.yieldingWait(subscriptionA::toString);
+                        Tests.yieldingWait(fragmentHandlerA::toString);
                     }
                 }
 

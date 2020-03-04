@@ -38,6 +38,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -370,11 +371,14 @@ public class MultiDestinationCastTest
             {
                 // If we add B before A has reached i number of messages
                 // then B will receive more than the expected `numMessageForSub2`.
-                while (!fragmentHandlerA.hasReached(i))
+                final int published = i;
+                final Supplier<String> message =
+                    () -> "Handler: " + fragmentHandlerA.toString() + ", published: " + published;
+                while (!fragmentHandlerA.hasReached(i + 1))
                 {
                     if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
                     {
-                        Tests.yieldingWait(fragmentHandlerA::toString);
+                        Tests.yieldingWait(message);
                     }
                 }
 

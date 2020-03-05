@@ -238,7 +238,7 @@ public class DriverNameResolverTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @Timeout(30)
     public void shouldTimeoutNeighborsAndCacheEntriesThatAreSeenViaGossip()
     {
         drivers.add(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())

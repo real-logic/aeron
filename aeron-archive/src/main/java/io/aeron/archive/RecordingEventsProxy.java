@@ -50,11 +50,6 @@ class RecordingEventsProxy implements AutoCloseable
         final String channel,
         final String sourceIdentity)
     {
-        if (null == publication)
-        {
-            return;
-        }
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingStartedEncoder.BLOCK_LENGTH +
             RecordingStartedEncoder.channelHeaderLength() + channel.length() +
             RecordingStartedEncoder.sourceIdentityHeaderLength() + sourceIdentity.length();
@@ -87,13 +82,8 @@ class RecordingEventsProxy implements AutoCloseable
         while (--attempts > 0);
     }
 
-    void progress(final long recordingId, final long startPosition, final long position)
+    boolean progress(final long recordingId, final long startPosition, final long position)
     {
-        if (null == publication)
-        {
-            return;
-        }
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingProgressEncoder.BLOCK_LENGTH;
         final long result = publication.tryClaim(length, bufferClaim);
 
@@ -106,23 +96,21 @@ class RecordingEventsProxy implements AutoCloseable
                 .position(position);
 
             bufferClaim.commit();
+            return true;
         }
         else
         {
             checkResult(result);
         }
+
+        return false;
     }
 
     void stopped(final long recordingId, final long startPosition, final long stopPosition)
     {
-        if (null == publication)
-        {
-            return;
-        }
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingStoppedEncoder.BLOCK_LENGTH;
-
         int attempts = SEND_ATTEMPTS;
+
         do
         {
             final long result = publication.tryClaim(length, bufferClaim);

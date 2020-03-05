@@ -41,6 +41,7 @@ class RecordingSession implements Session
     private final long correlationId;
     private final long recordingId;
     private final int blockLengthLimit;
+    private long progressEventPosition;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
     private final Counter position;
@@ -142,7 +143,12 @@ class RecordingSession implements Session
         if (State.INACTIVE == state)
         {
             state(State.STOPPED);
-            recordingEventsProxy.stopped(recordingId, image.joinPosition(), image.position());
+
+            if (null != recordingEventsProxy)
+            {
+                recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
+            }
+
             recordingWriter.close();
             workCount += 1;
         }
@@ -173,13 +179,16 @@ class RecordingSession implements Session
             LangUtil.rethrowUnchecked(ex);
         }
 
-        recordingEventsProxy.started(
-            recordingId,
-            image.joinPosition(),
-            image.sessionId(),
-            image.subscription().streamId(),
-            originalChannel,
-            image.sourceIdentity());
+        if (null != recordingEventsProxy)
+        {
+            recordingEventsProxy.started(
+                recordingId,
+                image.joinPosition(),
+                image.sessionId(),
+                image.subscription().streamId(),
+                originalChannel,
+                image.sourceIdentity());
+        }
 
         state(State.RECORDING);
 
@@ -192,19 +201,32 @@ class RecordingSession implements Session
         try
         {
             workCount = image.blockPoll(recordingWriter, blockLengthLimit);
+
             if (recordingWriter.isClosed())
             {
                 state(State.INACTIVE);
+                return workCount;
             }
-            else if (workCount > 0)
+
+            if (workCount > 0)
             {
-                final long position = image.position();
-                this.position.setOrdered(position);
-                recordingEventsProxy.progress(recordingId, image.joinPosition(), position);
+                this.position.setOrdered(image.position());
             }
             else if (image.isEndOfStream() || image.isClosed())
             {
                 state(State.INACTIVE);
+            }
+
+            if (null != recordingEventsProxy)
+            {
+                final long recordedPosition = position.getWeak();
+                if (progressEventPosition < recordedPosition)
+                {
+                    if (recordingEventsProxy.progress(recordingId, image.joinPosition(), recordedPosition))
+                    {
+                        progressEventPosition = recordedPosition;
+                    }
+                }
             }
         }
         catch (final Exception ex)

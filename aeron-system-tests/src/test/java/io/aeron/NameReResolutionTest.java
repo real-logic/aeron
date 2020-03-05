@@ -15,35 +15,26 @@
  */
 package io.aeron;
 
-import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.NameResolver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.MediaDriverTestWatcher;
-import io.aeron.test.SlowTest;
-import io.aeron.test.TestMediaDriver;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
+import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 import static org.mockito.Mockito.*;
 
 public class NameReResolutionTest
@@ -79,23 +70,22 @@ public class NameReResolutionTest
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);
-
-    private final NameResolver lookupResolver = new StubNameResolver(STUB_LOOKUP_CONFIGURATION);
+    private CountersReader countersReader;
 
     @BeforeEach
     public void before()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("ReResolution");
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
+            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+            .threadingMode(ThreadingMode.SHARED);
 
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .errorHandler(Tests::onError)
-                .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-                .threadingMode(ThreadingMode.SHARED)
-                .nameResolver(lookupResolver),
-            testWatcher);
+        TestMediaDriver.enableCsvNameLookupConfiguration(context, STUB_LOOKUP_CONFIGURATION);
+
+        driver = TestMediaDriver.launch(context, testWatcher);
 
         client = Aeron.connect();
+        countersReader = client.countersReader();
     }
 
     @AfterEach
@@ -110,6 +100,8 @@ public class NameReResolutionTest
     @Timeout(10)
     public void shouldReResolveEndpointOnNoConnected()
     {
+        final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
+
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
@@ -117,29 +109,18 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to first subscription");
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
-
-        fragmentsRead.set(0);
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on first subscription");
+        }
 
         subscription.close();
 
@@ -153,25 +134,20 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to second subscription");
         }
 
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on second subscription");
+        }
+
+        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -185,6 +161,8 @@ public class NameReResolutionTest
     @Timeout(10)
     public void shouldReResolveMdcManualEndpointOnNoConnected()
     {
+        final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
+
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
@@ -193,29 +171,18 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to first subscription");
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
-
-        fragmentsRead.set(0);
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on first subscription");
+        }
 
         subscription.close();
 
@@ -229,25 +196,20 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to second subscription");
         }
 
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on second subscription");
+        }
+
+        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -261,6 +223,7 @@ public class NameReResolutionTest
     @Timeout(15)
     public void shouldReResolveMdcDynamicControlOnNoConnected()
     {
+        final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(SUBSCRIPTION_DYNAMIC_MDC_URI, STREAM_ID);
@@ -268,29 +231,18 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to first subscription");
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
-
-        fragmentsRead.set(0);
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on first subscription");
+        }
 
         publication.close();
 
@@ -302,27 +254,22 @@ public class NameReResolutionTest
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
 
-        while (!publication.isConnected())
+        while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to second subscription");
         }
 
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on second subscription");
+        }
+
+        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -336,6 +283,7 @@ public class NameReResolutionTest
     @Timeout(15)
     public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected()
     {
+        final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
         TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-Destination-Subscriptions");
 
         buffer.putInt(0, 1);
@@ -346,29 +294,18 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to first subscription");
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
-
-        fragmentsRead.set(0);
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on first subscription");
+        }
 
         publication.close();
 
@@ -380,70 +317,27 @@ public class NameReResolutionTest
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
 
-        while (!publication.isConnected())
+        while (!subscription.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yieldingWait("No message offer to second subscription");
         }
 
-        Tests.executeUntil(
-            () -> fragmentsRead.get() > 0,
-            (i) ->
-            {
-                fragmentsRead.value += subscription.poll(handler, 1);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(5900));
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on second subscription");
+        }
+
+        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
             anyInt(),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));
-    }
-
-    private static class StubNameResolver implements NameResolver
-    {
-        private final List<String[]> lookupNames = new ArrayList<>();
-
-        StubNameResolver(final String stubLookupConfiguration)
-        {
-            final String[] lines = stubLookupConfiguration.split("\\|");
-            for (final String line : lines)
-            {
-                final String[] params = line.split(",");
-                if (4 != params.length)
-                {
-                    throw new IllegalArgumentException("Expect 4 elements per row");
-                }
-
-                lookupNames.add(params);
-            }
-        }
-
-        public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
-        {
-            return DefaultNameResolver.INSTANCE.resolve(name, uriParamName, isReResolution);
-        }
-
-        public String lookup(final String name, final String uriParamName, final boolean isReLookup)
-        {
-            for (final String[] lookupName : lookupNames)
-            {
-                if (lookupName[1].equals(uriParamName) && lookupName[0].equals(name))
-                {
-                    return isReLookup ? lookupName[2] : lookupName[3];
-                }
-            }
-
-            return name;
-        }
     }
 }

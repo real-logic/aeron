@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Map;
 
 public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
@@ -34,9 +36,23 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
             System.out.println("C Media Driver tests failed");
             outputFilesByAeronDirectoryName.forEach((aeronDirectoryName, files) ->
             {
-                System.out.println("Media Driver: " + aeronDirectoryName);
-                System.out.println("  stdout: " + files.stdout + ", stderr: " + files.stderr);
+                try
+                {
+                    System.out.println();
+                    System.out.println("Media Driver: " + aeronDirectoryName);
+                    System.out.println("*** STDOUT ***");
+                    Files.copy(files.stdout.toPath(), System.out);
+                    System.out.println("*** STDERR ***");
+                    Files.copy(files.stderr.toPath(), System.out);
+                    System.out.println("====");
+                }
+                catch (final IOException e)
+                {
+                    throw new RuntimeException("Failed to output logs to stdout", e);
+                }
             });
+
+            deleteFiles();
         }
     }
 
@@ -44,13 +60,18 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
     {
         if (TestMediaDriver.shouldRunCMediaDriver())
         {
-            outputFilesByAeronDirectoryName.forEach(
-                (aeronDirectoryName, files) ->
-                {
-                    IoUtil.delete(files.stdout, false);
-                    IoUtil.delete(files.stderr, false);
-                });
+            deleteFiles();
         }
+    }
+
+    private void deleteFiles()
+    {
+        outputFilesByAeronDirectoryName.forEach(
+            (aeronDirectoryName, files) ->
+            {
+                IoUtil.delete(files.stdout, false);
+                IoUtil.delete(files.stderr, false);
+            });
     }
 
     public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)

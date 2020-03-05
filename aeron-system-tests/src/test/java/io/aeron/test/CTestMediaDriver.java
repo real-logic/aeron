@@ -35,7 +35,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         new File("NUL") : new File("/dev/null");
     private static final Map<Class<?>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
         new IdentityHashMap<>();
-    private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> TRANSPORT_BINDINGS_CONFIGURATION =
+    private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> C_DRIVER_ADDITIONAL_ENV_VARS =
         ThreadLocal.withInitial(IdentityHashMap::new);
 
     static
@@ -64,9 +64,9 @@ public final class CTestMediaDriver implements TestMediaDriver
     @Override
     public void close()
     {
-        terminateDriver();
         try
         {
+            terminateDriver();
             if (!aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
             {
                 aeronMediaDriverProcess.destroyForcibly();
@@ -129,11 +129,11 @@ public final class CTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_FLOW_CONTROL_GROUP_TAG", String.valueOf(context.flowControlGroupTag()));
         pb.environment().put(
             "AERON_FLOW_CONTROL_GROUP_MIN_SIZE", String.valueOf(context.flowControlGroupMinSize()));
-//        pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
+        pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
         pb.environment().put("AERON_EVENT_LOG", "0xFFFF");
 
         setFlowControlStrategy(pb.environment(), context);
-        TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);
         setLogging(pb.environment());
 
         try
@@ -250,6 +250,14 @@ public final class CTestMediaDriver implements TestMediaDriver
         lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
 
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
-        TRANSPORT_BINDINGS_CONFIGURATION.get().put(context, lossTransportEnv);
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
+    }
+
+    public static void enableCsvNameLookupConfiguration(final MediaDriver.Context context, final String csvLookupTable)
+    {
+        final Object2ObjectHashMap<String, String> csvTableEnv = new Object2ObjectHashMap<>();
+        csvTableEnv.put("AERON_NAME_RESOLVER_SUPPLIER", "csv_table");
+        csvTableEnv.put("AERON_NAME_RESOLVER_INIT_ARGS", csvLookupTable);
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, csvTableEnv);
     }
 }

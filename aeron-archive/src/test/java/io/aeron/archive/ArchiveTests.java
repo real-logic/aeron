@@ -18,8 +18,6 @@ package io.aeron.archive;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.TimeoutException;
 import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -28,21 +26,11 @@ import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
 
 public class ArchiveTests
 {
-    public static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
-    static final boolean DEBUG = false;
-
-    public static void printf(final String s, final Object... args)
-    {
-        if (DEBUG)
-        {
-            System.out.printf(s, args);
-        }
-    }
+    private static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     public static File makeTestDirectory()
     {
@@ -95,7 +83,7 @@ public class ArchiveTests
             1
         );
 
-        await(() -> controlResponseAdapter.poll() != 0);
+        Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
     }
 
     public static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
@@ -128,7 +116,7 @@ public class ArchiveTests
             1
         );
 
-        await(() -> controlResponseAdapter.poll() != 0);
+        Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
     }
 
     static void awaitResponse(final Subscription controlResponse, final long expectedCorrelationId)
@@ -154,22 +142,7 @@ public class ArchiveTests
             1
         );
 
-        await(() -> controlResponseAdapter.poll() != 0);
-    }
-
-    public static void await(final BooleanSupplier conditionSupplier)
-    {
-        final long deadlineNs = System.nanoTime() + TIMEOUT_NS;
-        while (!conditionSupplier.getAsBoolean())
-        {
-            if ((deadlineNs - System.nanoTime()) <= 0)
-            {
-                throw new TimeoutException(AeronException.Category.ERROR);
-            }
-
-            Thread.yield();
-            Tests.checkInterruptStatus();
-        }
+        Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
     }
 
     public static TestWatcher newWatcher(final long seed)

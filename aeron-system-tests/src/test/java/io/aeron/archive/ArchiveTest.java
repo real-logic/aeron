@@ -43,6 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.ArchiveTests.awaitConnectedReply;
@@ -62,6 +63,7 @@ public class ArchiveTest
             arguments(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED));
     }
 
+    private static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final String CONTROL_RESPONSE_URI = CommonContext.IPC_CHANNEL;
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
@@ -399,14 +401,14 @@ public class ArchiveTest
         final Publication controlPublication,
         final Subscription recordingEvents)
     {
-        ArchiveTests.await(controlPublication::isConnected);
-        ArchiveTests.await(recordingEvents::isConnected);
+        Tests.await(controlPublication::isConnected, TIMEOUT_NS);
+        Tests.await(recordingEvents::isConnected, TIMEOUT_NS);
 
         controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
         final long connectCorrelationId = correlationId++;
         assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
-        ArchiveTests.await(controlResponse::isConnected);
+        Tests.await(controlResponse::isConnected, TIMEOUT_NS);
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
@@ -589,7 +591,7 @@ public class ArchiveTest
             }
 
             ArchiveTests.awaitOk(controlResponse, replayCorrelationId);
-            ArchiveTests.await(replay::isConnected);
+            Tests.await(replay::isConnected, TIMEOUT_NS);
 
             final Image image = replay.images().get(0);
             assertEquals(initialTermId, image.initialTermId());
@@ -759,7 +761,7 @@ public class ArchiveTest
                     }
 
                     ArchiveTests.awaitOk(controlResponse, replayCorrelationId);
-                    ArchiveTests.await(replay::isConnected);
+                    Tests.await(replay::isConnected, TIMEOUT_NS);
 
                     final Image image = replay.images().get(0);
                     assertEquals(initialTermId, image.initialTermId());

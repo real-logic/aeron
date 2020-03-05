@@ -16,6 +16,7 @@
 package io.aeron.test;
 
 import io.aeron.Subscription;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
@@ -225,5 +226,20 @@ public class Tests
         while (totalFragments < minFragments && ((nowNs - startNs) < timeoutNs));
 
         return totalFragments;
+    }
+
+    public static void await(final BooleanSupplier conditionSupplier, final long timeoutNs)
+    {
+        final long deadlineNs = System.nanoTime() + timeoutNs;
+        while (!conditionSupplier.getAsBoolean())
+        {
+            if ((deadlineNs - System.nanoTime()) <= 0)
+            {
+                throw new TimeoutException();
+            }
+
+            Thread.yield();
+            checkInterruptStatus();
+        }
     }
 }

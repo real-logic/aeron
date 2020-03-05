@@ -168,7 +168,8 @@ int aeron_driver_sender_do_work(void *clientd)
 
         if (sender->context->re_resolution_check_interval_ns > 0 && (sender->re_resolution_deadline_ns - now_ns) < 0)
         {
-            aeron_udp_transport_poller_check_re_resolutions(&sender->poller, now_ns, sender->context->conductor_proxy);
+            aeron_udp_transport_poller_check_send_endpoint_re_resolutions(
+                &sender->poller, now_ns, sender->context->conductor_proxy);
             sender->re_resolution_deadline_ns = now_ns + sender->context->re_resolution_check_interval_ns;
         }
 
@@ -297,7 +298,7 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command)
 
 void aeron_driver_sender_on_resolution_change(void *clientd, void *command)
 {
-    aeron_command_resolution_change_t *resolution_change = (aeron_command_resolution_change_t *)command;
+    aeron_command_sender_resolution_change_t *resolution_change = (aeron_command_sender_resolution_change_t *)command;
     aeron_send_channel_endpoint_t *endpoint = resolution_change->endpoint;
 
     aeron_send_channel_endpoint_resolution_change(

@@ -448,6 +448,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item);
 
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item);
 
+void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item);
+
 aeron_send_channel_endpoint_t *aeron_driver_conductor_find_send_channel_endpoint_by_tag(
     aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
 

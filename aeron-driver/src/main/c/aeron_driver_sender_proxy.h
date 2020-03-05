@@ -59,14 +59,14 @@ typedef struct aeron_command_destination_stct
 }
 aeron_command_destination_t;
 
-typedef struct aeron_command_resolution_change_stct
+typedef struct aeron_command_sender_resolution_change_stct
 {
     aeron_command_base_t base;
     const char *endpoint_name;
     void *endpoint;
     struct sockaddr_storage new_addr;
 }
-aeron_command_resolution_change_t;
+aeron_command_sender_resolution_change_t;
 
 void aeron_driver_sender_proxy_on_add_destination(
     aeron_driver_sender_proxy_t *sender_proxy,

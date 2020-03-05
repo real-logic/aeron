@@ -54,6 +54,8 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_driver_receiver_proxy_t *receiver_proxy;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_udp_channel_data_paths_t *data_paths;
+    aeron_clock_cache_t *cached_clock;
+
     int64_t receiver_id;
     size_t so_rcvbuf;
     bool has_receiver_released;
@@ -63,6 +65,8 @@ typedef struct aeron_receive_channel_endpoint_stct
         int64_t value;
     }
     group_tag;
+
+    int64_t time_of_last_activity_ns;
 
     int64_t *short_sends_counter;
     int64_t *possible_ttl_asymmetry_counter;
@@ -140,6 +144,11 @@ int aeron_receive_channel_endpoint_on_remove_publication_image(
 
 int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
     aeron_receive_channel_endpoint_t *endpoint, size_t sender_mtu_length, size_t window_max_length);
+
+void aeron_receive_channel_endpoint_check_for_re_resolution(
+    aeron_receive_channel_endpoint_t *endpoint,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy);
 
 inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)

@@ -226,7 +226,7 @@ void aeron_driver_sender_proxy_on_resolution_change(
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
-        aeron_command_resolution_change_t cmd =
+        aeron_command_sender_resolution_change_t cmd =
             {
                 .base = { .func = aeron_driver_sender_on_resolution_change, .item = NULL },
                 .endpoint = endpoint,
@@ -234,13 +234,14 @@ void aeron_driver_sender_proxy_on_resolution_change(
             };
         memcpy(&cmd.new_addr, new_addr, sizeof(cmd.new_addr));
 
+        // TODO: (Mike) go via sender and increment counter...
         aeron_driver_sender_on_resolution_change(sender_proxy->sender, &cmd);
     }
     else
     {
-        aeron_command_resolution_change_t *cmd;
+        aeron_command_sender_resolution_change_t *cmd;
 
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_resolution_change_t)) < 0)
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_sender_resolution_change_t)) < 0)
         {
             aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
             return;

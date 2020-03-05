@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <aeron_driver_context.h>
+#include <uri/aeron_uri.h>
 #include "aeron_socket.h"
 #include "aeron_system_counters.h"
 #include "util/aeron_netutil.h"
@@ -129,6 +130,9 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _endpoint->possible_ttl_asymmetry_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY);
+
+    _endpoint->cached_clock = context->cached_clock;
+    _endpoint->time_of_last_activity_ns = aeron_clock_cached_nano_time(_endpoint->cached_clock);
 
     *endpoint = _endpoint;
     return 0;
@@ -382,11 +386,17 @@ void aeron_receive_channel_endpoint_dispatch(
     }
 }
 
+void aeron_receive_channel_update_last_activity_ns(aeron_receive_channel_endpoint_t *endpoint, int64_t now_ns)
+{
+    endpoint->time_of_last_activity_ns = now_ns;
+}
+
 int aeron_receive_channel_endpoint_on_data(
     aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
 
+    aeron_receive_channel_update_last_activity_ns(endpoint, aeron_clock_cached_nano_time(endpoint->cached_clock));
     return aeron_data_packet_dispatcher_on_data(&endpoint->dispatcher, endpoint, data_header, buffer, length, addr);
 }
 
@@ -395,6 +405,7 @@ int aeron_receive_channel_endpoint_on_setup(
 {
     aeron_setup_header_t *setup_header = (aeron_setup_header_t *)buffer;
 
+    aeron_receive_channel_update_last_activity_ns(endpoint, aeron_clock_cached_nano_time(endpoint->cached_clock));
     return aeron_data_packet_dispatcher_on_setup(&endpoint->dispatcher, endpoint, setup_header, buffer, length, addr);
 }
 
@@ -406,6 +417,7 @@ int aeron_receive_channel_endpoint_on_rttm(
 
     if (endpoint->receiver_id == rttm_header->receiver_id || 0 == rttm_header->receiver_id)
     {
+        aeron_receive_channel_update_last_activity_ns(endpoint, aeron_clock_cached_nano_time(endpoint->cached_clock));
         result =
             aeron_data_packet_dispatcher_on_rttm(&endpoint->dispatcher, endpoint, rttm_header, buffer, length, addr);
     }
@@ -544,6 +556,24 @@ int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
     }
 
     return 0;
+}
+
+void aeron_receive_channel_endpoint_check_for_re_resolution(
+    aeron_receive_channel_endpoint_t *endpoint,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy)
+{
+    // MDS is not yet supported in the C media driver,
+    if (endpoint->conductor_fields.udp_channel->has_explicit_control &&
+        now_ns > endpoint->time_of_last_activity_ns + AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS)
+    {
+        const char *endpoint_name = endpoint->conductor_fields.udp_channel->uri.params.udp.control;
+        struct sockaddr_storage *addr = &endpoint->conductor_fields.udp_channel->local_control;
+
+        aeron_driver_conductor_proxy_on_re_resolve_control(conductor_proxy, endpoint_name, endpoint, addr);
+
+        aeron_receive_channel_update_last_activity_ns(endpoint, now_ns);
+    }
 }
 
 extern int aeron_receive_channel_endpoint_on_remove_pending_setup(

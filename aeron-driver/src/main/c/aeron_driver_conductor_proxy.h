@@ -17,7 +17,6 @@
 #ifndef AERON_DRIVER_CONDUCTOR_PROXY_H
 #define AERON_DRIVER_CONDUCTOR_PROXY_H
 
-#include <media/aeron_send_channel_endpoint.h>
 #include "aeron_driver_context.h"
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
@@ -50,14 +49,14 @@ typedef struct aeron_command_create_publication_image_stct
 }
 aeron_command_create_publication_image_t;
 
-typedef struct aeron_command_re_resolve_endpoint_stct
+typedef struct aeron_command_re_resolve_stct
 {
     aeron_command_base_t base;
     const char *endpoint_name;
     void *endpoint;
     struct sockaddr_storage existing_addr;
 }
-aeron_command_re_resolve_endpoint_t;
+aeron_command_re_resolve_t;
 
 void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy,
@@ -77,7 +76,13 @@ void aeron_driver_conductor_proxy_on_linger_buffer(aeron_driver_conductor_proxy_
 void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
-    aeron_send_channel_endpoint_t *endpoint,
+    void *endpoint,
+    struct sockaddr_storage *existing_addr);
+
+void aeron_driver_conductor_proxy_on_re_resolve_control(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const char *endpoint_name,
+    void *endpoint,
     struct sockaddr_storage *existing_addr);
 
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

@@ -84,4 +84,20 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     int32_t session_id,
     int32_t stream_id);
 
+typedef struct aeron_command_receiver_resolution_change_stct
+{
+    aeron_command_base_t base;
+    const char *endpoint_name;
+    void *endpoint;
+    struct sockaddr_storage new_addr;
+}
+aeron_command_receiver_resolution_change_t;
+
+void aeron_driver_receiver_proxy_on_resolution_change(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    const char *endpoint_name,
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *new_addr);
+
+
 #endif //AERON_DRIVER_RECEIVER_PROXY_H

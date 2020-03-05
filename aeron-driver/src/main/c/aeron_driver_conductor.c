@@ -3074,7 +3074,7 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = clientd;
-    aeron_command_re_resolve_endpoint_t *cmd = item;
+    aeron_command_re_resolve_t *cmd = item;
     struct sockaddr_storage resolved_addr;
     memset(&resolved_addr, 0, sizeof(resolved_addr));
 
@@ -3090,6 +3090,28 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     {
         aeron_driver_sender_proxy_on_resolution_change(
             conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
+    }
+}
+
+void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_re_resolve_t *cmd = item;
+    struct sockaddr_storage resolved_addr;
+    memset(&resolved_addr, 0, sizeof(resolved_addr));
+
+    if (aeron_name_resolver_resolve_host_and_port(
+        &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
+    {
+        // TODO: What is the best error handling here, error counter for re-resolution failures???
+        // Or distinct error logger...
+        return;
+    }
+
+    if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    {
+        aeron_driver_receiver_proxy_on_resolution_change(
+            conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
     }
 }
 

@@ -211,12 +211,7 @@ int aeron_create_file(const char* path)
 }
 #endif
 
-#include <string.h>
-#include <stdio.h>
 #include <inttypes.h>
-#include <errno.h>
-#include "util/aeron_fileutil.h"
-#include "aeron_error.h"
 
 #define AERON_BLOCK_SIZE (4 * 1024)
 
@@ -302,10 +297,6 @@ uint64_t aeron_usable_fs_space_disabled(const char *path)
     return UINT64_MAX;
 }
 
-/*
- * stream location:
- * aeron_dir/correlation_id.logbuffer
- */
 int aeron_ipc_publication_location(
     char *dst,
     size_t length,

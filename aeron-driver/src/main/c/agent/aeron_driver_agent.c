@@ -258,7 +258,7 @@ int aeron_driver_agent_outgoing_mmsg(
         aeron_driver_agent_log_frame(
             AERON_FRAME_OUT,
             &msgvec[i].msg_hdr,
-            msgvec[i].msg_len,
+            (int32_t)msgvec[i].msg_len,
             msgvec[i].msg_hdr.msg_iov[0].iov_len);
     }
 

@@ -237,7 +237,7 @@ void aeron_driver_agent_log_frame(
 
     ptr += msghdr->msg_namelen;
     int32_t copy_length = message_len < MAX_FRAME_LENGTH ? message_len : MAX_FRAME_LENGTH;
-    memcpy(ptr, msghdr->msg_iov[0].iov_base, copy_length);
+    memcpy(ptr, msghdr->msg_iov[0].iov_base, (size_t)copy_length);
     length += copy_length;
 
     aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, (size_t)length);
@@ -259,7 +259,7 @@ int aeron_driver_agent_outgoing_mmsg(
             AERON_FRAME_OUT,
             &msgvec[i].msg_hdr,
             (int32_t)msgvec[i].msg_len,
-            msgvec[i].msg_hdr.msg_iov[0].iov_len);
+            (int32_t)msgvec[i].msg_hdr.msg_iov[0].iov_len);
     }
 
     return result;

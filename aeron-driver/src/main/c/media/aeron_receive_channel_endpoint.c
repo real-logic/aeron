@@ -201,7 +201,7 @@ int aeron_receive_channel_endpoint_send_sm(
     sm_optional_header->group_tag = endpoint->group_tag.value;
 
     iov[0].iov_base = buffer;
-    iov[0].iov_len = frame_length;
+    iov[0].iov_len = (size_t)frame_length;
     msghdr.msg_iov = iov;
     msghdr.msg_iovlen = 1;
     msghdr.msg_flags = 0;

@@ -683,7 +683,7 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
     if (position > clean_position)
     {
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, publication->position_bits_to_shift);
-        size_t bytes_to_clean = position - clean_position;
+        size_t bytes_to_clean = (size_t)(position - clean_position);
         size_t term_length = publication->mapped_raw_log.term_length;
         size_t term_offset = (size_t)(clean_position & publication->term_length_mask);
         size_t bytes_left_in_term = term_length - term_offset;
@@ -732,7 +732,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
         int64_t publication_limit = aeron_counter_get(publication->pub_lmt_position.value_addr);
         if (proposed_pub_lmt > publication_limit)
         {
-            size_t term_length = publication->term_length_mask + 1;
+            size_t term_length = (size_t)publication->term_length_mask + 1;
             aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
             aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt);
             work_count = 1;
@@ -740,7 +740,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
     }
     else if (*publication->pub_lmt_position.value_addr > snd_pos)
     {
-        size_t term_length = publication->term_length_mask + 1;
+        size_t term_length = (size_t)publication->term_length_mask + 1;
         aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
         aeron_network_publication_clean_buffer(publication, snd_pos - term_length);
         work_count = 1;

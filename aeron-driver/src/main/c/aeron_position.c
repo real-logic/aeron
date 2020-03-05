@@ -234,7 +234,7 @@ void aeron_channel_endpoint_status_update_label(
     int label_length = snprintf(
         label, sizeof(label), "%s: %.*s %.*s", name, (int)channel_length, channel, (int)additional_length, additional);
 
-    aeron_counters_manager_update_label(counters_manager, counter_id, label_length, label);
+    aeron_counters_manager_update_label(counters_manager, counter_id, (size_t)label_length, label);
 }
 
 int32_t aeron_counter_send_channel_status_allocate(

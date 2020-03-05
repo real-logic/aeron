@@ -254,7 +254,7 @@ int aeron_udp_channel_transport_recvmmsg(
     }
     else
     {
-        for (size_t i = 0, length = result; i < length; i++)
+        for (size_t i = 0, length = (size_t)result; i < length; i++)
         {
             recv_func(
                 transport->data_paths,

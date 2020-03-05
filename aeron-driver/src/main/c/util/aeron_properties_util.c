@@ -71,7 +71,7 @@ int aeron_properties_parse_line(
             return 0;
         }
 
-        for (size_t i = cursor; i < length; i++)
+        for (size_t i = (size_t)cursor; i < length; i++)
         {
             const char c = line[i];
 
@@ -105,7 +105,7 @@ int aeron_properties_parse_line(
             return -1;
         }
 
-        value_start = aeron_next_non_whitespace(line, value_start, length - 1);
+        value_start = aeron_next_non_whitespace(line, (size_t)value_start, length - 1);
 
         if (-1 == value_start)
         {
@@ -119,7 +119,7 @@ int aeron_properties_parse_line(
     }
     else
     {
-        value_start = aeron_next_non_whitespace(line, value_start, length - 1);
+        value_start = aeron_next_non_whitespace(line, (size_t)value_start, length - 1);
 
         if (-1 == value_start || '!' == line[value_start] || '#' == line[value_start])
         {

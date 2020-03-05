@@ -237,7 +237,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
     if (position > clean_position)
     {
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, publication->position_bits_to_shift);
-        size_t bytes_to_clean = position - clean_position;
+        size_t bytes_to_clean = (size_t)(position - clean_position);
         size_t term_length = publication->mapped_raw_log.term_length;
         size_t term_offset = (size_t)(clean_position & (term_length - 1));
         size_t bytes_left_in_term = term_length - term_offset;

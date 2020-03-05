@@ -33,8 +33,6 @@
 
 #include <inttypes.h>
 #include <errno.h>
-#include <math.h>
-#include <limits.h>
 
 #ifdef HAVE_UUID_H
 

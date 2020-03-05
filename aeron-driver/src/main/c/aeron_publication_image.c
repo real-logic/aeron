@@ -226,8 +226,8 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
     if (position > clean_position)
     {
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, image->position_bits_to_shift);
-        size_t bytes_to_clean = position - clean_position;
-        size_t term_length = image->term_length;
+        size_t bytes_to_clean = (size_t)(position - clean_position);
+        size_t term_length = (size_t)image->term_length;
         size_t term_offset = (size_t)(clean_position & image->term_length_mask);
         size_t bytes_left_in_term = term_length - term_offset;
         size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
@@ -265,11 +265,11 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     }
     else if (NULL != image->loss_reporter)
     {
-        char source[AERON_MAX_PATH];
-        size_t source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
-
         if (NULL != image->endpoint)
         {
+            char source[AERON_MAX_PATH];
+            int source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
+
             image->loss_reporter_offset = aeron_loss_reporter_create_entry(
                 image->loss_reporter,
                 (int64_t)length,
@@ -279,7 +279,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
                 image->endpoint->conductor_fields.udp_channel->original_uri,
                 image->endpoint->conductor_fields.udp_channel->uri_length,
                 source,
-                source_length);
+                (size_t)source_length);
         }
 
         if (-1 == image->loss_reporter_offset)
@@ -592,7 +592,7 @@ void aeron_publication_image_check_untethered_subscriptions(
                     if (now_ns > (tetherable_position->time_of_last_update_ns + resting_timeout_ns))
                     {
                         char source_identity[AERON_MAX_PATH];
-                        size_t source_identity_length = aeron_format_source_identity(
+                        int source_identity_length = aeron_format_source_identity(
                             source_identity, sizeof(source_identity), &image->source_address);
 
                         aeron_counter_set_ordered(tetherable_position->value_addr, *image->rcv_pos_position.value_addr);
@@ -606,7 +606,7 @@ void aeron_publication_image_check_untethered_subscriptions(
                             tetherable_position->counter_id,
                             tetherable_position->subscription_registration_id,
                             source_identity,
-                            source_identity_length);
+                            (size_t)source_identity_length);
                         tetherable_position->state = AERON_SUBSCRIPTION_TETHER_ACTIVE;
                         tetherable_position->time_of_last_update_ns = now_ns;
                     }

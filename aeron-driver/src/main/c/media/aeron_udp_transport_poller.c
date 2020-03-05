@@ -219,7 +219,7 @@ int aeron_udp_transport_poller_poll(
         }
         else
         {
-            for (size_t i = 0, length = result; i < length; i++)
+            for (size_t i = 0, length = (size_t)result; i < length; i++)
             {
                 if (poller->epoll_events[i].events & EPOLLIN)
                 {

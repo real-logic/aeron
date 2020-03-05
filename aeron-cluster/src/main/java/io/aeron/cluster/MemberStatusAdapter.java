@@ -194,7 +194,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 consensusModuleAgent.onStopCatchup(
                     stopCatchupDecoder.leadershipTermId(),
-                    stopCatchupDecoder.logPosition(),
                     stopCatchupDecoder.followerMemberId());
                 break;
 

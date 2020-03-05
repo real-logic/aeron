@@ -562,7 +562,6 @@ class ConsensusModuleAgent implements Agent
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
             if (null != follower && follower.catchupReplaySessionId() == NULL_VALUE)
             {
                 final String replayChannel = new ChannelUriStringBuilder()
@@ -582,9 +581,10 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    public void onStopCatchup(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    public void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        if (null != logAdapter && null != replayLogDestination && followerMemberId == memberId)
+        if (null != logAdapter && null != replayLogDestination &&
+            followerMemberId == memberId && leadershipTermId == this.leadershipTermId)
         {
             logAdapter.asyncRemoveDestination(replayLogDestination);
             replayLogDestination = null;
@@ -684,7 +684,6 @@ class ConsensusModuleAgent implements Agent
         if (Cluster.Role.LEADER == role && logPosition == terminationPosition)
         {
             final ClusterMember member = clusterMemberByIdMap.get(memberId);
-
             if (null != member)
             {
                 member.hasTerminated(true);
@@ -749,7 +748,6 @@ class ConsensusModuleAgent implements Agent
     public void onRemoveMember(final long correlationId, final int memberId, final boolean isPassive)
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);
-
         if (null == election && Cluster.Role.LEADER == role && null != member)
         {
             if (isPassive)
@@ -1212,51 +1210,49 @@ class ConsensusModuleAgent implements Agent
         final int memberId,
         final String clusterMembers)
     {
-        if (leadershipTermId != this.leadershipTermId)
+        if (leadershipTermId == this.leadershipTermId)
         {
-            return;
-        }
-
-        if (ChangeType.JOIN == changeType)
-        {
-            final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
-            if (memberId == this.memberId)
+            if (ChangeType.JOIN == changeType)
             {
-                this.clusterMembers = newMembers;
-                clusterMemberByIdMap.clear();
-                clusterMemberByIdMap.compact();
-                ClusterMember.addClusterMemberIds(newMembers, clusterMemberByIdMap);
-                thisMember = ClusterMember.findMember(this.clusterMembers, memberId);
-                leaderMember = ClusterMember.findMember(this.clusterMembers, leaderMemberId);
-
-                ClusterMember.addMemberStatusPublications(
-                    newMembers,
-                    thisMember,
-                    ChannelUri.parse(ctx.memberStatusChannel()),
-                    ctx.memberStatusStreamId(),
-                    aeron);
-            }
-            else
-            {
-                clusterMemberJoined(memberId, newMembers);
-            }
-        }
-        else if (ChangeType.QUIT == changeType)
-        {
-            if (memberId == this.memberId)
-            {
-                expectedAckPosition = logPosition;
-                state(ConsensusModule.State.QUITTING);
-            }
-            else
-            {
-                final boolean hasCurrentLeaderSteppedDown = leaderMemberId == memberId;
-                clusterMemberQuit(memberId);
-
-                if (hasCurrentLeaderSteppedDown)
+                final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
+                if (memberId == this.memberId)
                 {
-                    commitPosition.proposeMaxOrdered(logPosition);
-                    enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
+                    this.clusterMembers = newMembers;
+                    clusterMemberByIdMap.clear();
+                    clusterMemberByIdMap.compact();
+                    ClusterMember.addClusterMemberIds(newMembers, clusterMemberByIdMap);
+                    thisMember = ClusterMember.findMember(this.clusterMembers, memberId);
+                    leaderMember = ClusterMember.findMember(this.clusterMembers, leaderMemberId);
+
+                    ClusterMember.addMemberStatusPublications(
+                        newMembers,
+                        thisMember,
+                        ChannelUri.parse(ctx.memberStatusChannel()),
+                        ctx.memberStatusStreamId(),
+                        aeron);
+                }
+                else
+                {
+                    clusterMemberJoined(memberId, newMembers);
+                }
+            }
+            else if (ChangeType.QUIT == changeType)
+            {
+                if (memberId == this.memberId)
+                {
+                    expectedAckPosition = logPosition;
+                    state(ConsensusModule.State.QUITTING);
+                }
+                else
+                {
+                    final boolean hasCurrentLeaderSteppedDown = leaderMemberId == memberId;
+                    clusterMemberQuit(memberId);
+
+                    if (hasCurrentLeaderSteppedDown)
+                    {
+                        commitPosition.proposeMaxOrdered(logPosition);
+                        enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
+                    }
                 }
             }
         }
@@ -1630,8 +1626,7 @@ class ConsensusModuleAgent implements Agent
                     }
                 }
 
-                if (memberStatusPublisher.stopCatchup(
-                    follower.publication(), leadershipTermId, logPublisher.position(), follower.id()))
+                if (memberStatusPublisher.stopCatchup(follower.publication(), leadershipTermId, follower.id()))
                 {
                     follower.catchupReplaySessionId(NULL_VALUE);
                 }

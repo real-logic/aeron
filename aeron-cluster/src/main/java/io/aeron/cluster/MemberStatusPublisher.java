@@ -279,11 +279,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean stopCatchup(
-        final ExclusivePublication publication,
-        final long leadershipTermId,
-        final long logPosition,
-        final int followerMemberId)
+    boolean stopCatchup(final ExclusivePublication publication, final long leadershipTermId, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + StopCatchupEncoder.BLOCK_LENGTH;
 
@@ -296,7 +292,6 @@ class MemberStatusPublisher
                 stopCatchupEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
-                    .logPosition(logPosition)
                     .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();

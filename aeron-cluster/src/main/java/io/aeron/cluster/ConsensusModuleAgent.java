@@ -2641,7 +2641,14 @@ class ConsensusModuleAgent implements Agent
 
                 for (int serviceId = serviceAckQueues.length - 1; serviceId >= 0; serviceId--)
                 {
-                    final long snapshotId = serviceAckQueues[serviceId].pollFirst().relevantId();
+                    final ServiceAck serviceAck = serviceAckQueues[serviceId].pollFirst();
+                    if (null == serviceAck || serviceAck.logPosition() != logPosition)
+                    {
+                        throw new ClusterException("invalid ack for serviceId=" + serviceId +
+                            " logPosition=" + logPosition + " " + serviceAck);
+                    }
+
+                    final long snapshotId = serviceAck.relevantId();
                     recordingLog.appendSnapshot(
                         snapshotId, snapshotLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
                 }

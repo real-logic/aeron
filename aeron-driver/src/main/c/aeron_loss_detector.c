@@ -123,7 +123,7 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator(aeron_feedback_delay_g
     return (int64_t)(state->optimal_delay.constant_t * log(x * state->optimal_delay.factor_t));
 }
 
-extern int64_t aeron_loss_detector_nak_unicast_delay_generator();
+extern int64_t aeron_loss_detector_nak_unicast_delay_generator(aeron_feedback_delay_generator_state_t *state);
 extern void aeron_loss_detector_on_gap(void *clientd, int32_t term_id, int32_t term_offset, size_t length);
 extern bool aeron_loss_detector_gaps_match(aeron_loss_detector_t *detector);
 extern void aeron_loss_detector_activate_gap(aeron_loss_detector_t *detector, int64_t now_ns);

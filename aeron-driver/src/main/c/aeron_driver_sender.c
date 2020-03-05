@@ -104,6 +104,9 @@ int aeron_driver_sender_init(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_RECEIVED);
     sender->nak_messages_received_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_RECEIVED);
+    sender->resolution_changes_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
+
     sender->re_resolution_deadline_ns =
         aeron_clock_cached_nano_time(context->cached_clock) + context->re_resolution_check_interval_ns;
 
@@ -170,6 +173,7 @@ int aeron_driver_sender_do_work(void *clientd)
         {
             aeron_udp_transport_poller_check_send_endpoint_re_resolutions(
                 &sender->poller, now_ns, sender->context->conductor_proxy);
+
             sender->re_resolution_deadline_ns = now_ns + sender->context->re_resolution_check_interval_ns;
         }
 
@@ -298,11 +302,13 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command)
 
 void aeron_driver_sender_on_resolution_change(void *clientd, void *command)
 {
+    aeron_driver_sender_t *sender = clientd;
     aeron_command_sender_resolution_change_t *resolution_change = (aeron_command_sender_resolution_change_t *)command;
     aeron_send_channel_endpoint_t *endpoint = resolution_change->endpoint;
 
     aeron_send_channel_endpoint_resolution_change(
         endpoint, resolution_change->endpoint_name, &resolution_change->new_addr);
+    aeron_counter_add_ordered(sender->resolution_changes_counter, 1);
 }
 
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns)

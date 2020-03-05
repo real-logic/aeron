@@ -80,12 +80,12 @@ typedef struct aeron_driver_receiver_stct
     aeron_udp_transport_poller_poll_func_t poller_poll_func;
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func;
     aeron_distinct_error_log_t *error_log;
-    int64_t re_resolution_check_interval_ns;
     int64_t re_resolution_deadline_ns;
 
     int64_t *errors_counter;
     int64_t *invalid_frames_counter;
     int64_t *total_bytes_received_counter;
+    int64_t *resolution_changes_counter;
 }
 aeron_driver_receiver_t;
 

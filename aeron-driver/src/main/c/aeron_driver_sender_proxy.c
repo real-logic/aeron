@@ -234,7 +234,6 @@ void aeron_driver_sender_proxy_on_resolution_change(
             };
         memcpy(&cmd.new_addr, new_addr, sizeof(cmd.new_addr));
 
-        // TODO: (Mike) go via sender and increment counter...
         aeron_driver_sender_on_resolution_change(sender_proxy->sender, &cmd);
     }
     else

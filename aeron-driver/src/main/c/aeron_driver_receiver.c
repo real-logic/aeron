@@ -97,10 +97,11 @@ int aeron_driver_receiver_init(
     receiver->invalid_frames_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
     receiver->total_bytes_received_counter =  aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
+    receiver->resolution_changes_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
 
-    receiver->re_resolution_check_interval_ns = context->re_resolution_check_interval_ns;
     receiver->re_resolution_deadline_ns =
-        aeron_clock_cached_nano_time(context->cached_clock) + receiver->re_resolution_check_interval_ns;
+        aeron_clock_cached_nano_time(context->cached_clock) + context->re_resolution_check_interval_ns;
 
     return 0;
 }
@@ -225,12 +226,12 @@ int aeron_driver_receiver_do_work(void *clientd)
         }
     }
 
-    if (receiver->re_resolution_check_interval_ns > 0 && now_ns > receiver->re_resolution_deadline_ns)
+    if (receiver->context->re_resolution_check_interval_ns > 0 && now_ns > receiver->re_resolution_deadline_ns)
     {
         aeron_udp_transport_poller_check_receive_endpoint_re_resolutions(
             &receiver->poller, now_ns, receiver->context->conductor_proxy);
 
-        receiver->re_resolution_deadline_ns = now_ns + receiver->re_resolution_check_interval_ns;
+        receiver->re_resolution_deadline_ns = now_ns + receiver->context->re_resolution_check_interval_ns;
     }
 
     return work_count;
@@ -418,7 +419,7 @@ void aeron_driver_receiver_on_resolution_change(void *clientd, void *item)
         if (pending_setup->endpoint == cmd->endpoint && pending_setup->is_periodic)
         {
             memcpy(&pending_setup->control_addr, &cmd->new_addr, sizeof(pending_setup->control_addr));
-            // TODO update counter...
+            aeron_counter_add_ordered(receiver->resolution_changes_counter, 1);
         }
     }
 }

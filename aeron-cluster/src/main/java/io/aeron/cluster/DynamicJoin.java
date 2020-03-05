@@ -464,7 +464,7 @@ class DynamicJoin implements AutoCloseable
     private int joinCluster()
     {
         int workCount = 0;
-        final long leadershipTermId = leaderSnapshots.isEmpty() ? -1 : leaderSnapshots.get(0).leadershipTermId;
+        final long leadershipTermId = leaderSnapshots.isEmpty() ? NULL_VALUE : leaderSnapshots.get(0).leadershipTermId;
 
         if (memberStatusPublisher.joinCluster(memberStatusPublication, leadershipTermId, memberId))
         {

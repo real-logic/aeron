@@ -423,7 +423,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             try
             {
                 neighborList.add(new Neighbor(new InetSocketAddress(
-                    InetAddress.getByAddress(neighborAddress), port), nowMs));
+                    InetAddress.getByAddress(neighborAddress), port), timeOfLastActivity));
                 neighborsCounter.setOrdered(neighborList.size());
             }
             catch (final Exception ex)
@@ -433,7 +433,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         }
         else if (isSelf)
         {
-            neighborList.get(neighborIndex).timeOfLastActivityMs = nowMs;
+            neighborList.get(neighborIndex).timeOfLastActivityMs = timeOfLastActivity;
         }
     }
 

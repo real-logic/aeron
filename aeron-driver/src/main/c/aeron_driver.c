@@ -54,6 +54,7 @@
 #endif
 
 #include <inttypes.h>
+#include <stdlib.h>
 #include "util/aeron_error.h"
 #include "aeronmd.h"
 #include "aeron_alloc.h"

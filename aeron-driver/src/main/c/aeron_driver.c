@@ -123,6 +123,7 @@ extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);
 extern int32_t aeron_find_next_power_of_two(int32_t value);
 
 #ifndef HAVE_ARC4RANDOM
+#include <stdlib.h>
 static int aeron_dev_random_fd = -1;
 #endif
 

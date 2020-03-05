@@ -1611,7 +1611,7 @@ class ConsensusModuleAgent implements Agent
 
     public void trackCatchupCompletion(final ClusterMember follower)
     {
-        if (null != follower && NULL_VALUE != follower.catchupReplaySessionId())
+        if (NULL_VALUE != follower.catchupReplaySessionId())
         {
             if (follower.logPosition() >= logPublisher.position())
             {

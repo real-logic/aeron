@@ -76,7 +76,7 @@ class ConsensusModuleAgent implements Agent
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionNs = 0;
     private long timeOfLastMarkFileUpdateNs;
-    private long timeNs;
+    private long timeOfLastSlowTickNs;
     private int pendingServiceMessageHeadOffset = 0;
     private int uncommittedServiceMessages = 0;
     private int logInitialTermId = NULL_VALUE;
@@ -257,7 +257,7 @@ class ConsensusModuleAgent implements Agent
 
             final long now = clusterClock.time();
             final long nowNs = clusterTimeUnit.toNanos(now);
-            timeNs = nowNs;
+            timeOfLastSlowTickNs = nowNs;
             timeOfLastLogUpdateNs = nowNs;
             timeOfLastAppendPositionNs = nowNs;
             leadershipTermId = recoveryPlan.lastLeadershipTermId;
@@ -284,9 +284,9 @@ class ConsensusModuleAgent implements Agent
         final long nowMs = clusterTimeUnit.toMillis(now);
         final long nowNs = clusterTimeUnit.toNanos(now);
 
-        if (nowNs >= (timeNs + SLOW_TICK_INTERVAL_NS))
+        if (nowNs >= (timeOfLastSlowTickNs + SLOW_TICK_INTERVAL_NS))
         {
-            timeNs = nowNs;
+            timeOfLastSlowTickNs = nowNs;
             workCount += slowTickWork(nowMs, nowNs);
         }
 
@@ -790,8 +790,9 @@ class ConsensusModuleAgent implements Agent
     {
         if (isExtendedRequest)
         {
+            final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
             serviceProxy.clusterMembersExtendedResponse(
-                correlationId, timeNs, leaderMember.id(), memberId, clusterMembers, passiveMembers);
+                correlationId, nowNs, leaderMember.id(), memberId, clusterMembers, passiveMembers);
         }
         else
         {

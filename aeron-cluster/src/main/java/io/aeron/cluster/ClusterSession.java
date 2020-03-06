@@ -26,7 +26,7 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
-class ClusterSession implements AutoCloseable
+class ClusterSession
 {
     static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
@@ -41,6 +41,7 @@ class ClusterSession implements AutoCloseable
     private final long id;
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
+    private long closedLogPosition = Aeron.NULL_VALUE;
     private long timeOfLastActivityNs;
     private boolean isBackupQuery = false;
     private final int responseStreamId;
@@ -87,14 +88,22 @@ class ClusterSession implements AutoCloseable
         }
     }
 
-    public void close()
+    public void close(final ErrorHandler errorHandler)
     {
         final Publication responsePublication = this.responsePublication;
         this.responsePublication = null;
         state(State.CLOSED);
+
         if (null != responsePublication)
         {
-            responsePublication.close();
+            try
+            {
+                responsePublication.close();
+            }
+            catch (final Throwable ex)
+            {
+                errorHandler.onError(ex);
+            }
         }
     }
 
@@ -113,10 +122,10 @@ class ClusterSession implements AutoCloseable
         return responseChannel;
     }
 
-    void close(final CloseReason closeReason)
+    void close(final CloseReason closeReason, final ErrorHandler errorHandler)
     {
         this.closeReason = closeReason;
-        close();
+        close(errorHandler);
     }
 
     CloseReason closeReason()
@@ -251,6 +260,16 @@ class ClusterSession implements AutoCloseable
         return openedLogPosition;
     }
 
+    void closedLogPosition(final long closedLogPosition)
+    {
+        this.closedLogPosition = closedLogPosition;
+    }
+
+    long closedLogPosition()
+    {
+        return closedLogPosition;
+    }
+
     void hasNewLeaderEventPending(final boolean flag)
     {
         hasNewLeaderEventPending = flag;
@@ -294,6 +313,7 @@ class ClusterSession implements AutoCloseable
             "id=" + id +
             ", correlationId=" + correlationId +
             ", openedLogPosition=" + openedLogPosition +
+            ", closedLogPosition=" + closedLogPosition +
             ", timeOfLastActivityNs=" + timeOfLastActivityNs +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +

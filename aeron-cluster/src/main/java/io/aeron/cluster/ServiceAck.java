@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.ClusterException;
+
 import java.util.ArrayDeque;
 
 /**
@@ -62,12 +64,12 @@ class ServiceAck
 
             if (serviceAck.ackId != ackId)
             {
-                throw new IllegalStateException(ackId + " ack out of sequence " + serviceAck);
+                throw new ClusterException(ackId + " ack out of sequence " + serviceAck);
             }
 
             if (serviceAck.logPosition != logPosition)
             {
-                throw new IllegalStateException(logPosition + " log position out of sequence " + serviceAck);
+                throw new ClusterException(logPosition + " log position out of sequence " + serviceAck);
             }
         }
 

@@ -1184,7 +1184,7 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void onMembershipChange(
+    void onReplayMembershipChange(
         final long leadershipTermId,
         final long logPosition,
         @SuppressWarnings("unused") final long timestamp,

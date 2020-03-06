@@ -180,7 +180,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onMembershipChange(
+                consensusModuleAgent.onReplayMembershipChange(
                     membershipChangeEventDecoder.leadershipTermId(),
                     membershipChangeEventDecoder.logPosition(),
                     membershipChangeEventDecoder.timestamp(),

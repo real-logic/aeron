@@ -84,6 +84,15 @@ public class Tests
         }
     }
 
+    public static void checkInterruptStatus(final String message)
+    {
+        if (Thread.interrupted())
+        {
+            unexpectedInterruptStackTrace(message);
+            fail("unexpected interrupt - " + message);
+        }
+    }
+
     public static void unexpectedInterruptStackTrace(final String message)
     {
         final StringBuilder sb = new StringBuilder();
@@ -162,6 +171,12 @@ public class Tests
         checkInterruptStatus(format, params);
     }
 
+    public static void wait(final IdleStrategy idleStrategy, final String message)
+    {
+        idleStrategy.idle();
+        checkInterruptStatus(message);
+    }
+
     public static void yieldingWait(final Supplier<String> messageSupplier)
     {
         wait(YieldingIdleStrategy.INSTANCE, messageSupplier);
@@ -170,6 +185,11 @@ public class Tests
     public static void yieldingWait(final String format, final Object... params)
     {
         wait(YieldingIdleStrategy.INSTANCE, format, params);
+    }
+
+    public static void yieldingWait(final String message)
+    {
+        wait(YieldingIdleStrategy.INSTANCE, message);
     }
 
     /**

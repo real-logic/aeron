@@ -74,6 +74,7 @@ class RecordingSession implements Session
         this.position = position;
         this.controlSession = controlSession;
         countedErrorHandler = ctx.countedErrorHandler();
+        progressEventPosition = image.joinPosition();
 
         blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
         recordingWriter = new RecordingWriter(

@@ -191,6 +191,7 @@ public class ArchiveTest
 
         final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
         final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+        Tests.await(recordingEvents::isConnected, TIMEOUT_NS);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
@@ -235,6 +236,7 @@ public class ArchiveTest
 
         final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
         final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+        Tests.await(recordingEvents::isConnected, TIMEOUT_NS);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
@@ -284,6 +286,7 @@ public class ArchiveTest
 
         final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
         final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+        Tests.await(recordingEvents::isConnected, TIMEOUT_NS);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);

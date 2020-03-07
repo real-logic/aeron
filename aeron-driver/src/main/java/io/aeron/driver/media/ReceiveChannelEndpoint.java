@@ -67,6 +67,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Long groupTag;
 
     private final long receiverId;
+    private InetSocketAddress currentControlAddress;
     private long timeOfLastActivityNs;
 
     public ReceiveChannelEndpoint(
@@ -101,6 +102,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
+        currentControlAddress = udpChannel.localControl();
     }
 
     /**
@@ -267,7 +269,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public InetSocketAddress explicitControlAddress()
     {
-        return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
+        return udpChannel.hasExplicitControl() ? currentControlAddress : null;
     }
 
     public boolean hasDestinationControl()
@@ -593,11 +595,24 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
         else if (udpChannel.hasExplicitControl() && nowNs > (timeOfLastActivityNs + DESTINATION_ADDRESS_TIMEOUT))
         {
-            final String endpoint = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME);
-            final InetSocketAddress address = udpChannel.localControl();
-
-            conductorProxy.reResolveControl(endpoint, udpChannel, this, address);
+            conductorProxy.reResolveControl(
+                udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME),
+                udpChannel,
+                this,
+                currentControlAddress);
             timeOfLastActivityNs = nowNs;
+        }
+    }
+
+    public void updateControlAddress(final int transportIndex, final InetSocketAddress newAddress)
+    {
+        if (null != multiRcvDestination)
+        {
+            multiRcvDestination.updateControlAddress(transportIndex, newAddress);
+        }
+        else if (udpChannel.hasExplicitControl())
+        {
+            currentControlAddress = newAddress;
         }
     }
 

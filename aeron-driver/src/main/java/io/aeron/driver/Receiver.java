@@ -258,6 +258,8 @@ public class Receiver implements Agent
                 resolutionChanges.getAndAddOrdered(1);
             }
         }
+
+        channelEndpoint.updateControlAddress(transportIndex, newAddress);
     }
 
     private void checkPendingSetupMessages(final long nowNs)

@@ -124,12 +124,26 @@ final class MultiRcvDestination
                 if (udpChannel.hasExplicitControl() &&
                     (transport.timeOfLastActivityNs() + destinationEndpointTimeoutNs) < nowNs)
                 {
-                    final String endpoint = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME);
-                    final InetSocketAddress address = udpChannel.localControl();
-
-                    conductorProxy.reResolveControl(endpoint, udpChannel, channelEndpoint, address);
+                    conductorProxy.reResolveControl(
+                        udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME),
+                        udpChannel,
+                        channelEndpoint,
+                        transport.currentControlAddress());
                     transport.timeOfLastActivityNs(nowNs);
                 }
+            }
+        }
+    }
+
+    void updateControlAddress(final int transportIndex, final InetSocketAddress newAddress)
+    {
+        if (ArrayUtil.UNKNOWN_INDEX != transportIndex)
+        {
+            final ReceiveDestinationTransport transport = transports[transportIndex];
+
+            if (null != transport)
+            {
+                transport.currentControlAddress(newAddress);
             }
         }
     }

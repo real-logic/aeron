@@ -42,6 +42,7 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -327,22 +328,32 @@ public class DriverConductor implements Agent
         final InetSocketAddress newAddress = UdpChannel.resolve(
             endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
 
-        if (!newAddress.isUnresolved() && !address.equals(newAddress))
+        if (newAddress.isUnresolved())
+        {
+            ctx.errorHandler().onError(new UnknownHostException(
+                "endpoint could not be resolved: endpoint=" + endpoint));
+        }
+        else if (!address.equals(newAddress))
         {
             senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
         }
     }
 
     void onReResolveControl(
-        final String endpoint,
+        final String control,
         final UdpChannel udpChannel,
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
         final InetSocketAddress newAddress = UdpChannel.resolve(
-            endpoint, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
+            control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
 
-        if (!newAddress.isUnresolved() && !address.equals(newAddress))
+        if (newAddress.isUnresolved())
+        {
+            ctx.errorHandler().onError(new UnknownHostException(
+                "control could not be resolved: control=" + control));
+        }
+        else if (!address.equals(newAddress))
         {
             receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
         }

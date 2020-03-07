@@ -28,12 +28,14 @@ import java.nio.channels.SelectionKey;
 public class ReceiveDestinationTransport extends UdpChannelTransport
 {
     private long timeOfLastActivityNs;
+    private InetSocketAddress currentControlAddress;
 
     public ReceiveDestinationTransport(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
         super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
 
         this.timeOfLastActivityNs = context.cachedNanoClock().nanoTime();
+        this.currentControlAddress = udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy, final AtomicCounter statusIndicator)
@@ -63,7 +65,7 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
 
     public InetSocketAddress explicitControlAddress()
     {
-        return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
+        return udpChannel.hasExplicitControl() ? currentControlAddress : null;
     }
 
     public void selectionKey(final SelectionKey key)
@@ -84,5 +86,15 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
     public UdpChannel udpChannel()
     {
         return udpChannel;
+    }
+
+    public InetSocketAddress currentControlAddress()
+    {
+        return currentControlAddress;
+    }
+
+    public void currentControlAddress(final InetSocketAddress newAddress)
+    {
+        this.currentControlAddress = newAddress;
     }
 }

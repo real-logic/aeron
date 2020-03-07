@@ -157,7 +157,7 @@ public class DriverConductor implements Agent
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
 
-        CloseHelper.close(driverNameResolver);
+        CloseHelper.close(ctx.errorHandler(), driverNameResolver);
         ctx.close();
     }
 
@@ -361,8 +361,8 @@ public class DriverConductor implements Agent
 
     void closeChannelEndpoints()
     {
-        receiveChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
-        sendChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
+        CloseHelper.closeAll(ctx.errorHandler(), receiveChannelEndpointByChannelMap.values());
+        CloseHelper.closeAll(ctx.errorHandler(), sendChannelEndpointByChannelMap.values());
     }
 
     SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)

@@ -176,7 +176,6 @@ public class DriverConductorTest
     @AfterEach
     public void after()
     {
-        //driverConductor.closeChannelEndpoints();
         CloseHelper.close(receiveChannelEndpoint);
         driverConductor.onClose();
     }

@@ -29,6 +29,7 @@ import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -102,6 +103,7 @@ public class DriverConductorTest
     private final SenderProxy senderProxy = mock(SenderProxy.class);
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
     private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
+    private ReceiveChannelEndpoint receiveChannelEndpoint = null;
 
     private long currentTimeMs;
     private final EpochClock epochClock = () -> currentTimeMs;
@@ -174,7 +176,8 @@ public class DriverConductorTest
     @AfterEach
     public void after()
     {
-        driverConductor.closeChannelEndpoints();
+        //driverConductor.closeChannelEndpoints();
+        CloseHelper.close(receiveChannelEndpoint);
         driverConductor.onClose();
     }
 
@@ -360,10 +363,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
-        assertNotNull(channelEndpoint);
-        assertEquals(3, channelEndpoint.streamCount());
+        assertNotNull(receiveChannelEndpoint);
+        assertEquals(3, receiveChannelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
@@ -371,7 +374,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
-        assertEquals(1, channelEndpoint.streamCount());
+        assertEquals(1, receiveChannelEndpoint.streamCount());
     }
 
     @Test
@@ -385,10 +388,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
-        assertNotNull(channelEndpoint);
-        assertEquals(3, channelEndpoint.streamCount());
+        assertNotNull(receiveChannelEndpoint);
+        assertEquals(3, receiveChannelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id2);
         driverProxy.removeSubscription(id3);
@@ -396,13 +399,14 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
-        assertEquals(1, channelEndpoint.streamCount());
+        assertEquals(1, receiveChannelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id1);
 
         driverConductor.doWork();
 
-        assertNull(driverConductor.receiverChannelEndpoint(udpChannel));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        assertNull(receiveChannelEndpoint);
     }
 
     @Test
@@ -583,8 +587,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
@@ -596,7 +599,8 @@ public class DriverConductorTest
         verify(receiverProxy, times(1))
             .removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
-        assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        assertNull(receiveChannelEndpoint);
     }
 
     @Test
@@ -606,8 +610,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
@@ -638,8 +641,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
@@ -668,8 +670,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
@@ -692,8 +693,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
@@ -725,8 +725,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
@@ -774,8 +773,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint =
-            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);

@@ -359,12 +359,6 @@ public class DriverConductor implements Agent
         }
     }
 
-    void closeChannelEndpoints()
-    {
-        CloseHelper.closeAll(ctx.errorHandler(), receiveChannelEndpointByChannelMap.values());
-        CloseHelper.closeAll(ctx.errorHandler(), sendChannelEndpointByChannelMap.values());
-    }
-
     SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
         return sendChannelEndpointByChannelMap.get(channel.canonicalForm());

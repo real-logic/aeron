@@ -162,8 +162,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
             throw new AeronException(
                 "channel error - " + ex.getMessage() +
-                    " (at " + ex.getStackTrace()[0].toString() + "): " +
-                    udpChannel.originalUriString(), ex);
+                " (at " + ex.getStackTrace()[0].toString() + "): " +
+                udpChannel.originalUriString(), ex);
         }
     }
 
@@ -243,17 +243,13 @@ public abstract class UdpChannelTransport implements AutoCloseable
             isClosed = true;
             if (null != selectionKey)
             {
-                CloseHelper.close(errorHandler, selectionKey::cancel);
+                selectionKey.cancel();
             }
 
             if (null != transportPoller)
             {
-                CloseHelper.close(errorHandler,
-                    () ->
-                    {
-                        transportPoller.cancelRead(this);
-                        transportPoller.selectNowWithoutProcessing();
-                    });
+                transportPoller.cancelRead(this);
+                transportPoller.selectNowWithoutProcessing();
             }
 
             CloseHelper.close(errorHandler, sendDatagramChannel);
@@ -265,7 +261,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
             if (null != transportPoller)
             {
-                CloseHelper.close(errorHandler, transportPoller::selectNowWithoutProcessing);
+                transportPoller.selectNowWithoutProcessing();
             }
         }
     }

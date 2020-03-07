@@ -224,7 +224,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (-1 == count)
         {
             refCountByStreamIdMap.remove(streamId);
-            throw new IllegalStateException("could not find stream Id to decrement: " + streamId);
+            throw new IllegalStateException("unknown stream Id: " + streamId);
         }
 
         return count;
@@ -243,8 +243,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (-1 == count)
         {
             refCountByStreamIdAndSessionIdMap.remove(key);
-            throw new IllegalStateException(
-                "could not find stream Id + session Id to decrement: " + streamId + " " + sessionId);
+            throw new IllegalStateException("unknown stream Id + session Id: " + streamId + " " + sessionId);
         }
 
         return count;
@@ -300,10 +299,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             return super.isMulticast();
         }
-        else
-        {
-            throw new IllegalStateException("isMulticast for unknown index " + transportIndex);
-        }
+
+        throw new IllegalStateException("isMulticast for unknown index " + transportIndex);
     }
 
     public UdpChannel udpChannel()
@@ -321,10 +318,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             return super.udpChannel();
         }
-        else
-        {
-            throw new IllegalStateException("udpChannel for unknown index " + transportIndex);
-        }
+
+        throw new IllegalStateException("udpChannel for unknown index " + transportIndex);
     }
 
     public boolean hasTag()
@@ -357,10 +352,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             return super.multicastTtl();
         }
-        else
-        {
-            throw new IllegalStateException("multicastTtl for unknown index " + transportIndex);
-        }
+
+        throw new IllegalStateException("multicastTtl for unknown index " + transportIndex);
     }
 
     public int addDestination(final ReceiveDestinationTransport transport)
@@ -618,16 +611,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     protected void send(final ByteBuffer buffer, final int bytesToSend, final ImageConnection[] imageConnections)
     {
-        final int bytesSent;
-
-        if (null == multiRcvDestination)
-        {
-            bytesSent = sendTo(buffer, imageConnections[0].controlAddress);
-        }
-        else
-        {
-            bytesSent = multiRcvDestination.sendToAll(imageConnections, buffer, 0, bytesToSend);
-        }
+        final int bytesSent = null == multiRcvDestination ?
+            sendTo(buffer, imageConnections[0].controlAddress) :
+            multiRcvDestination.sendToAll(imageConnections, buffer, bytesToSend);
 
         if (bytesToSend != bytesSent)
         {
@@ -641,17 +627,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final int transportIndex,
         final InetSocketAddress remoteAddress)
     {
-        final int bytesSent;
-
-        if (null == multiRcvDestination)
-        {
-            bytesSent = sendTo(buffer, remoteAddress);
-        }
-        else
-        {
-            bytesSent = MultiRcvDestination.sendTo(
-                multiRcvDestination.transport(transportIndex), buffer, remoteAddress);
-        }
+        final int bytesSent = null == multiRcvDestination ?
+            sendTo(buffer, remoteAddress) :
+            MultiRcvDestination.sendTo(multiRcvDestination.transport(transportIndex), buffer, remoteAddress);
 
         if (bytesToSend != bytesSent)
         {

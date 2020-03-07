@@ -52,7 +52,7 @@ final class MultiRcvDestination
             CloseHelper.close(errorHandler, transport);
             if (null != poller)
             {
-                CloseHelper.close(errorHandler, poller::selectNowWithoutProcessing);
+                poller.selectNowWithoutProcessing();
             }
         }
     }
@@ -148,11 +148,7 @@ final class MultiRcvDestination
         }
     }
 
-    int sendToAll(
-        final ImageConnection[] imageConnections,
-        final ByteBuffer buffer,
-        final int bufferPosition,
-        final int bytesToSend)
+    int sendToAll(final ImageConnection[] imageConnections, final ByteBuffer buffer, final int bytesToSend)
     {
         final ReceiveDestinationTransport[] transports = this.transports;
         final long nowNs = nanoClock.nanoTime();
@@ -167,7 +163,7 @@ final class MultiRcvDestination
                 final UdpChannelTransport transport = transports[i];
                 if (null != transport && ((connection.timeOfLastActivityNs + destinationEndpointTimeoutNs) - nowNs > 0))
                 {
-                    buffer.position(bufferPosition);
+                    buffer.position(0);
                     minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, connection.controlAddress));
                 }
             }

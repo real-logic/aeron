@@ -90,7 +90,6 @@ public class IpcPublicationTest
         driverConductor.doWork();
 
         ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID);
-
         publisherLimit = new UnsafeBufferPosition(counterBuffer, ipcPublication.publisherLimitId());
     }
 

@@ -23,7 +23,6 @@ import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
-import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -289,11 +288,12 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verify(receiverProxy).registerReceiveChannelEndpoint(any());
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
+        receiveChannelEndpoint = captor.getValue();
+
         verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
         verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
-
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test
@@ -304,7 +304,8 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+        verify(receiverProxy).registerReceiveChannelEndpoint(any());
+        verify(receiverProxy).closeReceiveChannelEndpoint(any());
     }
 
     @Test
@@ -328,8 +329,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_TIMEOUT_NS * 2) - nanoClock.nanoTime() < 0);
 
+        verify(senderProxy).registerSendChannelEndpoint(any());
         verify(senderProxy).removeNetworkPublication(any());
-        assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test
@@ -354,15 +355,15 @@ public class DriverConductorTest
     @Test
     public void shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber()
     {
-        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000);
-
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_3);
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
+        receiveChannelEndpoint = captor.getValue();
 
         assertNotNull(receiveChannelEndpoint);
         assertEquals(3, receiveChannelEndpoint.streamCount());
@@ -372,22 +373,21 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertEquals(1, receiveChannelEndpoint.streamCount());
     }
 
     @Test
     public void shouldOnlyRemoveSubscriptionMediaEndpointUponRemovalOfAllSubscribers()
     {
-        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000);
-
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
         final long id3 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_3);
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
+        receiveChannelEndpoint = captor.getValue();
 
         assertNotNull(receiveChannelEndpoint);
         assertEquals(3, receiveChannelEndpoint.streamCount());
@@ -397,15 +397,13 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertEquals(1, receiveChannelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id1);
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
-        assertNull(receiveChannelEndpoint);
+        verify(receiverProxy).closeReceiveChannelEndpoint(receiveChannelEndpoint);
     }
 
     @Test
@@ -495,7 +493,7 @@ public class DriverConductorTest
         verify(mockClientProxy, times(1))
             .onClientTimeout(driverProxy.clientId());
         verify(senderProxy).removeNetworkPublication(eq(publication));
-        assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+        verify(senderProxy).registerSendChannelEndpoint(any());
     }
 
     @Test
@@ -576,7 +574,7 @@ public class DriverConductorTest
         assertEquals(NetworkPublication.State.CLOSING, publication.state());
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
-        assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+        verify(senderProxy).registerSendChannelEndpoint(any());
     }
 
     @Test
@@ -586,8 +584,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
+        receiveChannelEndpoint = captor.getValue();
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
@@ -598,8 +597,7 @@ public class DriverConductorTest
         verify(receiverProxy, times(1))
             .removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNull(receiveChannelEndpoint);
+        verify(receiverProxy).closeReceiveChannelEndpoint(receiveChannelEndpoint);
     }
 
     @Test
@@ -609,8 +607,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
+        receiveChannelEndpoint = captor.getValue();
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
@@ -625,7 +624,6 @@ public class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(receiverProxy, never()).removeSubscription(any(), anyInt());
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test
@@ -640,8 +638,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor1 = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
+        receiveChannelEndpoint = captor1.getValue();
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
 
@@ -649,10 +648,10 @@ public class DriverConductorTest
             SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
 
-        final PublicationImage publicationImage = captor.getValue();
+        final PublicationImage publicationImage = captor2.getValue();
         assertEquals(SESSION_ID, publicationImage.sessionId());
         assertEquals(STREAM_ID_1, publicationImage.streamId());
 
@@ -669,8 +668,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
+        receiveChannelEndpoint = captor.getValue();
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
 
@@ -692,8 +692,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor1 = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
+        receiveChannelEndpoint = captor1.getValue();
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
 
@@ -701,10 +702,10 @@ public class DriverConductorTest
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
 
-        final PublicationImage publicationImage = captor.getValue();
+        final PublicationImage publicationImage = captor2.getValue();
 
         publicationImage.activate();
         publicationImage.ifActiveGoInactive();
@@ -724,8 +725,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor1 = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
+        receiveChannelEndpoint = captor1.getValue();
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
 
@@ -733,10 +735,10 @@ public class DriverConductorTest
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
 
-        final PublicationImage publicationImage = captor.getValue();
+        final PublicationImage publicationImage = captor2.getValue();
 
         publicationImage.activate();
 
@@ -772,8 +774,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        receiveChannelEndpoint = driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
-        assertNotNull(receiveChannelEndpoint);
+        final ArgumentCaptor<ReceiveChannelEndpoint> captor1 = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
+        verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
+        receiveChannelEndpoint = captor1.getValue();
 
         receiveChannelEndpoint.openChannel(driverConductorProxy);
 
@@ -781,10 +784,10 @@ public class DriverConductorTest
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
 
-        final PublicationImage publicationImage = captor.getValue();
+        final PublicationImage publicationImage = captor2.getValue();
 
         publicationImage.activate();
         publicationImage.ifActiveGoInactive();
@@ -1011,8 +1014,6 @@ public class DriverConductorTest
         verify(receiverProxy, never()).registerReceiveChannelEndpoint(any());
         verify(receiverProxy, never()).addSubscription(any(), eq(STREAM_ID_1));
         verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
-
-        assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test

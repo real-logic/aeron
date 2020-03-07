@@ -359,16 +359,6 @@ public class DriverConductor implements Agent
         }
     }
 
-    SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
-    {
-        return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
-    }
-
-    ReceiveChannelEndpoint receiverChannelEndpoint(final UdpChannel channel)
-    {
-        return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
-    }
-
     IpcPublication getSharedIpcPublication(final long streamId)
     {
         return findSharedIpcPublication(ipcPublications, streamId);

@@ -34,6 +34,7 @@ endif ()
 set(SOURCE
     collections/aeron_int64_to_ptr_hash_map.c
     concurrent/aeron_atomic.c
+    concurrent/aeron_broadcast_receiver.c
     concurrent/aeron_counters_manager.c
     concurrent/aeron_distinct_error_log.c
     concurrent/aeron_logbuffer_descriptor.c
@@ -72,6 +73,7 @@ set(HEADERS
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_atomic64_msvc.h
+    concurrent/aeron_broadcast_receiver.h
     concurrent/aeron_concurrent_array_queue.h
     concurrent/aeron_counters_manager.h
     concurrent/aeron_distinct_error_log.h

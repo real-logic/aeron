@@ -359,6 +359,7 @@ class ConsensusModuleAgent implements Agent
 
             if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
             {
+                session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -972,6 +973,7 @@ class ConsensusModuleAgent implements Agent
             if (Cluster.Role.LEADER == role &&
                 logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
             {
+                session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -2238,6 +2240,7 @@ class ConsensusModuleAgent implements Agent
                     session.close(CloseReason.TIMEOUT, ctx.countedErrorHandler());
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
+                        session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
                         ctx.timedOutClientCounter().incrementOrdered();
@@ -2247,6 +2250,7 @@ class ConsensusModuleAgent implements Agent
                 {
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
+                        session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
                         if (session.closeReason() == CloseReason.TIMEOUT)

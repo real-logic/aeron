@@ -62,7 +62,7 @@ class ClusterSession
     }
 
     ClusterSession(
-        final long sessionId,
+        final long id,
         final long correlationId,
         final long openedLogPosition,
         final long timeOfLastActivityNs,
@@ -70,7 +70,7 @@ class ClusterSession
         final String responseChannel,
         final CloseReason closeReason)
     {
-        this.id = sessionId;
+        this.id = id;
         this.responseStreamId = responseStreamId;
         this.responseChannel = responseChannel;
         this.openedLogPosition = openedLogPosition;
@@ -90,21 +90,9 @@ class ClusterSession
 
     public void close(final ErrorHandler errorHandler)
     {
-        final Publication responsePublication = this.responsePublication;
+        CloseHelper.close(errorHandler, responsePublication);
         this.responsePublication = null;
         state(State.CLOSED);
-
-        if (null != responsePublication)
-        {
-            try
-            {
-                responsePublication.close();
-            }
-            catch (final Throwable ex)
-            {
-                errorHandler.onError(ex);
-            }
-        }
     }
 
     long id()

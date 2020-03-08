@@ -25,13 +25,19 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
+#define AERON_NULL_VALUE (-1)
+
 typedef struct aeron_context_stct aeron_context_t;
 typedef struct aeron_stct aeron_t;
+typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
 typedef struct aeron_publication_stct aeron_publication_t;
 typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
+typedef struct aeron_header_stct aeron_header_t;
 typedef struct aeron_subscription_stct aeron_subscription_t;
 typedef struct aeron_image_stct aeron_image_t;
 typedef struct aeron_counter_stct aeron_counter_t;
+
+typedef struct aeron_counters_reader_stct aeron_counters_reader_t;
 
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
@@ -48,6 +54,23 @@ int aeron_context_set_agent_on_start_function(
     aeron_context_t *context, aeron_agent_on_start_func_t value, void *state);
 aeron_agent_on_start_func_t aeron_context_get_agent_on_start_function(aeron_context_t *context);
 void *aeron_context_get_agent_on_start_state(aeron_context_t *context);
+
+typedef void (*aeron_on_new_publication_t)(
+    void *clientd, const char *channel, int32_t stream_id, int32_t session_id, int64_t correlation_id);
+typedef void (*aeron_on_new_subscription_t)(
+    void *clientd, const char *channel, int32_t stream_id, int64_t correlation_id);
+
+typedef void (*aeron_on_available_image_t)(void *clientd, aeron_image_t *image);
+typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_image_t *image);
+
+typedef void (*aeron_on_available_counter_t)(
+    void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
+typedef void (*aeron_on_unavailable_counter_t)(
+    void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
+
+typedef void (*aeron_on_close_client_t)(void *clientd);
+
+typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
 
 /**
  * Create a aeron_context_t struct and initialize with default values.
@@ -112,28 +135,149 @@ void aeron_main_idle_strategy(aeron_t *client, int work_count);
 int aeron_close(aeron_t *client);
 
 /*
- * TODO: functions for API pub/sub/etc. Use non-blocking C++ mechanic
+ * Aeron API functions
  */
+
+void aeron_print_counters(aeron_t *client, void (*stream_out)(const char *));
+aeron_context_t *aeron_context(aeron_t *client);
+int64_t aeron_client_id(aeron_t *client);
+int64_t aeron_next_correlation_id(aeron_t *client);
 
 int64_t aeron_add_publication(aeron_t *client, const char *uri);
 int aeron_find_publication(aeron_publication_t **publication, aeron_t *client, int64_t registration_id);
-int aeron_publication_close(aeron_publication_t *publication);
 
 int64_t aeron_add_exclusive_publication(aeron_t *client, const char *uri);
 int aeron_find_exclusive_publication(
     aeron_exclusive_publication_t **publication, aeron_t *client, int64_t registration_id);
-int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
-
-typedef void (*aeron_on_available_image_handler_t)(aeron_image_t *image);
-typedef void (*aeron_on_unavailable_image_handler_t)(aeron_image_t *image);
 
 int64_t aeron_add_subscription(
     aeron_t *client,
     const char *uri,
-    aeron_on_available_image_handler_t on_available_image_handler,
-    aeron_on_unavailable_image_handler_t on_unavailable_image_handler);
+    aeron_on_available_image_t on_available_image_handler,
+    void *on_available_image_clientd,
+    aeron_on_unavailable_image_t on_unavailable_image_handler,
+    void *on_unavailable_image_clientd);
 int aeron_find_subscription(aeron_subscription_t **subscription, aeron_t *client, int64_t registration_id);
+
+aeron_counters_reader_t *aeron_counters_reader(aeron_t *client);
+
+int64_t aeron_add_counter(
+    aeron_t *client,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length);
+int aeron_find_counter(aeron_counter_t **counter, aeron_t *client, int64_t registration_id);
+
+int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_t handler, void *clientd);
+int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_t handler, void *clientd);
+int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_t handler, void *clientd);
+int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_t handler, void *clientd);
+
+int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_t handler, void *clientd);
+int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_t handler, void *clientd);
+
+/*
+ * Publication functions
+ */
+
+#define AERON_PUBLICATION_NOT_CONNECTED (-1L)
+#define AERON_PUBLICATION_BACK_PRESSURED (-2L)
+#define AERON_PUBLICATION_ADMIN_ACTION (-3L)
+#define AERON_PUBLICATION_CLOSED (-4L)
+#define AERON_PUBLICATION_MAX_POSITION_EXCEEDED (-5L)
+
+typedef int64_t (*aeron_reserved_value_supplier_t)(uint8_t *buffer, size_t frame_length);
+typedef struct aeron_iovec_stct
+{
+    uint8_t *iov_base;
+    size_t iov_len;
+}
+aeron_iovec_t;
+
+int64_t aeron_publication_offer(
+    aeron_publication_t *publication,
+    uint8_t *buffer,
+    size_t length,
+    aeron_reserved_value_supplier_t reserved_value_supplier);
+
+int64_t aeron_publication_offerv(
+    aeron_publication_t *publication,
+    aeron_iovec_t *iov,
+    size_t iovcnt,
+    aeron_reserved_value_supplier_t reserved_value_supplier);
+
+int64_t aeron_publication_try_claim(
+    aeron_publication_t *publication,
+    size_t length,
+    aeron_buffer_claim_t *buffer_claim);
+
+int aeron_publication_close(aeron_publication_t *publication);
+
+/*
+ * Exclusive Publication functions
+ */
+
+int64_t aeron_exclusive_publication_offer(
+    aeron_exclusive_publication_t *publication,
+    uint8_t *buffer,
+    size_t length,
+    aeron_reserved_value_supplier_t reserved_value_supplier);
+
+int64_t aeron_exclusive_publication_offerv(
+    aeron_exclusive_publication_t *publication,
+    aeron_iovec_t *iov,
+    size_t iovcnt,
+    aeron_reserved_value_supplier_t reserved_value_supplier);
+
+int64_t aeron_exclusive_publication_try_claim(
+    aeron_exclusive_publication_t *publication,
+    size_t length,
+    aeron_buffer_claim_t *buffer_claim);
+
+int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
+
+/*
+ * Subscription functions
+ */
+
+typedef void (*aeron_fragment_handler_t)(uint8_t *buffer, size_t length, aeron_header_t *header);
+
+typedef enum aeron_controlled_fragment_handler_action_en
+{
+    AERON_ACTION_ABORT, AERON_ACTION_BREAK, AERON_ACTION_COMMIT, AERON_ACTION_CONTINUE
+}
+aeron_controlled_fragment_handler_action_t;
+typedef aeron_controlled_fragment_handler_action_t (*aeron_controlled_fragment_handler_t)(
+    uint8_t *buffer, size_t length, aeron_header_t *header);
+
+int aeron_subscription_poll(aeron_subscription_t *subscription, aeron_fragment_handler_t handler, int fragment_limit);
+int aeron_subscription_controlled_poll(
+    aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, int fragment_limit);
+
+aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id);
+
 int aeron_subscription_close(aeron_subscription_t *subscription);
+
+/*
+ * Image functions
+ */
+
+int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, int fragment_limit);
+int aeron_image_controlled_poll(aeron_image_t *image, aeron_controlled_fragment_handler_t handler, int fragment_limit);
+int aeron_image_bounded_poll(
+    aeron_image_t *image, aeron_fragment_handler_t handler, int64_t limit_position, int fragment_limit);
+int aeron_image_bounded_controlled_poll(
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, int64_t limit_position, int fragment_limit);
+int64_t aeron_image_controlled_peek(
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handker, int64_t limit_position);
+
+/*
+ * Counter functions
+ */
+
+int aeron_counter_close(aeron_counter_t *counter);
 
 /**
  * Return full version and build string.

@@ -100,6 +100,7 @@ set(HEADERS
     aeron_agent.h
     aeron_alloc.h
     aeron_common.h
+    aeron_context.h
     aeron_socket.h
     aeron_windows.h
     )

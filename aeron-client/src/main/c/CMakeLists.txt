@@ -12,6 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS ON)
+endif ()
+
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
+    set(WSAPOLL_PROTOTYPE_EXISTS True)
+endif ()
+
+if (WSAPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_WSAPOLL)
+endif ()
+
 set(SOURCE
     collections/aeron_int64_to_ptr_hash_map.c
     concurrent/aeron_atomic.c

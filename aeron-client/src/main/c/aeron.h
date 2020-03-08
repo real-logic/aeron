@@ -28,6 +28,7 @@ extern "C"
 typedef struct aeron_context_stct aeron_context_t;
 typedef struct aeron_stct aeron_t;
 typedef struct aeron_publication_stct aeron_publication_t;
+typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_subscription_stct aeron_subscription_t;
 typedef struct aeron_image_stct aeron_image_t;
 typedef struct aeron_counter_stct aeron_counter_t;
@@ -111,12 +112,28 @@ void aeron_main_idle_strategy(aeron_t *client, int work_count);
 int aeron_close(aeron_t *client);
 
 /*
- * TODO: functions for API pub/sub/etc.
+ * TODO: functions for API pub/sub/etc. Use non-blocking C++ mechanic
  */
+
 int64_t aeron_add_publication(aeron_t *client, const char *uri);
 int aeron_find_publication(aeron_publication_t **publication, aeron_t *client, int64_t registration_id);
 int aeron_publication_close(aeron_publication_t *publication);
 
+int64_t aeron_add_exclusive_publication(aeron_t *client, const char *uri);
+int aeron_find_exclusive_publication(
+    aeron_exclusive_publication_t **publication, aeron_t *client, int64_t registration_id);
+int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
+
+typedef void (*aeron_on_available_image_handler_t)(aeron_image_t *image);
+typedef void (*aeron_on_unavailable_image_handler_t)(aeron_image_t *image);
+
+int64_t aeron_add_subscription(
+    aeron_t *client,
+    const char *uri,
+    aeron_on_available_image_handler_t on_available_image_handler,
+    aeron_on_unavailable_image_handler_t on_unavailable_image_handler);
+int aeron_find_subscription(aeron_subscription_t **subscription, aeron_t *client, int64_t registration_id);
+int aeron_subscription_close(aeron_subscription_t *subscription);
 
 /**
  * Return full version and build string.

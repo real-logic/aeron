@@ -40,39 +40,13 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-#include "aeron_flow_control.h"
-#include "aeron_congestion_control.h"
 #include "concurrent/aeron_counters_manager.h"
-#include "aeron_driver.h"
+#include "aeron.h"
 
-#ifdef AERON_DRIVER
-
-void* aeron_dlsym_fallback(LPCSTR name)
-{
-    if (strcmp(name, "aeron_unicast_flow_control_strategy_supplier") == 0)
-    {
-        return aeron_unicast_flow_control_strategy_supplier;
-    }
-
-    if (strcmp(name, "aeron_max_multicast_flow_control_strategy_supplier") == 0)
-    {
-        return aeron_max_multicast_flow_control_strategy_supplier;
-    }
-
-    if (strcmp(name, "aeron_static_window_congestion_control_strategy_supplier") == 0)
-    {
-        return aeron_static_window_congestion_control_strategy_supplier;
-    }
-
-    return NULL;
-}
-#else
 void* aeron_dlsym_fallback(LPCSTR name)
 {
     return NULL;
 }
-#endif
-
 
 static HMODULE* modules = NULL;
 static size_t modules_size = 0;

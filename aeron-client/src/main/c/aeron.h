@@ -252,9 +252,13 @@ aeron_controlled_fragment_handler_action_t;
 typedef aeron_controlled_fragment_handler_action_t (*aeron_controlled_fragment_handler_t)(
     uint8_t *buffer, size_t length, aeron_header_t *header);
 
+typedef void (*aeron_block_handler_t)(uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
+
 int aeron_subscription_poll(aeron_subscription_t *subscription, aeron_fragment_handler_t handler, int fragment_limit);
 int aeron_subscription_controlled_poll(
     aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, int fragment_limit);
+int aeron_subscription_block_poll(
+    aeron_subscription_t *subscription, aeron_block_handler_t handler, size_t block_length_limit);
 
 aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id);
 
@@ -272,6 +276,8 @@ int aeron_image_bounded_controlled_poll(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handler, int64_t limit_position, int fragment_limit);
 int64_t aeron_image_controlled_peek(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handker, int64_t limit_position);
+int aeron_image_block_poll(
+    aeron_image_t *image, aeron_block_handler_t handler, size_t block_length_limit);
 
 /*
  * Counter functions

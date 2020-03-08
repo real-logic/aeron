@@ -311,10 +311,6 @@ int aeron_udp_channel_parse(
         if (aeron_name_resolver_resolve_host_and_port(
             resolver, _channel->uri.params.udp.endpoint, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &endpoint_addr) < 0)
         {
-            aeron_set_err(
-                -AERON_ERROR_CODE_INVALID_CHANNEL,
-                "could not resolve endpoint address=(%s): %s",
-                _channel->uri.params.udp.endpoint, aeron_errmsg());
             goto error_cleanup;
         }
     }
@@ -328,10 +324,6 @@ int aeron_udp_channel_parse(
         if (aeron_name_resolver_resolve_host_and_port(
             resolver, _channel->uri.params.udp.control, AERON_UDP_CHANNEL_CONTROL_KEY, false, &explicit_control_addr) < 0)
         {
-            aeron_set_err(
-                -AERON_ERROR_CODE_INVALID_CHANNEL,
-                "could not resolve control address=(%s): %s",
-                _channel->uri.params.udp.control, aeron_errmsg());
             goto error_cleanup;
         }
     }

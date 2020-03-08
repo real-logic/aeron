@@ -2682,11 +2682,8 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             false,
             &destination_addr) < 0)
         {
-            aeron_set_err(
-                aeron_errcode(),
-                "could not resolve destination address=(%s): %s",
-                uri->params.udp.endpoint,
-                aeron_errmsg());
+            aeron_distinct_error_log_record(
+                conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
 
@@ -2760,11 +2757,8 @@ int aeron_driver_conductor_on_remove_destination(
             true,
             &destination_addr) < 0)
         {
-            aeron_set_err(
-                aeron_errcode(),
-                "could not resolve destination address=(%s): %s",
-                uri_params.params.udp.endpoint,
-                aeron_errmsg());
+            aeron_distinct_error_log_record(
+                conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
 
@@ -3081,8 +3075,8 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
     {
-        // TODO: What is the best error handling here, error counter for re-resolution failures???
-        // Or distinct error logger...
+        aeron_distinct_error_log_record(
+            conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
         return;
     }
 
@@ -3103,8 +3097,8 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
     {
-        // TODO: What is the best error handling here, error counter for re-resolution failures???
-        // Or distinct error logger...
+        aeron_distinct_error_log_record(
+            conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
         return;
     }
 

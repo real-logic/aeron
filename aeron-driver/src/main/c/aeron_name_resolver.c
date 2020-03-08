@@ -32,6 +32,12 @@
 #define strdup _strdup
 #endif
 
+static void aeron_name_resolver_set_err(
+    aeron_name_resolver_t *resolver,
+    const char *name,
+    const char *uri_param_name,
+    const char *address_str);
+
 int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args)
 {
     return context->name_resolver_supplier_func(context, resolver, args);
@@ -77,21 +83,21 @@ int aeron_name_resolver_resolve_host_and_port(
     struct sockaddr_storage *sockaddr)
 {
     aeron_parsed_address_t parsed_address;
-    const char *address_str;
+    const char *address_str = NULL;
+    int result = -1;
 
     if (resolver->lookup_func(resolver, name, uri_param_name, is_re_resolution, &address_str) < 0)
     {
-        return -1;
+        goto exit;
     }
 
     if (aeron_address_split(address_str, &parsed_address) < 0)
     {
-        return -1;
+        goto exit;
     }
 
     const int family_hint = 6 == parsed_address.ip_version_hint ? AF_INET6 : AF_INET;
 
-    int result = -1;
     int port = aeron_udp_port_resolver(parsed_address.port, false);
 
     if (0 <= port)
@@ -124,6 +130,12 @@ int aeron_name_resolver_resolve_host_and_port(
 
             ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);
         }
+    }
+
+exit:
+    if (result < 0)
+    {
+        aeron_name_resolver_set_err(resolver, name, uri_param_name, address_str);
     }
 
     return result;
@@ -164,4 +176,29 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
     }
 
     return supplier_func;
+}
+
+static void aeron_name_resolver_set_err(
+    aeron_name_resolver_t *resolver,
+    const char *name,
+    const char *uri_param_name,
+    const char *address_str)
+{
+#if defined(AERON_COMPILER_GCC)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+    char dl_name_buffer[128];
+    const char *address_or_null = NULL != address_str ? address_str : "null";
+    aeron_set_err(
+        -EINVAL,
+        "Unresolved - %s=%s, name-and-port=%s, name-resolver-lookup=%s, name-resolver-resolve=%s",
+        uri_param_name,
+        name,
+        address_or_null,
+        aeron_dlinfo((const void *)resolver->lookup_func, dl_name_buffer, sizeof(dl_name_buffer)),
+        aeron_dlinfo((const void *)resolver->resolve_func, dl_name_buffer, sizeof(dl_name_buffer)));
+#if defined(AERON_COMPILER_GCC)
+#pragma GCC diagnostic pop
+#endif
 }

@@ -26,6 +26,11 @@ if (WSAPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_WSAPOLL)
 endif ()
 
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    add_definitions(-D_DEFAULT_SOURCE)
+endif ()
+
 set(SOURCE
     collections/aeron_int64_to_ptr_hash_map.c
     concurrent/aeron_atomic.c

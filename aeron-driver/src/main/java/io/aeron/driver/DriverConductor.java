@@ -28,10 +28,7 @@ import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.*;
@@ -325,17 +322,19 @@ public class DriverConductor implements Agent
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        final InetSocketAddress newAddress = UdpChannel.resolve(
-            endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
+        final InetSocketAddress newAddress;
+        try
+        {
+            newAddress = UdpChannel.resolve(endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
 
-        if (newAddress.isUnresolved())
-        {
-            ctx.errorHandler().onError(new UnknownHostException(
-                "endpoint could not be resolved: endpoint=" + endpoint));
+            if (!address.equals(newAddress))
+            {
+                senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
+            }
         }
-        else if (!address.equals(newAddress))
+        catch (final UnknownHostException e)
         {
-            senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
+            LangUtil.rethrowUnchecked(e);
         }
     }
 
@@ -345,17 +344,19 @@ public class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
-        final InetSocketAddress newAddress = UdpChannel.resolve(
-            control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
+        final InetSocketAddress newAddress;
+        try
+        {
+            newAddress = UdpChannel.resolve(control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
 
-        if (newAddress.isUnresolved())
-        {
-            ctx.errorHandler().onError(new UnknownHostException(
-                "control could not be resolved: control=" + control));
+            if (!address.equals(newAddress))
+            {
+                receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
+            }
         }
-        else if (!address.equals(newAddress))
+        catch (final UnknownHostException e)
         {
-            receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
+            LangUtil.rethrowUnchecked(e);
         }
     }
 

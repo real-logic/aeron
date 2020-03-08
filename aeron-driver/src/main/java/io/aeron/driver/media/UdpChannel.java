@@ -21,6 +21,7 @@ import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.NameResolver;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import org.agrona.BitUtil;
+import org.agrona.LangUtil;
 
 import java.net.*;
 import java.util.Objects;
@@ -571,9 +572,11 @@ public final class UdpChannel
      * @param isReResolution for the resolution
      * @param nameResolver to be used for hostname.
      * @return address for endpoint
+     * @throws UnknownHostException if the endpoint can not be resolved.
      */
     public static InetSocketAddress resolve(
         final String endpoint, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+        throws UnknownHostException
     {
         return SocketAddressParser.parse(endpoint, uriParamName, isReResolution, nameResolver);
     }
@@ -604,7 +607,15 @@ public final class UdpChannel
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
-            return SocketAddressParser.parse(endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+            try
+            {
+                return SocketAddressParser.parse(endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+            }
+            catch (final UnknownHostException e)
+            {
+                LangUtil.rethrowUnchecked(e);
+                return null;
+            }
         }
 
         return null;
@@ -615,7 +626,16 @@ public final class UdpChannel
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
-            return SocketAddressParser.parse(controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
+            try
+            {
+                return SocketAddressParser.parse(
+                    controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
+            }
+            catch (final UnknownHostException e)
+            {
+                LangUtil.rethrowUnchecked(e);
+                return null;
+            }
         }
 
         return null;

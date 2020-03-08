@@ -24,26 +24,35 @@ import io.aeron.test.*;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.IOException;
+
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.mockito.Mockito.*;
 
 public class NameReResolutionTest
 {
     private static final String ENDPOINT_NAME = "ReResTestEndpoint";
+    private static final String ENDPOINT_WITH_ERROR_NAME = "ReResWithErrEndpoint";
     private static final String PUBLICATION_MANUAL_MDC_URI = "aeron:udp?control=localhost:24327|control-mode=manual";
     private static final String PUBLICATION_URI = "aeron:udp?endpoint=" + ENDPOINT_NAME;
+    private static final String PUBLICATION_WITH_ERROR_URI = "aeron:udp?endpoint=" + ENDPOINT_WITH_ERROR_NAME;
     private static final String FIRST_SUBSCRIPTION_URI = "aeron:udp?endpoint=localhost:24325";
     private static final String SECOND_SUBSCRIPTION_URI = "aeron:udp?endpoint=localhost:24326";
+    private static final String BAD_ADDRESS = "bad.invalid:24326";
 
     private static final String CONTROL_NAME = "ReResTestControl";
     private static final String FIRST_PUBLICATION_DYNAMIC_MDC_URI =
@@ -54,9 +63,15 @@ public class NameReResolutionTest
         "aeron:udp?control=" + CONTROL_NAME + "|control-mode=dynamic";
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
-    private static final String STUB_LOOKUP_CONFIGURATION =
-        ENDPOINT_NAME + "," + ENDPOINT_PARAM_NAME + "," + "localhost:24326,localhost:24325|" +
-        CONTROL_NAME + "," + MDC_CONTROL_PARAM_NAME + "," + "localhost:24328,localhost:24327|";
+    private static final String STUB_LOOKUP_CONFIGURATION;
+
+    static
+    {
+        STUB_LOOKUP_CONFIGURATION =
+            ENDPOINT_NAME + "," + ENDPOINT_PARAM_NAME + "," + "localhost:24326,localhost:24325|" +
+            CONTROL_NAME + "," + MDC_CONTROL_PARAM_NAME + "," + "localhost:24328,localhost:24327|" +
+            ENDPOINT_WITH_ERROR_NAME + "," + ENDPOINT_PARAM_NAME + "," + BAD_ADDRESS + ",localhost:24325|";
+    }
 
     private static final int STREAM_ID = 1001;
 
@@ -76,7 +91,7 @@ public class NameReResolutionTest
     public void before()
     {
         final MediaDriver.Context context = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+//            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -339,5 +354,47 @@ public class NameReResolutionTest
             anyInt(),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));
+    }
+
+    @SlowTest
+    @Test
+    @Timeout(10)
+    public void shouldReportErrorOnReResolveFailure() throws IOException
+    {
+        buffer.putInt(0, 1);
+
+        subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
+        publication = client.addPublication(PUBLICATION_WITH_ERROR_URI, STREAM_ID);
+
+        while (!subscription.isConnected())
+        {
+            Tests.yieldingWait("No connect to first subscription");
+        }
+
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Tests.yieldingWait("No message offer to first subscription");
+        }
+
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingWait("No message received on first subscription");
+        }
+
+        subscription.close();
+
+        // wait for disconnect to ensure we stay in lock step
+        while (publication.isConnected())
+        {
+            Tests.sleep(100);
+        }
+
+        final Matcher<String> execptionMessageMatcher = allOf(
+            containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME), containsString("name-and-port=" + BAD_ADDRESS));
+
+        ErrorReportTestUtil.waitForErrorToOccur(
+            client.context().aeronDirectoryName(),
+            execptionMessageMatcher,
+            new SleepingMillisIdleStrategy(100));
     }
 }

@@ -437,6 +437,17 @@ public class CommonContext implements Cloneable
     }
 
     /**
+     * Create a new command and control file in the administration directory.
+     *
+     * @return The newly created File.
+     * @param aeronDirectoryName name of the aeronDirectory that containing the cnc file.
+     */
+    public static File newCncFile(final String aeronDirectoryName)
+    {
+        return new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
+    }
+
+    /**
      * Get the buffer containing the counter meta data. These counters are R/W for the driver, read only for all
      * other users.
      *

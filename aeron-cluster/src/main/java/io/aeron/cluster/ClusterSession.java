@@ -43,7 +43,7 @@ class ClusterSession
     private long openedLogPosition = Aeron.NULL_VALUE;
     private long closedLogPosition = Aeron.NULL_VALUE;
     private long timeOfLastActivityNs;
-    private boolean isBackupQuery = false;
+    private boolean isBackupSession = false;
     private final int responseStreamId;
     private final String responseChannel;
     private Publication responsePublication;
@@ -268,14 +268,14 @@ class ClusterSession
         return hasNewLeaderEventPending;
     }
 
-    boolean isBackupQuery()
+    boolean isBackupSession()
     {
-        return isBackupQuery;
+        return isBackupSession;
     }
 
-    void isBackupQuery(final boolean isBackupQuery)
+    void markAsBackupSession()
     {
-        this.isBackupQuery = isBackupQuery;
+        this.isBackupSession = true;
     }
 
     Publication responsePublication()

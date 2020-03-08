@@ -723,7 +723,7 @@ class ConsensusModuleAgent implements Agent
             final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
             final long now = clusterClock.time();
             session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
-            session.isBackupQuery(true);
+            session.markAsBackupSession();
             session.connect(aeron);
 
             if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
@@ -2077,7 +2077,7 @@ class ConsensusModuleAgent implements Agent
 
             if (session.state() == AUTHENTICATED)
             {
-                if (session.isBackupQuery())
+                if (session.isBackupSession())
                 {
                     if (session.responsePublication().isConnected())
                     {

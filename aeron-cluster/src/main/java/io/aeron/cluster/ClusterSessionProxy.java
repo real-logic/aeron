@@ -74,7 +74,7 @@ class ClusterSessionProxy implements SessionProxy
     {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
-        if (clusterSession.isBackupQuery())
+        if (clusterSession.isBackupSession())
         {
             clusterSession.authenticate(encodedPrincipal);
             return true;

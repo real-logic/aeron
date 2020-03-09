@@ -33,7 +33,7 @@
 // Cater for windows.
 #define AERON_MAX_HOSTNAME_LEN (256)
 
-typedef struct aeron_name_resolver_driver_gossip_stct
+typedef struct aeron_name_resolver_driver_stct
 {
     aeron_udp_channel_transport_bindings_t *transport_bindings;
 
@@ -44,19 +44,19 @@ typedef struct aeron_name_resolver_driver_gossip_stct
     struct sockaddr_storage bootstrap_neighbor_addr;
     unsigned int interface_index;
 }
-aeron_name_resolver_driver_gossip_t;
+aeron_name_resolver_driver_t;
 
-int aeron_name_resolver_driver_gossip_init(
-    aeron_name_resolver_driver_gossip_t **driver_resolver,
+int aeron_name_resolver_driver_init(
+    aeron_name_resolver_driver_t **driver_resolver,
     aeron_driver_context_t *context,
     const char *name,
     const char *interface_name,
     const char *bootstrap_neighbor)
 {
-    aeron_name_resolver_driver_gossip_t *_driver_resolver = NULL;
+    aeron_name_resolver_driver_t *_driver_resolver = NULL;
     char *local_hostname = NULL;
 
-    if (aeron_alloc((void **)&_driver_resolver, sizeof(aeron_name_resolver_driver_gossip_t)) < 0)
+    if (aeron_alloc((void **)&_driver_resolver, sizeof(aeron_name_resolver_driver_t)) < 0)
     {
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         goto error_cleanup;
@@ -106,31 +106,31 @@ error_cleanup:
     return -1;
 }
 
-int aeron_name_resolver_resolve_driver_gossip(
+int aeron_name_resolver_driver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     struct sockaddr_storage *address)
 {
-    return aeron_name_resolver_resolve_default(NULL, name, uri_param_name, is_re_resolution, address);
+    return aeron_name_resolver_default_resolve(NULL, name, uri_param_name, is_re_resolution, address);
 }
 
-int aeron_name_resolver_supplier_driver_gossip(
+int aeron_name_resolver_driver_supplier(
     aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
     const char *args)
 {
-    aeron_name_resolver_driver_gossip_t *name_resolver;
+    aeron_name_resolver_driver_t *name_resolver;
 
-    aeron_name_resolver_driver_gossip_init(
+    aeron_name_resolver_driver_init(
         &name_resolver, context,
         context->resolver_name,
         context->resolver_interface,
         context->resolver_bootstrap_neighbor);
 
     resolver->lookup_func = aeron_name_resolver_lookup_default;
-    resolver->resolve_func = aeron_name_resolver_resolve_driver_gossip;
+    resolver->resolve_func = aeron_name_resolver_driver_resolve;
 
     resolver->state = name_resolver;
 

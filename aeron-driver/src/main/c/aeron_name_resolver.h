@@ -58,12 +58,12 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 
 int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args);
 
-int aeron_name_resolver_supplier_default(
+int aeron_name_resolver_default_supplier(
     aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
     const char *args);
 
-int aeron_name_resolver_resolve_default(
+int aeron_name_resolver_default_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,

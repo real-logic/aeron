@@ -48,7 +48,7 @@ typedef struct aeron_name_resolver_csv_table_stct
 }
 aeron_name_resolver_csv_table_t;
 
-int aeron_name_resolver_lookup_csv_table(
+int aeron_name_resolver_csv_table_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -76,13 +76,13 @@ int aeron_name_resolver_lookup_csv_table(
     return aeron_name_resolver_lookup_default(resolver, name, uri_param_name, is_re_resolution, resolved_name);
 }
 
-int aeron_name_resolver_supplier_csv_table(
+int aeron_name_resolver_csv_table_supplier(
     aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
     const char *args)
 {
-    resolver->resolve_func = aeron_name_resolver_resolve_default;
-    resolver->lookup_func = aeron_name_resolver_lookup_csv_table;
+    resolver->resolve_func = aeron_name_resolver_default_resolve;
+    resolver->lookup_func = aeron_name_resolver_csv_table_lookup;
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];

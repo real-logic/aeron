@@ -1,0 +1,6 @@
+**/build
+.gradle
+.idea
+.github
+config
+*.cmd

@@ -19,4 +19,5 @@ WORKDIR aeron
 
 ARG GCC_VERSION
 RUN export JAVA_HOME=/usr/lib/jvm/zulu-8 && \
+    export GRADLE_OPTS="-Dorg.gradle.daemon=false" && \
     scl enable devtoolset-${GCC_VERSION} -- cppbuild/cppbuild --build-archive-api

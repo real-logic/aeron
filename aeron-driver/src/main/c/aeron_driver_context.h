@@ -212,6 +212,9 @@ typedef struct aeron_driver_context_stct
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;
 
+    const char *resolver_name;
+    const char *resolver_interface;
+    const char *resolver_bootstrap_neighbor;
     aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
     const char *name_resolver_init_args;
 }

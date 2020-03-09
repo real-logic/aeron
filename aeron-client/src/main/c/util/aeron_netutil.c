@@ -174,23 +174,6 @@ int aeron_host_and_port_resolver(
     return result;
 }
 
-int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr)
-{
-    aeron_parsed_address_t parsed_address;
-
-    if (-1 == aeron_address_split(address_str, &parsed_address))
-    {
-        return -1;
-    }
-
-    if (6  == parsed_address.ip_version_hint)
-    {
-        return aeron_host_and_port_resolver(parsed_address.host, parsed_address.port, sockaddr, AF_INET6);
-    }
-
-    return aeron_host_and_port_resolver(parsed_address.host, parsed_address.port, sockaddr, AF_INET);
-}
-
 int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
 {
     if ('\0' == *prefixlen)

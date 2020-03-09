@@ -29,6 +29,7 @@
 #include "aeron_flow_control.h"
 #include "aeron_congestion_control.h"
 #include "aeron_agent.h"
+#include "aeron_name_resolver.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
@@ -96,6 +97,7 @@ typedef struct aeron_driver_context_stct
     uint64_t retransmit_unicast_linger_ns;                  /* aeron.retransmit.unicast.linger = 60ms */
     uint64_t nak_unicast_delay_ns;                          /* aeron.nak.unicast.delay = 60ms */
     uint64_t nak_multicast_max_backoff_ns;                  /* aeron.nak.multicast.max.backoff = 60ms */
+    uint64_t re_resolution_check_interval_ns;               /* aeron.driver.reresolution.check.interval = 1s */
     size_t to_driver_buffer_length;                         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;                        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;                   /* aeron.counters.buffer.length = 1MB */
@@ -209,6 +211,9 @@ typedef struct aeron_driver_context_stct
 
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;
+
+    aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
+    const char *name_resolver_init_args;
 }
 aeron_driver_context_t;
 

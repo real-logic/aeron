@@ -1,4 +1,4 @@
-#
+ #
 # Copyright 2014-2020 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,3 +68,4 @@ aeron_driver_test(system_test aeron_system_test.cpp)
 aeron_driver_test(udp_channel_transport_loss_test media/aeron_udp_channel_transport_loss_test.cpp)
 aeron_driver_test(strutil_test aeron_strutil_test.cpp)
 aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)
+aeron_driver_test(name_resolver_test aeron_name_resolver_test.cpp)

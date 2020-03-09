@@ -61,6 +61,7 @@ typedef struct aeron_driver_sender_stct
     int64_t *invalid_frames_counter;
     int64_t *status_messages_received_counter;
     int64_t *nak_messages_received_counter;
+    int64_t *resolution_changes_counter;
 
     aeron_driver_context_t *context;
     aeron_udp_transport_poller_poll_func_t poller_poll_func;
@@ -68,6 +69,7 @@ typedef struct aeron_driver_sender_stct
     aeron_distinct_error_log_t *error_log;
     int64_t status_message_read_timeout_ns;
     int64_t control_poll_timeout_ns;
+    int64_t re_resolution_deadline_ns;
     size_t round_robin_index;
     size_t duty_cycle_counter;
     size_t duty_cycle_ratio;
@@ -103,6 +105,7 @@ void aeron_driver_sender_on_add_publication(void *clientd, void *command);
 void aeron_driver_sender_on_remove_publication(void *clientd, void *command);
 void aeron_driver_sender_on_add_destination(void *clientd, void *command);
 void aeron_driver_sender_on_remove_destination(void *clientd, void *command);
+void aeron_driver_sender_on_resolution_change(void *clientd, void *command);
 
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns);
 

@@ -22,12 +22,14 @@
 #include "aeron_udp_channel_transport.h"
 
 #define AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000LL)
-#define AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS (0LL)
 
 typedef struct aeron_udp_destination_entry_stct
 {
     int64_t time_of_last_activity_ns;
+    int64_t destination_timeout_ns;
     int64_t receiver_id;
+    bool is_receiver_id_valid;
+    aeron_uri_t *uri;
     struct sockaddr_storage addr;
 }
 aeron_udp_destination_entry_t;
@@ -53,6 +55,7 @@ int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_clock_cache_t *cached_clock,
+    bool is_manual_control_model,
     int64_t timeout_ns);
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);
 
@@ -64,9 +67,22 @@ int aeron_udp_destination_tracker_sendmsg(
 int aeron_udp_destination_tracker_on_status_message(
     aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr);
 
-int aeron_udp_destination_tracker_add_destination(
-    aeron_udp_destination_tracker_t *tracker, int64_t receiver_id, int64_t now_ns, struct sockaddr_storage *addr);
+int aeron_udp_destination_tracker_manual_add_destination(
+    aeron_udp_destination_tracker_t *tracker,
+    int64_t now_ns,
+    aeron_uri_t *uri,
+    struct sockaddr_storage *addr);
+
 int aeron_udp_destination_tracker_remove_destination(
     aeron_udp_destination_tracker_t *tracker, struct sockaddr_storage *addr);
+
+void aeron_udp_destination_tracker_check_for_re_resolution(
+    aeron_udp_destination_tracker_t *tracker,
+    aeron_send_channel_endpoint_t *endpoint,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy);
+
+void aeron_udp_destination_tracker_resolution_change(
+    aeron_udp_destination_tracker_t *tracker, const char *endpoint_name, struct sockaddr_storage *addr);
 
 #endif //AERON_UDP_DESTINATION_TRACKER_H

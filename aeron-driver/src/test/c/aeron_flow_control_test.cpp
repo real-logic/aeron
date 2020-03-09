@@ -43,7 +43,10 @@ static void linger(void *clientd, uint8_t *resource)
 class FlowControlTest : public testing::Test
 {
 public:
-    FlowControlTest() = default;
+    FlowControlTest()
+    {
+        aeron_name_resolver_supplier_default(NULL, &m_resolver, "");
+    };
 
     virtual ~FlowControlTest() = default;
 
@@ -98,7 +101,7 @@ public:
 
     void initialise_channel(const char *uri)
     {
-        aeron_udp_channel_parse(strlen(uri), uri, &channel);
+        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
     }
 
     struct sockaddr_storage address{};
@@ -106,6 +109,7 @@ public:
     aeron_driver_context_t *context{};
     aeron_distinct_error_log_t error_log{};
     buffer_t buffer{};
+    aeron_name_resolver_t m_resolver;
 
 protected:
     virtual void TearDown()

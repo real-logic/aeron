@@ -145,7 +145,7 @@ void aeron_uri_close(aeron_uri_t *params);
 
 uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
-const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const char *key);
+const char *aeron_uri_find_param_value(const aeron_uri_params_t *uri_params, const char *key);
 int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval);
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;

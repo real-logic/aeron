@@ -37,9 +37,15 @@ typedef int (*aeron_ifaddr_func_t)
 
 #define AERON_ADDR_LEN(a) (AF_INET6 == (a)->ss_family ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))
 
+int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint, int protocol);
+
 int aeron_udp_port_resolver(const char *port_str, bool optional);
 
+bool aeron_try_parse_ipv4(const char *host, struct sockaddr_storage *sockaddr);
+
 int aeron_ipv4_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr);
+
+bool aeron_try_parse_ipv6(const char *host, struct sockaddr_storage *sockaddr);
 
 int aeron_ipv6_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr);
 
@@ -48,8 +54,6 @@ int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd);
 int aeron_lookup_interfaces_from_ifaddrs(aeron_ifaddr_func_t func, void *clientd, struct ifaddrs *ifaddrs);
 
 void aeron_set_getifaddrs(aeron_getifaddrs_func_t get_func, aeron_freeifaddrs_func_t free_func);
-
-int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr);
 
 int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr_storage *sockaddr, size_t *prefixlen);
 

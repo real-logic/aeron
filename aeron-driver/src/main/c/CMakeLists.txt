@@ -140,6 +140,7 @@ SET(SOURCE
     util/aeron_properties_util.c
     util/aeron_http_util.c
     util/aeron_clock.c
+    util/aeron_env.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -164,6 +165,8 @@ SET(SOURCE
     aeron_retransmit_handler.c
     aeron_windows.c
     aeron_termination_validator.c
+    aeron_name_resolver.c
+    aeron_name_resolver_csv_lookup_table.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -195,6 +198,7 @@ SET(HEADERS
     util/aeron_properties_util.h
     util/aeron_http_util.h
     util/aeron_clock.h
+    util/aeron_env.h
     concurrent/aeron_thread.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
@@ -229,6 +233,7 @@ SET(HEADERS
     aeron_driver_receiver.h
     aeron_driver_common.h
     aeron_ipc_publication.h
+    aeron_name_resolver.h
     aeron_network_publication.h
     aeron_position.h
     aeron_driver_sender_proxy.h

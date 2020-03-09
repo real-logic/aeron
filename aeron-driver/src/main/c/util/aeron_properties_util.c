@@ -24,6 +24,7 @@
 #include "aeron_error.h"
 #include "aeron_parse_util.h"
 #include "aeron_http_util.h"
+#include "util/aeron_env.h"
 
 int aeron_next_non_whitespace(const char *buffer, size_t start, size_t end)
 {
@@ -171,19 +172,11 @@ int aeron_properties_setenv(const char *name, const char *value)
 
     if ('\0' == *value)
     {
-#if !defined(WIN32)
-        unsetenv(env_name);
-#else
-        _putenv_s(env_name, "");
-#endif
+        aeron_env_unset(env_name);
     }
     else
     {
-#if !defined(WIN32)
-        setenv(env_name, value, true);
-#else
-        _putenv_s(env_name, value);
-#endif
+        aeron_env_set(env_name, value);
     }
 
     return 0;

@@ -297,7 +297,7 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri)
     return result;
 }
 
-const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const char *key)
+const char *aeron_uri_find_param_value(const aeron_uri_params_t *uri_params, const char *key)
 {
     size_t key_len = strlen(key);
 

@@ -130,6 +130,60 @@ void aeron_driver_conductor_proxy_on_linger_buffer(
     }
 }
 
+void aeron_driver_conductor_proxy_on_re_resolve(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void (*resolve_func)(void *clientd, void *command),
+    const char *endpoint_name,
+    void *endpoint,
+    struct sockaddr_storage *existing_addr)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_command_re_resolve_t cmd;
+        cmd.endpoint_name = endpoint_name;
+        cmd.endpoint = endpoint;
+        memcpy(&cmd.existing_addr, existing_addr, sizeof(cmd.existing_addr));
+
+        resolve_func(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_command_re_resolve_t *cmd;
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_re_resolve_t)) < 0)
+        {
+            aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = resolve_func;
+        cmd->endpoint_name = endpoint_name;
+        cmd->endpoint = endpoint;
+        memcpy(&cmd->existing_addr, existing_addr, sizeof(cmd->existing_addr));
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
+}
+
+void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const char *endpoint_name,
+    void *endpoint,
+    struct sockaddr_storage *existing_addr)
+{
+    aeron_driver_conductor_proxy_on_re_resolve(
+        conductor_proxy, aeron_driver_conductor_on_re_resolve_endpoint, endpoint_name, endpoint, existing_addr);
+}
+
+void aeron_driver_conductor_proxy_on_re_resolve_control(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const char *endpoint_name,
+    void *endpoint,
+    struct sockaddr_storage *existing_addr)
+{
+    aeron_driver_conductor_proxy_on_re_resolve(
+        conductor_proxy, aeron_driver_conductor_on_re_resolve_control, endpoint_name, endpoint, existing_addr);
+}
+
 void aeron_command_on_delete_cmd(void *clientd, void *cmd)
 {
     aeron_command_base_t *command = (aeron_command_base_t *)cmd;

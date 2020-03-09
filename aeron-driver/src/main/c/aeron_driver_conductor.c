@@ -32,6 +32,7 @@
 #include "aeron_publication_image.h"
 #include "collections/aeron_bit_set.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
+#include "aeron_name_resolver.h"
 
 #define STATIC_BIT_SET_U64_LEN (512)
 
@@ -228,6 +229,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
     conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
+
+    aeron_name_resolver_init(context, &conductor->name_resolver, context->name_resolver_init_args);
 
     conductor->context = context;
 
@@ -961,7 +964,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     bool is_exclusive)
 {
     aeron_network_publication_t *publication = NULL;
-    aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+    const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
     uint64_t bits[STATIC_BIT_SET_U64_LEN];
     aeron_bit_set_t session_id_offsets;
@@ -2133,7 +2136,7 @@ int aeron_driver_conductor_on_add_network_publication(
     size_t uri_length = command->channel_length;
     aeron_uri_publication_params_t params;
 
-    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
         return -1;
@@ -2350,7 +2353,8 @@ int aeron_driver_conductor_on_add_spy_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(command->channel_length - strlen(AERON_SPY_PREFIX), uri, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(
+        command->channel_length - strlen(AERON_SPY_PREFIX), uri, &conductor->name_resolver, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         return -1;
@@ -2430,7 +2434,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         return -1;
@@ -2643,8 +2647,14 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
     {
         size_t uri_length = command->channel_length;
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
-        aeron_uri_t uri_params;
-        if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
+        aeron_uri_t *uri; // Ownership is transferred to destination, no need to close...
+        if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
+        {
+            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            goto error_cleanup;
+        }
+
+        if (aeron_uri_parse(uri_length, command_uri, uri) < 0)
         {
             goto error_cleanup;
         }
@@ -2658,31 +2668,34 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             goto error_cleanup;
         }
 
-        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
+        if (uri->type != AERON_URI_UDP || NULL == uri->params.udp.endpoint)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             goto error_cleanup;
         }
 
         struct sockaddr_storage destination_addr;
-        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint, &destination_addr) < 0)
+        if (aeron_name_resolver_resolve_host_and_port(
+            &conductor->name_resolver,
+            uri->params.udp.endpoint,
+            AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            false,
+            &destination_addr) < 0)
         {
-            aeron_set_err(
-                aeron_errcode(),
-                "could not resolve destination address=(%s): %s",
-                uri_params.params.udp.endpoint,
-                aeron_errmsg());
+            aeron_distinct_error_log_record(
+                conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
 
-        aeron_driver_sender_proxy_on_add_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
+        aeron_driver_sender_proxy_on_add_destination(
+            conductor->context->sender_proxy, endpoint, uri, &destination_addr);
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
-        aeron_uri_close(&uri_params);
         return 0;
 
         error_cleanup:
-        aeron_uri_close(&uri_params);
+        aeron_uri_close(uri);
+        aeron_free(uri);
         return -1;
     }
 
@@ -2737,13 +2750,15 @@ int aeron_driver_conductor_on_remove_destination(
         }
 
         struct sockaddr_storage destination_addr;
-        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint, &destination_addr) < 0)
+        if (aeron_name_resolver_resolve_host_and_port(
+            &conductor->name_resolver,
+            uri_params.params.udp.endpoint,
+            AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            true,
+            &destination_addr) < 0)
         {
-            aeron_set_err(
-                aeron_errcode(),
-                "could not resolve destination address=(%s): %s",
-                uri_params.params.udp.endpoint,
-                aeron_errmsg());
+            aeron_distinct_error_log_record(
+                conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
 
@@ -3047,6 +3062,50 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
     {
         aeron_free(command);
         /* do not know where it came from originally, so just free command on the conductor duty cycle */
+    }
+}
+
+void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_re_resolve_t *cmd = item;
+    struct sockaddr_storage resolved_addr;
+    memset(&resolved_addr, 0, sizeof(resolved_addr));
+
+    if (aeron_name_resolver_resolve_host_and_port(
+        &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
+    {
+        aeron_distinct_error_log_record(
+            conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+        return;
+    }
+
+    if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    {
+        aeron_driver_sender_proxy_on_resolution_change(
+            conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
+    }
+}
+
+void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_re_resolve_t *cmd = item;
+    struct sockaddr_storage resolved_addr;
+    memset(&resolved_addr, 0, sizeof(resolved_addr));
+
+    if (aeron_name_resolver_resolve_host_and_port(
+        &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
+    {
+        aeron_distinct_error_log_record(
+            conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+        return;
+    }
+
+    if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    {
+        aeron_driver_receiver_proxy_on_resolution_change(
+            conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
     }
 }
 

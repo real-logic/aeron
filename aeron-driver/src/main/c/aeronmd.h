@@ -256,7 +256,7 @@ typedef struct aeron_udp_channel_stct aeron_udp_channel_t;
 typedef int (*aeron_flow_control_strategy_supplier_func_t)(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
-    aeron_udp_channel_t *channel,
+    const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -685,6 +685,39 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_low(aeron_drive
 
 int aeron_driver_context_set_publication_reserved_session_id_high(aeron_driver_context_t *context, int32_t value);
 int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driver_context_t *context);
+
+typedef struct aeron_name_resolver_stct aeron_name_resolver_t;
+typedef int (*aeron_name_resolver_supplier_func_t)(
+    aeron_driver_context_t *context,
+    aeron_name_resolver_t *resolver,
+    const char *args);
+
+/**
+ * Specify the name of the name resolver (supplier) to be used by this media driver
+ */
+#define AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR "AERON_NAME_RESOLVER_SUPPLIER"
+#define AERON_NAME_RESOLVER_SUPPLIER_DEFAULT "default"
+
+int aeron_driver_context_set_name_resolver_supplier(
+    aeron_driver_context_t *context,
+    aeron_name_resolver_supplier_func_t value);
+aeron_name_resolver_supplier_func_t aeron_driver_context_get_name_resolver_supplier(aeron_driver_context_t *context);
+
+/**
+ * Specify the name of the name resolver (supplier) to be used by this media driver
+ */
+#define AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR "AERON_NAME_RESOLVER_INIT_ARGS"
+
+int aeron_driver_context_set_name_resolver_init_args(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_name_resolver_init_args(aeron_driver_context_t *context);
+
+/**
+ * Specify the interval which checks for re-resolutions of names occurs.
+ */
+#define AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_ENV_VAR "AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL"
+
+int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context);
 
 /**
  * Return full version and build string.

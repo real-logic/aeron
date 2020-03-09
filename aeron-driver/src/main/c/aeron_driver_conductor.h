@@ -160,6 +160,7 @@ typedef struct aeron_driver_conductor_stct
     aeron_system_counters_t system_counters;
     aeron_driver_conductor_proxy_t conductor_proxy;
     aeron_loss_reporter_t loss_reporter;
+    aeron_name_resolver_t name_resolver;
 
     aeron_str_to_ptr_hash_map_t send_channel_endpoint_by_channel_map;
     aeron_str_to_ptr_hash_map_t receive_channel_endpoint_by_channel_map;
@@ -445,6 +446,10 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item);
 
+void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item);
+
+void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item);
+
 aeron_send_channel_endpoint_t *aeron_driver_conductor_find_send_channel_endpoint_by_tag(
     aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
 
@@ -618,7 +623,7 @@ inline aeron_send_channel_endpoint_t * aeron_driver_conductor_find_send_channel_
     for (size_t i = 0, length = conductor->send_channel_endpoints.length; i < length; i++)
     {
         aeron_send_channel_endpoint_t *endpoint = conductor->send_channel_endpoints.array[i].endpoint;
-        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+        const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
         if (strncmp(original_uri, udp_channel->original_uri, udp_channel->uri_length) == 0)
         {

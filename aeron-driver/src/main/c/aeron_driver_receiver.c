@@ -97,6 +97,11 @@ int aeron_driver_receiver_init(
     receiver->invalid_frames_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
     receiver->total_bytes_received_counter =  aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
+    receiver->resolution_changes_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
+
+    receiver->re_resolution_deadline_ns =
+        aeron_clock_cached_nano_time(context->cached_clock) + context->re_resolution_check_interval_ns;
 
     return 0;
 }
@@ -219,6 +224,14 @@ int aeron_driver_receiver_do_work(void *clientd)
                 entry->time_of_status_message_ns = now_ns;
             }
         }
+    }
+
+    if (receiver->context->re_resolution_check_interval_ns > 0 && now_ns > receiver->re_resolution_deadline_ns)
+    {
+        aeron_udp_transport_poller_check_receive_endpoint_re_resolutions(
+            &receiver->poller, now_ns, receiver->context->conductor_proxy);
+
+        receiver->re_resolution_deadline_ns = now_ns + receiver->context->re_resolution_check_interval_ns;
     }
 
     return work_count;
@@ -390,6 +403,28 @@ void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item)
     }
 
     aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
+}
+
+void aeron_driver_receiver_on_resolution_change(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = clientd;
+    aeron_command_receiver_resolution_change_t *cmd = item;
+    aeron_receive_channel_endpoint_t *endpoint = cmd->endpoint;
+
+    // MDS is not supported in the C driver yet, would need to look up transport index here.
+
+    for (size_t i = 0; i < receiver->pending_setups.length; i++)
+    {
+        aeron_driver_receiver_pending_setup_entry_t *pending_setup = &receiver->pending_setups.array[i];
+
+        if (pending_setup->endpoint == cmd->endpoint && pending_setup->is_periodic)
+        {
+            memcpy(&pending_setup->control_addr, &cmd->new_addr, sizeof(pending_setup->control_addr));
+            aeron_counter_add_ordered(receiver->resolution_changes_counter, 1);
+        }
+    }
+
+    aeron_receive_channel_endpoint_update_control_address(endpoint, &cmd->new_addr);
 }
 
 int aeron_driver_receiver_add_pending_setup(

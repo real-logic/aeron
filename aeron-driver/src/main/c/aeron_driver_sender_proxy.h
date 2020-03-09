@@ -44,16 +44,35 @@ void aeron_driver_sender_proxy_on_add_publication(
 void aeron_driver_sender_proxy_on_remove_publication(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication);
 
+void aeron_driver_sender_proxy_on_resolution_change(
+    aeron_driver_sender_proxy_t *sender_proxy,
+    const char *endpoint_name,
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *new_addr);
+
 typedef struct aeron_command_destination_stct
 {
     aeron_command_base_t base;
     struct sockaddr_storage control_address;
     void *endpoint;
+    void *uri;
 }
 aeron_command_destination_t;
 
+typedef struct aeron_command_sender_resolution_change_stct
+{
+    aeron_command_base_t base;
+    const char *endpoint_name;
+    void *endpoint;
+    struct sockaddr_storage new_addr;
+}
+aeron_command_sender_resolution_change_t;
+
 void aeron_driver_sender_proxy_on_add_destination(
-    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+    aeron_driver_sender_proxy_t *sender_proxy,
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_uri_t *uri,
+    struct sockaddr_storage *addr);
 
 void aeron_driver_sender_proxy_on_remove_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);

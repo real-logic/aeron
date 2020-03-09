@@ -27,6 +27,7 @@
 
 
 #include "media/aeron_udp_channel_transport.h"
+#include "aeron_driver_conductor.h"
 
 #define AERON_UDP_TRANSPORT_POLLER_ITERATION_THRESHOLD (5)
 
@@ -74,5 +75,15 @@ int aeron_udp_transport_poller_poll(
     aeron_udp_transport_recv_func_t recv_func,
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func,
     void *clientd);
+
+int aeron_udp_transport_poller_check_send_endpoint_re_resolutions(
+    aeron_udp_transport_poller_t *poller,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy);
+
+int aeron_udp_transport_poller_check_receive_endpoint_re_resolutions(
+    aeron_udp_transport_poller_t *poller,
+    int64_t now_ns,
+    aeron_driver_conductor_proxy_t *conductor_proxy);
 
 #endif //AERON_UDP_TRANSPORT_POLLER_H

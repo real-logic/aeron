@@ -26,6 +26,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
@@ -83,6 +84,9 @@ public class NameReResolutionTest
     @RegisterExtension
     public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
+    @RegisterExtension
+    public DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
+
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);
     private CountersReader countersReader;
@@ -91,8 +95,9 @@ public class NameReResolutionTest
     public void before()
     {
         final MediaDriver.Context context = new MediaDriver.Context()
-//            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
 
         TestMediaDriver.enableCsvNameLookupConfiguration(context, STUB_LOOKUP_CONFIGURATION);
@@ -106,8 +111,8 @@ public class NameReResolutionTest
     @AfterEach
     public void after()
     {
+        logWatcher.captureErrors(client.context().aeronDirectoryName());
         CloseHelper.closeAll(client, driver);
-        driver.context().deleteDirectory();
     }
 
     @SlowTest

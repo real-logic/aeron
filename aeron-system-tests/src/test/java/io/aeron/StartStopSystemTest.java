@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 
 public class StartStopSystemTest
@@ -25,7 +26,7 @@ public class StartStopSystemTest
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
-            .errorHandler(Throwable::printStackTrace);
+            .errorHandler(Tests::onError);
 
         try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
         {

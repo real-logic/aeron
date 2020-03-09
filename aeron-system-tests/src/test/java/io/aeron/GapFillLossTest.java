@@ -63,7 +63,7 @@ public class GapFillLossTest
         srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED)
             .dirDeleteOnStart(true)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
@@ -135,14 +135,13 @@ public class GapFillLossTest
                 final int fragments = subscription.poll(this, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
+                    Thread.yield();
                     Tests.checkInterruptStatus();
                     if (subscription.isClosed())
                     {
                         return;
                     }
                 }
-
-                Thread.yield();
             }
         }
 

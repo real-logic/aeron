@@ -55,7 +55,7 @@ public class CounterTest
 
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .threadingMode(ThreadingMode.SHARED));
 
         clientA = Aeron.connect(

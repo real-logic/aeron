@@ -76,25 +76,23 @@ public class MinFlowControlSystemTest
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverA = TestMediaDriver.launch(driverAContext, testWatcher);
         driverB = TestMediaDriver.launch(driverBContext, testWatcher);
         clientA = Aeron.connect(
             new Aeron.Context()
-                .errorHandler(Throwable::printStackTrace)
                 .aeronDirectoryName(driverAContext.aeronDirectoryName()));
 
         clientB = Aeron.connect(
             new Aeron.Context()
-                .errorHandler(Throwable::printStackTrace)
                 .aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
@@ -286,13 +284,12 @@ public class MinFlowControlSystemTest
                 new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
                     .aeronDirectoryName(ROOT_DIR + "C")
                     .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-                    .errorHandler(Throwable::printStackTrace)
+                    .errorHandler(Tests::onError)
                     .threadingMode(ThreadingMode.SHARED),
                 testWatcher);
 
             clientC = Aeron.connect(
                 new Aeron.Context()
-                    .errorHandler(Throwable::printStackTrace)
                     .aeronDirectoryName(driverC.aeronDirectoryName()));
 
             publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
@@ -333,8 +330,7 @@ public class MinFlowControlSystemTest
                 publication,
                 subscription0, subscription1, subscription2,
                 clientC,
-                driverC
-            );
+                driverC);
         }
     }
 

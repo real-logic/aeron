@@ -39,7 +39,7 @@ public class MultiSubscriberTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();

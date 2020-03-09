@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.verify;
 public class ReentrantClientTest
 {
     private final TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Tests::onError)
         .dirDeleteOnStart(true));
 
     @AfterEach

@@ -135,7 +135,7 @@ public class ArchiveTest
                 .threadingMode(threadingMode)
                 .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
                 .spiesSimulateConnection(true)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .dirDeleteOnStart(true));
 
         archive = Archive.launch(

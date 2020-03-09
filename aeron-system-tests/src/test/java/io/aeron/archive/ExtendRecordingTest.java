@@ -264,7 +264,7 @@ public class ExtendRecordingTest
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()

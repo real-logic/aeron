@@ -48,7 +48,7 @@ public class MemoryOrderingTest
     private static volatile String failedMessage = null;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED)
         .publicationTermBufferLength(TERM_BUFFER_LENGTH));

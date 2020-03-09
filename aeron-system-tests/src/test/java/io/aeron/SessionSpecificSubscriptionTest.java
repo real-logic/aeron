@@ -60,7 +60,7 @@ public class SessionSpecificSubscriptionTest
         (buffer, offset, length, header) -> assertEquals(SESSION_ID_2, header.sessionId());
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED));

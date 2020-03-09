@@ -89,7 +89,7 @@ public class NameReResolutionTest
 
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .nameResolver(lookupResolver),

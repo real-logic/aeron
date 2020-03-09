@@ -55,7 +55,7 @@ public class SpySubscriptionTest
     private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED));

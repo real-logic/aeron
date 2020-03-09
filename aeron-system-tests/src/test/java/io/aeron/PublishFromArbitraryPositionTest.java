@@ -49,7 +49,7 @@ public class PublishFromArbitraryPositionTest
     private final long seed = System.nanoTime();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();

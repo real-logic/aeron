@@ -59,7 +59,7 @@ public class ExclusivePublicationTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[65 * 1024]);
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();

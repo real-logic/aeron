@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -37,7 +38,7 @@ public class TermBufferLengthTest
     public void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .dirDeleteOnStart(true)
             .publicationTermBufferLength(TEST_TERM_LENGTH * 2)
             .ipcTermBufferLength(TEST_TERM_LENGTH * 2);

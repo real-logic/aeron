@@ -50,7 +50,7 @@ public class PublicationUnblockTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .threadingMode(ThreadingMode.SHARED)
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(400))
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))

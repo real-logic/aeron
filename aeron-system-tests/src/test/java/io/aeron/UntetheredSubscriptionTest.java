@@ -53,7 +53,7 @@ public class UntetheredSubscriptionTest
     private static final int MESSAGE_LENGTH = 512 - DataHeaderFlyweight.HEADER_LENGTH;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .spiesSimulateConnection(true)
         .dirDeleteOnStart(true)
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
@@ -62,8 +62,7 @@ public class UntetheredSubscriptionTest
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect(new Aeron.Context()
-        .useConductorAgentInvoker(true)
-        .errorHandler(Throwable::printStackTrace));
+        .useConductorAgentInvoker(true));
 
     @AfterEach
     public void after()

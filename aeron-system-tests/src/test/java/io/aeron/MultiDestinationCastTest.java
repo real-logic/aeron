@@ -91,13 +91,13 @@ public class MultiDestinationCastTest
         buffer.putInt(0, 1);
 
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -387,23 +387,23 @@ public class MultiDestinationCastTest
             }
         }
 
-        while (!fragmentHandlerA.isComplete() || !fragmentHandlerB.isComplete())
+        while (fragmentHandlerA.notDone() || fragmentHandlerB.notDone())
         {
-            if (!fragmentHandlerA.isComplete() && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+            if (fragmentHandlerA.notDone() && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
             {
                 Tests.yieldingWait(fragmentHandlerA::toString);
             }
 
-            if (!fragmentHandlerB.isComplete() && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
+            if (fragmentHandlerB.notDone() && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
             {
                 Tests.yieldingWait(fragmentHandlerB::toString);
             }
         }
     }
 
-    private static int pollForFragment(final Subscription subscription, final FragmentHandler handler)
+    private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)
     {
-        return Tests.pollForFragments(subscription, handler, 1, TimeUnit.MILLISECONDS.toNanos(500));
+        Tests.pollForFragments(subscription, handler, 1, TimeUnit.MILLISECONDS.toNanos(500));
     }
 
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)
@@ -427,9 +427,9 @@ public class MultiDestinationCastTest
             this.expected = expected;
         }
 
-        public boolean isComplete()
+        public boolean notDone()
         {
-            return expected == received;
+            return expected != received;
         }
 
         public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

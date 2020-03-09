@@ -39,7 +39,7 @@ public class ControlledMessageTest
     private static final int PAYLOAD_LENGTH = 10;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED));
 

@@ -78,7 +78,7 @@ public class SpySimulatedConnectionTest
     private void launch()
     {
         driverContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 

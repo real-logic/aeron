@@ -39,7 +39,7 @@ public class MaxPositionPublicationTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED));
 

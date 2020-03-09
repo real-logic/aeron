@@ -189,8 +189,7 @@ public class DriverNameResolverTest
 
         awaitCounterValue(drivers.get(0), aCacheEntriesCounterId, 1);
 
-        try (
-            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-A"));
+        try (Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-A"));
             Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(baseDir + "-B"));
             Subscription subscription = clientB.addSubscription("aeron:udp?endpoint=localhost:24325", 1);
             Publication publication = clientA.addPublication("aeron:udp?endpoint=B:24325", 1))
@@ -284,7 +283,7 @@ public class DriverNameResolverTest
     private static MediaDriver.Context setDefaults(final MediaDriver.Context context)
     {
         context
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED)
             .dirDeleteOnStart(true);
@@ -327,9 +326,7 @@ public class DriverNameResolverTest
     }
 
     private static void awaitCounterValue(
-        final TestMediaDriver mediaDriver,
-        final int counterId,
-        final long expectedValue)
+        final TestMediaDriver mediaDriver, final int counterId, final long expectedValue)
     {
         final CountersReader countersReader = mediaDriver.context().countersManager();
         final Supplier<String> messageSupplier =

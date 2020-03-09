@@ -36,7 +36,7 @@ public class TwoBufferOfferMessageTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED));
 

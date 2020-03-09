@@ -82,25 +82,25 @@ public class MaxFlowControlStrategySystemTest
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverA = TestMediaDriver.launch(driverAContext, testWatcher);
         driverB = TestMediaDriver.launch(driverBContext, testWatcher);
         clientA = Aeron.connect(
             new Aeron.Context()
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .aeronDirectoryName(driverAContext.aeronDirectoryName()));
 
         clientB = Aeron.connect(
             new Aeron.Context()
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 

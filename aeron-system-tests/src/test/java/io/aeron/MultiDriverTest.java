@@ -74,13 +74,13 @@ public class MultiDriverTest
         buffer.putInt(0, 1);
 
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(THREADING_MODE);
 
         final MediaDriver.Context driverBContext = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);

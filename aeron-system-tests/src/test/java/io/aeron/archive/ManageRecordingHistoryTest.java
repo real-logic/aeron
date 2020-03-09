@@ -23,6 +23,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
@@ -63,7 +64,7 @@ public class ManageRecordingHistoryTest
                 .publicationTermBufferLength(Common.TERM_LENGTH)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()

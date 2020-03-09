@@ -73,8 +73,7 @@ public class SessionSpecificPublicationTest
     @ParameterizedTest
     @MethodSource("data")
     public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication(
-        final ChannelUriStringBuilder channelBuilder
-    )
+        final ChannelUriStringBuilder channelBuilder)
     {
         try (Subscription ignored = aeron.addSubscription(channelBuilder.build(), STREAM_ID);
             Publication publication = aeron.addExclusivePublication(channelBuilder.build(), STREAM_ID))

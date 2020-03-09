@@ -55,7 +55,7 @@ public class FragmentedMessageTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();

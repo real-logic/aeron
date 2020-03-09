@@ -16,6 +16,7 @@
 package io.aeron.test;
 
 import io.aeron.Subscription;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
@@ -261,5 +262,16 @@ public class Tests
             Thread.yield();
             checkInterruptStatus();
         }
+    }
+
+    public static void onError(final Throwable ex)
+    {
+        if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN)
+        {
+            System.err.println("Warning: " + ex.getMessage());
+            return;
+        }
+
+        ex.printStackTrace();
     }
 }

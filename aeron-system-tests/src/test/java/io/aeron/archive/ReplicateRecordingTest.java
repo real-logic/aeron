@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
@@ -81,7 +82,7 @@ public class ReplicateRecordingTest
                 .aeronDirectoryName(srcAeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -101,7 +102,7 @@ public class ReplicateRecordingTest
                 .aeronDirectoryName(dstAeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()

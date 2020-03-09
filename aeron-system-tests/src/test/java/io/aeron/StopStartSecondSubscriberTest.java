@@ -65,13 +65,13 @@ public class StopStartSecondSubscriberTest
         driverOne = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
                 .dirDeleteOnStart(true)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .termBufferSparseFile(true));
 
         driverTwo = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
                 .dirDeleteOnStart(true)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .termBufferSparseFile(true));
 
         publisherOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));

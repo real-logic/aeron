@@ -26,7 +26,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;

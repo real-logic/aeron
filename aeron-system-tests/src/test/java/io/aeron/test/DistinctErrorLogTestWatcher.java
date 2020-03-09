@@ -1,6 +1,5 @@
 package io.aeron.test;
 
-import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.driver.reports.ErrorReportUtil;
 import org.agrona.IoUtil;
@@ -17,7 +16,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,7 +50,10 @@ public class DistinctErrorLogTestWatcher implements TestWatcher
     }
 
     private void onObservation(
-        int observationCount, long firstObservationTimestamp, long lastObservationTimestamp, String encodedException)
+        final int observationCount,
+        final long firstObservationTimestamp,
+        final long lastObservationTimestamp,
+        final String encodedException)
     {
         observationValues.addLong(observationCount);
         observationValues.addLong(firstObservationTimestamp);
@@ -60,7 +61,7 @@ public class DistinctErrorLogTestWatcher implements TestWatcher
         errors.add(encodedException);
     }
 
-    public void captureErrors(String aeronDirectoryName)
+    public void captureErrors(final String aeronDirectoryName)
     {
         final File cncFile = CommonContext.newCncFile(aeronDirectoryName);
         assertTrue(cncFile.exists());
@@ -76,7 +77,7 @@ public class DistinctErrorLogTestWatcher implements TestWatcher
 
             ErrorLogReader.read(errorLogBuffer, this::onObservation);
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             e.printStackTrace();
         }

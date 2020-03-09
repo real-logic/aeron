@@ -151,13 +151,17 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
         return NULL;
     }
 
-    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, strlen(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)))
+    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, strlen(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT) + 1))
     {
         supplier_func = aeron_name_resolver_supplier_default;
     }
-    else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, strlen(AERON_NAME_RESOLVER_CSV_TABLE)))
+    else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, strlen(AERON_NAME_RESOLVER_CSV_TABLE) + 1))
     {
         supplier_func = aeron_name_resolver_supplier_load("aeron_name_resolver_supplier_csv_table");
+    }
+    else if (0 == strncmp(name, AERON_NAME_RESOLVER_DRIVER, strlen(AERON_NAME_RESOLVER_DRIVER) + 1))
+    {
+        supplier_func = aeron_name_resolver_supplier_load("aeron_name_resolver_supplier_driver_gossip");
     }
     else
     {

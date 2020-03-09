@@ -69,6 +69,9 @@ size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask);
 
 int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_addr, unsigned int *if_index);
 
+int aeron_find_unicast_interface(
+    int family, const char *interface_str, struct sockaddr_storage *interface_addr, unsigned int *interface_index);
+
 bool aeron_is_addr_multicast(struct sockaddr_storage *addr);
 
 bool aeron_is_wildcard_addr(struct sockaddr_storage *addr);

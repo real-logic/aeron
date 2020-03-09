@@ -65,9 +65,9 @@ int aeron_name_resolver_driver_gossip_init(
     _driver_resolver->transport_bindings = context->udp_channel_transport_bindings;
 
     _driver_resolver->name = name;
-    if (_driver_resolver->name == name)
+    if (NULL == _driver_resolver->name)
     {
-        if (aeron_alloc((void **)local_hostname, AERON_MAX_HOSTNAME_LEN) < 0)
+        if (aeron_alloc((void **)&local_hostname, AERON_MAX_HOSTNAME_LEN) < 0)
         {
             goto error_cleanup;
         }
@@ -81,10 +81,8 @@ int aeron_name_resolver_driver_gossip_init(
         _driver_resolver->name = local_hostname;
     }
 
-    if (aeron_find_interface(
-        NULL != interface_name ? interface_name : "0.0.0.0",
-        &_driver_resolver->local_socket_addr,
-        &_driver_resolver->interface_index) < 0)
+    if (aeron_find_unicast_interface(
+        AF_INET, interface_name, &_driver_resolver->local_socket_addr, &_driver_resolver->interface_index) < 0)
     {
         goto error_cleanup;
     }

@@ -34,7 +34,6 @@ public:
 protected:
     void TearDown() override
     {
-        aeron_env_unset(AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR);
         if (NULL != m_context)
         {
             aeron_driver_context_close(m_context);
@@ -84,4 +83,15 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 
     ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
     ASSERT_STREQ(HOST_1B, resolved_name);
+}
+
+TEST_F(NameResolverTest, shouldLoadDriverNameResolver)
+{
+    aeron_driver_context_init(&m_context);
+
+    aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
+    ASSERT_NE(nullptr, supplier_func);
+
+    aeron_name_resolver_t resolver;
+    ASSERT_EQ(0, supplier_func(m_context, &resolver, NULL));
 }

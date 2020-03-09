@@ -46,10 +46,13 @@ typedef int (*aeron_name_resolver_lookup_func_t)(
     bool is_re_resolution,
     const char **resolved_name);
 
+typedef int (*aeron_name_resolver_close_func_t)(aeron_name_resolver_t *resolver);
+
 typedef struct aeron_name_resolver_stct
 {
     aeron_name_resolver_lookup_func_t lookup_func;
     aeron_name_resolver_resolve_func_t resolve_func;
+    aeron_name_resolver_close_func_t close_func;
     void *state;
 }
 aeron_name_resolver_t;
@@ -70,12 +73,14 @@ int aeron_name_resolver_default_resolve(
     bool is_re_resolution,
     struct sockaddr_storage *address);
 
-int aeron_name_resolver_lookup_default(
+int aeron_name_resolver_default_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     const char **resolved_name);
+
+int aeron_name_resolver_default_close(aeron_name_resolver_t *resolver);
 
 int aeron_name_resolver_resolve_host_and_port(
     aeron_name_resolver_t *resolver,

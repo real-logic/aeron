@@ -1843,6 +1843,8 @@ void aeron_driver_conductor_on_close(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
 
+    conductor->name_resolver.close_func(&conductor->name_resolver);
+
     for (size_t i = 0, length = conductor->clients.length; i < length; i++)
     {
         aeron_free(conductor->clients.array[i].publication_links.array);

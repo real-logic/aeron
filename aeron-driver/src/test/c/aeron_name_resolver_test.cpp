@@ -94,4 +94,6 @@ TEST_F(NameResolverTest, shouldLoadDriverNameResolver)
 
     aeron_name_resolver_t resolver;
     ASSERT_EQ(0, supplier_func(m_context, &resolver, NULL));
+
+    ASSERT_EQ(0, resolver.close_func(&resolver));
 }

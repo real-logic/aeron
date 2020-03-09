@@ -116,6 +116,12 @@ int aeron_name_resolver_driver_resolve(
     return aeron_name_resolver_default_resolve(NULL, name, uri_param_name, is_re_resolution, address);
 }
 
+int aeron_name_resolver_driver_close(aeron_name_resolver_t *resolver)
+{
+    aeron_free(resolver->state);
+    return 0;
+}
+
 int aeron_name_resolver_driver_supplier(
     aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
@@ -129,8 +135,9 @@ int aeron_name_resolver_driver_supplier(
         context->resolver_interface,
         context->resolver_bootstrap_neighbor);
 
-    resolver->lookup_func = aeron_name_resolver_lookup_default;
+    resolver->lookup_func = aeron_name_resolver_default_lookup;
     resolver->resolve_func = aeron_name_resolver_driver_resolve;
+    resolver->close_func = aeron_name_resolver_driver_close;
 
     resolver->state = name_resolver;
 

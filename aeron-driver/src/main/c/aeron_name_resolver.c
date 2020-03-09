@@ -48,8 +48,9 @@ int aeron_name_resolver_default_supplier(
     aeron_name_resolver_t *resolver,
     const char *args)
 {
-    resolver->lookup_func = aeron_name_resolver_lookup_default;
+    resolver->lookup_func = aeron_name_resolver_default_lookup;
     resolver->resolve_func = aeron_name_resolver_default_resolve;
+    resolver->close_func = aeron_name_resolver_default_close;
     resolver->state = NULL;
     return 0;
 }
@@ -64,7 +65,7 @@ int aeron_name_resolver_default_resolve(
     return aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
 }
 
-int aeron_name_resolver_lookup_default(
+int aeron_name_resolver_default_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -72,6 +73,11 @@ int aeron_name_resolver_lookup_default(
     const char **resolved_name)
 {
     *resolved_name = name;
+    return 0;
+}
+
+int aeron_name_resolver_default_close(aeron_name_resolver_t *resolver)
+{
     return 0;
 }
 

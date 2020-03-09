@@ -73,7 +73,13 @@ int aeron_name_resolver_csv_table_lookup(
         }
     }
 
-    return aeron_name_resolver_lookup_default(resolver, name, uri_param_name, is_re_resolution, resolved_name);
+    return aeron_name_resolver_default_lookup(resolver, name, uri_param_name, is_re_resolution, resolved_name);
+}
+
+int aeron_name_resolver_csv_table_close(aeron_name_resolver_t *resolver)
+{
+    aeron_free(resolver->state);
+    return 0;
 }
 
 int aeron_name_resolver_csv_table_supplier(
@@ -83,6 +89,7 @@ int aeron_name_resolver_csv_table_supplier(
 {
     resolver->resolve_func = aeron_name_resolver_default_resolve;
     resolver->lookup_func = aeron_name_resolver_csv_table_lookup;
+    resolver->close_func = aeron_name_resolver_csv_table_close;
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];

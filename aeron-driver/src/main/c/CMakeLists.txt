@@ -167,7 +167,7 @@ SET(SOURCE
     aeron_termination_validator.c
     aeron_name_resolver.c
         aeron_name_resolver_csv_table.c
-    aeron_name_resolver_driver_gossip.c
+        aeron_name_resolver_driver.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c

@@ -395,7 +395,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_REJOIN_STREAM_DEFAULT (true)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT (-1)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT (10000)
-#define AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_DEFAULT (1 * 1000 * 1000 * 1000LL)
+#define AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT (1 * 1000 * 1000 * 1000LL)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -534,7 +534,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
     _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
     _context->name_resolver_init_args = NULL;
-    _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_DEFAULT;
+    _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
 
     char *value = NULL;
 
@@ -2346,6 +2346,6 @@ int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_contex
 uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context)
 {
     return NULL != context ?
-        context->re_resolution_check_interval_ns : AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_DEFAULT;
+        context->re_resolution_check_interval_ns : AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
 }
 

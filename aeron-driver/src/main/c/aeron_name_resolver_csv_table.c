@@ -87,9 +87,11 @@ int aeron_name_resolver_csv_table_supplier(
     aeron_name_resolver_t *resolver,
     const char *args)
 {
-    resolver->resolve_func = aeron_name_resolver_default_resolve;
     resolver->lookup_func = aeron_name_resolver_csv_table_lookup;
     resolver->close_func = aeron_name_resolver_csv_table_close;
+
+    resolver->resolve_func = aeron_name_resolver_default_resolve;
+    resolver->do_work_func = aeron_name_resolver_default_do_work;
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];

@@ -50,6 +50,7 @@ int aeron_name_resolver_default_supplier(
 {
     resolver->lookup_func = aeron_name_resolver_default_lookup;
     resolver->resolve_func = aeron_name_resolver_default_resolve;
+    resolver->do_work_func = aeron_name_resolver_default_do_work;
     resolver->close_func = aeron_name_resolver_default_close;
     resolver->state = NULL;
     return 0;
@@ -73,6 +74,11 @@ int aeron_name_resolver_default_lookup(
     const char **resolved_name)
 {
     *resolved_name = name;
+    return 0;
+}
+
+int aeron_name_resolver_default_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
+{
     return 0;
 }
 

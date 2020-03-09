@@ -55,6 +55,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_udp_channel_data_paths_t *data_paths;
     aeron_clock_cache_t *cached_clock;
+    struct sockaddr_storage current_control_addr;
 
     int64_t receiver_id;
     size_t so_rcvbuf;
@@ -149,6 +150,10 @@ void aeron_receive_channel_endpoint_check_for_re_resolution(
     aeron_receive_channel_endpoint_t *endpoint,
     int64_t now_ns,
     aeron_driver_conductor_proxy_t *conductor_proxy);
+
+void aeron_receive_channel_endpoint_update_control_address(
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *address);
 
 inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)

@@ -56,7 +56,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_udp_channel_data_paths_t *data_paths;
-    struct sockaddr_storage remote_data_addr;
+    struct sockaddr_storage current_data_addr;
     aeron_clock_cache_t *cached_clock;
     int64_t time_of_last_sm_ns;
 }

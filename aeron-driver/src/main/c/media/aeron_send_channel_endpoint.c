@@ -112,7 +112,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->sender_proxy = context->sender_proxy;
     _endpoint->cached_clock = context->cached_clock;
     _endpoint->time_of_last_sm_ns = aeron_clock_cached_nano_time(_endpoint->cached_clock);
-    memcpy(&_endpoint->remote_data_addr, &channel->remote_data, sizeof(_endpoint->remote_data_addr));
+    memcpy(&_endpoint->current_data_addr, &channel->remote_data, sizeof(_endpoint->current_data_addr));
 
     *endpoint = _endpoint;
     return 0;
@@ -168,8 +168,8 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
     {
         for (size_t i = 0; i < vlen; i++)
         {
-            mmsghdr[i].msg_hdr.msg_name = &endpoint->remote_data_addr;
-            mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->remote_data_addr);
+            mmsghdr[i].msg_hdr.msg_name = &endpoint->current_data_addr;
+            mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
         }
 
         result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, mmsghdr, vlen);
@@ -189,8 +189,8 @@ int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct m
 
     if (NULL == endpoint->destination_tracker)
     {
-        msghdr->msg_name = &endpoint->remote_data_addr;
-        msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->remote_data_addr);
+        msghdr->msg_name = &endpoint->current_data_addr;
+        msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
 
         result = endpoint->data_paths->sendmsg_func(endpoint->data_paths, &endpoint->transport, msghdr);
     }
@@ -379,7 +379,7 @@ int aeron_send_channel_endpoint_check_for_re_resolution(
         const char *endpoint_name = endpoint->conductor_fields.udp_channel->uri.params.udp.endpoint;
 
         aeron_driver_conductor_proxy_on_re_resolve_endpoint(
-            conductor_proxy, endpoint_name, endpoint, &endpoint->remote_data_addr);
+            conductor_proxy, endpoint_name, endpoint, &endpoint->current_data_addr);
     }
 
     return 0;
@@ -396,7 +396,7 @@ void aeron_send_channel_endpoint_resolution_change(
     }
     else
     {
-        memcpy(&endpoint->remote_data_addr, new_addr, sizeof(endpoint->remote_data_addr));
+        memcpy(&endpoint->current_data_addr, new_addr, sizeof(endpoint->current_data_addr));
     }
 }
 

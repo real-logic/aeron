@@ -134,6 +134,8 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->cached_clock = context->cached_clock;
     _endpoint->time_of_last_activity_ns = aeron_clock_cached_nano_time(_endpoint->cached_clock);
 
+    memcpy(&_endpoint->current_control_addr, &channel->local_control, sizeof(_endpoint->current_control_addr));
+
     *endpoint = _endpoint;
     return 0;
 }
@@ -564,15 +566,27 @@ void aeron_receive_channel_endpoint_check_for_re_resolution(
     aeron_driver_conductor_proxy_t *conductor_proxy)
 {
     // MDS is not yet supported in the C media driver,
+
     if (endpoint->conductor_fields.udp_channel->has_explicit_control &&
         now_ns > endpoint->time_of_last_activity_ns + AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS)
     {
         const char *endpoint_name = endpoint->conductor_fields.udp_channel->uri.params.udp.control;
-        struct sockaddr_storage *addr = &endpoint->conductor_fields.udp_channel->local_control;
+        struct sockaddr_storage *addr = &endpoint->current_control_addr;
 
         aeron_driver_conductor_proxy_on_re_resolve_control(conductor_proxy, endpoint_name, endpoint, addr);
-
         aeron_receive_channel_update_last_activity_ns(endpoint, now_ns);
+    }
+}
+
+void aeron_receive_channel_endpoint_update_control_address(
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *address)
+{
+    // MDS is not supported in the C driver yet, would need to update destinations here...
+
+    if (endpoint->conductor_fields.udp_channel->has_explicit_control)
+    {
+        memcpy(&endpoint->current_control_addr, address, sizeof(endpoint->current_control_addr));
     }
 }
 

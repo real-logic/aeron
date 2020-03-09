@@ -101,7 +101,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build
-        run: docker build --file CentOS_cpp_build --build-arg GCC_VERSION=${{ matrix.version }} --shm-size=1G
+        run: docker build --file CentOS_cpp_build --build-arg GCC_VERSION=${{ matrix.version }} --shm-size=1G .
 
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}

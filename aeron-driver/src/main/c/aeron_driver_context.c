@@ -2312,7 +2312,7 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
     return NULL != context ? context->rejoin_stream : AERON_REJOIN_STREAM_DEFAULT;
 }
 
-int aeron_driver_set_resolver_name(aeron_driver_context_t *context, const char *value)
+int aeron_driver_context_set_resolver_name(aeron_driver_context_t *context, const char *value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -2320,12 +2320,12 @@ int aeron_driver_set_resolver_name(aeron_driver_context_t *context, const char *
     return 0;
 }
 
-const char *aeron_driver_get_resolver_name(aeron_driver_context_t *context)
+const char *aeron_driver_context_get_resolver_name(aeron_driver_context_t *context)
 {
     return NULL != context ? context->resolver_name : NULL;
 }
 
-int aeron_driver_set_resolver_interface(aeron_driver_context_t *context, const char *value)
+int aeron_driver_context_set_resolver_interface(aeron_driver_context_t *context, const char *value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -2333,12 +2333,12 @@ int aeron_driver_set_resolver_interface(aeron_driver_context_t *context, const c
     return 0;
 }
 
-const char *aeron_driver_get_resolver_interface(aeron_driver_context_t *context)
+const char *aeron_driver_context_get_resolver_interface(aeron_driver_context_t *context)
 {
     return NULL != context ? context->resolver_interface : NULL;
 }
 
-int aeron_driver_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context, const char *value)
+int aeron_driver_context_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context, const char *value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -2346,7 +2346,7 @@ int aeron_driver_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context
     return 0;
 }
 
-const char *aeron_driver_get_resolver_bootstrap_neighbor(aeron_driver_context_t *context)
+const char *aeron_driver_context_get_resolver_bootstrap_neighbor(aeron_driver_context_t *context)
 {
     return NULL != context ? context->resolver_bootstrap_neighbor : NULL;
 }

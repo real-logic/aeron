@@ -94,9 +94,37 @@ typedef struct aeron_rttm_header_stct
     int64_t receiver_id;
 }
 aeron_rttm_header_t;
+
+typedef struct aeron_resolution_header_stct
+{
+    aeron_frame_header_t frame_header;
+    int8_t res_type;
+    uint8_t res_flags;
+    uint16_t udp_port;
+}
+aeron_resolution_header_t;
+
+typedef struct aeron_resolution_header_ipv4_stct
+{
+    aeron_resolution_header_t resolution_header;
+    uint8_t addr[4];
+    int16_t name_length;
+}
+aeron_resolution_header_ipv4_t;
+
+typedef struct aeron_resolution_header_ipv6_stct
+{
+    aeron_resolution_header_t resolution_header;
+    uint8_t addr[16];
+    int16_t name_length;
+}
+aeron_resolution_header_ipv6_t;
+
 #pragma pack(pop)
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);
+int aeron_udp_protocol_resolution_set_name(
+    aeron_resolution_header_t *resolution_header, size_t capacity, const char *name, size_t name_length);
 
 #define AERON_FRAME_HEADER_VERSION (0)
 
@@ -107,6 +135,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_HDR_TYPE_ERR (0x04)
 #define AERON_HDR_TYPE_SETUP (0x05)
 #define AERON_HDR_TYPE_RTTM (0x06)
+#define AERON_HDR_TYPE_RES (0x07)
 #define AERON_HDR_TYPE_EXT (0xFFFF)
 
 #define AERON_DATA_HEADER_LENGTH (sizeof(aeron_data_header_t))
@@ -120,5 +149,9 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG ((uint8_t)(0x80))
 
 #define AERON_RTTM_HEADER_REPLY_FLAG ((uint8_t)(0x80))
+
+#define AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD (0x01)
+#define AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD (0x02)
+#define AERON_RES_HEADER_SELF_FLAG UINT8_C(0x80)
 
 #endif //AERON_UDP_PROTOCOL_H

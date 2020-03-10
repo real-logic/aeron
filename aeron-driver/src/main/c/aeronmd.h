@@ -697,8 +697,8 @@ typedef int (*aeron_name_resolver_supplier_func_t)(
  */
 #define AERON_DRIVER_RESOLVER_NAME_ENV_VAR "AERON_DRIVER_RESOLVER_NAME"
 
-int aeron_driver_set_resolver_name(aeron_driver_context_t *context, const char *value);
-const char *aeron_driver_get_resolver_name(aeron_driver_context_t *context);
+int aeron_driver_context_set_resolver_name(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_resolver_name(aeron_driver_context_t *context);
 
 /**
 * The interface of the MediaDriver for name resolver purposes.
@@ -707,8 +707,8 @@ const char *aeron_driver_get_resolver_name(aeron_driver_context_t *context);
 */
 #define AERON_DRIVER_RESOLVER_INTERFACE_ENV_VAR "AERON_DRIVER_RESOLVER_INTERFACE"
 
-int aeron_driver_set_resolver_interface(aeron_driver_context_t *context, const char *value);
-const char *aeron_driver_get_resolver_interface(aeron_driver_context_t *context);
+int aeron_driver_context_set_resolver_interface(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_resolver_interface(aeron_driver_context_t *context);
 
 /**
  * Get the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
@@ -717,8 +717,8 @@ const char *aeron_driver_get_resolver_interface(aeron_driver_context_t *context)
  */
 #define AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR_ENV_VAR "AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR"
 
-int aeron_driver_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context, const char *value);
-const char *aeron_driver_get_resolver_bootstrap_neighbor(aeron_driver_context_t *context);
+int aeron_driver_context_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_resolver_bootstrap_neighbor(aeron_driver_context_t *context);
 
 /**
 * Specify the name of the name resolver (supplier) to be used by this media driver

@@ -19,6 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdlib.h>
 #include <errno.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"

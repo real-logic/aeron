@@ -68,7 +68,7 @@ public class PubAndSubTest
     }
 
     @RegisterExtension
-    public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;

@@ -352,7 +352,7 @@ public class CommonContext implements Cloneable
      */
     public static String generateRandomDirName()
     {
-        return AERON_DIR_PROP_DEFAULT + '-' + UUID.randomUUID().toString();
+        return AERON_DIR_PROP_DEFAULT + "-" + UUID.randomUUID();
     }
 
     /**

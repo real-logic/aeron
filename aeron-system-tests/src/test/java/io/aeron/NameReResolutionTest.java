@@ -81,10 +81,10 @@ public class NameReResolutionTest
     private Publication publication;
 
     @RegisterExtension
-    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @RegisterExtension
-    public DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
+    public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);

@@ -18,7 +18,7 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import org.agrona.IoUtil;
-import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.CachedEpochClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,9 +37,7 @@ public class CatalogViewTest
     private static final int MTU_LENGTH = 1024;
 
     private final File archiveDir = ArchiveTests.makeTestDirectory();
-
-    private long currentTimeMs = 1;
-    private final EpochClock clock = () -> currentTimeMs;
+    private final CachedEpochClock clock = new CachedEpochClock();
 
     private long recordingOneId;
     private long recordingTwoId;
@@ -49,6 +47,8 @@ public class CatalogViewTest
     @BeforeEach
     public void before()
     {
+        clock.update(1);
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             recordingOneId = catalog.addNewRecording(

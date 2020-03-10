@@ -101,7 +101,7 @@ public class Election
         }
     }
 
-    private boolean isNodeStartup;
+    private final boolean isNodeStartup;
     private boolean isLeaderStartup;
     private boolean isExtendedCanvass;
     private boolean shouldReplay;

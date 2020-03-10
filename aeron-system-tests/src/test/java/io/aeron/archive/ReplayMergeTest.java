@@ -62,12 +62,12 @@ public class ReplayMergeTest
         .minFlowControl(null, "5s")
         .termLength(TERM_LENGTH);
 
-    private ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
+    private final ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(RECORDING_ENDPOINT)
         .controlEndpoint(CONTROL_ENDPOINT);
 
-    private ChannelUriStringBuilder subscriptionChannel = new ChannelUriStringBuilder()
+    private final ChannelUriStringBuilder subscriptionChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
 

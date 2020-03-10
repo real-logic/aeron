@@ -34,7 +34,7 @@ public class SampleAuthenticator implements Authenticator
         CHALLENGE, AUTHENTICATED, REJECT
     }
 
-    private Long2ObjectHashMap<SessionState> sessionIdToStateMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SessionState> sessionIdToStateMap = new Long2ObjectHashMap<>();
 
     public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
     {

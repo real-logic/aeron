@@ -965,7 +965,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecordingValidFlag(catalog, validRecording4, VALID);
+            assertRecordingValidFlag(catalog, validRecording4);
         }
     }
 
@@ -976,7 +976,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecordingValidFlag(catalog, validRecording4, VALID);
+            assertRecordingValidFlag(catalog, validRecording4);
         }
     }
 
@@ -1101,13 +1101,11 @@ class ArchiveToolTests
             }));
     }
 
-    private void assertRecordingValidFlag(final Catalog catalog, final long recordingId, final byte valid)
+    private void assertRecordingValidFlag(final Catalog catalog, final long recordingId)
     {
-        assertTrue(catalog.forEntry(
-            recordingId,
-            (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-            {
-                assertEquals(valid, headerDecoder.valid());
-            }));
+        final CatalogEntryProcessor processor = (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            assertEquals(VALID, headerDecoder.valid());
+
+        assertTrue(catalog.forEntry(recordingId, processor));
     }
 }

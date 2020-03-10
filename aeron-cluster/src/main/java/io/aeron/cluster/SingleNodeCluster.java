@@ -90,7 +90,7 @@ public class SingleNodeCluster implements AutoCloseable
         protected Cluster cluster;
         protected IdleStrategy idleStrategy;
         private int messageCount = 0;
-        private ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+        private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {

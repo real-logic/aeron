@@ -924,9 +924,9 @@ public class TestCluster implements AutoCloseable
 
     static class ServiceContext
     {
-        public Aeron.Context aeron = new Aeron.Context();
-        AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
-        ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
+        final Aeron.Context aeron = new Aeron.Context();
+        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
+        final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
         TestNode.TestService service;
     }
 

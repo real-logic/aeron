@@ -766,7 +766,7 @@ public class TestCluster implements AutoCloseable
     void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
-        long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
 
         while (node.service().messageCount() < messageCount)
         {
@@ -779,10 +779,10 @@ public class TestCluster implements AutoCloseable
             }
 
             final long nowMs = epochClock.time();
-            if (nowMs > deadlineMs)
+            if (nowMs > keepAliveDeadlineMs)
             {
                 client.sendKeepAlive();
-                deadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
         }
     }

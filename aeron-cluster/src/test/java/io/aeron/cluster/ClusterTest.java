@@ -441,7 +441,7 @@ public class ClusterTest
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            final TestNode leaderNode = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
             TestNode followerA = followers.get(0), followerB = followers.get(1);
 
@@ -453,7 +453,7 @@ public class ClusterTest
 
             cluster.sendPoisonMessages(10);
 
-            while (leaderNode.appendPosition() <= leaderNode.commitPosition())
+            while (leader.appendPosition() <= leader.commitPosition())
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
@@ -461,15 +461,14 @@ public class ClusterTest
 
             cluster.closeClient();
 
-            final long targetPosition = leaderNode.appendPosition();
+            final long targetPosition = leader.appendPosition();
 
-            cluster.stopNode(leaderNode);
+            cluster.stopNode(leader);
 
             followerA = cluster.startStaticNode(followerA.index(), false);
             followerB = cluster.startStaticNode(followerB.index(), false);
 
             cluster.awaitLeader();
-
             cluster.connectClient();
 
             int messageCount = 0;
@@ -483,9 +482,8 @@ public class ClusterTest
             cluster.awaitServiceMessageCount(followerA, messageCount);
             cluster.awaitServiceMessageCount(followerB, messageCount);
 
-            final TestNode leaderNode2 = cluster.startStaticNode(leaderNode.index(), false);
-
-            cluster.awaitServiceMessageCount(leaderNode2, messageCount);
+            final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
+            cluster.awaitServiceMessageCount(oldLeader, messageCount);
         }
     }
 
@@ -496,7 +494,7 @@ public class ClusterTest
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            final TestNode leaderNode = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
             TestNode followerA = followers.get(0), followerB = followers.get(1);
 
@@ -508,22 +506,21 @@ public class ClusterTest
 
             cluster.sendPoisonMessages(10);
 
-            while (leaderNode.appendPosition() <= leaderNode.commitPosition())
+            while (leader.appendPosition() <= leader.commitPosition())
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
             }
 
             cluster.closeClient();
-
-            cluster.stopNode(leaderNode);
+            cluster.stopNode(leader);
 
             followerA = cluster.startStaticNode(followerA.index(), false);
             followerB = cluster.startStaticNode(followerB.index(), false);
 
             cluster.awaitLeader();
 
-            final TestNode leaderNode2 = cluster.startStaticNode(leaderNode.index(), false);
+            final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
 
             Tests.sleep(1000);
 
@@ -535,7 +532,7 @@ public class ClusterTest
             cluster.awaitResponseMessageCount(messageCount);
             cluster.awaitServiceMessageCount(followerA, messageCount);
             cluster.awaitServiceMessageCount(followerB, messageCount);
-            cluster.awaitServiceMessageCount(leaderNode2, messageCount);
+            cluster.awaitServiceMessageCount(oldLeader, messageCount);
         }
     }
 

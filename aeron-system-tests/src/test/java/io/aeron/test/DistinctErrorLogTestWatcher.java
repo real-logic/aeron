@@ -1,7 +1,21 @@
+/*
+ * Copyright 2014-2020 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.test;
 
 import io.aeron.CommonContext;
-import io.aeron.driver.reports.ErrorReportUtil;
 import org.agrona.IoUtil;
 import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.AtomicBuffer;
@@ -68,18 +82,17 @@ public class DistinctErrorLogTestWatcher implements TestWatcher
 
         MappedByteBuffer cncByteBuffer = null;
 
-        try (
-            RandomAccessFile file = new RandomAccessFile(cncFile, "r");
+        try (RandomAccessFile file = new RandomAccessFile(cncFile, "r");
             FileChannel channel = file.getChannel())
         {
             cncByteBuffer = channel.map(READ_ONLY, 0, channel.size());
-            final AtomicBuffer errorLogBuffer = ErrorReportUtil.mapErrorLogBuffer(cncByteBuffer);
+            final AtomicBuffer errorLogBuffer = CommonContext.errorLogBuffer(cncByteBuffer);
 
             ErrorLogReader.read(errorLogBuffer, this::onObservation);
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
         finally
         {

@@ -127,8 +127,7 @@ public class ImageAvailabilityTest
 
         final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
         final Aeron.Context ctx = new Aeron.Context()
-            .useConductorAgentInvoker(true)
-            .errorHandler(Throwable::printStackTrace);
+            .useConductorAgentInvoker(true);
 
         try (Aeron aeronTwo = Aeron.connect(ctx);
             Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);

@@ -34,23 +34,24 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
         if (TestMediaDriver.shouldRunCMediaDriver())
         {
             System.out.println("C Media Driver tests failed");
-            outputFilesByAeronDirectoryName.forEach((aeronDirectoryName, files) ->
-            {
-                try
+            outputFilesByAeronDirectoryName.forEach(
+                (aeronDirectoryName, files) ->
                 {
-                    System.out.println();
-                    System.out.println("Media Driver: " + aeronDirectoryName);
-                    System.out.println("*** STDOUT ***");
-                    Files.copy(files.stdout.toPath(), System.out);
-                    System.out.println("*** STDERR ***");
-                    Files.copy(files.stderr.toPath(), System.out);
-                    System.out.println("====");
-                }
-                catch (final IOException e)
-                {
-                    throw new RuntimeException("Failed to output logs to stdout", e);
-                }
-            });
+                    try
+                    {
+                        System.out.println();
+                        System.out.println("Media Driver: " + aeronDirectoryName);
+                        System.out.println("*** STDOUT ***");
+                        Files.copy(files.stdout.toPath(), System.out);
+                        System.out.println("*** STDERR ***");
+                        Files.copy(files.stderr.toPath(), System.out);
+                        System.out.println("====");
+                    }
+                    catch (final IOException ex)
+                    {
+                        throw new RuntimeException("Failed to output logs to stdout", ex);
+                    }
+                });
 
             deleteFiles();
         }

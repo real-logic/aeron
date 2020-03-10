@@ -1,7 +1,6 @@
 package io.aeron.test;
 
 import io.aeron.CommonContext;
-import io.aeron.driver.reports.ErrorReportUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -39,7 +38,7 @@ public class ErrorReportTestUtil
             FileChannel channel = file.getChannel())
         {
             cncByteBuffer = channel.map(READ_ONLY, 0, channel.size());
-            final AtomicBuffer errorLogBuffer = ErrorReportUtil.mapErrorLogBuffer(cncByteBuffer);
+            final AtomicBuffer errorLogBuffer = CommonContext.errorLogBuffer(cncByteBuffer);
 
             final MatcherErrorConsumer errorConsumer = new MatcherErrorConsumer(matcher);
 
@@ -114,11 +113,12 @@ public class ErrorReportTestUtil
             description.appendText("Unable to match: ");
             matcher.describeTo(description);
             description.appendText(", against the following errors:");
-            encodedExceptions.forEach((encodedException) ->
-            {
-                description.appendText(lineSeparator).appendText("  ");
-                description.appendText(encodedException);
-            });
+            encodedExceptions.forEach(
+                (encodedException) ->
+                {
+                    description.appendText(lineSeparator).appendText("  ");
+                    description.appendText(encodedException);
+                });
             description.appendText(lineSeparator);
 
             return description.toString();

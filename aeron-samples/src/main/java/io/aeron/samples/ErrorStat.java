@@ -17,7 +17,6 @@ package io.aeron.samples;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
-import io.aeron.driver.reports.ErrorReportUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 
@@ -42,7 +41,7 @@ public class ErrorStat
 
         final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
 
-        final AtomicBuffer buffer = ErrorReportUtil.mapErrorLogBuffer(cncByteBuffer);
+        final AtomicBuffer buffer = CommonContext.errorLogBuffer(cncByteBuffer);
         final int distinctErrorCount = ErrorLogReader.read(buffer, ErrorStat::accept);
 
         System.out.format("%n%d distinct errors observed.%n", distinctErrorCount);

@@ -39,11 +39,6 @@ import static java.net.InetAddress.getByAddress;
  */
 public final class UdpChannel
 {
-    private static final byte[] HEX_TABLE =
-    {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
-    };
-
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
 
     private final boolean isManualControlMode;
@@ -604,41 +599,42 @@ public final class UdpChannel
 
     private static InetSocketAddress getEndpointAddress(final ChannelUri uri, final NameResolver nameResolver)
     {
+        InetSocketAddress address = null;
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
             try
             {
-                return SocketAddressParser.parse(endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+                address = SocketAddressParser.parse(
+                    endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
             }
-            catch (final UnknownHostException e)
+            catch (final UnknownHostException ex)
             {
-                LangUtil.rethrowUnchecked(e);
-                return null;
+                LangUtil.rethrowUnchecked(ex);
             }
         }
 
-        return null;
+        return address;
     }
 
     private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri, final NameResolver nameResolver)
     {
+        InetSocketAddress address = null;
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
             try
             {
-                return SocketAddressParser.parse(
+                address = SocketAddressParser.parse(
                     controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
             }
-            catch (final UnknownHostException e)
+            catch (final UnknownHostException ex)
             {
-                LangUtil.rethrowUnchecked(e);
-                return null;
+                LangUtil.rethrowUnchecked(ex);
             }
         }
 
-        return null;
+        return address;
     }
 
     private static void validateDataAddress(final byte[] addressAsBytes)
@@ -721,17 +717,6 @@ public final class UdpChannel
         }
 
         return builder.toString();
-    }
-
-    private static StringBuilder toHex(final StringBuilder builder, final byte[] bytes)
-    {
-        for (final byte b : bytes)
-        {
-            builder.append((char)(HEX_TABLE[(b >> 4) & 0x0F]));
-            builder.append((char)(HEX_TABLE[b & 0x0F]));
-        }
-
-        return builder;
     }
 
     static class Context

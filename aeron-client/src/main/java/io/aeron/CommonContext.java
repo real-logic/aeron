@@ -769,12 +769,7 @@ public class CommonContext implements Cloneable
             return 0;
         }
 
-        final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-        CncFileDescriptor.checkVersion(cncVersion);
-
-        return printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
+        return printErrorLog(errorLogBuffer(cncByteBuffer), out);
     }
 
     /**
@@ -811,5 +806,21 @@ public class CommonContext implements Cloneable
         }
 
         return distinctErrorCount;
+    }
+
+    /**
+     * Get an {@link AtomicBuffer} which wraps the error log in the CnC file.
+     *
+     * @param cncByteBuffer which contains the error log.
+     * @return an {@link AtomicBuffer} which wraps the error log in the CnC file.
+     */
+    public static AtomicBuffer errorLogBuffer(final ByteBuffer cncByteBuffer)
+    {
+        final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaDataBuffer.getInt(cncVersionOffset(0));
+
+        CncFileDescriptor.checkVersion(cncVersion);
+
+        return CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
     }
 }

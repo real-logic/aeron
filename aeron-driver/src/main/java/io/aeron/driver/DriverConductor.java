@@ -332,9 +332,9 @@ public class DriverConductor implements Agent
                 senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
             }
         }
-        catch (final UnknownHostException e)
+        catch (final UnknownHostException ex)
         {
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -354,9 +354,9 @@ public class DriverConductor implements Agent
                 receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
             }
         }
-        catch (final UnknownHostException e)
+        catch (final UnknownHostException ex)
         {
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

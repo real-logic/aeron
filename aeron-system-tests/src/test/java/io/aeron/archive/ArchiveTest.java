@@ -151,7 +151,7 @@ public class ArchiveTest
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
-        client = Aeron.connect(new Aeron.Context().errorHandler(Throwable::printStackTrace));
+        client = Aeron.connect();
 
         recorded = 0;
     }

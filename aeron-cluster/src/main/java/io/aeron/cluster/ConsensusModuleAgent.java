@@ -1624,11 +1624,7 @@ class ConsensusModuleAgent implements Agent
             timeOfLastAppendPositionNs = nowNs;
         }
 
-        if (null == recoveryPlan.log)
-        {
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-        }
-
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
         election = null;
         notifiedCommitPosition = termBaseLogPosition;
         commitPosition.setOrdered(termBaseLogPosition);

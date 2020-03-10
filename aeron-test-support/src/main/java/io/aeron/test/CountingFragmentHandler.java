@@ -7,7 +7,7 @@ import org.agrona.DirectBuffer;
 public final class CountingFragmentHandler implements FragmentHandler
 {
     private final String name;
-    private int lastCheckedValue = 0;
+    private int lastCheckedTargetValue = 0;
     private int received = 0;
 
     public CountingFragmentHandler(final String name)
@@ -15,10 +15,10 @@ public final class CountingFragmentHandler implements FragmentHandler
         this.name = name;
     }
 
-    public boolean hasReached(final int i)
+    public boolean notDone(final int targetValue)
     {
-        lastCheckedValue = i;
-        return i == received;
+        lastCheckedTargetValue = targetValue;
+        return targetValue != received;
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -31,7 +31,7 @@ public final class CountingFragmentHandler implements FragmentHandler
         return "CountingFragmentHandler{" +
             "name='" + name + '\'' +
             ", received=" + received +
-            ", lastCheckedValue" + lastCheckedValue +
+            ", lastCheckedTargetValue" + lastCheckedTargetValue +
             '}';
     }
 }

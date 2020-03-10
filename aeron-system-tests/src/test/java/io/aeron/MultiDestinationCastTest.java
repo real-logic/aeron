@@ -370,7 +370,7 @@ public class MultiDestinationCastTest
                 final int published = i + 1;
                 // If we add B before A has reached `published` number of messages
                 // then B will receive more than the expected `numMessageForSub2`.
-                while (!fragmentHandlerA.hasReached(published))
+                while (fragmentHandlerA.notDone(published))
                 {
                     if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
                     {
@@ -383,14 +383,14 @@ public class MultiDestinationCastTest
             }
         }
 
-        while (!fragmentHandlerA.hasReached(numMessagesToSend) || !fragmentHandlerB.hasReached(numMessageForSub2))
+        while (fragmentHandlerA.notDone(numMessagesToSend) || fragmentHandlerB.notDone(numMessageForSub2))
         {
-            if (!fragmentHandlerA.hasReached(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+            if (fragmentHandlerA.notDone(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
             {
                 Tests.yieldingWait(fragmentHandlerA::toString);
             }
 
-            if (!fragmentHandlerB.hasReached(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
+            if (fragmentHandlerB.notDone(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
             {
                 Tests.yieldingWait(fragmentHandlerB::toString);
             }

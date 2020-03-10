@@ -49,7 +49,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
-
             TestNode follower = cluster.followers().get(0);
 
             cluster.stopNode(follower);
@@ -318,7 +317,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
-
             TestNode follower = cluster.followers().get(0);
 
             cluster.stopNode(follower);
@@ -409,7 +407,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             TestNode followerA = followers.get(0), followerB = followers.get(1);
 
@@ -445,7 +442,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leaderNode = cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             TestNode followerA = followers.get(0), followerB = followers.get(1);
 
@@ -501,7 +497,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leaderNode = cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             TestNode followerA = followers.get(0), followerB = followers.get(1);
 
@@ -551,7 +546,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0), followerB = followers.get(1);
 
@@ -571,7 +565,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             TestNode leader = cluster.awaitLeader();
-
             List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
@@ -599,7 +592,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
@@ -626,7 +618,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0);
             TestNode followerB = followers.get(1);
@@ -661,7 +652,6 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
             TestNode followerB = followers.get(1);
 
@@ -871,9 +861,7 @@ public class ClusterTest
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            cluster.awaitLeader();
-
-            final TestNode leader = cluster.findLeader();
+            final TestNode leader = cluster.awaitLeader();
             final TestNode follower = cluster.followers().get(0);
             final TestNode follower2 = cluster.followers().get(1);
 

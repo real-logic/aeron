@@ -2735,7 +2735,7 @@ class ConsensusModuleAgent implements Agent
         final ExclusivePublication publication = aeron.addExclusivePublication(
             channelUri.toString(), ctx.logStreamId());
 
-        if (!channelUri.containsKey(ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
+        if (!channelUri.containsKey(ENDPOINT_PARAM_NAME))
         {
             for (final ClusterMember member : clusterMembers)
             {

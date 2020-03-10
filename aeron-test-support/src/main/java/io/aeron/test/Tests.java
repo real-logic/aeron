@@ -21,6 +21,7 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
 import java.util.function.BooleanSupplier;
@@ -32,6 +33,8 @@ import static org.mockito.Mockito.doAnswer;
 
 public class Tests
 {
+    public static final IdleStrategy SLEEP_1_MS = new SleepingMillisIdleStrategy(1);
+
     /**
      * Check if the interrupt flag has been set on the current thread and fail the test if it has.
      * <p>

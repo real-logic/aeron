@@ -128,7 +128,15 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
 
     public static InetSocketAddress getInetSocketAddress(final String hostAndPort)
     {
-        return SocketAddressParser.parse(
-            hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, DefaultNameResolver.INSTANCE);
+        try
+        {
+            return SocketAddressParser.parse(
+                hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, DefaultNameResolver.INSTANCE);
+        }
+        catch (final UnknownHostException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+            return null;
+        }
     }
 }

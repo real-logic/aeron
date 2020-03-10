@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.CountingFragmentHandler;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
@@ -38,9 +39,8 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
@@ -330,10 +330,8 @@ public class MultiDestinationCastTest
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
-        final CountingFragmentHandler fragmentHandlerA = new CountingFragmentHandler(
-            "fragmentHandlerA", numMessagesToSend);
-        final CountingFragmentHandler fragmentHandlerB = new CountingFragmentHandler(
-            "fragmentHandlerB", numMessageForSub2);
+        final CountingFragmentHandler fragmentHandlerA = new CountingFragmentHandler("fragmentHandlerA");
+        final CountingFragmentHandler fragmentHandlerB = new CountingFragmentHandler("fragmentHandlerB");
 
         final CountDownLatch availableImage = new CountDownLatch(1);
 
@@ -369,16 +367,14 @@ public class MultiDestinationCastTest
 
             if (i == (numMessagesToSend - numMessageForSub2 - 1))
             {
-                // If we add B before A has reached i number of messages
-                // then B will receive more than the expected `numMessageForSub2`.
                 final int published = i + 1;
-                final Supplier<String> message =
-                    () -> "Handler: " + fragmentHandlerA.toString() + ", published: " + published;
-                while (!fragmentHandlerA.hasReached(published))
+                // If we add B before A has reached `published` number of messages
+                // then B will receive more than the expected `numMessageForSub2`.
+                while (fragmentHandlerA.notDone(published))
                 {
                     if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
                     {
-                        Tests.yieldingWait(message);
+                        Tests.yieldingWait(fragmentHandlerA::toString);
                     }
                 }
 
@@ -387,14 +383,14 @@ public class MultiDestinationCastTest
             }
         }
 
-        while (fragmentHandlerA.notDone() || fragmentHandlerB.notDone())
+        while (fragmentHandlerA.notDone(numMessagesToSend) || fragmentHandlerB.notDone(numMessageForSub2))
         {
-            if (fragmentHandlerA.notDone() && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+            if (fragmentHandlerA.notDone(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
             {
                 Tests.yieldingWait(fragmentHandlerA::toString);
             }
 
-            if (fragmentHandlerB.notDone() && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
+            if (fragmentHandlerB.notDone(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
             {
                 Tests.yieldingWait(fragmentHandlerB::toString);
             }
@@ -415,40 +411,4 @@ public class MultiDestinationCastTest
             any(Header.class));
     }
 
-    private static final class CountingFragmentHandler implements FragmentHandler
-    {
-        private final String name;
-        private final int expected;
-        private int received = 0;
-
-        private CountingFragmentHandler(final String name, final int expected)
-        {
-            this.name = name;
-            this.expected = expected;
-        }
-
-        public boolean notDone()
-        {
-            return expected != received;
-        }
-
-        public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
-        {
-            received++;
-        }
-
-        public String toString()
-        {
-            return "CountingFragmentHandler{" +
-                "name='" + name + '\'' +
-                ", expected=" + expected +
-                ", received=" + received +
-                '}';
-        }
-
-        public boolean hasReached(final int i)
-        {
-            return i == received;
-        }
-    }
 }

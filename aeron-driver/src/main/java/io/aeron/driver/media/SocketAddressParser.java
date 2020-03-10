@@ -21,6 +21,7 @@ import org.agrona.Strings;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 class SocketAddressParser
 {
@@ -46,6 +47,7 @@ class SocketAddressParser
      */
     static InetSocketAddress parse(
         final String value, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+        throws UnknownHostException
     {
         if (Strings.isEmpty(value))
         {
@@ -63,6 +65,13 @@ class SocketAddressParser
         if (null == address)
         {
             throw new IllegalArgumentException("invalid format: " + value);
+        }
+
+        if (address.isUnresolved())
+        {
+            throw new UnknownHostException(
+                "Unresolved - " + uriParamName + "=" + value + ", name-and-port=" + nameAndPort +
+                ", name-resolver=" + nameResolver.getClass().getName());
         }
 
         return address;

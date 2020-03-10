@@ -125,7 +125,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldParseWithScope()
+    public void shouldParseWithScope() throws UnknownHostException
     {
         final InetSocketAddress address = SocketAddressParser.parse(
             "[::1%12~_.-34]:1234", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER);

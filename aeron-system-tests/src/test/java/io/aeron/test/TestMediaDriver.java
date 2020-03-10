@@ -65,6 +65,18 @@ public interface TestMediaDriver extends AutoCloseable
         }
     }
 
+    static void enableCsvNameLookupConfiguration(final MediaDriver.Context context, final String csvLookupTable)
+    {
+        if (shouldRunCMediaDriver())
+        {
+            CTestMediaDriver.enableCsvNameLookupConfiguration(context, csvLookupTable);
+        }
+        else
+        {
+            context.nameResolver(new StubCsvNameResolver(csvLookupTable));
+        }
+    }
+
     MediaDriver.Context context();
 
     String aeronDirectoryName();

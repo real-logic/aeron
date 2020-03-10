@@ -346,7 +346,7 @@ public class Election
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
-        final long timestamp,
+        @SuppressWarnings("unused") final long timestamp,
         final int leaderMemberId,
         final int logSessionId,
         final boolean isStartup)

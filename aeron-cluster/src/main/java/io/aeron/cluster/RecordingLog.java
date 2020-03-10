@@ -329,6 +329,49 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Validate that an existing recording in an archive matches the {@link Log} for the {@link RecoveryPlan}.
+     *
+     * @param recordingId in the archive.
+     * @param log         from the {@link RecoveryPlan}.
+     * @param archive     to look up the recording descriptor in.
+     */
+    public static void validateExistingLog(final long recordingId, final Log log, final AeronArchive archive)
+    {
+        if (null != log)
+        {
+            final RecordingExtent recordingExtent = new RecordingExtent();
+            if (0 == archive.listRecording(recordingId, recordingExtent))
+            {
+                throw new ClusterException("recording not found: " + recordingId);
+            }
+
+            if (recordingExtent.initialTermId != log.initialTermId)
+            {
+                throw new ClusterException(
+                    "recording mismatch - recordingId=" + recordingId +
+                    " recording.initialTermId=" + recordingExtent.initialTermId +
+                    " log.initialTermId=" + log.initialTermId);
+            }
+
+            if (recordingExtent.termBufferLength != log.termBufferLength)
+            {
+                throw new ClusterException(
+                    "recording mismatch - recordingId=" + recordingId +
+                    " recording.termBufferLength=" + recordingExtent.termBufferLength +
+                    " log.termBufferLength=" + log.termBufferLength);
+            }
+
+            if (recordingExtent.mtuLength != log.mtuLength)
+            {
+                throw new ClusterException(
+                    "recording mismatch - recordingId=" + recordingId +
+                    " recording.mtuLength=" + recordingExtent.mtuLength +
+                    " log.mtuLength=" + log.mtuLength);
+            }
+        }
+    }
+
+    /**
      * Filename for the history of leadership log terms and snapshot recordings.
      */
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";

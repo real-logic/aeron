@@ -79,9 +79,6 @@ class ConsensusModuleAgent implements Agent
     private long timeOfLastSlowTickNs;
     private int pendingServiceMessageHeadOffset = 0;
     private int uncommittedServiceMessages = 0;
-    private int logInitialTermId = NULL_VALUE;
-    private int logTermBufferLength = NULL_VALUE;
-    private int logMtuLength = NULL_VALUE;
     private int memberId;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
@@ -882,18 +879,7 @@ class ConsensusModuleAgent implements Agent
             archive.truncateRecording(recordingId, logPosition);
         }
 
-        if (NULL_VALUE == logInitialTermId)
-        {
-            final RecordingExtent recordingExtent = new RecordingExtent();
-            if (0 == archive.listRecording(recordingId, recordingExtent))
-            {
-                throw new ClusterException("recording not found: " + recordingId);
-            }
-
-            logInitialTermId = recordingExtent.initialTermId;
-            logTermBufferLength = recordingExtent.termBufferLength;
-            logMtuLength = recordingExtent.mtuLength;
-        }
+        RecordingLog.validateExistingLog(recordingId, recoveryPlan.log, archive);
 
         lastAppendPosition = logPosition;
         notifiedCommitPosition = logPosition;
@@ -2740,21 +2726,14 @@ class ConsensusModuleAgent implements Agent
         logPublicationTag = (int)aeron.nextCorrelationId();
         logPublicationChannelTag = (int)aeron.nextCorrelationId();
 
-        if (null != plan.log)
-        {
-            logInitialTermId = plan.log.initialTermId;
-            logTermBufferLength = plan.log.termBufferLength;
-            logMtuLength = plan.log.mtuLength;
-        }
-
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
         channelUri.put(ALIAS_PARAM_NAME, "log");
 
-        if (NULL_VALUE != logInitialTermId)
+        if (null != plan.log)
         {
-            channelUri.initialPosition(position, logInitialTermId, logTermBufferLength);
-            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(logMtuLength));
+            channelUri.initialPosition(position, plan.log.initialTermId, plan.log.termBufferLength);
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(plan.log.mtuLength));
         }
 
         final ExclusivePublication publication = aeron.addExclusivePublication(

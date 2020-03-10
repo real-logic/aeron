@@ -1,4 +1,5 @@
 **/build
+**/Release
 .gradle
 .idea
 .github

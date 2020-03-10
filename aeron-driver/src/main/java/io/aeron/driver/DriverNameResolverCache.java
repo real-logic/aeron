@@ -26,7 +26,7 @@ class DriverNameResolverCache implements AutoCloseable
 {
     private static final int INVALID_INDEX = -1;
 
-    private final ArrayList<CacheEntry> listOfEntries = new ArrayList<>();
+    private final ArrayList<CacheEntry> entries = new ArrayList<>();
     private final long timeoutMs;
 
     DriverNameResolverCache(final long timeoutMs)
@@ -38,11 +38,11 @@ class DriverNameResolverCache implements AutoCloseable
     {
     }
 
-    CacheEntry lookup(final CharSequence name, final byte type)
+    CacheEntry lookup(final String name, final byte type)
     {
         final int index = findEntryIndexByNameAndType(name, type);
 
-        return INVALID_INDEX == index ? null : listOfEntries.get(index);
+        return INVALID_INDEX == index ? null : entries.get(index);
     }
 
     void addOrUpdateEntry(
@@ -55,8 +55,8 @@ class DriverNameResolverCache implements AutoCloseable
         final AtomicCounter cacheEntriesCounter)
     {
         final int existingEntryIndex = findEntryIndexByNameAndType(name, nameLength, type);
-        final CacheEntry entry;
         final int addressLength = ResolutionEntryFlyweight.addressLength(type);
+        final CacheEntry entry;
 
         if (INVALID_INDEX == existingEntryIndex)
         {
@@ -67,12 +67,12 @@ class DriverNameResolverCache implements AutoCloseable
                 nowMs + timeoutMs,
                 Arrays.copyOf(address, addressLength),
                 port);
-            listOfEntries.add(entry);
-            cacheEntriesCounter.setOrdered(listOfEntries.size());
+            entries.add(entry);
+            cacheEntriesCounter.setOrdered(entries.size());
         }
         else
         {
-            entry = listOfEntries.get(existingEntryIndex);
+            entry = entries.get(existingEntryIndex);
             entry.timeOfLastActivityMs = nowMs;
             entry.deadlineMs = nowMs + timeoutMs;
 
@@ -88,7 +88,7 @@ class DriverNameResolverCache implements AutoCloseable
     {
         int workCount = 0;
 
-        final ArrayList<CacheEntry> listOfEntries = this.listOfEntries;
+        final ArrayList<CacheEntry> listOfEntries = this.entries;
         for (int lastIndex = listOfEntries.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final CacheEntry entry = listOfEntries.get(i);
@@ -119,12 +119,12 @@ class DriverNameResolverCache implements AutoCloseable
 
         boolean hasNext()
         {
-            return (index + 1) < cache.listOfEntries.size();
+            return (index + 1) < cache.entries.size();
         }
 
         CacheEntry next()
         {
-            return cache.listOfEntries.get(++index);
+            return cache.entries.get(++index);
         }
 
         void rewindNext()
@@ -153,7 +153,7 @@ class DriverNameResolverCache implements AutoCloseable
         return true;
     }
 
-    public static boolean byteSubsetEquals(final byte[] lhs, final CharSequence rhs)
+    public static boolean byteSubsetEquals(final byte[] lhs, final String rhs)
     {
         final int length = rhs.length();
 
@@ -175,9 +175,9 @@ class DriverNameResolverCache implements AutoCloseable
 
     private int findEntryIndexByNameAndType(final byte[] name, final int nameLength, final byte type)
     {
-        for (int i = 0; i < listOfEntries.size(); i++)
+        for (int i = 0; i < entries.size(); i++)
         {
-            final CacheEntry entry = listOfEntries.get(i);
+            final CacheEntry entry = entries.get(i);
 
             if (type == entry.type && byteSubsetEquals(entry.name, name, nameLength))
             {
@@ -188,13 +188,13 @@ class DriverNameResolverCache implements AutoCloseable
         return INVALID_INDEX;
     }
 
-    private int findEntryIndexByNameAndType(final CharSequence cs, final byte type)
+    private int findEntryIndexByNameAndType(final String name, final byte type)
     {
-        for (int i = 0; i < listOfEntries.size(); i++)
+        for (int i = 0; i < entries.size(); i++)
         {
-            final CacheEntry entry = listOfEntries.get(i);
+            final CacheEntry entry = entries.get(i);
 
-            if (type == entry.type && byteSubsetEquals(entry.name, cs))
+            if (type == entry.type && byteSubsetEquals(entry.name, name))
             {
                 return i;
             }

@@ -73,7 +73,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private byte[] localAddress;
 
     private final String bootstrapNeighbor;
-    private InetSocketAddress bootstrapNeighborAddr;
+    private InetSocketAddress bootstrapNeighborAddress;
     private long timeOfLastBootstrapNeighborResolveMs;
 
     private final long neighborTimeoutMs;
@@ -102,7 +102,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         final long nowMs = context.epochClock().time();
 
         this.bootstrapNeighbor = bootstrapNeighbor;
-        bootstrapNeighborAddr = null == bootstrapNeighbor ?
+        bootstrapNeighborAddress = null == bootstrapNeighbor ?
             null : UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
         timeOfLastBootstrapNeighborResolveMs = nowMs;
 
@@ -149,13 +149,13 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             final StringBuilder builder = new StringBuilder(": bound ");
             builder.append(transport.bindAddressAndPort());
 
-            if (null != bootstrapNeighborAddr)
+            if (null != bootstrapNeighborAddress)
             {
                 builder
                     .append(" bootstrap ")
-                    .append(bootstrapNeighborAddr.getHostString())
+                    .append(bootstrapNeighborAddress.getHostString())
                     .append(':')
-                    .append(bootstrapNeighborAddr.getPort());
+                    .append(bootstrapNeighborAddress.getPort());
             }
 
             neighborsCounter.appendToLabel(builder.toString());
@@ -278,15 +278,15 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
         byteBuffer.limit(length);
 
-        if (neighborList.size() == 0 && null != bootstrapNeighborAddr)
+        if (neighborList.size() == 0 && null != bootstrapNeighborAddress)
         {
             if (nowMs > (timeOfLastBootstrapNeighborResolveMs + TIMEOUT_MS))
             {
-                bootstrapNeighborAddr = UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
+                bootstrapNeighborAddress = UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
                 timeOfLastBootstrapNeighborResolveMs = nowMs;
             }
 
-            sendResolutionFrameTo(byteBuffer, bootstrapNeighborAddr);
+            sendResolutionFrameTo(byteBuffer, bootstrapNeighborAddress);
         }
         else
         {

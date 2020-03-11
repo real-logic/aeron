@@ -168,6 +168,7 @@ SET(SOURCE
     aeron_name_resolver.c
     aeron_name_resolver_csv_table.c
     aeron_name_resolver_driver.c
+    aeron_name_resolver_driver_cache.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -236,6 +237,7 @@ SET(HEADERS
     aeron_ipc_publication.h
     aeron_name_resolver.h
     aeron_name_resolver_driver.h
+    aeron_name_resolver_driver_cache.h
     aeron_network_publication.h
     aeron_position.h
     aeron_driver_sender_proxy.h

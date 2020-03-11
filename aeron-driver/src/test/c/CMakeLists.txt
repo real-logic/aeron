@@ -69,3 +69,4 @@ aeron_driver_test(udp_channel_transport_loss_test media/aeron_udp_channel_transp
 aeron_driver_test(strutil_test aeron_strutil_test.cpp)
 aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)
 aeron_driver_test(name_resolver_test aeron_name_resolver_test.cpp)
+aeron_driver_test(name_resolver_cache_test aeron_name_resolver_cache_test.cpp)

@@ -111,14 +111,6 @@ int aeron_name_resolver_driver_init(
     char local_host_name[INET6_ADDRSTRLEN];
     char local_port[NI_MAXSERV];
 
-    getnameinfo(
-        (const struct sockaddr *)&_driver_resolver->local_socket_addr, sizeof(struct sockaddr_storage),
-        local_host_name, INET6_ADDRSTRLEN,
-        local_port, NI_MAXSERV,
-        NI_NUMERICHOST | NI_NUMERICSERV);
-
-    printf("Local socket address: %s, port: %s\n", local_host_name, local_port);
-
     if (aeron_name_resolver_default_supplier(context, &_driver_resolver->bootstrap_resolver, NULL) < 0)
     {
         goto error_cleanup;
@@ -268,8 +260,6 @@ void aeron_name_resolver_driver_receive(
             resolution_header->res_type,
             ip4_hdr->addr,
             resolution_header->udp_port);
-
-        printf("Host name: %.*s\n", ip4_hdr->name_length, name);
     }
     else if (AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == resolution_header->res_type &&
         sizeof(aeron_resolution_header_ipv6_t) <= length)
@@ -288,8 +278,6 @@ void aeron_name_resolver_driver_receive(
             resolution_header->res_type,
             ip6_hdr->addr,
             resolution_header->udp_port);
-
-        printf("Host name: %.*s\n", ip6_hdr->name_length, name);
     }
 }
 

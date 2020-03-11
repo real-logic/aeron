@@ -30,6 +30,9 @@ class NameResolverTest : public testing::Test
 public:
     NameResolverTest() : m_context_a(NULL), m_context_b(NULL), m_context_c(NULL)
     {
+        resolver_a.close_func = NULL;
+        resolver_b.close_func = NULL;
+        resolver_c.close_func = NULL;
     }
 
 protected:
@@ -38,11 +41,17 @@ protected:
         close(m_context_a);
         close(m_context_b);
         close(m_context_c);
+        close(&resolver_a);
+        close(&resolver_b);
+        close(&resolver_c);
     }
 
     aeron_driver_context_t *m_context_a;
     aeron_driver_context_t *m_context_b;
     aeron_driver_context_t *m_context_c;
+    aeron_name_resolver_t resolver_a;
+    aeron_name_resolver_t resolver_b;
+    aeron_name_resolver_t resolver_c;
 
 private:
     static void close(aeron_driver_context_t *context)
@@ -50,6 +59,14 @@ private:
         if (NULL != context)
         {
             aeron_driver_context_close(context);
+        }
+    }
+
+    static void close(aeron_name_resolver_t *resolver)
+    {
+        if (NULL != resolver->close_func)
+        {
+            resolver->close_func(resolver);
         }
     }
 };
@@ -127,13 +144,11 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
 
     aeron_driver_context_set_resolver_name(m_context_a, "A");
     aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    aeron_name_resolver_t resolver_a;
     ASSERT_EQ(0, supplier_func(m_context_a, &resolver_a, NULL));
 
     aeron_driver_context_set_resolver_name(m_context_b, "B");
     aeron_driver_context_set_resolver_interface(m_context_b, "127.0.0.1:8051");
     aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    aeron_name_resolver_t resolver_b;
     ASSERT_EQ(0, supplier_func(m_context_b, &resolver_b, NULL)) << aeron_errmsg();
 
     timestamp_ms += 2000;
@@ -152,10 +167,6 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
     struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
     ASSERT_EQ(local_address_b.s_addr, in_addr_b->sin_addr.s_addr);
-
-    // TODO: Move to fields...
-    ASSERT_EQ(0, resolver_a.close_func(&resolver_a));
-    ASSERT_EQ(0, resolver_b.close_func(&resolver_b));
 }
 
 TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)

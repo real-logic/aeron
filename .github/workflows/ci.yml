@@ -41,8 +41,22 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
+      - name: DEBUG Gradle caching (1)
+        run: |
+          ls -la ~/.gradle
+
+          ls -la ~/.gradle/wrapper
+
+          ls -la ~/.gradle/caches
       - name: Build with Gradle
         run: ./gradlew
+      - name: DEBUG Gradle caching (2)
+        run: |
+          ls -la ~/.gradle
+
+          ls -la ~/.gradle/wrapper
+
+          ls -la ~/.gradle/caches
       - name: Copy crash logs
         id: copy_crash_logs
         if: failure()

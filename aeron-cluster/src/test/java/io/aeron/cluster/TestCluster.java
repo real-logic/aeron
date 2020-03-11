@@ -43,7 +43,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -163,15 +162,6 @@ public class TestCluster implements AutoCloseable
         }
 
         return node::closeAndDelete;
-    }
-
-    static void awaitCount(final AtomicLong counter, final long value)
-    {
-        while (counter.get() < value)
-        {
-            Thread.yield();
-            Tests.checkInterruptStatus();
-        }
     }
 
     static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)

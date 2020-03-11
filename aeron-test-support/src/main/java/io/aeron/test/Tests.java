@@ -23,7 +23,9 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.status.AtomicCounter;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
@@ -276,5 +278,31 @@ public class Tests
         }
 
         ex.printStackTrace();
+    }
+
+    public static void awaitValue(final AtomicLong counter, final long value)
+    {
+        while (counter.get() < value)
+        {
+            Thread.yield();
+            if (Thread.interrupted())
+            {
+                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counter.get());
+                fail("unexpected interrupt");
+            }
+        }
+    }
+
+    public static void awaitValue(final AtomicCounter counter, final long value)
+    {
+        while (counter.get() < value)
+        {
+            Thread.yield();
+            if (Thread.interrupted())
+            {
+                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counter.get());
+                fail("unexpected interrupt");
+            }
+        }
     }
 }

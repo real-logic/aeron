@@ -99,8 +99,8 @@ public class ClusterTimerTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        TestCluster.awaitCount(snapshotCount, 1);
-        TestCluster.awaitCount(triggeredTimersCounter, 4);
+        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(triggeredTimersCounter, 4);
 
         forceCloseForRestart();
         triggeredTimersCounter.set(0);
@@ -109,7 +109,7 @@ public class ClusterTimerTest
         launchReschedulingService(triggeredTimersCounter);
         connectClient();
 
-        TestCluster.awaitCount(triggeredTimersCounter, 2 + 4);
+        Tests.awaitValue(triggeredTimersCounter, 2 + 4);
 
         forceCloseForRestart();
         final long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
@@ -120,7 +120,7 @@ public class ClusterTimerTest
         launchReschedulingService(triggeredTimersCounter);
         connectClient();
 
-        TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
+        Tests.awaitValue(triggeredTimersCounter, triggeredSinceStart + 4);
 
         ClusterTests.failOnClusterError();
     }
@@ -134,7 +134,7 @@ public class ClusterTimerTest
         launchReschedulingService(triggeredTimersCounter);
         connectClient();
 
-        TestCluster.awaitCount(triggeredTimersCounter, 2);
+        Tests.awaitValue(triggeredTimersCounter, 2);
 
         forceCloseForRestart();
 
@@ -143,7 +143,7 @@ public class ClusterTimerTest
         launchClusteredMediaDriver(false);
         launchReschedulingService(triggeredTimersCounter);
 
-        TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 2);
+        Tests.awaitValue(triggeredTimersCounter, triggeredSinceStart + 2);
 
         forceCloseForRestart();
 
@@ -152,7 +152,7 @@ public class ClusterTimerTest
         launchClusteredMediaDriver(false);
         launchReschedulingService(triggeredTimersCounter);
 
-        TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
+        Tests.awaitValue(triggeredTimersCounter, triggeredSinceStart + 4);
 
         ClusterTests.failOnClusterError();
     }

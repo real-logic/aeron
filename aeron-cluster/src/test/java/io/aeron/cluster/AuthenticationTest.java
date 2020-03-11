@@ -127,7 +127,7 @@ public class AuthenticationTest
 
         connectClient(credentialsSupplier);
         sendCountedMessageIntoCluster(0);
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
         assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
@@ -189,7 +189,7 @@ public class AuthenticationTest
 
         connectClient(credentialsSupplier);
         sendCountedMessageIntoCluster(0);
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
         assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
@@ -259,7 +259,7 @@ public class AuthenticationTest
 
         connectClient(credentialsSupplier);
         sendCountedMessageIntoCluster(0);
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
         assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);

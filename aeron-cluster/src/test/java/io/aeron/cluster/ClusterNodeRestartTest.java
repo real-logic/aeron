@@ -103,7 +103,7 @@ public class ClusterNodeRestartTest
         connectClient();
 
         sendCountedMessageIntoCluster(0);
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         forceCloseForRestart();
 
@@ -111,7 +111,7 @@ public class ClusterNodeRestartTest
         launchService(restartServiceMsgCounter);
         connectClient();
 
-        TestCluster.awaitCount(restartServiceMsgCounter, 1);
+        Tests.awaitValue(restartServiceMsgCounter, 1);
 
         ClusterTests.failOnClusterError();
     }
@@ -126,7 +126,7 @@ public class ClusterNodeRestartTest
         connectClient();
 
         sendCountedMessageIntoCluster(0);
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         forceCloseForRestart();
 
@@ -137,7 +137,7 @@ public class ClusterNodeRestartTest
         connectClient();
 
         sendCountedMessageIntoCluster(1);
-        TestCluster.awaitCount(restartServiceMsgCounter, 1);
+        Tests.awaitValue(restartServiceMsgCounter, 1);
 
         ClusterTests.failOnClusterError();
     }
@@ -156,7 +156,7 @@ public class ClusterNodeRestartTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        TestCluster.awaitCount(snapshotCount, 1);
+        Tests.awaitValue(snapshotCount, 1);
 
         forceCloseForRestart();
 
@@ -189,14 +189,14 @@ public class ClusterNodeRestartTest
         sendCountedMessageIntoCluster(1);
         sendCountedMessageIntoCluster(2);
 
-        TestCluster.awaitCount(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCounter, 3);
 
         final CountersReader counters = aeronCluster.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        TestCluster.awaitCount(snapshotCount, 1);
+        Tests.awaitValue(snapshotCount, 1);
 
         forceCloseForRestart();
 
@@ -229,18 +229,18 @@ public class ClusterNodeRestartTest
         sendCountedMessageIntoCluster(1);
         sendCountedMessageIntoCluster(2);
 
-        TestCluster.awaitCount(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCounter, 3);
 
         final CountersReader counters = aeronCluster.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        TestCluster.awaitCount(snapshotCount, 1);
+        Tests.awaitValue(snapshotCount, 1);
 
         sendCountedMessageIntoCluster(3);
 
-        TestCluster.awaitCount(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCounter, 4);
 
         forceCloseForRestart();
 
@@ -249,7 +249,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         assertEquals("4", serviceState.get());
 
@@ -298,18 +298,18 @@ public class ClusterNodeRestartTest
         sendCountedMessageIntoCluster(2);
         sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
 
-        TestCluster.awaitCount(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCounter, 4);
 
         final CountersReader counters = aeronCluster.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        TestCluster.awaitCount(snapshotCount, 1);
+        Tests.awaitValue(snapshotCount, 1);
 
         sendCountedMessageIntoCluster(4);
 
-        TestCluster.awaitCount(serviceMsgCounter, 5);
+        Tests.awaitValue(serviceMsgCounter, 5);
 
         forceCloseForRestart();
 
@@ -318,7 +318,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        TestCluster.awaitCount(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCounter, 1);
 
         assertEquals("5", serviceState.get());
 
@@ -371,18 +371,18 @@ public class ClusterNodeRestartTest
         sendCountedMessageIntoCluster(1);
         sendCountedMessageIntoCluster(2);
 
-        TestCluster.awaitCount(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCounter, 3);
 
         final CountersReader counters = container.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        TestCluster.awaitCount(snapshotCount, 1);
+        Tests.awaitValue(snapshotCount, 1);
 
         sendCountedMessageIntoCluster(3);
 
-        TestCluster.awaitCount(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCounter, 4);
 
         forceCloseForRestart();
 
@@ -396,13 +396,13 @@ public class ClusterNodeRestartTest
         launchClusteredMediaDriver(false);
         launchService(serviceMsgCounter);
 
-        TestCluster.awaitCount(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCounter, 4);
 
         assertEquals("4", serviceState.get());
 
         connectClient();
         sendCountedMessageIntoCluster(4);
-        TestCluster.awaitCount(serviceMsgCounter, 5);
+        Tests.awaitValue(serviceMsgCounter, 5);
 
         forceCloseForRestart();
 

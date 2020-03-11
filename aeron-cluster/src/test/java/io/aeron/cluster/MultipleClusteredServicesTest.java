@@ -121,8 +121,8 @@ public class MultipleClusteredServicesTest
                 Tests.checkInterruptStatus();
             }
 
-            TestCluster.awaitCount(serviceAMessageCount, 3);
-            TestCluster.awaitCount(serviceBMessageCount, 3);
+            Tests.awaitValue(serviceAMessageCount, 3);
+            Tests.awaitValue(serviceBMessageCount, 3);
         }
         finally
         {

@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper') }}
       - name: Setup java
         uses: actions/setup-java@v1
         with:
@@ -81,7 +81,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper') }}
       - name: Install compiler
         run: |
          sudo apt-get update
@@ -111,7 +111,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper') }}
       - name: Build
         run: cppbuild/centos-docker-build ${{ matrix.version }}
 
@@ -139,7 +139,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper') }}
       - name: Install compiler
         run: |
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
@@ -174,7 +174,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper') }}
       - name: Install compiler
         run: |
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"

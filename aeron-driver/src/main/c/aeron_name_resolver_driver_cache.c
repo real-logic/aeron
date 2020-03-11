@@ -23,9 +23,10 @@
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_name_resolver_driver_cache.h"
 
-int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t **cache)
+int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache)
 {
-    return aeron_alloc((void **)cache, sizeof(aeron_name_resolver_driver_cache_t));
+    memset(cache, 0, sizeof(aeron_name_resolver_driver_cache_t));
+    return 0;
 }
 
 int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *cache)
@@ -36,8 +37,6 @@ int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *c
         {
             aeron_free((void *)cache->entries.array[i].name);
         }
-
-        aeron_free(cache);
     }
 
     return 0;

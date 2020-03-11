@@ -29,7 +29,7 @@ extern "C"
 class NameResolverCacheTest : public testing::Test
 {
 public:
-    NameResolverCacheTest() : m_cache(NULL)
+    NameResolverCacheTest()
     {
     }
 
@@ -44,7 +44,7 @@ protected:
 
 TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 {
-    aeron_name_resolver_driver_cache_init(&m_cache);
+    aeron_name_resolver_driver_cache_init(m_cache);
 
     for (int i = 0; i < 1000; i++)
     {

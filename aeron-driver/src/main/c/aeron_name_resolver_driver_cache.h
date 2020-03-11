@@ -42,7 +42,7 @@ typedef struct aeron_name_resolver_driver_cache_stct
 }
 aeron_name_resolver_driver_cache_t;
 
-int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t **cache);
+int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache);
 
 int aeron_name_resolver_driver_cache_add_or_update(
     aeron_name_resolver_driver_cache_t *cache,

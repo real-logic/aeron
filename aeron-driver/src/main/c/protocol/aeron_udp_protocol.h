@@ -95,6 +95,10 @@ typedef struct aeron_rttm_header_stct
 }
 aeron_rttm_header_t;
 
+#pragma pack(pop)
+
+#pragma pack(push)
+#pragma pack(1)
 typedef struct aeron_resolution_header_stct
 {
     int8_t res_type;
@@ -119,7 +123,6 @@ typedef struct aeron_resolution_header_ipv6_stct
     int16_t name_length;
 }
 aeron_resolution_header_ipv6_t;
-
 #pragma pack(pop)
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);

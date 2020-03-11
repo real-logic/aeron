@@ -186,8 +186,7 @@ class CommonEventEncoderTest
             arguments(0, 0),
             arguments(10, 10),
             arguments(MAX_CAPTURE_LENGTH, MAX_CAPTURE_LENGTH),
-            arguments(Integer.MAX_VALUE, MAX_CAPTURE_LENGTH)
-        );
+            arguments(Integer.MAX_VALUE, MAX_CAPTURE_LENGTH));
     }
 
     private static List<Arguments> encodedLengthArgs()

@@ -157,6 +157,7 @@ public class ElectionTest
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             leadershipTermId,
+            logPosition,
             candidateTermId,
             logPosition,
             t6,
@@ -165,6 +166,7 @@ public class ElectionTest
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             leadershipTermId,
+            logPosition,
             candidateTermId,
             logPosition,
             t6,
@@ -213,8 +215,8 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(Election.State.FOLLOWER_BALLOT.code());
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(leadershipTermId, candidateTermId, logPosition, t2, candidateId, logSessionId,
-            false);
+        election.onNewLeadershipTerm(
+            leadershipTermId, logPosition, candidateTermId, logPosition, t2, candidateId, logSessionId, false);
         verify(electionStateCounter).setOrdered(Election.State.FOLLOWER_REPLAY.code());
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
@@ -404,8 +406,9 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(Election.State.CANVASS.code());
 
         final long t2 = t1 + 1;
+        final int leaderMemberId = clusterMembers[0].id();
         election.onNewLeadershipTerm(
-            leadershipTermId, leadershipTermId, logPosition, t2, clusterMembers[0].id(), 0, leaderIsStart);
+            leadershipTermId, logPosition, leadershipTermId, logPosition, t2, leaderMemberId, 0, leaderIsStart);
         election.doWork(t2);
 
         final long t3 = t2 + 1;

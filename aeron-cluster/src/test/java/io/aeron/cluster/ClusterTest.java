@@ -24,7 +24,6 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -435,7 +434,6 @@ public class ClusterTest
     }
 
     @Test
-    @Disabled
     @Timeout(30)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos()
     {
@@ -485,7 +483,6 @@ public class ClusterTest
     }
 
     @Test
-    @Disabled
     @Timeout(30)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
     {
@@ -1024,12 +1021,10 @@ public class ClusterTest
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            final TestNode leader = cluster.awaitLeader();
+            cluster.awaitLeader();
             TestNode follower = cluster.followers().get(0);
 
             cluster.stopNode(follower);
-
-            awaitElectionClosed(leader);
 
             cluster.connectClient();
             cluster.msgBuffer().putStringWithoutLengthAscii(0, message);

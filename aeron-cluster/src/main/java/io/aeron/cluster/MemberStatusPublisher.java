@@ -150,6 +150,7 @@ class MemberStatusPublisher
     void newLeadershipTerm(
         final ExclusivePublication publication,
         final long logLeadershipTermId,
+        final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
@@ -168,6 +169,7 @@ class MemberStatusPublisher
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logLeadershipTermId(logLeadershipTermId)
+                    .logTruncatePosition(logTruncatePosition)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .timestamp(timestamp)

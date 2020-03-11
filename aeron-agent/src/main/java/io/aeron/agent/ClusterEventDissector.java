@@ -40,6 +40,9 @@ final class ClusterEventDissector
         final long logLeadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
+        final long logTruncatePosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
         final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
@@ -58,6 +61,7 @@ final class ClusterEventDissector
         final boolean isStartup = 1 == buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId)
+            .append(", logTruncatePosition=").append(logTruncatePosition)
             .append(", leadershipTermId=").append(leadershipTermId)
             .append(", logPosition=").append(logPosition)
             .append(", timestamp=").append(timestamp)

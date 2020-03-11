@@ -42,6 +42,7 @@ class ClusterInterceptor
         @Advice.OnMethodEnter
         static void onNewLeadershipTerm(
             final long logLeadershipTermId,
+            final long logTruncatePosition,
             final long leadershipTermId,
             final long logPosition,
             final long timestamp,
@@ -51,6 +52,7 @@ class ClusterInterceptor
         {
             LOGGER.logNewLeadershipTerm(
                 logLeadershipTermId,
+                logTruncatePosition,
                 leadershipTermId,
                 logPosition,
                 timestamp,

@@ -138,6 +138,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 consensusModuleAgent.onNewLeadershipTerm(
                     newLeadershipTermDecoder.logLeadershipTermId(),
+                    newLeadershipTermDecoder.logTruncatePosition(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.logPosition(),
                     newLeadershipTermDecoder.timestamp(),

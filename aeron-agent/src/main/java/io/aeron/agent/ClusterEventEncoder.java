@@ -36,6 +36,7 @@ final class ClusterEventEncoder
         final int captureLength,
         final int length,
         final long logLeadershipTermId,
+        final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
@@ -46,6 +47,9 @@ final class ClusterEventEncoder
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
         encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, logTruncatePosition, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
         encodingBuffer.putLong(offset + relativeOffset, leadershipTermId, LITTLE_ENDIAN);
@@ -71,7 +75,7 @@ final class ClusterEventEncoder
 
     static int newLeaderShipTermLength()
     {
-        return (SIZE_OF_LONG * 4) + (SIZE_OF_INT * 3);
+        return (SIZE_OF_LONG * 5) + (SIZE_OF_INT * 3);
     }
 
     static <T extends Enum<T>> int encodeStateChange(

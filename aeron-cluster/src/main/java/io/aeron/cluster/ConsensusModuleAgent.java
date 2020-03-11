@@ -450,18 +450,24 @@ class ConsensusModuleAgent implements Agent
         else if (Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
-            if (null != follower)
+            if (null != follower && logLeadershipTermId <= leadershipTermId)
             {
-                memberStatusPublisher.newLeadershipTerm(
-                    follower.publication(),
-                    leadershipTermId,
-                    leadershipTermId,
-                    logPublisher.position(),
-                    recordingLog.getTermTimestamp(leadershipTermId),
-                    thisMember.id(),
-                    logPublisher.sessionId(),
-                    false);
+                final RecordingLog.Entry termEntry = recordingLog.findTermEntry(
+                    logLeadershipTermId < leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
+                if (null != termEntry)
+                {
+                    final long appendPosition = logPublisher.position();
+                    memberStatusPublisher.newLeadershipTerm(
+                        follower.publication(),
+                        logLeadershipTermId,
+                        logLeadershipTermId < leadershipTermId ? termEntry.termBaseLogPosition : appendPosition,
+                        leadershipTermId,
+                        appendPosition,
+                        termEntry.timestamp,
+                        thisMember.id(),
+                        logPublisher.sessionId(),
+                        false);
+                }
             }
         }
     }
@@ -499,6 +505,7 @@ class ConsensusModuleAgent implements Agent
 
     public void onNewLeadershipTerm(
         final long logLeadershipTermId,
+        final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
@@ -509,7 +516,14 @@ class ConsensusModuleAgent implements Agent
         if (null != election)
         {
             election.onNewLeadershipTerm(
-                logLeadershipTermId, leadershipTermId, logPosition, timestamp, leaderId, logSessionId, isStartup);
+                logLeadershipTermId,
+                logTruncatePosition,
+                leadershipTermId,
+                logPosition,
+                timestamp,
+                leaderId,
+                logSessionId,
+                isStartup);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {

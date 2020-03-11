@@ -609,6 +609,23 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Find the term {@link Entry} for a given leadership term id.
+     *
+     * @param leadershipTermId to get {@link Entry} for.
+     * @return the {@link Entry} if found or null if not found.
+     */
+    public Entry findTermEntry(final long leadershipTermId)
+    {
+        final int index = (int)cacheIndexByLeadershipTermIdMap.get(leadershipTermId);
+        if (NULL_VALUE != index)
+        {
+            return entriesCache.get(index);
+        }
+
+        return null;
+    }
+
+    /**
      * Get the latest snapshot {@link Entry} in the log.
      *
      * @param serviceId for the snapshot.

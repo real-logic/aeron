@@ -274,6 +274,7 @@ public class Election
                     memberStatusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
+                        this.logPosition,
                         leadershipTermId,
                         this.logPosition,
                         timestamp,
@@ -292,7 +293,7 @@ public class Election
     void onRequestVote(
         final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
     {
-        if (isPassiveMember())
+        if (isPassiveMember() || candidateId == thisMember.id())
         {
             return;
         }
@@ -344,6 +345,7 @@ public class Election
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
+        final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
         @SuppressWarnings("unused") final long timestamp,
@@ -352,7 +354,7 @@ public class Election
         final boolean isStartup)
     {
         final ClusterMember leader = clusterMemberByIdMap.get(leaderMemberId);
-        if (null == leader)
+        if (null == leader || leaderMemberId == thisMember.id())
         {
             return;
         }
@@ -360,13 +362,16 @@ public class Election
         leaderMember = leader;
         this.isLeaderStartup = isStartup;
 
-        if (this.logPosition > logPosition && logLeadershipTermId == this.logLeadershipTermId)
+        if (leadershipTermId > this.leadershipTermId &&
+            logLeadershipTermId == this.logLeadershipTermId &&
+            logTruncatePosition < this.logPosition)
         {
+            consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logTruncatePosition);
+            consensusModuleAgent.prepareForNewLeadership(logTruncatePosition);
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
-            consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
-            consensusModuleAgent.prepareForNewLeadership(logPosition);
-            this.logPosition = logPosition;
+            this.logPosition = logTruncatePosition;
+            catchupLogPosition = logPosition;
             state(State.FOLLOWER_REPLAY);
         }
         else if (leadershipTermId == candidateTermId &&
@@ -885,6 +890,7 @@ public class Election
         memberStatusPublisher.newLeadershipTerm(
             publication,
             logLeadershipTermId,
+            logPosition,
             leadershipTermId,
             logPosition,
             timestamp,

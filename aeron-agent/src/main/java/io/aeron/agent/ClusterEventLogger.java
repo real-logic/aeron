@@ -44,6 +44,7 @@ public final class ClusterEventLogger
 
     public void logNewLeadershipTerm(
         final long logLeadershipTermId,
+        final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
@@ -66,6 +67,7 @@ public final class ClusterEventLogger
                     captureLength,
                     length,
                     logLeadershipTermId,
+                    logTruncatePosition,
                     leadershipTermId,
                     logPosition,
                     timestamp,

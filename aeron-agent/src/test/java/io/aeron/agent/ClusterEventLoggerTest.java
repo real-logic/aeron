@@ -60,20 +60,30 @@ class ClusterEventLoggerTest
         final int offset = align(22, ALIGNMENT);
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final long logLeadershipTermId = 434;
+        final long logTruncatePosition = 256;
         final long leadershipTermId = -500;
         final long logPosition = 43;
         final long timestamp = 2;
         final int leaderMemberId = 0;
         final int logSessionId = 3;
-        final int captureLength = SIZE_OF_LONG * 4 + SIZE_OF_INT * 3;
+        final int captureLength = SIZE_OF_LONG * 5 + SIZE_OF_INT * 3;
         final boolean isStartup = true;
 
         logger.logNewLeadershipTerm(
-            logLeadershipTermId, leadershipTermId, logPosition, timestamp, leaderMemberId, logSessionId, isStartup);
+            logLeadershipTermId,
+            logTruncatePosition,
+            leadershipTermId,
+            logPosition,
+            timestamp,
+            leaderMemberId,
+            logSessionId,
+            isStartup);
 
         verifyLogHeader(logBuffer, offset, toEventCodeId(NEW_LEADERSHIP_TERM), captureLength, captureLength);
         int relativeOffset = LOG_HEADER_LENGTH;
         assertEquals(logLeadershipTermId, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(logTruncatePosition, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
         relativeOffset += SIZE_OF_LONG;
         assertEquals(leadershipTermId, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
         relativeOffset += SIZE_OF_LONG;

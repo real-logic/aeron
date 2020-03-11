@@ -16,6 +16,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include "aeron_udp_protocol.h"
 
@@ -39,50 +40,3 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
     return (int)((size_t)sm->frame_header.frame_length - group_tag_offset);
 }
 
-int aeron_udp_protocol_resolution_set_name(
-    aeron_resolution_header_t *resolution_header,
-    size_t capacity,
-    const char *name,
-    size_t name_length)
-{
-    if (resolution_header->res_type != AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD &&
-        resolution_header->res_type != AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD)
-    {
-        return -1;
-    }
-
-    if (capacity < sizeof(aeron_resolution_header_t))
-    {
-        return 0;
-    }
-
-    uint8_t *buffer = (uint8_t *)resolution_header;
-    size_t offset;
-    if (resolution_header->res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD &&
-        sizeof(aeron_resolution_header_ipv6_t) <= capacity)
-    {
-        aeron_resolution_header_ipv6_t *hdr = (aeron_resolution_header_ipv6_t *) resolution_header;
-        hdr->name_length = name_length;
-        offset = sizeof(aeron_resolution_header_ipv6_t);
-    }
-    else if (resolution_header->res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD &&
-        sizeof(aeron_resolution_header_ipv4_t) <= capacity)
-    {
-        aeron_resolution_header_ipv4_t *hdr = (aeron_resolution_header_ipv4_t *) resolution_header;
-        hdr->name_length = name_length;
-        offset = sizeof(aeron_resolution_header_ipv4_t);
-    }
-    else
-    {
-        return 0;
-    }
-
-    int resolution_message_length = 0;
-    if ((offset + name_length) <= capacity)
-    {
-        memcpy(&buffer[offset], name, name_length);
-        resolution_message_length = offset + name_length;
-    }
-
-    return resolution_message_length;
-}

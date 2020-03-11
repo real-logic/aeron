@@ -32,12 +32,12 @@
 #include "media/aeron_udp_channel_transport.h"
 #include "media/aeron_udp_transport_poller.h"
 #include "util/aeron_netutil.h"
+#include "aeron_name_resolver_driver.h"
 
 // Cater for windows.
 #define AERON_MAX_HOSTNAME_LEN (256)
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
 #define AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS (1)
-
 
 typedef struct aeron_name_resolver_driver_stct
 {
@@ -279,28 +279,31 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
         return 0;
     }
 
-    aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&resolver->buffer[0];
-    const bool isIpv6 = resolver->local_socket_addr.ss_family == AF_INET6;
+    const size_t entry_offset = sizeof(aeron_frame_header_t);
 
-    resolution_header->frame_header.type = AERON_HDR_TYPE_RES;
-    resolution_header->frame_header.flags = UINT8_C(0);
-    resolution_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) &resolver->buffer[0];
+    aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&resolver->buffer[entry_offset];
 
-    resolution_header->res_type = isIpv6 ?
-        AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
-    resolution_header->res_flags = AERON_RES_HEADER_SELF_FLAG;
-    resolution_header->udp_port = isIpv6 ?
-        ((struct sockaddr_in6 *)&resolver->local_socket_addr)->sin6_port :
-        ((struct sockaddr_in *)&resolver->local_socket_addr)->sin_port;
-    int frame_length = aeron_udp_protocol_resolution_set_name(
-        resolution_header, sizeof(resolver->buffer), resolver->name, strlen(resolver->name)); // TODO: cache name length
-    assert(frame_length > 0 && "Bug! Single message should always fit in buffer.");
+    const size_t name_length = strlen(resolver->name); // TODO: cache name length
 
-    resolution_header->frame_header.frame_length = frame_length;
+    int entry_length = aeron_name_resolver_driver_set_resolution_header(
+        resolution_header,
+        sizeof(resolver->buffer) - entry_offset,
+        AERON_RES_HEADER_SELF_FLAG,
+        &resolver->local_socket_addr,
+        resolver->name,
+        name_length);
+
+    assert(entry_length > 0 && "Bug! Single message should always fit in buffer.");
+
+    frame_header->type = AERON_HDR_TYPE_RES;
+    frame_header->flags = UINT8_C(0);
+    frame_header->version = AERON_FRAME_HEADER_VERSION;
+    frame_header->frame_length = sizeof(frame_header) + entry_length;
 
     struct iovec iov[1];
     iov[0].iov_base = resolution_header;
-    iov[0].iov_len = resolution_header->frame_header.frame_length;
+    iov[0].iov_len = frame_header->frame_length;
     struct msghdr msghdr;
     msghdr.msg_iov = iov;
     msghdr.msg_iovlen = 1;
@@ -370,4 +373,65 @@ int aeron_name_resolver_driver_supplier(
     resolver->state = name_resolver;
 
     return 0;
+}
+
+int aeron_name_resolver_driver_set_resolution_header(
+    aeron_resolution_header_t *resolution_header,
+    size_t capacity,
+    uint8_t flags,
+    struct sockaddr_storage *address,
+    const char *name,
+    size_t name_length)
+{
+    size_t name_offset;
+    size_t entry_length;
+
+    switch (address->ss_family)
+    {
+        case AF_INET:
+            entry_length = AERON_ALIGN(sizeof(aeron_resolution_header_ipv4_t) + name_length, sizeof(int64_t));
+            if (capacity < entry_length)
+            {
+                return 0;
+            }
+
+            aeron_resolution_header_ipv4_t *hdr_ipv4 = (aeron_resolution_header_ipv4_t *) resolution_header;
+            struct sockaddr_in *addr_in = (struct sockaddr_in*)&address;
+
+            hdr_ipv4->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
+            hdr_ipv4->resolution_header.udp_port = addr_in->sin_port;
+            memcpy(&hdr_ipv4->addr, &addr_in->sin_addr, sizeof(hdr_ipv4->addr));
+            hdr_ipv4->name_length = name_length;
+            name_offset = sizeof(aeron_resolution_header_ipv4_t);
+
+            break;
+
+        case AF_INET6:
+            entry_length = AERON_ALIGN(sizeof(aeron_resolution_header_ipv6_t) + name_length, sizeof(int64_t));
+            if (capacity < entry_length)
+            {
+                return 0;
+            }
+
+            aeron_resolution_header_ipv6_t *hdr_ipv6 = (aeron_resolution_header_ipv6_t *) resolution_header;
+            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6*)&address;
+
+            hdr_ipv6->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD;
+            hdr_ipv6->resolution_header.udp_port = addr_in6->sin6_port;
+            memcpy(&hdr_ipv6->addr, &addr_in6->sin6_addr, sizeof(hdr_ipv6->addr));
+            hdr_ipv6->name_length = name_length;
+            name_offset = sizeof(aeron_resolution_header_ipv6_t);
+
+            break;
+
+        default:
+            return -1;
+    }
+
+    resolution_header->res_flags = flags;
+
+    uint8_t *buffer = (uint8_t *)resolution_header;
+    memcpy(&buffer[name_offset], name, name_length);
+
+    return entry_length;
 }

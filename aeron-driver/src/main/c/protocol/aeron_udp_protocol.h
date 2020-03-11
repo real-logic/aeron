@@ -97,10 +97,10 @@ aeron_rttm_header_t;
 
 typedef struct aeron_resolution_header_stct
 {
-    aeron_frame_header_t frame_header;
     int8_t res_type;
     uint8_t res_flags;
     uint16_t udp_port;
+    int32_t age_in_ms;
 }
 aeron_resolution_header_t;
 
@@ -123,8 +123,6 @@ aeron_resolution_header_ipv6_t;
 #pragma pack(pop)
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);
-int aeron_udp_protocol_resolution_set_name(
-    aeron_resolution_header_t *resolution_header, size_t capacity, const char *name, size_t name_length);
 
 #define AERON_FRAME_HEADER_VERSION (0)
 

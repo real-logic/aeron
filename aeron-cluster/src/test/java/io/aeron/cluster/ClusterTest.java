@@ -447,7 +447,6 @@ public class ClusterTest
 
             cluster.connectClient();
 
-            // Makes it easier to have the leader have appended messages without consensus
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
@@ -459,10 +458,8 @@ public class ClusterTest
                 Tests.checkInterruptStatus();
             }
 
-            cluster.closeClient();
-
             final long targetPosition = leader.appendPosition();
-
+            cluster.closeClient();
             cluster.stopNode(leader);
 
             followerA = cluster.startStaticNode(followerA.index(), false);
@@ -500,7 +497,6 @@ public class ClusterTest
 
             cluster.connectClient();
 
-            // Makes it easier to have the leader have appended messages without consensus
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 

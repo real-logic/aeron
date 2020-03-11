@@ -185,18 +185,6 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    static TestCluster startThreeNodeStaticCluster(
-        final int appointedLeaderId, final Supplier<? extends TestNode.TestService> serviceSupplier)
-    {
-        final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
-        for (int i = 0; i < 3; i++)
-        {
-            testCluster.startStaticNode(i, true, serviceSupplier);
-        }
-
-        return testCluster;
-    }
-
     static TestCluster startSingleNodeStaticCluster()
     {
         final TestCluster testCluster = new TestCluster(1, 0, 0);
@@ -626,7 +614,7 @@ public class TestCluster implements AutoCloseable
 
     void awaitCommitPosition(final TestNode node, final long logPosition)
     {
-        while (node.commitPosition() != logPosition)
+        while (node.commitPosition() < logPosition)
         {
             Thread.yield();
             Tests.checkInterruptStatus();

@@ -23,14 +23,12 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.cluster.service.CommitPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
 import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -39,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class TestNode implements AutoCloseable
 {
@@ -164,35 +163,25 @@ class TestNode implements AutoCloseable
 
     long commitPosition()
     {
-        final MutableLong commitPosition = new MutableLong(NULL_VALUE);
-
-        countersReader().forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                if (typeId == CommitPos.COMMIT_POSITION_TYPE_ID)
-                {
-                    commitPosition.value = countersReader().getCounterValue(counterId);
-                }
-            });
-
-        return commitPosition.value;
+        return clusteredMediaDriver.consensusModule().context().commitPositionCounter().get();
     }
 
     long appendPosition()
     {
-        final MutableLong appendPosition = new MutableLong(NULL_VALUE);
+        final long recordingId = consensusModule().context().recordingLog().findLastTermRecordingId();
+        if (RecordingPos.NULL_RECORDING_ID == recordingId)
+        {
+            fail("no recording for last term");
+        }
 
-        countersReader().forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                // Doesn't work if there with multiple recordings
-                if (typeId == RecordingPos.RECORDING_POSITION_TYPE_ID)
-                {
-                    appendPosition.value = countersReader().getCounterValue(counterId);
-                }
-            });
+        final CountersReader countersReader = countersReader();
+        final int counterId = RecordingPos.findCounterIdByRecording(countersReader, recordingId);
+        if (NULL_VALUE == counterId)
+        {
+            fail("recording not active " + recordingId);
+        }
 
-        return appendPosition.value;
+        return countersReader.getCounterValue(counterId);
     }
 
     boolean isLeader()
@@ -266,9 +255,8 @@ class TestNode implements AutoCloseable
         private volatile int messageCount;
         private volatile boolean wasSnapshotTaken = false;
         private volatile boolean wasSnapshotLoaded = false;
-        private volatile boolean wasOnStartCalled = false;
-        private volatile Cluster.Role roleChangedTo = null;
         private volatile boolean hasReceivedUnexpectedMessage = false;
+        private volatile Cluster.Role roleChangedTo = null;
 
         TestService index(final int index)
         {
@@ -299,11 +287,6 @@ class TestNode implements AutoCloseable
         boolean wasSnapshotLoaded()
         {
             return wasSnapshotLoaded;
-        }
-
-        boolean wasOnStartCalled()
-        {
-            return wasOnStartCalled;
         }
 
         Cluster.Role roleChangedTo()
@@ -356,8 +339,6 @@ class TestNode implements AutoCloseable
 
                 wasSnapshotLoaded = true;
             }
-
-            wasOnStartCalled = true;
         }
 
         public void onSessionMessage(

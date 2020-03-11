@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
 #include "aeron_socket.h"
 #include <stdio.h>
+#include <netdb.h>
 #include <uri/aeron_uri.h>
 #include "aeron_alloc.h"
 #include "util/aeron_strutil.h"

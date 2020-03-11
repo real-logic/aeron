@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+SOURCE_DIR="`pwd`"
+
+# Install dev tools
+yum update -y
+yum remove -y cmake
+yum install -y centos-release-scl
+yum install -y devtoolset-${GCC_VERSION}-gcc devtoolset-${GCC_VERSION}-gcc-c++
+yum install -y epel-release
+yum install -y make cmake3 openssl-devel libbsd-devel libuuid-devel zlib-devel
+ln -s /usr/bin/cmake3 /usr/bin/cmake
+ln -s /usr/bin/ctest3 /usr/bin/ctest
+
+# Install Java
+rpm --import http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems
+curl -o /etc/yum.repos.d/zulu.repo http://repos.azulsystems.com/rhel/zulu.repo
+yum install -y zulu-8
+
+# Run the build
+export JAVA_HOME=/usr/lib/jvm/zulu-8
+export GRADLE_OPTS="-Dorg.gradle.daemon=false"
+scl enable devtoolset-${GCC_VERSION} -- ${SOURCE_DIR}/cppbuild/cppbuild --build-archive-api

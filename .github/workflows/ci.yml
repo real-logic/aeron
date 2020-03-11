@@ -90,6 +90,31 @@ jobs:
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
 
+  cpp-gcc-centos-build:
+    name: C++ GCC ${{ matrix.version }} (CentOS)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '6' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper
+      - name: Build
+        run: cppbuild/centos-docker-build ${{ matrix.version }}
+
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}
     runs-on: ubuntu-latest

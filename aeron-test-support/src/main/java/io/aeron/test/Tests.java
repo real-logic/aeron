@@ -282,12 +282,13 @@ public class Tests
 
     public static void awaitValue(final AtomicLong counter, final long value)
     {
-        while (counter.get() < value)
+        long counterValue;
+        while ((counterValue = counter.get()) < value)
         {
             Thread.yield();
             if (Thread.interrupted())
             {
-                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counter.get());
+                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
                 fail("unexpected interrupt");
             }
         }
@@ -295,12 +296,13 @@ public class Tests
 
     public static void awaitValue(final AtomicCounter counter, final long value)
     {
-        while (counter.get() < value)
+        long counterValue;
+        while ((counterValue = counter.get()) < value)
         {
             Thread.yield();
             if (Thread.interrupted())
             {
-                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counter.get());
+                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
                 fail("unexpected interrupt");
             }
         }

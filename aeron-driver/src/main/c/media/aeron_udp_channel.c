@@ -24,7 +24,6 @@
 #include <inttypes.h>
 #include "aeron_socket.h"
 #include <stdio.h>
-#include <netdb.h>
 #include <uri/aeron_uri.h>
 #include "aeron_alloc.h"
 #include "util/aeron_strutil.h"

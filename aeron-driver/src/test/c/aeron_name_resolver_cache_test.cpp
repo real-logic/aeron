@@ -36,15 +36,15 @@ public:
 protected:
     void TearDown() override
     {
-        aeron_name_resolver_driver_cache_close(m_cache);
+        aeron_name_resolver_driver_cache_close(&m_cache);
     }
 
-    aeron_name_resolver_driver_cache_t *m_cache;
+    aeron_name_resolver_driver_cache_t m_cache;
 };
 
 TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 {
-    aeron_name_resolver_driver_cache_init(m_cache);
+    aeron_name_resolver_driver_cache_init(&m_cache);
 
     for (int i = 0; i < 1000; i++)
     {
@@ -64,9 +64,9 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
         port = rand();
 
         ASSERT_EQ(
-            1, aeron_name_resolver_driver_cache_add_or_update(m_cache, name, strlen(name), res_type, address, port))
+            1, aeron_name_resolver_driver_cache_add_or_update(&m_cache, name, strlen(name), res_type, address, port))
             << "Iteration: " << i;
-        ASSERT_LE(0, aeron_name_resolver_driver_cache_lookup(m_cache, name, strlen(name), res_type, &cache_entry));
+        ASSERT_LE(0, aeron_name_resolver_driver_cache_lookup(&m_cache, name, strlen(name), res_type, &cache_entry));
         ASSERT_EQ(res_type, cache_entry->res_type);
         ASSERT_EQ(port, cache_entry->port);
         ASSERT_EQ(0, memcmp(address, &cache_entry->address, address_length)) << i;

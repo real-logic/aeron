@@ -102,6 +102,10 @@ public:
 
     inline this_t& media(const std::string& media)
     {
+        if (media != IPC_MEDIA && media != UDP_MEDIA)
+        {
+            throw IllegalArgumentException("unknown media: " + media, SOURCEINFO);
+        }
         m_media = media;
         return *this;
     }
@@ -213,7 +217,7 @@ public:
 
         if (!startsWith(uri, position, AERON_PREFIX))
         {
-            throw IllegalArgumentException("Aeron URIs must start with 'aeron:', found: '" + uri + "'", SOURCEINFO);
+            throw IllegalArgumentException("Aeron URIs must start with 'aeron:', found: " + uri, SOURCEINFO);
         }
         else
         {
@@ -243,7 +247,11 @@ public:
                             break;
 
                         case ':':
-                            throw IllegalArgumentException("encountered ':' within media definition", SOURCEINFO);
+                        case '|':
+                        case '=':
+                            throw IllegalStateException(
+                                "encountered '" + std::to_string(c) + "' within media definition at index " +
+                                std::to_string(i) + " in " + uri, SOURCEINFO);
 
                         default:
                             builder += c;
@@ -253,12 +261,24 @@ public:
                 case PARAMS_KEY:
                     if ('=' == c)
                     {
+                        if (0 == builder.length())
+                        {
+                            throw IllegalStateException(
+                                "empty key not allowed at index " + std::to_string(i) + " in " + uri, SOURCEINFO);
+
+                        }
                         key = builder;
                         builder.clear();
                         state = State::PARAMS_VALUE;
                     }
                     else
                     {
+                        if (c == '|')
+                        {
+                            throw IllegalStateException(
+                                "invalid en of key at index " + std::to_string(i) + " in " + uri, SOURCEINFO);
+                        }
+
                         builder += c;
                     }
                     break;
@@ -282,6 +302,10 @@ public:
         {
             case State::MEDIA:
                 media = builder;
+                if (media != IPC_MEDIA && media != UDP_MEDIA)
+                {
+                    throw IllegalArgumentException("unknown media: " + media, SOURCEINFO);
+                }
                 break;
 
             case PARAMS_VALUE:

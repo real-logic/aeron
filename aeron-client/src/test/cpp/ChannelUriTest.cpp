@@ -33,10 +33,6 @@ TEST(ChannelUriTest, shouldParseSimpleDefaultUris)
     ASSERT_EQ(channelUri->prefix(), "");
     ASSERT_EQ(channelUri->media(), "ipc");
 
-    channelUri = ChannelUri::parse("aeron:");
-    ASSERT_EQ(channelUri->prefix(), "");
-    ASSERT_EQ(channelUri->media(), "");
-
     channelUri = ChannelUri::parse("aeron-spy:aeron:udp");
     ASSERT_EQ(channelUri->prefix(), "aeron-spy");
     ASSERT_EQ(channelUri->media(), "udp");
@@ -52,21 +48,22 @@ TEST(ChannelUriTest, shouldRejectUriWithoutAeronPrefix)
 
 TEST(ChannelUriTest, shouldRejectWithOutOfPlaceColon)
 {
-    ASSERT_THROW(ChannelUri::parse("aeron:udp:"), IllegalArgumentException);
+    ASSERT_THROW(ChannelUri::parse("aeron:udp:"), IllegalStateException);
 }
 
-TEST(ChannelUriTest, shouldParseWithSingleParameter)
+TEST(ChannelUriTest, shouldRejectWithInvalidMedia)
 {
-    std::shared_ptr<ChannelUri> channelUri;
+    ASSERT_THROW(ChannelUri::parse("aeron:ipcsdfgfdhfgf"), IllegalArgumentException);
+}
 
-    channelUri = ChannelUri::parse("aeron:udp?endpoint=224.10.9.8");
-    ASSERT_EQ(channelUri->get("endpoint"), "224.10.9.8");
+TEST(ChannelUriTest, shouldRejectWithMissingQuerySeparatorWhenFollowedWithParams)
+{
+    ASSERT_THROW(ChannelUri::parse("aeron:ipc|sparse=true"), IllegalStateException);
+}
 
-    channelUri = ChannelUri::parse("aeron:udp?add|ress=224.10.9.8");
-    ASSERT_EQ(channelUri->get("add|ress"), "224.10.9.8");
-
-    channelUri = ChannelUri::parse("aeron:udp?endpoint=224.1=0.9.8");
-    ASSERT_EQ(channelUri->get("endpoint"), "224.1=0.9.8");
+TEST(ChannelUriTest, shouldRejectWithInvalidParams)
+{
+    ASSERT_THROW(ChannelUri::parse("aeron:udp?endpoint=localhost:4652|-~@{]|=??#s!£$%===="), IllegalStateException);
 }
 
 TEST(ChannelUriTest, shouldParseWithMultipleParameters)

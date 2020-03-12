@@ -397,7 +397,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         byte[] addr = addressTempBuffer;
 
         final int addressLength = resolutionEntryFlyweight.getAddress(addressTempBuffer);
-        if (isSelf && ResolutionEntryFlyweight.isIp4Wildcard(addressTempBuffer, addressLength))
+        if (isSelf && ResolutionEntryFlyweight.isAnyLocalAddress(addressTempBuffer, addressLength))
         {
             addr = srcAddress.getAddress().getAddress();
         }

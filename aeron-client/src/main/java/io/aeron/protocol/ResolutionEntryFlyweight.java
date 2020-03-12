@@ -261,11 +261,22 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
         throw new IllegalStateException("unknown RES_TYPE=" + type);
     }
 
-    public static boolean isIp4Wildcard(final byte[] address, final int addressLength)
+    public static boolean isAnyLocalAddress(final byte[] address, final int addressLength)
     {
         if (addressLength == ADDRESS_LENGTH_IP4)
         {
             return 0 == address[0] && 0 == address[1] && 0 == address[2] && 0 == address[3];
+        }
+        else if (addressLength == ADDRESS_LENGTH_IP6)
+        {
+            byte val = 0;
+
+            for (int i = 0; i < ADDRESS_LENGTH_IP6; i++)
+            {
+                val |= address[i];
+            }
+
+            return 0 == val;
         }
 
         return false;

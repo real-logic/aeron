@@ -18,6 +18,7 @@
 #include <string.h>
 #include <netinet/in.h>
 
+#include "util/aeron_bitutil.h"
 #include "aeron_udp_protocol.h"
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
@@ -39,4 +40,8 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 
     return (int)((size_t)sm->frame_header.frame_length - group_tag_offset);
 }
+
+extern size_t aeron_res_header_address_length(int8_t res_type);
+extern size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header);
+extern size_t aeron_res_header_entry_length_ipv6(aeron_resolution_header_ipv6_t *header);
 

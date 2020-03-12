@@ -21,6 +21,16 @@ int aeron_name_resolver_driver_set_resolution_header(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,
     uint8_t flags,
+    int8_t res_type,
+    uint8_t *address,
+    uint16_t port,
+    const char *name,
+    size_t name_length);
+
+int aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    aeron_resolution_header_t *resolution_header,
+    size_t capacity,
+    uint8_t flags,
     struct sockaddr_storage *address,
     const char *name,
     size_t name_length);

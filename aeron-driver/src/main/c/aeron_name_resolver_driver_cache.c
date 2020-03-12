@@ -42,7 +42,6 @@ int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *c
     return 0;
 }
 
-
 int aeron_name_resolver_driver_cache_find_index_by_name_and_type(
     aeron_name_resolver_driver_cache_t *cache,
     const char *name,
@@ -110,14 +109,14 @@ int aeron_name_resolver_driver_cache_add_or_update(
     }
 
     entry->port = port;
-    size_t address_len = res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD ? 16 : 4;
+    size_t address_len = aeron_res_header_address_length(res_type);
     memcpy(entry->address, address, address_len);
-    memset(&entry->address[address_len], 0, 16 - address_len);
+    memset(&entry->address[address_len], 0, AERON_RES_HEADER_ADDRESS_LENGTH_IP6 - address_len);
 
     return num_updated;
 }
 
-int aeron_name_resolver_driver_cache_lookup(
+int aeron_name_resolver_driver_cache_lookup_by_name(
     aeron_name_resolver_driver_cache_t *cache,
     const char *name,
     size_t name_length,

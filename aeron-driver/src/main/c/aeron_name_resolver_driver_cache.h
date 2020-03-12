@@ -20,7 +20,7 @@
 
 typedef struct aeron_name_resolver_driver_cache_entry_stct
 {
-    uint8_t address[16];
+    uint8_t address[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];
     int64_t deadline_ms;
     int64_t time_of_last_activity_ms;
     size_t name_length;
@@ -52,7 +52,7 @@ int aeron_name_resolver_driver_cache_add_or_update(
     uint8_t *address,
     uint16_t port);
 
-int aeron_name_resolver_driver_cache_lookup(
+int aeron_name_resolver_driver_cache_lookup_by_name(
     aeron_name_resolver_driver_cache_t *cache,
     const char *name,
     size_t name_length,

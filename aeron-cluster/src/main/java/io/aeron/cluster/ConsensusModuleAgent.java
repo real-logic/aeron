@@ -1014,8 +1014,9 @@ class ConsensusModuleAgent implements Agent
         {
             if (ConsensusModule.State.SNAPSHOT == state)
             {
+                final ServiceAck[] serviceAcks = consumeServiceAcks(logPosition, serviceId);
                 ++serviceAckId;
-                takeSnapshot(timestamp, logPosition);
+                takeSnapshot(timestamp, logPosition, serviceAcks);
                 final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
 
                 if (NULL_POSITION == terminationPosition)
@@ -1040,7 +1041,6 @@ class ConsensusModuleAgent implements Agent
             }
             else if (ConsensusModule.State.QUITTING == state)
             {
-                recordingLog.commitLogPosition(leadershipTermId, logPosition);
                 state(ConsensusModule.State.CLOSED);
                 ctx.terminationHook().run();
             }
@@ -1067,6 +1067,23 @@ class ConsensusModuleAgent implements Agent
                 }
             }
         }
+    }
+
+    private ServiceAck[] consumeServiceAcks(final long logPosition, final int serviceId)
+    {
+        final ServiceAck[] serviceAcks = new ServiceAck[serviceAckQueues.length];
+        for (int id = 0, length = serviceAckQueues.length; id < length; id++)
+        {
+            final ServiceAck serviceAck = serviceAckQueues[id].pollFirst();
+            if (null == serviceAck || serviceAck.logPosition() != logPosition)
+            {
+                throw new ClusterException("invalid ack for serviceId=" + serviceId +
+                    " logPosition=" + logPosition + " " + serviceAck);
+            }
+
+            serviceAcks[id] = serviceAck;
+        }
+        return serviceAcks;
     }
 
     void onReplaySessionMessage(final long clusterSessionId, final long timestamp)
@@ -2630,49 +2647,48 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    private void takeSnapshot(final long timestamp, final long logPosition)
+    private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(
             ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
             final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
             final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
+            final long recordingId;
             try
             {
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
-                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-                final long termBaseLogPosition =
-                    recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 snapshotState(publication, logPosition, replayLeadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
-
-                for (int serviceId = serviceAckQueues.length - 1; serviceId >= 0; serviceId--)
-                {
-                    final ServiceAck serviceAck = serviceAckQueues[serviceId].pollFirst();
-                    if (null == serviceAck || serviceAck.logPosition() != logPosition)
-                    {
-                        throw new ClusterException("invalid ack for serviceId=" + serviceId +
-                            " logPosition=" + logPosition + " " + serviceAck);
-                    }
-
-                    final long snapshotId = serviceAck.relevantId();
-                    recordingLog.appendSnapshot(
-                        snapshotId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
-                }
-
-                recordingLog.appendSnapshot(
-                    recordingId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
-
-                recordingLog.force(ctx.fileSyncLevel());
-                recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-                ctx.snapshotCounter().incrementOrdered();
             }
             finally
             {
-                archive.stopRecording(subscriptionId);
+                archive.archiveProxy().stopRecording(
+                    subscriptionId, aeron.nextCorrelationId(), archive.controlSessionId());
             }
+
+            final long termBaseLogPosition = recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;
+
+            for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
+            {
+                final long snapshotId = serviceAcks[serviceId].relevantId();
+                recordingLog.appendSnapshot(
+                    snapshotId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
+            }
+
+            recordingLog.appendSnapshot(
+                recordingId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+
+            recordingLog.force(ctx.fileSyncLevel());
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+            ctx.snapshotCounter().incrementOrdered();
+        }
+        catch (final Exception ex)
+        {
+            ctx.countedErrorHandler().onError(ex);
         }
     }
 

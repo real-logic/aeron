@@ -841,8 +841,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(publication.sessionId(), counters);
-
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
+
                 snapshotState(publication, logPosition, leadershipTermId);
 
                 checkForClockTick();
@@ -852,7 +852,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             }
             finally
             {
-                archive.stopRecording(subscriptionId);
+                archive.archiveProxy().stopRecording(
+                    subscriptionId, aeron.nextCorrelationId(), archive.controlSessionId());
             }
         }
 

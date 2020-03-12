@@ -298,7 +298,6 @@ public class DriverConductor implements Agent
             for (int i = 0, size = subscriberPositions.size(); i < size; i++)
             {
                 final SubscriberPosition position = subscriberPositions.get(i);
-
                 position.addLink(image);
 
                 clientProxy.onAvailableImage(
@@ -630,7 +629,7 @@ public class DriverConductor implements Agent
                 subscriberPosition.subscription().registrationId,
                 subscriberPosition.position().id(),
                 ipcPublication.rawLog().fileName(),
-                channel);
+                CommonContext.IPC_CHANNEL);
         }
     }
 
@@ -781,7 +780,7 @@ public class DriverConductor implements Agent
                 registrationId,
                 subscriberPosition.position().id(),
                 publication.rawLog().fileName(),
-                channel);
+                CommonContext.IPC_CHANNEL);
         }
     }
 

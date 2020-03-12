@@ -26,7 +26,6 @@ public class ChannelUriTest
     {
         assertParseWithMedia("aeron:udp", "udp");
         assertParseWithMedia("aeron:ipc", "ipc");
-        assertParseWithMedia("aeron:", "");
         assertParseWithMediaAndPrefix("aeron-spy:aeron:ipc", "aeron-spy", "ipc");
     }
 
@@ -46,11 +45,21 @@ public class ChannelUriTest
     }
 
     @Test
-    public void shouldParseWithSingleParameter()
+    public void shouldRejectWithInvalidMedia()
     {
-        assertParseWithParams("aeron:udp?endpoint=224.10.9.8", "endpoint", "224.10.9.8");
-        assertParseWithParams("aeron:udp?add|ress=224.10.9.8", "add|ress", "224.10.9.8");
-        assertParseWithParams("aeron:udp?endpoint=224.1=0.9.8", "endpoint", "224.1=0.9.8");
+        assertInvalid("aeron:ipcsdfgfdhfgf");
+    }
+
+    @Test
+    public void shouldRejectWithMissingQuerySeparatorWhenFollowedWithParams()
+    {
+        assertInvalid("aeron:ipc|sparse=true");
+    }
+
+    @Test
+    public void shouldRejectWithInvalidParams()
+    {
+        assertInvalid("aeron:udp?endpoint=localhost:4652|-~@{]|=??#s!£$%====");
     }
 
     @Test
@@ -142,7 +151,7 @@ public class ChannelUriTest
             ChannelUri.parse(string);
             fail(IllegalArgumentException.class.getName() + " not thrown");
         }
-        catch (final IllegalArgumentException ignore)
+        catch (final IllegalArgumentException | IllegalStateException ignore)
         {
         }
     }

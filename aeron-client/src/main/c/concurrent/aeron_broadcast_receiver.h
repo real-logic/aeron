@@ -72,6 +72,8 @@ typedef void (*aeron_broadcast_receiver_handler_t)(int32_t type_id, uint8_t *buf
 
 int aeron_broadcast_receiver_init(volatile aeron_broadcast_receiver_t *receiver, void *buffer, size_t length);
 
+/* bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_receiver_t *receiver); */
+
 int aeron_broadcast_receiver_receive(
     volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler);
 

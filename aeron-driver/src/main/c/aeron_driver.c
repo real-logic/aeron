@@ -282,21 +282,21 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
         }
     }
 
-    if (aeron_mkdir(driver->context->aeron_dir, S_IRWXU) != 0)
+    if (aeron_mkdir(driver->context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         aeron_set_err_from_last_err_code("mkdir %s", driver->context->aeron_dir);
         return -1;
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_PUBLICATIONS_DIR);
-    if (aeron_mkdir(buffer, S_IRWXU) != 0)
+    if (aeron_mkdir(buffer, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         aeron_set_err_from_last_err_code("mkdir %s", buffer);
         return -1;
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_IMAGES_DIR);
-    if (aeron_mkdir(buffer, S_IRWXU) != 0)
+    if (aeron_mkdir(buffer, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         aeron_set_err_from_last_err_code("mkdir %s", buffer);
         return -1;

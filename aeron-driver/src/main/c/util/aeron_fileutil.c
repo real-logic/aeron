@@ -42,6 +42,10 @@
 #define MAP_SHARED 0x01
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
+#define S_IRGRP 0
+#define S_IWGRP 0
+#define S_IROTH 0
+#define S_IWOTH 0
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {

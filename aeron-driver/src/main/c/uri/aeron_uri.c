@@ -47,10 +47,19 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
                 switch (c)
                 {
                     case '=':
+                        if (NULL == param_key)
+                        {
+                            aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "empty key not allowed");
+                            return -1;
+                        }
                         uri[i] = '\0';
                         param_value = NULL;
                         state = PARAM_VALUE;
                         break;
+
+                    case '|':
+                        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "invalid end of key");
+                        return -1;
 
                     default:
                         if (NULL == param_key)
@@ -65,6 +74,11 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
                 switch (c)
                 {
                     case '|':
+                        if (NULL == param_value)
+                        {
+                            aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "empty value not allowed");
+                            return -1;
+                        }
                         uri[i] = '\0';
                         if (param_func(clientd, param_key, param_value) < 0)
                         {
@@ -262,20 +276,28 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
             if (*ptr++ == '?')
             {
                 params->type = AERON_URI_UDP;
-                return aeron_udp_uri_parse(ptr, &params->params.udp);
+                int result = aeron_udp_uri_parse(ptr, &params->params.udp);
+                if (result < 0)
+                {
+                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int) uri_length, uri);
+                }
+                return result;
             }
         }
         else if (strncmp(ptr, AERON_URI_IPC_TRANSPORT, strlen(AERON_URI_IPC_TRANSPORT)) == 0)
         {
             ptr += strlen(AERON_URI_IPC_TRANSPORT);
 
-            if (*ptr == '?')
+            if (*ptr == '\0' || *ptr++ == '?')
             {
-                ptr++;
+                params->type = AERON_URI_IPC;
+                int result = aeron_ipc_uri_parse(ptr, &params->params.ipc);
+                if (result < 0)
+                {
+                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int) uri_length, uri);
+                }
+                return result;
             }
-
-            params->type = AERON_URI_IPC;
-            return aeron_ipc_uri_parse(ptr, &params->params.ipc);
         }
     }
 

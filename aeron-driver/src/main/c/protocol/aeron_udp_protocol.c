@@ -42,6 +42,4 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 }
 
 extern size_t aeron_res_header_address_length(int8_t res_type);
-extern size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header);
-extern size_t aeron_res_header_entry_length_ipv6(aeron_resolution_header_ipv6_t *header);
 

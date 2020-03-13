@@ -41,6 +41,17 @@
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
 #define AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS (1)
 
+
+static inline size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header)
+{
+    return AERON_ALIGN(sizeof(aeron_resolution_header_ipv4_t) + header->name_length, sizeof(int64_t));
+}
+
+static inline size_t aeron_res_header_entry_length_ipv6(aeron_resolution_header_ipv6_t *header)
+{
+    return AERON_ALIGN(sizeof(aeron_resolution_header_ipv6_t) + header->name_length, sizeof(int64_t));
+}
+
 typedef struct aeron_name_resolver_driver_neighbor_stct
 {
     uint8_t address[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];
@@ -85,7 +96,7 @@ aeron_name_resolver_driver_t;
 
 static const char *host_string(struct sockaddr_storage *addr)
 {
-    static char buf[1024];
+    static char buf[NI_MAXHOST + NI_MAXSERV + 32];
     char host[NI_MAXHOST];
     char port[NI_MAXSERV];
 

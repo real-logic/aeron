@@ -171,9 +171,6 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
 {
-    struct in_addr local_address_b;
-    inet_pton(AF_INET, "127.0.0.1", &local_address_b);
-
     aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
     ASSERT_NE(nullptr, supplier_func);
 
@@ -201,19 +198,13 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
     aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_c, "localhost:8051");
     ASSERT_EQ(0, supplier_func(m_context_c, &resolver_c, NULL));
 
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-    aeron_clock_update_cached_time(m_context_c->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-
     for (int i = 0; i < 6; i++)
     {
         timestamp_ms += 1000;
+        aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms * 1000000);
+        aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms * 1000000);
+        aeron_clock_update_cached_time(m_context_c->cached_clock, timestamp_ms, timestamp_ms * 1000000);
 
-//        ASSERT_LT(0, resolver_c.do_work_func(&resolver_c, timestamp_ms));
-//
-//        ASSERT_LT(0, resolver_b.do_work_func(&resolver_b, timestamp_ms));
-//
-//        ASSERT_LT(0, resolver_a.do_work_func(&resolver_a, timestamp_ms));
         resolver_a.do_work_func(&resolver_a, timestamp_ms);
         resolver_b.do_work_func(&resolver_b, timestamp_ms);
         resolver_c.do_work_func(&resolver_c, timestamp_ms);

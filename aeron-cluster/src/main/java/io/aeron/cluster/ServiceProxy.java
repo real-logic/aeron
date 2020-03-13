@@ -32,7 +32,7 @@ final class ServiceProxy implements AutoCloseable
     private final ClusterMembersResponseEncoder clusterMembersResponseEncoder = new ClusterMembersResponseEncoder();
     private final ServiceTerminationPositionEncoder serviceTerminationPositionEncoder =
         new ServiceTerminationPositionEncoder();
-    private final ElectionStartEventEncoder electionStartEventEncoder = new ElectionStartEventEncoder();
+    private final ElectionStartEncoder electionStartEncoder = new ElectionStartEncoder();
     private final ClusterMembersExtendedResponseEncoder clusterMembersExtendedResponseEncoder =
         new ClusterMembersExtendedResponseEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
@@ -213,9 +213,9 @@ final class ServiceProxy implements AutoCloseable
         throw new ClusterException("failed to send service termination position");
     }
 
-    void electionStartEvent(final long logPosition, final ErrorHandler errorHandler)
+    boolean electionStart(final long logPosition)
     {
-        final int length = MessageHeaderDecoder.ENCODED_LENGTH + ElectionStartEventEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderDecoder.ENCODED_LENGTH + ElectionStartEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS * 2;
         do
@@ -223,20 +223,20 @@ final class ServiceProxy implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                electionStartEventEncoder
+                electionStartEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition);
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        errorHandler.onError(new ClusterException("failed to send election start event", AeronException.Category.WARN));
+        return false;
     }
 
     private static void checkResult(final long result)

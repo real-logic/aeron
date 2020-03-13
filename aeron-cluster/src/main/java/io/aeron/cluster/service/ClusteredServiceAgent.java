@@ -347,7 +347,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         terminationPosition = logPosition;
     }
 
-    void onElectionStartEvent(final long logPosition)
+    void onElectionStart(final long logPosition)
     {
         roleChangePosition = logPosition;
     }

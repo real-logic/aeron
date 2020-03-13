@@ -2612,7 +2612,11 @@ class ConsensusModuleAgent implements Agent
             this);
 
         election.doWork(nowNs);
-        serviceProxy.electionStartEvent(commitPosition, ctx.countedErrorHandler());
+        if (!serviceProxy.electionStart(commitPosition))
+        {
+            ctx.countedErrorHandler().onError(
+                new ClusterException("failed to send election start event", AeronException.Category.WARN));
+        }
     }
 
     private void idle()

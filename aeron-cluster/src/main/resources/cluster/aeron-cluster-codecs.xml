@@ -335,9 +335,9 @@
         <field name="logPosition"              id="1" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="ElectionStartEvent"
+    <sbe:message name="ElectionStart"
                  id="43"
-                 description="Consensus Module instructing a service that an election has been entered at position.">
+                 description="Consensus Module notifying services an election has started at a position.">
         <field name="logPosition"              id="1" type="int64"/>
     </sbe:message>
 

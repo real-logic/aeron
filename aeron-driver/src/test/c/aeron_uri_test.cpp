@@ -62,6 +62,7 @@ TEST_F(UriTest, shouldNotParseInvalidUriScheme)
     EXPECT_EQ(AERON_URI_PARSE("aeron:", &m_uri), -1);
     EXPECT_EQ(AERON_URI_PARSE("aron:", &m_uri), -1);
     EXPECT_EQ(AERON_URI_PARSE(":aeron", &m_uri), -1);
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp:", &m_uri), -1);
 }
 
 TEST_F(UriTest, shouldNotParseUnknownUriTransport)
@@ -69,6 +70,18 @@ TEST_F(UriTest, shouldNotParseUnknownUriTransport)
     EXPECT_EQ(AERON_URI_PARSE("aeron:tcp", &m_uri), -1);
     EXPECT_EQ(AERON_URI_PARSE("aeron:sctp", &m_uri), -1);
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp", &m_uri), -1);
+    EXPECT_EQ(AERON_URI_PARSE("aeron:ipcsdfgfdhfgf", &m_uri), -1);
+}
+
+TEST_F(UriTest, shouldRejectWithMissingQuerySeparatorWhenFollowedWithParams)
+{
+    EXPECT_EQ(AERON_URI_PARSE("aeron:ipc|sparse=true", &m_uri), -1);
+}
+
+TEST_F(UriTest, shouldRejectWithInvalidParams)
+{
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=localhost:4652|-~@{]|=??#s!£$%====", &m_uri), -1);
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?add|ress=224.10.9.8", &m_uri), -1);
 }
 
 TEST_F(UriTest, shouldParseKnownUriTransportWithoutParamsIpcNoSeparator)
@@ -97,15 +110,6 @@ TEST_F(UriTest, shouldParseWithSingleParamUdpEndpoint)
     ASSERT_EQ(m_uri.type, AERON_URI_UDP);
     EXPECT_EQ(std::string(m_uri.params.udp.endpoint), "224.10.9.8");
     EXPECT_EQ(m_uri.params.udp.additional_params.length, 0u);
-}
-
-TEST_F(UriTest, shouldParseWithSingleParamUdpVariableWithEmbeddedPipe)
-{
-    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?add|ress=224.10.9.8", &m_uri), 0);
-    ASSERT_EQ(m_uri.type, AERON_URI_UDP);
-    ASSERT_EQ(m_uri.params.udp.additional_params.length, 1u);
-    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].key), "add|ress");
-    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), "224.10.9.8");
 }
 
 TEST_F(UriTest, shouldParseWithSingleParamUdpValueWithEmbeddedEquals)

@@ -88,6 +88,7 @@ typedef struct aeron_name_resolver_driver_stct
 
     int64_t dead_line_self_resolutions_ms;
     int64_t dead_line_neighbor_resolutions_ms;
+    int64_t now_ms;
 
     struct sockaddr_storage received_address;
     uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH];  // TODO: Cache alignment??
@@ -216,11 +217,11 @@ int aeron_name_resolver_driver_init(
         goto error_cleanup;
     }
 
-    aeron_name_resolver_driver_cache_init(&_driver_resolver->cache);
+    aeron_name_resolver_driver_cache_init(&_driver_resolver->cache, AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS);
 
-    _driver_resolver->self_resolution_interval_ms = 1000;
+    _driver_resolver->self_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
     _driver_resolver->dead_line_self_resolutions_ms = 0;
-    _driver_resolver->neighbor_resolution_interval_ms = 2000;
+    _driver_resolver->neighbor_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_NEIGHBOUR_RESOLUTION_INTERVAL_MS;
     _driver_resolver->dead_line_neighbor_resolutions_ms = aeron_clock_cached_epoch_time(context->cached_clock);
 
     *driver_resolver = _driver_resolver;
@@ -332,7 +333,7 @@ int aeron_name_resolver_driver_resolve(
 int aeron_name_resolver_driver_find_neighbor_by_addr(
     aeron_name_resolver_driver_t *resolver,
     int8_t res_type,
-    uint8_t *address,
+    const uint8_t *address,
     uint16_t port)
 {
     for (size_t i = 0; i < resolver->neighbors.length; i++)
@@ -353,10 +354,13 @@ int aeron_name_resolver_driver_find_neighbor_by_addr(
 int aeron_name_resolver_driver_add_neighbor(
     aeron_name_resolver_driver_t *resolver,
     int8_t res_type,
-    uint8_t *address,
-    uint16_t port)
+    const uint8_t *address,
+    uint16_t port,
+    bool is_self,
+    int64_t time_of_last_activity)
 {
-    if (aeron_name_resolver_driver_find_neighbor_by_addr(resolver, res_type, address, port) < 0)
+    const int neighbor_index = aeron_name_resolver_driver_find_neighbor_by_addr(resolver, res_type, address, port);
+    if (neighbor_index < 0)
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, resolver->neighbors, aeron_name_resolver_driver_neighbor_t)
@@ -377,8 +381,50 @@ int aeron_name_resolver_driver_add_neighbor(
 
         return 1;
     }
+    else if (is_self)
+    {
+        resolver->neighbors.array[neighbor_index].time_of_last_activity_ms = time_of_last_activity;
+
+        return 2;
+    }
 
     return 0;
+}
+
+int aeron_name_resolver_driver_on_resolution_entry(
+    aeron_name_resolver_driver_t *resolver,
+    const aeron_resolution_header_t *resolution_header,
+    const char *name,
+    size_t name_length,
+    int8_t res_type,
+    const uint8_t *address,
+    uint16_t port,
+    bool is_self,
+    int64_t now_ms)
+{
+    // Ignore own records that match me...
+    if (port == aeron_name_resolver_driver_get_port(resolver) &&
+        name_length && strlen(resolver->name) &&
+        0 == strncmp(resolver->name, name, name_length))
+    {
+        return 0;
+    }
+
+    int64_t time_of_last_activity = now_ms - resolution_header->age_in_ms;
+
+    if (aeron_name_resolver_driver_cache_add_or_update(
+        &resolver->cache, name, name_length, res_type, address, port, time_of_last_activity) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_name_resolver_driver_add_neighbor(
+        resolver, resolution_header->res_type, address, resolution_header->udp_port, is_self, time_of_last_activity))
+    {
+        return -1;
+    }
+
+    return 1;
 }
 
 void aeron_name_resolver_driver_receive(
@@ -457,22 +503,20 @@ void aeron_name_resolver_driver_receive(
 
         printf("Host: %s, received: %s (%d)\n", resolver->name, name, port);
 
-        if (AERON_RES_HEADER_SELF_FLAG == (resolution_header->res_flags & AERON_RES_HEADER_SELF_FLAG) &&
+        const bool is_self = AERON_RES_HEADER_SELF_FLAG == (resolution_header->res_flags & AERON_RES_HEADER_SELF_FLAG);
+        if (is_self &&
             resolution_header->res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD &&
             *((in_addr_t *)address) == INADDR_ANY)
         {
             aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port);
         }
 
-        // Ignore self...
-        if (port != aeron_name_resolver_driver_get_port(resolver) ||
-            name_length != strlen(resolver->name) ||
-            0 != strncmp(resolver->name, name, name_length))
+        if (aeron_name_resolver_driver_on_resolution_entry(
+            resolver, resolution_header, name, name_length, res_type, address, port, is_self, resolver->now_ms) < 0)
         {
-            aeron_name_resolver_driver_cache_add_or_update(&resolver->cache, name, name_length, res_type, address, port);
-
-            aeron_name_resolver_driver_add_neighbor(
-                resolver, resolution_header->res_type, address, resolution_header->udp_port);
+            // Problem processing data (probably out of memory error).
+            // Log error, reset error state and discard packet.
+            return;
         }
 
         remaining -= entry_length;
@@ -547,6 +591,7 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
     frame_header->flags = UINT8_C(0);
     frame_header->version = AERON_FRAME_HEADER_VERSION;
     frame_header->frame_length = sizeof(frame_header) + entry_length;
+    resolution_header->age_in_ms = 0;
 
     struct sockaddr_storage neighbor_address;
 
@@ -646,6 +691,8 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 
             assert(-1 != entry_length && "Invalid res_type crept in from somewhere");
 
+            resolution_header->age_in_ms = now_ms - cache_entry->time_of_last_activity_ms;
+
             if (0 == entry_length)
             {
                 break;
@@ -689,11 +736,13 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
 {
     aeron_name_resolver_driver_t *driver_resolver = resolver->state;
+    driver_resolver->now_ms = now_ms;
     int work_count = 0;
 
     if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
     {
         work_count += aeron_name_resolver_driver_poll(driver_resolver);
+        aeron_name_resolver_driver_cache_timeout_old_entries(&driver_resolver->cache, now_ms);
 
         if (driver_resolver->dead_line_self_resolutions_ms <= now_ms)
         {

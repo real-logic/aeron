@@ -251,3 +251,51 @@ TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
     ASSERT_EQ(-1, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
         resolution_header, sizeof(buffer), flags, &address, hostname, strlen(hostname)));
 }
+
+
+TEST_F(NameResolverTest, shouldTimeoutNeighbor)
+{
+    aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
+    ASSERT_NE(nullptr, supplier_func);
+    struct sockaddr_storage address;
+
+    int64_t timestamp_ms = INTMAX_C(8932472347945);
+
+    aeron_driver_context_init(&m_context_a);
+    aeron_driver_context_init(&m_context_b);
+
+    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+
+    aeron_driver_context_set_resolver_name(m_context_a, "A");
+    aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
+    ASSERT_EQ(0, supplier_func(m_context_a, &resolver_a, NULL));
+
+    aeron_driver_context_set_resolver_name(m_context_b, "B");
+    aeron_driver_context_set_resolver_interface(m_context_b, "127.0.0.1:8051");
+    aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
+    ASSERT_EQ(0, supplier_func(m_context_b, &resolver_b, NULL)) << aeron_errmsg();
+
+    timestamp_ms += 2000;
+    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+
+    // Should push self address to neighbor
+    ASSERT_LT(0, resolver_b.do_work_func(&resolver_b, timestamp_ms));
+
+    // Should load neighbor resolution (spin until we do work)
+    ASSERT_LT(0, resolver_a.do_work_func(&resolver_a, timestamp_ms));
+
+    // A sees B.
+    ASSERT_LE(0, resolver_a.resolve_func(&resolver_a, "B", "endpoint", false, &address));
+
+
+    timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
+    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+
+    // B's not pushed it self resolution recently enough
+    ASSERT_LT(0, resolver_a.do_work_func(&resolver_a, timestamp_ms));
+
+    ASSERT_EQ(-1, resolver_a.resolve_func(&resolver_a, "B", "endpoint", false, &address));
+}

@@ -32,6 +32,7 @@ aeron_name_resolver_driver_cache_entry_t;
 
 typedef struct aeron_name_resolver_driver_cache_stct
 {
+    int64_t timeout_ms;
     struct entry_stct
     {
         size_t length;
@@ -42,15 +43,16 @@ typedef struct aeron_name_resolver_driver_cache_stct
 }
 aeron_name_resolver_driver_cache_t;
 
-int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache);
+int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache, int64_t timeout_ms);
 
 int aeron_name_resolver_driver_cache_add_or_update(
     aeron_name_resolver_driver_cache_t *cache,
     const char *name,
     size_t name_length,
     int8_t res_type,
-    uint8_t *address,
-    uint16_t port);
+    const uint8_t *address,
+    uint16_t port,
+    int64_t time_of_last_activity);
 
 int aeron_name_resolver_driver_cache_lookup_by_name(
     aeron_name_resolver_driver_cache_t *cache,
@@ -60,5 +62,7 @@ int aeron_name_resolver_driver_cache_lookup_by_name(
     aeron_name_resolver_driver_cache_entry_t **entry);
 
 int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *cache);
+
+int aeron_name_resolver_driver_cache_timeout_old_entries(aeron_name_resolver_driver_cache_t *cache, int64_t now_ms);
 
 #endif //AERON_AERON_NAME_RESOLVER_DRIVER_CACHE_H

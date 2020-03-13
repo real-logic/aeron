@@ -23,9 +23,10 @@
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_name_resolver_driver_cache.h"
 
-int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache)
+int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache, int64_t timeout_ms)
 {
     memset(cache, 0, sizeof(aeron_name_resolver_driver_cache_t));
+    cache->timeout_ms = timeout_ms;
     return 0;
 }
 
@@ -68,8 +69,9 @@ int aeron_name_resolver_driver_cache_add_or_update(
     const char *name,
     size_t name_length,
     int8_t res_type,
-    uint8_t *address,
-    uint16_t port)
+    const uint8_t *address,
+    uint16_t port,
+    int64_t time_of_last_activity)
 {
     int index = aeron_name_resolver_driver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
     aeron_name_resolver_driver_cache_entry_t *entry;
@@ -95,6 +97,7 @@ int aeron_name_resolver_driver_cache_add_or_update(
             aeron_set_err_from_last_err_code("Failed copy name string for cache - %s:%d", __FILE__, __LINE__);
             return -1;
         }
+
         strncpy((char *)entry->name, name, name_length);
         entry->name_length = name_length;
         entry->res_type = res_type;
@@ -112,6 +115,8 @@ int aeron_name_resolver_driver_cache_add_or_update(
     size_t address_len = aeron_res_header_address_length(res_type);
     memcpy(entry->address, address, address_len);
     memset(&entry->address[address_len], 0, AERON_RES_HEADER_ADDRESS_LENGTH_IP6 - address_len);
+    entry->time_of_last_activity_ms = time_of_last_activity;
+    entry->deadline_ms = time_of_last_activity + cache->timeout_ms;
 
     return num_updated;
 }
@@ -125,10 +130,31 @@ int aeron_name_resolver_driver_cache_lookup_by_name(
 {
     int index = aeron_name_resolver_driver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
 
-    if (0 <= index)
+    if (0 <= index && NULL != entry)
     {
         *entry = &cache->entries.array[index];
     }
 
     return index;
 }
+
+int aeron_name_resolver_driver_cache_timeout_old_entries(aeron_name_resolver_driver_cache_t *cache, int64_t now_ms)
+{
+    int num_removed = 0;
+    for (int last_index = cache->entries.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_name_resolver_driver_cache_entry_t *entry = &cache->entries.array[i];
+
+        if (entry->deadline_ms <= now_ms)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)cache->entries.array, sizeof(aeron_name_resolver_driver_cache_entry_t), i, last_index);
+            cache->entries.length--;
+            last_index--;
+            num_removed++;
+        }
+    }
+
+    return num_removed;
+}
+

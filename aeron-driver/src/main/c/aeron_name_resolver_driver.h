@@ -17,6 +17,10 @@
 #ifndef AERON_NAME_RESOLVER_DRIVER_H
 #define AERON_NAME_RESOLVER_DRIVER_H
 
+#define AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS (1 * INT64_C(1000))
+#define AERON_NAME_RESOLVER_DRIVER_NEIGHBOUR_RESOLUTION_INTERVAL_MS (2 * INT64_C(2000))
+#define AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS (10 * INT64_C(1000))
+
 int aeron_name_resolver_driver_set_resolution_header(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,

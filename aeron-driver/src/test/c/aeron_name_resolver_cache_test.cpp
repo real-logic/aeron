@@ -44,7 +44,7 @@ protected:
 
 TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 {
-    aeron_name_resolver_driver_cache_init(&m_cache);
+    aeron_name_resolver_driver_cache_init(&m_cache, 0);
 
     for (int i = 0; i < 1000; i++)
     {
@@ -64,7 +64,7 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
         port = rand();
 
         ASSERT_EQ(
-            1, aeron_name_resolver_driver_cache_add_or_update(&m_cache, name, strlen(name), res_type, address, port))
+            1, aeron_name_resolver_driver_cache_add_or_update(&m_cache, name, strlen(name), res_type, address, port, 0))
             << "Iteration: " << i;
         ASSERT_LE(0,
             aeron_name_resolver_driver_cache_lookup_by_name(&m_cache, name, strlen(name), res_type, &cache_entry));
@@ -74,3 +74,37 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
     }
 }
 
+TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
+{
+    aeron_name_resolver_driver_cache_init(&m_cache, 2000);
+    int res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
+    uint8_t address[4] = { 192, 168, 0, 1 };
+    uint16_t port = 12345;
+
+    int64_t now_ms = 0;
+    for (int i = 0; i < 5; i++)
+    {
+        now_ms = i * 1000;
+
+        char name[13];
+        snprintf(name, 12, "hostname%d", i);
+
+        for (size_t j = 0; j < sizeof(address); j++)
+        {
+            address[j] = rand();
+        }
+        port = rand();
+
+        aeron_name_resolver_driver_cache_add_or_update(&m_cache, name, strlen(name), res_type, address, port, now_ms);
+    }
+
+    aeron_name_resolver_driver_cache_add_or_update(
+        &m_cache, "hostname1", strlen("hostname1"), res_type, address, port, now_ms);
+
+    ASSERT_EQ(2, aeron_name_resolver_driver_cache_timeout_old_entries(&m_cache, now_ms));
+    ASSERT_LE(0, aeron_name_resolver_driver_cache_lookup_by_name(&m_cache, "hostname1", strlen("hostname1"), res_type, NULL));
+    ASSERT_LE(0, aeron_name_resolver_driver_cache_lookup_by_name(&m_cache, "hostname3", strlen("hostname3"), res_type, NULL));
+    ASSERT_LE(0, aeron_name_resolver_driver_cache_lookup_by_name(&m_cache, "hostname4", strlen("hostname4"), res_type, NULL));
+    ASSERT_EQ(-1, aeron_name_resolver_driver_cache_lookup_by_name(&m_cache, "hostname0", strlen("hostname0"), res_type, NULL));
+    ASSERT_EQ(-1, aeron_name_resolver_driver_cache_lookup_by_name(&m_cache, "hostname2", strlen("hostname2"), res_type, NULL));
+}

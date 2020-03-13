@@ -60,7 +60,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private long terminationPosition = NULL_POSITION;
     private long roleChangePosition = NULL_POSITION;
 
-    private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -90,7 +89,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         this.ctx = ctx;
 
-        archiveCtx = ctx.archiveContext();
         aeron = ctx.aeron();
         aeronAgentInvoker = ctx.aeron().conductorAgentInvoker();
         service = ctx.clusteredService();
@@ -778,7 +776,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     private void loadSnapshot(final long recordingId)
     {
-        try (AeronArchive archive = AeronArchive.connect(archiveCtx.clone()))
+        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext().clone()))
         {
             final String channel = ctx.replayChannel();
             final int streamId = ctx.replayStreamId();
@@ -831,7 +829,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         final long recordingId;
 
-        try (AeronArchive archive = AeronArchive.connect(archiveCtx.clone());
+        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext().clone());
             ExclusivePublication publication = aeron.addExclusivePublication(
                 ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
@@ -844,7 +842,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 snapshotState(publication, logPosition, leadershipTermId);
-
                 checkForClockTick();
                 service.onTakeSnapshot(publication);
 

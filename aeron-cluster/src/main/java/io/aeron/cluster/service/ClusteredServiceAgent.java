@@ -110,11 +110,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         roleCounter = awaitClusterRoleCounter(counters);
         commitPosition = awaitCommitPositionCounter(counters);
 
-        final int recoveryCounterId = awaitRecoveryCounter(counters);
-
-        isServiceActive = true;
-        checkForSnapshot(counters, recoveryCounterId);
-        checkForReplay(counters, recoveryCounterId);
+        recoverState(counters);
     }
 
     public void onClose()
@@ -597,11 +593,14 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
+    private void recoverState(final CountersReader counters)
     {
+        final int recoveryCounterId = awaitRecoveryCounter(counters);
         clusterLogPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         clusterTime = RecoveryState.getTimestamp(counters, recoveryCounterId);
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
+        final boolean hasReplay = RecoveryState.hasReplay(counters, recoveryCounterId);
+        isServiceActive = true;
 
         if (NULL_VALUE != leadershipTermId)
         {
@@ -618,39 +617,37 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             idle();
         }
-    }
 
-    private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
-    {
-        if (RecoveryState.hasReplay(counters, recoveryCounterId))
+        if (hasReplay)
         {
-            awaitActiveLog();
-
-            try (Subscription subscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId))
-            {
-                final long id = ackId++;
-                idleStrategy.reset();
-                while (!consensusModuleProxy.ack(activeLogEvent.logPosition, clusterTime, id, NULL_VALUE, serviceId))
-                {
-                    idle();
-                }
-
-                final Image image = awaitImage(activeLogEvent.sessionId, subscription);
-                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
-                consumeImage(image, adapter, activeLogEvent.maxLogPosition);
-            }
-
-            activeLogEvent = null;
+            prepareForReplay();
         }
     }
 
-    private void awaitActiveLog()
+    private void prepareForReplay()
     {
+        ActiveLogEvent activeLog;
         idleStrategy.reset();
-        while (null == activeLogEvent)
+        while (null == (activeLog = activeLogEvent))
         {
             idle();
             serviceAdapter.poll();
+        }
+
+        activeLogEvent = null;
+
+        try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+        {
+            final long id = ackId++;
+            idleStrategy.reset();
+            while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
+            {
+                idle();
+            }
+
+            final Image image = awaitImage(activeLog.sessionId, subscription);
+            final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
+            consumeImage(image, adapter, activeLog.maxLogPosition);
         }
     }
 
@@ -695,25 +692,23 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         return counterId;
     }
 
-    private void joinActiveLog()
+    private void joinActiveLog(final ActiveLogEvent activeLog)
     {
-        final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
+        final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
 
         final long id = ackId++;
         idleStrategy.reset();
-        while (!consensusModuleProxy.ack(activeLogEvent.logPosition, clusterTime, id, NULL_VALUE, serviceId))
+        while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
         {
             idle();
         }
 
-        final boolean isStartup = activeLogEvent.isStartup;
-        final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
+        final Image image = awaitImage(activeLog.sessionId, logSubscription);
 
-        sessionMessageHeaderEncoder.leadershipTermId(activeLogEvent.leadershipTermId);
-        memberId = activeLogEvent.memberId;
+        sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
+        memberId = activeLog.memberId;
         ctx.clusterMarkFile().memberId(memberId);
-        logChannel = activeLogEvent.channel;
-        activeLogEvent = null;
+        logChannel = activeLog.channel;
         logAdapter = new BoundedLogAdapter(image, commitPosition, this);
 
         role(Role.get((int)roleCounter.get()));
@@ -722,7 +717,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             if (Role.LEADER == role)
             {
-                if (ctx.isRespondingService() && !isStartup)
+                if (ctx.isRespondingService() && !activeLog.isStartup)
                 {
                     session.connect(aeron);
                 }
@@ -969,7 +964,9 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (null != activeLogEvent && null == logAdapter)
         {
-            joinActiveLog();
+            final ActiveLogEvent event = activeLogEvent;
+            activeLogEvent = null;
+            joinActiveLog(event);
         }
 
         if (NULL_POSITION != terminationPosition)

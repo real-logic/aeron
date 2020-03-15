@@ -29,11 +29,6 @@ import org.agrona.collections.Long2ObjectHashMap;
 
 class ControlSessionDemuxer implements Session, FragmentHandler
 {
-    enum State
-    {
-        ACTIVE, INACTIVE, CLOSED
-    }
-
     private static final int FRAGMENT_LIMIT = 10;
 
     private final ControlRequestDecoders decoders;
@@ -42,7 +37,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
     private final ImageFragmentAssembler assembler = new ImageFragmentAssembler(this);
     private final Long2ObjectHashMap<ControlSession> controlSessionByIdMap = new Long2ObjectHashMap<>();
 
-    private State state = State.ACTIVE;
+    private boolean isActive = true;
 
     ControlSessionDemuxer(final ControlRequestDecoders decoders, final Image image, final ArchiveConductor conductor)
     {
@@ -58,30 +53,29 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
     public void abort()
     {
-        state = State.INACTIVE;
+        isActive = false;
     }
 
     public void close()
     {
-        state = State.CLOSED;
     }
 
     public boolean isDone()
     {
-        return state == State.INACTIVE;
+        return !isActive;
     }
 
     public int doWork()
     {
         int workCount = 0;
 
-        if (state == State.ACTIVE)
+        if (isActive)
         {
             workCount += image.poll(assembler, FRAGMENT_LIMIT);
 
             if (0 == workCount && image.isClosed())
             {
-                state = State.INACTIVE;
+                isActive = false;
                 for (final ControlSession session : controlSessionByIdMap.values())
                 {
                     session.abort();

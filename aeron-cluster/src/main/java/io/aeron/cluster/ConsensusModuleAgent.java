@@ -2653,25 +2653,28 @@ class ConsensusModuleAgent implements Agent
 
     private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
     {
-        try (ExclusivePublication publication = aeron.addExclusivePublication(
-            ctx.snapshotChannel(), ctx.snapshotStreamId()))
+        try
         {
-            final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
-            final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
             final long recordingId;
-            try
+            try (ExclusivePublication publication = aeron.addExclusivePublication(
+                ctx.snapshotChannel(), ctx.snapshotStreamId()))
             {
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = awaitRecordingCounter(counters, publication.sessionId());
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
+                final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
+                final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
+                try
+                {
+                    final CountersReader counters = aeron.countersReader();
+                    final int counterId = awaitRecordingCounter(counters, publication.sessionId());
+                    recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication, logPosition, replayLeadershipTermId);
-                awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
-            }
-            finally
-            {
-                archive.archiveProxy().stopRecording(
-                    subscriptionId, aeron.nextCorrelationId(), archive.controlSessionId());
+                    snapshotState(publication, logPosition, replayLeadershipTermId);
+                    awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
+                }
+                finally
+                {
+                    archive.archiveProxy().stopRecording(
+                        subscriptionId, aeron.nextCorrelationId(), archive.controlSessionId());
+                }
             }
 
             final long termBaseLogPosition = recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;

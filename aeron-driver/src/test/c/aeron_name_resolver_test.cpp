@@ -30,43 +30,74 @@ class NameResolverTest : public testing::Test
 public:
     NameResolverTest() : m_context_a(NULL), m_context_b(NULL), m_context_c(NULL)
     {
-        resolver_a.close_func = NULL;
-        resolver_b.close_func = NULL;
-        resolver_c.close_func = NULL;
+        m_resolver_a.close_func = NULL;
+        m_resolver_b.close_func = NULL;
+        m_resolver_c.close_func = NULL;
+        memset(&m_counters_a, 0, sizeof(m_context_a));
+        memset(&m_counters_b, 0, sizeof(m_context_b));
+        memset(&m_counters_c, 0, sizeof(m_context_c));
     }
 
 protected:
     void TearDown() override
     {
-        close(m_context_a);
-        close(m_context_b);
-        close(m_context_c);
-        close(&resolver_a);
-        close(&resolver_b);
-        close(&resolver_c);
+        close(m_context_a, &m_resolver_a, &m_counters_a);
+        close(m_context_b, &m_resolver_b, &m_counters_b);
+        close(m_context_c, &m_resolver_c, &m_counters_c);
+    }
+
+    static void initResolver(
+        aeron_driver_context_t **context,
+        aeron_name_resolver_t *resolver,
+        aeron_counters_manager_t *counters,
+        uint8_t *buffer,
+        const char *name,
+        const char *args,
+        int64_t now_ms,
+        const char *driver_resolver_name = nullptr,
+        const char *driver_resolver_interface = nullptr,
+        const char *driver_bootstrap_neighbour = nullptr)
+    {
+        aeron_name_resolver_supplier_func_t supplier_func =
+            aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
+        ASSERT_NE(nullptr, supplier_func);
+
+        aeron_driver_context_init(context);
+
+        aeron_clock_update_cached_time((*context)->cached_clock, now_ms, now_ms + 1000000);
+        aeron_driver_context_set_resolver_name(*context, driver_resolver_name);
+        aeron_driver_context_set_resolver_interface(*context, driver_resolver_interface);
+        aeron_driver_context_set_resolver_bootstrap_neighbor(*context, driver_bootstrap_neighbour);
+
+        aeron_counters_manager_init(counters, &buffer[0], 2048, &buffer[2048], 1024, aeron_epoch_clock, 1000);
+
+        ASSERT_EQ(0, supplier_func(resolver, NULL, *context));
     }
 
     aeron_driver_context_t *m_context_a;
     aeron_driver_context_t *m_context_b;
     aeron_driver_context_t *m_context_c;
-    aeron_name_resolver_t resolver_a;
-    aeron_name_resolver_t resolver_b;
-    aeron_name_resolver_t resolver_c;
+    aeron_name_resolver_t m_resolver_a;
+    aeron_name_resolver_t m_resolver_b;
+    aeron_name_resolver_t m_resolver_c;
+    aeron_counters_manager_t m_counters_a;
+    aeron_counters_manager_t m_counters_b;
+    aeron_counters_manager_t m_counters_c;
+    uint8_t m_buffer_a[2048 + 1024];
+    uint8_t m_buffer_b[2048 + 1024];
+    uint8_t m_buffer_c[2048 + 1024];
 
 private:
-    static void close(aeron_driver_context_t *context)
+    static void close(
+        aeron_driver_context_t *context,
+        aeron_name_resolver_t *resolver,
+        aeron_counters_manager_t *counters)
     {
         if (NULL != context)
         {
             aeron_driver_context_close(context);
-        }
-    }
-
-    static void close(aeron_name_resolver_t *resolver)
-    {
-        if (NULL != resolver->close_func)
-        {
             resolver->close_func(resolver);
+            aeron_counters_manager_close(counters);
         }
     }
 };
@@ -130,40 +161,29 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
 {
     struct in_addr local_address_b;
     inet_pton(AF_INET, "127.0.0.1", &local_address_b);
-
-    aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
-    ASSERT_NE(nullptr, supplier_func);
-
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
-    aeron_driver_context_init(&m_context_a);
-    aeron_driver_context_init(&m_context_b);
+    initResolver(
+        &m_context_a, &m_resolver_a, &m_counters_a, m_buffer_a,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
 
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-
-    aeron_driver_context_set_resolver_name(m_context_a, "A");
-    aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    ASSERT_EQ(0, supplier_func(&resolver_a, NULL, m_context_a));
-
-    aeron_driver_context_set_resolver_name(m_context_b, "B");
-    aeron_driver_context_set_resolver_interface(m_context_b, "127.0.0.1:8051");
-    aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    ASSERT_EQ(0, supplier_func(&resolver_b, NULL, m_context_b)) << aeron_errmsg();
+    initResolver(
+        &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
     timestamp_ms += 2000;
     aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
     aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     // Should push self address to neighbor
-    ASSERT_LT(0, resolver_b.do_work_func(&resolver_b, timestamp_ms));
+    ASSERT_LT(0, m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms));
 
     // Should load neighbor resolution (spin until we do work)
-    ASSERT_LT(0, resolver_a.do_work_func(&resolver_a, timestamp_ms));
+    ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
 
     struct sockaddr_storage resolved_address_of_b;
     resolved_address_of_b.ss_family = AF_INET;
-    ASSERT_LE(0, resolver_a.resolve_func(&resolver_a, "B", "endpoint", false, &resolved_address_of_b));
+    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
     struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
     ASSERT_EQ(local_address_b.s_addr, in_addr_b->sin_addr.s_addr);
@@ -171,32 +191,18 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
 {
-    aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
-    ASSERT_NE(nullptr, supplier_func);
-
     int64_t timestamp_ms = INTMAX_C(8932472347945);
+    initResolver(
+        &m_context_a, &m_resolver_a, &m_counters_a, m_buffer_a,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
 
-    aeron_driver_context_init(&m_context_a);
-    aeron_driver_context_init(&m_context_b);
-    aeron_driver_context_init(&m_context_c);
+    initResolver(
+        &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-    aeron_clock_update_cached_time(m_context_c->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-
-    aeron_driver_context_set_resolver_name(m_context_a, "A");
-    aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    ASSERT_EQ(0, supplier_func(&resolver_a, NULL, m_context_a)) << aeron_errmsg();
-
-    aeron_driver_context_set_resolver_name(m_context_b, "B");
-    aeron_driver_context_set_resolver_interface(m_context_b, "0.0.0.0:8051");
-    aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    ASSERT_EQ(0, supplier_func(&resolver_b, NULL, m_context_b));
-
-    aeron_driver_context_set_resolver_name(m_context_c, "C");
-    aeron_driver_context_set_resolver_interface(m_context_c, "0.0.0.0:8052");
-    aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_c, "localhost:8051");
-    ASSERT_EQ(0, supplier_func(&resolver_c, NULL, m_context_c));
+    initResolver(
+        &m_context_c, &m_resolver_c, &m_counters_c, m_buffer_c,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8051");
 
     for (int i = 0; i < 6; i++)
     {
@@ -205,22 +211,22 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
         aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms * 1000000);
         aeron_clock_update_cached_time(m_context_c->cached_clock, timestamp_ms, timestamp_ms * 1000000);
 
-        resolver_a.do_work_func(&resolver_a, timestamp_ms);
-        resolver_b.do_work_func(&resolver_b, timestamp_ms);
-        resolver_c.do_work_func(&resolver_c, timestamp_ms);
+        m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms);
+        m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms);
+        m_resolver_c.do_work_func(&m_resolver_c, timestamp_ms);
     }
 
     struct sockaddr_storage resolved_address;
     resolved_address.ss_family = AF_INET;
 
-    ASSERT_LE(0, resolver_a.resolve_func(&resolver_a, "B", "endpoint", false, &resolved_address));
-    ASSERT_LE(0, resolver_c.resolve_func(&resolver_c, "B", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_resolver_c.resolve_func(&m_resolver_c, "B", "endpoint", false, &resolved_address));
 
-    ASSERT_LE(0, resolver_a.resolve_func(&resolver_a, "C", "endpoint", false, &resolved_address));
-    ASSERT_LE(0, resolver_b.resolve_func(&resolver_b, "C", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "C", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_resolver_b.resolve_func(&m_resolver_b, "C", "endpoint", false, &resolved_address));
 
-    ASSERT_LE(0, resolver_c.resolve_func(&resolver_c, "A", "endpoint", false, &resolved_address));
-    ASSERT_LE(0, resolver_b.resolve_func(&resolver_b, "A", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_resolver_c.resolve_func(&m_resolver_c, "A", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_resolver_b.resolve_func(&m_resolver_b, "A", "endpoint", false, &resolved_address));
 }
 
 TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
@@ -258,36 +264,28 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
     ASSERT_NE(nullptr, supplier_func);
     struct sockaddr_storage address;
-
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
-    aeron_driver_context_init(&m_context_a);
-    aeron_driver_context_init(&m_context_b);
+    initResolver(
+        &m_context_a, &m_resolver_a, &m_counters_a, m_buffer_a,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
 
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-
-    aeron_driver_context_set_resolver_name(m_context_a, "A");
-    aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    ASSERT_EQ(0, supplier_func(&resolver_a, NULL, m_context_a));
-
-    aeron_driver_context_set_resolver_name(m_context_b, "B");
-    aeron_driver_context_set_resolver_interface(m_context_b, "127.0.0.1:8051");
-    aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    ASSERT_EQ(0, supplier_func(&resolver_b, NULL, m_context_b)) << aeron_errmsg();
+    initResolver(
+        &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
+        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
     timestamp_ms += 2000;
     aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
     aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     // Should push self address to neighbor
-    ASSERT_LT(0, resolver_b.do_work_func(&resolver_b, timestamp_ms));
+    ASSERT_LT(0, m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms));
 
     // Should load neighbor resolution (spin until we do work)
-    ASSERT_LT(0, resolver_a.do_work_func(&resolver_a, timestamp_ms));
+    ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
 
     // A sees B.
-    ASSERT_LE(0, resolver_a.resolve_func(&resolver_a, "B", "endpoint", false, &address));
+    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
 
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
@@ -295,7 +293,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     // B's not pushed it self resolution recently enough
-    ASSERT_LT(0, resolver_a.do_work_func(&resolver_a, timestamp_ms));
+    ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
 
-    ASSERT_EQ(-1, resolver_a.resolve_func(&resolver_a, "B", "endpoint", false, &address));
+    ASSERT_EQ(-1, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
 }

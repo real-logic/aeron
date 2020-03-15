@@ -24,7 +24,6 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.CachedEpochClock;
-import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.ArrayDeque;
@@ -45,7 +44,7 @@ class ControlSession implements Session
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED
     }
 
     private final int majorVersion;
@@ -121,15 +120,12 @@ class ControlSession implements Session
 
     public void close()
     {
-        final CountedErrorHandler errorHandler = conductor.context().countedErrorHandler();
         if (null != activeListing)
         {
-            CloseHelper.close(errorHandler, activeListing::abort);
+            activeListing.abort();
         }
 
-        CloseHelper.close(errorHandler, controlPublication);
-
-        state(State.CLOSED);
+        CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
         demuxer.removeControlSession(this);
     }
 

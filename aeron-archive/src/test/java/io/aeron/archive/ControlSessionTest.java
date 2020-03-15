@@ -18,10 +18,8 @@ package io.aeron.archive;
 import io.aeron.Publication;
 import io.aeron.security.Authenticator;
 import org.agrona.concurrent.CachedEpochClock;
-import org.agrona.concurrent.CountedErrorHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.util.concurrent.TimeUnit;
 
@@ -32,8 +30,6 @@ public class ControlSessionTest
 {
     private static final long CONNECT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
-    private final CountedErrorHandler errorHandler = mock(CountedErrorHandler.class);
-    private final Archive.Context context = mock(Archive.Context.class);
     private final ControlSessionDemuxer mockDemuxer = mock(ControlSessionDemuxer.class);
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
     private final Publication mockControlPublication = mock(Publication.class);
@@ -87,32 +83,5 @@ public class ControlSessionTest
         cachedEpochClock.update(CONNECT_TIMEOUT_MS + 1L);
         session.doWork();
         assertTrue(session.isDone());
-    }
-
-    @Test
-    void closeErrorHandling()
-    {
-        when(mockConductor.context()).thenReturn(context);
-        when(context.countedErrorHandler()).thenReturn(errorHandler);
-
-        final Session activeListing = mock(Session.class);
-        final IllegalStateException activeListingException = new IllegalStateException("can't abort me");
-        doThrow(activeListingException).when(activeListing).abort();
-        session.activeListing(activeListing);
-
-        final NullPointerException publicationException = new NullPointerException("pub");
-        doThrow(publicationException).when(mockControlPublication).close();
-
-        final AssertionError demuxerException = new AssertionError("demouxer");
-        doThrow(demuxerException).when(mockDemuxer).removeControlSession(session);
-
-        final AssertionError ex = assertThrows(AssertionError.class, session::close);
-
-        assertSame(demuxerException, ex);
-        assertEquals(ControlSession.State.CLOSED, session.state());
-        final InOrder inOrder = inOrder(errorHandler);
-        inOrder.verify(errorHandler).onError(activeListingException);
-        inOrder.verify(errorHandler).onError(publicationException);
-        inOrder.verifyNoMoreInteractions();
     }
 }

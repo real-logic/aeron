@@ -25,54 +25,64 @@ extern "C"
 #include "aeron_name_resolver_driver.h"
 }
 
+#define METADATA_LENGTH (2048)
+#define VALUES_LENGTH (1024)
+
 class NameResolverTest : public testing::Test
 {
 public:
-    NameResolverTest() : m_context_a(NULL), m_context_b(NULL), m_context_c(NULL)
+    NameResolverTest()
     {
-        m_resolver_a.close_func = NULL;
-        m_resolver_b.close_func = NULL;
-        m_resolver_c.close_func = NULL;
-        memset(&m_counters_a, 0, sizeof(m_context_a));
-        memset(&m_counters_b, 0, sizeof(m_context_b));
-        memset(&m_counters_c, 0, sizeof(m_context_c));
+        m_a.context = NULL;
+        m_b.context = NULL;
+        m_c.context = NULL;
     }
 
 protected:
+    typedef struct resolver_fields_stct
+    {
+        aeron_driver_context_t *context;
+        aeron_name_resolver_t resolver;
+        aeron_counters_manager_t counters;
+        uint8_t buffer[METADATA_LENGTH + VALUES_LENGTH];
+    }
+    resolver_fields_t;
+
     void TearDown() override
     {
-        close(m_context_a, &m_resolver_a, &m_counters_a);
-        close(m_context_b, &m_resolver_b, &m_counters_b);
-        close(m_context_c, &m_resolver_c, &m_counters_c);
+        close(&m_a);
+        close(&m_b);
+        close(&m_c);
     }
 
     static void initResolver(
-        aeron_driver_context_t **context,
-        aeron_name_resolver_t *resolver,
-        aeron_counters_manager_t *counters,
-        uint8_t *buffer,
-        const char *name,
+        resolver_fields_t *resolver_fields,
+        const char *resolver_supplier_name,
         const char *args,
         int64_t now_ms,
         const char *driver_resolver_name = nullptr,
         const char *driver_resolver_interface = nullptr,
         const char *driver_bootstrap_neighbour = nullptr)
     {
-        aeron_name_resolver_supplier_func_t supplier_func =
-            aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
+        aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(resolver_supplier_name);
         ASSERT_NE(nullptr, supplier_func);
 
-        aeron_driver_context_init(context);
+        aeron_driver_context_init(&resolver_fields->context);
 
-        aeron_clock_update_cached_time((*context)->cached_clock, now_ms, now_ms + 1000000);
-        aeron_driver_context_set_resolver_name(*context, driver_resolver_name);
-        aeron_driver_context_set_resolver_interface(*context, driver_resolver_interface);
-        aeron_driver_context_set_resolver_bootstrap_neighbor(*context, driver_bootstrap_neighbour);
+        aeron_clock_update_cached_time(resolver_fields->context->cached_clock, now_ms, now_ms + 1000000);
+        aeron_driver_context_set_resolver_name(resolver_fields->context, driver_resolver_name);
+        aeron_driver_context_set_resolver_interface(resolver_fields->context, driver_resolver_interface);
+        aeron_driver_context_set_resolver_bootstrap_neighbor(resolver_fields->context, driver_bootstrap_neighbour);
 
-        aeron_counters_manager_init(counters, &buffer[0], 2048, &buffer[2048], 1024, aeron_epoch_clock, 1000);
-        (*context)->counters_manager = counters;
+        aeron_counters_manager_init(
+            &resolver_fields->counters,
+            &resolver_fields->buffer[0], METADATA_LENGTH,
+            &resolver_fields->buffer[METADATA_LENGTH], VALUES_LENGTH,
+            aeron_epoch_clock, 1000);
 
-        ASSERT_EQ(0, supplier_func(resolver, NULL, *context));
+        resolver_fields->context->counters_manager = &resolver_fields->counters;
+
+        ASSERT_EQ(0, supplier_func(&resolver_fields->resolver, args, resolver_fields->context));
     }
 
     typedef struct counters_clientd_stct
@@ -83,7 +93,7 @@ protected:
     }
     counters_clientd_t;
 
-    static void foreachCounter(
+    static void foreachFilterByTypeId(
         int32_t id,
         int32_t type_id,
         const uint8_t *key,
@@ -106,36 +116,24 @@ protected:
         clientd.counters = counters;
         clientd.type_id = type_id;
         clientd.value = -1;
-        
-        aeron_counters_reader_foreach(counters->metadata, counters->metadata_length, foreachCounter, &clientd);
+
+        aeron_counters_reader_foreach(counters->metadata, counters->metadata_length, foreachFilterByTypeId, &clientd);
 
         return clientd.value;
     }
 
-    aeron_driver_context_t *m_context_a;
-    aeron_driver_context_t *m_context_b;
-    aeron_driver_context_t *m_context_c;
-    aeron_name_resolver_t m_resolver_a;
-    aeron_name_resolver_t m_resolver_b;
-    aeron_name_resolver_t m_resolver_c;
-    aeron_counters_manager_t m_counters_a;
-    aeron_counters_manager_t m_counters_b;
-    aeron_counters_manager_t m_counters_c;
-    uint8_t m_buffer_a[2048 + 1024];
-    uint8_t m_buffer_b[2048 + 1024];
-    uint8_t m_buffer_c[2048 + 1024];
+    resolver_fields_t m_a;
+    resolver_fields_t m_b;
+    resolver_fields_t m_c;
 
 private:
-    static void close(
-        aeron_driver_context_t *context,
-        aeron_name_resolver_t *resolver,
-        aeron_counters_manager_t *counters)
+    static void close(resolver_fields_t *resolver_fields)
     {
-        if (NULL != context)
+        if (NULL != resolver_fields->context)
         {
-            aeron_driver_context_close(context);
-            resolver->close_func(resolver);
-            aeron_counters_manager_close(counters);
+            resolver_fields->resolver.close_func(&resolver_fields->resolver);
+            aeron_counters_manager_close(&resolver_fields->counters);
+            aeron_driver_context_close(resolver_fields->context);
         }
     }
 };
@@ -164,37 +162,21 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
         "NAME_8" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
         "NAME_9" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|";
 
-    aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(
-        AERON_NAME_RESOLVER_CSV_TABLE);
-    aeron_name_resolver_t resolver;
+    initResolver(&m_a, AERON_NAME_RESOLVER_CSV_TABLE, config_param, 0);
 
-    supplier_func(&resolver, config_param, NULL);
     const char *resolved_name;
 
-    ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
+    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
     ASSERT_STREQ(HOST_0A, resolved_name);
 
-    ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
+    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
     ASSERT_STREQ(HOST_0B, resolved_name);
 
-    ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
+    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
     ASSERT_STREQ(HOST_1A, resolved_name);
 
-    ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
+    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
     ASSERT_STREQ(HOST_1B, resolved_name);
-}
-
-TEST_F(NameResolverTest, shouldLoadDriverNameResolver)
-{
-    aeron_driver_context_init(&m_context_a);
-
-    aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
-    ASSERT_NE(nullptr, supplier_func);
-
-    aeron_name_resolver_t resolver;
-    ASSERT_EQ(0, supplier_func(&resolver, NULL, m_context_a)) << aeron_errmsg();
-
-    ASSERT_EQ(0, resolver.close_func(&resolver));
 }
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
@@ -203,27 +185,22 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
     inet_pton(AF_INET, "127.0.0.1", &local_address_b);
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
-    initResolver(
-        &m_context_a, &m_resolver_a, &m_counters_a, m_buffer_a,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
-
-    initResolver(
-        &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
+    initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
+    initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
     timestamp_ms += 2000;
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     // Should push self address to neighbor
-    ASSERT_LT(0, m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms));
+    ASSERT_LT(0, m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms));
 
     // Should load neighbor resolution (spin until we do work)
-    ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
+    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
 
     struct sockaddr_storage resolved_address_of_b;
     resolved_address_of_b.ss_family = AF_INET;
-    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &resolved_address_of_b));
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
     struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
     ASSERT_EQ(local_address_b.s_addr, in_addr_b->sin_addr.s_addr);
@@ -232,45 +209,37 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
 TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
 {
     int64_t timestamp_ms = INTMAX_C(8932472347945);
-    initResolver(
-        &m_context_a, &m_resolver_a, &m_counters_a, m_buffer_a,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
-
-    initResolver(
-        &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
-
-    initResolver(
-        &m_context_c, &m_resolver_c, &m_counters_c, m_buffer_c,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8051");
+    initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
+    initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
+    initResolver(&m_c, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8051");
 
     for (int i = 0; i < 6; i++)
     {
         timestamp_ms += 1000;
-        aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-        aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-        aeron_clock_update_cached_time(m_context_c->cached_clock, timestamp_ms, timestamp_ms * 1000000);
+        aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
+        aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
+        aeron_clock_update_cached_time(m_c.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
 
-        m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms);
-        m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms);
-        m_resolver_c.do_work_func(&m_resolver_c, timestamp_ms);
+        m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms);
+        m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms);
+        m_c.resolver.do_work_func(&m_c.resolver, timestamp_ms);
     }
 
     struct sockaddr_storage resolved_address;
     resolved_address.ss_family = AF_INET;
 
-    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &resolved_address));
-    ASSERT_LE(0, m_resolver_c.resolve_func(&m_resolver_c, "B", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "B", "endpoint", false, &resolved_address));
 
-    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "C", "endpoint", false, &resolved_address));
-    ASSERT_LE(0, m_resolver_b.resolve_func(&m_resolver_b, "C", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "C", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "C", "endpoint", false, &resolved_address));
 
-    ASSERT_LE(0, m_resolver_c.resolve_func(&m_resolver_c, "A", "endpoint", false, &resolved_address));
-    ASSERT_LE(0, m_resolver_b.resolve_func(&m_resolver_b, "A", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "A", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "A", "endpoint", false, &resolved_address));
 
-    ASSERT_EQ(2, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
-    ASSERT_EQ(2, readCounterByTypeId(&m_counters_b, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
-    ASSERT_EQ(2, readCounterByTypeId(&m_counters_c, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(2, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(2, readCounterByTypeId(&m_b.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(2, readCounterByTypeId(&m_c.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 }
 
 TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
@@ -310,38 +279,34 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     struct sockaddr_storage address;
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
-    initResolver(
-        &m_context_a, &m_resolver_a, &m_counters_a, m_buffer_a,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
+    initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
 
-    initResolver(
-        &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
-        AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
+    initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
     // Should push self address to neighbor
-    ASSERT_LT(0, m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms));
+    ASSERT_LT(0, m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms));
 
     // Should load neighbor resolution
-    ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
+    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
 
     // A sees B.
-    ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));
 
-    ASSERT_EQ(1, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
-    ASSERT_EQ(1, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(1, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
+    ASSERT_EQ(1, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     timestamp_ms += 2000;
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     // B's not pushed it self resolution recently enough
-    ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
+    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
 
-    ASSERT_EQ(-1, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
-    ASSERT_EQ(0, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
-    ASSERT_EQ(0, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(-1, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));
+    ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
+    ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 }

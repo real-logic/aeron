@@ -318,22 +318,23 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
         &m_context_b, &m_resolver_b, &m_counters_b, m_buffer_b,
         AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
-    timestamp_ms += 2000;
-    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-
     // Should push self address to neighbor
     ASSERT_LT(0, m_resolver_b.do_work_func(&m_resolver_b, timestamp_ms));
 
-    // Should load neighbor resolution (spin until we do work)
+    // Should load neighbor resolution
     ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
 
     // A sees B.
     ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
 
     ASSERT_EQ(1, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
+    ASSERT_EQ(1, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
+    aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+
+    timestamp_ms += 2000;
     aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
     aeron_clock_update_cached_time(m_context_b->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
@@ -342,4 +343,5 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 
     ASSERT_EQ(-1, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
     ASSERT_EQ(0, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
+    ASSERT_EQ(0, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 }

@@ -82,12 +82,14 @@ typedef struct aeron_name_resolver_driver_stct
     }
     neighbors;
 
-    int64_t time_of_last_work_ms;
     int64_t self_resolution_interval_ms;
     int64_t neighbor_resolution_interval_ms;
+    int64_t neighbor_timeout_ms;
 
+    int64_t time_of_last_work_ms;
     int64_t dead_line_self_resolutions_ms;
     int64_t dead_line_neighbor_resolutions_ms;
+
     int64_t now_ms;
 
     aeron_position_t neighbor_counter;
@@ -181,8 +183,6 @@ int aeron_name_resolver_driver_init(
         }
     }
 
-    _driver_resolver->time_of_last_work_ms = 0;
-
     _driver_resolver->transport_bindings = context->udp_channel_transport_bindings;
     if (aeron_udp_channel_data_paths_init(
         &_driver_resolver->data_paths,
@@ -223,10 +223,12 @@ int aeron_name_resolver_driver_init(
 
     aeron_name_resolver_driver_cache_init(&_driver_resolver->cache, AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS);
 
+    _driver_resolver->neighbor_timeout_ms = AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
     _driver_resolver->self_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
     _driver_resolver->dead_line_self_resolutions_ms = 0;
     _driver_resolver->neighbor_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_NEIGHBOUR_RESOLUTION_INTERVAL_MS;
     _driver_resolver->dead_line_neighbor_resolutions_ms = aeron_clock_cached_epoch_time(context->cached_clock);
+    _driver_resolver->time_of_last_work_ms = 0;
 
     _driver_resolver->neighbor_counter.counter_id = aeron_counters_manager_allocate(
         context->counters_manager,
@@ -399,6 +401,7 @@ int aeron_name_resolver_driver_add_neighbor(
         aeron_name_resolver_driver_neighbor_t *new_neighbor = &resolver->neighbors.array[resolver->neighbors.length];
         new_neighbor->res_type = res_type;
         new_neighbor->port = port;
+        new_neighbor->time_of_last_activity_ms = time_of_last_activity;
         memcpy(&new_neighbor->address, address, aeron_res_header_address_length(res_type));
         resolver->neighbors.length++;
         aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, (int64_t)resolver->neighbors.length);
@@ -758,6 +761,31 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
     return work_count;
 }
 
+int aeron_name_resolver_driver_timeout_neighbors(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
+{
+    int num_removed = 0;
+    for (int last_index = resolver->neighbors.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_name_resolver_driver_neighbor_t *entry = &resolver->neighbors.array[i];
+
+        if ((entry->time_of_last_activity_ms + resolver->neighbor_timeout_ms) <= now_ms)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)resolver->neighbors.array, sizeof(aeron_name_resolver_driver_cache_entry_t), i, last_index);
+            resolver->neighbors.length--;
+            last_index--;
+            num_removed++;
+        }
+    }
+
+    if (0 != num_removed)
+    {
+        aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, resolver->neighbors.length);
+    }
+
+    return num_removed;
+}
+
 int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
 {
     aeron_name_resolver_driver_t *driver_resolver = resolver->state;
@@ -767,8 +795,9 @@ int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t 
     if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
     {
         work_count += aeron_name_resolver_driver_poll(driver_resolver);
-        aeron_name_resolver_driver_cache_timeout_old_entries(
+        work_count += aeron_name_resolver_driver_cache_timeout_old_entries(
             &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);
+        work_count += aeron_name_resolver_driver_timeout_neighbors(driver_resolver, now_ms);
 
         if (driver_resolver->dead_line_self_resolutions_ms <= now_ms)
         {

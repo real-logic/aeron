@@ -437,13 +437,14 @@ int aeron_name_resolver_driver_on_resolution_entry(
     int64_t time_of_last_activity = now_ms - resolution_header->age_in_ms;
 
     if (aeron_name_resolver_driver_cache_add_or_update(
-        &resolver->cache, name, name_length, res_type, address, port, time_of_last_activity) < 0)
+        &resolver->cache, name, name_length, res_type, address, port, time_of_last_activity,
+        resolver->cache_size_counter.value_addr) < 0)
     {
         return -1;
     }
 
     if (aeron_name_resolver_driver_add_neighbor(
-        resolver, resolution_header->res_type, address, resolution_header->udp_port, is_self, time_of_last_activity))
+        resolver, resolution_header->res_type, address, resolution_header->udp_port, is_self, time_of_last_activity) < 0)
     {
         return -1;
     }
@@ -766,7 +767,8 @@ int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t 
     if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
     {
         work_count += aeron_name_resolver_driver_poll(driver_resolver);
-        aeron_name_resolver_driver_cache_timeout_old_entries(&driver_resolver->cache, now_ms);
+        aeron_name_resolver_driver_cache_timeout_old_entries(
+            &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);
 
         if (driver_resolver->dead_line_self_resolutions_ms <= now_ms)
         {

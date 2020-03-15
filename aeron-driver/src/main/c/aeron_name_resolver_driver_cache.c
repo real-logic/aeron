@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <sys/socket.h>
 
+#include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_arrayutil.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_name_resolver_driver_cache.h"
@@ -71,7 +72,8 @@ int aeron_name_resolver_driver_cache_add_or_update(
     int8_t res_type,
     const uint8_t *address,
     uint16_t port,
-    int64_t time_of_last_activity)
+    int64_t time_of_last_activity,
+    int64_t *cache_entries_counter)
 {
     int index = aeron_name_resolver_driver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
     aeron_name_resolver_driver_cache_entry_t *entry;
@@ -104,6 +106,8 @@ int aeron_name_resolver_driver_cache_add_or_update(
         num_updated = 1;
 
         cache->entries.length++;
+
+        aeron_counter_set_ordered(cache_entries_counter, cache->entries.length);
     }
     else
     {
@@ -138,7 +142,10 @@ int aeron_name_resolver_driver_cache_lookup_by_name(
     return index;
 }
 
-int aeron_name_resolver_driver_cache_timeout_old_entries(aeron_name_resolver_driver_cache_t *cache, int64_t now_ms)
+int aeron_name_resolver_driver_cache_timeout_old_entries(
+    aeron_name_resolver_driver_cache_t *cache,
+    int64_t now_ms,
+    int64_t *cache_entries_counter)
 {
     int num_removed = 0;
     for (int last_index = cache->entries.length - 1, i = last_index; i >= 0; i--)
@@ -153,6 +160,11 @@ int aeron_name_resolver_driver_cache_timeout_old_entries(aeron_name_resolver_dri
             last_index--;
             num_removed++;
         }
+    }
+
+    if (0 != num_removed)
+    {
+        aeron_counter_set_ordered(cache_entries_counter, cache->entries.length);
     }
 
     return num_removed;

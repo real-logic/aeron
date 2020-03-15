@@ -331,6 +331,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     // A sees B.
     ASSERT_LE(0, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
 
+    ASSERT_EQ(1, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
     aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
@@ -340,4 +341,5 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     ASSERT_LT(0, m_resolver_a.do_work_func(&m_resolver_a, timestamp_ms));
 
     ASSERT_EQ(-1, m_resolver_a.resolve_func(&m_resolver_a, "B", "endpoint", false, &address));
+    ASSERT_EQ(0, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
 }

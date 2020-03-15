@@ -52,7 +52,8 @@ int aeron_name_resolver_driver_cache_add_or_update(
     int8_t res_type,
     const uint8_t *address,
     uint16_t port,
-    int64_t time_of_last_activity);
+    int64_t time_of_last_activity,
+    int64_t *cache_entries_counter);
 
 int aeron_name_resolver_driver_cache_lookup_by_name(
     aeron_name_resolver_driver_cache_t *cache,
@@ -63,6 +64,9 @@ int aeron_name_resolver_driver_cache_lookup_by_name(
 
 int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *cache);
 
-int aeron_name_resolver_driver_cache_timeout_old_entries(aeron_name_resolver_driver_cache_t *cache, int64_t now_ms);
+int aeron_name_resolver_driver_cache_timeout_old_entries(
+    aeron_name_resolver_driver_cache_t *cache,
+    int64_t now_ms,
+    int64_t *cache_entries_counter);
 
 #endif //AERON_AERON_NAME_RESOLVER_DRIVER_CACHE_H

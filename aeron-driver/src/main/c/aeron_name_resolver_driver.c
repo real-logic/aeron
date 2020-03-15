@@ -90,6 +90,9 @@ typedef struct aeron_name_resolver_driver_stct
     int64_t dead_line_neighbor_resolutions_ms;
     int64_t now_ms;
 
+    aeron_position_t neighbor_counter;
+    aeron_position_t cache_size_counter;
+
     struct sockaddr_storage received_address;
     uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH];  // TODO: Cache alignment??
 }
@@ -224,6 +227,25 @@ int aeron_name_resolver_driver_init(
     _driver_resolver->dead_line_self_resolutions_ms = 0;
     _driver_resolver->neighbor_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_NEIGHBOUR_RESOLUTION_INTERVAL_MS;
     _driver_resolver->dead_line_neighbor_resolutions_ms = aeron_clock_cached_epoch_time(context->cached_clock);
+
+    _driver_resolver->neighbor_counter.counter_id = aeron_counters_manager_allocate(
+        context->counters_manager,
+        AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID,
+        NULL, 0,
+        "Resolver neighbors", strlen("Resolver neighbors"));
+    _driver_resolver->neighbor_counter.value_addr = aeron_counter_addr(
+        context->counters_manager, _driver_resolver->neighbor_counter.counter_id);
+
+    char cache_entries_label[512];
+    snprintf(
+        cache_entries_label, sizeof(cache_entries_label), "Resolver cache entries: name %s", _driver_resolver->name);
+    _driver_resolver->cache_size_counter.counter_id = aeron_counters_manager_allocate(
+        context->counters_manager,
+        AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID,
+        NULL, 0,
+        cache_entries_label, strlen(cache_entries_label));
+    _driver_resolver->cache_size_counter.value_addr = aeron_counter_addr(
+        context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
 
     *driver_resolver = _driver_resolver;
     return 0;
@@ -379,6 +401,7 @@ int aeron_name_resolver_driver_add_neighbor(
         new_neighbor->port = port;
         memcpy(&new_neighbor->address, address, aeron_res_header_address_length(res_type));
         resolver->neighbors.length++;
+        aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, (int64_t)resolver->neighbors.length);
 
         return 1;
     }

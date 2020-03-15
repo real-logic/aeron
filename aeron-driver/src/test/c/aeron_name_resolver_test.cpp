@@ -70,8 +70,46 @@ protected:
         aeron_driver_context_set_resolver_bootstrap_neighbor(*context, driver_bootstrap_neighbour);
 
         aeron_counters_manager_init(counters, &buffer[0], 2048, &buffer[2048], 1024, aeron_epoch_clock, 1000);
+        (*context)->counters_manager = counters;
 
         ASSERT_EQ(0, supplier_func(resolver, NULL, *context));
+    }
+
+    typedef struct counters_clientd_stct
+    {
+        aeron_counters_manager_t *counters;
+        int32_t type_id;
+        int64_t value;
+    }
+    counters_clientd_t;
+
+    static void foreachCounter(
+        int32_t id,
+        int32_t type_id,
+        const uint8_t *key,
+        size_t key_length,
+        const uint8_t *label,
+        size_t label_length,
+        void *clientd)
+    {
+        counters_clientd_t *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
+        if (counters_clientd->type_id == type_id)
+        {
+            int64_t *counter_addr = aeron_counter_addr(counters_clientd->counters, id);
+            AERON_GET_VOLATILE(counters_clientd->value, *counter_addr);
+        }
+    }
+
+    static int64_t readCounterByTypeId(aeron_counters_manager_t *counters, int32_t type_id)
+    {
+        counters_clientd_t clientd;
+        clientd.counters = counters;
+        clientd.type_id = type_id;
+        clientd.value = -1;
+        
+        aeron_counters_reader_foreach(counters->metadata, counters->metadata_length, foreachCounter, &clientd);
+
+        return clientd.value;
     }
 
     aeron_driver_context_t *m_context_a;
@@ -101,6 +139,8 @@ private:
         }
     }
 };
+
+
 
 #define NAME_0 "server0"
 #define HOST_0A "localhost:20001"
@@ -227,6 +267,10 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
 
     ASSERT_LE(0, m_resolver_c.resolve_func(&m_resolver_c, "A", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_resolver_b.resolve_func(&m_resolver_b, "A", "endpoint", false, &resolved_address));
+
+    ASSERT_EQ(2, readCounterByTypeId(&m_counters_a, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(2, readCounterByTypeId(&m_counters_b, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(2, readCounterByTypeId(&m_counters_c, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 }
 
 TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)

@@ -688,9 +688,9 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driv
 
 typedef struct aeron_name_resolver_stct aeron_name_resolver_t;
 typedef int (*aeron_name_resolver_supplier_func_t)(
-    aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
-    const char *args);
+    const char *args,
+    aeron_driver_context_t *context);
 
 /**
  * Set the name of the MediaDriver for name resolver purposes.

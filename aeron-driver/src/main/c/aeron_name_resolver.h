@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
+#include "aeron_system_counters.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE "csv_table"
 #define AERON_NAME_RESOLVER_DRIVER "driver"
@@ -62,12 +63,12 @@ aeron_name_resolver_t;
 
 aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char *name);
 
-int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args);
+int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context);
 
 int aeron_name_resolver_default_supplier(
-    aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
-    const char *args);
+    const char *args,
+    aeron_driver_context_t *context);
 
 int aeron_name_resolver_default_resolve(
     aeron_name_resolver_t *resolver,

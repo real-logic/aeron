@@ -83,9 +83,9 @@ int aeron_name_resolver_csv_table_close(aeron_name_resolver_t *resolver)
 }
 
 int aeron_name_resolver_csv_table_supplier(
-    aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
-    const char *args)
+    const char *args,
+    aeron_driver_context_t *context)
 {
     resolver->lookup_func = aeron_name_resolver_csv_table_lookup;
     resolver->close_func = aeron_name_resolver_csv_table_close;

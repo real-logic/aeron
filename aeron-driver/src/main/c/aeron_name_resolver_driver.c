@@ -158,7 +158,8 @@ int aeron_name_resolver_driver_init(
         goto error_cleanup;
     }
 
-    if (aeron_name_resolver_default_supplier(context, &_driver_resolver->bootstrap_resolver, NULL) < 0)
+    // TODO: Make fallback configurable...
+    if (aeron_name_resolver_default_supplier(&_driver_resolver->bootstrap_resolver, NULL, context) < 0)
     {
         goto error_cleanup;
     }
@@ -763,9 +764,9 @@ int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t 
 }
 
 int aeron_name_resolver_driver_supplier(
-    aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
-    const char *args)
+    const char *args,
+    aeron_driver_context_t *context)
 {
     aeron_name_resolver_driver_t *name_resolver = NULL;
 

@@ -38,15 +38,15 @@ static void aeron_name_resolver_set_err(
     const char *uri_param_name,
     const char *address_str);
 
-int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args)
+int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
 {
-    return context->name_resolver_supplier_func(context, resolver, args);
+    return context->name_resolver_supplier_func(resolver, args, context);
 }
 
 int aeron_name_resolver_default_supplier(
-    aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
-    const char *args)
+    const char *args,
+    aeron_driver_context_t *context)
 {
     resolver->lookup_func = aeron_name_resolver_default_lookup;
     resolver->resolve_func = aeron_name_resolver_default_resolve;

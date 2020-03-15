@@ -97,7 +97,7 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
         AERON_NAME_RESOLVER_CSV_TABLE);
     aeron_name_resolver_t resolver;
 
-    supplier_func(NULL, &resolver, config_param);
+    supplier_func(&resolver, config_param, NULL);
     const char *resolved_name;
 
     ASSERT_EQ(1, resolver.lookup_func(&resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
@@ -121,7 +121,7 @@ TEST_F(NameResolverTest, shouldLoadDriverNameResolver)
     ASSERT_NE(nullptr, supplier_func);
 
     aeron_name_resolver_t resolver;
-    ASSERT_EQ(0, supplier_func(m_context_a, &resolver, NULL)) << aeron_errmsg();
+    ASSERT_EQ(0, supplier_func(&resolver, NULL, m_context_a)) << aeron_errmsg();
 
     ASSERT_EQ(0, resolver.close_func(&resolver));
 }
@@ -144,12 +144,12 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
 
     aeron_driver_context_set_resolver_name(m_context_a, "A");
     aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    ASSERT_EQ(0, supplier_func(m_context_a, &resolver_a, NULL));
+    ASSERT_EQ(0, supplier_func(&resolver_a, NULL, m_context_a));
 
     aeron_driver_context_set_resolver_name(m_context_b, "B");
     aeron_driver_context_set_resolver_interface(m_context_b, "127.0.0.1:8051");
     aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    ASSERT_EQ(0, supplier_func(m_context_b, &resolver_b, NULL)) << aeron_errmsg();
+    ASSERT_EQ(0, supplier_func(&resolver_b, NULL, m_context_b)) << aeron_errmsg();
 
     timestamp_ms += 2000;
     aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);
@@ -186,17 +186,17 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
 
     aeron_driver_context_set_resolver_name(m_context_a, "A");
     aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    ASSERT_EQ(0, supplier_func(m_context_a, &resolver_a, NULL)) << aeron_errmsg();
+    ASSERT_EQ(0, supplier_func(&resolver_a, NULL, m_context_a)) << aeron_errmsg();
 
     aeron_driver_context_set_resolver_name(m_context_b, "B");
     aeron_driver_context_set_resolver_interface(m_context_b, "0.0.0.0:8051");
     aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    ASSERT_EQ(0, supplier_func(m_context_b, &resolver_b, NULL));
+    ASSERT_EQ(0, supplier_func(&resolver_b, NULL, m_context_b));
 
     aeron_driver_context_set_resolver_name(m_context_c, "C");
     aeron_driver_context_set_resolver_interface(m_context_c, "0.0.0.0:8052");
     aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_c, "localhost:8051");
-    ASSERT_EQ(0, supplier_func(m_context_c, &resolver_c, NULL));
+    ASSERT_EQ(0, supplier_func(&resolver_c, NULL, m_context_c));
 
     for (int i = 0; i < 6; i++)
     {
@@ -269,12 +269,12 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 
     aeron_driver_context_set_resolver_name(m_context_a, "A");
     aeron_driver_context_set_resolver_interface(m_context_a, "0.0.0.0:8050");
-    ASSERT_EQ(0, supplier_func(m_context_a, &resolver_a, NULL));
+    ASSERT_EQ(0, supplier_func(&resolver_a, NULL, m_context_a));
 
     aeron_driver_context_set_resolver_name(m_context_b, "B");
     aeron_driver_context_set_resolver_interface(m_context_b, "127.0.0.1:8051");
     aeron_driver_context_set_resolver_bootstrap_neighbor(m_context_b, "localhost:8050");
-    ASSERT_EQ(0, supplier_func(m_context_b, &resolver_b, NULL)) << aeron_errmsg();
+    ASSERT_EQ(0, supplier_func(&resolver_b, NULL, m_context_b)) << aeron_errmsg();
 
     timestamp_ms += 2000;
     aeron_clock_update_cached_time(m_context_a->cached_clock, timestamp_ms, timestamp_ms + 1000000);

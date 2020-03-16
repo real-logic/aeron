@@ -829,24 +829,16 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
             final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
-            final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
-            try
-            {
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = awaitRecordingCounter(publication.sessionId(), counters);
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
+            archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL, true);
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounter(publication.sessionId(), counters);
+            recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication, logPosition, leadershipTermId);
-                checkForClockTick();
-                service.onTakeSnapshot(publication);
+            snapshotState(publication, logPosition, leadershipTermId);
+            checkForClockTick();
+            service.onTakeSnapshot(publication);
 
-                awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
-            }
-            finally
-            {
-                archive.archiveProxy().stopRecording(
-                    subscriptionId, aeron.nextCorrelationId(), archive.controlSessionId());
-            }
+            awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
         }
 
         return recordingId;

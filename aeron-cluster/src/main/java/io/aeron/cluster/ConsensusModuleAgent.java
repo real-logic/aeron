@@ -2660,21 +2660,13 @@ class ConsensusModuleAgent implements Agent
                 ctx.snapshotChannel(), ctx.snapshotStreamId()))
             {
                 final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
-                final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
-                try
-                {
-                    final CountersReader counters = aeron.countersReader();
-                    final int counterId = awaitRecordingCounter(counters, publication.sessionId());
-                    recordingId = RecordingPos.getRecordingId(counters, counterId);
+                archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL, true);
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = awaitRecordingCounter(counters, publication.sessionId());
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                    snapshotState(publication, logPosition, replayLeadershipTermId);
-                    awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
-                }
-                finally
-                {
-                    archive.archiveProxy().stopRecording(
-                        subscriptionId, aeron.nextCorrelationId(), archive.controlSessionId());
-                }
+                snapshotState(publication, logPosition, replayLeadershipTermId);
+                awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
             }
 
             final long termBaseLogPosition = recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;

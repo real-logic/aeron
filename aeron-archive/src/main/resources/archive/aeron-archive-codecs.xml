@@ -497,6 +497,29 @@
         <data  name="liveDestination"      id="9" type="varAsciiEncoding"/>
     </sbe:message>
 
+    <sbe:message name="StartRecordingRequest2"
+                 id="63"
+                 description="Request a channel:stream be recorded with the option to auto stop when complete.">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="streamId"             id="3" type="int32"/>
+        <field name="sourceLocation"       id="4" type="SourceLocation"/>
+        <field name="autoStop"             id="5" type="BooleanType"/>
+        <data  name="channel"              id="6" type="varAsciiEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="ExtendRecordingRequest2"
+                 id="64"
+                 description="Request an existing recording be extended">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="recordingId"          id="3" type="int64"/>
+        <field name="streamId"             id="4" type="int32"/>
+        <field name="sourceLocation"       id="5" type="SourceLocation"/>
+        <field name="autoStop"             id="6" type="BooleanType"/>
+        <data  name="channel"              id="7" type="varAsciiEncoding"/>
+    </sbe:message>
+
 <!-- Archive Recording Progress Events -->
 
     <sbe:message name="RecordingStarted"

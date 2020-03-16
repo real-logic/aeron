@@ -353,6 +353,7 @@ abstract class ArchiveConductor
         final long correlationId,
         final int streamId,
         final SourceLocation sourceLocation,
+        final boolean autoStop,
         final String originalChannel,
         final ControlSession controlSession)
     {
@@ -376,7 +377,7 @@ abstract class ArchiveConductor
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final AvailableImageHandler handler = (image) -> taskQueue.addLast(() -> startRecordingSession(
-                    controlSession, correlationId, strippedChannel, originalChannel, image));
+                    controlSession, correlationId, strippedChannel, originalChannel, image, autoStop));
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
@@ -428,7 +429,7 @@ abstract class ArchiveConductor
         final Subscription subscription = removeRecordingSubscription(subscriptionId);
         if (null != subscription)
         {
-            subscription.close();
+            CloseHelper.close(errorHandler, subscription);
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
         else
@@ -718,6 +719,7 @@ abstract class ArchiveConductor
         final long recordingId,
         final int streamId,
         final SourceLocation sourceLocation,
+        final boolean autoStop,
         final String originalChannel,
         final ControlSession controlSession)
     {
@@ -764,7 +766,7 @@ abstract class ArchiveConductor
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final AvailableImageHandler handler = (image) -> taskQueue.addLast(() -> extendRecordingSession(
-                    controlSession, correlationId, recordingId, strippedChannel, originalChannel, image));
+                    controlSession, correlationId, recordingId, strippedChannel, originalChannel, image, autoStop));
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
@@ -1359,7 +1361,8 @@ abstract class ArchiveConductor
         final long correlationId,
         final String strippedChannel,
         final String originalChannel,
-        final Image image)
+        final Image image,
+        final boolean autoStop)
     {
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();
@@ -1400,7 +1403,8 @@ abstract class ArchiveConductor
             ctx,
             controlSession,
             ctx.recordChecksumBuffer(),
-            ctx.recordChecksum());
+            ctx.recordChecksum(),
+            autoStop);
 
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
@@ -1419,7 +1423,8 @@ abstract class ArchiveConductor
         final long recordingId,
         final String strippedChannel,
         final String originalChannel,
-        final Image image)
+        final Image image,
+        final boolean autoStop)
     {
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
@@ -1455,7 +1460,8 @@ abstract class ArchiveConductor
             ctx,
             controlSession,
             ctx.recordChecksumBuffer(),
-            ctx.recordChecksum());
+            ctx.recordChecksum(),
+            autoStop);
 
         recordingSessionByIdMap.put(recordingId, session);
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());

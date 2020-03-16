@@ -15,8 +15,7 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Counter;
-import io.aeron.Image;
+import io.aeron.*;
 import io.aeron.archive.checksum.Checksum;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -40,8 +39,9 @@ class RecordingSession implements Session
 
     private final long correlationId;
     private final long recordingId;
-    private final int blockLengthLimit;
     private long progressEventPosition;
+    private final int blockLengthLimit;
+    private final boolean autoStop;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
     private final Counter position;
@@ -64,7 +64,8 @@ class RecordingSession implements Session
         final Archive.Context ctx,
         final ControlSession controlSession,
         final UnsafeBuffer checksumBuffer,
-        final Checksum checksum)
+        final Checksum checksum,
+        final boolean autoStop)
     {
         this.correlationId = correlationId;
         this.recordingId = recordingId;
@@ -73,6 +74,7 @@ class RecordingSession implements Session
         this.image = image;
         this.position = position;
         this.controlSession = controlSession;
+        this.autoStop = autoStop;
         countedErrorHandler = ctx.countedErrorHandler();
         progressEventPosition = image.joinPosition();
 
@@ -105,6 +107,12 @@ class RecordingSession implements Session
     {
         CloseHelper.close(countedErrorHandler, recordingWriter);
         CloseHelper.close(countedErrorHandler, position);
+        if (autoStop)
+        {
+            final Subscription subscription = image.subscription();
+            CloseHelper.close(countedErrorHandler, subscription);
+            controlSession.archiveConductor().removeRecordingSubscription(subscription.registrationId());
+        }
     }
 
     public void abortClose()

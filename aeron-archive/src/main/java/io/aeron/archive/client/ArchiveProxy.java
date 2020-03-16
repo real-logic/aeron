@@ -45,7 +45,7 @@ public class ArchiveProxy
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private StartRecordingRequestEncoder startRecordingRequestEncoder;
+    private StartRecordingRequest2Encoder startRecordingRequest2Encoder;
     private StopRecordingRequestEncoder stopRecordingRequestEncoder;
     private StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequestEncoder;
     private ReplayRequestEncoder replayRequestEncoder;
@@ -53,7 +53,7 @@ public class ArchiveProxy
     private ListRecordingsRequestEncoder listRecordingsRequestEncoder;
     private ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder;
     private ListRecordingRequestEncoder listRecordingRequestEncoder;
-    private ExtendRecordingRequestEncoder extendRecordingRequestEncoder;
+    private ExtendRecordingRequest2Encoder extendRecordingRequest2Encoder;
     private RecordingPositionRequestEncoder recordingPositionRequestEncoder;
     private TruncateRecordingRequestEncoder truncateRecordingRequestEncoder;
     private StopPositionRequestEncoder stopPositionRequestEncoder;
@@ -282,20 +282,43 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == startRecordingRequestEncoder)
+        return startRecording(channel, streamId, sourceLocation, false, correlationId, controlSessionId);
+    }
+
+    /**
+     * Start recording streams for a given channel and stream id pairing.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param autoStop         if the recording should be automatically stopped when complete.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean startRecording(
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final boolean autoStop,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        if (null == startRecordingRequest2Encoder)
         {
-            startRecordingRequestEncoder = new StartRecordingRequestEncoder();
+            startRecordingRequest2Encoder = new StartRecordingRequest2Encoder();
         }
 
-        startRecordingRequestEncoder
+        startRecordingRequest2Encoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .streamId(streamId)
             .sourceLocation(sourceLocation)
+            .autoStop(autoStop ? BooleanType.TRUE : BooleanType.FALSE)
             .channel(channel);
 
-        return offer(startRecordingRequestEncoder.encodedLength());
+        return offer(startRecordingRequest2Encoder.encodedLength());
     }
 
     /**
@@ -588,21 +611,50 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == extendRecordingRequestEncoder)
+        return extendRecording(channel, streamId, sourceLocation, false, recordingId, correlationId, controlSessionId);
+    }
+
+    /**
+     * Extend an existing, non-active, recorded stream for a the same channel and stream id.
+     * <p>
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can
+     * be found by calling {@link #listRecording(long, long, long)}.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param autoStop         if the recording should be automatically stopped when complete.
+     * @param recordingId      to be extended.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean extendRecording(
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final boolean autoStop,
+        final long recordingId,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        if (null == extendRecordingRequest2Encoder)
         {
-            extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
+            extendRecordingRequest2Encoder = new ExtendRecordingRequest2Encoder();
         }
 
-        extendRecordingRequestEncoder
+        extendRecordingRequest2Encoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
             .streamId(streamId)
             .sourceLocation(sourceLocation)
+            .autoStop(autoStop ? BooleanType.TRUE : BooleanType.FALSE)
             .channel(channel);
 
-        return offer(extendRecordingRequestEncoder.encodedLength());
+        return offer(extendRecordingRequest2Encoder.encodedLength());
     }
 
     /**

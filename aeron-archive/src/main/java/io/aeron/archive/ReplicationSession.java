@@ -465,8 +465,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             builder.endpoint(channelUri);
         }
 
+        final String channel = builder.build();
         recordingSubscription = conductor.extendRecording(
-            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, builder.build(), controlSession);
+            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, false, channel, controlSession);
 
         if (null == recordingSubscription)
         {

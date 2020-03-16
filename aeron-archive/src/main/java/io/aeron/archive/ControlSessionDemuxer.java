@@ -176,6 +176,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     decoder.streamId(),
                     decoder.sourceLocation(),
+                    false,
                     decoder.channel());
                 break;
             }
@@ -339,6 +340,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     decoder.recordingId(),
                     decoder.streamId(),
                     decoder.sourceLocation(),
+                    false,
                     decoder.channel());
                 break;
             }
@@ -756,6 +758,51 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     decoder.srcControlStreamId(),
                     decoder.srcControlChannel(),
                     decoder.liveDestination());
+                break;
+            }
+
+            case StartRecordingRequest2Decoder.TEMPLATE_ID:
+            {
+                final StartRecordingRequest2Decoder decoder = decoders.startRecordingRequest2;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = decoder.correlationId();
+                final long controlSessionId = decoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+
+                controlSession.onStartRecording(
+                    correlationId,
+                    decoder.streamId(),
+                    decoder.sourceLocation(),
+                    decoder.autoStop() == BooleanType.TRUE,
+                    decoder.channel());
+                break;
+            }
+
+            case ExtendRecordingRequest2Decoder.TEMPLATE_ID:
+            {
+                final ExtendRecordingRequest2Decoder decoder = decoders.extendRecordingRequest2;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = decoder.correlationId();
+                final long controlSessionId = decoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+
+                controlSession.onExtendRecording(
+                    correlationId,
+                    decoder.recordingId(),
+                    decoder.streamId(),
+                    decoder.sourceLocation(),
+                    decoder.autoStop() == BooleanType.TRUE,
+                    decoder.channel());
                 break;
             }
         }

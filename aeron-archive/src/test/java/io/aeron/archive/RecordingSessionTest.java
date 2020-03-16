@@ -130,7 +130,8 @@ public class RecordingSessionTest
             context,
             CONTROL_SESSION,
             null,
-            null);
+            null,
+            false);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

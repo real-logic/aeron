@@ -556,9 +556,30 @@ public class AeronArchive implements AutoCloseable
      * @param streamId       to be recorded.
      * @param sourceLocation of the publication to be recorded.
      * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
-     * passed to {@link #stopRecording(long)}
+     * passed to {@link #stopRecording(long)}.
      */
     public long startRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
+    {
+        return startRecording(channel, streamId, sourceLocation, false);
+    }
+
+    /**
+     * Start recording a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * publication matches both a sessionId specific channel recording and a non-sessionId specific recording,
+     * it will be recorded twice.
+     *
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @param autoStop       if the recording should be automatically stopped when complete.
+     * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
+     * passed to {@link #stopRecording(long)}. However if is autoStop is true then no need to stop the recording
+     * unless you want to abort early.
+     */
+    public long startRecording(
+        final String channel, final int streamId, final SourceLocation sourceLocation, final boolean autoStop)
     {
         lock.lock();
         try
@@ -568,7 +589,8 @@ public class AeronArchive implements AutoCloseable
 
             lastCorrelationId = aeron.nextCorrelationId();
 
-            if (!archiveProxy.startRecording(channel, streamId, sourceLocation, lastCorrelationId, controlSessionId))
+            if (!archiveProxy.startRecording(
+                channel, streamId, sourceLocation, autoStop, lastCorrelationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send start recording request");
             }
@@ -592,10 +614,40 @@ public class AeronArchive implements AutoCloseable
      * @param channel        to be recorded.
      * @param streamId       to be recorded.
      * @param sourceLocation of the publication to be recorded.
-     * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording.
+     * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
+     * passed to {@link #stopRecording(long)}.
      */
     public long extendRecording(
-        final long recordingId, final String channel, final int streamId, final SourceLocation sourceLocation)
+        final long recordingId,
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation)
+    {
+        return extendRecording(recordingId, channel, streamId, sourceLocation, false);
+    }
+
+    /**
+     * Extend an existing, non-active recording of a channel and stream pairing.
+     * <p>
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can
+     * be found by calling {@link #listRecording(long, RecordingDescriptorConsumer)}.
+     *
+     * @param recordingId    of the existing recording.
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @param autoStop       if the recording should be automatically stopped when complete.
+     * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
+     * passed to {@link #stopRecording(long)}. However if is autoStop is true then no need to stop the recording
+     * unless you want to abort early.
+     */
+    public long extendRecording(
+        final long recordingId,
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final boolean autoStop)
     {
         lock.lock();
         try
@@ -606,7 +658,7 @@ public class AeronArchive implements AutoCloseable
             lastCorrelationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.extendRecording(
-                channel, streamId, sourceLocation, recordingId, lastCorrelationId, controlSessionId))
+                channel, streamId, sourceLocation, autoStop, recordingId, lastCorrelationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send extend recording request");
             }
@@ -1802,7 +1854,7 @@ public class AeronArchive implements AutoCloseable
     public static class Configuration
     {
         public static final int PROTOCOL_MAJOR_VERSION = 1;
-        public static final int PROTOCOL_MINOR_VERSION = 3;
+        public static final int PROTOCOL_MINOR_VERSION = 4;
         public static final int PROTOCOL_PATCH_VERSION = 0;
         public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
             PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);

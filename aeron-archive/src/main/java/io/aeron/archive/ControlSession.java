@@ -228,12 +228,16 @@ class ControlSession implements Session
     }
 
     void onStartRecording(
-        final long correlationId, final int streamId, final SourceLocation sourceLocation, final String channel)
+        final long correlationId,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final boolean autoStop,
+        final String channel)
     {
         attemptToGoActive();
         if (State.ACTIVE == state)
         {
-            conductor.startRecording(correlationId, streamId, sourceLocation, channel, this);
+            conductor.startRecording(correlationId, streamId, sourceLocation, autoStop, channel, this);
         }
     }
 
@@ -358,12 +362,13 @@ class ControlSession implements Session
         final long recordingId,
         final int streamId,
         final SourceLocation sourceLocation,
+        final boolean autoStop,
         final String channel)
     {
         attemptToGoActive();
         if (State.ACTIVE == state)
         {
-            conductor.extendRecording(correlationId, recordingId, streamId, sourceLocation, channel, this);
+            conductor.extendRecording(correlationId, recordingId, streamId, sourceLocation, autoStop, channel, this);
         }
     }
 

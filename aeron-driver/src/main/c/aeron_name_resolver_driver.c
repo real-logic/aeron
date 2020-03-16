@@ -92,29 +92,15 @@ typedef struct aeron_name_resolver_driver_stct
 
     int64_t now_ms;
 
+    int64_t *invalid_packets_counter;
     aeron_position_t neighbor_counter;
     aeron_position_t cache_size_counter;
+    aeron_distinct_error_log_t *error_log;
 
     struct sockaddr_storage received_address;
     uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH];  // TODO: Cache alignment??
 }
 aeron_name_resolver_driver_t;
-
-static const char *host_string(struct sockaddr_storage *addr)
-{
-    static char buf[NI_MAXHOST + NI_MAXSERV + 32];
-    char host[NI_MAXHOST];
-    char port[NI_MAXSERV];
-
-    getnameinfo(
-        (struct sockaddr *)addr, sizeof(struct sockaddr_storage),
-        host, sizeof(host),
-        port, sizeof(port),
-        NI_NUMERICSERV | NI_NUMERICHOST);
-
-    snprintf(buf, sizeof(buf), "(host=%s,port=%s)", host, port);
-    return buf;
-}
 
 void aeron_name_resolver_driver_receive(
     aeron_udp_channel_data_paths_t *data_paths,
@@ -235,9 +221,13 @@ int aeron_name_resolver_driver_init(
         AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID,
         NULL, 0,
         "Resolver neighbors", strlen("Resolver neighbors"));
+    if (_driver_resolver->neighbor_counter.counter_id < 0)
+    {
+        return -1;
+    }
+
     _driver_resolver->neighbor_counter.value_addr = aeron_counter_addr(
         context->counters_manager, _driver_resolver->neighbor_counter.counter_id);
-
     char cache_entries_label[512];
     snprintf(
         cache_entries_label, sizeof(cache_entries_label), "Resolver cache entries: name %s", _driver_resolver->name);
@@ -246,8 +236,18 @@ int aeron_name_resolver_driver_init(
         AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID,
         NULL, 0,
         cache_entries_label, strlen(cache_entries_label));
+    if (_driver_resolver->cache_size_counter.counter_id < 0)
+    {
+        return -1;
+    }
+
     _driver_resolver->cache_size_counter.value_addr = aeron_counter_addr(
         context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
+
+    _driver_resolver->invalid_packets_counter = aeron_system_counter_addr(
+        context->system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
+
+    _driver_resolver->error_log = context->error_log;
 
     *driver_resolver = _driver_resolver;
     return 0;
@@ -469,8 +469,7 @@ void aeron_name_resolver_driver_receive(
 
     if ((remaining < sizeof(aeron_frame_header_t)) || (frame_header->version != AERON_FRAME_HEADER_VERSION))
     {
-        // Resolution frames error counter...
-//        aeron_counter_increment(receiver->invalid_frames_counter, 1);
+        aeron_counter_increment(resolver->invalid_packets_counter, 1);
         return;
     }
 
@@ -481,7 +480,7 @@ void aeron_name_resolver_driver_receive(
         const size_t offset = length - remaining;
         if (AERON_HDR_TYPE_RES != frame_header->type || remaining < sizeof(aeron_resolution_header_t))
         {
-            // Invalid message counter...
+            aeron_counter_increment(resolver->invalid_packets_counter, 1);
             return;
         }
 
@@ -497,7 +496,7 @@ void aeron_name_resolver_driver_receive(
             if (length < sizeof(aeron_resolution_header_ipv4_t) ||
                 length < (entry_length = aeron_res_header_entry_length_ipv4(ip4_hdr)))
             {
-                // Message not long enough...
+                aeron_counter_increment(resolver->invalid_packets_counter, 1);
                 return;
             }
 
@@ -511,7 +510,7 @@ void aeron_name_resolver_driver_receive(
             if (length < sizeof(aeron_resolution_header_ipv6_t) ||
                 length < (entry_length = aeron_res_header_entry_length_ipv6(ip6_hdr)))
             {
-                // Message not long enough...
+                aeron_counter_increment(resolver->invalid_packets_counter, 1);
                 return;
             }
 
@@ -521,15 +520,12 @@ void aeron_name_resolver_driver_receive(
         }
         else
         {
-            // Log error invalid res_type...
             return;
         }
 
 
         int8_t res_type = resolution_header->res_type;
         uint16_t port = resolution_header->udp_port;
-
-        printf("Host: %s, received: %s (%d)\n", resolver->name, name, port);
 
         const bool is_self = AERON_RES_HEADER_SELF_FLAG == (resolution_header->res_flags & AERON_RES_HEADER_SELF_FLAG);
         if (is_self &&
@@ -542,15 +538,15 @@ void aeron_name_resolver_driver_receive(
         if (aeron_name_resolver_driver_on_resolution_entry(
             resolver, resolution_header, name, name_length, res_type, address, port, is_self, resolver->now_ms) < 0)
         {
-            // Problem processing data (probably out of memory error).
-            // Log error, reset error state and discard packet.
+            aeron_set_err(EINVAL, "Failed to handle resolution entry: %s", aeron_errmsg());
+            aeron_distinct_error_log_record(
+                resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+
             return;
         }
 
         remaining -= entry_length;
     }
-
-    printf("Host: %s, from: %s\n", resolver->name, host_string(addr));
 }
 
 static int aeron_name_resolver_driver_poll(aeron_name_resolver_driver_t *resolver)
@@ -584,8 +580,8 @@ static int aeron_name_resolver_driver_poll(aeron_name_resolver_driver_t *resolve
 
     if (poll_result < 0)
     {
-        fprintf(stderr, "Failed to poll: %d\n", poll_result);
-        // Distinct error log...
+        aeron_set_err(poll_result, "Failed to poll in driver name resolver: %s", aeron_errmsg());
+        aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
     }
 
     return bytes_received > 0 ? (int)bytes_received : 0;
@@ -645,10 +641,10 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
         send_result = resolver->transport_bindings->sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
         if (send_result < 0)
         {
-            fprintf(stderr, "Error: %s\n", aeron_errmsg());
+            aeron_set_err(
+                send_result, "Failed to send to self resolution to bootstrap: %s", aeron_errmsg());
+            aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
         }
-
-        printf("From: %s, to: %s, send self (%d)\n", resolver->name, host_string(&resolver->bootstrap_neighbor_addr), resolution_header->udp_port);
     }
     else
     {
@@ -664,11 +660,10 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
             if (send_result < 0)
             {
-                // TODO: proper error handling...
-                fprintf(stderr, "Failed to send");
+                aeron_set_err(
+                    send_result, "Failed to send to self resolution to neighbors: %s", aeron_errmsg());
+                aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
             }
-
-            printf("From: %s, to: %s, send self (%d)\n", resolver->name, host_string(&neighbor_address), resolution_header->udp_port);
         }
     }
 
@@ -726,8 +721,6 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
                 break;
             }
 
-            printf("Host: %s, neighbor: %.*s (%d)\n", resolver->name, (int)cache_entry->name_length, cache_entry->name, cache_entry->port);
-
             entry_offset += entry_length;
             j++;
         }
@@ -747,11 +740,10 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 
             if (send_result < 0)
             {
-                // TODO: proper error handling...
-                fprintf(stderr, "Failed to send");
+                aeron_set_err(
+                    send_result, "Failed to send to neighbors to neighbor list: %s", aeron_errmsg());
+                aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
             }
-
-            printf("From: %s, to: %s, send neighbors\n", resolver->name, host_string(&neighbor_address));
         }
 
         work_count++;

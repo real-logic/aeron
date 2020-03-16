@@ -23,10 +23,12 @@ extern "C"
 #include "util/aeron_env.h"
 #include "aeron_name_resolver.h"
 #include "aeron_name_resolver_driver.h"
+#include "aeron_system_counters.h"
 }
 
-#define METADATA_LENGTH (2048)
-#define VALUES_LENGTH (1024)
+#define METADATA_LENGTH (16 * 1024)
+#define VALUES_LENGTH (METADATA_LENGTH / 2)
+#define ERROR_LOG_LENGTH (8192)
 
 class NameResolverTest : public testing::Test
 {
@@ -44,7 +46,10 @@ protected:
         aeron_driver_context_t *context;
         aeron_name_resolver_t resolver;
         aeron_counters_manager_t counters;
-        uint8_t buffer[METADATA_LENGTH + VALUES_LENGTH];
+        aeron_system_counters_t system_counters;
+        aeron_distinct_error_log_t error_log;
+        uint8_t counters_buffer[METADATA_LENGTH + VALUES_LENGTH];
+        uint8_t error_log_buffer[ERROR_LOG_LENGTH];
     }
     resolver_fields_t;
 
@@ -76,11 +81,18 @@ protected:
 
         aeron_counters_manager_init(
             &resolver_fields->counters,
-            &resolver_fields->buffer[0], METADATA_LENGTH,
-            &resolver_fields->buffer[METADATA_LENGTH], VALUES_LENGTH,
+            &resolver_fields->counters_buffer[0], METADATA_LENGTH,
+            &resolver_fields->counters_buffer[METADATA_LENGTH], VALUES_LENGTH,
             aeron_epoch_clock, 1000);
+        aeron_system_counters_init(&resolver_fields->system_counters, &resolver_fields->counters);
+
+        aeron_distinct_error_log_init(
+            &resolver_fields->error_log, resolver_fields->error_log_buffer, ERROR_LOG_LENGTH, aeron_epoch_clock,
+            [](void *clientd, uint8_t *resource){}, NULL);
 
         resolver_fields->context->counters_manager = &resolver_fields->counters;
+        resolver_fields->context->system_counters = &resolver_fields->system_counters;
+        resolver_fields->context->error_log = &resolver_fields->error_log;
 
         ASSERT_EQ(0, supplier_func(&resolver_fields->resolver, args, resolver_fields->context));
     }

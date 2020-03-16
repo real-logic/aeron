@@ -815,6 +815,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     }
 
     context->counters_manager = &_driver->conductor.counters_manager;
+    context->system_counters = &_driver->conductor.system_counters;
     context->error_log = &_driver->conductor.error_log;
     _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
 

@@ -30,6 +30,7 @@
 #include "aeron_congestion_control.h"
 #include "aeron_agent.h"
 #include "aeron_name_resolver.h"
+#include "aeron_system_counters.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
@@ -192,6 +193,7 @@ typedef struct aeron_driver_context_stct
     aeron_driver_receiver_proxy_t *receiver_proxy;
 
     aeron_counters_manager_t *counters_manager;
+    aeron_system_counters_t *system_counters;
     aeron_distinct_error_log_t *error_log;
 
     aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;

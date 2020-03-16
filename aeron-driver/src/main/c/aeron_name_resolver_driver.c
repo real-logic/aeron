@@ -704,7 +704,7 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
             aeron_name_resolver_driver_to_sockaddr(
                 neighbor->res_type, neighbor->address, neighbor->port, &neighbor_address);
 
-            send_result += resolver->transport_bindings->sendmsg_func(
+            send_result += resolver->data_paths.sendmsg_func(
                 &resolver->data_paths, &resolver->transport, &msghdr);
 
             if (send_result < 0)
@@ -786,7 +786,7 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
             aeron_name_resolver_driver_to_sockaddr(
                 neighbor->res_type, neighbor->address, neighbor->port, &neighbor_address);
 
-            int send_result = resolver->transport_bindings->sendmsg_func(
+            int send_result = resolver->data_paths.sendmsg_func(
                 &resolver->data_paths, &resolver->transport, &msghdr);
 
             if (send_result < 0)

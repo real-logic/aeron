@@ -79,7 +79,10 @@ public final class CTestMediaDriver implements TestMediaDriver
                 throw new RuntimeException("Failed to shutdown cleaning, forcing close");
             }
 
-            driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
+            if (null != driverOutputConsumer)
+            {
+                driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
+            }
         }
         catch (final InterruptedException e)
         {

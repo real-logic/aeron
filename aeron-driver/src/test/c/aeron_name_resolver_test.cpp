@@ -191,7 +191,7 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
     ASSERT_STREQ(HOST_1B, resolved_name);
 }
 
-TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
+TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
 {
     struct in_addr local_address_b;
     inet_pton(AF_INET, "127.0.0.1", &local_address_b);
@@ -216,6 +216,31 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrap)
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
     struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
     ASSERT_EQ(local_address_b.s_addr, in_addr_b->sin_addr.s_addr);
+}
+
+TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv6WildCard)
+{
+    int64_t timestamp_ms = INTMAX_C(8932472347945);
+
+    initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "[::]:8050");
+    initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "[::]:8051", "localhost:8050");
+
+    timestamp_ms += 2000;
+    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
+
+    // Should push self address to neighbor
+    ASSERT_LT(0, m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms));
+
+    // Should load neighbor resolution (spin until we do work)
+    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
+
+    struct sockaddr_storage resolved_address_of_b;
+    resolved_address_of_b.ss_family = AF_INET6;
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
+    ASSERT_EQ(AF_INET6, resolved_address_of_b.ss_family);
+    struct sockaddr_in6 *in_addr_b = (struct sockaddr_in6 *)&resolved_address_of_b;
+    ASSERT_NE(0, memcmp(&in6addr_any, &in_addr_b->sin6_addr, sizeof(in6addr_any)));
 }
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)

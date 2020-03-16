@@ -434,6 +434,14 @@ int aeron_name_resolver_driver_on_resolution_entry(
     return 1;
 }
 
+static bool aeron_name_resolver_driver_is_wildcard(int8_t res_type, uint8_t *address)
+{
+    const in_addr_t ipv4_wildcard = INADDR_ANY;
+    return
+        (res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD && 0 == memcmp(address, &in6addr_any, sizeof(in6addr_any))) ||
+        0 == memcmp(address, &ipv4_wildcard, sizeof(ipv4_wildcard));
+}
+
 void aeron_name_resolver_driver_receive(
     aeron_udp_channel_data_paths_t *data_paths,
     void *receiver_clientd,
@@ -507,9 +515,8 @@ void aeron_name_resolver_driver_receive(
         uint16_t port = resolution_header->udp_port;
 
         const bool is_self = AERON_RES_HEADER_SELF_FLAG == (resolution_header->res_flags & AERON_RES_HEADER_SELF_FLAG);
-        if (is_self &&
-            resolution_header->res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD &&
-            *((in_addr_t *)address) == INADDR_ANY)
+
+        if (is_self && aeron_name_resolver_driver_is_wildcard(res_type, address))
         {
             aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port);
         }

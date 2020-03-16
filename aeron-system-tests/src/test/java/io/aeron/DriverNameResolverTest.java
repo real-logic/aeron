@@ -210,8 +210,8 @@ public class DriverNameResolverTest
         awaitCounterValue("A", aCacheEntriesCounterId, 1);
 
         try (
-            Subscription subscription = clients.get("A").addSubscription("aeron:udp?endpoint=localhost:24325", 1);
-            Publication publication = clients.get("B").addPublication("aeron:udp?endpoint=B:24325", 1))
+            Subscription subscription = clients.get("B").addSubscription("aeron:udp?endpoint=localhost:24325", 1);
+            Publication publication = clients.get("A").addPublication("aeron:udp?endpoint=B:24325", 1))
         {
             while (!publication.isConnected() || !subscription.isConnected())
             {

@@ -388,6 +388,11 @@ public class Archive implements AutoCloseable
         public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
 
         /**
+         * The type id of the {@link Counter} used for keeping track of the count of concurrent control sessions.
+         */
+        public static final int ARCHIVE_CONTROL_SESSIONS_TYPE_ID = 102;
+
+        /**
          * Size in bytes of the error buffer for the archive when not externally provided.
          */
         public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.archive.error.buffer.length";
@@ -687,6 +692,7 @@ public class Archive implements AutoCloseable
         private Catalog catalog;
         private ArchiveMarkFile markFile;
         private AeronArchive.Context archiveClientContext;
+        private AgentInvoker mediaDriverAgentInvoker;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
@@ -706,6 +712,8 @@ public class Archive implements AutoCloseable
         private int segmentFileLength = Configuration.segmentFileLength();
         private int fileSyncLevel = Configuration.fileSyncLevel();
         private int catalogFileSyncLevel = Configuration.catalogFileSyncLevel();
+        private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
+        private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory;
@@ -716,15 +724,12 @@ public class Archive implements AutoCloseable
         private Supplier<IdleStrategy> recorderIdleStrategySupplier;
         private EpochClock epochClock;
         private AuthenticatorSupplier authenticatorSupplier;
+        private Counter controlSessionsCounter;
 
         private int errorBufferLength = 0;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
-
-        private AgentInvoker mediaDriverAgentInvoker;
-        private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
-        private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
         private Checksum recordChecksum;
         private Checksum replayChecksum;
@@ -902,6 +907,12 @@ public class Archive implements AutoCloseable
             }
 
             archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);
+
+            if (null == controlSessionsCounter)
+            {
+                controlSessionsCounter = aeron.addCounter(
+                    Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions");
+            }
 
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
@@ -1726,6 +1737,28 @@ public class Archive implements AutoCloseable
         }
 
         /**
+         * Get the counter used to track the number of active control sessions.
+         *
+         * @return the counter used to track the number of active control sessions.
+         */
+        public Counter controlSessionsCounter()
+        {
+            return controlSessionsCounter;
+        }
+
+        /**
+         * Set the counter used to track the number of active control sessions.
+         *
+         * @param controlSessionsCounter the counter used to track the number of active control sessions.
+         * @return this for a fluent API.
+         */
+        public Context controlSessionsCounter(final Counter controlSessionsCounter)
+        {
+            this.controlSessionsCounter = controlSessionsCounter;
+            return this;
+        }
+
+        /**
          * Get the max number of concurrent recordings.
          *
          * @return the max number of concurrent recordings.
@@ -2069,6 +2102,10 @@ public class Archive implements AutoCloseable
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+            else
+            {
+                CloseHelper.close(countedErrorHandler, controlSessionsCounter);
             }
         }
     }

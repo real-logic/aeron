@@ -344,6 +344,7 @@ abstract class ArchiveConductor
         authenticator.onConnectRequest(controlSession.sessionId(), encodedCredentials, cachedEpochClock.time());
 
         addSession(controlSession);
+        ctx.controlSessionsCounter().incrementOrdered();
 
         return controlSession;
     }

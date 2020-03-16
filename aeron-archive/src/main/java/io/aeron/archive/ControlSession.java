@@ -127,6 +127,10 @@ class ControlSession implements Session
 
         CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
         demuxer.removeControlSession(this);
+        if (!conductor.context().controlSessionsCounter().isClosed())
+        {
+            conductor.context().controlSessionsCounter().getAndAddOrdered(-1);
+        }
     }
 
     public boolean isDone()
@@ -628,11 +632,6 @@ class ControlSession implements Session
     void reject()
     {
         state(State.REJECTED);
-    }
-
-    State state()
-    {
-        return state;
     }
 
     private void queueResponse(

@@ -425,6 +425,44 @@ public:
     }
 
     /**
+     * Start recording a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * publication matches both a sessionId specific channel recording and a non-sessionId specific recording, it will
+     * be recorded twice.
+     *
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @param autoStop       if the recording should be automatically stopped when complete.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the subscriptionId, i.e. Subscription#registrationId, of the recording.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t startRecording(
+        const std::string& channel, std::int32_t streamId, SourceLocation sourceLocation, bool autoStop)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->startRecording<IdleStrategy>(
+            channel,
+            streamId,
+            sourceLocation == SourceLocation::LOCAL,
+            autoStop,
+            m_lastCorrelationId,
+            m_controlSessionId))
+        {
+            throw ArchiveException("failed to send start recording request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+    }
+
+    /**
      * Extend an existing, non-active recording for a channel and stream pairing.
      * <p>
      * The channel must be configured for the initial position from which it will be extended. This can be done
@@ -452,6 +490,50 @@ public:
             channel,
             streamId,
             sourceLocation == SourceLocation::LOCAL,
+            recordingId,
+            m_lastCorrelationId,
+            m_controlSessionId))
+        {
+            throw ArchiveException("failed to send extend recording request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+    }
+
+    /**
+     * Extend an existing, non-active recording for a channel and stream pairing.
+     * <p>
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with ChannelUriStringBuilder#initialPosition(std::int64_t, std::int32_t, std::int32_t). The details required
+     * to initialise can be found by calling #listRecording(std::int64_t, RecordingDescriptorConsumer).
+     *
+     * @param recordingId    of the existing recording.
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @param autoStop       if the recording should be automatically stopped when complete.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the subscriptionId, i.e. Subscription#registrationId, of the recording.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t extendRecording(
+        std::int64_t recordingId,
+        const std::string& channel,
+        std::int32_t streamId,
+        SourceLocation sourceLocation,
+        bool autoStop)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->extendRecording<IdleStrategy>(
+            channel,
+            streamId,
+            sourceLocation == SourceLocation::LOCAL,
+            autoStop,
             recordingId,
             m_lastCorrelationId,
             m_controlSessionId))

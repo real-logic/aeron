@@ -159,6 +159,33 @@ public:
     }
 
     /**
+     * Start recording streams for a given channel and stream id pairing.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param autoStop         if the recording should be automatically stopped when complete.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool startRecording(
+        const std::string& channel,
+        std::int32_t streamId,
+        bool localSource,
+        bool autoStop,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = startRecording(
+            m_buffer, channel, streamId, localSource, autoStop, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
      * Extend an existing, non-active, recorded stream for a the same channel and stream id.
      *
      * The channel must be configured for the initial position from which it will be extended. This can be done
@@ -185,6 +212,39 @@ public:
     {
         const util::index_t length = extendRecording(
             m_buffer, channel, streamId, localSource, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Extend an existing, non-active, recorded stream for a the same channel and stream id.
+     *
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with ChannelUriStringBuilder#initialPosition(std::int64_t, std::int32_t, std::int32_t). The details required
+     * to initialise can be found by calling #listRecording(std::int64_t, std::int64_t, std::int64_t).
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param autoStop         if the recording should be automatically stopped when complete.
+     * @param recordingId      to be extended.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool extendRecording(
+        const std::string& channel,
+        std::int32_t streamId,
+        bool localSource,
+        bool autoStop,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = extendRecording(
+            m_buffer, channel, streamId, localSource, autoStop, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -828,11 +888,30 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
+    static util::index_t startRecording(
+        AtomicBuffer& buffer,
+        const std::string& channel,
+        std::int32_t streamId,
+        bool localSource,
+        bool autoStop,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
     static util::index_t extendRecording(
         AtomicBuffer& buffer,
         const std::string& channel,
         std::int32_t streamId,
         bool localSource,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t extendRecording(
+        AtomicBuffer& buffer,
+        const std::string& channel,
+        std::int32_t streamId,
+        bool localSource,
+        bool autoStop,
         std::int64_t recordingId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);

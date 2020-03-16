@@ -22,7 +22,9 @@
 #include "aeron_archive_client/AuthConnectRequest.h"
 #include "aeron_archive_client/CloseSessionRequest.h"
 #include "aeron_archive_client/StartRecordingRequest.h"
+#include "aeron_archive_client/StartRecordingRequest2.h"
 #include "aeron_archive_client/ExtendRecordingRequest.h"
+#include "aeron_archive_client/ExtendRecordingRequest2.h"
 #include "aeron_archive_client/StopRecordingRequest.h"
 #include "aeron_archive_client/StopRecordingSubscriptionRequest.h"
 #include "aeron_archive_client/ReplayRequest.h"
@@ -113,6 +115,28 @@ util::index_t ArchiveProxy::startRecording(
     return messageAndHeaderLength(request);
 }
 
+util::index_t ArchiveProxy::startRecording(
+    AtomicBuffer& buffer,
+    const std::string& channel,
+    std::int32_t streamId,
+    bool localSource,
+    bool autoStop,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    StartRecordingRequest2 request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .streamId(streamId)
+        .sourceLocation(localSource ? SourceLocation::LOCAL : SourceLocation::REMOTE)
+        .autoStop(autoStop ? BooleanType::TRUE : BooleanType::FALSE)
+        .putChannel(channel);
+
+    return messageAndHeaderLength(request);
+}
+
 util::index_t ArchiveProxy::extendRecording(
     AtomicBuffer& buffer,
     const std::string& channel,
@@ -130,6 +154,30 @@ util::index_t ArchiveProxy::extendRecording(
         .recordingId(recordingId)
         .streamId(streamId)
         .sourceLocation(localSource ? SourceLocation::LOCAL : SourceLocation::REMOTE)
+        .putChannel(channel);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::extendRecording(
+    AtomicBuffer& buffer,
+    const std::string& channel,
+    std::int32_t streamId,
+    bool localSource,
+    bool autoStop,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ExtendRecordingRequest2 request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId)
+        .streamId(streamId)
+        .sourceLocation(localSource ? SourceLocation::LOCAL : SourceLocation::REMOTE)
+        .autoStop(autoStop ? BooleanType::TRUE : BooleanType::FALSE)
         .putChannel(channel);
 
     return messageAndHeaderLength(request);

@@ -23,6 +23,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ConnectRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/CloseSessionRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StartRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StartRecordingRequest2.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopRecordingRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ReplayRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopReplayRequest.h
@@ -31,6 +32,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingsForUriRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ExtendRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ExtendRecordingRequest2.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingPositionRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/TruncateRecordingRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopRecordingSubscriptionRequest.h

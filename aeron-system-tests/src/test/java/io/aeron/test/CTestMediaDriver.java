@@ -23,6 +23,7 @@ import org.agrona.collections.Object2ObjectHashMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,11 +55,16 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private final Process aeronMediaDriverProcess;
     private final MediaDriver.Context context;
+    private final DriverOutputConsumer driverOutputConsumer;
 
-    private CTestMediaDriver(final Process aeronMediaDriverProcess, final MediaDriver.Context context)
+    private CTestMediaDriver(
+        final Process aeronMediaDriverProcess,
+        final MediaDriver.Context context,
+        final DriverOutputConsumer driverOutputConsumer)
     {
         this.aeronMediaDriverProcess = aeronMediaDriverProcess;
         this.context = context;
+        this.driverOutputConsumer = driverOutputConsumer;
     }
 
     @Override
@@ -72,6 +78,8 @@ public final class CTestMediaDriver implements TestMediaDriver
                 aeronMediaDriverProcess.destroyForcibly();
                 throw new RuntimeException("Failed to shutdown cleaning, forcing close");
             }
+
+            driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
         }
         catch (final InterruptedException e)
         {
@@ -103,38 +111,58 @@ public final class CTestMediaDriver implements TestMediaDriver
             new File(context.aeronDirectoryName()).getParentFile(), "Aeron C Media Driver directory");
 
         final ProcessBuilder pb = new ProcessBuilder(f.getAbsolutePath());
+        final HashMap<String, String> environment = new HashMap<>();
 
-        pb.environment().put("AERON_CLIENT_LIVENESS_TIMEOUT", String.valueOf(context.clientLivenessTimeoutNs()));
-        pb.environment().put("AERON_IMAGE_LIVENESS_TIMEOUT", String.valueOf(context.imageLivenessTimeoutNs()));
-        pb.environment().put("AERON_DIR", context.aeronDirectoryName());
-        pb.environment().put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
-        pb.environment().put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));
-        pb.environment().put(
+        environment.put("AERON_CLIENT_LIVENESS_TIMEOUT", String.valueOf(context.clientLivenessTimeoutNs()));
+        environment.put("AERON_IMAGE_LIVENESS_TIMEOUT", String.valueOf(context.imageLivenessTimeoutNs()));
+        environment.put("AERON_DIR", context.aeronDirectoryName());
+        environment.put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
+        environment.put("AERON_DIR_DELETE_ON_START", Boolean.toString(context.dirDeleteOnStart()));
+        environment.put("AERON_DIR_DELETE_ON_SHUTDOWN", Boolean.toString(context.dirDeleteOnShutdown()));
+        environment.put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));
+        environment.put(
             "AERON_PUBLICATION_UNBLOCK_TIMEOUT", String.valueOf(context.publicationUnblockTimeoutNs()));
-        pb.environment().put(
+        environment.put(
             "AERON_PUBLICATION_CONNECTION_TIMEOUT", String.valueOf(context.publicationConnectionTimeoutNs()));
-        pb.environment().put("AERON_SPIES_SIMULATE_CONNECTION", String.valueOf(context.spiesSimulateConnection()));
+        environment.put("AERON_SPIES_SIMULATE_CONNECTION", String.valueOf(context.spiesSimulateConnection()));
         if (null != context.threadingMode())
         {
-            pb.environment().put("AERON_THREADING_MODE", context.threadingMode().name());
+            environment.put("AERON_THREADING_MODE", context.threadingMode().name());
         }
-        pb.environment().put("AERON_TIMER_INTERVAL", String.valueOf(context.timerIntervalNs()));
-        pb.environment().put("AERON_UNTETHERED_RESTING_TIMEOUT", String.valueOf(context.untetheredRestingTimeoutNs()));
-        pb.environment().put(
+        environment.put("AERON_TIMER_INTERVAL", String.valueOf(context.timerIntervalNs()));
+        environment.put("AERON_UNTETHERED_RESTING_TIMEOUT", String.valueOf(context.untetheredRestingTimeoutNs()));
+        environment.put(
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
+
         if (null != context.receiverGroupTag())
         {
-            pb.environment().put("AERON_RECEIVER_GROUP_TAG", context.receiverGroupTag().toString());
+            environment.put("AERON_RECEIVER_GROUP_TAG", context.receiverGroupTag().toString());
         }
-        pb.environment().put("AERON_FLOW_CONTROL_GROUP_TAG", String.valueOf(context.flowControlGroupTag()));
-        pb.environment().put(
+        environment.put("AERON_FLOW_CONTROL_GROUP_TAG", String.valueOf(context.flowControlGroupTag()));
+        environment.put(
             "AERON_FLOW_CONTROL_GROUP_MIN_SIZE", String.valueOf(context.flowControlGroupMinSize()));
-        pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
-        pb.environment().put("AERON_EVENT_LOG", "0xFFFF");
+        environment.put("AERON_PRINT_CONFIGURATION", "true");
+        environment.put("AERON_EVENT_LOG", "0xFFFF");
 
-        setFlowControlStrategy(pb.environment(), context);
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);
-        setLogging(pb.environment());
+        if (null != context.resolverName())
+        {
+            environment.put("AERON_DRIVER_RESOLVER_NAME", context.resolverName());
+        }
+        if (null != context.resolverInterface())
+        {
+            environment.put("AERON_DRIVER_RESOLVER_INTERFACE", context.resolverInterface());
+            environment.put("AERON_NAME_RESOLVER_SUPPLIER", "driver");
+        }
+        if (null != context.resolverBootstrapNeighbor())
+        {
+            environment.put("AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR", context.resolverBootstrapNeighbor());
+        }
+
+        setFlowControlStrategy(environment, context);
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(environment::put);
+        setLogging(environment);
+
+        pb.environment().putAll(environment);
 
         try
         {
@@ -152,11 +180,12 @@ public final class CTestMediaDriver implements TestMediaDriver
                 final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
                 stderrFile = new File(stdoutFile.getParent(), tmpName);
                 driverOutputConsumer.outputFiles(context.aeronDirectoryName(), stdoutFile, stderrFile);
+                driverOutputConsumer.environmentVariables(context.aeronDirectoryName(), environment);
             }
 
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
 
-            return new CTestMediaDriver(pb.start(), context);
+            return new CTestMediaDriver(pb.start(), context, driverOutputConsumer);
         }
         catch (final IOException e)
         {

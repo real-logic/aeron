@@ -278,7 +278,19 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
         byteBuffer.limit(length);
 
-        if (neighborList.size() == 0 && null != bootstrapNeighborAddress)
+        boolean sendToBootstrap = null != bootstrapNeighborAddress;
+        for (int i = 0, size = neighborList.size(); i < size; i++)
+        {
+            final Neighbor neighbor = neighborList.get(i);
+            sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
+
+            if (neighbor.socketAddress.equals(bootstrapNeighborAddress))
+            {
+                sendToBootstrap = false;
+            }
+        }
+
+        if (sendToBootstrap)
         {
             if (nowMs > (timeOfLastBootstrapNeighborResolveMs + TIMEOUT_MS))
             {
@@ -287,14 +299,6 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             }
 
             sendResolutionFrameTo(byteBuffer, bootstrapNeighborAddress);
-        }
-        else
-        {
-            for (int i = 0, size = neighborList.size(); i < size; i++)
-            {
-                final Neighbor neighbor = neighborList.get(i);
-                sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
-            }
         }
 
         deadlineSelfResolutionMs = nowMs + selfResolutionIntervalMs;

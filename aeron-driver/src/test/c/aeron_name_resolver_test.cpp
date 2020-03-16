@@ -193,8 +193,6 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
 {
-    struct in_addr local_address_b;
-    inet_pton(AF_INET, "127.0.0.1", &local_address_b);
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
@@ -215,7 +213,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
     struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
-    ASSERT_EQ(local_address_b.s_addr, in_addr_b->sin_addr.s_addr);
+    ASSERT_NE(INADDR_ANY, in_addr_b->sin_addr.s_addr);
 }
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv6WildCard)

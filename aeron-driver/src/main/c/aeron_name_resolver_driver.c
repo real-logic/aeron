@@ -332,29 +332,6 @@ static uint16_t aeron_name_resolver_driver_get_port(aeron_name_resolver_driver_t
     return ntohs(port);
 }
 
-int aeron_name_resolver_driver_resolve(
-    aeron_name_resolver_t *resolver,
-    const char *name,
-    const char *uri_param_name,
-    bool is_re_resolution,
-    struct sockaddr_storage *address)
-{
-    aeron_name_resolver_driver_t *driver_resolver = resolver->state;
-
-    const int8_t res_type = address->ss_family == AF_INET6 ?
-        AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
-    
-    aeron_name_resolver_driver_cache_entry_t *cache_entry;
-    if (aeron_name_resolver_driver_cache_lookup_by_name(
-        &driver_resolver->cache, name, strlen(name), res_type, &cache_entry) < 0)
-    {
-        return driver_resolver->bootstrap_resolver.resolve_func(
-            &driver_resolver->bootstrap_resolver, name, uri_param_name, is_re_resolution, address);
-    }
-
-    return aeron_name_resolver_driver_to_sockaddr(res_type, cache_entry->address, cache_entry->port, address);
-}
-
 int aeron_name_resolver_driver_find_neighbor_by_addr(
     aeron_name_resolver_driver_t *resolver,
     int8_t res_type,
@@ -778,64 +755,6 @@ int aeron_name_resolver_driver_timeout_neighbors(aeron_name_resolver_driver_t *r
     return num_removed;
 }
 
-int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
-{
-    aeron_name_resolver_driver_t *driver_resolver = resolver->state;
-    driver_resolver->now_ms = now_ms;
-    int work_count = 0;
-
-    if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
-    {
-        work_count += aeron_name_resolver_driver_poll(driver_resolver);
-        work_count += aeron_name_resolver_driver_cache_timeout_old_entries(
-            &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);
-        work_count += aeron_name_resolver_driver_timeout_neighbors(driver_resolver, now_ms);
-
-        if (driver_resolver->dead_line_self_resolutions_ms <= now_ms)
-        {
-            work_count += aeron_name_resolver_driver_send_self_resolutions(driver_resolver, now_ms);
-
-            driver_resolver->dead_line_self_resolutions_ms += driver_resolver->self_resolution_interval_ms;
-        }
-
-        if (driver_resolver->dead_line_neighbor_resolutions_ms <= now_ms)
-        {
-            work_count += aeron_name_resolver_driver_send_neighbor_resolutions(driver_resolver, now_ms);
-
-            driver_resolver->dead_line_neighbor_resolutions_ms += driver_resolver->neighbor_resolution_interval_ms;
-        }
-    }
-
-    return work_count;
-}
-
-int aeron_name_resolver_driver_supplier(
-    aeron_name_resolver_t *resolver,
-    const char *args,
-    aeron_driver_context_t *context)
-{
-    aeron_name_resolver_driver_t *name_resolver = NULL;
-
-    resolver->state = NULL;
-    if (aeron_name_resolver_driver_init(
-        &name_resolver, context,
-        context->resolver_name,
-        context->resolver_interface,
-        context->resolver_bootstrap_neighbor) < 0)
-    {
-        return -1;
-    }
-
-    resolver->lookup_func = aeron_name_resolver_default_lookup;
-    resolver->resolve_func = aeron_name_resolver_driver_resolve;
-    resolver->do_work_func = aeron_name_resolver_driver_do_work;
-    resolver->close_func = aeron_name_resolver_driver_close;
-
-    resolver->state = name_resolver;
-
-    return 0;
-}
-
 int aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,
@@ -922,3 +841,83 @@ int aeron_name_resolver_driver_set_resolution_header(
     return entry_length;
 }
 
+int aeron_name_resolver_driver_resolve(
+    aeron_name_resolver_t *resolver,
+    const char *name,
+    const char *uri_param_name,
+    bool is_re_resolution,
+    struct sockaddr_storage *address)
+{
+    aeron_name_resolver_driver_t *driver_resolver = resolver->state;
+
+    const int8_t res_type = address->ss_family == AF_INET6 ?
+        AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
+
+    aeron_name_resolver_driver_cache_entry_t *cache_entry;
+    if (aeron_name_resolver_driver_cache_lookup_by_name(
+        &driver_resolver->cache, name, strlen(name), res_type, &cache_entry) < 0)
+    {
+        return driver_resolver->bootstrap_resolver.resolve_func(
+            &driver_resolver->bootstrap_resolver, name, uri_param_name, is_re_resolution, address);
+    }
+
+    return aeron_name_resolver_driver_to_sockaddr(res_type, cache_entry->address, cache_entry->port, address);
+}
+
+int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
+{
+    aeron_name_resolver_driver_t *driver_resolver = resolver->state;
+    driver_resolver->now_ms = now_ms;
+    int work_count = 0;
+
+    if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
+    {
+        work_count += aeron_name_resolver_driver_poll(driver_resolver);
+        work_count += aeron_name_resolver_driver_cache_timeout_old_entries(
+            &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);
+        work_count += aeron_name_resolver_driver_timeout_neighbors(driver_resolver, now_ms);
+
+        if (driver_resolver->dead_line_self_resolutions_ms <= now_ms)
+        {
+            work_count += aeron_name_resolver_driver_send_self_resolutions(driver_resolver, now_ms);
+
+            driver_resolver->dead_line_self_resolutions_ms += driver_resolver->self_resolution_interval_ms;
+        }
+
+        if (driver_resolver->dead_line_neighbor_resolutions_ms <= now_ms)
+        {
+            work_count += aeron_name_resolver_driver_send_neighbor_resolutions(driver_resolver, now_ms);
+
+            driver_resolver->dead_line_neighbor_resolutions_ms += driver_resolver->neighbor_resolution_interval_ms;
+        }
+    }
+
+    return work_count;
+}
+
+int aeron_name_resolver_driver_supplier(
+    aeron_name_resolver_t *resolver,
+    const char *args,
+    aeron_driver_context_t *context)
+{
+    aeron_name_resolver_driver_t *name_resolver = NULL;
+
+    resolver->state = NULL;
+    if (aeron_name_resolver_driver_init(
+        &name_resolver, context,
+        context->resolver_name,
+        context->resolver_interface,
+        context->resolver_bootstrap_neighbor) < 0)
+    {
+        return -1;
+    }
+
+    resolver->lookup_func = aeron_name_resolver_default_lookup;
+    resolver->resolve_func = aeron_name_resolver_driver_resolve;
+    resolver->do_work_func = aeron_name_resolver_driver_do_work;
+    resolver->close_func = aeron_name_resolver_driver_close;
+
+    resolver->state = name_resolver;
+
+    return 0;
+}

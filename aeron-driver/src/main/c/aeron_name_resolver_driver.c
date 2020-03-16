@@ -98,7 +98,7 @@ typedef struct aeron_name_resolver_driver_stct
     aeron_distinct_error_log_t *error_log;
 
     struct sockaddr_storage received_address;
-    uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH];  // TODO: Cache alignment??
+    uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH + AERON_CACHE_LINE_LENGTH];
 }
 aeron_name_resolver_driver_t;
 
@@ -528,9 +528,11 @@ void aeron_name_resolver_driver_receive(
 
 static int aeron_name_resolver_driver_poll(aeron_name_resolver_driver_t *resolver)
 {
+    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
+
     struct mmsghdr mmsghdr[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
     struct iovec iov[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
-    iov[0].iov_base = resolver->buffer;
+    iov[0].iov_base = aligned_buffer;
     iov[0].iov_len = AERON_MAX_UDP_PAYLOAD_LENGTH;
 
     for (size_t i = 0; i < AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS; i++)
@@ -566,6 +568,8 @@ static int aeron_name_resolver_driver_poll(aeron_name_resolver_driver_t *resolve
 
 int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
 {
+    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
+
     if (NULL == resolver->bootstrap_neighbor && 0 == resolver->neighbors.length)
     {
         return 0;
@@ -573,14 +577,14 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
     const size_t entry_offset = sizeof(aeron_frame_header_t);
 
-    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) &resolver->buffer[0];
-    aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&resolver->buffer[entry_offset];
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) &aligned_buffer[0];
+    aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&aligned_buffer[entry_offset];
 
     const size_t name_length = strlen(resolver->name); // TODO: cache name length
 
     int entry_length = aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
         resolution_header,
-        sizeof(resolver->buffer) - entry_offset,
+        AERON_MAX_UDP_PAYLOAD_LENGTH - entry_offset,
         AERON_RES_HEADER_SELF_FLAG,
         &resolver->local_socket_addr,
         resolver->name,
@@ -614,7 +618,6 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
         msghdr.msg_name = &resolver->bootstrap_neighbor_addr;
         msghdr.msg_namelen = sizeof(resolver->bootstrap_neighbor_addr);
 
-        // TODO: Track resolution send errors/short sends.
         send_result = resolver->transport_bindings->sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
         if (send_result < 0)
         {
@@ -649,7 +652,9 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
 int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
 {
-    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) &resolver->buffer[0];
+    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
+
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) aligned_buffer;
     frame_header->type = AERON_HDR_TYPE_RES;
     frame_header->flags = UINT8_C(0);
     frame_header->version = AERON_FRAME_HEADER_VERSION;
@@ -676,12 +681,12 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 
         for (j = i; j < resolver->cache.entries.length;)
         {
-            aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&resolver->buffer[entry_offset];
+            aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&aligned_buffer[entry_offset];
             aeron_name_resolver_driver_cache_entry_t *cache_entry = &resolver->cache.entries.array[j];
 
             int entry_length = aeron_name_resolver_driver_set_resolution_header(
                 resolution_header,
-                sizeof(resolver->buffer) - entry_offset,
+                AERON_MAX_UDP_PAYLOAD_LENGTH - entry_offset,
                 0,
                 cache_entry->res_type,
                 cache_entry->address,

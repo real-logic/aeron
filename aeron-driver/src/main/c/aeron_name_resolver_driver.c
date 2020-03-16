@@ -64,6 +64,7 @@ aeron_name_resolver_driver_neighbor_t;
 typedef struct aeron_name_resolver_driver_stct
 {
     const char *name;
+    size_t name_length;
     struct sockaddr_storage local_socket_addr;
     const char *bootstrap_neighbor;
     struct sockaddr_storage bootstrap_neighbor_addr;
@@ -142,6 +143,7 @@ int aeron_name_resolver_driver_init(
 
         _driver_resolver->name = local_hostname;
     }
+    _driver_resolver->name_length = strlen(_driver_resolver->name);
 
     if (aeron_find_unicast_interface(
         AF_INET, interface_name, &_driver_resolver->local_socket_addr, &_driver_resolver->interface_index) < 0)
@@ -408,7 +410,7 @@ int aeron_name_resolver_driver_on_resolution_entry(
 {
     // Ignore own records that match me...
     if (port == aeron_name_resolver_driver_get_port(resolver) &&
-        name_length && strlen(resolver->name) &&
+        name_length && resolver->name_length &&
         0 == strncmp(resolver->name, name, name_length))
     {
         return 0;
@@ -580,7 +582,7 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *) &aligned_buffer[0];
     aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&aligned_buffer[entry_offset];
 
-    const size_t name_length = strlen(resolver->name); // TODO: cache name length
+    const size_t name_length = resolver->name_length; // TODO: cache name length
 
     int entry_length = aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
         resolution_header,

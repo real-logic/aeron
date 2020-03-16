@@ -101,7 +101,7 @@ TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
             &m_cache, name, strlen(name), res_type, address, port, now_ms, &m_counter);
     }
 
-    ASSERT_EQ(m_counter, m_cache.entries.length);
+    ASSERT_EQ(m_counter, (int64_t)m_cache.entries.length);
 
     aeron_name_resolver_driver_cache_add_or_update(
         &m_cache, "hostname1", strlen("hostname1"), res_type, address, port, now_ms, &m_counter);

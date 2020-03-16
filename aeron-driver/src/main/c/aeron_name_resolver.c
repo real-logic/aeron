@@ -184,7 +184,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
         if ((supplier_func = (aeron_name_resolver_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
         {
             aeron_set_err(
-                EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", name, aeron_dlerror());
+                EINVAL, "could not find name resolver %s: dlsym - %s", name, aeron_dlerror());
         }
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop

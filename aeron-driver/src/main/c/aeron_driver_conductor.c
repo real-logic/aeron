@@ -230,7 +230,11 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
-    aeron_name_resolver_init(&conductor->name_resolver, context->name_resolver_init_args, context);
+    if (aeron_name_resolver_init(&conductor->name_resolver, context->name_resolver_init_args, context) < 0)
+    {
+        aeron_set_err(-1, "Failed to start name resolver: %s", aeron_errmsg());
+        return -1;
+    }
 
     conductor->context = context;
 
@@ -1803,16 +1807,16 @@ int aeron_driver_conductor_do_work(void *clientd)
     int work_count = 0;
     const int64_t now_ns = conductor->context->nano_clock();
     aeron_driver_conductor_update_clocks(conductor, now_ns);
+    const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
     work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
         conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
+    work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
 
     if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))
     {
-        const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
-
         aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
         aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
         aeron_driver_conductor_on_check_for_blocked_driver_commands(conductor, now_ns);

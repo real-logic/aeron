@@ -248,7 +248,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
     initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
     initResolver(&m_c, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8051");
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 10; i++)
     {
         timestamp_ms += 1000;
         aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);

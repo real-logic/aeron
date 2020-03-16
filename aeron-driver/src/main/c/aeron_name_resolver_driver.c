@@ -197,6 +197,8 @@ int aeron_name_resolver_driver_init(
         goto error_cleanup;
     }
 
+    _driver_resolver->transport.data_paths = &_driver_resolver->data_paths;
+
     if (_driver_resolver->transport_bindings->poller_init_func(
         &_driver_resolver->poller, context, AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_CONDUCTOR) < 0)
     {
@@ -355,6 +357,62 @@ int aeron_name_resolver_driver_find_neighbor_by_addr(
     return -1;
 }
 
+void aeron_name_resolver_driver_log_add_neighbor(
+    aeron_name_resolver_driver_t *resolver,
+    int8_t res_type,
+    const uint8_t *address,
+    uint16_t port)
+{
+    static char addr_buf[INET6_ADDRSTRLEN];
+    inet_ntop(AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == res_type ? AF_INET6 : AF_INET, address, addr_buf, sizeof(addr_buf));
+    printf("[%s] Adding neighbor %s:%d to: ", resolver->name, addr_buf, port);
+    for (size_t i = 0; i < resolver->neighbors.length; i++)
+    {
+        aeron_name_resolver_driver_neighbor_t *neighbor = &resolver->neighbors.array[i];
+
+        inet_ntop(AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == neighbor->res_type ? AF_INET6 : AF_INET, neighbor->address, addr_buf, sizeof(addr_buf));
+        printf("%s:%d", addr_buf, neighbor->port);
+        if (i + 1 < resolver->neighbors.length)
+        {
+           printf(", ");
+        }
+    }
+    printf("\n");
+}
+
+void aeron_name_resolver_driver_log_removed_neighbors(aeron_name_resolver_driver_t *resolver, int num_removed)
+{
+    static char addr_buf[INET6_ADDRSTRLEN];
+    printf("[%s] Removed neighbors: ", resolver->name);
+
+    size_t length_of_removed = resolver->neighbors.length + num_removed;
+    for (size_t i = resolver->neighbors.length; i < length_of_removed && i < resolver->neighbors.capacity; i++)
+    {
+        aeron_name_resolver_driver_neighbor_t *neighbor = &resolver->neighbors.array[i];
+
+        inet_ntop(AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == neighbor->res_type ? AF_INET6 : AF_INET, neighbor->address, addr_buf, sizeof(addr_buf));
+        printf("%s:%d", addr_buf, neighbor->port);
+        if (i + 1 < length_of_removed)
+        {
+            printf(", ");
+        }
+    }
+
+    printf(" from: ");
+    for (size_t i = 0; i < resolver->neighbors.length; i++)
+    {
+        aeron_name_resolver_driver_neighbor_t *neighbor = &resolver->neighbors.array[i];
+
+        inet_ntop(AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == neighbor->res_type ? AF_INET6 : AF_INET, neighbor->address, addr_buf, sizeof(addr_buf));
+        printf("%s:%d", addr_buf, neighbor->port);
+        if (i + 1 < resolver->neighbors.length)
+        {
+            printf(", ");
+        }
+    }
+    printf("\n");
+}
+
 int aeron_name_resolver_driver_add_neighbor(
     aeron_name_resolver_driver_t *resolver,
     int8_t res_type,
@@ -366,6 +424,8 @@ int aeron_name_resolver_driver_add_neighbor(
     const int neighbor_index = aeron_name_resolver_driver_find_neighbor_by_addr(resolver, res_type, address, port);
     if (neighbor_index < 0)
     {
+        aeron_name_resolver_driver_log_add_neighbor(resolver, res_type, address, port);
+
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, resolver->neighbors, aeron_name_resolver_driver_neighbor_t)
         if (ensure_capacity_result < 0)
@@ -764,6 +824,7 @@ int aeron_name_resolver_driver_timeout_neighbors(aeron_name_resolver_driver_t *r
     if (0 != num_removed)
     {
         aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, resolver->neighbors.length);
+        aeron_name_resolver_driver_log_removed_neighbors(resolver, num_removed);
     }
 
     return num_removed;
@@ -895,15 +956,17 @@ int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t 
         {
             work_count += aeron_name_resolver_driver_send_self_resolutions(driver_resolver, now_ms);
 
-            driver_resolver->dead_line_self_resolutions_ms += driver_resolver->self_resolution_interval_ms;
+            driver_resolver->dead_line_self_resolutions_ms = now_ms + driver_resolver->self_resolution_interval_ms;
         }
 
         if (driver_resolver->dead_line_neighbor_resolutions_ms <= now_ms)
         {
             work_count += aeron_name_resolver_driver_send_neighbor_resolutions(driver_resolver, now_ms);
 
-            driver_resolver->dead_line_neighbor_resolutions_ms += driver_resolver->neighbor_resolution_interval_ms;
+            driver_resolver->dead_line_neighbor_resolutions_ms = now_ms + driver_resolver->neighbor_resolution_interval_ms;
         }
+
+        driver_resolver->time_of_last_work_ms = now_ms;
     }
 
     return work_count;

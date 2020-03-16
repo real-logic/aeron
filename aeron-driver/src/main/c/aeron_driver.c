@@ -809,15 +809,15 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         goto error;
     }
 
-    if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
-    {
-        goto error;
-    }
-
     context->counters_manager = &_driver->conductor.counters_manager;
     context->system_counters = &_driver->conductor.system_counters;
     context->error_log = &_driver->conductor.error_log;
     _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
+
+    if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
+    {
+        goto error;
+    }
 
     if (aeron_driver_sender_init(
         &_driver->sender, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)

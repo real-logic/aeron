@@ -45,6 +45,7 @@ public class ArchiveProxy
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private StartRecordingRequestEncoder startRecordingRequestEncoder;
     private StartRecordingRequest2Encoder startRecordingRequest2Encoder;
     private StopRecordingRequestEncoder stopRecordingRequestEncoder;
     private StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequestEncoder;
@@ -53,6 +54,7 @@ public class ArchiveProxy
     private ListRecordingsRequestEncoder listRecordingsRequestEncoder;
     private ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder;
     private ListRecordingRequestEncoder listRecordingRequestEncoder;
+    private ExtendRecordingRequestEncoder extendRecordingRequestEncoder;
     private ExtendRecordingRequest2Encoder extendRecordingRequest2Encoder;
     private RecordingPositionRequestEncoder recordingPositionRequestEncoder;
     private TruncateRecordingRequestEncoder truncateRecordingRequestEncoder;
@@ -282,7 +284,20 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        return startRecording(channel, streamId, sourceLocation, false, correlationId, controlSessionId);
+        if (null == startRecordingRequestEncoder)
+        {
+            startRecordingRequestEncoder = new StartRecordingRequestEncoder();
+        }
+
+        startRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .streamId(streamId)
+            .sourceLocation(sourceLocation)
+            .channel(channel);
+
+        return offer(startRecordingRequestEncoder.encodedLength());
     }
 
     /**
@@ -611,7 +626,21 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        return extendRecording(channel, streamId, sourceLocation, false, recordingId, correlationId, controlSessionId);
+        if (null == extendRecordingRequestEncoder)
+        {
+            extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
+        }
+
+        extendRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .streamId(streamId)
+            .sourceLocation(sourceLocation)
+            .channel(channel);
+
+        return offer(extendRecordingRequestEncoder.encodedLength());
     }
 
     /**

@@ -560,7 +560,26 @@ public class AeronArchive implements AutoCloseable
      */
     public long startRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        return startRecording(channel, streamId, sourceLocation, false);
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.startRecording(
+                channel, streamId, sourceLocation, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send start recording request");
+            }
+
+            return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -623,7 +642,26 @@ public class AeronArchive implements AutoCloseable
         final int streamId,
         final SourceLocation sourceLocation)
     {
-        return extendRecording(recordingId, channel, streamId, sourceLocation, false);
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.extendRecording(
+                channel, streamId, sourceLocation, recordingId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send extend recording request");
+            }
+
+            return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**

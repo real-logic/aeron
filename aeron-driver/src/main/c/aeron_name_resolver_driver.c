@@ -526,7 +526,15 @@ void aeron_name_resolver_driver_receive(
 
         if (is_self && aeron_name_resolver_driver_is_wildcard(res_type, address))
         {
-            aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port);
+            if (aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port) < 0)
+            {
+                aeron_set_err(
+                    -1, "Failed to replace wildcard with source addr: %d, %s", addr->ss_family, aeron_errmsg());
+                aeron_distinct_error_log_record(
+                    resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+
+                return;
+            }
         }
 
         if (aeron_name_resolver_driver_on_resolution_entry(
@@ -635,6 +643,13 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
         &resolver->local_socket_addr,
         resolver->name,
         name_length);
+
+    if (entry_length < 0)
+    {
+        aeron_set_err(
+            -1, "Entry length invalid from sockaddr: %d, %s", resolver->local_socket_addr.ss_family, aeron_errmsg());
+        return 0;
+    }
 
     assert(entry_length > 0 && "Bug! Single message should always fit in buffer.");
 

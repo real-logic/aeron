@@ -555,7 +555,7 @@ static int aeron_name_resolver_driver_poll(aeron_name_resolver_driver_t *resolve
     for (size_t i = 0; i < AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS; i++)
     {
         mmsghdr[i].msg_hdr.msg_name = &resolver->received_address;
-        mmsghdr[i].msg_hdr.msg_namelen = sizeof(resolver->received_address);
+        mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&resolver->received_address);
         mmsghdr[i].msg_hdr.msg_iov = &iov[i];
         mmsghdr[i].msg_hdr.msg_iovlen = 1;
         mmsghdr[i].msg_hdr.msg_flags = 0;
@@ -611,6 +611,9 @@ bool aeron_name_resolver_driver_sockaddr_equals(struct sockaddr_storage *a, stru
 
 int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
 {
+    struct iovec iov[1];
+    struct msghdr msghdr;
+
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
     if (NULL == resolver->bootstrap_neighbor && 0 == resolver->neighbors.length)
@@ -643,18 +646,6 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
     struct sockaddr_storage neighbor_address;
 
-    struct iovec iov[1];
-    iov[0].iov_base = frame_header;
-    iov[0].iov_len = frame_header->frame_length;
-    struct msghdr msghdr;
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = &neighbor_address;
-    msghdr.msg_namelen = sizeof(neighbor_address);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
-
     bool send_to_bootstrap = NULL != resolver->bootstrap_neighbor;
     int send_work = 0;
     for (size_t k = 0; k < resolver->neighbors.length; k++)
@@ -663,6 +654,16 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
         aeron_name_resolver_driver_to_sockaddr(
             neighbor->res_type, neighbor->address, neighbor->port, &neighbor_address);
+
+        iov[0].iov_base = frame_header;
+        iov[0].iov_len = frame_header->frame_length;
+        msghdr.msg_iov = iov;
+        msghdr.msg_iovlen = 1;
+        msghdr.msg_flags = 0;
+        msghdr.msg_name = &neighbor_address;
+        msghdr.msg_namelen = AERON_ADDR_LEN(&neighbor_address);
+        msghdr.msg_control = NULL;
+        msghdr.msg_controllen = 0;
 
         if (resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr) < 0)
         {
@@ -693,8 +694,15 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
             resolver->time_of_last_bootstrap_neighbor_resolve_ms = now_ms;
         }
 
+        iov[0].iov_base = frame_header;
+        iov[0].iov_len = frame_header->frame_length;
+        msghdr.msg_iov = iov;
+        msghdr.msg_iovlen = 1;
+        msghdr.msg_flags = 0;
         msghdr.msg_name = &resolver->bootstrap_neighbor_addr;
-        msghdr.msg_namelen = sizeof(resolver->bootstrap_neighbor_addr);
+        msghdr.msg_namelen = AERON_ADDR_LEN(&resolver->bootstrap_neighbor_addr);
+        msghdr.msg_control = NULL;
+        msghdr.msg_controllen = 0;
 
         if (resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr) < 0)
         {
@@ -710,6 +718,8 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
 int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
 {
+    struct iovec iov[1];
+    struct msghdr msghdr;
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *) aligned_buffer;
@@ -718,17 +728,6 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
     frame_header->version = AERON_FRAME_HEADER_VERSION;
 
     struct sockaddr_storage neighbor_address;
-
-    struct iovec iov[1];
-    iov[0].iov_base = frame_header;
-    struct msghdr msghdr;
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = &neighbor_address;
-    msghdr.msg_namelen = sizeof(neighbor_address);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
 
     size_t i;
     size_t j;
@@ -766,8 +765,7 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
         }
 
         frame_header->frame_length = (int32_t)entry_offset;
-        iov[0].iov_len = frame_header->frame_length;
-        
+
         for (size_t k = 0; k < resolver->neighbors.length; k++)
         {
             aeron_name_resolver_driver_neighbor_t *neighbor = &resolver->neighbors.array[k];
@@ -775,8 +773,17 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
             aeron_name_resolver_driver_to_sockaddr(
                 neighbor->res_type, neighbor->address, neighbor->port, &neighbor_address);
 
-            int send_result = resolver->data_paths.sendmsg_func(
-                &resolver->data_paths, &resolver->transport, &msghdr);
+            iov[0].iov_base = frame_header;
+            iov[0].iov_len = frame_header->frame_length;
+            msghdr.msg_iov = iov;
+            msghdr.msg_iovlen = 1;
+            msghdr.msg_flags = 0;
+            msghdr.msg_name = &neighbor_address;
+            msghdr.msg_namelen = AERON_ADDR_LEN(&neighbor_address);
+            msghdr.msg_control = NULL;
+            msghdr.msg_controllen = 0;
+
+            int send_result = resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
 
             if (send_result < 0)
             {

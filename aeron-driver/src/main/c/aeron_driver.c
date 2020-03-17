@@ -656,6 +656,12 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         aeron_dlinfo((const void *)context->name_resolver_supplier_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    name_resolver_init_args=%s",
         (void *)context->name_resolver_init_args ? context->name_resolver_init_args : "");
+    fprintf(fpout, "\n    resolver_name=%s",
+        (void *)context->resolver_name ? context->resolver_name : "");
+    fprintf(fpout, "\n    resolver_interface=%s",
+        (void *)context->resolver_interface ? context->resolver_interface : "");
+    fprintf(fpout, "\n    resolver_bootstrap_neighbor=%s",
+        (void *)context->resolver_bootstrap_neighbor ? context->resolver_bootstrap_neighbor : "");
     fprintf(fpout, "\n    re_resolution_check_interval_ns=%" PRIu64, context->re_resolution_check_interval_ns);
 
     const aeron_udp_channel_transport_bindings_t *bindings = context->udp_channel_transport_bindings;

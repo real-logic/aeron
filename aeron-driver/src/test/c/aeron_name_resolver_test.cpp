@@ -207,7 +207,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     ASSERT_LT(0, m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms));
 
     // Should load neighbor resolution (spin until we do work)
-    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
+    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms)) << aeron_errmsg();
 
     struct sockaddr_storage resolved_address_of_b;
     resolved_address_of_b.ss_family = AF_INET;
@@ -264,7 +264,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
     struct sockaddr_storage resolved_address;
     resolved_address.ss_family = AF_INET;
 
-    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address)) << aeron_errmsg();
     ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "B", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "B", "endpoint", false, &resolved_address));
 
@@ -326,7 +326,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     ASSERT_LT(0, m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms));
 
     // Should load neighbor resolution
-    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
+    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms)) << aeron_errmsg();
 
     // A sees B.
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));

@@ -862,49 +862,38 @@ class ConsensusModuleAgent implements Agent
     {
         ClusterControl.ToggleState.deactivate(controlToggle);
 
-        long recordingId = RecordingPos.NULL_RECORDING_ID;
-        if (null != appendPosition)
+        final long recordingId = logRecordingId();
+        if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
-            recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendPosition.counterId());
-        }
+            stopLogRecording();
 
-        if (RecordingPos.NULL_RECORDING_ID == recordingId)
-        {
-            recordingId = recordingLog.findLastTermRecordingId();
-            if (RecordingPos.NULL_RECORDING_ID == recordingId)
+            long stopPosition;
+            idleStrategy.reset();
+            while (AeronArchive.NULL_POSITION == (stopPosition = archive.getStopPosition(recordingId)))
             {
-                return;
+                idle();
             }
-        }
 
-        stopLogRecording();
+            archive.stopAllReplays(recordingId);
 
-        long stopPosition;
-        idleStrategy.reset();
-        while (AeronArchive.NULL_POSITION == (stopPosition = archive.getStopPosition(recordingId)))
-        {
-            idle();
-        }
+            if (stopPosition > logPosition)
+            {
+                archive.truncateRecording(recordingId, logPosition);
+            }
 
-        archive.stopAllReplays(recordingId);
+            RecordingLog.validateExistingLog(recordingId, recoveryPlan.log, archive);
 
-        if (stopPosition > logPosition)
-        {
-            archive.truncateRecording(recordingId, logPosition);
-        }
+            lastAppendPosition = logPosition;
+            notifiedCommitPosition = logPosition;
 
-        RecordingLog.validateExistingLog(recordingId, recoveryPlan.log, archive);
+            commitPosition.setOrdered(logPosition);
+            restoreUncommittedEntries(logPosition);
 
-        lastAppendPosition = logPosition;
-        notifiedCommitPosition = logPosition;
-
-        commitPosition.setOrdered(logPosition);
-        restoreUncommittedEntries(logPosition);
-
-        clearSessionsAfter(logPosition);
-        for (final ClusterSession session : sessionByIdMap.values())
-        {
-            session.disconnect(ctx.countedErrorHandler());
+            clearSessionsAfter(logPosition);
+            for (final ClusterSession session : sessionByIdMap.values())
+            {
+                session.disconnect(ctx.countedErrorHandler());
+            }
         }
     }
 

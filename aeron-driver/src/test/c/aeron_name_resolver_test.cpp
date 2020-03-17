@@ -255,22 +255,25 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
         aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
         aeron_clock_update_cached_time(m_c.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
 
-        m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms);
-        m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms);
         m_c.resolver.do_work_func(&m_c.resolver, timestamp_ms);
+        m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms);
+        m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms);
     }
 
     struct sockaddr_storage resolved_address;
     resolved_address.ss_family = AF_INET;
 
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "B", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "B", "endpoint", false, &resolved_address));
 
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "C", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "C", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "C", "endpoint", false, &resolved_address));
 
     ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "A", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "A", "endpoint", false, &resolved_address));
+    ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "A", "endpoint", false, &resolved_address));
 
     ASSERT_EQ(2, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
     ASSERT_EQ(2, readCounterByTypeId(&m_b.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));

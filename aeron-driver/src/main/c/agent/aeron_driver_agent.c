@@ -855,7 +855,8 @@ static const char *dissect_frame(const void *message, size_t length)
 
         case AERON_HDR_TYPE_RES:
         {
-            int buffer_used = snprintf(buffer, sizeof(buffer) - 1, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
+//            int buffer_used = snprintf(buffer, sizeof(buffer) - 1, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
+            snprintf(buffer, sizeof(buffer) - 1, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
 //                aeron_resolution_header_t * res = (aeron_resolution_header_t *)message;
 //            switch (res->res_type)
             break;

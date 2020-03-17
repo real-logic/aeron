@@ -119,6 +119,31 @@ class ArchiveEventDissectorTest
     }
 
     @Test
+    void controlRequestStartRecording2()
+    {
+        internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);
+        final StartRecordingRequest2Encoder requestEncoder = new StartRecordingRequest2Encoder();
+        requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
+            .controlSessionId(5)
+            .correlationId(13)
+            .streamId(7)
+            .sourceLocation(SourceLocation.REMOTE)
+            .autoStop(BooleanType.TRUE)
+            .channel("foo");
+
+        controlRequest(CMD_IN_START_RECORDING2, buffer, 0, builder);
+
+        assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_START_RECORDING2.name() + " [32/64]:" +
+            " controlSessionId=5" +
+            ", correlationId=13" +
+            ", streamId=7" +
+            ", sourceLocation=" + SourceLocation.REMOTE +
+            ", autoStop=" + BooleanType.TRUE +
+            ", channel=foo",
+            builder.toString());
+    }
+
+    @Test
     void controlRequestStopRecording()
     {
         internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);
@@ -271,6 +296,33 @@ class ArchiveEventDissectorTest
             ", recordingId=1010101" +
             ", streamId=43" +
             ", sourceLocation=" + SourceLocation.LOCAL +
+            ", channel=extend me",
+            builder.toString());
+    }
+
+    @Test
+    void controlRequestExtendRecording2()
+    {
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
+        final ExtendRecordingRequest2Encoder requestEncoder = new ExtendRecordingRequest2Encoder();
+        requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
+            .controlSessionId(9)
+            .correlationId(78)
+            .recordingId(1010101)
+            .streamId(43)
+            .sourceLocation(SourceLocation.LOCAL)
+            .autoStop(BooleanType.TRUE)
+            .channel("extend me");
+
+        controlRequest(CMD_IN_EXTEND_RECORDING2, buffer, 0, builder);
+
+        assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_EXTEND_RECORDING2.name() + " [12/32]:" +
+            " controlSessionId=9" +
+            ", correlationId=78" +
+            ", recordingId=1010101" +
+            ", streamId=43" +
+            ", sourceLocation=" + SourceLocation.LOCAL +
+            ", autoStop=" + BooleanType.TRUE +
             ", channel=extend me",
             builder.toString());
     }

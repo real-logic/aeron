@@ -30,6 +30,8 @@ final class ArchiveEventDissector
     private static final CloseSessionRequestDecoder CLOSE_SESSION_REQUEST_DECODER = new CloseSessionRequestDecoder();
     private static final StartRecordingRequestDecoder START_RECORDING_REQUEST_DECODER =
         new StartRecordingRequestDecoder();
+    private static final StartRecordingRequest2Decoder START_RECORDING_REQUEST2_DECODER =
+        new StartRecordingRequest2Decoder();
     private static final StopRecordingRequestDecoder STOP_RECORDING_REQUEST_DECODER = new StopRecordingRequestDecoder();
     private static final ReplayRequestDecoder REPLAY_REQUEST_DECODER = new ReplayRequestDecoder();
     private static final StopReplayRequestDecoder STOP_REPLAY_REQUEST_DECODER = new StopReplayRequestDecoder();
@@ -40,6 +42,8 @@ final class ArchiveEventDissector
     private static final ListRecordingRequestDecoder LIST_RECORDING_REQUEST_DECODER = new ListRecordingRequestDecoder();
     private static final ExtendRecordingRequestDecoder EXTEND_RECORDING_REQUEST_DECODER =
         new ExtendRecordingRequestDecoder();
+    private static final ExtendRecordingRequest2Decoder EXTEND_RECORDING_REQUEST2_DECODER =
+        new ExtendRecordingRequest2Decoder();
     private static final RecordingPositionRequestDecoder RECORDING_POSITION_REQUEST_DECODER =
         new RecordingPositionRequestDecoder();
     private static final TruncateRecordingRequestDecoder TRUNCATE_RECORDING_REQUEST_DECODER =
@@ -352,15 +356,30 @@ final class ArchiveEventDissector
                 appendTaggedReplicate(builder);
                 break;
 
+            case CMD_IN_START_RECORDING2:
+                START_RECORDING_REQUEST2_DECODER.wrap(
+                    buffer,
+                    offset + relativeOffset,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendStartRecording2(builder);
+                break;
+
+            case CMD_IN_EXTEND_RECORDING2:
+                EXTEND_RECORDING_REQUEST2_DECODER.wrap(
+                    buffer,
+                    offset + relativeOffset,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendExtendRecording2(builder);
+                break;
+
             default:
                 builder.append(": unknown command");
         }
     }
 
-    static void controlResponse(
-        final MutableDirectBuffer buffer,
-        final int offset,
-        final StringBuilder builder)
+    static void controlResponse(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = dissectLogHeader(CONTEXT, CMD_OUT_RESPONSE, buffer, offset, builder);
 
@@ -419,6 +438,18 @@ final class ArchiveEventDissector
             .append(", channel=");
 
         START_RECORDING_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendStartRecording2(final StringBuilder builder)
+    {
+        builder.append(": controlSessionId=").append(START_RECORDING_REQUEST2_DECODER.controlSessionId())
+            .append(", correlationId=").append(START_RECORDING_REQUEST2_DECODER.correlationId())
+            .append(", streamId=").append(START_RECORDING_REQUEST2_DECODER.streamId())
+            .append(", sourceLocation=").append(START_RECORDING_REQUEST2_DECODER.sourceLocation())
+            .append(", autoStop=").append(START_RECORDING_REQUEST2_DECODER.autoStop())
+            .append(", channel=");
+
+        START_RECORDING_REQUEST2_DECODER.getChannel(builder);
     }
 
     private static void appendStopRecording(final StringBuilder builder)
@@ -488,6 +519,19 @@ final class ArchiveEventDissector
             .append(", channel=");
 
         EXTEND_RECORDING_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendExtendRecording2(final StringBuilder builder)
+    {
+        builder.append(": controlSessionId=").append(EXTEND_RECORDING_REQUEST2_DECODER.controlSessionId())
+            .append(", correlationId=").append(EXTEND_RECORDING_REQUEST2_DECODER.correlationId())
+            .append(", recordingId=").append(EXTEND_RECORDING_REQUEST2_DECODER.recordingId())
+            .append(", streamId=").append(EXTEND_RECORDING_REQUEST2_DECODER.streamId())
+            .append(", sourceLocation=").append(EXTEND_RECORDING_REQUEST2_DECODER.sourceLocation())
+            .append(", autoStop=").append(EXTEND_RECORDING_REQUEST2_DECODER.autoStop())
+            .append(", channel=");
+
+        EXTEND_RECORDING_REQUEST2_DECODER.getChannel(builder);
     }
 
     private static void appendRecordingPosition(final StringBuilder builder)

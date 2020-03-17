@@ -81,8 +81,8 @@ public final class DriverEventLogger
         {
             try
             {
-                encode(
-                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, srcBuffer, srcOffset, dstAddress);
+                final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
+                encode(buffer, index, captureLength, length, srcBuffer, srcOffset, dstAddress);
             }
             finally
             {
@@ -129,8 +129,8 @@ public final class DriverEventLogger
         {
             try
             {
-                encodePublicationRemoval(
-                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, uri, sessionId, streamId);
+                final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
+                encodePublicationRemoval(buffer, index, captureLength, length, uri, sessionId, streamId);
             }
             finally
             {
@@ -150,8 +150,8 @@ public final class DriverEventLogger
         {
             try
             {
-                encodeSubscriptionRemoval(
-                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, uri, streamId, id);
+                final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
+                encodeSubscriptionRemoval(buffer, index, captureLength, length, uri, streamId, id);
             }
             finally
             {
@@ -171,8 +171,8 @@ public final class DriverEventLogger
         {
             try
             {
-                encodeImageRemoval(
-                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, uri, sessionId, streamId, id);
+                final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
+                encodeImageRemoval(buffer, index, captureLength, length, uri, sessionId, streamId, id);
             }
             finally
             {

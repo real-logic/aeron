@@ -62,7 +62,10 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_TAGGED_REPLICATE(29, TaggedReplicateRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
 
     CMD_OUT_RESPONSE(30, ControlResponseDecoder.TEMPLATE_ID,
-        (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder));
+        (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder)),
+
+    CMD_IN_START_RECORDING2(31, StartRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_EXTEND_RECORDING2(32, ExtendRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest);
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;
@@ -117,7 +120,12 @@ public enum ArchiveEventCode implements EventCode
 
     static ArchiveEventCode getByTemplateId(final int templateId)
     {
-        return EVENT_CODE_BY_TEMPLATE_ID[templateId];
+        if (templateId >= 0 && templateId < EVENT_CODE_BY_TEMPLATE_ID.length)
+        {
+            return EVENT_CODE_BY_TEMPLATE_ID[templateId];
+        }
+
+        return null;
     }
 
     /**

@@ -19,8 +19,6 @@
 extern "C"
 {
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <string.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_name_resolver_driver_cache.h"

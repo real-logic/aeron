@@ -217,7 +217,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     ASSERT_NE(INADDR_ANY, in_addr_b->sin_addr.s_addr);
 }
 
-TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv6WildCard)
+TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6WildCard)
 {
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
@@ -381,10 +381,10 @@ TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking
     while (res_offset < sizeof(buffer));
 
     frame->type = AERON_HDR_TYPE_RES;
-    frame->frame_length = res_offset;
+    frame->frame_length = (int32_t)res_offset;
     log_header->message_len = frame->frame_length;
 
-    setenv(AERON_AGENT_MASK_ENV_VAR, "0xFFFF", 1);
+    aeron_env_set(AERON_AGENT_MASK_ENV_VAR, "0xFFFF");
     aeron_driver_agent_context_init(m_a.context);
     aeron_driver_agent_log_dissector(AERON_FRAME_IN, buffer, res_offset, NULL);
 }

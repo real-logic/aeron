@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "util/aeron_platform.h"
+
 #if defined(__linux__)
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -21,7 +23,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#if defined(AERON_COMPILER_MSVC)
+#include <winsock2.h>
+#include <inaddr.h>
+#define in_addr_t ULONG
+#else
 #include <unistd.h>
+#endif
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
@@ -327,7 +335,7 @@ static int aeron_name_resolver_driver_from_sockaddr(
 
 static uint16_t aeron_name_resolver_driver_get_port(aeron_name_resolver_driver_t *resolver)
 {
-    in_port_t port = resolver->local_socket_addr.ss_family == AF_INET6 ?
+    uint16_t port = resolver->local_socket_addr.ss_family == AF_INET6 ?
         ((struct sockaddr_in6 *)&resolver->local_socket_addr)->sin6_port :
         ((struct sockaddr_in *)&resolver->local_socket_addr)->sin_port;
     return ntohs(port);
@@ -347,7 +355,7 @@ int aeron_name_resolver_driver_find_neighbor_by_addr(
             port == neighbor->port &&
             0 == memcmp(address, neighbor->address, aeron_res_header_address_length(res_type)))
         {
-            return i;
+            return (int)i;
         }
     }
 
@@ -436,7 +444,7 @@ int aeron_name_resolver_driver_on_resolution_entry(
 
 static bool aeron_name_resolver_driver_is_wildcard(int8_t res_type, uint8_t *address)
 {
-    const in_addr_t ipv4_wildcard = INADDR_ANY;
+    in_addr_t ipv4_wildcard = INADDR_ANY;
     return
         (res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD && 0 == memcmp(address, &in6addr_any, sizeof(in6addr_any))) ||
         0 == memcmp(address, &ipv4_wildcard, sizeof(ipv4_wildcard));
@@ -746,7 +754,7 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 
             assert(-1 != entry_length && "Invalid res_type crept in from somewhere");
 
-            resolution_header->age_in_ms = now_ms - cache_entry->time_of_last_activity_ms;
+            resolution_header->age_in_ms = (int32_t)(now_ms - cache_entry->time_of_last_activity_ms);
 
             if (0 == entry_length)
             {
@@ -758,7 +766,7 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
         }
 
         frame_header->frame_length = (int32_t)entry_offset;
-        iov[0].iov_len = entry_offset;
+        iov[0].iov_len = frame_header->frame_length;
         
         for (size_t k = 0; k < resolver->neighbors.length; k++)
         {
@@ -788,7 +796,7 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 int aeron_name_resolver_driver_timeout_neighbors(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
 {
     int num_removed = 0;
-    for (int last_index = resolver->neighbors.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int)resolver->neighbors.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_name_resolver_driver_neighbor_t *entry = &resolver->neighbors.array[i];
 
@@ -862,7 +870,7 @@ int aeron_name_resolver_driver_set_resolution_header(
 
             aeron_resolution_header_ipv4_t *hdr_ipv4 = (aeron_resolution_header_ipv4_t *) resolution_header;
             memcpy(&hdr_ipv4->addr, address, sizeof(hdr_ipv4->addr));
-            hdr_ipv4->name_length = name_length;
+            hdr_ipv4->name_length = (int16_t)name_length;
             name_offset = sizeof(aeron_resolution_header_ipv4_t);
 
             break;
@@ -877,7 +885,7 @@ int aeron_name_resolver_driver_set_resolution_header(
             aeron_resolution_header_ipv6_t *hdr_ipv6 = (aeron_resolution_header_ipv6_t *) resolution_header;
 
             memcpy(&hdr_ipv6->addr, address, sizeof(hdr_ipv6->addr));
-            hdr_ipv6->name_length = name_length;
+            hdr_ipv6->name_length = (int16_t)name_length;
             name_offset = sizeof(aeron_resolution_header_ipv6_t);
 
             break;
@@ -893,7 +901,7 @@ int aeron_name_resolver_driver_set_resolution_header(
     uint8_t *buffer = (uint8_t *)resolution_header;
     memcpy(&buffer[name_offset], name, name_length);
 
-    return entry_length;
+    return (int)entry_length;
 }
 
 int aeron_name_resolver_driver_resolve(

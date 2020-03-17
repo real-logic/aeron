@@ -57,7 +57,7 @@ int aeron_name_resolver_driver_cache_find_index_by_name_and_type(
             name_length == entry->name_length &&
             0 == strncmp(name, entry->name, name_length))
         {
-            return i;
+            return (int)i;
         }
     }
     
@@ -147,7 +147,7 @@ int aeron_name_resolver_driver_cache_timeout_old_entries(
     int64_t *cache_entries_counter)
 {
     int num_removed = 0;
-    for (int last_index = cache->entries.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int)cache->entries.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_name_resolver_driver_cache_entry_t *entry = &cache->entries.array[i];
 

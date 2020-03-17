@@ -306,7 +306,7 @@ static int aeron_name_resolver_driver_to_sockaddr(
 }
 
 static int aeron_name_resolver_driver_from_sockaddr(
-    struct sockaddr_storage *addr, int8_t *res_type, uint8_t **address, uint16_t *port)
+    struct sockaddr_storage *addr, int8_t *res_type, uint8_t **address, uint16_t *port, const char *from)
 {
     int result = -1;
     if (addr->ss_family == AF_INET6)
@@ -327,7 +327,7 @@ static int aeron_name_resolver_driver_from_sockaddr(
     }
     else
     {
-        aeron_set_err(EINVAL, "Invalid address family: %d", addr->ss_family);
+        aeron_set_err(EINVAL, "Invalid address family: %d (%s)", addr->ss_family, from);
     }
 
     return result;
@@ -526,12 +526,13 @@ void aeron_name_resolver_driver_receive(
 
         if (is_self && aeron_name_resolver_driver_is_wildcard(res_type, address))
         {
-            if (aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port) < 0)
+            if (aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port, "receive") < 0)
             {
                 aeron_set_err(
                     -1, "Failed to replace wildcard with source addr: %d, %s", addr->ss_family, aeron_errmsg());
                 aeron_distinct_error_log_record(
                     resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+                // TODO: errors counter
 
                 return;
             }
@@ -543,6 +544,7 @@ void aeron_name_resolver_driver_receive(
             aeron_set_err(EINVAL, "Failed to handle resolution entry: %s", aeron_errmsg());
             aeron_distinct_error_log_record(
                 resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+            // TODO: errors counter
 
             return;
         }
@@ -852,7 +854,7 @@ int aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
     uint8_t *address;
     uint16_t port;
 
-    if (aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port) < 0)
+    if (aeron_name_resolver_driver_from_sockaddr(addr, &res_type, &address, &port, "res_header") < 0)
     {
         return -1;
     }
@@ -965,6 +967,8 @@ int aeron_name_resolver_driver_do_work(aeron_name_resolver_t *resolver, int64_t 
 
     if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
     {
+        aeron_set_err(0, "%s", "no error");
+
         work_count += aeron_name_resolver_driver_poll(driver_resolver);
         work_count += aeron_name_resolver_driver_cache_timeout_old_entries(
             &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);

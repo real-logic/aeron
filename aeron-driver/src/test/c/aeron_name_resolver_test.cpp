@@ -24,6 +24,7 @@ extern "C"
 #include "aeron_name_resolver.h"
 #include "aeron_name_resolver_driver.h"
 #include "aeron_system_counters.h"
+#include "agent/aeron_driver_agent.h"
 }
 
 #define METADATA_LENGTH (16 * 1024)
@@ -347,4 +348,43 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     ASSERT_EQ(-1, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));
     ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
     ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+}
+
+TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking dissection formatting manually...
+{
+    uint8_t buffer[65536];
+    initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", 0, "A", "[::1]:8050");
+    const char *name = "ABCDEFGH";
+
+    aeron_driver_agent_frame_log_header_t *log_header = reinterpret_cast<aeron_driver_agent_frame_log_header_t *>(&buffer[0]);
+    log_header->sockaddr_len = sizeof(struct sockaddr_in6);
+
+    size_t frame_offset = sizeof(aeron_driver_agent_frame_log_header_t) + log_header->sockaddr_len;
+    aeron_frame_header_t *frame = reinterpret_cast<aeron_frame_header_t *>(&buffer[frame_offset]);
+
+    size_t res_offset = sizeof(aeron_frame_header_t) + frame_offset;
+    do
+    {
+        aeron_resolution_header_ipv6_t *res =
+            reinterpret_cast<aeron_resolution_header_ipv6_t *>(&buffer[res_offset]);
+
+        res->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD;
+        res->resolution_header.res_flags = AERON_RES_HEADER_SELF_FLAG;
+        res->resolution_header.age_in_ms = 100;
+        res->resolution_header.udp_port = 9872;
+        inet_pton(AF_INET6, "::1", &res->addr);
+        res->name_length = 8;
+        memcpy(&buffer[res_offset + sizeof(aeron_resolution_header_ipv6_t)], name, 8);
+
+        res_offset += aeron_res_header_entry_length_ipv6(res);
+    }
+    while (res_offset < sizeof(buffer));
+
+    frame->type = AERON_HDR_TYPE_RES;
+    frame->frame_length = res_offset;
+    log_header->message_len = frame->frame_length;
+
+    setenv(AERON_AGENT_MASK_ENV_VAR, "0xFFFF", 1);
+    aeron_driver_agent_context_init(m_a.context);
+    aeron_driver_agent_log_dissector(AERON_FRAME_IN, buffer, res_offset, NULL);
 }

@@ -164,4 +164,10 @@ inline size_t aeron_res_header_address_length(int8_t res_type)
         AERON_RES_HEADER_ADDRESS_LENGTH_IP6 : AERON_RES_HEADER_ADDRESS_LENGTH_IP4;
 }
 
+size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header);
+
+size_t aeron_res_header_entry_length_ipv6(aeron_resolution_header_ipv6_t *header);
+
+int aeron_res_header_entry_length(void *res, size_t remaining);
+
 #endif //AERON_UDP_PROTOCOL_H

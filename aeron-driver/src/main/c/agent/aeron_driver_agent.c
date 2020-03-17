@@ -31,6 +31,7 @@
 
 #include <time.h>
 #include <inttypes.h>
+#include <netinet/in.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_dlopen.h"
@@ -736,6 +737,33 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
     return buffer;
 }
 
+static const char *dissect_flags(uint8_t flags)
+{
+    static char flag_buffer[8] = { '0', '0', '0', '0', '0', '0', '0', '0' };
+    size_t length = sizeof(flag_buffer);
+    uint8_t flag_mask = (uint8_t)(1 << (length - 1));
+
+    for (size_t i = 0; i < length; i++)
+    {
+        if ((flags & flag_mask) == flag_mask)
+        {
+            flag_buffer[i] = '1';
+        }
+
+        flag_mask >>= 1;
+    }
+
+    return flag_buffer;
+}
+
+static const char *dissect_res_address(int8_t res_type, const uint8_t *address)
+{
+    static char addr_buffer[INET6_ADDRSTRLEN];
+    int af = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == res_type ? AF_INET6 : AF_INET;
+    inet_ntop(af, address, addr_buffer, sizeof(addr_buffer));
+    return addr_buffer;
+}
+
 static const char *dissect_sockaddr(const struct sockaddr *addr, size_t sockaddr_len)
 {
     static char addr_buffer[128], buffer[256];
@@ -855,10 +883,65 @@ static const char *dissect_frame(const void *message, size_t length)
 
         case AERON_HDR_TYPE_RES:
         {
-//            int buffer_used = snprintf(buffer, sizeof(buffer) - 1, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
-            snprintf(buffer, sizeof(buffer) - 1, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
-//                aeron_resolution_header_t * res = (aeron_resolution_header_t *)message;
-//            switch (res->res_type)
+            uint8_t null_buffer[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+            const uint8_t *message_bytes = (uint8_t *)message;
+            const int buffer_available = sizeof(buffer) - 1;
+
+            int buffer_used = snprintf(buffer, buffer_available, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
+            size_t message_offset = sizeof(aeron_frame_header_t);
+
+            while (message_offset < length && buffer_used < buffer_available)
+            {
+                aeron_resolution_header_t *res = (aeron_resolution_header_t *)&message_bytes[message_offset];
+                const int entry_length = aeron_res_header_entry_length(res, length - message_offset);
+                if (entry_length < 0)
+                {
+                    break;
+                }
+
+                const uint8_t *address = null_buffer;
+                const uint8_t *name = null_buffer;
+                int16_t name_length = 0;
+
+                switch (res->res_type)
+                {
+                    case AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD:
+                    {
+                        aeron_resolution_header_ipv6_t *res_ipv6 = (aeron_resolution_header_ipv6_t *)res;
+                        address = res_ipv6->addr;
+                        name_length = res_ipv6->name_length;
+                        name = &message_bytes[message_offset + sizeof(aeron_resolution_header_ipv6_t)];
+                        break;
+                    }
+                    case AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD:
+                    {
+                        aeron_resolution_header_ipv4_t *res_ipv4 = (aeron_resolution_header_ipv4_t *)res;
+                        address = res_ipv4->addr;
+                        name_length = res_ipv4->name_length;
+                        name = &message_bytes[message_offset + sizeof(aeron_resolution_header_ipv4_t)];
+                        break;
+                    }
+                }
+
+                buffer_used += snprintf(
+                    &buffer[buffer_used], buffer_available - buffer_used,
+                    " [%" PRId8 " %s port %" PRIu16 " %" PRId32 " %s %.*s]",
+                    res->res_type,
+                    dissect_flags(res->res_flags),
+                    res->udp_port,
+                    res->age_in_ms,
+                    dissect_res_address(res->res_type, address),
+                    (int)name_length,
+                    (char *)name);
+
+                message_offset += entry_length;
+            }
+
+            if (buffer_available < buffer_used)
+            {
+                snprintf(&buffer[buffer_available - 3], 4, "...");
+            }
+
             break;
         }
 

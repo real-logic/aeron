@@ -35,6 +35,13 @@
 #include "aeron_name_resolver_driver_cache.h"
 #include "aeron_name_resolver_driver.h"
 
+#if !defined(HAVE_STRUCT_MMSGHDR)
+struct mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+#endif
 
 // Cater for windows.
 #define AERON_MAX_HOSTNAME_LEN (256)

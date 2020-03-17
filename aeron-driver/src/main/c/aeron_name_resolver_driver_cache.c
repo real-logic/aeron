@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <sys/socket.h>
 
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_arrayutil.h"

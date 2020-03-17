@@ -16,7 +16,6 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <netinet/in.h>
 
 #include "util/aeron_bitutil.h"
 #include "aeron_udp_protocol.h"

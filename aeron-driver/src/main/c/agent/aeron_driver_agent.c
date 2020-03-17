@@ -31,7 +31,6 @@
 
 #include <time.h>
 #include <inttypes.h>
-#include <netinet/in.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_dlopen.h"

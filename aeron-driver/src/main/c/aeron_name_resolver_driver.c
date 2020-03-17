@@ -218,11 +218,13 @@ int aeron_name_resolver_driver_init(
 
     aeron_name_resolver_driver_cache_init(&_driver_resolver->cache, AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS);
 
+    int64_t now_ms = aeron_clock_cached_epoch_time(context->cached_clock);
     _driver_resolver->neighbor_timeout_ms = AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
     _driver_resolver->self_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
     _driver_resolver->dead_line_self_resolutions_ms = 0;
     _driver_resolver->neighbor_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_NEIGHBOUR_RESOLUTION_INTERVAL_MS;
-    _driver_resolver->dead_line_neighbor_resolutions_ms = aeron_clock_cached_epoch_time(context->cached_clock);
+    _driver_resolver->dead_line_neighbor_resolutions_ms = now_ms + _driver_resolver->neighbor_resolution_interval_ms;
+    _driver_resolver->time_of_last_bootstrap_neighbor_resolve_ms = now_ms;
     _driver_resolver->time_of_last_work_ms = 0;
 
     _driver_resolver->neighbor_counter.counter_id = aeron_counters_manager_allocate(

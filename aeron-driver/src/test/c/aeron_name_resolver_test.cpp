@@ -359,11 +359,21 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 
     initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
-    // Should push self address to neighbor
-    ASSERT_LT(0, m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms));
+    int64_t deadline_ms = aeron_epoch_clock() + (5 * 1000);
+    while (m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms) <= 0)
+    {
+        ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work";
+        aeron_micro_sleep(1000);
+    }
 
-    // Should load neighbor resolution
-    ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms)) << aeron_errmsg();
+    deadline_ms = aeron_epoch_clock() + (5 * 1000);
+    while (m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms) <= 0)
+    {
+        ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work";
+        aeron_micro_sleep(1000);
+    }
 
     // A sees B.
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));

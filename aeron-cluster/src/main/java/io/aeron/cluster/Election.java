@@ -271,10 +271,13 @@ public class Election
                 }
                 else
                 {
+                    final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(
+                        logLeadershipTermId < leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
+
                     memberStatusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        this.logPosition,
+                        logLeadershipTermId < leadershipTermId ? termEntry.termBaseLogPosition : this.logPosition,
                         leadershipTermId,
                         this.logPosition,
                         timestamp,
@@ -420,7 +423,7 @@ public class Election
         {
             if (this.logPosition > logPosition)
             {
-                consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
+                state(State.CANVASS);
             }
             else
             {

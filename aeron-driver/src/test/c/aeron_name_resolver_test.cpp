@@ -100,7 +100,7 @@ protected:
 
     typedef struct counters_clientd_stct
     {
-        aeron_counters_manager_t *counters;
+        const aeron_counters_manager_t *counters;
         int32_t type_id;
         int64_t value;
     }
@@ -118,12 +118,12 @@ protected:
         counters_clientd_t *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
         if (counters_clientd->type_id == type_id)
         {
-            int64_t *counter_addr = aeron_counter_addr(counters_clientd->counters, id);
+            int64_t *counter_addr = aeron_counter_addr((aeron_counters_manager_t *)counters_clientd->counters, id);
             AERON_GET_VOLATILE(counters_clientd->value, *counter_addr);
         }
     }
 
-    static int64_t readCounterByTypeId(aeron_counters_manager_t *counters, int32_t type_id)
+    static int64_t readCounterByTypeId(const aeron_counters_manager_t *counters, int32_t type_id)
     {
         counters_clientd_t clientd;
         clientd.counters = counters;
@@ -135,12 +135,12 @@ protected:
         return clientd.value;
     }
 
-    static int64_t readNeighborCounter(resolver_fields_t *resolver)
+    static int64_t readNeighborCounter(const resolver_fields_t *resolver)
     {
         return readCounterByTypeId(&resolver->counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
     }
 
-    static int64_t readCacheEntriesCounter(resolver_fields_t *resolver)
+    static int64_t readCacheEntriesCounter(const resolver_fields_t *resolver)
     {
         return readCounterByTypeId(&resolver->counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
     }
@@ -166,19 +166,21 @@ protected:
         return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
     }
 
+    static void printCounters(std::ostream &output, const resolver_fields_t *resolver, const char *name)
+    {
+        if (NULL != resolver->context)
+        {
+            output
+                << " " << name << "(" << bytesSent(resolver) << "," << bytesReceived(resolver) << ","
+                << shortSends(resolver) << "," << readNeighborCounter(resolver) << ","
+                << readCacheEntriesCounter(resolver) << ")";
+        }
+    }
+
     friend std::ostream &operator<<(std::ostream &output, const NameResolverTest &t) {
-        if (NULL != t.m_a.context)
-        {
-            output << " A (" << bytesSent(&(t.m_a)) << "," << bytesReceived(&t.m_a) << "," << shortSends(&t.m_a) << ")";
-        }
-        if (NULL != t.m_b.context)
-        {
-            output << " B (" << bytesSent(&t.m_b) << "," << bytesReceived(&t.m_b) << "," << shortSends(&t.m_b) << ")";
-        }
-        if (NULL != t.m_c.context)
-        {
-            output << " C (" << bytesSent(&t.m_c) << "," << bytesReceived(&t.m_c) << "," << shortSends(&t.m_c) << ")";
-        }
+        printCounters(output, &t.m_a, "A");
+        printCounters(output, &t.m_b, "B");
+        printCounters(output, &t.m_c, "C");
         return output;
     }
 
@@ -253,7 +255,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" << *this;
-        aeron_micro_sleep(1000);
+        aeron_micro_sleep(10000);
         timestamp_ms += 10;
     }
 
@@ -262,7 +264,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" << *this;
-        aeron_micro_sleep(1000);
+        aeron_micro_sleep(10000);
         timestamp_ms += 10;
     }
 
@@ -288,7 +290,7 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" << *this;
-        aeron_micro_sleep(1000);
+        aeron_micro_sleep(10000);
         timestamp_ms += 10;
     }
 
@@ -297,7 +299,7 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" << *this;
-        aeron_micro_sleep(1000);
+        aeron_micro_sleep(10000);
         timestamp_ms += 10;
     }
 
@@ -334,15 +336,12 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
             work_done += m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms);
             ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
 
-            aeron_micro_sleep(1000);
+            aeron_micro_sleep(10000);
             timestamp_ms += 10;
         }
         while (0 != work_done);
 
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms)
-            << "A #neigbours: " << readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID)
-            << ", B #neigbours: " << readCounterByTypeId(&m_b.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID)
-            << ", C #neigbours: " << readCounterByTypeId(&m_c.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for neighbors" << *this;
     }
 
     struct sockaddr_storage resolved_address;
@@ -407,7 +406,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" << *this;
-        aeron_micro_sleep(1000);
+        aeron_micro_sleep(10000);
         timestamp_ms += 10;
     }
 
@@ -416,7 +415,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" << *this;
-        aeron_micro_sleep(1000);
+        aeron_micro_sleep(10000);
         timestamp_ms += 10;
     }
 

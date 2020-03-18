@@ -158,12 +158,12 @@ protected:
 
     static int64_t bytesSent(resolver_fields_t *resolver)
     {
-        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_SHORT_SENDS);
+        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_BYTES_SENT);
     }
 
     static int64_t bytesReceived(resolver_fields_t *resolver)
     {
-        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_SHORT_SENDS);
+        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
     }
 
     resolver_fields_t m_a;

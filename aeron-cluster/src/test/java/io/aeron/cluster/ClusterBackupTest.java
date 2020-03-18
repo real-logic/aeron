@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
-public class BackupTest
+public class ClusterBackupTest
 {
     @Test
     @Timeout(30)

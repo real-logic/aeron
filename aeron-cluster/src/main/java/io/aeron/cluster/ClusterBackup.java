@@ -122,8 +122,8 @@ public final class ClusterBackup implements AutoCloseable
     }
 
     private final ClusterBackup.Context ctx;
-    private final AgentInvoker clusterBackupAgentInvoker;
-    private final AgentRunner clusterBackupAgentRunner;
+    private final AgentInvoker agentInvoker;
+    private final AgentRunner agentRunner;
 
     private ClusterBackup(final ClusterBackup.Context ctx)
     {
@@ -136,15 +136,14 @@ public final class ClusterBackup implements AutoCloseable
 
             if (ctx.useAgentInvoker())
             {
-                clusterBackupAgentRunner = null;
-                clusterBackupAgentInvoker = new AgentInvoker(
-                    ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
+                agentRunner = null;
+                agentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
             }
             else
             {
-                clusterBackupAgentRunner = new AgentRunner(
+                agentRunner = new AgentRunner(
                     ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
-                clusterBackupAgentInvoker = null;
+                agentInvoker = null;
             }
         }
         catch (final ConcurrentConcludeException ex)
@@ -160,13 +159,13 @@ public final class ClusterBackup implements AutoCloseable
 
     private ClusterBackup start()
     {
-        if (null != clusterBackupAgentRunner)
+        if (null != agentRunner)
         {
-            AgentRunner.startOnThread(clusterBackupAgentRunner, ctx.threadFactory());
+            AgentRunner.startOnThread(agentRunner, ctx.threadFactory());
         }
         else
         {
-            clusterBackupAgentInvoker.start();
+            agentInvoker.start();
         }
 
         return this;
@@ -210,14 +209,14 @@ public final class ClusterBackup implements AutoCloseable
      */
     public AgentInvoker conductorAgentInvoker()
     {
-        return clusterBackupAgentInvoker;
+        return agentInvoker;
     }
 
     public void close()
     {
         final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();
-        CloseHelper.close(countedErrorHandler, clusterBackupAgentRunner);
-        CloseHelper.close(countedErrorHandler, clusterBackupAgentInvoker);
+        CloseHelper.close(countedErrorHandler, agentRunner);
+        CloseHelper.close(countedErrorHandler, agentInvoker);
     }
 
     /**

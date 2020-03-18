@@ -1540,10 +1540,10 @@ class ConsensusModuleAgent implements Agent
         awaitServices(logPosition);
     }
 
-    void awaitServicesReplayComplete(final long stopPosition)
+    void awaitServicesReplayPosition(final long logPosition)
     {
-        expectedAckPosition = stopPosition;
-        awaitServices(stopPosition);
+        expectedAckPosition = logPosition;
+        awaitServices(logPosition);
     }
 
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition)

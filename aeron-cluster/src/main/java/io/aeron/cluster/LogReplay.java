@@ -17,8 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import org.agrona.CloseHelper;
 
-class LogReplay implements AutoCloseable
+class LogReplay
 {
     enum State
     {
@@ -35,6 +36,7 @@ class LogReplay implements AutoCloseable
     private final int replayStreamId;
     private final AeronArchive archive;
     private final ConsensusModuleAgent consensusModuleAgent;
+    private final ConsensusModule.Context ctx;
     private final String channel;
 
     private int replaySessionId = Aeron.NULL_VALUE;
@@ -59,23 +61,19 @@ class LogReplay implements AutoCloseable
         this.leadershipTermId = leadershipTermId;
         this.logSessionId = logSessionId;
         this.consensusModuleAgent = consensusModuleAgent;
+        this.ctx = ctx;
         this.replayStreamId = ctx.replayStreamId();
-
-        final Aeron aeron = ctx.aeron();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         this.channel = channelUri.toString();
 
-        logSubscription = aeron.addSubscription(channel, replayStreamId);
+        logSubscription = ctx.aeron().addSubscription(channel, replayStreamId);
     }
 
     public void close()
     {
-        if (null != logSubscription)
-        {
-            logSubscription.close();
-        }
+        CloseHelper.close(ctx.countedErrorHandler(), logSubscription);
     }
 
     int doWork(@SuppressWarnings("unused") final long nowMs)
@@ -108,9 +106,9 @@ class LogReplay implements AutoCloseable
                 consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
                 if (logAdapter.position() == stopPosition)
                 {
-                    consensusModuleAgent.awaitServicesReplayComplete(stopPosition);
+                    consensusModuleAgent.awaitServicesReplayPosition(stopPosition);
 
-                    logSubscription.close();
+                    CloseHelper.close(ctx.countedErrorHandler(), logSubscription);
                     logSubscription = null;
                     logAdapter = null;
 

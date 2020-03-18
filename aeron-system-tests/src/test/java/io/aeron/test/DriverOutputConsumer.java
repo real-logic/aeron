@@ -16,8 +16,13 @@
 package io.aeron.test;
 
 import java.io.File;
+import java.util.Map;
 
 public interface DriverOutputConsumer
 {
     void outputFiles(String aeronDirectoryName, File stdoutFile, File stderrFile);
+
+    void exitCode(String aeronDirectoryName, int exitValue);
+
+    void environmentVariables(String aeronDirectoryName, Map<String, String> environment);
 }

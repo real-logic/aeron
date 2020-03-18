@@ -22,12 +22,15 @@ import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.Map;
 
 public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 {
-    private final Map<String, StdOutputFiles> outputFilesByAeronDirectoryName = new Object2ObjectHashMap<>();
+    private final Map<String, ProcessDetails> outputFilesByAeronDirectoryName = new Object2ObjectHashMap<>();
+    private int exitValue;
+    private Map<String, String> environment;
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {
@@ -40,7 +43,8 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
                     try
                     {
                         System.out.println();
-                        System.out.println("Media Driver: " + aeronDirectoryName);
+                        System.out.println("Media Driver: " + aeronDirectoryName + ", exit code: " + files.exitValue);
+                        printEnvironment(files.environment, System.out);
                         System.out.println("*** STDOUT ***");
                         Files.copy(files.stdout.toPath(), System.out);
                         System.out.println("*** STDERR ***");
@@ -55,6 +59,17 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 
             deleteFiles();
         }
+    }
+
+    private void printEnvironment(final Map<String, String> environment, final PrintStream ps)
+    {
+        environment.forEach((name, value) ->
+        {
+            ps.print(name);
+            ps.print('=');
+            ps.print(value);
+            ps.println();
+        });
     }
 
     public void testSuccessful(final ExtensionContext context)
@@ -77,18 +92,41 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 
     public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
     {
-        outputFilesByAeronDirectoryName.put(aeronDirectoryName, new StdOutputFiles(stdoutFile, stderrFile));
+        outputFilesByAeronDirectoryName.put(aeronDirectoryName, new ProcessDetails(stdoutFile, stderrFile));
     }
 
-    static final class StdOutputFiles
+    public void exitCode(final String aeronDirectoryName, final int exitValue)
+    {
+        outputFilesByAeronDirectoryName.get(aeronDirectoryName).exitValue(exitValue);
+    }
+
+    public void environmentVariables(final String aeronDirectoryName, final Map<String, String> environment)
+    {
+        outputFilesByAeronDirectoryName.get(aeronDirectoryName).environment(environment);
+        this.environment = environment;
+    }
+
+    static final class ProcessDetails
     {
         private final File stderr;
         private final File stdout;
+        private int exitValue;
+        private Map<String, String> environment;
 
-        StdOutputFiles(final File stdout, final File stderr)
+        ProcessDetails(final File stdout, final File stderr)
         {
             this.stderr = stderr;
             this.stdout = stdout;
+        }
+
+        public void exitValue(final int exitValue)
+        {
+            this.exitValue = exitValue;
+        }
+
+        public void environment(final Map<String, String> environment)
+        {
+            this.environment = environment;
         }
     }
 }

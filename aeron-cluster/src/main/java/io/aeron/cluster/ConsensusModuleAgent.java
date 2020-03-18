@@ -1006,8 +1006,8 @@ class ConsensusModuleAgent implements Agent
                 final ServiceAck[] serviceAcks = consumeServiceAcks(logPosition, serviceId);
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
-                final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
 
+                final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
                 if (NULL_POSITION == terminationPosition)
                 {
                     state(ConsensusModule.State.ACTIVE);
@@ -1125,7 +1125,7 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void onReplayClusterAction(final long leadershipTermId, final long logPosition, final ClusterAction action)
+    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action)
     {
         if (leadershipTermId == this.replayLeadershipTermId)
         {
@@ -1139,7 +1139,6 @@ class ConsensusModuleAgent implements Agent
             }
             else if (ClusterAction.SNAPSHOT == action)
             {
-                expectedAckPosition = logPosition;
                 state(ConsensusModule.State.SNAPSHOT);
             }
         }
@@ -1220,7 +1219,6 @@ class ConsensusModuleAgent implements Agent
             {
                 if (memberId == this.memberId)
                 {
-                    expectedAckPosition = logPosition;
                     state(ConsensusModule.State.QUITTING);
                 }
                 else
@@ -1476,8 +1474,6 @@ class ConsensusModuleAgent implements Agent
             isStartup,
             channel);
 
-        expectedAckPosition = logPosition;
-
         if (isStartup)
         {
             for (final ClusterSession session : sessionByIdMap.values())
@@ -1536,13 +1532,11 @@ class ConsensusModuleAgent implements Agent
     {
         serviceProxy.joinLog(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, true, channel);
-        expectedAckPosition = logPosition;
         awaitServices(logPosition);
     }
 
     void awaitServicesReplayPosition(final long logPosition)
     {
-        expectedAckPosition = logPosition;
         awaitServices(logPosition);
     }
 
@@ -1823,7 +1817,7 @@ class ConsensusModuleAgent implements Agent
         {
             ++serviceAckId;
             ServiceAck.removeHead(serviceAckQueues);
-            recoveryStateCounter.close();
+            CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
             if (ConsensusModule.State.SUSPENDED != state)
             {
                 state(ConsensusModule.State.ACTIVE);
@@ -1895,7 +1889,6 @@ class ConsensusModuleAgent implements Agent
                 if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
                 {
                     serviceProxy.terminationPosition(terminationPosition);
-                    expectedAckPosition = terminationPosition;
                     state(ConsensusModule.State.TERMINATING);
                 }
 
@@ -2009,7 +2002,6 @@ class ConsensusModuleAgent implements Agent
             case SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT))
                 {
-                    expectedAckPosition = logPosition();
                     state(ConsensusModule.State.SNAPSHOT);
                 }
                 break;
@@ -2021,7 +2013,6 @@ class ConsensusModuleAgent implements Agent
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
                     clusterTermination.terminationPosition(memberStatusPublisher, clusterMembers, thisMember, position);
                     terminationPosition = position;
-                    expectedAckPosition = position;
                     state(ConsensusModule.State.SNAPSHOT);
                 }
                 break;
@@ -2033,7 +2024,6 @@ class ConsensusModuleAgent implements Agent
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
                     clusterTermination.terminationPosition(memberStatusPublisher, clusterMembers, thisMember, position);
                     terminationPosition = position;
-                    expectedAckPosition = position;
                     serviceProxy.terminationPosition(terminationPosition);
                     state(ConsensusModule.State.TERMINATING);
                 }
@@ -2317,9 +2307,6 @@ class ConsensusModuleAgent implements Agent
 
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
-        expectedAckPosition = snapshot.logPosition;
-        leadershipTermId(snapshot.leadershipTermId);
-
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();
         final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, NULL_LENGTH, channel, streamId);
@@ -2367,6 +2354,8 @@ class ConsensusModuleAgent implements Agent
         }
 
         timerService.currentTickTime(clusterClock.time());
+        leadershipTermId(snapshot.leadershipTermId);
+        expectedAckPosition = snapshot.logPosition;
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)
@@ -2427,6 +2416,8 @@ class ConsensusModuleAgent implements Agent
 
     private void awaitServices(final long logPosition)
     {
+        expectedAckPosition = logPosition;
+
         while (!ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
         {
             idle(consensusModuleAdapter.poll());
@@ -2451,7 +2442,6 @@ class ConsensusModuleAgent implements Agent
             {
                 if (member == thisMember)
                 {
-                    expectedAckPosition = commitPosition;
                     state(ConsensusModule.State.QUITTING);
                 }
 

@@ -882,14 +882,14 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
     }
 
-    private void executeAction(final ClusterAction action, final long position, final long leadershipTermId)
+    private void executeAction(final ClusterAction action, final long logPosition, final long leadershipTermId)
     {
         if (ClusterAction.SNAPSHOT == action)
         {
-            final long recordingId = onTakeSnapshot(position, leadershipTermId);
+            final long recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             final long id = ackId++;
             idleStrategy.reset();
-            while (!consensusModuleProxy.ack(position, clusterTime, id, recordingId, serviceId))
+            while (!consensusModuleProxy.ack(logPosition, clusterTime, id, recordingId, serviceId))
             {
                 idle();
             }

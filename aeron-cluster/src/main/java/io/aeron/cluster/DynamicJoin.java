@@ -185,7 +185,7 @@ class DynamicJoin implements AutoCloseable
                         if (!leaderMember.memberFacingEndpoint().equals(
                             clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]))
                         {
-                            memberStatusPublication.close();
+                            CloseHelper.close(ctx.countedErrorHandler(), memberStatusPublication);
 
                             final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
                             memberStatusUri.put(ENDPOINT_PARAM_NAME, leaderMember.memberFacingEndpoint());
@@ -264,7 +264,7 @@ class DynamicJoin implements AutoCloseable
                 cursor = 0;
             }
 
-            CloseHelper.close(memberStatusPublication);
+            CloseHelper.close(ctx.countedErrorHandler(), memberStatusPublication);
             final ChannelUri uri = ChannelUri.parse(ctx.memberStatusChannel());
             uri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[cursor]);
             memberStatusPublication = ctx.aeron().addExclusivePublication(uri.toString(), ctx.memberStatusStreamId());
@@ -449,7 +449,7 @@ class DynamicJoin implements AutoCloseable
         }
         else if (consensusModuleAgent.pollForEndOfSnapshotLoad(recoveryStateCounter, nowNs))
         {
-            recoveryStateCounter.close();
+            CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
             recoveryStateCounter = null;
             state(State.JOIN_CLUSTER);
             workCount++;

@@ -135,6 +135,37 @@ protected:
         return clientd.value;
     }
 
+    static int64_t readNeighborCounter(resolver_fields_t *resolver)
+    {
+        return readCounterByTypeId(&resolver->counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
+    }
+
+    static int64_t readCacheEntriesCounter(resolver_fields_t *resolver)
+    {
+        return readCounterByTypeId(&resolver->counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
+    }
+
+    static int64_t readSystemCounter(resolver_fields_t *resolver, aeron_system_counter_enum_t counter)
+    {
+        return aeron_counter_get(
+            aeron_system_counter_addr(resolver->context->system_counters, counter));
+    }
+
+    static int64_t shortSends(resolver_fields_t *resolver)
+    {
+        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_SHORT_SENDS);
+    }
+
+    static int64_t bytesSent(resolver_fields_t *resolver)
+    {
+        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_SHORT_SENDS);
+    }
+
+    static int64_t bytesReceived(resolver_fields_t *resolver)
+    {
+        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_SHORT_SENDS);
+    }
+
     resolver_fields_t m_a;
     resolver_fields_t m_b;
     resolver_fields_t m_c;
@@ -207,7 +238,10 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     while (m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms) <= 0)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work";
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" <<
+            ", Bytes sent: " << bytesSent(&m_b) <<
+            ", Bytes received: " << bytesReceived(&m_b) <<
+            ", Short sends: " << shortSends(&m_b);
         aeron_micro_sleep(1000);
     }
 
@@ -215,7 +249,10 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     while (m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms) <= 0)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work";
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" <<
+            ", Bytes sent: " << bytesSent(&m_a) <<
+            ", Bytes received: " << bytesReceived(&m_a) <<
+            ", Short sends: " << shortSends(&m_a);
         aeron_micro_sleep(1000);
     }
 
@@ -242,7 +279,10 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
     while (m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms) <= 0)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work";
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" <<
+            ", Bytes sent: " << bytesSent(&m_b) <<
+            ", Bytes received: " << bytesReceived(&m_b) <<
+            ", Short sends: " << shortSends(&m_b);
         aeron_micro_sleep(1000);
     }
 
@@ -250,7 +290,10 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
     while (m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms) <= 0)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work";
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" <<
+            ", Bytes sent: " << bytesSent(&m_a) <<
+            ", Bytes received: " << bytesReceived(&m_a) <<
+            ", Short sends: " << shortSends(&m_a);
         aeron_micro_sleep(1000);
     }
 
@@ -270,9 +313,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
     initResolver(&m_c, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8051");
 
     int64_t deadline_ms = aeron_epoch_clock() + (5 * 1000);
-    while (2 > readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID) ||
-        2 > readCounterByTypeId(&m_b.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID) ||
-        2 > readCounterByTypeId(&m_c.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID))
+    while (2 > readNeighborCounter(&m_a) || 2 > readNeighborCounter(&m_b) || 2 > readNeighborCounter(&m_c))
     {
         timestamp_ms += 1000;
         aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
@@ -363,7 +404,10 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     while (m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms) <= 0)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work";
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" <<
+            ", Bytes sent: " << bytesSent(&m_b) <<
+            ", Bytes received: " << bytesReceived(&m_b) <<
+            ", Short sends: " << shortSends(&m_b);
         aeron_micro_sleep(1000);
     }
 
@@ -371,15 +415,18 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     while (m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms) <= 0)
     {
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
-        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work";
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" <<
+            ", Bytes sent: " << bytesSent(&m_a) <<
+            ", Bytes received: " << bytesReceived(&m_a) <<
+            ", Short sends: " << shortSends(&m_a);
         aeron_micro_sleep(1000);
     }
 
     // A sees B.
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));
 
-    ASSERT_EQ(1, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
-    ASSERT_EQ(1, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(1, readCacheEntriesCounter(&m_a));
+    ASSERT_EQ(1, readNeighborCounter(&m_a));
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
     aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
@@ -393,7 +440,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));
 
     ASSERT_EQ(-1, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));
-    ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID));
+    ASSERT_EQ(0, readCacheEntriesCounter(&m_a));
     ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
 }
 

@@ -98,7 +98,10 @@ typedef struct aeron_name_resolver_driver_stct
 
     int64_t now_ms;
 
+    int64_t *bytes_sent_counter;
+    int64_t *bytes_received_counter;
     int64_t *invalid_packets_counter;
+    int64_t *short_sends_counter;
     aeron_position_t neighbor_counter;
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
@@ -255,6 +258,12 @@ int aeron_name_resolver_driver_init(
     _driver_resolver->cache_size_counter.value_addr = aeron_counter_addr(
         context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
 
+    _driver_resolver->bytes_sent_counter = aeron_system_counter_addr(
+        context->system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
+    _driver_resolver->bytes_received_counter = aeron_system_counter_addr(
+        context->system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
+    _driver_resolver->short_sends_counter = aeron_system_counter_addr(
+        context->system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _driver_resolver->invalid_packets_counter = aeron_system_counter_addr(
         context->system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
 
@@ -463,6 +472,7 @@ void aeron_name_resolver_driver_receive(
     aeron_name_resolver_driver_t *resolver = receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     size_t remaining = length;
+    aeron_counter_increment(resolver->bytes_received_counter, length);
 
     if ((remaining < sizeof(aeron_frame_header_t)) || (frame_header->version != AERON_FRAME_HEADER_VERSION))
     {
@@ -621,11 +631,45 @@ bool aeron_name_resolver_driver_sockaddr_equals(struct sockaddr_storage *a, stru
     return false;
 }
 
-int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
+int aeron_name_resolver_driver_do_send(
+    aeron_name_resolver_driver_t *resolver,
+    aeron_frame_header_t *frame_header,
+    ssize_t length,
+    struct sockaddr_storage *neighbor_address)
 {
     struct iovec iov[1];
     struct msghdr msghdr;
 
+    iov[0].iov_base = frame_header;
+    iov[0].iov_len = (uint32_t)length;
+    msghdr.msg_iov = iov;
+    msghdr.msg_iovlen = 1;
+    msghdr.msg_flags = 0;
+    msghdr.msg_name = neighbor_address;
+    msghdr.msg_namelen = AERON_ADDR_LEN(neighbor_address);
+    msghdr.msg_control = NULL;
+    msghdr.msg_controllen = 0;
+
+    int send_result = resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
+    if (send_result >= 0)
+    {
+        aeron_counter_increment(resolver->bytes_sent_counter, send_result);
+
+        if ((size_t)send_result != iov[0].iov_len)
+        {
+            aeron_counter_increment(resolver->short_sends_counter, 1);
+        }
+    }
+    else
+    {
+        aeron_set_err(errno, "Failed to send resolution frames: %s", aeron_errmsg());
+    }
+
+    return send_result;
+}
+
+int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
+{
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
     if (NULL == resolver->bootstrap_neighbor && 0 == resolver->neighbors.length)
@@ -655,18 +699,19 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
         return 0;
     }
 
-    assert(entry_length > 0 && "Bug! Single message should always fit in buffer.");
+    size_t frame_length = sizeof(frame_header) + (ssize_t)entry_length;
 
     frame_header->type = AERON_HDR_TYPE_RES;
     frame_header->flags = UINT8_C(0);
     frame_header->version = AERON_FRAME_HEADER_VERSION;
-    frame_header->frame_length = sizeof(frame_header) + entry_length;
+    frame_header->frame_length = (int32_t)frame_length;
     resolution_header->age_in_ms = 0;
 
     struct sockaddr_storage neighbor_address;
 
     bool send_to_bootstrap = NULL != resolver->bootstrap_neighbor;
     int send_work = 0;
+    // TODO: Optimise with sendmmsg
     for (size_t k = 0; k < resolver->neighbors.length; k++)
     {
         aeron_name_resolver_driver_neighbor_t *neighbor = &resolver->neighbors.array[k];
@@ -674,23 +719,16 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
         aeron_name_resolver_driver_to_sockaddr(
             neighbor->res_type, neighbor->address, neighbor->port, &neighbor_address);
 
-        iov[0].iov_base = frame_header;
-        iov[0].iov_len = frame_header->frame_length;
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_name = &neighbor_address;
-        msghdr.msg_namelen = AERON_ADDR_LEN(&neighbor_address);
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
-
-        if (resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr) < 0)
+        if (aeron_name_resolver_driver_do_send(resolver, frame_header, frame_length, &neighbor_address) < 0)
         {
-            aeron_set_err(-1, "Failed to send to self resolution to neighbors: %s", aeron_errmsg());
-            aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+            aeron_set_err_from_last_err_code("Self resolution to neighbor: %s", aeron_errmsg());
+            aeron_distinct_error_log_record(
+                resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
         }
-
-        send_work++;
+        else
+        {
+            send_work++;
+        }
 
         if (send_to_bootstrap &&
             aeron_name_resolver_driver_sockaddr_equals(&resolver->bootstrap_neighbor_addr, &neighbor_address))
@@ -707,29 +745,24 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
                 &resolver->bootstrap_resolver, resolver->bootstrap_neighbor, "bootstrap_neighbor", false,
                 &resolver->bootstrap_neighbor_addr) < 0)
             {
-                aeron_set_err(-1, "failed to resolve bootstrap neighbor (%s)", resolver->bootstrap_neighbor);
+                aeron_set_err(
+                    -1, "failed to resolve bootstrap neighbor (%s), %s", resolver->bootstrap_neighbor, aeron_errmsg());
+                return send_work;
             }
 
             resolver->time_of_last_bootstrap_neighbor_resolve_ms = now_ms;
         }
 
-        iov[0].iov_base = frame_header;
-        iov[0].iov_len = frame_header->frame_length;
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_name = &resolver->bootstrap_neighbor_addr;
-        msghdr.msg_namelen = AERON_ADDR_LEN(&resolver->bootstrap_neighbor_addr);
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
-
-        if (resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr) < 0)
+        if (aeron_name_resolver_driver_do_send(resolver, frame_header, frame_length, &resolver->bootstrap_neighbor_addr) < 0)
         {
-            aeron_set_err(-1, "failed to send to self resolution to bootstrap: %s", aeron_errmsg());
-            aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+            aeron_set_err_from_last_err_code("Self resolution to bootstrap: %s", aeron_errmsg());
+            aeron_distinct_error_log_record(
+                resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
         }
-
-        send_work++;
+        else
+        {
+            send_work++;
+        }
     }
 
     return send_work;
@@ -737,8 +770,6 @@ int aeron_name_resolver_driver_send_self_resolutions(aeron_name_resolver_driver_
 
 int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_driver_t *resolver, int64_t now_ms)
 {
-    struct iovec iov[1];
-    struct msghdr msghdr;
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *) aligned_buffer;
@@ -785,6 +816,7 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
 
         frame_header->frame_length = (int32_t)entry_offset;
 
+        // TODO: Optimise with sendmmsg
         for (size_t k = 0; k < resolver->neighbors.length; k++)
         {
             aeron_name_resolver_driver_neighbor_t *neighbor = &resolver->neighbors.array[k];
@@ -792,27 +824,18 @@ int aeron_name_resolver_driver_send_neighbor_resolutions(aeron_name_resolver_dri
             aeron_name_resolver_driver_to_sockaddr(
                 neighbor->res_type, neighbor->address, neighbor->port, &neighbor_address);
 
-            iov[0].iov_base = frame_header;
-            iov[0].iov_len = frame_header->frame_length;
-            msghdr.msg_iov = iov;
-            msghdr.msg_iovlen = 1;
-            msghdr.msg_flags = 0;
-            msghdr.msg_name = &neighbor_address;
-            msghdr.msg_namelen = AERON_ADDR_LEN(&neighbor_address);
-            msghdr.msg_control = NULL;
-            msghdr.msg_controllen = 0;
-
-            int send_result = resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
-
-            if (send_result < 0)
+            if (aeron_name_resolver_driver_do_send(resolver, frame_header, entry_offset, &neighbor_address) < 0)
             {
-                aeron_set_err(
-                    send_result, "Failed to send to neighbors to neighbor list: %s", aeron_errmsg());
-                aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+                aeron_set_err_from_last_err_code("Neighbor resolutions: %s", aeron_errmsg());
+                aeron_distinct_error_log_record(
+                    resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+            }
+            else
+            {
+                work_count++;
             }
         }
 
-        work_count++;
         i = j;
     }
 

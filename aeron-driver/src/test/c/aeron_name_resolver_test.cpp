@@ -247,8 +247,6 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050");
 
     timestamp_ms += 2000;
-    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     int64_t deadline_ms = aeron_epoch_clock() + (5 * 1000);
     while (m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms) <= 0)
@@ -256,6 +254,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" << *this;
         aeron_micro_sleep(1000);
+        timestamp_ms += 10;
     }
 
     deadline_ms = aeron_epoch_clock() + (5 * 1000);
@@ -264,6 +263,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" << *this;
         aeron_micro_sleep(1000);
+        timestamp_ms += 10;
     }
 
     struct sockaddr_storage resolved_address_of_b;
@@ -282,8 +282,6 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
     initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "[::]:8051", "localhost:8050");
 
     timestamp_ms += 2000;
-    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     int64_t deadline_ms = aeron_epoch_clock() + (5 * 1000);
     while (m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms) <= 0)
@@ -291,6 +289,7 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" << *this;
         aeron_micro_sleep(1000);
+        timestamp_ms += 10;
     }
 
     deadline_ms = aeron_epoch_clock() + (5 * 1000);
@@ -299,6 +298,7 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" << *this;
         aeron_micro_sleep(1000);
+        timestamp_ms += 10;
     }
 
     struct sockaddr_storage resolved_address_of_b;
@@ -320,9 +320,6 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
     while (2 > readNeighborCounter(&m_a) || 2 > readNeighborCounter(&m_b) || 2 > readNeighborCounter(&m_c))
     {
         timestamp_ms += 1000;
-        aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-        aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
-        aeron_clock_update_cached_time(m_c.context->cached_clock, timestamp_ms, timestamp_ms * 1000000);
 
         int work_done;
         do
@@ -338,6 +335,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
             ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
 
             aeron_micro_sleep(1000);
+            timestamp_ms += 10;
         }
         while (0 != work_done);
 
@@ -410,6 +408,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver b to do work" << *this;
         aeron_micro_sleep(1000);
+        timestamp_ms += 10;
     }
 
     deadline_ms = aeron_epoch_clock() + (5 * 1000);
@@ -418,6 +417,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
         ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for resolver a to do work" << *this;
         aeron_micro_sleep(1000);
+        timestamp_ms += 10;
     }
 
     // A sees B.
@@ -427,12 +427,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     ASSERT_EQ(1, readNeighborCounter(&m_a));
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
-    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-
     timestamp_ms += 2000;
-    aeron_clock_update_cached_time(m_a.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
-    aeron_clock_update_cached_time(m_b.context->cached_clock, timestamp_ms, timestamp_ms + 1000000);
 
     // B's not pushed it self resolution recently enough
     ASSERT_LT(0, m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms));

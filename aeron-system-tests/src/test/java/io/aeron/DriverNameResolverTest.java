@@ -134,8 +134,6 @@ public class DriverNameResolverTest
         awaitCounterValue("A", aNeighborsCounterId, 2);
         awaitCounterValue("B", bNeighborsCounterId, 2);
         awaitCounterValue("C", cNeighborsCounterId, 2);
-
-        //        fail("foo");
     }
 
     @Test
@@ -209,8 +207,7 @@ public class DriverNameResolverTest
 
         awaitCounterValue("A", aCacheEntriesCounterId, 1);
 
-        try (
-            Subscription subscription = clients.get("B").addSubscription("aeron:udp?endpoint=localhost:24325", 1);
+        try (Subscription subscription = clients.get("B").addSubscription("aeron:udp?endpoint=localhost:24325", 1);
             Publication publication = clients.get("A").addPublication("aeron:udp?endpoint=B:24325", 1))
         {
             while (!publication.isConnected() || !subscription.isConnected())
@@ -351,8 +348,7 @@ public class DriverNameResolverTest
         return id.value;
     }
 
-    private void awaitCounterValue(
-        final String name, final int counterId, final long expectedValue)
+    private void awaitCounterValue(final String name, final int counterId, final long expectedValue)
     {
         final CountersReader countersReader = clients.get(name).countersReader();
         final Supplier<String> messageSupplier =
@@ -366,15 +362,16 @@ public class DriverNameResolverTest
 
     private void startClients()
     {
-        drivers.forEach((name, driver) ->
-        {
-            if (!clients.containsKey(name))
+        drivers.forEach(
+            (name, driver) ->
             {
-                clients.put(name, Aeron.connect(new Aeron.Context()
-                    .aeronDirectoryName(driver.aeronDirectoryName())
-                    .errorHandler(Tests::onError)));
-            }
-        });
+                if (!clients.containsKey(name))
+                {
+                    clients.put(name, Aeron.connect(new Aeron.Context()
+                        .aeronDirectoryName(driver.aeronDirectoryName())
+                        .errorHandler(Tests::onError)));
+                }
+            });
     }
 
     private void addDriver(final TestMediaDriver testMediaDriver)

@@ -252,16 +252,9 @@ class ConsensusModuleAgent implements Agent
                 state(ConsensusModule.State.ACTIVE);
             }
 
-            final long now = clusterClock.time();
-            final long nowNs = clusterTimeUnit.toNanos(now);
-            timeOfLastSlowTickNs = nowNs;
-            timeOfLastLogUpdateNs = nowNs;
-            timeOfLastAppendPositionNs = nowNs;
-            leadershipTermId = recoveryPlan.lastLeadershipTermId;
-
             election = new Election(
                 true,
-                leadershipTermId,
+                recoveryPlan.lastLeadershipTermId,
                 recoveryPlan.appendedLogPosition,
                 clusterMembers,
                 clusterMemberByIdMap,
@@ -880,8 +873,6 @@ class ConsensusModuleAgent implements Agent
             {
                 archive.truncateRecording(recordingId, logPosition);
             }
-
-            RecordingLog.validateExistingLog(recordingId, recoveryPlan.log, archive);
 
             lastAppendPosition = logPosition;
             notifiedCommitPosition = logPosition;

@@ -329,49 +329,6 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Validate that an existing recording in an archive matches the {@link Log} for the {@link RecoveryPlan}.
-     *
-     * @param recordingId in the archive.
-     * @param log         from the {@link RecoveryPlan}.
-     * @param archive     to look up the recording descriptor in.
-     */
-    public static void validateExistingLog(final long recordingId, final Log log, final AeronArchive archive)
-    {
-        if (null != log)
-        {
-            final RecordingExtent recordingExtent = new RecordingExtent();
-            if (0 == archive.listRecording(recordingId, recordingExtent))
-            {
-                throw new ClusterException("recording not found: " + recordingId);
-            }
-
-            if (recordingExtent.initialTermId != log.initialTermId)
-            {
-                throw new ClusterException(
-                    "recording mismatch - recordingId=" + recordingId +
-                    " recording.initialTermId=" + recordingExtent.initialTermId +
-                    " log.initialTermId=" + log.initialTermId);
-            }
-
-            if (recordingExtent.termBufferLength != log.termBufferLength)
-            {
-                throw new ClusterException(
-                    "recording mismatch - recordingId=" + recordingId +
-                    " recording.termBufferLength=" + recordingExtent.termBufferLength +
-                    " log.termBufferLength=" + log.termBufferLength);
-            }
-
-            if (recordingExtent.mtuLength != log.mtuLength)
-            {
-                throw new ClusterException(
-                    "recording mismatch - recordingId=" + recordingId +
-                    " recording.mtuLength=" + recordingExtent.mtuLength +
-                    " log.mtuLength=" + log.mtuLength);
-            }
-        }
-    }
-
-    /**
      * Filename for the history of leadership log terms and snapshot recordings.
      */
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";
@@ -961,7 +918,7 @@ public class RecordingLog implements AutoCloseable
         final Entry entry = entriesCache.get(index);
         if (entry.logPosition != logPosition)
         {
-            commitEntryValue(entry.entryIndex, logPosition, LOG_POSITION_OFFSET);
+            commitEntryLogPosition(entry.entryIndex, logPosition);
 
             entriesCache.set(index, new Entry(
                 entry.recordingId,
@@ -1184,11 +1141,11 @@ public class RecordingLog implements AutoCloseable
         }
     }
 
-    private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
+    private void commitEntryLogPosition(final int entryIndex, final long value)
     {
         buffer.putLong(0, value, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long position = (entryIndex * (long)ENTRY_LENGTH) + fieldOffset;
+        final long position = (entryIndex * (long)ENTRY_LENGTH) + LOG_POSITION_OFFSET;
 
         try
         {

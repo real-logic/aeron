@@ -54,9 +54,9 @@ aeron_driver_agent_frame_log_header_t;
 typedef struct aeron_driver_agent_map_raw_log_op_header_stct
 {
     int64_t time_ms;
-    union
+    union map_raw_log_un
     {
-        struct
+        struct map_raw_log_stct
         {
             aeron_mapped_raw_log_t log;
             int result;
@@ -65,14 +65,15 @@ typedef struct aeron_driver_agent_map_raw_log_op_header_stct
         }
         map_raw_log;
 
-        struct
+        struct map_raw_log_close_stct
         {
             aeron_mapped_raw_log_t log;
             int result;
             uintptr_t addr;
         }
         map_raw_log_close;
-    };
+    }
+    map_raw;
 }
 aeron_driver_agent_map_raw_log_op_header_t;
 

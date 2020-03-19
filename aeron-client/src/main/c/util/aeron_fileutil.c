@@ -42,6 +42,10 @@
 #define MAP_SHARED 0x01
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
+#define S_IRGRP 0
+#define S_IWGRP 0
+#define S_IROTH 0
+#define S_IWOTH 0
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
@@ -207,7 +211,7 @@ uint64_t aeron_usable_fs_space(const char *path)
 
 int aeron_create_file(const char* path)
 {
-    return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+    return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 }
 #endif
 
@@ -343,7 +347,7 @@ int aeron_map_raw_log(
     int fd, result = -1;
     uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
+    if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) >= 0)
     {
         if (aeron_ftruncate(fd, (off_t)log_length) >= 0)
         {

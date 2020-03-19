@@ -93,6 +93,19 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     return result;
 }
 
+bool aeron_try_parse_ipv4(const char *host, struct sockaddr_storage *sockaddr)
+{
+    struct sockaddr_in *addr = (struct sockaddr_in *)sockaddr;
+
+    if (inet_pton(AF_INET, host, &addr->sin_addr))
+    {
+        sockaddr->ss_family = AF_INET;
+        return true;
+    }
+
+    return false;
+}
+
 int aeron_ipv4_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr)
 {
     struct sockaddr_in *addr = (struct sockaddr_in *)sockaddr;
@@ -104,6 +117,19 @@ int aeron_ipv4_addr_resolver(const char *host, int protocol, struct sockaddr_sto
     }
 
     return aeron_ip_addr_resolver(host, sockaddr, AF_INET, protocol);
+}
+
+bool aeron_try_parse_ipv6(const char *host, struct sockaddr_storage *sockaddr)
+{
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)sockaddr;
+
+    if (inet_pton(AF_INET6, host, &addr->sin6_addr))
+    {
+        sockaddr->ss_family = AF_INET6;
+        return true;
+    }
+
+    return false;
 }
 
 int aeron_ipv6_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr)
@@ -150,28 +176,6 @@ int aeron_udp_port_resolver(const char *port_str, bool optional)
     }
 
     return (int)value;
-}
-
-int aeron_host_and_port_resolver(
-    const char *host_str, const char *port_str, struct sockaddr_storage *sockaddr, int family_hint)
-{
-    int result = -1, port = aeron_udp_port_resolver(port_str, false);
-
-    if (port >= 0)
-    {
-        if (AF_INET == family_hint)
-        {
-            result = aeron_ipv4_addr_resolver(host_str, IPPROTO_UDP, sockaddr);
-            ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port);
-        }
-        else if (AF_INET6 == family_hint)
-        {
-            result = aeron_ipv6_addr_resolver(host_str, IPPROTO_UDP, sockaddr);
-            ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);
-        }
-    }
-
-    return result;
 }
 
 int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
@@ -531,6 +535,43 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
     }
 
     aeron_ip_copy_port(if_addr, &state.lookup_addr);
+
+    return 0;
+}
+
+int aeron_find_unicast_interface(
+    int family, const char *interface_str, struct sockaddr_storage *interface_addr, unsigned int *interface_index)
+{
+    *interface_index = 0;
+
+    if (NULL != interface_str)
+    {
+        struct sockaddr_storage tmp_addr;
+        size_t prefixlen = 0;
+
+        if (aeron_interface_parse_and_resolve(interface_str, &tmp_addr, &prefixlen) >= 0 &&
+            aeron_is_wildcard_addr(&tmp_addr))
+        {
+            memcpy(interface_addr, &tmp_addr, sizeof(tmp_addr));
+            return 0;
+        }
+
+        return aeron_find_interface(interface_str, interface_addr, interface_index);
+    }
+    else if (AF_INET6 == family)
+    {
+        interface_addr->ss_family = AF_INET6;
+        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)interface_addr;
+        addr->sin6_addr = in6addr_any;
+        addr->sin6_port = htons(0);
+    }
+    else
+    {
+        interface_addr->ss_family = AF_INET;
+        struct sockaddr_in *addr = (struct sockaddr_in *)interface_addr;
+        addr->sin_addr.s_addr = INADDR_ANY;
+        addr->sin_port = htons(0);
+    }
 
     return 0;
 }

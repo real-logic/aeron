@@ -83,7 +83,7 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
 
     int num_tokens = 0;
 
-    for (int i = (int)len - 1; --i != -1;)
+    for (int i = (int)len; --i != -1;)
     {
         if (delimiter == input[i])
         {

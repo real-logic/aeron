@@ -17,6 +17,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "util/aeron_bitutil.h"
 #include "aeron_udp_protocol.h"
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag)
@@ -38,3 +39,53 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 
     return (int)((size_t)sm->frame_header.frame_length - group_tag_offset);
 }
+
+extern size_t aeron_res_header_address_length(int8_t res_type);
+
+size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header)
+{
+    return AERON_ALIGN(sizeof(aeron_resolution_header_ipv4_t) + header->name_length, sizeof(int64_t));
+}
+
+size_t aeron_res_header_entry_length_ipv6(aeron_resolution_header_ipv6_t *header)
+{
+    return AERON_ALIGN(sizeof(aeron_resolution_header_ipv6_t) + header->name_length, sizeof(int64_t));
+}
+
+int aeron_res_header_entry_length(void *res, size_t remaining)
+{
+    if (remaining < sizeof(aeron_resolution_header_t))
+    {
+        return -1;
+    }
+
+    aeron_resolution_header_t *res_header = (aeron_resolution_header_t *)res;
+
+    int result = -1;
+    switch (res_header->res_type)
+    {
+        case AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD:
+        {
+            if (sizeof(aeron_resolution_header_ipv6_t) <= remaining)
+            {
+                aeron_resolution_header_ipv6_t *res_ipv6 = (aeron_resolution_header_ipv6_t *)res_header;
+                size_t entry_length = aeron_res_header_entry_length_ipv6(res_ipv6);
+                result = entry_length <= remaining ? (int) entry_length : -1;
+            }
+            break;
+        }
+        case AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD:
+        {
+            if (sizeof(aeron_resolution_header_ipv4_t) <= remaining)
+            {
+                aeron_resolution_header_ipv4_t *res_ipv4 = (aeron_resolution_header_ipv4_t *)res_header;
+                size_t entry_length = aeron_res_header_entry_length_ipv4(res_ipv4);
+                result = entry_length <= remaining ? (int) entry_length : -1;
+            }
+            break;
+        }
+    }
+
+    return result;
+}
+

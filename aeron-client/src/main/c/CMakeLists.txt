@@ -32,7 +32,9 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 endif ()
 
 set(SOURCE
+    collections/aeron_bit_set.c
     collections/aeron_int64_to_ptr_hash_map.c
+    collections/aeron_str_to_ptr_hash_map.c
     concurrent/aeron_atomic.c
     concurrent/aeron_broadcast_receiver.c
     concurrent/aeron_counters_manager.c
@@ -52,6 +54,7 @@ set(SOURCE
     util/aeron_arrayutil.c
     util/aeron_clock.c
     util/aeron_dlopen.c
+    util/aeron_env.c
     util/aeron_error.c
     util/aeron_fileutil.c
     util/aeron_http_util.c
@@ -68,7 +71,9 @@ set(SOURCE
     )
 
 set(HEADERS
+    collections/aeron_bit_set.h
     collections/aeron_int64_to_ptr_hash_map.h
+    collections/aeron_str_to_ptr_hash_map.h
     command/aeron_control_protocol.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
@@ -94,6 +99,7 @@ set(HEADERS
     util/aeron_bitutil.h
     util/aeron_clock.h
     util/aeron_dlopen.h
+    util/aeron_env.h
     util/aeron_error.h
     util/aeron_fileutil.h
     util/aeron_http_util.h

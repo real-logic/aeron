@@ -88,8 +88,12 @@ protected:
         aeron_system_counters_init(&resolver_fields->system_counters, &resolver_fields->counters);
 
         aeron_distinct_error_log_init(
-            &resolver_fields->error_log, resolver_fields->error_log_buffer, ERROR_LOG_LENGTH, aeron_epoch_clock,
-            [](void *clientd, uint8_t *resource){}, NULL);
+            &resolver_fields->error_log,
+            resolver_fields->error_log_buffer,
+            ERROR_LOG_LENGTH,
+            aeron_epoch_clock,
+            [](void *clientd, uint8_t *resource){},
+            NULL);
 
         resolver_fields->context->counters_manager = &resolver_fields->counters;
         resolver_fields->context->system_counters = &resolver_fields->system_counters;
@@ -177,7 +181,8 @@ protected:
         }
     }
 
-    friend std::ostream &operator<<(std::ostream &output, const NameResolverTest &t) {
+    friend std::ostream &operator << (std::ostream &output, const NameResolverTest &t)
+    {
         printCounters(output, &t.m_a, "A");
         printCounters(output, &t.m_b, "B");
         printCounters(output, &t.m_c, "C");
@@ -199,7 +204,6 @@ private:
         }
     }
 };
-
 
 
 #define NAME_0 "server0"
@@ -389,7 +393,6 @@ TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
         resolution_header, sizeof(buffer), flags, &address, hostname, strlen(hostname)));
 }
 
-
 TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 {
     aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
@@ -442,7 +445,8 @@ TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", 0, "A", "[::1]:8050");
     const char *name = "ABCDEFGH";
 
-    aeron_driver_agent_frame_log_header_t *log_header = reinterpret_cast<aeron_driver_agent_frame_log_header_t *>(&buffer[0]);
+    aeron_driver_agent_frame_log_header_t *log_header =
+        reinterpret_cast<aeron_driver_agent_frame_log_header_t *>(&buffer[0]);
     log_header->sockaddr_len = sizeof(struct sockaddr_in6);
 
     size_t frame_offset = sizeof(aeron_driver_agent_frame_log_header_t) + log_header->sockaddr_len;

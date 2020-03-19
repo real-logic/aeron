@@ -882,7 +882,7 @@ static const char *dissect_frame(const void *message, size_t length)
 
         case AERON_HDR_TYPE_RES:
         {
-            uint8_t null_buffer[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+            uint8_t null_buffer[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             const uint8_t *message_bytes = (uint8_t *)message;
             const int buffer_available = sizeof(buffer) - 1;
 

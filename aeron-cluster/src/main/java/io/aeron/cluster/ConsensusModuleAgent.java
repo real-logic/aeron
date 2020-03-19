@@ -550,7 +550,9 @@ class ConsensusModuleAgent implements Agent
         {
             election.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
         }
-        else if (Cluster.Role.FOLLOWER == role && leadershipTermId == this.leadershipTermId)
+        else if (Cluster.Role.FOLLOWER == role &&
+            leadershipTermId == this.leadershipTermId &&
+            leaderMemberId == leaderMember.id())
         {
             timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(clusterClock.time());
             notifiedCommitPosition = logPosition;

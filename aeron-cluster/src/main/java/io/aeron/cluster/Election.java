@@ -416,7 +416,6 @@ public class Election
         }
     }
 
-    @SuppressWarnings("unused")
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         if (State.FOLLOWER_BALLOT == state && leadershipTermId > this.leadershipTermId)
@@ -431,7 +430,10 @@ public class Election
                 state(State.FOLLOWER_REPLAY);
             }
         }
-        else if (State.FOLLOWER_CATCHUP == state && NULL_POSITION != catchupLogPosition)
+        else if (State.FOLLOWER_CATCHUP == state &&
+            leadershipTermId == this.leadershipTermId &&
+            leaderMemberId == leaderMember.id() &&
+            NULL_POSITION != catchupLogPosition)
         {
             catchupLogPosition = Math.max(catchupLogPosition, logPosition);
         }

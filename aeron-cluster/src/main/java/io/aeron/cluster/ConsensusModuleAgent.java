@@ -1688,25 +1688,27 @@ class ConsensusModuleAgent implements Agent
         return true;
     }
 
-    void catchupLogPoll(
-        final Subscription subscription, final int logSessionId, final long stopPosition, final long nowNs)
+    int catchupPoll(final Subscription subscription, final int logSessionId, final long nowNs)
     {
+        int workCount = 0;
         if (!findImageAndLogAdapter(subscription, logSessionId))
         {
-            return;
+            return workCount;
         }
 
         final Image image = logAdapter.image();
 
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            if (logAdapter.poll(stopPosition) == 0 && image.isClosed())
+            final int fragmentsPolled = logAdapter.poll(appendPosition.get());
+            if (fragmentsPolled == 0 && image.isClosed())
             {
                 throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
+            workCount += fragmentsPolled;
         }
 
-        final long appendPosition = min(image.position(), this.appendPosition.get());
+        final long appendPosition = image.position();
         if (appendPosition != lastAppendPosition)
         {
             commitPosition.setOrdered(appendPosition);
@@ -1718,12 +1720,14 @@ class ConsensusModuleAgent implements Agent
             }
         }
 
-        consensusModuleAdapter.poll();
+        workCount += consensusModuleAdapter.poll();
+
+        return workCount;
     }
 
     boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)
     {
-        return findImageAndLogAdapter(subscription, logSessionId) && commitPosition.get() >= position;
+        return findImageAndLogAdapter(subscription, logSessionId) && commitPosition.getWeak() >= position;
     }
 
     boolean hasAppendReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
@@ -1732,7 +1736,7 @@ class ConsensusModuleAgent implements Agent
 
         if (findImageAndLogAdapter(subscription, logSessionId))
         {
-            final long localPosition = commitPosition.get();
+            final long localPosition = commitPosition.getWeak();
             final long window = logAdapter.image().termBufferLength() * 2L;
 
             result = localPosition >= (position - window);
@@ -1952,7 +1956,7 @@ class ConsensusModuleAgent implements Agent
             {
                 ctx.countedErrorHandler().onError(new ClusterException(
                     "log disconnected from leader: logPosition=" + logPosition() +
-                    " commitPosition=" + commitPosition.get() +
+                    " commitPosition=" + commitPosition.getWeak() +
                     " leadershipTermId=" + leadershipTermId +
                     " leaderId=" + leaderMember.id(),
                     AeronException.Category.WARN));

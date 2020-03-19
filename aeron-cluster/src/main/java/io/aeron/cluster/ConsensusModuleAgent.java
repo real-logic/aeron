@@ -271,13 +271,12 @@ class ConsensusModuleAgent implements Agent
         int workCount = 0;
 
         final long now = clusterClock.time();
-        final long nowMs = clusterTimeUnit.toMillis(now);
         final long nowNs = clusterTimeUnit.toNanos(now);
 
         if (nowNs >= (timeOfLastSlowTickNs + SLOW_TICK_INTERVAL_NS))
         {
             timeOfLastSlowTickNs = nowNs;
-            workCount += slowTickWork(nowMs, nowNs);
+            workCount += slowTickWork(clusterTimeUnit.toMillis(now), nowNs);
         }
 
         if (null != dynamicJoin)

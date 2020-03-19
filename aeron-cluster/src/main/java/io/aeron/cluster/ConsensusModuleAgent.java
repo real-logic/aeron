@@ -749,8 +749,7 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    public void onRemoveMember(
-        @SuppressWarnings("unused") final long correlationId, final int memberId, final boolean isPassive)
+    public void onRemoveMember(final int memberId, final boolean isPassive)
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);
         if (null == election && Cluster.Role.LEADER == role && null != member)

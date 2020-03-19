@@ -217,7 +217,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public boolean removeMember(final long correlationId, final int memberId, final BooleanType isPassive)
+    public boolean removeMember(final int memberId, final BooleanType isPassive)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RemoveMemberEncoder.BLOCK_LENGTH;
 
@@ -229,7 +229,6 @@ public final class ConsensusModuleProxy implements AutoCloseable
             {
                 removeMemberEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
                     .memberId(memberId)
                     .isPassive(isPassive);
 

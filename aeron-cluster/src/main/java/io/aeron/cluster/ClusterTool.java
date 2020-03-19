@@ -515,8 +515,7 @@ public class ClusterTool
             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
                 aeron.addPublication(channel, toConsensusModuleStreamId)))
         {
-            if (consensusModuleProxy.removeMember(
-                aeron.nextCorrelationId(), memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))
+            if (consensusModuleProxy.removeMember(memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))
             {
                 return true;
             }

@@ -155,7 +155,6 @@ final class ConsensusModuleAdapter implements AutoCloseable
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onRemoveMember(
-                    removeMemberDecoder.correlationId(),
                     removeMemberDecoder.memberId(),
                     BooleanType.TRUE == removeMemberDecoder.isPassive());
                 break;

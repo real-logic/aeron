@@ -65,28 +65,28 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 
 int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context);
 
-int aeron_name_resolver_default_supplier(
+int aeron_default_name_resolver_supplier(
     aeron_name_resolver_t *resolver,
     const char *args,
     aeron_driver_context_t *context);
 
-int aeron_name_resolver_default_resolve(
+int aeron_default_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     struct sockaddr_storage *address);
 
-int aeron_name_resolver_default_lookup(
+int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     const char **resolved_name);
 
-int aeron_name_resolver_default_do_work(aeron_name_resolver_t *resolver, int64_t now_ms);
+int aeron_default_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms);
 
-int aeron_name_resolver_default_close(aeron_name_resolver_t *resolver);
+int aeron_default_name_resolver_close(aeron_name_resolver_t *resolver);
 
 int aeron_name_resolver_resolve_host_and_port(
     aeron_name_resolver_t *resolver,

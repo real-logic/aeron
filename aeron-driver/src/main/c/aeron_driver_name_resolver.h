@@ -23,7 +23,7 @@
 #define AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID (14)
 #define AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID (15)
 
-int aeron_name_resolver_driver_set_resolution_header(
+int aeron_driver_name_resolver_set_resolution_header(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,
     uint8_t flags,
@@ -33,11 +33,11 @@ int aeron_name_resolver_driver_set_resolution_header(
     const char *name,
     size_t name_length);
 
-int aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+int aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,
     uint8_t flags,
-    struct sockaddr_storage *address,
+    struct sockaddr_storage *addr,
     const char *name,
     size_t name_length);
 

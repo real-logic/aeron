@@ -30,7 +30,7 @@ public:
     UdpChannelTestBase() :
         m_channel(NULL)
     {
-        aeron_name_resolver_default_supplier(&m_resolver, NULL, NULL);
+        aeron_default_name_resolver_supplier(&m_resolver, NULL, NULL);
     }
 
     virtual ~UdpChannelTestBase()

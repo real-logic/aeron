@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_NAME_RESOLVER_DRIVER_CACHE_H
-#define AERON_AERON_NAME_RESOLVER_DRIVER_CACHE_H
+#ifndef AERON_AERON_NAME_RESOLVER_CACHE_H
+#define AERON_AERON_NAME_RESOLVER_CACHE_H
 
 
-typedef struct aeron_name_resolver_driver_cache_entry_stct
+typedef struct aeron_name_resolver_cache_entry_stct
 {
     uint8_t address[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];
     int64_t deadline_ms;
@@ -28,25 +28,25 @@ typedef struct aeron_name_resolver_driver_cache_entry_stct
     uint16_t port;
     int8_t res_type;
 }
-aeron_name_resolver_driver_cache_entry_t;
+aeron_name_resolver_cache_entry_t;
 
-typedef struct aeron_name_resolver_driver_cache_stct
+typedef struct aeron_name_resolver_cache_stct
 {
     int64_t timeout_ms;
     struct entry_stct
     {
         size_t length;
         size_t capacity;
-        aeron_name_resolver_driver_cache_entry_t *array;
+        aeron_name_resolver_cache_entry_t *array;
     }
     entries;
 }
-aeron_name_resolver_driver_cache_t;
+aeron_name_resolver_cache_t;
 
-int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache, int64_t timeout_ms);
+int aeron_name_resolver_cache_init(aeron_name_resolver_cache_t *cache, int64_t timeout_ms);
 
-int aeron_name_resolver_driver_cache_add_or_update(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_add_or_update(
+    aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
     int8_t res_type,
@@ -55,18 +55,18 @@ int aeron_name_resolver_driver_cache_add_or_update(
     int64_t time_of_last_activity,
     int64_t *cache_entries_counter);
 
-int aeron_name_resolver_driver_cache_lookup_by_name(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_lookup_by_name(
+    aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
     int8_t res_type,
-    aeron_name_resolver_driver_cache_entry_t **entry);
+    aeron_name_resolver_cache_entry_t **entry);
 
-int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *cache);
+int aeron_name_resolver_cache_close(aeron_name_resolver_cache_t *cache);
 
-int aeron_name_resolver_driver_cache_timeout_old_entries(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_timeout_old_entries(
+    aeron_name_resolver_cache_t *cache,
     int64_t now_ms,
     int64_t *cache_entries_counter);
 
-#endif //AERON_AERON_NAME_RESOLVER_DRIVER_CACHE_H
+#endif //AERON_AERON_NAME_RESOLVER_CACHE_H

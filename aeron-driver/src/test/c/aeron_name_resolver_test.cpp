@@ -22,7 +22,7 @@ extern "C"
 #include "util/aeron_parse_util.h"
 #include "util/aeron_env.h"
 #include "aeron_name_resolver.h"
-#include "aeron_name_resolver_driver.h"
+#include "aeron_driver_name_resolver.h"
 #include "aeron_system_counters.h"
 #include "agent/aeron_driver_agent.h"
 }
@@ -369,23 +369,23 @@ TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
     struct sockaddr_storage address;
 
     address.ss_family = AF_INET6;
-    ASSERT_EQ(48, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(48, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, sizeof(buffer), flags, &address, hostname, strlen(hostname)));
-    ASSERT_EQ(48, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(48, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, 48, flags, &address, hostname, strlen(hostname)));
-    ASSERT_EQ(0, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(0, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, 47, flags, &address, hostname, strlen(hostname)));
 
     address.ss_family = AF_INET;
-    ASSERT_EQ(40, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(40, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, sizeof(buffer), flags, &address, hostname, strlen(hostname)));
-    ASSERT_EQ(40, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(40, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, 40, flags, &address, hostname, strlen(hostname)));
-    ASSERT_EQ(0, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(0, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, 39, flags, &address, hostname, strlen(hostname)));
 
     address.ss_family = AF_UNIX;
-    ASSERT_EQ(-1, aeron_name_resolver_driver_set_resolution_header_from_sockaddr(
+    ASSERT_EQ(-1, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
         resolution_header, sizeof(buffer), flags, &address, hostname, strlen(hostname)));
 }
 

@@ -21,16 +21,16 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_arrayutil.h"
 #include "protocol/aeron_udp_protocol.h"
-#include "aeron_name_resolver_driver_cache.h"
+#include "aeron_name_resolver_cache.h"
 
-int aeron_name_resolver_driver_cache_init(aeron_name_resolver_driver_cache_t *cache, int64_t timeout_ms)
+int aeron_name_resolver_cache_init(aeron_name_resolver_cache_t *cache, int64_t timeout_ms)
 {
-    memset(cache, 0, sizeof(aeron_name_resolver_driver_cache_t));
+    memset(cache, 0, sizeof(aeron_name_resolver_cache_t));
     cache->timeout_ms = timeout_ms;
     return 0;
 }
 
-int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *cache)
+int aeron_name_resolver_cache_close(aeron_name_resolver_cache_t *cache)
 {
     if (NULL != cache)
     {
@@ -43,15 +43,15 @@ int aeron_name_resolver_driver_cache_close(aeron_name_resolver_driver_cache_t *c
     return 0;
 }
 
-int aeron_name_resolver_driver_cache_find_index_by_name_and_type(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_find_index_by_name_and_type(
+    aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
     int8_t res_type)
 {
     for (size_t i = 0; i < cache->entries.length; i++)
     {
-        aeron_name_resolver_driver_cache_entry_t *entry = &cache->entries.array[i];
+        aeron_name_resolver_cache_entry_t *entry = &cache->entries.array[i];
 
         if (res_type == entry->res_type &&
             name_length == entry->name_length &&
@@ -64,8 +64,8 @@ int aeron_name_resolver_driver_cache_find_index_by_name_and_type(
     return -1;
 }
 
-int aeron_name_resolver_driver_cache_add_or_update(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_add_or_update(
+    aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
     int8_t res_type,
@@ -74,14 +74,14 @@ int aeron_name_resolver_driver_cache_add_or_update(
     int64_t time_of_last_activity,
     int64_t *cache_entries_counter)
 {
-    int index = aeron_name_resolver_driver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
-    aeron_name_resolver_driver_cache_entry_t *entry;
+    int index = aeron_name_resolver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
+    aeron_name_resolver_cache_entry_t *entry;
     int num_updated;
 
     if (index < 0)
     {
         int ensure_capacity_result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, cache->entries, aeron_name_resolver_driver_cache_entry_t)
+        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, cache->entries, aeron_name_resolver_cache_entry_t)
 
         if (ensure_capacity_result < 0)
         {
@@ -124,14 +124,14 @@ int aeron_name_resolver_driver_cache_add_or_update(
     return num_updated;
 }
 
-int aeron_name_resolver_driver_cache_lookup_by_name(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_lookup_by_name(
+    aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
     int8_t res_type,
-    aeron_name_resolver_driver_cache_entry_t **entry)
+    aeron_name_resolver_cache_entry_t **entry)
 {
-    int index = aeron_name_resolver_driver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
+    int index = aeron_name_resolver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
 
     if (0 <= index && NULL != entry)
     {
@@ -141,20 +141,20 @@ int aeron_name_resolver_driver_cache_lookup_by_name(
     return index;
 }
 
-int aeron_name_resolver_driver_cache_timeout_old_entries(
-    aeron_name_resolver_driver_cache_t *cache,
+int aeron_name_resolver_cache_timeout_old_entries(
+    aeron_name_resolver_cache_t *cache,
     int64_t now_ms,
     int64_t *cache_entries_counter)
 {
     int num_removed = 0;
     for (int last_index = (int)cache->entries.length - 1, i = last_index; i >= 0; i--)
     {
-        aeron_name_resolver_driver_cache_entry_t *entry = &cache->entries.array[i];
+        aeron_name_resolver_cache_entry_t *entry = &cache->entries.array[i];
 
         if (entry->deadline_ms <= now_ms)
         {
             aeron_array_fast_unordered_remove(
-                (uint8_t *)cache->entries.array, sizeof(aeron_name_resolver_driver_cache_entry_t), i, last_index);
+                (uint8_t *)cache->entries.array, sizeof(aeron_name_resolver_cache_entry_t), i, last_index);
             cache->entries.length--;
             last_index--;
             num_removed++;

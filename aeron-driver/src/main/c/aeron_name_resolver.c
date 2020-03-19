@@ -43,20 +43,20 @@ int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, 
     return context->name_resolver_supplier_func(resolver, args, context);
 }
 
-int aeron_name_resolver_default_supplier(
+int aeron_default_name_resolver_supplier(
     aeron_name_resolver_t *resolver,
     const char *args,
     aeron_driver_context_t *context)
 {
-    resolver->lookup_func = aeron_name_resolver_default_lookup;
-    resolver->resolve_func = aeron_name_resolver_default_resolve;
-    resolver->do_work_func = aeron_name_resolver_default_do_work;
-    resolver->close_func = aeron_name_resolver_default_close;
+    resolver->lookup_func = aeron_default_name_resolver_lookup;
+    resolver->resolve_func = aeron_default_name_resolver_resolve;
+    resolver->do_work_func = aeron_default_name_resolver_do_work;
+    resolver->close_func = aeron_default_name_resolver_close;
     resolver->state = NULL;
     return 0;
 }
 
-int aeron_name_resolver_default_resolve(
+int aeron_default_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -66,7 +66,7 @@ int aeron_name_resolver_default_resolve(
     return aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
 }
 
-int aeron_name_resolver_default_lookup(
+int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -77,12 +77,12 @@ int aeron_name_resolver_default_lookup(
     return 0;
 }
 
-int aeron_name_resolver_default_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
+int aeron_default_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
 {
     return 0;
 }
 
-int aeron_name_resolver_default_close(aeron_name_resolver_t *resolver)
+int aeron_default_name_resolver_close(aeron_name_resolver_t *resolver)
 {
     return 0;
 }
@@ -165,15 +165,15 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 
     if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, strlen(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT) + 1))
     {
-        supplier_func = aeron_name_resolver_default_supplier;
+        supplier_func = aeron_default_name_resolver_supplier;
     }
     else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, strlen(AERON_NAME_RESOLVER_CSV_TABLE) + 1))
     {
-        supplier_func = aeron_name_resolver_supplier_load("aeron_name_resolver_csv_table_supplier");
+        supplier_func = aeron_name_resolver_supplier_load("aeron_csv_table_name_resolver_supplier");
     }
     else if (0 == strncmp(name, AERON_NAME_RESOLVER_DRIVER, strlen(AERON_NAME_RESOLVER_DRIVER) + 1))
     {
-        supplier_func = aeron_name_resolver_supplier_load("aeron_name_resolver_driver_supplier");
+        supplier_func = aeron_name_resolver_supplier_load("aeron_driver_name_resolver_supplier");
     }
     else
     {

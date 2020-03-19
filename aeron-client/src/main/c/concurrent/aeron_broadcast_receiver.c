@@ -141,7 +141,7 @@ int aeron_broadcast_receiver_receive(
             return -1;
         }
 
-        handler(type_id, (uint8_t *)receiver->scratch_buffer, 0, length);
+        handler(type_id, (uint8_t *)receiver->scratch_buffer, 0, (int)length);
 
         messages_received = 1;
     }

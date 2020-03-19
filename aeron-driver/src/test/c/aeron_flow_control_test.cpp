@@ -45,7 +45,7 @@ class FlowControlTest : public testing::Test
 public:
     FlowControlTest()
     {
-        aeron_name_resolver_supplier_default(NULL, &m_resolver, "");
+        aeron_default_name_resolver_supplier(&m_resolver, NULL, NULL);
     };
 
     virtual ~FlowControlTest() = default;

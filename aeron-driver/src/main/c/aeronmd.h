@@ -688,13 +688,41 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driv
 
 typedef struct aeron_name_resolver_stct aeron_name_resolver_t;
 typedef int (*aeron_name_resolver_supplier_func_t)(
-    aeron_driver_context_t *context,
     aeron_name_resolver_t *resolver,
-    const char *args);
+    const char *args,
+    aeron_driver_context_t *context);
 
 /**
- * Specify the name of the name resolver (supplier) to be used by this media driver
+ * Set the name of the MediaDriver for name resolver purposes.
  */
+#define AERON_DRIVER_RESOLVER_NAME_ENV_VAR "AERON_DRIVER_RESOLVER_NAME"
+
+int aeron_driver_context_set_resolver_name(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_resolver_name(aeron_driver_context_t *context);
+
+/**
+* The interface of the MediaDriver for name resolver purposes.
+*
+* The format is hostname:port and follows the URI format for the interface parameter.
+*/
+#define AERON_DRIVER_RESOLVER_INTERFACE_ENV_VAR "AERON_DRIVER_RESOLVER_INTERFACE"
+
+int aeron_driver_context_set_resolver_interface(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_resolver_interface(aeron_driver_context_t *context);
+
+/**
+ * Get the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
+ *
+ * The format is hostname:port and follows the URI format for the endpoint parameter.
+ */
+#define AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR_ENV_VAR "AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR"
+
+int aeron_driver_context_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_resolver_bootstrap_neighbor(aeron_driver_context_t *context);
+
+/**
+* Specify the name of the name resolver (supplier) to be used by this media driver
+*/
 #define AERON_NAME_RESOLVER_SUPPLIER_ENV_VAR "AERON_NAME_RESOLVER_SUPPLIER"
 #define AERON_NAME_RESOLVER_SUPPLIER_DEFAULT "default"
 

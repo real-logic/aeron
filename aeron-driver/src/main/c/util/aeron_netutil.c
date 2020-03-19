@@ -539,6 +539,43 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
     return 0;
 }
 
+int aeron_find_unicast_interface(
+    int family, const char *interface_str, struct sockaddr_storage *interface_addr, unsigned int *interface_index)
+{
+    *interface_index = 0;
+
+    if (NULL != interface_str)
+    {
+        struct sockaddr_storage tmp_addr;
+        size_t prefixlen = 0;
+
+        if (aeron_interface_parse_and_resolve(interface_str, &tmp_addr, &prefixlen) >= 0 &&
+            aeron_is_wildcard_addr(&tmp_addr))
+        {
+            memcpy(interface_addr, &tmp_addr, sizeof(tmp_addr));
+            return 0;
+        }
+
+        return aeron_find_interface(interface_str, interface_addr, interface_index);
+    }
+    else if (AF_INET6 == family)
+    {
+        interface_addr->ss_family = AF_INET6;
+        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)interface_addr;
+        addr->sin6_addr = in6addr_any;
+        addr->sin6_port = htons(0);
+    }
+    else
+    {
+        interface_addr->ss_family = AF_INET;
+        struct sockaddr_in *addr = (struct sockaddr_in *)interface_addr;
+        addr->sin_addr.s_addr = INADDR_ANY;
+        addr->sin_port = htons(0);
+    }
+
+    return 0;
+}
+
 bool aeron_is_addr_multicast(struct sockaddr_storage *addr)
 {
     bool result = false;

@@ -38,23 +38,25 @@ static void aeron_name_resolver_set_err(
     const char *uri_param_name,
     const char *address_str);
 
-int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args)
+int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
 {
-    return context->name_resolver_supplier_func(context, resolver, args);
+    return context->name_resolver_supplier_func(resolver, args, context);
 }
 
-int aeron_name_resolver_supplier_default(
-    aeron_driver_context_t *context,
+int aeron_default_name_resolver_supplier(
     aeron_name_resolver_t *resolver,
-    const char *args)
+    const char *args,
+    aeron_driver_context_t *context)
 {
-    resolver->lookup_func = aeron_name_resolver_lookup_default;
-    resolver->resolve_func = aeron_name_resolver_resolve_default;
+    resolver->lookup_func = aeron_default_name_resolver_lookup;
+    resolver->resolve_func = aeron_default_name_resolver_resolve;
+    resolver->do_work_func = aeron_default_name_resolver_do_work;
+    resolver->close_func = aeron_default_name_resolver_close;
     resolver->state = NULL;
     return 0;
 }
 
-int aeron_name_resolver_resolve_default(
+int aeron_default_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -64,7 +66,7 @@ int aeron_name_resolver_resolve_default(
     return aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
 }
 
-int aeron_name_resolver_lookup_default(
+int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -72,6 +74,16 @@ int aeron_name_resolver_lookup_default(
     const char **resolved_name)
 {
     *resolved_name = name;
+    return 0;
+}
+
+int aeron_default_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
+{
+    return 0;
+}
+
+int aeron_default_name_resolver_close(aeron_name_resolver_t *resolver)
+{
     return 0;
 }
 
@@ -151,13 +163,17 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
         return NULL;
     }
 
-    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, strlen(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)))
+    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, strlen(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT) + 1))
     {
-        supplier_func = aeron_name_resolver_supplier_default;
+        supplier_func = aeron_default_name_resolver_supplier;
     }
-    else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, strlen(AERON_NAME_RESOLVER_CSV_TABLE)))
+    else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, strlen(AERON_NAME_RESOLVER_CSV_TABLE) + 1))
     {
-        supplier_func = aeron_name_resolver_supplier_load("aeron_name_resolver_supplier_csv_table");
+        supplier_func = aeron_name_resolver_supplier_load("aeron_csv_table_name_resolver_supplier");
+    }
+    else if (0 == strncmp(name, AERON_NAME_RESOLVER_DRIVER, strlen(AERON_NAME_RESOLVER_DRIVER) + 1))
+    {
+        supplier_func = aeron_name_resolver_supplier_load("aeron_driver_name_resolver_supplier");
     }
     else
     {
@@ -168,7 +184,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
         if ((supplier_func = (aeron_name_resolver_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
         {
             aeron_set_err(
-                EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", name, aeron_dlerror());
+                EINVAL, "could not find name resolver %s: dlsym - %s", name, aeron_dlerror());
         }
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop

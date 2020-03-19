@@ -533,6 +533,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nak_unicast_delay_ns = AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
     _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
     _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
+    _context->resolver_name = NULL;
+    _context->resolver_interface = NULL;
+    _context->resolver_bootstrap_neighbor = NULL;
     _context->name_resolver_init_args = NULL;
     _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
 
@@ -583,6 +586,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
+    _context->resolver_name = getenv(AERON_DRIVER_RESOLVER_NAME_ENV_VAR);
+    _context->resolver_interface = getenv(AERON_DRIVER_RESOLVER_INTERFACE_ENV_VAR);
+    _context->resolver_bootstrap_neighbor = getenv(AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR_ENV_VAR);
     _context->name_resolver_init_args = getenv(AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
 
     _context->dirs_delete_on_start = aeron_config_parse_bool(
@@ -2305,6 +2311,46 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
 {
     return NULL != context ? context->rejoin_stream : AERON_REJOIN_STREAM_DEFAULT;
 }
+
+int aeron_driver_context_set_resolver_name(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->resolver_name = value;
+    return 0;
+}
+
+const char *aeron_driver_context_get_resolver_name(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->resolver_name : NULL;
+}
+
+int aeron_driver_context_set_resolver_interface(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->resolver_interface = value;
+    return 0;
+}
+
+const char *aeron_driver_context_get_resolver_interface(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->resolver_interface : NULL;
+}
+
+int aeron_driver_context_set_resolver_bootstrap_neighbor(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->resolver_bootstrap_neighbor = value;
+    return 0;
+}
+
+const char *aeron_driver_context_get_resolver_bootstrap_neighbor(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->resolver_bootstrap_neighbor : NULL;
+}
+
 
 int aeron_driver_context_set_name_resolver_supplier(
     aeron_driver_context_t *context,

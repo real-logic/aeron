@@ -49,8 +49,6 @@ int aeron_lookup_interfaces_from_ifaddrs(aeron_ifaddr_func_t func, void *clientd
 
 void aeron_set_getifaddrs(aeron_getifaddrs_func_t get_func, aeron_freeifaddrs_func_t free_func);
 
-int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr);
-
 int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr_storage *sockaddr, size_t *prefixlen);
 
 void aeron_set_ipv4_wildcard_host_and_port(struct sockaddr_storage *sockaddr);

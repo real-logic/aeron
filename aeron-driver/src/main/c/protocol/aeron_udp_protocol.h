@@ -94,6 +94,38 @@ typedef struct aeron_rttm_header_stct
     int64_t receiver_id;
 }
 aeron_rttm_header_t;
+
+#pragma pack(pop)
+
+#define AERON_RES_HEADER_ADDRESS_LENGTH_IP4 (4)
+#define AERON_RES_HEADER_ADDRESS_LENGTH_IP6 (16)
+
+#pragma pack(push)
+#pragma pack(1)
+typedef struct aeron_resolution_header_stct
+{
+    int8_t res_type;
+    uint8_t res_flags;
+    uint16_t udp_port;
+    int32_t age_in_ms;
+}
+aeron_resolution_header_t;
+
+typedef struct aeron_resolution_header_ipv4_stct
+{
+    aeron_resolution_header_t resolution_header;
+    uint8_t addr[AERON_RES_HEADER_ADDRESS_LENGTH_IP4];
+    int16_t name_length;
+}
+aeron_resolution_header_ipv4_t;
+
+typedef struct aeron_resolution_header_ipv6_stct
+{
+    aeron_resolution_header_t resolution_header;
+    uint8_t addr[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];
+    int16_t name_length;
+}
+aeron_resolution_header_ipv6_t;
 #pragma pack(pop)
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);
@@ -107,6 +139,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_HDR_TYPE_ERR (0x04)
 #define AERON_HDR_TYPE_SETUP (0x05)
 #define AERON_HDR_TYPE_RTTM (0x06)
+#define AERON_HDR_TYPE_RES (0x07)
 #define AERON_HDR_TYPE_EXT (0xFFFF)
 
 #define AERON_DATA_HEADER_LENGTH (sizeof(aeron_data_header_t))
@@ -120,5 +153,21 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG ((uint8_t)(0x80))
 
 #define AERON_RTTM_HEADER_REPLY_FLAG ((uint8_t)(0x80))
+
+#define AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD (0x01)
+#define AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD (0x02)
+#define AERON_RES_HEADER_SELF_FLAG UINT8_C(0x80)
+
+inline size_t aeron_res_header_address_length(int8_t res_type)
+{
+    return AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == res_type ?
+        AERON_RES_HEADER_ADDRESS_LENGTH_IP6 : AERON_RES_HEADER_ADDRESS_LENGTH_IP4;
+}
+
+size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header);
+
+size_t aeron_res_header_entry_length_ipv6(aeron_resolution_header_ipv6_t *header);
+
+int aeron_res_header_entry_length(void *res, size_t remaining);
 
 #endif //AERON_UDP_PROTOCOL_H

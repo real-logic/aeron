@@ -22,8 +22,10 @@
 #include <stdio.h>
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
+#include "aeron_system_counters.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE "csv_table"
+#define AERON_NAME_RESOLVER_DRIVER "driver"
 #define AERON_NAME_RESOLVER_CSV_TABLE_ARGS_ENV_VAR "AERON_NAME_RESOLVER_CSV_LOOKUP_TABLE_ARGS"
 
 typedef int (*aeron_name_resolver_resolve_func_t)(
@@ -45,36 +47,46 @@ typedef int (*aeron_name_resolver_lookup_func_t)(
     bool is_re_resolution,
     const char **resolved_name);
 
+typedef int (*aeron_name_resolver_do_work_func_t)(aeron_name_resolver_t *resolver, int64_t now_ms);
+
+typedef int (*aeron_name_resolver_close_func_t)(aeron_name_resolver_t *resolver);
+
 typedef struct aeron_name_resolver_stct
 {
     aeron_name_resolver_lookup_func_t lookup_func;
     aeron_name_resolver_resolve_func_t resolve_func;
+    aeron_name_resolver_do_work_func_t do_work_func;
+    aeron_name_resolver_close_func_t close_func;
     void *state;
 }
 aeron_name_resolver_t;
 
 aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char *name);
 
-int aeron_name_resolver_init(aeron_driver_context_t *context, aeron_name_resolver_t *resolver, const char *args);
+int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context);
 
-int aeron_name_resolver_supplier_default(
-    aeron_driver_context_t *context,
+int aeron_default_name_resolver_supplier(
     aeron_name_resolver_t *resolver,
-    const char *args);
+    const char *args,
+    aeron_driver_context_t *context);
 
-int aeron_name_resolver_resolve_default(
+int aeron_default_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     struct sockaddr_storage *address);
 
-int aeron_name_resolver_lookup_default(
+int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
     const char **resolved_name);
+
+int aeron_default_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms);
+
+int aeron_default_name_resolver_close(aeron_name_resolver_t *resolver);
 
 int aeron_name_resolver_resolve_host_and_port(
     aeron_name_resolver_t *resolver,

@@ -34,21 +34,21 @@
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
 #define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (4)
 
-typedef struct aeron_name_resolver_csv_table_row_stct
+typedef struct aeron_csv_table_name_resolver_row_stct
 {
     const char* row[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
 }
-aeron_name_resolver_csv_table_row_t;
+aeron_csv_table_name_resolver_row_t;
 
-typedef struct aeron_name_resolver_csv_table_stct
+typedef struct aeron_csv_table_name_resolver_stct
 {
-    aeron_name_resolver_csv_table_row_t *array;
+    aeron_csv_table_name_resolver_row_t *array;
     size_t length;
     size_t capacity;
 }
-aeron_name_resolver_csv_table_t;
+aeron_csv_table_name_resolver_t;
 
-int aeron_name_resolver_lookup_csv_table(
+int aeron_csv_table_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
@@ -60,7 +60,7 @@ int aeron_name_resolver_lookup_csv_table(
         return -1;
     }
 
-    aeron_name_resolver_csv_table_t *table = (aeron_name_resolver_csv_table_t *)resolver->state;
+    aeron_csv_table_name_resolver_t *table = (aeron_csv_table_name_resolver_t *)resolver->state;
 
     for (size_t i = 0; i < table->length; i++)
     {
@@ -73,16 +73,25 @@ int aeron_name_resolver_lookup_csv_table(
         }
     }
 
-    return aeron_name_resolver_lookup_default(resolver, name, uri_param_name, is_re_resolution, resolved_name);
+    return aeron_default_name_resolver_lookup(resolver, name, uri_param_name, is_re_resolution, resolved_name);
 }
 
-int aeron_name_resolver_supplier_csv_table(
-    aeron_driver_context_t *context,
-    aeron_name_resolver_t *resolver,
-    const char *args)
+int aeron_csv_table_name_resolver_close(aeron_name_resolver_t *resolver)
 {
-    resolver->resolve_func = aeron_name_resolver_resolve_default;
-    resolver->lookup_func = aeron_name_resolver_lookup_csv_table;
+    aeron_free(resolver->state);
+    return 0;
+}
+
+int aeron_csv_table_name_resolver_supplier(
+    aeron_name_resolver_t *resolver,
+    const char *args,
+    aeron_driver_context_t *context)
+{
+    resolver->lookup_func = aeron_csv_table_name_resolver_lookup;
+    resolver->close_func = aeron_csv_table_name_resolver_close;
+
+    resolver->resolve_func = aeron_default_name_resolver_resolve;
+    resolver->do_work_func = aeron_default_name_resolver_do_work;
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
@@ -100,8 +109,8 @@ int aeron_name_resolver_supplier_csv_table(
         return -1;
     }
 
-    aeron_name_resolver_csv_table_t *lookup_table;
-    if (aeron_alloc((void**) &lookup_table, sizeof(aeron_name_resolver_csv_table_t)) < 0)
+    aeron_csv_table_name_resolver_t *lookup_table;
+    if (aeron_alloc((void**) &lookup_table, sizeof(aeron_csv_table_name_resolver_t)) < 0)
     {
         aeron_set_err_from_last_err_code("Allocating lookup table - %s:%d", __FILE__, __LINE__);
         aeron_free(config_csv);
@@ -118,7 +127,7 @@ int aeron_name_resolver_supplier_csv_table(
     for (int i = num_rows; -1 < --i;)
     {
         int ensure_capacity_result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, (*lookup_table), aeron_name_resolver_csv_table_row_t)
+        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, (*lookup_table), aeron_csv_table_name_resolver_row_t)
         if (ensure_capacity_result < 0)
         {
             aeron_set_err_from_last_err_code(

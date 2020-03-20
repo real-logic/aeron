@@ -1085,6 +1085,11 @@ public class DriverConductor implements Agent
         final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, canonicalForm);
         final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
 
+        final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
+            ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
+            ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+        flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);
+
         final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition publisherLimit = PublisherLimit.allocate(
@@ -1109,11 +1114,6 @@ public class DriverConductor implements Agent
             ctx.systemCounters().get(INVALID_PACKETS),
             ctx.retransmitUnicastDelayGenerator(),
             ctx.retransmitUnicastLingerGenerator());
-
-        final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
-            ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
-            ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
-        flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,

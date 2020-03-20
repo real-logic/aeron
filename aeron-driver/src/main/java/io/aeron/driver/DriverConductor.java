@@ -1085,7 +1085,7 @@ public class DriverConductor implements Agent
         final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, canonicalForm);
         final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
 
-        final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.isMdc() ?
+        final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.isMultiDestination() ?
             ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
             ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
         flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);

@@ -458,11 +458,11 @@ public final class UdpChannel
     }
 
     /**
-     * Is the channel configured as MDC (Multi-Destination-Cast).
+     * Is the channel configured as multi-destination.
      *
-     * @return true if he channel configured as MDC (Multi-Destination-Cast).
+     * @return true if he channel configured as multi-destination.
      */
-    public boolean isMdc()
+    public boolean isMultiDestination()
     {
         return isDynamicControlMode || isManualControlMode || hasExplicitControl;
     }

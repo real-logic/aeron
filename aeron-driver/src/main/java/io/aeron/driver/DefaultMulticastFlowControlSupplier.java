@@ -47,7 +47,7 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
                     return new TaggedMulticastFlowControl();
 
                 default:
-                    throw new IllegalArgumentException("unsupported multicast flow control strategy : fc=" + fcStr);
+                    throw new IllegalArgumentException("unsupported multicast flow control strategy: fc=" + fcStr);
             }
         }
 

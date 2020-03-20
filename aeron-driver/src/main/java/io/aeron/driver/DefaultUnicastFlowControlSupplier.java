@@ -34,7 +34,7 @@ public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
 
         if (null != fcStr)
         {
-            throw new IllegalArgumentException("unsupported unicast flow control strategy : fc=" + fcStr);
+            throw new IllegalArgumentException("unsupported unicast flow control strategy: fc=" + fcStr);
         }
 
         if (UnicastFlowControl.class.getName().equals(UNICAST_FLOW_CONTROL_STRATEGY))

@@ -96,7 +96,7 @@ public final class UdpChannel
      * Parse channel URI and create a {@link UdpChannel}.
      *
      * @param channelUriString to parse.
-     * @param nameResolver to use for resolving names
+     * @param nameResolver     to use for resolving names
      * @return a new {@link UdpChannel} as the result of parsing.
      * @throws InvalidChannelException if an error occurs.
      */
@@ -232,10 +232,10 @@ public final class UdpChannel
      * The general format is:
      * UDP-interface:localPort-remoteAddress:remotePort
      *
-     * @param localParamValue interface or MDC control param value or null for not set.
-     * @param localData  address/interface for the channel.
+     * @param localParamValue  interface or MDC control param value or null for not set.
+     * @param localData        address/interface for the channel.
      * @param remoteParamValue endpoint param value or null if not set.
-     * @param remoteData address for the channel.
+     * @param remoteData       address for the channel.
      * @return canonical representation as a string.
      */
     public static String canonicalise(
@@ -518,7 +518,7 @@ public final class UdpChannel
     /**
      * Get the endpoint destination address from the URI.
      *
-     * @param uri to check.
+     * @param uri          to check.
      * @param nameResolver to use for resolution
      * @return endpoint address for URI.
      */
@@ -562,10 +562,10 @@ public final class UdpChannel
     /**
      * Resolve and endpoint into a {@link InetSocketAddress}.
      *
-     * @param endpoint to resolve
-     * @param uriParamName for the resolution
+     * @param endpoint       to resolve
+     * @param uriParamName   for the resolution
      * @param isReResolution for the resolution
-     * @param nameResolver to be used for hostname.
+     * @param nameResolver   to be used for hostname.
      * @return address for endpoint
      * @throws UnknownHostException if the endpoint can not be resolved.
      */

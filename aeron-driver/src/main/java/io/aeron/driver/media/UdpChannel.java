@@ -358,39 +358,6 @@ public final class UdpChannel
     }
 
     /**
-     * Channels are considered equal if the {@link #canonicalForm()} is equal.
-     *
-     * @param o object to be compared with.
-     * @return true if the {@link #canonicalForm()} is equal, otherwise false.
-     */
-    public boolean equals(final Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-
-        final UdpChannel that = (UdpChannel)o;
-
-        return Objects.equals(canonicalForm, that.canonicalForm);
-    }
-
-    /**
-     * The hash code for the {@link #canonicalForm()}.
-     *
-     * @return the hash code for the {@link #canonicalForm()}.
-     */
-    public int hashCode()
-    {
-        return canonicalForm != null ? canonicalForm.hashCode() : 0;
-    }
-
-    /**
      * The {@link #canonicalForm()} for the channel.
      *
      * @return the {@link #canonicalForm()} for the channel.
@@ -491,6 +458,16 @@ public final class UdpChannel
     }
 
     /**
+     * Is the channel configured as MDC (Multi-Destination-Cast).
+     *
+     * @return true if he channel configured as MDC (Multi-Destination-Cast).
+     */
+    public boolean isMdc()
+    {
+        return isDynamicControlMode || isManualControlMode || hasExplicitControl;
+    }
+
+    /**
      * Does this channel have a tag match to another channel including endpoints.
      *
      * @param udpChannel to match against.
@@ -516,26 +493,6 @@ public final class UdpChannel
     }
 
     /**
-     * Get the endpoint destination address from the URI.
-     *
-     * @param uri          to check.
-     * @param nameResolver to use for resolution
-     * @return endpoint address for URI.
-     */
-    public static InetSocketAddress destinationAddress(final ChannelUri uri, final NameResolver nameResolver)
-    {
-        try
-        {
-            validateConfiguration(uri);
-            return getEndpointAddress(uri, nameResolver);
-        }
-        catch (final Exception ex)
-        {
-            throw new InvalidChannelException(ex);
-        }
-    }
-
-    /**
      * Used for debugging to get a human readable description of the channel.
      *
      * @return a human readable description of the channel.
@@ -557,6 +514,59 @@ public final class UdpChannel
             .append(", ttl: ").append(multicastTtl);
 
         return builder.toString();
+    }
+
+    /**
+     * Channels are considered equal if the {@link #canonicalForm()} is equal.
+     *
+     * @param o object to be compared with.
+     * @return true if the {@link #canonicalForm()} is equal, otherwise false.
+     */
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final UdpChannel that = (UdpChannel)o;
+
+        return Objects.equals(canonicalForm, that.canonicalForm);
+    }
+
+    /**
+     * The hash code for the {@link #canonicalForm()}.
+     *
+     * @return the hash code for the {@link #canonicalForm()}.
+     */
+    public int hashCode()
+    {
+        return canonicalForm != null ? canonicalForm.hashCode() : 0;
+    }
+
+    /**
+     * Get the endpoint destination address from the URI.
+     *
+     * @param uri          to check.
+     * @param nameResolver to use for resolution
+     * @return endpoint address for URI.
+     */
+    public static InetSocketAddress destinationAddress(final ChannelUri uri, final NameResolver nameResolver)
+    {
+        try
+        {
+            validateConfiguration(uri);
+            return getEndpointAddress(uri, nameResolver);
+        }
+        catch (final Exception ex)
+        {
+            throw new InvalidChannelException(ex);
+        }
     }
 
     /**

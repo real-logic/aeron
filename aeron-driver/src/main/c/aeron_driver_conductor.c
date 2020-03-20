@@ -1049,6 +1049,19 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 int32_t session_id = params->has_session_id ? params->session_id : speculated_session_id;
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
+                aeron_flow_control_strategy_t *flow_control_strategy;
+                if (aeron_default_multicast_flow_control_strategy_supplier(
+                    &flow_control_strategy,
+                    conductor->context,
+                    udp_channel,
+                    stream_id,
+                    registration_id,
+                    initial_term_id,
+                    params->term_length) < 0)
+                {
+                    return NULL;
+                }
+
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
                 aeron_position_t snd_pos_position;
@@ -1096,19 +1109,6 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     aeron_counter_set_ordered(pub_lmt_position.value_addr, position);
                     aeron_counter_set_ordered(snd_pos_position.value_addr, position);
                     aeron_counter_set_ordered(snd_lmt_position.value_addr, position);
-                }
-
-                aeron_flow_control_strategy_t *flow_control_strategy;
-                if (aeron_default_multicast_flow_control_strategy_supplier(
-                    &flow_control_strategy,
-                    conductor->context,
-                    udp_channel,
-                    stream_id,
-                    registration_id,
-                    initial_term_id,
-                    params->term_length) < 0)
-                {
-                    return NULL;
                 }
 
                 if (pub_lmt_position.counter_id >= 0 &&

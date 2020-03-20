@@ -1689,7 +1689,7 @@ class ConsensusModuleAgent implements Agent
         return true;
     }
 
-    int catchupPoll(final Subscription subscription, final int logSessionId, final long nowNs)
+    int catchupPoll(final Subscription subscription, final int logSessionId, final long limitPosition, final long nowNs)
     {
         int workCount = 0;
         if (!findImageAndLogAdapter(subscription, logSessionId))
@@ -1701,7 +1701,7 @@ class ConsensusModuleAgent implements Agent
 
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            final int fragmentsPolled = logAdapter.poll(appendPosition.get());
+            final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
             if (fragmentsPolled == 0 && image.isClosed())
             {
                 throw new ClusterException("unexpected image close replaying log at position " + image.position());
@@ -1709,7 +1709,7 @@ class ConsensusModuleAgent implements Agent
             workCount += fragmentsPolled;
         }
 
-        final long appendPosition = image.position();
+        final long appendPosition = Math.min(image.position(), limitPosition);
         if (appendPosition != lastAppendPosition)
         {
             commitPosition.setOrdered(appendPosition);

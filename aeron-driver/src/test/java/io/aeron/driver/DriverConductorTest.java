@@ -1696,6 +1696,48 @@ public class DriverConductorTest
         verify(mockErrorHandler, never()).onError(any());
     }
 
+    @Test
+    public void shouldBeAbleToAddNetworkPublicationThenSingleSpyWithTag()
+    {
+        driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_TAG_ID_1), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt());
+        inOrder.verify(mockClientProxy).onAvailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
+            anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
+    }
+
+    @Test
+    public void shouldBeAbleToAddSingleSpyThenNetworkPublicationWithTag()
+    {
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_TAG_ID_1), STREAM_ID_1);
+        driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt());
+        inOrder.verify(mockClientProxy).onAvailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
+            anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
+    }
+
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)
     {
         while (!condition.getAsBoolean())

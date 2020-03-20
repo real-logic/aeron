@@ -311,9 +311,12 @@ class SpySubscriptionLink extends SubscriptionLink
 
     public boolean matches(final NetworkPublication publication)
     {
-        return streamId == publication.streamId() &&
-            isWildcardOrSessionIdMatch(publication.sessionId()) &&
-            udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm());
+        final boolean isSameChannelTag =
+            udpChannel.hasTag() && udpChannel.tag() == publication.channelEndpoint().udpChannel().tag();
+
+        return streamId == publication.streamId() && (isSameChannelTag ||
+            (isWildcardOrSessionIdMatch(publication.sessionId()) &&
+            udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm())));
     }
 }
 

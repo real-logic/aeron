@@ -26,7 +26,6 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
@@ -217,7 +216,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
@@ -283,7 +281,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);
@@ -344,7 +341,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);
@@ -408,7 +404,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(backupNodeIndex))
             .dirDeleteOnStart(true);
 
@@ -962,7 +957,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);

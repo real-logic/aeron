@@ -485,7 +485,7 @@ public class AuthenticationTest
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(ClusterTests.errorHandler(0))
                 .authenticatorSupplier(authenticatorSupplier)
                 .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(true));

@@ -742,11 +742,11 @@ public class Election
     {
         if (null == logSubscription)
         {
-            final ChannelUri logChannelUri = followerLogChannel(
+            final String logChannel = followerLogChannel(
                 ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isLeaderStartup);
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
+            consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
 
             final String replayDestination = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -807,11 +807,11 @@ public class Election
     {
         if (null == logSubscription)
         {
-            final ChannelUri logChannelUri = followerLogChannel(
+            final String logChannel = followerLogChannel(
                 ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isLeaderStartup);
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
+            consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
         }
 
         if (null == liveLogDestination)
@@ -919,16 +919,17 @@ public class Election
         return liveLogDestination;
     }
 
-    private static ChannelUri followerLogChannel(final String logChannel, final int sessionId, final String tags)
+    private static String followerLogChannel(final String logChannel, final int sessionId, final String tags)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
+        channelUri.put(CommonContext.GROUP_PARAM_NAME, "true");
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
         channelUri.put(CommonContext.TAGS_PARAM_NAME, tags);
         channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
 
-        return channelUri;
+        return channelUri.toString();
     }
 
     private static ChannelUri followerLogDestination(final String logChannel, final String logEndpoint)

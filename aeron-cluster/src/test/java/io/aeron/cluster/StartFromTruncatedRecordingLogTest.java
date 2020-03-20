@@ -28,7 +28,6 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.SlowTest;
@@ -331,7 +330,6 @@ public class StartFromTruncatedRecordingLogTest
                 .warnIfDirectoryExists(false)
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
-                .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                 .errorHandler(ClusterTests.errorHandler(index))
                 .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),

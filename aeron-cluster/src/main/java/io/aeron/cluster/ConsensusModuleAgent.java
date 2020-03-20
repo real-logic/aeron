@@ -27,6 +27,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.RecoveryState;
+import io.aeron.driver.MinMulticastFlowControl;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
@@ -1312,12 +1313,13 @@ class ConsensusModuleAgent implements Agent
         leadershipTermId(leadershipTermId);
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        channelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        channelUri.put(TAGS_PARAM_NAME, Long.toString(logPublicationChannelTag));
         channelUri.put(ALIAS_PARAM_NAME, "log");
 
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
-        awaitServicesReady(channelUri, logSessionId, logPosition, isStartup);
+        awaitServicesReady(channelUri.prefix(SPY_QUALIFIER).toString(), logSessionId, logPosition, isStartup);
 
         if (!isStartup)
         {
@@ -1450,11 +1452,8 @@ class ConsensusModuleAgent implements Agent
     }
 
     void awaitServicesReady(
-        final ChannelUri logChannelUri, final int logSessionId, final long logPosition, final boolean isStartup)
+        final String logChannel, final int logSessionId, final long logPosition, final boolean isStartup)
     {
-        final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
-            logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
-
         serviceProxy.joinLog(
             leadershipTermId,
             logPosition,
@@ -1463,7 +1462,7 @@ class ConsensusModuleAgent implements Agent
             logSessionId,
             ctx.logStreamId(),
             isStartup,
-            channel);
+            logChannel);
 
         if (isStartup)
         {
@@ -2726,8 +2725,16 @@ class ConsensusModuleAgent implements Agent
         logPublicationChannelTag = (int)aeron.nextCorrelationId();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
+        final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
+
+        if (!isMulticast)
+        {
+            channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
+        }
+
         channelUri.put(ALIAS_PARAM_NAME, "log");
+        channelUri.put(FLOW_CONTROL_PARAM_NAME, MinMulticastFlowControl.FC_PARAM_VALUE);
+        channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
         if (null != plan.log)
         {
@@ -2735,10 +2742,10 @@ class ConsensusModuleAgent implements Agent
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(plan.log.mtuLength));
         }
 
-        final ExclusivePublication publication = aeron.addExclusivePublication(
-            channelUri.toString(), ctx.logStreamId());
+        final String channel = channelUri.toString();
+        final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
 
-        if (!channelUri.containsKey(ENDPOINT_PARAM_NAME))
+        if (!isMulticast)
         {
             for (final ClusterMember member : clusterMembers)
             {

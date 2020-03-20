@@ -249,7 +249,7 @@ public class CommonContext implements Cloneable
     public static final String TETHER_PARAM_NAME = "tether";
 
     /**
-     * Parameter name for channel URI param to indicate Subscription represents a group member or individual
+     * Parameter name for channel URI param to indicate if a Subscription represents a group member or individual
      * from the perspective of message reception. This can inform loss handling and similar semantics.
      * <p>
      * When configuring an subscription for an MDC publication then should be added as this is effective multicast.

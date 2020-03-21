@@ -768,7 +768,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send stop recording request");
             }
 
-            return pollForSubscriptionResponse(lastCorrelationId);
+            return pollForStopRecordingResponse(lastCorrelationId);
         }
         finally
         {
@@ -829,7 +829,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send stop recording request");
             }
 
-            return pollForSubscriptionResponse(lastCorrelationId);
+            return pollForStopRecordingResponse(lastCorrelationId);
         }
         finally
         {
@@ -1843,7 +1843,7 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
-    private boolean pollForSubscriptionResponse(final long correlationId)
+    private boolean pollForStopRecordingResponse(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;

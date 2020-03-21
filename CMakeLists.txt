@@ -281,21 +281,21 @@ if (BUILD_AERON_ARCHIVE_API)
     set(ARCHIVE_CODEC_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
     add_subdirectory(${AERON_ARCHIVE_SOURCE_PATH})
+    set(AERON_ALL_JAR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-all/build/libs/aeron-all-${AERON_VERSION_TXT}.jar")
+
+    file(GLOB_RECURSE AERON_ALL_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/main/java/*.java")
+
+    add_custom_command(OUTPUT ${AERON_ALL_JAR}
+        COMMAND ./gradlew :aeron-all:clean :aeron-all:assemble --no-parallel -x javadoc
+        DEPENDS ${AERON_ALL_SOURCES}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating aeron-all jar")
+
+    add_custom_target(aeron-all-jar
+        DEPENDS ${AERON_ALL_JAR})
+
     if (AERON_TESTS)
-        set(AERON_ALL_JAR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-all/build/libs/aeron-all-${AERON_VERSION_TXT}.jar")
-
-        file(GLOB_RECURSE AERON_ALL_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/main/java/*.java")
-
-        add_custom_command(OUTPUT ${AERON_ALL_JAR}
-            COMMAND ./gradlew :aeron-all:clean :aeron-all:assemble --no-parallel -x javadoc
-            DEPENDS ${AERON_ALL_SOURCES}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            COMMENT "Generating aeron-all jar")
-
-        add_custom_target(aeron-all-jar
-            DEPENDS ${AERON_ALL_JAR})
-
         add_subdirectory(${AERON_ARCHIVE_TEST_PATH})
     endif ()
 endif (BUILD_AERON_ARCHIVE_API)

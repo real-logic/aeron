@@ -47,12 +47,12 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 
     for (int i = 0; i < 1000; i++)
     {
-        char name[13];
+        char name[14];
         uint8_t address[16];
         uint16_t port;
         aeron_name_resolver_cache_entry_t *cache_entry;
 
-        snprintf(name, 12, "hostname%d", i);
+        snprintf(name, 13, "hostname%d", i);
         int res_type = (i & 1) == 1 ? AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
         size_t address_length = (i & 1) == 1 ? 16 : 4;
 

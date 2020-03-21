@@ -55,7 +55,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStarted.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingProgress.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStopped.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingTransition.h)
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingSignalEvent.h)
 
 add_custom_command(OUTPUT ${GENERATED_CODECS}
     COMMAND ./gradlew -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs

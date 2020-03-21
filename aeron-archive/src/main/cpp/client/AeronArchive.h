@@ -573,6 +573,35 @@ public:
     }
 
     /**
+     * Try to stop a recording for a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
+     * recordings that use the same channel and streamId.
+     *
+     * @param channel  to stop recording for.
+     * @param streamId to stop recording for.
+     * @return true if the recording was stopped or false if the subscription is not currently active.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline bool tryStopRecording(const std::string& channel, std::int32_t streamId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopRecording<IdleStrategy>(channel, streamId, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop recording request", SOURCEINFO);
+        }
+
+        return pollForStopRecordingResponse<IdleStrategy>(m_lastCorrelationId);
+    }
+
+    /**
      * Stop recording a sessionId specific recording that pertains to the given Publication.
      *
      * @param publication to stop recording for.
@@ -625,6 +654,32 @@ public:
         }
 
         pollForResponse<IdleStrategy>(m_lastCorrelationId);
+    }
+
+    /**
+     * Try stop a recording for a subscriptionId that has been returned from
+     * #startRecording(String, int, SourceLocation) or
+     * #extendRecording(long, String, int, SourceLocation).
+     *
+     * @param subscriptionId is the Subscription#registrationId for the recording in the archive.
+     * @return true if the recording was stopped or false if the subscription is not currently active.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline bool tryStopRecording(std::int64_t subscriptionId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopRecording<IdleStrategy>(subscriptionId, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop recording request", SOURCEINFO);
+        }
+
+        return pollForStopRecordingResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1548,6 +1603,62 @@ private:
                 }
 
                 return m_controlResponsePoller->relevantId();
+            }
+        }
+    }
+
+    template<typename IdleStrategy>
+    inline bool pollForStopRecordingResponse(std::int64_t correlationId)
+    {
+        const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+
+        while (true)
+        {
+            pollNextResponse<IdleStrategy>(correlationId, deadlineNs, *m_controlResponsePoller);
+
+            if (m_controlResponsePoller->controlSessionId() != controlSessionId())
+            {
+                invokeAeronClient();
+                continue;
+            }
+
+            if (m_controlResponsePoller->isCodeError())
+            {
+                if (m_controlResponsePoller->correlationId() == correlationId)
+                {
+                    if (m_controlResponsePoller->relevantId() == ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION)
+                    {
+                        return false;
+                    }
+
+                    throw ArchiveException(
+                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->correlationId(),
+                        "response for correlationId=" + std::to_string(correlationId) +
+                            ", error: " + m_controlResponsePoller->errorMessage(),
+                        SOURCEINFO);
+                }
+                else if (m_ctx->errorHandler() != nullptr)
+                {
+                    ArchiveException ex(
+                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->correlationId(),
+                        "response for correlationId=" + std::to_string(correlationId) +
+                            ", error: " + m_controlResponsePoller->errorMessage(),
+                        SOURCEINFO);
+                    m_ctx->errorHandler()(ex);
+                }
+            }
+            else if (m_controlResponsePoller->correlationId() == correlationId)
+            {
+                if (!m_controlResponsePoller->isCodeOk())
+                {
+                    throw ArchiveException(
+                        "unexpected response code: " + std::to_string(m_controlResponsePoller->codeValue()),
+                        SOURCEINFO);
+                }
+
+                return true;
             }
         }
     }

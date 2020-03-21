@@ -2199,12 +2199,16 @@ int aeron_driver_conductor_on_add_network_publication(
     for (size_t i = 0; i < conductor->spy_subscriptions.length; i++)
     {
         aeron_subscription_link_t *subscription_link = &conductor->spy_subscriptions.array[i];
+        bool is_same_channel_tag =
+            subscription_link->spy_channel->tag_id != AERON_URI_INVALID_TAG ?
+            subscription_link->spy_channel->tag_id == udp_channel->tag_id :
+            false;
 
         if (command->stream_id == subscription_link->stream_id &&
-            0 == strncmp(
+            (0 == strncmp(
                 subscription_link->spy_channel->canonical_form,
                 udp_channel->canonical_form,
-                subscription_link->spy_channel->canonical_length) &&
+                subscription_link->spy_channel->canonical_length) || is_same_channel_tag) &&
             !aeron_driver_conductor_is_subscribable_linked(subscription_link, subscribable))
         {
             if (aeron_driver_conductor_link_subscribable(
@@ -2371,8 +2375,13 @@ int aeron_driver_conductor_on_add_spy_subscription(
         return -1;
     }
 
-    endpoint = aeron_str_to_ptr_hash_map_get(
-        &conductor->send_channel_endpoint_by_channel_map, udp_channel->canonical_form, udp_channel->canonical_length);
+    if ((endpoint = aeron_driver_conductor_find_send_channel_endpoint_by_tag(conductor, udp_channel->tag_id)) == NULL)
+    {
+        endpoint = aeron_str_to_ptr_hash_map_get(
+            &conductor->send_channel_endpoint_by_channel_map,
+            udp_channel->canonical_form,
+            udp_channel->canonical_length);
+    }
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->spy_subscriptions, aeron_subscription_link_t);

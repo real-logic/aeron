@@ -82,6 +82,9 @@ using namespace aeron;
 #define _TERM_LENGTH_1 65536
 #define _TERM_LENGTH_2 131072
 
+#define CHANNEL_1_WITH_TAG_1001 "aeron:udp?endpoint=localhost:40001|tags=1001"
+#define CHANNEL_TAG_1001 "aeron:udp?tags=1001"
+
 #define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
 #define CHANNEL_1_WITH_SESSION_ID_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_2)
 #define CHANNEL_1_WITH_SESSION_ID_3 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_3)

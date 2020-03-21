@@ -21,6 +21,7 @@ import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
@@ -94,7 +95,7 @@ public class ArchiveLoggingAgentTest
         final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 
         final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .aeronDirectoryName(aeronDirectoryName)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
@@ -109,7 +110,7 @@ public class ArchiveLoggingAgentTest
 
         final Archive.Context archiveCtx = new Archive.Context()
             .aeronDirectoryName(aeronDirectoryName)
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)
             .controlChannel(aeronArchiveContext.controlRequestChannel())

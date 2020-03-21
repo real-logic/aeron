@@ -132,7 +132,7 @@ public class DriverLoggingAgentTest
         final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(Tests::onError)
             .publicationLingerTimeoutNs(0)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
             .aeronDirectoryName(aeronDirectoryName);

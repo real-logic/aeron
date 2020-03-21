@@ -743,15 +743,37 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Stop recording a sessionId specific recording that pertains to the given {@link Publication}.
+     * Try to stop a recording for a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
+     * recordings that use the same channel and streamId.
      *
-     * @param publication to stop recording for.
+     * @param channel  to stop recording for.
+     * @param streamId to stop recording for.
+     * @return true if the recording was stopped or false if the subscription is no longer active.
      */
-    public void stopRecording(final Publication publication)
+    public boolean tryStopRecording(final String channel, final int streamId)
     {
-        final String recordingChannel = ChannelUri.addSessionId(publication.channel(), publication.sessionId());
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
 
-        stopRecording(recordingChannel, publication.streamId());
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopRecording(channel, streamId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop recording request");
+            }
+
+            return pollForSubscriptionResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -782,6 +804,49 @@ public class AeronArchive implements AutoCloseable
         {
             lock.unlock();
         }
+    }
+
+    /**
+     * Try stop a recording for a subscriptionId that has been returned from
+     * {@link #startRecording(String, int, SourceLocation)} or
+     * {@link #extendRecording(long, String, int, SourceLocation)}.
+     *
+     * @param subscriptionId is the {@link Subscription#registrationId()} for the recording in the archive.
+     * @return true if the recording was stopped or false if the subscription is no longer active.
+     */
+    public boolean tryStopRecording(final long subscriptionId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopRecording(subscriptionId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop recording request");
+            }
+
+            return pollForSubscriptionResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Stop recording a sessionId specific recording that pertains to the given {@link Publication}.
+     *
+     * @param publication to stop recording for.
+     */
+    public void stopRecording(final Publication publication)
+    {
+        final String recordingChannel = ChannelUri.addSessionId(publication.channel(), publication.sessionId());
+
+        stopRecording(recordingChannel, publication.streamId());
     }
 
     /**
@@ -1705,6 +1770,35 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    private void pollNextResponse(final long correlationId, final long deadlineNs, final ControlResponsePoller poller)
+    {
+        idleStrategy.reset();
+
+        while (true)
+        {
+            final int fragments = poller.poll();
+
+            if (poller.isPollComplete())
+            {
+                break;
+            }
+
+            if (fragments > 0)
+            {
+                continue;
+            }
+
+            if (!poller.subscription().isConnected())
+            {
+                throw new ArchiveException("subscription to archive is not connected");
+            }
+
+            checkDeadline(deadlineNs, "awaiting response", correlationId);
+            idleStrategy.idle();
+            invokeAeronClient();
+        }
+    }
+
     private long pollForResponse(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
@@ -1749,32 +1843,54 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
-    private void pollNextResponse(final long correlationId, final long deadlineNs, final ControlResponsePoller poller)
+    private boolean pollForSubscriptionResponse(final long correlationId)
     {
-        idleStrategy.reset();
+        final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
+        final ControlResponsePoller poller = controlResponsePoller;
 
         while (true)
         {
-            final int fragments = poller.poll();
+            pollNextResponse(correlationId, deadlineNs, poller);
 
-            if (poller.isPollComplete())
+            if (poller.controlSessionId() != controlSessionId)
             {
-                break;
-            }
-
-            if (fragments > 0)
-            {
+                invokeAeronClient();
                 continue;
             }
 
-            if (!poller.subscription().isConnected())
+            final ControlResponseCode code = poller.code();
+            if (ControlResponseCode.ERROR == code)
             {
-                throw new ArchiveException("subscription to archive is not connected");
-            }
+                final long relevantId = poller.relevantId();
+                if (poller.correlationId() == correlationId)
+                {
+                    if (relevantId == ArchiveException.UNKNOWN_SUBSCRIPTION)
+                    {
+                        return false;
+                    }
 
-            checkDeadline(deadlineNs, "awaiting response", correlationId);
-            idleStrategy.idle();
-            invokeAeronClient();
+                    throw new ArchiveException(
+                        "response for correlationId=" + correlationId + ", error: " + poller.errorMessage(),
+                        (int)relevantId,
+                        poller.correlationId());
+                }
+                else if (context.errorHandler() != null)
+                {
+                    context.errorHandler().onError(new ArchiveException(
+                        "response for correlationId=" + correlationId + ", error: " + poller.errorMessage(),
+                        (int)relevantId,
+                        poller.correlationId()));
+                }
+            }
+            else if (poller.correlationId() == correlationId)
+            {
+                if (ControlResponseCode.OK != code)
+                {
+                    throw new ArchiveException("unexpected response code: " + code);
+                }
+
+                return true;
+            }
         }
     }
 

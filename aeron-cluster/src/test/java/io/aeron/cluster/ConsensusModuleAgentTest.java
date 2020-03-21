@@ -23,6 +23,7 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
+import io.aeron.test.Tests;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.NoOpIdleStrategy;
@@ -56,7 +57,7 @@ public class ConsensusModuleAgentTest
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
-        .errorHandler(Throwable::printStackTrace)
+        .errorHandler(Tests::onError)
         .errorCounter(mock(AtomicCounter.class))
         .moduleStateCounter(mock(Counter.class))
         .commitPositionCounter(mock(Counter.class))

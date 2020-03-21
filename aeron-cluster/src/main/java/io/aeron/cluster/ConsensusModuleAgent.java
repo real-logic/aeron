@@ -893,7 +893,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (NULL_VALUE != logSubscriptionId)
         {
-            archive.stopRecording(logSubscriptionId);
+            archive.tryStopRecording(logSubscriptionId);
             logSubscriptionId = NULL_VALUE;
         }
 
@@ -2767,13 +2767,14 @@ class ConsensusModuleAgent implements Agent
     private void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
         final long logRecordingId = recordingLog.findLastTermRecordingId();
+        final int streamId = ctx.logStreamId();
         if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
         {
-            logSubscriptionId = archive.startRecording(channel, ctx.logStreamId(), sourceLocation);
+            logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
         }
         else
         {
-            logSubscriptionId = archive.extendRecording(logRecordingId, channel, ctx.logStreamId(), sourceLocation);
+            logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
         }
     }
 

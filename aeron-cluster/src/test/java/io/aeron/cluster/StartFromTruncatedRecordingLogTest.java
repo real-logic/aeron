@@ -344,7 +344,7 @@ public class StartFromTruncatedRecordingLogTest
                 .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:803" + index)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(Tests::onError)
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(index))

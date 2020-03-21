@@ -257,7 +257,7 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(clusteredService)
-                .errorHandler(Throwable::printStackTrace));
+                .errorHandler(Tests::onError));
     }
 
     private ClusteredServiceContainer launchTimedService()

@@ -199,7 +199,9 @@ private:
         if (NULL != resolver_fields->context)
         {
             resolver_fields->resolver.close_func(&resolver_fields->resolver);
+            aeron_system_counters_close(&resolver_fields->system_counters);
             aeron_counters_manager_close(&resolver_fields->counters);
+            aeron_distinct_error_log_close(&resolver_fields->error_log);
             aeron_driver_context_close(resolver_fields->context);
         }
     }

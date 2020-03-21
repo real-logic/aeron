@@ -45,6 +45,7 @@ typedef struct aeron_csv_table_name_resolver_stct
     aeron_csv_table_name_resolver_row_t *array;
     size_t length;
     size_t capacity;
+    char *saved_config_csv;
 }
 aeron_csv_table_name_resolver_t;
 
@@ -78,6 +79,10 @@ int aeron_csv_table_name_resolver_lookup(
 
 int aeron_csv_table_name_resolver_close(aeron_name_resolver_t *resolver)
 {
+    aeron_csv_table_name_resolver_t *resolver_state = (aeron_csv_table_name_resolver_t *)resolver->state;
+
+    aeron_free(resolver_state->saved_config_csv);
+    aeron_free(resolver_state->array);
     aeron_free(resolver->state);
     return 0;
 }
@@ -123,6 +128,8 @@ int aeron_csv_table_name_resolver_supplier(
         aeron_set_err(num_rows, "%s", "Failed to parse rows for lookup table");
         return -1;
     }
+
+    lookup_table->saved_config_csv = config_csv;
 
     for (int i = num_rows; -1 < --i;)
     {

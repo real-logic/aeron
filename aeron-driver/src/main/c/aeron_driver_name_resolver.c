@@ -283,6 +283,7 @@ int aeron_driver_name_resolver_close(aeron_name_resolver_t *resolver)
     aeron_driver_name_resolver_t *driver_resolver = (aeron_driver_name_resolver_t *)resolver->state;
     driver_resolver->transport_bindings->poller_close_func(&driver_resolver->poller);
     driver_resolver->transport_bindings->close_func(&driver_resolver->transport);
+    aeron_name_resolver_cache_close(&driver_resolver->cache);
     aeron_free(driver_resolver->neighbors.array);
     aeron_free(driver_resolver);
     return 0;

@@ -550,6 +550,7 @@ void aeron_driver_name_resolver_receive(
                 aeron_distinct_error_log_record(
                     resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
                 aeron_counter_increment(resolver->error_counter, 1);
+                aeron_set_err(0, "%s", "no error");
 
                 return;
             }
@@ -562,6 +563,7 @@ void aeron_driver_name_resolver_receive(
             aeron_distinct_error_log_record(
                 resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
             aeron_counter_increment(resolver->error_counter, 1);
+            aeron_set_err(0, "%s", "no error");
 
             return;
         }
@@ -997,8 +999,6 @@ int aeron_driver_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t 
 
     if ((driver_resolver->time_of_last_work_ms + AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS) <= now_ms)
     {
-        aeron_set_err(0, "%s", "no error");
-
         work_count += aeron_driver_name_resolver_poll(driver_resolver);
         work_count += aeron_name_resolver_cache_timeout_old_entries(
             &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);

@@ -46,7 +46,8 @@ static aeron_system_counter_t system_counters[] =
         { "Possible TTL Asymmetry", AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY },
         { "ControllableIdleStrategy status", AERON_SYSTEM_COUNTER_CONTROLLABLE_IDLE_STRATEGY },
         { "Loss gap fills", AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS},
-        { "Client liveness timeouts", AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS}
+        { "Client liveness timeouts", AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS},
+        { "Resolution changes", AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES}
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

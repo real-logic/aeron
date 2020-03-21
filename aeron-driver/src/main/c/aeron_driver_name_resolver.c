@@ -102,6 +102,8 @@ typedef struct aeron_driver_name_resolver_stct
     int64_t *bytes_received_counter;
     int64_t *invalid_packets_counter;
     int64_t *short_sends_counter;
+    int64_t* error_counter;
+
     aeron_position_t neighbor_counter;
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
@@ -266,6 +268,8 @@ int aeron_driver_name_resolver_init(
         context->system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _driver_resolver->invalid_packets_counter = aeron_system_counter_addr(
         context->system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
+    _driver_resolver->error_counter = aeron_system_counter_addr(
+        context->system_counters, AERON_SYSTEM_COUNTER_ERRORS);
 
     _driver_resolver->error_log = context->error_log;
 
@@ -509,7 +513,7 @@ void aeron_driver_name_resolver_receive(
             }
 
             address = ip4_hdr->addr;
-            name_length = ip4_hdr->name_length;
+            name_length = (size_t)ip4_hdr->name_length;
             name = (const char *)(ip4_hdr + 1);
         }
         else if (AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == resolution_header->res_type)
@@ -523,7 +527,7 @@ void aeron_driver_name_resolver_receive(
             }
 
             address = ip6_hdr->addr;
-            name_length = ip6_hdr->name_length;
+            name_length = (size_t)ip6_hdr->name_length;
             name = (const char *)(ip6_hdr + 1);
         }
         else
@@ -545,7 +549,7 @@ void aeron_driver_name_resolver_receive(
                     -1, "Failed to replace wildcard with source addr: %d, %s", addr->ss_family, aeron_errmsg());
                 aeron_distinct_error_log_record(
                     resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
-                // TODO: errors counter
+                aeron_counter_increment(resolver->error_counter, 1);
 
                 return;
             }
@@ -557,7 +561,7 @@ void aeron_driver_name_resolver_receive(
             aeron_set_err(EINVAL, "Failed to handle resolution entry: %s", aeron_errmsg());
             aeron_distinct_error_log_record(
                 resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
-            // TODO: errors counter
+            aeron_counter_increment(resolver->error_counter, 1);
 
             return;
         }

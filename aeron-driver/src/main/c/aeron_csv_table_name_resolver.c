@@ -133,8 +133,8 @@ int aeron_csv_table_name_resolver_supplier(
             aeron_set_err_from_last_err_code(
                 "Failed to allocate rows for lookup table (%zu,%zu) - %s:%d",
                 lookup_table->length, lookup_table->capacity, __FILE__, __LINE__);
-            free(lookup_table->array);
-            free(lookup_table);
+            aeron_free(lookup_table->array);
+            aeron_free(lookup_table);
             return -1;
         }
 

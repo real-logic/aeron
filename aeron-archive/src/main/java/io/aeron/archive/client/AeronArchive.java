@@ -751,7 +751,7 @@ public class AeronArchive implements AutoCloseable
      *
      * @param channel  to stop recording for.
      * @param streamId to stop recording for.
-     * @return true if the recording was stopped or false if the subscription is no longer active.
+     * @return true if the recording was stopped or false if the subscription is not currently active.
      */
     public boolean tryStopRecording(final String channel, final int streamId)
     {
@@ -812,7 +812,7 @@ public class AeronArchive implements AutoCloseable
      * {@link #extendRecording(long, String, int, SourceLocation)}.
      *
      * @param subscriptionId is the {@link Subscription#registrationId()} for the recording in the archive.
-     * @return true if the recording was stopped or false if the subscription is no longer active.
+     * @return true if the recording was stopped or false if the subscription is not currently active.
      */
     public boolean tryStopRecording(final long subscriptionId)
     {

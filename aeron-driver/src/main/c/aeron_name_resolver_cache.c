@@ -38,6 +38,8 @@ int aeron_name_resolver_cache_close(aeron_name_resolver_cache_t *cache)
         {
             aeron_free((void *)cache->entries.array[i].name);
         }
+
+        aeron_free((void *)cache->entries.array);
     }
 
     return 0;
@@ -153,6 +155,7 @@ int aeron_name_resolver_cache_timeout_old_entries(
 
         if (entry->deadline_ms <= now_ms)
         {
+            aeron_free((void *)entry->name);
             aeron_array_fast_unordered_remove(
                 (uint8_t *)cache->entries.array, sizeof(aeron_name_resolver_cache_entry_t), i, last_index);
             cache->entries.length--;

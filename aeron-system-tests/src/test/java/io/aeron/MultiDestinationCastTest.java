@@ -39,6 +39,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
@@ -252,7 +253,7 @@ public class MultiDestinationCastTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
@@ -294,7 +295,7 @@ public class MultiDestinationCastTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
@@ -332,7 +333,8 @@ public class MultiDestinationCastTest
         final int numMessageForSub2 = 10;
         final CountingFragmentHandler fragmentHandlerA = new CountingFragmentHandler("fragmentHandlerA");
         final CountingFragmentHandler fragmentHandlerB = new CountingFragmentHandler("fragmentHandlerB");
-
+        final Supplier<String> messageSupplierA = fragmentHandlerA::toString;
+        final Supplier<String> messageSupplierB = fragmentHandlerB::toString;
         final CountDownLatch availableImage = new CountDownLatch(1);
 
         launch();
@@ -352,7 +354,7 @@ public class MultiDestinationCastTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
@@ -374,7 +376,7 @@ public class MultiDestinationCastTest
                 {
                     if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
                     {
-                        Tests.yieldingWait(fragmentHandlerA::toString);
+                        Tests.yieldingWait(messageSupplierA);
                     }
                 }
 
@@ -387,12 +389,12 @@ public class MultiDestinationCastTest
         {
             if (fragmentHandlerA.notDone(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
             {
-                Tests.yieldingWait(fragmentHandlerA::toString);
+                Tests.yieldingWait(messageSupplierA);
             }
 
             if (fragmentHandlerB.notDone(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
             {
-                Tests.yieldingWait(fragmentHandlerB::toString);
+                Tests.yieldingWait(messageSupplierB);
             }
         }
     }
@@ -410,5 +412,4 @@ public class MultiDestinationCastTest
             eq(MESSAGE_LENGTH),
             any(Header.class));
     }
-
 }

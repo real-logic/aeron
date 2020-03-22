@@ -240,6 +240,7 @@ public class DynamicMembershipTest
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             awaitElectionClosed(dynamicMember);
+            awaitMembershipSize(initialLeader, 4);
 
             initialLeader.terminationExpected(true);
             initialLeader.removeMember(initialLeader.index(), false);

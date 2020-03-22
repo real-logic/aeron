@@ -412,11 +412,11 @@ public class ClusterNodeRestartTest
         sendMessageIntoCluster(aeronCluster, msgBuffer, MESSAGE_LENGTH);
     }
 
-    private void sendTimerMessageIntoCluster(final int value, final long timerCorrelationId, final long delayMs)
+    private void sendTimerMessageIntoCluster(final int value, final long timerCorrelationId, final long delay)
     {
         msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
         msgBuffer.putLong(TIMER_MESSAGE_ID_OFFSET, timerCorrelationId);
-        msgBuffer.putLong(TIMER_MESSAGE_DELAY_OFFSET, delayMs);
+        msgBuffer.putLong(TIMER_MESSAGE_DELAY_OFFSET, delay);
 
         sendMessageIntoCluster(aeronCluster, msgBuffer, TIMER_MESSAGE_LENGTH);
     }

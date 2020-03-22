@@ -62,6 +62,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private final DriverNameResolverCache cache;
     private final NameResolver delegateResolver;
     private final AtomicCounter invalidPackets;
+    private final AtomicCounter shortSends;
     private final AtomicCounter neighborsCounter;
     private final AtomicCounter cacheEntriesCounter;
     private final byte[] nameTempBuffer = new byte[ResolutionEntryFlyweight.MAX_NAME_LENGTH];
@@ -97,6 +98,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         this.neighborResolutionIntervalMs = NEIGHBOR_RESOLUTION_INTERVAL_MS;
         this.mtuLength = context.mtuLength();
         invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        shortSends = context.systemCounters().get(SystemCounterDescriptor.SHORT_SENDS);
         delegateResolver = context.nameResolver();
 
         final long nowMs = context.epochClock().time();
@@ -359,7 +361,16 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     {
         //System.out.println("out " + transport.bindAddressAndPort() + " " + remoteAddress);
         buffer.position(0);
-        return transport.sendTo(buffer, remoteAddress);
+
+        final int bytesRemaining = buffer.remaining();
+        final int bytesSent = transport.sendTo(buffer, remoteAddress);
+
+        if (0 <= bytesSent && bytesSent < bytesRemaining)
+        {
+            shortSends.increment();
+        }
+
+        return bytesSent;
     }
 
     public int onFrame(

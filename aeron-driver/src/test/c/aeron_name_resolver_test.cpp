@@ -165,24 +165,13 @@ protected:
         return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     }
 
-    static int64_t bytesSent(const resolver_fields_t *resolver)
-    {
-        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_BYTES_SENT);
-    }
-
-    static int64_t bytesReceived(const resolver_fields_t *resolver)
-    {
-        return readSystemCounter(resolver, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
-    }
-
     static void printCounters(std::ostream &output, const resolver_fields_t *resolver, const char *name)
     {
         if (NULL != resolver->context)
         {
             output
-                << " " << name << "(" << bytesSent(resolver) << "," << bytesReceived(resolver) << ","
-                << shortSends(resolver) << "," << readNeighborCounter(resolver) << ","
-                << readCacheEntriesCounter(resolver) << ")";
+                << " " << name << "(" << shortSends(resolver) << "," << readNeighborCounter(resolver)
+                << "," << readCacheEntriesCounter(resolver) << ")";
         }
     }
 

@@ -98,8 +98,6 @@ typedef struct aeron_driver_name_resolver_stct
 
     int64_t now_ms;
 
-    int64_t *bytes_sent_counter;
-    int64_t *bytes_received_counter;
     int64_t *invalid_packets_counter;
     int64_t *short_sends_counter;
     int64_t* error_counter;
@@ -260,10 +258,6 @@ int aeron_driver_name_resolver_init(
     _driver_resolver->cache_size_counter.value_addr = aeron_counter_addr(
         context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
 
-    _driver_resolver->bytes_sent_counter = aeron_system_counter_addr(
-        context->system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
-    _driver_resolver->bytes_received_counter = aeron_system_counter_addr(
-        context->system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
     _driver_resolver->short_sends_counter = aeron_system_counter_addr(
         context->system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _driver_resolver->invalid_packets_counter = aeron_system_counter_addr(
@@ -477,7 +471,6 @@ void aeron_driver_name_resolver_receive(
     aeron_driver_name_resolver_t *resolver = receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     size_t remaining = length;
-    aeron_counter_increment(resolver->bytes_received_counter, length);
 
     if ((remaining < sizeof(aeron_frame_header_t)) || (frame_header->version != AERON_FRAME_HEADER_VERSION))
     {
@@ -660,8 +653,6 @@ int aeron_driver_name_resolver_do_send(
     int send_result = resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
     if (send_result >= 0)
     {
-        aeron_counter_increment(resolver->bytes_sent_counter, send_result);
-
         if ((size_t)send_result != iov[0].iov_len)
         {
             aeron_counter_increment(resolver->short_sends_counter, 1);

@@ -1317,9 +1317,12 @@ class ConsensusModuleAgent implements Agent
         channelUri.put(TAGS_PARAM_NAME, Long.toString(logPublicationChannelTag));
         channelUri.put(ALIAS_PARAM_NAME, "log");
 
-        startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
+        final String recordingChannel = channelUri.toString();
+        startLogRecording(recordingChannel, SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
-        awaitServicesReady(channelUri.prefix(SPY_QUALIFIER).toString(), logSessionId, logPosition, isStartup);
+
+        final String logChannel = channelUri.isUdp() ? channelUri.prefix(SPY_QUALIFIER).toString() : recordingChannel;
+        awaitServicesReady(logChannel, logSessionId, logPosition, isStartup);
 
         if (!isStartup)
         {
@@ -1818,7 +1821,7 @@ class ConsensusModuleAgent implements Agent
             }
 
             timeOfLastLogUpdateNs = nowNs;
-            leadershipTermId = recoveryPlan.lastLeadershipTermId;
+            leadershipTermId(recoveryPlan.lastLeadershipTermId);
 
             return true;
         }
@@ -2417,8 +2420,8 @@ class ConsensusModuleAgent implements Agent
             idle(consensusModuleAdapter.poll());
         }
 
-        ++serviceAckId;
         ServiceAck.removeHead(serviceAckQueues);
+        ++serviceAckId;
     }
 
     private long logPosition()
@@ -2727,14 +2730,18 @@ class ConsensusModuleAgent implements Agent
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
 
-        if (!isMulticast)
+        if (!isMulticast && channelUri.isUdp())
         {
             channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
         }
 
         channelUri.put(ALIAS_PARAM_NAME, "log");
-        channelUri.put(FLOW_CONTROL_PARAM_NAME, MinMulticastFlowControl.FC_PARAM_VALUE);
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
+
+        if (channelUri.isUdp())
+        {
+            channelUri.put(FLOW_CONTROL_PARAM_NAME, MinMulticastFlowControl.FC_PARAM_VALUE);
+        }
 
         if (null != plan.log)
         {

@@ -64,6 +64,7 @@ public class ClusterNodeTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .logChannel("aeron:ipc")
                 .deleteDirOnStart(true));
     }
 
@@ -81,6 +82,7 @@ public class ClusterNodeTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldConnectAndSendKeepAlive()
     {
         container = launchEchoService();

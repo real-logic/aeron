@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -373,7 +372,7 @@ abstract class ArchiveConductor
             if (oldSubscription == null)
             {
                 final String strippedChannel = strippedChannelBuilder(channelUri).build();
-                final String channel = sourceLocation == SourceLocation.LOCAL && channelUri.media().equals(UDP_MEDIA) ?
+                final String channel = sourceLocation == SourceLocation.LOCAL && channelUri.isUdp() ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final AvailableImageHandler handler = (image) -> taskQueue.addLast(() -> startRecordingSession(

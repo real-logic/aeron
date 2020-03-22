@@ -662,7 +662,7 @@ public final class UdpChannel
 
     private static void validateMedia(final ChannelUri uri)
     {
-        if (!CommonContext.UDP_MEDIA.equals(uri.media()))
+        if (!uri.isUdp())
         {
             throw new IllegalArgumentException("UdpChannel only supports UDP media: " + uri);
         }

@@ -139,6 +139,26 @@ public class ChannelUri
     }
 
     /**
+     * Is the channel {@link #media()} equal to {@link CommonContext#UDP_MEDIA}.
+     *
+     * @return true the channel {@link #media()} equals {@link CommonContext#UDP_MEDIA}.
+     */
+    public boolean isUdp()
+    {
+        return UDP_MEDIA.equals(media);
+    }
+
+    /**
+     * Is the channel {@link #media()} equal to {@link CommonContext#IPC_MEDIA}.
+     *
+     * @return true the channel {@link #media()} equals {@link CommonContext#IPC_MEDIA}.
+     */
+    public boolean isIpc()
+    {
+        return IPC_MEDIA.equals(media);
+    }
+
+    /**
      * The scheme for the URI. Must be "aeron".
      *
      * @return the scheme for the URI.

@@ -102,7 +102,6 @@ public class Tests
     public static void unexpectedInterruptStackTrace(final String message)
     {
         final StringBuilder sb = new StringBuilder();
-
         sb.append("*** unexpected interrupt");
 
         if (null != message)
@@ -135,6 +134,45 @@ public class Tests
         catch (final InterruptedException ex)
         {
             unexpectedInterruptStackTrace(null);
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    /**
+     * Same as {@link Thread#sleep(long)} but without the checked exception.
+     *
+     * @param durationMs      to sleep.
+     * @param messageSupplier of message to be reported on interrupt.
+     */
+    public static void sleep(final long durationMs, final Supplier<String> messageSupplier)
+    {
+        try
+        {
+            Thread.sleep(durationMs);
+        }
+        catch (final InterruptedException ex)
+        {
+            unexpectedInterruptStackTrace(messageSupplier.get());
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    /**
+     * Same as {@link Thread#sleep(long)} but without the checked exception.
+     *
+     * @param durationMs to sleep.
+     * @param format     of the message.
+     * @param params     to be formatted.
+     */
+    public static void sleep(final long durationMs, final String format, final Object... params)
+    {
+        try
+        {
+            Thread.sleep(durationMs);
+        }
+        catch (final InterruptedException ex)
+        {
+            unexpectedInterruptStackTrace(String.format(format, params));
             LangUtil.rethrowUnchecked(ex);
         }
     }

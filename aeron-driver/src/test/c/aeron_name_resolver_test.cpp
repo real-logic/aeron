@@ -54,6 +54,11 @@ protected:
     }
     resolver_fields_t;
 
+    void SetUp() override
+    {
+        aeron_set_err(0, "No error");
+    }
+
     void TearDown() override
     {
         close(&m_a);

@@ -47,7 +47,10 @@ typedef enum aeron_system_counter_enum_stct
     AERON_SYSTEM_COUNTER_CONTROLLABLE_IDLE_STRATEGY = 22,
     AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS = 23,
     AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS = 24,
-    AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES = 25
+    AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES = 25,
+
+    // Add all new counters before this one (used for a static assertion).
+    AERON_SYSTEM_COUNTER_DUMMY_LAST,
 }
 aeron_system_counter_enum_t;
 

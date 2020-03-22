@@ -17,8 +17,6 @@
 #ifndef AERON_AERON_ENV_H
 #define AERON_AERON_ENV_H
 
-#include <stdlib.h>
-
 inline int aeron_env_set(const char *key, const char *val)
 {
 #if !defined(WIN32)

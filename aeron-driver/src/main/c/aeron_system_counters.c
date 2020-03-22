@@ -52,6 +52,12 @@ static aeron_system_counter_t system_counters[] =
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);
 
+#ifdef AERON_COMPILER_GCC
+_Static_assert(
+    AERON_SYSTEM_COUNTER_DUMMY_LAST == sizeof(system_counters) / sizeof(aeron_system_counter_t),
+    "Please add counters in aeron_system_counter_t enum to the system_counters table");
+#endif
+
 int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters_manager_t *manager)
 {
     if (NULL == counters || NULL == manager)

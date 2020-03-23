@@ -352,7 +352,7 @@ static uint16_t aeron_driver_name_resolver_get_port(aeron_driver_name_resolver_t
     return ntohs(port);
 }
 
-int aeron_driver_name_resolver_find_neighbor_by_addr(
+static int aeron_driver_name_resolver_find_neighbor_by_addr(
     aeron_driver_name_resolver_t *resolver,
     aeron_name_resolver_cache_addr_t *cache_addr)
 {
@@ -375,7 +375,7 @@ int aeron_driver_name_resolver_find_neighbor_by_addr(
     return -1;
 }
 
-int aeron_driver_name_resolver_add_neighbor(
+static int aeron_driver_name_resolver_add_neighbor(
     aeron_driver_name_resolver_t *resolver,
     aeron_name_resolver_cache_addr_t *cache_addr,
     bool is_self,
@@ -418,7 +418,7 @@ int aeron_driver_name_resolver_add_neighbor(
     return 0;
 }
 
-int aeron_driver_name_resolver_on_resolution_entry(
+static int aeron_driver_name_resolver_on_resolution_entry(
     aeron_driver_name_resolver_t *resolver,
     const aeron_resolution_header_t *resolution_header,
     const char *name,
@@ -610,7 +610,7 @@ static int aeron_driver_name_resolver_poll(aeron_driver_name_resolver_t *resolve
     return bytes_received > 0 ? (int)bytes_received : 0;
 }
 
-bool aeron_driver_name_resolver_sockaddr_equals(struct sockaddr_storage *a, struct sockaddr_storage *b)
+static bool aeron_driver_name_resolver_sockaddr_equals(struct sockaddr_storage *a, struct sockaddr_storage *b)
 {
     if (a->ss_family != b->ss_family)
     {
@@ -636,7 +636,7 @@ bool aeron_driver_name_resolver_sockaddr_equals(struct sockaddr_storage *a, stru
     return false;
 }
 
-int aeron_driver_name_resolver_do_send(
+static int aeron_driver_name_resolver_do_send(
     aeron_driver_name_resolver_t *resolver,
     aeron_frame_header_t *frame_header,
     ssize_t length,
@@ -671,7 +671,7 @@ int aeron_driver_name_resolver_do_send(
     return send_result;
 }
 
-int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
+static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
 {
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
@@ -768,7 +768,7 @@ int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_resolver_
     return send_work;
 }
 
-int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
+static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
 {
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
@@ -839,7 +839,7 @@ int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_name_resol
     return work_count;
 }
 
-int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
+static int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
 {
     int num_removed = 0;
     for (int last_index = (int)resolver->neighbors.length - 1, i = last_index; i >= 0; i--)

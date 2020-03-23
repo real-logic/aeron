@@ -60,7 +60,7 @@ typedef struct aeron_driver_name_resolver_neighbor_stct
 {
     aeron_name_resolver_cache_addr_t cache_addr;
     int64_t time_of_last_activity_ms;
-    struct sockaddr_storage cached_socket_addr;
+    struct sockaddr_storage socket_addr;
 }
 aeron_driver_name_resolver_neighbor_t;
 
@@ -69,6 +69,7 @@ typedef struct aeron_driver_name_resolver_stct
     const char *name;
     size_t name_length;
     struct sockaddr_storage local_socket_addr;
+    aeron_name_resolver_cache_addr_t local_cache_addr;
     const char *bootstrap_neighbor;
     struct sockaddr_storage bootstrap_neighbor_addr;
     unsigned int interface_index;
@@ -118,6 +119,10 @@ void aeron_driver_name_resolver_receive(
     size_t length,
     struct sockaddr_storage *addr);
 
+static int aeron_driver_name_resolver_from_sockaddr(
+    struct sockaddr_storage *addr,
+    aeron_name_resolver_cache_addr_t *cache_addr);
+
 int aeron_driver_name_resolver_init(
     aeron_driver_name_resolver_t **driver_resolver,
     aeron_driver_context_t *context,
@@ -154,6 +159,12 @@ int aeron_driver_name_resolver_init(
 
     if (aeron_find_unicast_interface(
         AF_INET, interface_name, &_driver_resolver->local_socket_addr, &_driver_resolver->interface_index) < 0)
+    {
+        goto error_cleanup;
+    }
+
+    if (aeron_driver_name_resolver_from_sockaddr(
+        &_driver_resolver->local_socket_addr, &_driver_resolver->local_cache_addr) < 0)
     {
         goto error_cleanup;
     }
@@ -236,7 +247,7 @@ int aeron_driver_name_resolver_init(
         "Resolver neighbors", strlen("Resolver neighbors"));
     if (_driver_resolver->neighbor_counter.counter_id < 0)
     {
-        return -1;
+        goto error_cleanup;
     }
 
     _driver_resolver->neighbor_counter.value_addr = aeron_counter_addr(
@@ -251,7 +262,7 @@ int aeron_driver_name_resolver_init(
         cache_entries_label, strlen(cache_entries_label));
     if (_driver_resolver->cache_size_counter.counter_id < 0)
     {
-        return -1;
+        goto error_cleanup;
     }
 
     _driver_resolver->cache_size_counter.value_addr = aeron_counter_addr(
@@ -270,6 +281,9 @@ int aeron_driver_name_resolver_init(
     return 0;
 
 error_cleanup:
+    context->udp_channel_transport_bindings->poller_close_func(&_driver_resolver->poller);
+    context->udp_channel_transport_bindings->close_func(&_driver_resolver->transport);
+
     aeron_free((void *)local_hostname);
     aeron_free((void *)_driver_resolver);
     return -1;
@@ -395,7 +409,7 @@ static int aeron_driver_name_resolver_add_neighbor(
         }
 
         aeron_driver_name_resolver_neighbor_t *new_neighbor = &resolver->neighbors.array[resolver->neighbors.length];
-        if (aeron_driver_name_resolver_to_sockaddr(cache_addr, &new_neighbor->cached_socket_addr) < 0)
+        if (aeron_driver_name_resolver_to_sockaddr(cache_addr, &new_neighbor->socket_addr) < 0)
         {
             return -1;
         }
@@ -465,8 +479,7 @@ static bool aeron_driver_name_resolver_is_wildcard(int8_t res_type, uint8_t *add
 
 static void aeron_name_resolver_log_and_clear_error(aeron_driver_name_resolver_t *resolver)
 {
-    aeron_distinct_error_log_record(
-        resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+    aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
     aeron_counter_increment(resolver->error_counter, 1);
     aeron_set_err(0, "%s", "no error");
 }
@@ -506,6 +519,9 @@ void aeron_driver_name_resolver_receive(
         size_t name_length;
         size_t entry_length;
 
+        cache_addr.res_type = resolution_header->res_type;
+        cache_addr.port = resolution_header->udp_port;
+
         if (AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD == resolution_header->res_type)
         {
             aeron_resolution_header_ipv4_t *ip4_hdr = (aeron_resolution_header_ipv4_t *)resolution_header;
@@ -540,9 +556,6 @@ void aeron_driver_name_resolver_receive(
             aeron_name_resolver_log_and_clear_error(resolver);
             return;
         }
-
-        cache_addr.res_type = resolution_header->res_type;
-        cache_addr.port = resolution_header->udp_port;
 
         const bool is_self = AERON_RES_HEADER_SELF_FLAG == (resolution_header->res_flags & AERON_RES_HEADER_SELF_FLAG);
 
@@ -686,20 +699,15 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
     const size_t name_length = resolver->name_length; // TODO: cache name length
 
-    int entry_length = aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
+    int entry_length = aeron_driver_name_resolver_set_resolution_header(
         resolution_header,
         AERON_MAX_UDP_PAYLOAD_LENGTH - entry_offset,
         AERON_RES_HEADER_SELF_FLAG,
-        &resolver->local_socket_addr,
+        &resolver->local_cache_addr,
         resolver->name,
         name_length);
 
-    if (entry_length < 0)
-    {
-        aeron_set_err(
-            -1, "Entry length invalid from sockaddr: %d, %s", resolver->local_socket_addr.ss_family, aeron_errmsg());
-        return 0;
-    }
+    assert(0 <= entry_length || "local_cache_addr should of been correctly constructed during init");
 
     size_t frame_length = sizeof(frame_header) + (ssize_t)entry_length;
 
@@ -776,8 +784,6 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
     frame_header->flags = UINT8_C(0);
     frame_header->version = AERON_FRAME_HEADER_VERSION;
 
-    struct sockaddr_storage neighbor_address;
-
     size_t i;
     size_t j;
     int work_count = 0;
@@ -818,9 +824,7 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
         {
             aeron_driver_name_resolver_neighbor_t *neighbor = &resolver->neighbors.array[k];
 
-            aeron_driver_name_resolver_to_sockaddr(&neighbor->cache_addr, &neighbor_address);
-
-            if (aeron_driver_name_resolver_do_send(resolver, frame_header, entry_offset, &neighbor_address) < 0)
+            if (aeron_driver_name_resolver_do_send(resolver, frame_header, entry_offset, &neighbor->socket_addr) < 0)
             {
                 aeron_set_err_from_last_err_code("Neighbor resolutions: %s", aeron_errmsg());
                 aeron_distinct_error_log_record(

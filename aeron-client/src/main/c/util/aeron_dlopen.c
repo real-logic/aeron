@@ -41,7 +41,7 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
 #include "concurrent/aeron_counters_manager.h"
-#include "aeron.h"
+#include "aeronc.h"
 
 void* aeron_dlsym_fallback(LPCSTR name)
 {

@@ -43,7 +43,6 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -1321,7 +1320,7 @@ class ConsensusModuleAgent implements Agent
         startLogRecording(recordingChannel, SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
 
-        final String logChannel = channelUri.isUdp() ? channelUri.prefix(SPY_QUALIFIER).toString() : recordingChannel;
+        final String logChannel = channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel;
         awaitServicesReady(logChannel, logSessionId, logPosition, isStartup);
 
         if (!isStartup)

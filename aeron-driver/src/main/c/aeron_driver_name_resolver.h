@@ -27,9 +27,7 @@ int aeron_driver_name_resolver_set_resolution_header(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,
     uint8_t flags,
-    int8_t res_type,
-    uint8_t *address,
-    uint16_t port,
+    aeron_name_resolver_cache_addr_t *cache_addr,
     const char *name,
     size_t name_length);
 

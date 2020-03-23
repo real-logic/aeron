@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <stdlib.h>
 #include "util/aeron_env.h"
 
 extern int aeron_env_set(const char *key, const char *val);

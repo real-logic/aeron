@@ -68,9 +68,9 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
             << "Iteration: " << i;
         ASSERT_LE(0,
             aeron_name_resolver_cache_lookup_by_name(&m_cache, name, strlen(name), res_type, &cache_entry));
-        ASSERT_EQ(res_type, cache_entry->res_type);
-        ASSERT_EQ(port, cache_entry->port);
-        ASSERT_EQ(0, memcmp(address, &cache_entry->address, address_length)) << i;
+        ASSERT_EQ(res_type, cache_entry->cache_addr.res_type);
+        ASSERT_EQ(port, cache_entry->cache_addr.port);
+        ASSERT_EQ(0, memcmp(address, &cache_entry->cache_addr.address, address_length)) << i;
     }
 }
 

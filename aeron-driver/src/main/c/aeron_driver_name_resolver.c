@@ -360,7 +360,6 @@ static int aeron_driver_name_resolver_find_neighbor_by_addr(
     {
         aeron_driver_name_resolver_neighbor_t *neighbor = &resolver->neighbors.array[i];
 
-        // TODO: Add a compare function...
         if (cache_addr->res_type == neighbor->cache_addr.res_type &&
             cache_addr->port == neighbor->cache_addr.port &&
             0 == memcmp(

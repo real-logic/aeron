@@ -72,6 +72,6 @@ class StubClusteredService implements ClusteredService
 
     protected long serviceCorrelationId(final int correlationId)
     {
-        return ((long)cluster.context().serviceId()) << 32 | correlationId;
+        return ((long)cluster.context().serviceId()) << 56 | correlationId;
     }
 }

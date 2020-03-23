@@ -571,9 +571,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 throw new ConcurrentConcludeException();
             }
 
-            if (serviceId < 0)
+            if (serviceId < 0 || serviceId > 127)
             {
-                throw new ConfigurationException("service id cannot be negative: " + serviceId);
+                throw new ConfigurationException("service id outside allowed range (0-127): " + serviceId);
             }
 
             if (null == threadFactory)

@@ -14,8 +14,28 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#endif
+
+#include <stdlib.h>
+
 #include "util/aeron_env.h"
 
-extern int aeron_env_set(const char *key, const char *val);
+int aeron_env_set(const char *key, const char *val)
+{
+#if !defined(WIN32)
+    return setenv(key, val, 1);
+#else
+    return _putenv_s(key, val);
+#endif
+}
 
-extern int aeron_env_unset(const char *key);
+int aeron_env_unset(const char *key)
+{
+#if !defined(WIN32)
+    return unsetenv(key);
+#else
+    return _putenv_s(key, "");
+#endif
+}

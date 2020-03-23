@@ -17,28 +17,8 @@
 #ifndef AERON_AERON_ENV_H
 #define AERON_AERON_ENV_H
 
-#if defined(__linux__)
-#define _POSIX_C_SOURCE 200112L
-#endif
+int aeron_env_set(const char *key, const char *val);
 
-#include <stdlib.h>
-
-inline int aeron_env_set(const char *key, const char *val)
-{
-#if !defined(WIN32)
-    return setenv(key, val, 1);
-#else
-    return _putenv_s(key, val);
-#endif
-}
-
-inline int aeron_env_unset(const char *key)
-{
-#if !defined(WIN32)
-    return unsetenv(key);
-#else
-    return _putenv_s(key, "");
-#endif
-}
+int aeron_env_unset(const char *key);
 
 #endif //AERON_AERON_ENV_H

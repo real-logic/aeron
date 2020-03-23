@@ -63,7 +63,7 @@ set(SOURCE
     util/aeron_parse_util.c
     util/aeron_properties_util.c
     util/aeron_strutil.c
-    aeron.c
+    aeronc.c
     aeron_agent.c
     aeron_alloc.c
     aeron_socket.c
@@ -109,7 +109,7 @@ set(HEADERS
     util/aeron_platform.h
     util/aeron_properties_util.h
     util/aeron_strutil.h
-    aeron.h
+    aeronc.h
     aeron_agent.h
     aeron_alloc.h
     aeron_common.h

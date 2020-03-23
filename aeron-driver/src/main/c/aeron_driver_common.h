@@ -46,7 +46,7 @@ typedef struct aeron_position_stct
 }
 aeron_position_t;
 
-typedef struct aeron_position_stct aeron_counter_t;
+typedef struct aeron_position_stct aeron_atomic_counter_t;
 
 typedef enum aeron_subscription_tether_state_enum
 {

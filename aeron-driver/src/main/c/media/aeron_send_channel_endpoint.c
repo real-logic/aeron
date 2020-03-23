@@ -41,7 +41,7 @@ struct mmsghdr
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
-    aeron_counter_t *status_indicator,
+    aeron_atomic_counter_t *status_indicator,
     aeron_driver_context_t *context)
 {
     aeron_send_channel_endpoint_t *_endpoint = NULL;

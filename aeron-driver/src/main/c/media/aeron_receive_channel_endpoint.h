@@ -50,7 +50,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_udp_channel_transport_t transport;
     aeron_data_packet_dispatcher_t dispatcher;
     aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;
-    aeron_counter_t channel_status;
+    aeron_atomic_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_udp_channel_data_paths_t *data_paths;
@@ -77,7 +77,7 @@ aeron_receive_channel_endpoint_t;
 int aeron_receive_channel_endpoint_create(
     aeron_receive_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
-    aeron_counter_t *status_indicator,
+    aeron_atomic_counter_t *status_indicator,
     aeron_system_counters_t *system_counters,
     aeron_driver_context_t *context);
 

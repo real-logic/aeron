@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "aeron.h"
+#include "aeronc.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_clock.h"
 #include "aeron_atomic.h"

@@ -56,7 +56,7 @@ int aeron_receive_channel_endpoint_set_group_tag(
 int aeron_receive_channel_endpoint_create(
     aeron_receive_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
-    aeron_counter_t *status_indicator,
+    aeron_atomic_counter_t *status_indicator,
     aeron_system_counters_t *system_counters,
     aeron_driver_context_t *context)
 {

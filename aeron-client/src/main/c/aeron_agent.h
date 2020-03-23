@@ -23,7 +23,7 @@
 #include "concurrent/aeron_thread.h"
 #include "aeron_common.h"
 #include "concurrent/aeron_atomic.h"
-#include "aeron.h"
+#include "aeronc.h"
 
 typedef int (*aeron_agent_do_work_func_t)(void *);
 typedef void (*aeron_agent_on_close_func_t)(void *);

@@ -269,7 +269,7 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
         if (ensure_capacity_result >= 0)
         {
-            aeron_counter_t client_heartbeat;
+            aeron_atomic_counter_t client_heartbeat;
 
             client_heartbeat.counter_id = aeron_counter_client_heartbeat_timestamp_allocate(
                 &conductor->counters_manager, client_id);
@@ -1066,7 +1066,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 aeron_position_t pub_lmt_position;
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
-                aeron_counter_t snd_bpe_counter;
+                aeron_atomic_counter_t snd_bpe_counter;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
@@ -1229,7 +1229,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
     if (NULL == endpoint)
     {
-        aeron_counter_t status_indicator;
+        aeron_atomic_counter_t status_indicator;
         int ensure_capacity_result = 0;
         char bind_addr_and_port[AERON_MAX_PATH];
         int bind_addr_and_port_length;
@@ -1308,7 +1308,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
     if (NULL == endpoint)
     {
-        aeron_counter_t status_indicator;
+        aeron_atomic_counter_t status_indicator;
         int ensure_capacity_result = 0;
         char bind_addr_and_port[AERON_MAX_PATH];
         int bind_addr_and_port_length;

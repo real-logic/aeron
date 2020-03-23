@@ -17,7 +17,7 @@
 #ifndef AERON_CONTEXT_H
 #define AERON_CONTEXT_H
 
-#include "aeron.h"
+#include "aeronc.h"
 
 typedef struct aeron_context_stct
 {

@@ -18,8 +18,7 @@
 #define AERON_AERON_ENV_H
 
 #if defined(__linux__)
-#define _BSD_SOURCE
-#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200112L
 #endif
 
 #include <stdlib.h>

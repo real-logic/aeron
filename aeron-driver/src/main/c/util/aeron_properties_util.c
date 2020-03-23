@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _POSIX_C_SOURCE 200112L
+#endif
+
 #include <errno.h>
 #include <inttypes.h>
 #include <string.h>

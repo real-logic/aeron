@@ -32,7 +32,6 @@
 #endif
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"
-#include "util/aeron_strutil.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_name_resolver.h"
 #include "aeron_driver_context.h"

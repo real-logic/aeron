@@ -1029,7 +1029,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
 }
 
 
-TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhenNoAcitvity)
+TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhenNoActivity)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();

@@ -1028,7 +1028,6 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 }
 
-
 TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhenNoActivity)
 {
     int64_t client_id = nextCorrelationId();

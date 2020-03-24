@@ -29,8 +29,6 @@ import java.util.Map;
 public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 {
     private final Map<String, ProcessDetails> outputFilesByAeronDirectoryName = new Object2ObjectHashMap<>();
-    private int exitValue;
-    private Map<String, String> environment;
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {
@@ -63,13 +61,14 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 
     private void printEnvironment(final Map<String, String> environment, final PrintStream ps)
     {
-        environment.forEach((name, value) ->
-        {
-            ps.print(name);
-            ps.print('=');
-            ps.print(value);
-            ps.println();
-        });
+        environment.forEach(
+            (name, value) ->
+            {
+                ps.print(name);
+                ps.print('=');
+                ps.print(value);
+                ps.println();
+            });
     }
 
     public void testSuccessful(final ExtensionContext context)
@@ -103,7 +102,6 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
     public void environmentVariables(final String aeronDirectoryName, final Map<String, String> environment)
     {
         outputFilesByAeronDirectoryName.get(aeronDirectoryName).environment(environment);
-        this.environment = environment;
     }
 
     static final class ProcessDetails

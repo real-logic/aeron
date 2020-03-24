@@ -118,6 +118,6 @@ public class UntetheredSubscriptionTest
         final SubscriptionParams params = new SubscriptionParams();
         params.isTether = isTether;
 
-        return new IpcSubscriptionLink(registrationId, STREAM_ID, CHANNEL, null, params, errorHandler);
+        return new IpcSubscriptionLink(registrationId, STREAM_ID, CHANNEL, null, params);
     }
 }

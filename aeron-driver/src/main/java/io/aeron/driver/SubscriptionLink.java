@@ -18,8 +18,6 @@ package io.aeron.driver;
 import io.aeron.CommonContext;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.IdentityHashMap;
@@ -38,7 +36,6 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final boolean isTether;
     protected boolean reachedEndOfLife = false;
     protected final CommonContext.InferableBoolean group;
-    private final ErrorHandler errorHandler;
     protected final String channel;
     protected final AeronClient aeronClient;
     protected final IdentityHashMap<Subscribable, ReadablePosition> positionBySubscribableMap;
@@ -48,8 +45,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         final int streamId,
         final String channel,
         final AeronClient aeronClient,
-        final SubscriptionParams params,
-        final ErrorHandler errorHandler)
+        final SubscriptionParams params)
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
@@ -60,7 +56,6 @@ public abstract class SubscriptionLink implements DriverManagedResource
         this.isSparse = params.isSparse;
         this.isTether = params.isTether;
         this.group = params.group;
-        this.errorHandler = errorHandler;
 
         positionBySubscribableMap = new IdentityHashMap<>(hasSessionId ? 1 : 8);
     }
@@ -167,7 +162,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         {
             final Subscribable subscribable = entry.getKey();
             final ReadablePosition position = entry.getValue();
-            CloseHelper.close(errorHandler, () -> subscribable.removeSubscriber(this, position));
+            subscribable.removeSubscriber(this, position);
         }
     }
 
@@ -222,10 +217,9 @@ class NetworkSubscriptionLink extends SubscriptionLink
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        final SubscriptionParams params,
-        final ErrorHandler errorHandler)
+        final SubscriptionParams params)
     {
-        super(registrationId, streamId, channelUri, aeronClient, params, errorHandler);
+        super(registrationId, streamId, channelUri, aeronClient, params);
 
         this.isReliable = params.isReliable;
         this.isRejoin = params.isRejoin;
@@ -280,10 +274,9 @@ class IpcSubscriptionLink extends SubscriptionLink
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        final SubscriptionParams params,
-        final ErrorHandler errorHandler)
+        final SubscriptionParams params)
     {
-        super(registrationId, streamId, channelUri, aeronClient, params, errorHandler);
+        super(registrationId, streamId, channelUri, aeronClient, params);
     }
 
     public boolean matches(final IpcPublication publication)
@@ -301,10 +294,9 @@ class SpySubscriptionLink extends SubscriptionLink
         final UdpChannel spiedChannel,
         final int streamId,
         final AeronClient aeronClient,
-        final SubscriptionParams params,
-        final ErrorHandler errorHandler)
+        final SubscriptionParams params)
     {
-        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, params, errorHandler);
+        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, params);
 
         this.udpChannel = spiedChannel;
     }

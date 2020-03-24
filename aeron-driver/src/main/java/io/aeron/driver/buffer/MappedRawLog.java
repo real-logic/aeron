@@ -168,7 +168,7 @@ class MappedRawLog implements RawLog
     {
         if (!free())
         {
-            errorHandler.onError(new AeronException("unable to delete " + logFile));
+            errorHandler.onError(new AeronException("unable to delete " + logFile, AeronException.Category.WARN));
         }
     }
 

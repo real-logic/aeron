@@ -739,7 +739,7 @@ public class DriverConductor implements Agent
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, params, ctx.errorHandler());
+            registrationId, channelEndpoint, streamId, channel, client, params);
 
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
@@ -751,7 +751,7 @@ public class DriverConductor implements Agent
     {
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
-            registrationId, streamId, channel, getOrAddClient(clientId), params, ctx.errorHandler());
+            registrationId, streamId, channel, getOrAddClient(clientId), params);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
         subscriptionLinks.add(subscriptionLink);
@@ -791,7 +791,7 @@ public class DriverConductor implements Agent
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, client, params, ctx.errorHandler());
+            registrationId, udpChannel, streamId, client, params);
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -1646,7 +1646,14 @@ public class DriverConductor implements Agent
                 if (resource.free())
                 {
                     fastUnorderedRemove(list, i, lastIndex--);
-                    resource.close();
+                    try
+                    {
+                        resource.close();
+                    }
+                    catch (final Exception ex)
+                    {
+                        ctx.errorHandler().onError(ex);
+                    }
                 }
                 else
                 {

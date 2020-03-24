@@ -418,24 +418,16 @@ public class Election
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        if (State.FOLLOWER_BALLOT == state && leadershipTermId > this.leadershipTermId)
-        {
-            if (this.logPosition > logPosition)
-            {
-                state(State.CANVASS);
-            }
-            else
-            {
-                catchupPosition = logPosition;
-                state(State.FOLLOWER_REPLAY);
-            }
-        }
-        else if (State.FOLLOWER_CATCHUP == state &&
+        if (State.FOLLOWER_CATCHUP == state &&
             leadershipTermId == this.leadershipTermId &&
             leaderMemberId == leaderMember.id() &&
             NULL_POSITION != catchupPosition)
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
+        }
+        else if (leadershipTermId > this.leadershipTermId)
+        {
+            state(State.INIT);
         }
     }
 

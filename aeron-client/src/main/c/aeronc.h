@@ -44,19 +44,46 @@ typedef struct aeron_counters_reader_stct aeron_counters_reader_t;
  */
 
 /**
- * Function name to call on start of each agent.
+ * The top level Aeron directory used for communication between a Media Driver and client.
  */
-#define AERON_AGENT_ON_START_FUNCTION_ENV_VAR "AERON_AGENT_ON_START_FUNCTION"
+#define AERON_DIR_ENV_VAR "AERON_DIR"
 
-typedef void (*aeron_agent_on_start_func_t)(void *state, const char *role_name);
+int aeron_context_set_dir(aeron_context_t *context, const char *value);
+const char *aeron_context_get_dir(aeron_context_t *context);
 
-int aeron_context_set_agent_on_start_function(
-    aeron_context_t *context, aeron_agent_on_start_func_t value, void *state);
-aeron_agent_on_start_func_t aeron_context_get_agent_on_start_function(aeron_context_t *context);
-void *aeron_context_get_agent_on_start_state(aeron_context_t *context);
+/**
+ * The error handler to be called when an error occurs.
+ */
+typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
 
+int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd);
+aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
+void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
+
+/**
+ * Function called by Aeron to deliver notification that the media driver has added a Publication successfully.
+ *
+ * Implementations should do the minimum work for passing off state to another thread for later processing
+ * and should not make a reentrant call back into the Aeron instance.
+ *
+ * @param clientd to be returned in the call
+ * @param channel of the Publication
+ * @param stream_id within the channel of the Publication
+ * @param session_id of the Publication
+ * @param correlation_id used by the Publication for adding. Aka the registrationId returned by aeron_add_publication
+ */
 typedef void (*aeron_on_new_publication_t)(
     void *clientd, const char *channel, int32_t stream_id, int32_t session_id, int64_t correlation_id);
+
+int aeron_context_set_on_new_publication(aeron_context_t *context, aeron_on_new_publication_t handler, void *clientd);
+aeron_on_new_publication_t aeron_context_get_on_new_publication(aeron_context_t *context);
+void *aeron_context_get_on_new_publication_clientd(aeron_context_t *context);
+
+int aeron_context_set_on_new_exclusive_publication(
+    aeron_context_t *context, aeron_on_new_publication_t handler, void *clientd);
+aeron_on_new_publication_t aeron_context_get_on_new_exclusive_publication(aeron_context_t *context);
+void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *context);
+
 typedef void (*aeron_on_new_subscription_t)(
     void *clientd, const char *channel, int32_t stream_id, int64_t correlation_id);
 
@@ -70,7 +97,17 @@ typedef void (*aeron_on_unavailable_counter_t)(
 
 typedef void (*aeron_on_close_client_t)(void *clientd);
 
-typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
+/**
+ * Function name to call on start of each agent.
+ */
+#define AERON_AGENT_ON_START_FUNCTION_ENV_VAR "AERON_AGENT_ON_START_FUNCTION"
+
+typedef void (*aeron_agent_on_start_func_t)(void *state, const char *role_name);
+
+int aeron_context_set_agent_on_start_function(
+    aeron_context_t *context, aeron_agent_on_start_func_t value, void *state);
+aeron_agent_on_start_func_t aeron_context_get_agent_on_start_function(aeron_context_t *context);
+void *aeron_context_get_agent_on_start_state(aeron_context_t *context);
 
 /**
  * Create a aeron_context_t struct and initialize with default values.

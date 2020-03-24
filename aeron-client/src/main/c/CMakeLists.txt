@@ -66,6 +66,7 @@ set(SOURCE
     aeronc.c
     aeron_agent.c
     aeron_alloc.c
+    aeron_context.c
     aeron_socket.c
     aeron_windows.c
     )

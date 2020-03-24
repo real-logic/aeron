@@ -21,7 +21,7 @@
 
 typedef struct aeron_context_stct
 {
-    const char *dir_name;
+    char *aeron_dir;
 
     aeron_error_handler_t error_handler;
     void *error_handler_clientd;

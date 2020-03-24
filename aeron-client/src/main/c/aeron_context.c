@@ -93,6 +93,8 @@ inline static const char *username()
     return username;
 }
 
+#define AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT (false)
+
 void aeron_default_error_handler(void *clientd, int errcode, const char *message)
 {
     fprintf(stderr, "ERROR: (%d): %s\n", errcode, message);
@@ -140,11 +142,24 @@ int aeron_context_init(aeron_context_t **context)
     _context->on_new_exclusive_publication = aeron_default_on_new_publication;
     _context->on_new_exclusive_publication_clientd = NULL;
 
+    _context->use_conductor_agent_invoker = AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT;
+    _context->agent_on_start_func = NULL;
+    _context->agent_on_start_state = NULL;
+
     char *value = NULL;
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    }
+
+    if ((_context->idle_strategy_func = aeron_idle_strategy_load(
+        "sleeping",
+        &_context->idle_strategy_state,
+        NULL,
+        "1ms")) == NULL)
+    {
+        return -1;
     }
 
     *context = _context;
@@ -156,6 +171,7 @@ int aeron_context_close(aeron_context_t *context)
     if (NULL != context)
     {
         aeron_free((void *)context->aeron_dir);
+        aeron_free(context->idle_strategy_state);
         aeron_free(context);
     }
 
@@ -243,4 +259,17 @@ aeron_on_new_publication_t aeron_context_get_on_new_exclusive_publication(aeron_
 void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *context)
 {
     return NULL != context ? context->on_new_exclusive_publication_clientd : NULL;
+}
+
+int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->use_conductor_agent_invoker = value;
+    return 0;
+}
+
+bool aeron_contest_get_use_conductor_agent_invoker(aeron_context_t *context)
+{
+    return NULL != context ? context->use_conductor_agent_invoker : AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT;
 }

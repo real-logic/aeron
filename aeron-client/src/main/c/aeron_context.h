@@ -18,6 +18,7 @@
 #define AERON_CONTEXT_H
 
 #include "aeronc.h"
+#include "aeron_agent.h"
 
 typedef struct aeron_context_stct
 {
@@ -47,12 +48,19 @@ typedef struct aeron_context_stct
     aeron_on_unavailable_counter_t on_unavailable_counter;
     void *on_unavailable_counter_clientd;
 
+    aeron_agent_on_start_func_t agent_on_start_func;
+    void *agent_on_start_state;
+
     aeron_on_close_client_t on_close_client;
     void *on_close_client_clientd;
+
+    aeron_idle_strategy_func_t idle_strategy_func;
+    void *idle_strategy_state;
 
     long media_driver_timeout_ms;
     long resource_linger_timeout_ms;
 
+    bool use_conductor_agent_invoker;
     bool pre_touch_mapped_memory;
 
     aeron_clock_func_t nano_clock;

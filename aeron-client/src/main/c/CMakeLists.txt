@@ -66,6 +66,8 @@ set(SOURCE
     aeronc.c
     aeron_agent.c
     aeron_alloc.c
+    aeron_client.c
+    aeron_client_conductor.c
     aeron_context.c
     aeron_socket.c
     aeron_windows.c
@@ -113,6 +115,8 @@ set(HEADERS
     aeronc.h
     aeron_agent.h
     aeron_alloc.h
+    aeron_client.h
+    aeron_client_conductor.h
     aeron_common.h
     aeron_context.h
     aeron_socket.h

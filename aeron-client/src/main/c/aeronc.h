@@ -24,6 +24,7 @@ extern "C"
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define AERON_NULL_VALUE (-1)
 
@@ -98,6 +99,12 @@ typedef void (*aeron_on_unavailable_counter_t)(
 typedef void (*aeron_on_close_client_t)(void *clientd);
 
 /**
+ * Whether to use an invoker to control the conductor agent or spawn a thread.
+ */
+int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool value);
+bool aeron_contest_get_use_conductor_agent_invoker(aeron_context_t *context);
+
+/**
  * Function name to call on start of each agent.
  */
 #define AERON_AGENT_ON_START_FUNCTION_ENV_VAR "AERON_AGENT_ON_START_FUNCTION"
@@ -140,15 +147,14 @@ int aeron_init(aeron_t **client, aeron_context_t *context);
  * Start an aeron_t. This may spawn a thread for the Client Conductor.
  *
  * @param client to start.
- * @param manual_main_loop to be called by the caller for the Conductor do_work cycle.
  * @return 0 for success and -1 for error.
  */
-int aeron_start(aeron_t *client, bool manual_main_loop);
+int aeron_start(aeron_t *client);
 
 /**
  * Call the Conductor main do_work duty cycle once.
  *
- * Client must have been created with manual_main_loop set to true.
+ * Client must have been created with use conductor invoker set to true.
  *
  * @param client to call do_work duty cycle on.
  * @return 0 for success and -1 for error.

@@ -26,10 +26,10 @@ public class AeronClient implements DriverManagedResource
 {
     private final long clientId;
     private final long clientLivenessTimeoutMs;
-    private final AtomicCounter clientTimeouts;
-    private final AtomicCounter heartbeatTimestamp;
     private boolean reachedEndOfLife = false;
     private boolean closedByCommand = false;
+    private final AtomicCounter clientTimeouts;
+    private final AtomicCounter heartbeatTimestamp;
 
     public AeronClient(
         final long clientId,
@@ -48,10 +48,7 @@ public class AeronClient implements DriverManagedResource
 
     public void close()
     {
-        if (!heartbeatTimestamp.isClosed())
-        {
-            heartbeatTimestamp.close();
-        }
+        heartbeatTimestamp.close();
     }
 
     public long clientId()

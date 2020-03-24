@@ -58,7 +58,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private long clusterTime;
     private long clusterLogPosition = NULL_POSITION;
     private long terminationPosition = NULL_POSITION;
-    private long roleChangePosition = NULL_POSITION;
 
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
@@ -170,9 +169,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 if (logAdapter.isDone())
                 {
-                    checkPosition(logAdapter.position(), activeLogEvent);
+                    final long logPosition = logAdapter.position();
                     CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
                     logAdapter = null;
+                    checkLogPosition(logPosition, activeLogEvent);
+                    role(Role.get((int)roleCounter.get()));
                 }
             }
 
@@ -333,19 +334,14 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             logAdapter = null;
         }
 
-        roleChangePosition = NULL_POSITION;
         activeLogEvent = new ActiveLogEvent(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, isStartup, logChannel);
+        role(Role.get((int)roleCounter.get()));
     }
 
     void onServiceTerminationPosition(final long logPosition)
     {
         terminationPosition = logPosition;
-    }
-
-    void onElectionStart(final long logPosition)
-    {
-        roleChangePosition = logPosition;
     }
 
     void onSessionMessage(
@@ -711,8 +707,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         logChannel = activeLog.channel;
         logAdapter = new BoundedLogAdapter(image, commitPosition, this);
 
-        role(Role.get((int)roleCounter.get()));
-
         for (final ClientSession session : sessionByIdMap.values())
         {
             if (Role.LEADER == role)
@@ -729,6 +723,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 session.disconnect(ctx.countedErrorHandler());
             }
         }
+
+        role(Role.get((int)roleCounter.get()));
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)
@@ -965,11 +961,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             checkForTermination();
         }
-
-        if (NULL_POSITION != roleChangePosition)
-        {
-            checkForRoleChange();
-        }
     }
 
     private void checkForTermination()
@@ -979,15 +970,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             final long logPosition = terminationPosition;
             terminationPosition = NULL_VALUE;
             terminate(logPosition);
-        }
-    }
-
-    private void checkForRoleChange()
-    {
-        if (null != logAdapter && logAdapter.position() >= roleChangePosition)
-        {
-            roleChangePosition = NULL_VALUE;
-            role(Role.get((int)roleCounter.get()));
         }
     }
 
@@ -1026,7 +1008,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    private static void checkPosition(final long existingPosition, final ActiveLogEvent activeLogEvent)
+    private static void checkLogPosition(final long existingPosition, final ActiveLogEvent activeLogEvent)
     {
         if (null != activeLogEvent && existingPosition != activeLogEvent.logPosition)
         {

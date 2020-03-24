@@ -32,7 +32,6 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
     private final ServiceTerminationPositionDecoder serviceTerminationPositionDecoder =
         new ServiceTerminationPositionDecoder();
-    private final ElectionStartDecoder electionStartDecoder = new ElectionStartDecoder();
 
     ServiceAdapter(final Subscription subscription, final ClusteredServiceAgent clusteredServiceAgent)
     {
@@ -89,16 +88,6 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 clusteredServiceAgent.onServiceTerminationPosition(serviceTerminationPositionDecoder.logPosition());
-                break;
-
-            case ElectionStartDecoder.TEMPLATE_ID:
-                electionStartDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                clusteredServiceAgent.onElectionStart(electionStartDecoder.logPosition());
                 break;
         }
     }

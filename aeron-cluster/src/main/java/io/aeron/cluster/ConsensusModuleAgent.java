@@ -853,11 +853,13 @@ class ConsensusModuleAgent implements Agent
 
     void prepareForNewLeadership(final long logPosition)
     {
+        role(Cluster.Role.FOLLOWER);
         ClusterControl.ToggleState.deactivate(controlToggle);
 
         final long recordingId = logRecordingId();
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
+            logPublisher.disconnect(ctx.countedErrorHandler());
             stopLogRecording();
 
             long stopPosition;
@@ -1957,7 +1959,7 @@ class ConsensusModuleAgent implements Agent
             if (0 == count && logAdapter.isImageClosed())
             {
                 ctx.countedErrorHandler().onError(new ClusterException(
-                    "log disconnected from leader: logPosition=" + logPosition() +
+                    "log disconnected from leader: logPosition=" + logAdapter.position() +
                     " commitPosition=" + commitPosition.getWeak() +
                     " leadershipTermId=" + leadershipTermId +
                     " leaderId=" + leaderMember.id(),
@@ -2587,11 +2589,6 @@ class ConsensusModuleAgent implements Agent
             this);
 
         election.doWork(nowNs);
-        if (!serviceProxy.electionStart(commitPosition))
-        {
-            ctx.countedErrorHandler().onError(
-                new ClusterException("failed to send election start event", AeronException.Category.WARN));
-        }
     }
 
     private void idle()

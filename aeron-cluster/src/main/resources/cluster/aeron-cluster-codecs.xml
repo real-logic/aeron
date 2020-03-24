@@ -334,14 +334,8 @@
         <field name="logPosition"              id="1" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="ElectionStart"
-                 id="43"
-                 description="Consensus Module notifying services an election has started at a position.">
-        <field name="logPosition"              id="1" type="int64"/>
-    </sbe:message>
-
     <sbe:message name="ClusterMembersExtendedResponse"
-                 id="44"
+                 id="43"
                  description="Cluster Members status for active and passive members">
         <field name="correlationId"            id="1" type="int64"/>
         <field name="currentTimeNs"            id="2" type="time_t"/>

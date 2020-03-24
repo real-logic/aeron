@@ -32,7 +32,6 @@ final class ServiceProxy implements AutoCloseable
     private final ClusterMembersResponseEncoder clusterMembersResponseEncoder = new ClusterMembersResponseEncoder();
     private final ServiceTerminationPositionEncoder serviceTerminationPositionEncoder =
         new ServiceTerminationPositionEncoder();
-    private final ElectionStartEncoder electionStartEncoder = new ElectionStartEncoder();
     private final ClusterMembersExtendedResponseEncoder clusterMembersExtendedResponseEncoder =
         new ClusterMembersExtendedResponseEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
@@ -211,32 +210,6 @@ final class ServiceProxy implements AutoCloseable
         while (--attempts > 0);
 
         throw new ClusterException("failed to send service termination position");
-    }
-
-    boolean electionStart(final long logPosition)
-    {
-        final int length = MessageHeaderDecoder.ENCODED_LENGTH + ElectionStartEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS * 2;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                electionStartEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
     }
 
     private static void checkResult(final long result)

@@ -55,7 +55,7 @@ int aeron_name_resolver_cache_find_index_by_name_and_type(
     {
         aeron_name_resolver_cache_entry_t *entry = &cache->entries.array[i];
 
-        if (res_type == entry->res_type &&
+        if (res_type == entry->cache_addr.res_type &&
             name_length == entry->name_length &&
             0 == strncmp(name, entry->name, name_length))
         {
@@ -70,13 +70,11 @@ int aeron_name_resolver_cache_add_or_update(
     aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
-    int8_t res_type,
-    const uint8_t *address,
-    uint16_t port,
+    aeron_name_resolver_cache_addr_t *cache_addr,
     int64_t time_of_last_activity,
     int64_t *cache_entries_counter)
 {
-    int index = aeron_name_resolver_cache_find_index_by_name_and_type(cache, name, name_length, res_type);
+    int index = aeron_name_resolver_cache_find_index_by_name_and_type(cache, name, name_length, cache_addr->res_type);
     aeron_name_resolver_cache_entry_t *entry;
     int num_updated;
 
@@ -103,7 +101,6 @@ int aeron_name_resolver_cache_add_or_update(
 
         strncpy((char *)entry->name, name, name_length);
         entry->name_length = name_length;
-        entry->res_type = res_type;
         num_updated = 1;
 
         cache->entries.length++;
@@ -116,10 +113,7 @@ int aeron_name_resolver_cache_add_or_update(
         num_updated = 0;
     }
 
-    entry->port = port;
-    size_t address_len = aeron_res_header_address_length(res_type);
-    memcpy(entry->address, address, address_len);
-    memset(&entry->address[address_len], 0, AERON_RES_HEADER_ADDRESS_LENGTH_IP6 - address_len);
+    memcpy(&entry->cache_addr, cache_addr, sizeof(entry->cache_addr));
     entry->time_of_last_activity_ms = time_of_last_activity;
     entry->deadline_ms = time_of_last_activity + cache->timeout_ms;
 

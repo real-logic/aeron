@@ -17,16 +17,21 @@
 #ifndef AERON_AERON_NAME_RESOLVER_CACHE_H
 #define AERON_AERON_NAME_RESOLVER_CACHE_H
 
+typedef struct aeron_name_resolver_cache_addr_stct
+{
+    uint8_t address[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];
+    uint16_t port;
+    int8_t res_type;
+}
+aeron_name_resolver_cache_addr_t;
 
 typedef struct aeron_name_resolver_cache_entry_stct
 {
-    uint8_t address[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];
+    aeron_name_resolver_cache_addr_t cache_addr;
     int64_t deadline_ms;
     int64_t time_of_last_activity_ms;
     size_t name_length;
     const char *name;
-    uint16_t port;
-    int8_t res_type;
 }
 aeron_name_resolver_cache_entry_t;
 
@@ -49,9 +54,7 @@ int aeron_name_resolver_cache_add_or_update(
     aeron_name_resolver_cache_t *cache,
     const char *name,
     size_t name_length,
-    int8_t res_type,
-    const uint8_t *address,
-    uint16_t port,
+    aeron_name_resolver_cache_addr_t *cache_addr,
     int64_t time_of_last_activity,
     int64_t *cache_entries_counter);
 

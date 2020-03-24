@@ -47,62 +47,11 @@ int aeron_broadcast_receiver_init(volatile aeron_broadcast_receiver_t *receiver,
     return result;
 }
 
-inline static bool aeron_broadcast_receiver_validate_at(volatile aeron_broadcast_receiver_t *receiver, int64_t cursor)
-{
-    int64_t tail_intent_counter;
-    AERON_GET_VOLATILE(tail_intent_counter, receiver->descriptor->tail_intent_counter);
+extern bool aeron_broadcast_receiver_validate(volatile aeron_broadcast_receiver_t *receiver);
 
-    return (cursor + (int64_t)receiver->capacity) > tail_intent_counter;
-}
+extern bool aeron_broadcast_receiver_validate_at(volatile aeron_broadcast_receiver_t *receiver, int64_t cursor);
 
-inline static bool aeron_broadcast_receiver_validate(volatile aeron_broadcast_receiver_t *receiver)
-{
-    aeron_acquire();
-
-    return aeron_broadcast_receiver_validate_at(receiver, receiver->cursor);
-}
-
-inline static bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_receiver_t *receiver)
-{
-    bool is_available = false;
-    int64_t tail;
-    int64_t cursor = receiver->next_record;
-
-    AERON_GET_VOLATILE(tail, receiver->descriptor->tail_counter);
-
-    if (tail > cursor)
-    {
-        size_t record_offset = (uint32_t)cursor & (receiver->capacity - 1);
-
-        if (!aeron_broadcast_receiver_validate_at(receiver, cursor))
-        {
-            receiver->lapped_count++;
-            cursor = receiver->descriptor->latest_counter;
-            record_offset = (uint32_t)cursor & (receiver->capacity - 1);
-        }
-
-        aeron_broadcast_record_descriptor_t *record =
-            (aeron_broadcast_record_descriptor_t *)(receiver->buffer + record_offset);
-
-        receiver->cursor = cursor;
-        receiver->next_record = cursor + AERON_ALIGN(record->length, AERON_BROADCAST_RECORD_ALIGNMENT);
-
-        if (AERON_BROADCAST_PADDING_MSG_TYPE_ID == record->msg_type_id)
-        {
-            aeron_broadcast_record_descriptor_t *new_record =
-                (aeron_broadcast_record_descriptor_t *)(receiver->buffer + 0);
-
-            record_offset = 0;
-            receiver->cursor = receiver->next_record;
-            receiver->next_record += AERON_ALIGN(new_record->length, AERON_BROADCAST_RECORD_ALIGNMENT);
-        }
-
-        receiver->record_offset = record_offset;
-        is_available = true;
-    }
-
-    return is_available;
-}
+extern bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_receiver_t *receiver);
 
 int aeron_broadcast_receiver_receive(
     volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler)

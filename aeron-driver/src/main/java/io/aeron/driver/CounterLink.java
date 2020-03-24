@@ -20,14 +20,14 @@ import org.agrona.concurrent.status.AtomicCounter;
 /**
  * Tracks an aeron client interest in a counter.
  */
-public class CounterLink implements DriverManagedResource
+final class CounterLink implements DriverManagedResource
 {
     private final long registrationId;
     private final AtomicCounter counter;
     private final AeronClient client;
     private boolean reachedEndOfLife = false;
 
-    public CounterLink(final AtomicCounter counter, final long registrationId, final AeronClient client)
+    CounterLink(final AtomicCounter counter, final long registrationId, final AeronClient client)
     {
         this.registrationId = registrationId;
         this.counter = counter;
@@ -37,16 +37,6 @@ public class CounterLink implements DriverManagedResource
     public void close()
     {
         counter.close();
-    }
-
-    public long registrationId()
-    {
-        return registrationId;
-    }
-
-    public int counterId()
-    {
-        return counter.id();
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
@@ -60,5 +50,15 @@ public class CounterLink implements DriverManagedResource
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
+    }
+
+    int counterId()
+    {
+        return counter.id();
+    }
+
+    long registrationId()
+    {
+        return registrationId;
     }
 }

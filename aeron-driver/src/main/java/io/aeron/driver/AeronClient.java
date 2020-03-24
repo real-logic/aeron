@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Aeron client library tracker.
  */
-public class AeronClient implements DriverManagedResource
+final class AeronClient implements DriverManagedResource
 {
     private final long clientId;
     private final long clientLivenessTimeoutMs;
@@ -31,7 +31,7 @@ public class AeronClient implements DriverManagedResource
     private final AtomicCounter clientTimeouts;
     private final AtomicCounter heartbeatTimestamp;
 
-    public AeronClient(
+    AeronClient(
         final long clientId,
         final long clientLivenessTimeoutNs,
         final long nowMs,
@@ -51,21 +51,6 @@ public class AeronClient implements DriverManagedResource
         heartbeatTimestamp.close();
     }
 
-    public long clientId()
-    {
-        return clientId;
-    }
-
-    public void timeOfLastKeepaliveMs(final long nowMs)
-    {
-        heartbeatTimestamp.setOrdered(nowMs);
-    }
-
-    public boolean hasTimedOut()
-    {
-        return reachedEndOfLife;
-    }
-
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (timeMs > (heartbeatTimestamp.get() + clientLivenessTimeoutMs))
@@ -83,6 +68,21 @@ public class AeronClient implements DriverManagedResource
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
+    }
+
+    long clientId()
+    {
+        return clientId;
+    }
+
+    boolean hasTimedOut()
+    {
+        return reachedEndOfLife;
+    }
+
+    void timeOfLastKeepaliveMs(final long nowMs)
+    {
+        heartbeatTimestamp.setOrdered(nowMs);
     }
 
     void onClosedByCommand()

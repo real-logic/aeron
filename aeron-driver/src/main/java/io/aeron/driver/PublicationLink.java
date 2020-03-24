@@ -18,14 +18,14 @@ package io.aeron.driver;
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication} or {@link IpcPublication}.
  */
-public class PublicationLink implements DriverManagedResource
+final class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
     private final Object publication;
     private final AeronClient client;
     private boolean reachedEndOfLife = false;
 
-    public PublicationLink(final long registrationId, final AeronClient client, final NetworkPublication publication)
+    PublicationLink(final long registrationId, final AeronClient client, final NetworkPublication publication)
     {
         this.registrationId = registrationId;
         this.client = client;
@@ -34,7 +34,7 @@ public class PublicationLink implements DriverManagedResource
         publication.incRef();
     }
 
-    public PublicationLink(final long registrationId, final AeronClient client, final IpcPublication publication)
+    PublicationLink(final long registrationId, final AeronClient client, final IpcPublication publication)
     {
         this.registrationId = registrationId;
         this.client = client;
@@ -55,11 +55,6 @@ public class PublicationLink implements DriverManagedResource
         }
     }
 
-    public long registrationId()
-    {
-        return registrationId;
-    }
-
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (client.hasTimedOut())
@@ -71,5 +66,10 @@ public class PublicationLink implements DriverManagedResource
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
+    }
+
+    long registrationId()
+    {
+        return registrationId;
     }
 }

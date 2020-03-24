@@ -60,22 +60,22 @@ public abstract class SubscriptionLink implements DriverManagedResource
         positionBySubscribableMap = new IdentityHashMap<>(hasSessionId ? 1 : 8);
     }
 
-    public long registrationId()
+    public final long registrationId()
     {
         return registrationId;
     }
 
-    public int streamId()
+    public final int streamId()
     {
         return streamId;
     }
 
-    public int sessionId()
+    public final int sessionId()
     {
         return sessionId;
     }
 
-    public String channel()
+    public final String channel()
     {
         return channel;
     }

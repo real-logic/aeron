@@ -63,11 +63,6 @@ public class DriverProxy
         return toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
-    public long clientId()
-    {
-        return correlatedMessage.clientId();
-    }
-
     public long addPublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -295,7 +290,6 @@ public class DriverProxy
     public boolean terminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {
         correlatedMessage.correlationId(Aeron.NULL_VALUE);
-
         terminateDriver.tokenBuffer(tokenBuffer, tokenOffset, tokenLength);
 
         return toDriverCommandBuffer.write(TERMINATE_DRIVER, buffer, 0, terminateDriver.length());

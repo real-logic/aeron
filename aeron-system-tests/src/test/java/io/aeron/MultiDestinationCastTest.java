@@ -378,7 +378,7 @@ public class MultiDestinationCastTest
                 subscriptionB.poll(fragmentHandlerB, 10);
             }
 
-            if (messagesSent.value == (numMessagesToSend - numMessageForSub2 - 1))
+            if (messagesSent.value == (numMessagesToSend - numMessageForSub2))
             {
                 final int published = messagesSent.value;
                 // If we add B before A has reached `published` number of messages

@@ -46,7 +46,7 @@ public final class CountingFragmentHandler implements FragmentHandler
         return "CountingFragmentHandler{" +
             "name='" + name + '\'' +
             ", received=" + received +
-            ", lastCheckedTargetValue" + lastCheckedTargetValue +
+            ", lastCheckedTargetValue=" + lastCheckedTargetValue +
             '}';
     }
 }

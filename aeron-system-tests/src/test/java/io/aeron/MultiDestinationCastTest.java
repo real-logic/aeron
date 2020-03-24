@@ -29,6 +29,8 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -336,6 +338,10 @@ public class MultiDestinationCastTest
         final Supplier<String> messageSupplierA = fragmentHandlerA::toString;
         final Supplier<String> messageSupplierB = fragmentHandlerB::toString;
         final CountDownLatch availableImage = new CountDownLatch(1);
+        final MutableLong position = new MutableLong(0);
+        final MutableInteger messagesSent = new MutableInteger(0);
+        final Supplier<String> positionSupplier =
+            () -> "Failed to publish, position: " + position + ", sent: " + messagesSent;
 
         launch();
 
@@ -352,24 +358,29 @@ public class MultiDestinationCastTest
             Tests.checkInterruptStatus();
         }
 
-        for (int i = 0; i < numMessagesToSend; i++)
+        while (messagesSent.value < numMessagesToSend)
         {
-            while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
+            position.value = publication.offer(buffer, 0, MESSAGE_LENGTH);
+
+            if (0 <= position.value)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                messagesSent.increment();
+            }
+            else
+            {
+                Tests.yieldingWait(positionSupplier);
             }
 
             subscriptionA.poll(fragmentHandlerA, 10);
 
-            if (i > (numMessagesToSend - numMessageForSub2))
+            if (messagesSent.value > (numMessagesToSend - numMessageForSub2))
             {
                 subscriptionB.poll(fragmentHandlerB, 10);
             }
 
-            if (i == (numMessagesToSend - numMessageForSub2 - 1))
+            if (messagesSent.value == (numMessagesToSend - numMessageForSub2 - 1))
             {
-                final int published = i + 1;
+                final int published = messagesSent.value;
                 // If we add B before A has reached `published` number of messages
                 // then B will receive more than the expected `numMessageForSub2`.
                 while (fragmentHandlerA.notDone(published))

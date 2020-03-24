@@ -1167,11 +1167,10 @@ class ClientConductor implements Agent, DriverEventsListener
                      driverTimeoutMs + ", age=" + (nowMs - lastKeepAliveMs));
             }
 
-            final long clientId = driverProxy.clientId();
             if (null == heartbeatTimestamp)
             {
                 final int counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
-                    countersReader, CLIENT_HEARTBEAT_TYPE_ID, clientId);
+                    countersReader, CLIENT_HEARTBEAT_TYPE_ID, ctx.clientId());
 
                 if (counterId != CountersReader.NULL_COUNTER_ID)
                 {
@@ -1183,7 +1182,7 @@ class ClientConductor implements Agent, DriverEventsListener
             else
             {
                 final int counterId = heartbeatTimestamp.id();
-                if (!HeartbeatTimestamp.isActive(countersReader, counterId, CLIENT_HEARTBEAT_TYPE_ID, clientId))
+                if (!HeartbeatTimestamp.isActive(countersReader, counterId, CLIENT_HEARTBEAT_TYPE_ID, ctx.clientId()))
                 {
                     isTerminating = true;
                     forceCloseResources();

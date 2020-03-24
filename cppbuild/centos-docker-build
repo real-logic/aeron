@@ -3,7 +3,7 @@
 GCC_VERSION=$1
 if [ -z ${GCC_VERSION} ];
 then echo "No GCC version provided!";
-  exit -1;
+  exit 1;
 fi
 
 SOURCE_DIR="`pwd`"

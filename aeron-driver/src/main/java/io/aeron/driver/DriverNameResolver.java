@@ -452,19 +452,6 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         }
     }
 
-    int findNeighborByAddress(final InetSocketAddress address)
-    {
-        for (int i = 0, size = neighborList.size(); i < size; i++)
-        {
-            if (address.equals(neighborList.get(i).socketAddress))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
     int findNeighborByAddress(final byte[] address, final int addressLength, final int port)
     {
         for (int i = 0, size = neighborList.size(); i < size; i++)
@@ -499,7 +486,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
     static class Neighbor
     {
-        InetSocketAddress socketAddress;
+        final InetSocketAddress socketAddress;
         long timeOfLastActivityMs;
 
         Neighbor(final InetSocketAddress socketAddress, final long nowMs)

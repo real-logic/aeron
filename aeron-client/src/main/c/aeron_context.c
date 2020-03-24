@@ -19,6 +19,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "util/aeron_platform.h"
+#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#include <io.h>
+#endif
+
+#include "aeron_windows.h"
 #include "aeron_alloc.h"
 #include "aeron_context.h"
 #include "util/aeron_error.h"

@@ -148,12 +148,6 @@ public class DriverProxy
         return correlationId;
     }
 
-    public void sendClientKeepalive()
-    {
-        correlatedMessage.correlationId(0);
-        toDriverCommandBuffer.write(CLIENT_KEEPALIVE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
-    }
-
     public long addDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();

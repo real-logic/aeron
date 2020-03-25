@@ -28,13 +28,11 @@ import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.*;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,8 +50,9 @@ import java.util.function.LongConsumer;
 
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.status.ClientHeartbeatTimestamp.CLIENT_HEARTBEAT_TYPE_ID;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
+import static org.agrona.concurrent.status.CountersReader.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -104,29 +103,26 @@ public class DriverConductorTest
     private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
     private ReceiveChannelEndpoint receiveChannelEndpoint = null;
 
-    private long currentTimeMs;
-    private final EpochClock epochClock = () -> currentTimeMs;
-    private long currentTimeNs;
-    private final NanoClock nanoClock = () -> currentTimeNs;
+    private final CachedEpochClock epochClock = new CachedEpochClock();
+    private final CachedNanoClock nanoClock = new CachedNanoClock();
 
     private CountersManager spyCountersManager;
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
 
-    private final Answer<Void> closeChannelEndpointAnswer = (invocation) ->
-    {
-        final Object[] args = invocation.getArguments();
-        final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
-        channelEndpoint.close();
+    private final Answer<Void> closeChannelEndpointAnswer =
+        (invocation) ->
+        {
+            final Object[] args = invocation.getArguments();
+            final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
+            channelEndpoint.close();
 
-        return null;
-    };
+            return null;
+        };
 
     @BeforeEach
     public void before()
     {
-        currentTimeNs = 0;
-
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
@@ -505,14 +501,15 @@ public class DriverConductorTest
         verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS / 2) - nanoClock.nanoTime() <= 0);
 
-        driverProxy.sendClientKeepalive();
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + 1000) - nanoClock.nanoTime() <= 0);
 
-        driverProxy.sendClientKeepalive();
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
@@ -567,7 +564,7 @@ public class DriverConductorTest
         assertThat(publication.state(),
             Matchers.anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
 
-        currentTimeNs += DEFAULT_TIMER_INTERVAL_NS + PUBLICATION_LINGER_TIMEOUT_NS;
+        nanoClock.advance(DEFAULT_TIMER_INTERVAL_NS + PUBLICATION_LINGER_TIMEOUT_NS);
         driverConductor.doWork();
         assertEquals(NetworkPublication.State.CLOSING, publication.state());
 
@@ -608,14 +605,15 @@ public class DriverConductorTest
         receiveChannelEndpoint = captor.getValue();
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        driverProxy.sendClientKeepalive();
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
-        driverProxy.sendClientKeepalive();
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
@@ -790,7 +788,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() / 2);
 
-        driverProxy.sendClientKeepalive();
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() + 1000);
 
@@ -992,7 +991,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
-        driverProxy.sendClientKeepalive();
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
@@ -1105,7 +1105,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
-        driverProxy.sendClientKeepalive();
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
@@ -1126,14 +1127,15 @@ public class DriverConductorTest
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
         final NetworkPublication publication = captor.getValue();
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS / 2) - nanoClock.nanoTime() <= 0);
 
-        spyDriverProxy.sendClientKeepalive();
+        heartbeatCounter.setOrdered(epochClock.time());
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + 1000) - nanoClock.nanoTime() <= 0);
 
-        spyDriverProxy.sendClientKeepalive();
+        heartbeatCounter.setOrdered(0);
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
@@ -1149,11 +1151,7 @@ public class DriverConductorTest
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
-        doWorkUntil(() ->
-        {
-            driverProxy.sendClientKeepalive();
-            return (PUBLICATION_LINGER_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0;
-        });
+        doWorkUntil(() -> (PUBLICATION_LINGER_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(senderProxy, times(1)).closeSendChannelEndpoint(any());
     }
@@ -1166,11 +1164,7 @@ public class DriverConductorTest
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
 
-        doWorkUntil(() ->
-        {
-            driverProxy.sendClientKeepalive();
-            return (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0;
-        });
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(receiverProxy, times(1)).closeReceiveChannelEndpoint(any());
     }
@@ -1302,10 +1296,11 @@ public class DriverConductorTest
         final ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
+        final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
 
         doWorkUntil(() ->
         {
-            driverProxy.sendClientKeepalive();
+            heartbeatCounter.setOrdered(epochClock.time());
             return (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0;
         });
 
@@ -1740,9 +1735,9 @@ public class DriverConductorTest
         {
             final long millisecondsToAdvance = 16;
 
-            currentTimeNs += TimeUnit.MILLISECONDS.toNanos(millisecondsToAdvance);
-            currentTimeMs += millisecondsToAdvance;
-            timeConsumer.accept(currentTimeNs);
+            nanoClock.advance(TimeUnit.MILLISECONDS.toNanos(millisecondsToAdvance));
+            epochClock.advance(millisecondsToAdvance);
+            timeConsumer.accept(nanoClock.nanoTime());
             driverConductor.doWork();
         }
     }
@@ -1760,5 +1755,25 @@ public class DriverConductorTest
     private static long networkPublicationCorrelationId(final NetworkPublication publication)
     {
         return LogBufferDescriptor.correlationId(publication.rawLog().metaData());
+    }
+
+    private static AtomicCounter clientHeartbeatCounter(final CountersReader countersReader)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CLIENT_HEARTBEAT_TYPE_ID)
+                {
+                    return new AtomicCounter(countersReader.valuesBuffer(), i);
+                }
+            }
+        }
+
+        throw new IllegalStateException("could not find client heartbeat counter");
     }
 }

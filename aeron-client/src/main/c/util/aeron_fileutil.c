@@ -34,6 +34,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <io.h>
+#include <direct.h>
+#include <process.h>
 
 #define PROT_READ  1
 #define PROT_WRITE 2
@@ -94,6 +96,11 @@ int aeron_ftruncate(int fd, off_t length)
     }
 
     return 0;
+}
+
+int aeron_mkdir(const char *path, int permission)
+{
+    return _mkdir(path);
 }
 
 uint64_t aeron_usable_fs_space(const char *path)

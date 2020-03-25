@@ -155,22 +155,8 @@ public:
 
             return ControlProtocolEvents::REMOVE_SUBSCRIPTION;
         });
+
         return correlationId;
-    }
-
-    void sendClientKeepalive()
-    {
-        writeCommandToDriver([&](AtomicBuffer& buffer, util::index_t& length)
-        {
-            CorrelatedMessageFlyweight correlatedMessage(buffer, 0);
-
-            correlatedMessage.clientId(m_clientId);
-            correlatedMessage.correlationId(0);
-
-            length = CORRELATED_MESSAGE_LENGTH;
-
-            return ControlProtocolEvents::CLIENT_KEEPALIVE;
-        });
     }
 
     std::int64_t addDestination(std::int64_t publicationRegistrationId, const std::string& channel)

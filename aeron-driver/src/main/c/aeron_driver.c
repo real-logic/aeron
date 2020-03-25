@@ -37,10 +37,6 @@
 #define S_IRWXU 0
 #define S_IRWXG 0
 #define S_IRWXO 0
-static int aeron_mkdir(const char *path, int permission)
-{
-    return _mkdir(path);
-}
 #endif
 
 #include <inttypes.h>

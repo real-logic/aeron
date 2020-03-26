@@ -25,6 +25,19 @@ set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 
+if (POLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_POLL)
+endif ()
+
+if (EPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_EPOLL)
+endif ()
+
+if (WSAPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_WSAPOLL)
+endif ()
+
+
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     target_link_libraries(${name} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
@@ -72,3 +85,4 @@ aeron_driver_test(strutil_test aeron_strutil_test.cpp)
 aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)
 aeron_driver_test(name_resolver_test aeron_name_resolver_test.cpp)
 aeron_driver_test(name_resolver_cache_test aeron_name_resolver_cache_test.cpp)
+aeron_driver_test(data_patch_dispatcher_test aeron_data_packet_dispatcher_test.cpp)

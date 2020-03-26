@@ -214,24 +214,24 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
     return result;
 }
 
-int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
+int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 {
     char buffer[AERON_MAX_PATH];
-    const char *dirname = driver->context->aeron_dir;
+    const char *dirname = context->aeron_dir;
     aeron_log_func_t log_func = aeron_log_func_none;
 
     if (aeron_is_directory(dirname))
     {
-        if (driver->context->warn_if_dirs_exist)
+        if (context->warn_if_dirs_exist)
         {
             log_func = aeron_log_func_stderr;
             snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s exists", dirname);
             log_func(buffer);
         }
 
-        if (driver->context->dirs_delete_on_start)
+        if (context->dirs_delete_on_start)
         {
-            aeron_delete_directory(driver->context->aeron_dir);
+            aeron_delete_directory(context->aeron_dir);
         }
         else
         {
@@ -249,7 +249,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             log_func(buffer);
 
             if (aeron_is_driver_active_with_cnc(
-                &cnc_mmap, driver->context->driver_timeout_ms, aeron_epoch_clock(), log_func))
+                &cnc_mmap, context->driver_timeout_ms, aeron_epoch_clock(), log_func))
             {
                 aeron_unmap(&cnc_mmap);
                 return -1;
@@ -262,13 +262,13 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             }
 
             aeron_unmap(&cnc_mmap);
-            aeron_delete_directory(driver->context->aeron_dir);
+            aeron_delete_directory(context->aeron_dir);
         }
     }
 
-    if (aeron_mkdir(driver->context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_mkdir(context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        aeron_set_err_from_last_err_code("mkdir %s", driver->context->aeron_dir);
+        aeron_set_err_from_last_err_code("mkdir %s", context->aeron_dir);
         return -1;
     }
 
@@ -780,7 +780,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         goto error;
     }
 
-    if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
+    if (aeron_driver_ensure_dir_is_recreated(_driver->context) < 0)
     {
         aeron_set_err(
             aeron_errcode(), "could not recreate aeron dir %s: %s", _driver->context->aeron_dir, aeron_errmsg());

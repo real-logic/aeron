@@ -60,6 +60,7 @@ public final class AeronCluster implements AutoCloseable
     private final long clusterSessionId;
     private long leadershipTermId;
     private int leaderMemberId;
+    private boolean isClosed;
     private final Context ctx;
     private final Subscription subscription;
     private Publication publication;
@@ -240,7 +241,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public void close()
     {
-        if (null != publication && publication.isConnected())
+        if (null != publication && publication.isConnected() && !isClosed)
         {
             closeSession();
         }
@@ -252,7 +253,18 @@ public final class AeronCluster implements AutoCloseable
             CloseHelper.close(errorHandler, publication);
         }
 
+        isClosed = true;
         ctx.close();
+    }
+
+    /**
+     * Is the client closed? The client can be closed by calling {@link #close()} or the cluster sending an event.
+     *
+     * @return true if closed otherwise false.
+     */
+    public boolean isClosed()
+    {
+        return isClosed;
     }
 
     /**
@@ -449,7 +461,13 @@ public final class AeronCluster implements AutoCloseable
      */
     public int pollEgress()
     {
-        return subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
+        final int fragments = subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
+        if (isClosed)
+        {
+            close();
+        }
+
+        return fragments;
     }
 
     /**
@@ -463,7 +481,13 @@ public final class AeronCluster implements AutoCloseable
      */
     public int controlledPollEgress()
     {
-        return subscription.controlledPoll(controlledFragmentAssembler, FRAGMENT_LIMIT);
+        final int fragments = subscription.controlledPoll(controlledFragmentAssembler, FRAGMENT_LIMIT);
+        if (isClosed)
+        {
+            close();
+        }
+
+        return fragments;
     }
 
     /**
@@ -607,12 +631,18 @@ public final class AeronCluster implements AutoCloseable
             final long sessionId = sessionEventDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
+                final EventCode code = sessionEventDecoder.code();
+                if (EventCode.CLOSED == code)
+                {
+                    isClosed = true;
+                }
+
                 egressListener.sessionEvent(
                     sessionEventDecoder.correlationId(),
                     sessionId,
                     sessionEventDecoder.leadershipTermId(),
                     sessionEventDecoder.leaderMemberId(),
-                    sessionEventDecoder.code(),
+                    code,
                     sessionEventDecoder.detail());
             }
         }
@@ -675,12 +705,18 @@ public final class AeronCluster implements AutoCloseable
             final long sessionId = sessionEventDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
+                final EventCode code = sessionEventDecoder.code();
+                if (EventCode.CLOSED == code)
+                {
+                    isClosed = true;
+                }
+
                 controlledEgressListener.sessionEvent(
                     sessionEventDecoder.correlationId(),
                     sessionId,
                     sessionEventDecoder.leadershipTermId(),
                     sessionEventDecoder.leaderMemberId(),
-                    sessionEventDecoder.code(),
+                    code,
                     sessionEventDecoder.detail());
             }
         }

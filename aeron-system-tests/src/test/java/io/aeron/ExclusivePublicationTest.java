@@ -94,8 +94,20 @@ public class ExclusivePublicationTest
 
             for (int i = 0; i < expectedNumberOfFragments; i += 2)
             {
-                publishMessage(srcBuffer, publicationOne);
-                publishMessage(srcBuffer, publicationTwo);
+                while (publicationOne.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                }
+
+                while (publicationTwo.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                }
+
                 totalFragmentsRead += pollFragments(subscription, fragmentHandler);
             }
 
@@ -118,7 +130,11 @@ public class ExclusivePublicationTest
         {
             awaitConnection(subscription, 1);
 
-            publishMessage(srcBuffer, publication);
+            while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
 
             final int termBufferLength = publication.termBufferLength();
             final int termOffset = publication.termOffset();
@@ -253,15 +269,6 @@ public class ExclusivePublicationTest
     private static void awaitConnection(final Subscription subscription, final int imageCount)
     {
         while (subscription.imageCount() < imageCount)
-        {
-            Thread.yield();
-            Tests.checkInterruptStatus();
-        }
-    }
-
-    private static void publishMessage(final UnsafeBuffer srcBuffer, final ExclusivePublication publication)
-    {
-        while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
             Tests.checkInterruptStatus();

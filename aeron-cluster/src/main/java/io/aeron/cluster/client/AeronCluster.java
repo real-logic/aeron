@@ -418,11 +418,6 @@ public final class AeronCluster implements AutoCloseable
                 return true;
             }
 
-            if (result == Publication.NOT_CONNECTED)
-            {
-                return false;
-            }
-
             if (result == Publication.CLOSED)
             {
                 throw new ClusterException("ingress publication is closed");

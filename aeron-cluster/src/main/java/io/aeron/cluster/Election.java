@@ -271,13 +271,14 @@ public class Election
                 }
                 else
                 {
-                    final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(
-                        logLeadershipTermId < leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
+                    final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId);
+                    final long truncatePosition = logLeadershipTermId < leadershipTermId && null != termEntry ?
+                        termEntry.termBaseLogPosition : this.logPosition;
 
                     memberStatusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        logLeadershipTermId < leadershipTermId ? termEntry.termBaseLogPosition : this.logPosition,
+                        truncatePosition,
                         leadershipTermId,
                         this.logPosition,
                         timestamp,

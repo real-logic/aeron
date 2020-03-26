@@ -47,9 +47,24 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path);
 int aeron_unmap(aeron_mapped_file_t *mapped_file);
 
 #if defined(AERON_COMPILER_GCC)
+#include <unistd.h>
+
+#define aeron_mkdir mkdir
 #define aeron_ftruncate ftruncate
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#define _CRT_RAND_S
+#include <io.h>
+#include <direct.h>
+#include <process.h>
+#include <WinSock2.h>
+#include <Windows.h>
+
+#define S_IRWXU 0
+#define S_IRWXG 0
+#define S_IRWXO 0
+
 int aeron_ftruncate(int fd, off_t length);
+int aeron_mkdir(const char *path, int permission);
 #endif
 
 typedef uint64_t (*aeron_usable_fs_space_func_t)(const char *path);

@@ -22,6 +22,14 @@
 #endif
 #endif
 
+#include "util/aeron_platform.h"
+#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#define _CRT_RAND_S
+
+#define S_IRWXU 0
+#define S_IRWXG 0
+#define S_IRWXO 0
+#endif
 #include <stdlib.h>
 #include <stddef.h>
 #include <sys/stat.h>
@@ -29,33 +37,7 @@
 #include <time.h>
 #include <fcntl.h>
 
-#include "util/aeron_platform.h"
 #include "aeron_windows.h"
-#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
-
-    #define _CRT_RAND_S
-    #include <io.h>
-    #include <direct.h>
-    #include <process.h>
-    #include <WinSock2.h>
-    #include <Windows.h>
-
-    #define S_IRWXU 0
-    #define S_IRWXG 0
-    #define S_IRWXO 0
-    static int aeron_mkdir(const char *path, int permission)
-    {
-        return _mkdir(path);
-    }
-
-#else
-
-    #include <unistd.h>
-
-    #define aeron_mkdir mkdir
-
-#endif
-
 #include <inttypes.h>
 #include "util/aeron_error.h"
 #include "aeronmd.h"

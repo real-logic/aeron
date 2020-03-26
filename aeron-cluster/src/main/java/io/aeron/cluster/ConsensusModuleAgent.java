@@ -944,17 +944,13 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            if (session.isResponsePublicationConnected())
-            {
-                egressPublisher.sendEvent(
-                    session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TERMINATED_MSG);
-            }
-
             session.close(CloseReason.SERVICE_ACTION, ctx.countedErrorHandler());
 
             if (Cluster.Role.LEADER == role &&
                 logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
             {
+                final String msg = "closed " + CloseReason.SERVICE_ACTION;
+                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.ERROR, msg);
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
@@ -2147,9 +2143,9 @@ class ConsensusModuleAgent implements Agent
         {
             final ClusterSession session = redirectSessions.get(i);
             final EventCode eventCode = EventCode.REDIRECT;
-            final int id = leaderMember.id();
+            final int leaderId = leaderMember.id();
 
-            if (egressPublisher.sendEvent(session, leadershipTermId, id, eventCode, clientFacingEndpoints) ||
+            if (egressPublisher.sendEvent(session, leadershipTermId, leaderId, eventCode, clientFacingEndpoints) ||
                 nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
@@ -2221,15 +2217,11 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    if (session.isResponsePublicationConnected())
-                    {
-                        egressPublisher.sendEvent(
-                            session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TIMEOUT_MSG);
-                    }
-
                     session.close(CloseReason.TIMEOUT, ctx.countedErrorHandler());
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
+                        final String msg = "closed " + session.closeReason();
+                        egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.ERROR, msg);
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
@@ -2240,9 +2232,12 @@ class ConsensusModuleAgent implements Agent
                 {
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
+                        final String msg = "closed " + session.closeReason();
+                        egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.ERROR, msg);
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
+
                         if (session.closeReason() == CloseReason.TIMEOUT)
                         {
                             ctx.timedOutClientCounter().incrementOrdered();

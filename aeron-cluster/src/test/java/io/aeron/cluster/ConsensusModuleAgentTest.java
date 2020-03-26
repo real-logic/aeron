@@ -17,8 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.ClusterAction;
-import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.security.DefaultAuthenticatorSupplier;
@@ -152,7 +151,7 @@ public class ConsensusModuleAgentTest
         verify(mockTimedOutClientCounter).incrementOrdered();
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_TIMEOUT_MSG));
+            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq("closed " + CloseReason.TIMEOUT));
     }
 
     @Test
@@ -187,7 +186,11 @@ public class ConsensusModuleAgentTest
 
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeMs));
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_TERMINATED_MSG));
+            any(ClusterSession.class),
+            anyLong(),
+            anyInt(),
+            eq(EventCode.ERROR),
+            eq("closed " + CloseReason.SERVICE_ACTION));
     }
 
     @Test

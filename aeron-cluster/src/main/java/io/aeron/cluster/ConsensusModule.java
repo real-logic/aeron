@@ -414,16 +414,6 @@ public class ConsensusModule implements AutoCloseable
         public static final String SESSION_LIMIT_MSG = "concurrent session limit";
 
         /**
-         * Message detail to be sent when a session timeout occurs.
-         */
-        public static final String SESSION_TIMEOUT_MSG = "session inactive";
-
-        /**
-         * Message detail to be sent when a session is terminated by a service.
-         */
-        public static final String SESSION_TERMINATED_MSG = "session terminated";
-
-        /**
          * Message detail to be sent when a session is rejected due to authentication.
          */
         public static final String SESSION_REJECTED_MSG = "session failed authentication";

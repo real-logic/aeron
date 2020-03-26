@@ -403,7 +403,7 @@ public final class AeronCluster implements AutoCloseable
      * <b>Note:</b> keepalives can fail during a leadership transition. The consumer should continue to call
      * {@link #pollEgress()} to ensure a connection to the new leader is established.
      *
-     * @return true if successfully sent otherwise false.
+     * @return true if successfully sent otherwise false if back pressured.
      */
     public boolean sendKeepAlive()
     {
@@ -418,14 +418,19 @@ public final class AeronCluster implements AutoCloseable
                 return true;
             }
 
-            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
+            if (result == Publication.NOT_CONNECTED)
             {
                 return false;
             }
 
+            if (result == Publication.CLOSED)
+            {
+                throw new ClusterException("ingress publication is closed");
+            }
+
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new ClusterException("unexpected publication state: " + result);
+                throw new ClusterException("max position exceeded");
             }
 
             if (--attempts <= 0)

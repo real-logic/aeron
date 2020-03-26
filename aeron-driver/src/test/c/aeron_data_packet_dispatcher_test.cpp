@@ -141,7 +141,7 @@ protected:
     std::vector<aeron_publication_image_t *> m_images;
 };
 
-TEST_F(DataPacketDispatcherTest, fooBar)
+TEST_F(DataPacketDispatcherTest, shouldInsertDataInputSubscribedPublicationImage)
 {
     AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
 
@@ -170,3 +170,34 @@ TEST_F(DataPacketDispatcherTest, fooBar)
     ASSERT_EQ((int)len, bytes_written);
     ASSERT_EQ(expected_position_after_data, *image->rcv_hwm_position.value_addr);
 }
+
+TEST_F(DataPacketDispatcherTest, shouldNotInsertDataInputWithNoSubscription)
+{
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+
+    int32_t session_id = 123123;
+    int32_t stream_id = 434523;
+
+    aeron_publication_image_t *image = createImage(stream_id, session_id);
+    ASSERT_NE(nullptr, image) << aeron_errmsg();
+
+    aeron_data_header_t *data_header = (aeron_data_header_t *)data_buffer.data();
+    data_header->stream_id = stream_id;
+    data_header->session_id = session_id;
+    data_header->term_id = 0;
+    data_header->term_offset = 0;
+    size_t len = sizeof(aeron_data_header_t) + 8;
+
+    // No subscription made...
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(&m_dispatcher, image));
+
+    int64_t position_before_data = *image->rcv_hwm_position.value_addr;
+    int64_t expected_position_after_data = position_before_data;
+
+    int bytes_written = aeron_data_packet_dispatcher_on_data(
+        &m_dispatcher, NULL, data_header, data_buffer.data(), len, &m_source_address);
+
+    ASSERT_EQ(0, bytes_written);
+    ASSERT_EQ(expected_position_after_data, *image->rcv_hwm_position.value_addr);
+}
+

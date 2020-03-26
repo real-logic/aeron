@@ -949,8 +949,8 @@ class ConsensusModuleAgent implements Agent
             if (Cluster.Role.LEADER == role &&
                 logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
             {
-                final String msg = "closed " + CloseReason.SERVICE_ACTION;
-                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.ERROR, msg);
+                final String msg = CloseReason.SERVICE_ACTION.name();
+                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
@@ -2220,8 +2220,8 @@ class ConsensusModuleAgent implements Agent
                     session.close(CloseReason.TIMEOUT, ctx.countedErrorHandler());
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
-                        final String msg = "closed " + session.closeReason();
-                        egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.ERROR, msg);
+                        final String msg = session.closeReason().name();
+                        egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
@@ -2232,8 +2232,8 @@ class ConsensusModuleAgent implements Agent
                 {
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
-                        final String msg = "closed " + session.closeReason();
-                        egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.ERROR, msg);
+                        final String msg = session.closeReason().name();
+                        egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();

@@ -34,6 +34,7 @@
             <validValue name="ERROR" description="Error occurred during operation.">1</validValue>
             <validValue name="REDIRECT" description="Redirect to cluster leader.">2</validValue>
             <validValue name="AUTHENTICATION_REJECTED" description="Authentication credentials rejected.">3</validValue>
+            <validValue name="CLOSED" description="Session has been closed.">4</validValue>
         </enum>
         <enum name="CloseReason" encodingType="int32" description="Reason why a session was closed.">
             <validValue name="CLIENT_ACTION" description="Client closed the session.">0</validValue>

@@ -151,7 +151,7 @@ public class ConsensusModuleAgentTest
         verify(mockTimedOutClientCounter).incrementOrdered();
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq("closed " + CloseReason.TIMEOUT));
+            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.CLOSED), eq(CloseReason.TIMEOUT.name()));
     }
 
     @Test
@@ -189,8 +189,8 @@ public class ConsensusModuleAgentTest
             any(ClusterSession.class),
             anyLong(),
             anyInt(),
-            eq(EventCode.ERROR),
-            eq("closed " + CloseReason.SERVICE_ACTION));
+            eq(EventCode.CLOSED),
+            eq(CloseReason.SERVICE_ACTION.name()));
     }
 
     @Test

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_H
-#define AERON_H
+#ifndef AERON_C_H
+#define AERON_C_H
 
 #ifdef __cplusplus
 extern "C"
@@ -453,4 +453,4 @@ const char *aeron_errmsg();
 }
 #endif
 
-#endif //AERON_H
+#endif //AERON_C_H

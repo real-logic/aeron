@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CONTEXT_H
-#define AERON_CONTEXT_H
+#ifndef AERON_C_CONTEXT_H
+#define AERON_C_CONTEXT_H
 
 #include "aeronc.h"
 #include "aeron_agent.h"
@@ -68,4 +68,4 @@ typedef struct aeron_context_stct
 }
 aeron_context_t;
 
-#endif //AERON_CONTEXT_H
+#endif //AERON_C_CONTEXT_H

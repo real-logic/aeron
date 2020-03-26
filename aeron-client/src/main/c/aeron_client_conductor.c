@@ -29,3 +29,14 @@ int aeron_client_conductor_do_work(aeron_client_conductor_t *conductor)
 void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 {
 }
+
+int64_t aeron_client_conductor_add_publication(aeron_t *client, const char *uri)
+{
+    return -1;
+}
+
+int aeron_client_conductor_find_publication(
+    aeron_publication_t **publication, aeron_t *client, int64_t registration_id)
+{
+    return -1;
+}

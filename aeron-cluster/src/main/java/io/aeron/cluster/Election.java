@@ -264,7 +264,7 @@ public class Election
 
             if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
             {
-                final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId);
+                final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
                 memberStatusPublisher.newLeadershipTerm(
                     follower.publication(),
                     logLeadershipTermId,
@@ -276,7 +276,7 @@ public class Election
                     logSessionId,
                     isLeaderStartup);
             }
-            else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
+            else if (logLeadershipTermId > leadershipTermId && (State.CANVASS != state && State.INIT != state))
             {
                 state(State.CANVASS);
             }

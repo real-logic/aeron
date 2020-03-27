@@ -42,6 +42,12 @@ void stub_linger(void *clientd, uint8_t* resource)
 {
 }
 
+void verify_conductor_cmd_function(void *clientd, volatile void *item)
+{
+    aeron_command_base_t *cmd = (aeron_command_base_t *)item;
+    ASSERT_EQ(clientd, (void *)cmd->func);
+}
+
 class DataPacketDispatcherTest : public testing::Test
 {
 public:
@@ -63,7 +69,7 @@ protected:
 
         aeron_mpsc_concurrent_array_queue_init(&m_conductor_command_queue, 1024);
         m_conductor_proxy.command_queue = &m_conductor_command_queue;
-        m_conductor_proxy.threading_mode = AERON_THREADING_MODE_INVOKER;
+        m_conductor_proxy.threading_mode = AERON_THREADING_MODE_DEDICATED;
         m_conductor_proxy.fail_counter = &m_conductor_fail_counter;
         m_conductor_proxy.conductor = NULL;
 
@@ -153,12 +159,28 @@ protected:
         buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
     {
         aeron_data_header_t *data_header = (aeron_data_header_t *)buffer.data();
+        data_header->frame_header.type = AERON_HDR_TYPE_DATA;
         data_header->stream_id = stream_id;
         data_header->session_id = session_id;
         data_header->term_id = term_id;
         data_header->term_offset = term_offset;
 
         return data_header;
+    }
+
+    static aeron_setup_header_t *setupPacket(
+        buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
+    {
+        aeron_setup_header_t *setup_header = (aeron_setup_header_t *)buffer.data();
+        setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
+        setup_header->stream_id = stream_id;
+        setup_header->session_id = session_id;
+        setup_header->initial_term_id = term_id;
+        setup_header->active_term_id = term_id;
+        setup_header->term_offset = term_offset;
+        setup_header->term_length = TERM_BUFFER_SIZE;
+
+        return setup_header;
     }
 
     aeron_driver_context_t *m_context;
@@ -269,4 +291,31 @@ TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageForSubscriptionWithoutI
     ASSERT_EQ(initial_count + 2, m_test_bindings_state->sm_count);
 }
 
+TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetup)
+{
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+
+    int32_t session_id = 123123;
+    int32_t stream_id = 434523;
+
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
+
+    aeron_setup_header_t *setup_header = setupPacket(data_buffer, stream_id, session_id);
+
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, setup_header, data_buffer.data(), sizeof(*setup_header),
+        &m_channel->local_data);
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, setup_header, data_buffer.data(), sizeof(*setup_header),
+        &m_channel->local_data);
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, setup_header, data_buffer.data(), sizeof(*setup_header),
+        &m_channel->local_data);
+
+    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+        m_conductor_proxy.command_queue,
+        verify_conductor_cmd_function,
+        (void *)aeron_driver_conductor_on_create_publication_image,
+        1));
+}
 

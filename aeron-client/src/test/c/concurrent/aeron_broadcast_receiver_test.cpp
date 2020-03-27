@@ -98,7 +98,7 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
     aeron_broadcast_record_descriptor_t *record =
         (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -129,12 +129,12 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
     aeron_broadcast_record_descriptor_t *record =
         (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset_one);
 
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset_two);
 
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -173,7 +173,7 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
     aeron_broadcast_record_descriptor_t *record =
         (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -206,7 +206,7 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     aeron_broadcast_record_descriptor_t *record =
         (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + catchup_offset);
 
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     size_t padding_offset = catchup_tail & (CAPACITY - 1);
@@ -217,7 +217,7 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     record->msg_type_id = AERON_BROADCAST_PADDING_MSG_TYPE_ID;
 
     record = (aeron_broadcast_record_descriptor_t *)(receiver.buffer + record_offset);
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -231,7 +231,6 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     EXPECT_EQ(receiver.record_offset, record_offset);
     EXPECT_TRUE(aeron_broadcast_receiver_validate(&receiver));
 }
-
 
 TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
 {
@@ -251,7 +250,7 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
     aeron_broadcast_record_descriptor_t *record =
         (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
-    record->length = record_length;
+    record->length = (std::int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));

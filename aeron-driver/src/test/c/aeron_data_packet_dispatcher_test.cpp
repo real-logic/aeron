@@ -105,6 +105,9 @@ protected:
         m_context->congestion_control_supplier_func(
             &m_congestion_control_strategy, 0, 0, 0, 0, 0, TERM_BUFFER_SIZE, MTU,
             &m_channel->remote_control, &m_channel->remote_data, m_context, &m_counters_manager);
+
+        m_test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(
+            m_receive_endpoint->transport.bindings_clientd);
     };
 
     virtual void TearDown()
@@ -146,6 +149,18 @@ protected:
         return image;
     }
 
+    static aeron_data_header_t *dataPacket(
+        buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
+    {
+        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer.data();
+        data_header->stream_id = stream_id;
+        data_header->session_id = session_id;
+        data_header->term_id = term_id;
+        data_header->term_offset = term_offset;
+
+        return data_header;
+    }
+
     aeron_driver_context_t *m_context;
     aeron_receive_channel_endpoint_t *m_receive_endpoint;
     aeron_congestion_control_strategy_t *m_congestion_control_strategy;
@@ -160,6 +175,7 @@ protected:
     int64_t m_conductor_fail_counter;
     aeron_udp_channel_transport_bindings_t m_transport_bindings;
     aeron_udp_channel_t *m_channel;
+    aeron_test_udp_bindings_state_t *m_test_bindings_state;
     AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16);
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16);
     AERON_DECL_ALIGNED(buffer_2x_t m_counter_meta_buffer, 16);
@@ -176,11 +192,7 @@ TEST_F(DataPacketDispatcherTest, shouldInsertDataInputSubscribedPublicationImage
     aeron_publication_image_t *image = createImage(stream_id, session_id);
     ASSERT_NE(nullptr, image) << aeron_errmsg();
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)data_buffer.data();
-    data_header->stream_id = stream_id;
-    data_header->session_id = session_id;
-    data_header->term_id = 0;
-    data_header->term_offset = 0;
+    aeron_data_header_t *data_header = dataPacket(data_buffer, stream_id, session_id);
     size_t len = sizeof(aeron_data_header_t) + 8;
 
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
@@ -206,14 +218,13 @@ TEST_F(DataPacketDispatcherTest, shouldNotInsertDataInputWithNoSubscription)
     aeron_publication_image_t *image = createImage(stream_id, session_id);
     ASSERT_NE(nullptr, image) << aeron_errmsg();
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)data_buffer.data();
-    data_header->stream_id = stream_id;
-    data_header->session_id = session_id;
-    data_header->term_id = 0;
-    data_header->term_offset = 0;
+    aeron_data_header_t *data_header = dataPacket(data_buffer, stream_id, session_id);
     size_t len = sizeof(aeron_data_header_t) + 8;
 
-    // No subscription made...
+    int32_t other_stream_id = stream_id + 1;
+
+    // Subscribe to a difference id
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, other_stream_id));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
 
     int64_t position_before_data = *image->rcv_hwm_position.value_addr;
@@ -233,19 +244,13 @@ TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageForSubscriptionWithoutI
     int32_t session_id = 123123;
     int32_t stream_id = 434523;
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)data_buffer.data();
-    data_header->stream_id = stream_id;
-    data_header->session_id = session_id;
-    data_header->term_id = 0;
-    data_header->term_offset = 0;
+    aeron_data_header_t *data_header = dataPacket(data_buffer, stream_id, session_id);
     size_t len = sizeof(aeron_data_header_t) + 8;
 
-    // No publicaction added...
+    // No publication added...
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
 
-    aeron_test_udp_bindings_state_t *state = static_cast<aeron_test_udp_bindings_state_t *>(
-        m_receive_endpoint->transport.bindings_clientd);
-    int64_t initial_count = state->sm_count;
+    int64_t initial_count = m_test_bindings_state->sm_count;
 
     ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
         m_dispatcher, m_receive_endpoint, data_header, data_buffer.data(), len, &m_channel->local_data));
@@ -254,7 +259,14 @@ TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageForSubscriptionWithoutI
     ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
         m_dispatcher, m_receive_endpoint, data_header, data_buffer.data(), len, &m_channel->local_data));
 
-    ASSERT_EQ(initial_count + 1, state->sm_count);
+    ASSERT_EQ(initial_count + 1, m_test_bindings_state->sm_count);
+
+    aeron_data_packet_dispatcher_remove_pending_setup(m_dispatcher, session_id, stream_id);
+
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
+        m_dispatcher, m_receive_endpoint, data_header, data_buffer.data(), len, &m_channel->local_data));
+
+    ASSERT_EQ(initial_count + 2, m_test_bindings_state->sm_count);
 }
 
 

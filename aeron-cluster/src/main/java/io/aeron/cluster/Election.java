@@ -272,8 +272,7 @@ public class Election
                 else
                 {
                     final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId);
-                    final long truncatePosition = logLeadershipTermId < leadershipTermId && null != termEntry ?
-                        termEntry.termBaseLogPosition : this.logPosition;
+                    final long truncatePosition = null != termEntry ? termEntry.termBaseLogPosition : this.logPosition;
 
                     memberStatusPublisher.newLeadershipTerm(
                         follower.publication(),

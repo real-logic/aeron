@@ -19,7 +19,10 @@ endif ()
 
 include_directories(${AERON_DRIVER_SOURCE_PATH})
 
-set(TEST_HEADERS aeron_driver_conductor_test.h EmbeddedMediaDriver.h)
+set(TEST_HEADERS
+    aeron_driver_conductor_test.h
+    EmbeddedMediaDriver.h
+    aeron_test_udp_bindings.h)
 
 set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)

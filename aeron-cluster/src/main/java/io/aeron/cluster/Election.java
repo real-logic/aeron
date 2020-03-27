@@ -264,27 +264,17 @@ public class Election
 
             if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
             {
-                final long timestamp = ctx.recordingLog().getTermTimestamp(leadershipTermId);
-                if (this.logLeadershipTermId == logLeadershipTermId)
-                {
-                    publishNewLeadershipTerm(follower.publication(), leadershipTermId, timestamp);
-                }
-                else
-                {
-                    final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId);
-                    final long truncatePosition = null != termEntry ? termEntry.termBaseLogPosition : this.logPosition;
-
-                    memberStatusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        logLeadershipTermId,
-                        truncatePosition,
-                        leadershipTermId,
-                        this.logPosition,
-                        timestamp,
-                        thisMember.id(),
-                        logSessionId,
-                        isLeaderStartup);
-                }
+                final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId);
+                memberStatusPublisher.newLeadershipTerm(
+                    follower.publication(),
+                    logLeadershipTermId,
+                    termEntry.termBaseLogPosition,
+                    leadershipTermId,
+                    this.logPosition,
+                    termEntry.timestamp,
+                    thisMember.id(),
+                    logSessionId,
+                    isLeaderStartup);
             }
             else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
             {

@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
-import io.aeron.Counter;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
@@ -562,8 +559,24 @@ public class TestCluster implements AutoCloseable
 
     void sendMessage(final int messageLength)
     {
-        while (client.offer(msgBuffer, 0, messageLength) < 0)
+        while (true)
         {
+            final long result = client.offer(msgBuffer, 0, messageLength);
+            if (result > 0)
+            {
+                break;
+            }
+
+            if (Publication.CLOSED == result)
+            {
+                throw new ClusterException("client publication is closed");
+            }
+
+            if (Publication.MAX_POSITION_EXCEEDED == result)
+            {
+                throw new ClusterException("max position exceeded");
+            }
+
             Thread.yield();
             Tests.checkInterruptStatus();
             client.pollEgress();
@@ -575,7 +588,7 @@ public class TestCluster implements AutoCloseable
     void awaitResponseMessageCount(final int messageCount)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
-        long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        long heartbeatDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
 
         while (responseCount.get() < messageCount)
         {
@@ -584,10 +597,10 @@ public class TestCluster implements AutoCloseable
             client.pollEgress();
 
             final long nowMs = epochClock.time();
-            if (nowMs > deadlineMs)
+            if (nowMs > heartbeatDeadlineMs)
             {
                 client.sendKeepAlive();
-                deadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+                heartbeatDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
         }
     }

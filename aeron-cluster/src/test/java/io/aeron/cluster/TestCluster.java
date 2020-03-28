@@ -22,8 +22,8 @@ import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.EgressListener;
+import io.aeron.cluster.client.*;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -77,6 +77,20 @@ public class TestCluster implements AutoCloseable
             final Header header)
         {
             responseCount.value++;
+        }
+
+        public void sessionEvent(
+            final long correlationId,
+            final long clusterSessionId,
+            final long leadershipTermId,
+            final int leaderMemberId,
+            final EventCode code,
+            final String detail)
+        {
+            if (EventCode.ERROR == code)
+            {
+                ClusterTests.addError(new ClusterException(detail));
+            }
         }
 
         public void newLeader(

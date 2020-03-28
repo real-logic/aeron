@@ -71,15 +71,7 @@ class ClusterTests
                     }
                 }
 
-                final Throwable error = CLUSTER_ERROR.get();
-                if (null == error)
-                {
-                    CLUSTER_ERROR.set(ex);
-                }
-                else
-                {
-                    error.addSuppressed(ex);
-                }
+                addError(ex);
 
                 System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");
                 ex.printStackTrace();
@@ -87,6 +79,19 @@ class ClusterTests
                 System.err.println();
                 System.err.println(SystemUtil.threadDump());
             };
+    }
+
+    public static void addError(final Throwable ex)
+    {
+        final Throwable error = CLUSTER_ERROR.get();
+        if (null == error)
+        {
+            CLUSTER_ERROR.set(ex);
+        }
+        else
+        {
+            error.addSuppressed(ex);
+        }
     }
 
     public static void printCounters(final CountersReader countersReader, final PrintStream out)

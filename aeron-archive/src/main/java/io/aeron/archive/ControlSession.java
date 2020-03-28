@@ -129,7 +129,7 @@ class ControlSession implements Session
         demuxer.removeControlSession(this);
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
-            conductor.context().controlSessionsCounter().getAndAddOrdered(-1);
+            conductor.context().controlSessionsCounter().decrementOrdered();
         }
     }
 

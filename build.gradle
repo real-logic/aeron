@@ -120,8 +120,8 @@ jar.enabled = false
 
 allprojects {
     repositories {
-        mavenCentral()
         mavenLocal()
+        mavenCentral()
     }
 }
 

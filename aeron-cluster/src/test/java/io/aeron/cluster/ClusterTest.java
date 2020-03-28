@@ -24,6 +24,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -396,6 +397,44 @@ public class ClusterTest
             final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
+        }
+    }
+
+    @Test
+    @Timeout(120)
+    @Disabled
+    public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime()
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode firstLeader = cluster.awaitLeader();
+
+            cluster.connectClient();
+
+            // Add enough messages to log make replay take some time
+            final int messageCount = 1000000;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+
+            cluster.closeClient();
+
+            cluster.stopNode(firstLeader);
+
+            final TestNode secondLeader = cluster.awaitLeader();
+
+            cluster.stopNode(secondLeader);
+
+            final TestNode restartedFirstLeader = cluster.startStaticNode(firstLeader.index(), false);
+            final TestNode restartedSecondLeader = cluster.startStaticNode(secondLeader.index(), false);
+
+            cluster.awaitNotInElection(restartedFirstLeader);
+            cluster.awaitNotInElection(restartedSecondLeader);
+
+            cluster.awaitLeader();
+
+            cluster.connectClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponseMessageCount(messageCount + 10);
         }
     }
 

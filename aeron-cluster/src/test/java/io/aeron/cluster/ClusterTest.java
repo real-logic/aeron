@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SlowTest
 public class ClusterTest
 {
-    private static final String MSG = "Hello World!";
-
     @Test
     @Timeout(30)
     public void shouldStopFollowerAndRestartFollower()
@@ -751,14 +749,14 @@ public class ClusterTest
     @Timeout(30)
     public void shouldCatchUpAfterFollowerMissesOneMessage()
     {
-        shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
+        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.NO_OP_MSG);
     }
 
     @Test
     @Timeout(30)
     public void shouldCatchUpAfterFollowerMissesTimerRegistration()
     {
-        shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER);
+        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.REGISTER_TIMER_MSG);
     }
 
     @Test
@@ -774,8 +772,8 @@ public class ClusterTest
             final int messageCount = 50_000;
             for (int i = 0; i < messageCount; i++)
             {
-                cluster.msgBuffer().putStringWithoutLengthAscii(0, TestMessages.NO_OP);
-                cluster.sendMessage(TestMessages.NO_OP.length());
+                cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.NO_OP_MSG);
+                cluster.sendMessage(ClusterTests.NO_OP_MSG.length());
             }
             cluster.awaitResponseMessageCount(messageCount);
 
@@ -1103,11 +1101,11 @@ public class ClusterTest
                 final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
                 final AeronCluster client = cluster.client();
                 final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
-                msgBuffer.putStringWithoutLengthAscii(0, MSG);
+                msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.HELLO_WORLD_MSG);
 
                 while (!Thread.interrupted())
                 {
-                    if (client.offer(msgBuffer, 0, MSG.length()) < 0)
+                    if (client.offer(msgBuffer, 0, ClusterTests.HELLO_WORLD_MSG.length()) < 0)
                     {
                         LockSupport.parkNanos(intervalNs);
                     }

@@ -30,6 +30,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class ClusterTests
 {
+    static final String HELLO_WORLD_MSG = "Hello World!";
+    static final String NO_OP_MSG = "No op!           ";
+    static final String REGISTER_TIMER_MSG = "Register a timer!";
+    static final String ECHO_IPC_INGRESS_MSG = "Echo as IPC ingress";
+    static final String POISON_MSG = "You should never get this message!";
+
     private static final AtomicReference<Throwable> CLUSTER_ERROR = new AtomicReference<>();
 
     public static final Runnable TERMINATION_HOOK =

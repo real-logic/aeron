@@ -249,8 +249,9 @@ class TestNode implements AutoCloseable
 
     static class TestService extends StubClusteredService
     {
-        public static final int SNAPSHOT_FRAGMENT_COUNT = 500;
-        public static final int SNAPSHOT_MSG_LENGTH = 1000;
+        static final int SNAPSHOT_FRAGMENT_COUNT = 500;
+        static final int SNAPSHOT_MSG_LENGTH = 1000;
+
         private int index;
         private volatile int messageCount;
         private volatile boolean wasSnapshotTaken = false;
@@ -350,7 +351,7 @@ class TestNode implements AutoCloseable
             final Header header)
         {
             final String message = buffer.getStringWithoutLengthAscii(offset, length);
-            if (message.equals(TestMessages.REGISTER_TIMER))
+            if (message.equals(ClusterTests.REGISTER_TIMER_MSG))
             {
                 while (!cluster.scheduleTimer(1, cluster.time() + 1_000))
                 {
@@ -358,13 +359,13 @@ class TestNode implements AutoCloseable
                 }
             }
 
-            if (message.equals(TestMessages.POISON_MESSAGE))
+            if (message.equals(ClusterTests.POISON_MSG))
             {
                 hasReceivedUnexpectedMessage = true;
                 throw new IllegalStateException("Poison message received.");
             }
 
-            if (message.equals(TestMessages.ECHO_IPC_INGRESS))
+            if (message.equals(ClusterTests.ECHO_IPC_INGRESS_MSG))
             {
                 if (null != session)
                 {

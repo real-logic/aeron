@@ -431,3 +431,60 @@ TEST_F(DataPacketDispatcherTest, shouldNotRemoveNewPublicationImageFromOldRemove
     ASSERT_EQ((int64_t)len, *image2->rcv_hwm_position.value_addr);
     ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image2->conductor_fields.state);
 }
+
+TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOtherSession)
+{
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+
+    int32_t session_id1 = 123123;
+    int32_t session_id2 = 123123;
+    int32_t stream_id = 434523;
+
+    aeron_setup_header_t *setup_session1 = setupPacket(data_buffer, stream_id, session_id1);
+
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription_by_session(m_dispatcher, stream_id, session_id1));
+
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, setup_session1, data_buffer.data(), sizeof(*setup_session1),
+        &m_channel->local_data);
+
+    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+        m_conductor_proxy.command_queue,
+        verify_conductor_cmd_function,
+        (void *)aeron_driver_conductor_on_create_publication_image,
+        1));
+
+    aeron_setup_header_t *setup_session2_ignored = setupPacket(data_buffer, stream_id, session_id2);
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, setup_session2_ignored, data_buffer.data(), sizeof(*setup_session2_ignored),
+        &m_channel->local_data);
+
+    ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+}
+
+
+TEST_F(DataPacketDispatcherTest, shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage)
+{
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+
+    int32_t session_id = 123123;
+    int32_t stream_id = 434523;
+
+    aeron_publication_image_t *image = createImage(stream_id, session_id);
+    ASSERT_NE(nullptr, image) << aeron_errmsg();
+
+    aeron_data_header_t *data_header = dataPacket(data_buffer, stream_id, session_id);
+    size_t len = sizeof(aeron_data_header_t) + 8;
+
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription_by_session(m_dispatcher, stream_id, session_id));
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_subscription_by_session(m_dispatcher, stream_id, session_id));
+
+    int bytes_written = aeron_data_packet_dispatcher_on_data(
+        m_dispatcher, m_receive_endpoint, data_header, data_buffer.data(), len, &m_channel->local_data);
+
+    ASSERT_EQ((int)len, bytes_written);
+    ASSERT_EQ((int64_t)len, *image->rcv_hwm_position.value_addr);
+    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
+}

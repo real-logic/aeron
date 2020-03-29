@@ -22,9 +22,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.status.CountersReader;
 
-import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -98,16 +96,6 @@ class ClusterTests
         {
             error.addSuppressed(ex);
         }
-    }
-
-    public static void printCounters(final CountersReader countersReader, final PrintStream out)
-    {
-        countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                final long value = countersReader.getCounterValue(counterId);
-                out.format("%3d: %,20d - %s%n", counterId, value, label);
-            });
     }
 
     public static void failOnClusterError()

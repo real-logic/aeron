@@ -1705,17 +1705,17 @@ class ConsensusModuleAgent implements Agent
                 throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
             workCount += fragmentsPolled;
+        }
 
-            final long appendPosition = image.position();
-            if (appendPosition != lastAppendPosition)
+        final long appendPosition = logAdapter.position();
+        if (appendPosition != lastAppendPosition)
+        {
+            commitPosition.setOrdered(appendPosition);
+            final ExclusivePublication publication = election.leader().publication();
+            if (memberStatusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
             {
-                commitPosition.setOrdered(appendPosition);
-                final ExclusivePublication publication = election.leader().publication();
-                if (memberStatusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
-                {
-                    lastAppendPosition = appendPosition;
-                    timeOfLastAppendPositionNs = nowNs;
-                }
+                lastAppendPosition = appendPosition;
+                timeOfLastAppendPositionNs = nowNs;
             }
         }
 

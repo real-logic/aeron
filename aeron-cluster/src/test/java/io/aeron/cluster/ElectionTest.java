@@ -78,11 +78,14 @@ public class ElectionTest
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember);
 
         final long newLeadershipTermId = leadershipTermId + 1;
+        when(recordingLog.isUnknown(newLeadershipTermId)).thenReturn(Boolean.TRUE);
         final long t1 = 1;
         election.doWork(t1);
         election.doWork(t1);
+
         verify(clusterMarkFile).candidateTermId();
         verify(consensusModuleAgent).becomeLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
+        verify(recordingLog).isUnknown(newLeadershipTermId);
         verify(recordingLog).appendTerm(RECORDING_ID, newLeadershipTermId, logPosition, NANOSECONDS.toMillis(t1));
         verify(electionStateCounter).setOrdered(Election.State.LEADER_READY.code());
     }
@@ -139,9 +142,12 @@ public class ElectionTest
         election.doWork(t3);
         verify(electionStateCounter).setOrdered(Election.State.LEADER_REPLAY.code());
 
+        when(recordingLog.isUnknown(candidateTermId)).thenReturn(Boolean.TRUE);
+
         final long t5 = t4 + 1;
         election.doWork(t5);
         election.doWork(t5);
+
         verify(consensusModuleAgent).becomeLeader(eq(candidateTermId), eq(logPosition), anyInt(), eq(true));
         verify(recordingLog).appendTerm(RECORDING_ID, candidateTermId, logPosition, NANOSECONDS.toMillis(t5));
         verify(electionStateCounter).setOrdered(Election.State.LEADER_READY.code());

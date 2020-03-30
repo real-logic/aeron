@@ -1696,27 +1696,26 @@ class ConsensusModuleAgent implements Agent
             return workCount;
         }
 
-        final Image image = logAdapter.image();
-
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
+            final Image image = logAdapter.image();
             final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
             if (fragmentsPolled == 0 && image.isClosed())
             {
                 throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
             workCount += fragmentsPolled;
-        }
 
-        final long appendPosition = Math.min(image.position(), limitPosition);
-        if (appendPosition != lastAppendPosition)
-        {
-            commitPosition.setOrdered(appendPosition);
-            final ExclusivePublication publication = election.leader().publication();
-            if (memberStatusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+            final long appendPosition = image.position();
+            if (appendPosition != lastAppendPosition)
             {
-                lastAppendPosition = appendPosition;
-                timeOfLastAppendPositionNs = nowNs;
+                commitPosition.setOrdered(appendPosition);
+                final ExclusivePublication publication = election.leader().publication();
+                if (memberStatusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+                {
+                    lastAppendPosition = appendPosition;
+                    timeOfLastAppendPositionNs = nowNs;
+                }
             }
         }
 

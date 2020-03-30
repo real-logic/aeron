@@ -382,13 +382,14 @@ public class Election
             catchupPosition = logPosition;
             state(State.FOLLOWER_REPLAY);
         }
-        else if (leadershipTermId == candidateTermId &&
+        else if (logLeadershipTermId == this.logLeadershipTermId && leadershipTermId == candidateTermId &&
             (State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state))
         {
             leaderMember = leader;
             this.isLeaderStartup = isStartup;
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
+            //catchupPosition = logPosition > this.logPosition ? logPosition : NULL_POSITION;
             catchupPosition = logPosition;
             state(State.FOLLOWER_REPLAY);
         }
@@ -396,7 +397,7 @@ public class Election
         {
             if (NULL_POSITION == catchupPosition)
             {
-                if (this.logPosition <= logPosition)
+                if (logPosition >= this.logPosition && leadershipTermId >= candidateTermId)
                 {
                     leaderMember = leader;
                     this.isLeaderStartup = isStartup;

@@ -399,27 +399,30 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(120)
     @Disabled
+    @Timeout(90)
     public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime()
     {
+        System.out.println("*** First election");
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode firstLeader = cluster.awaitLeader();
 
             cluster.connectClient();
 
-            // Add enough messages to log make replay take some time
-            final int messageCount = 1000000;
+            // Add enough messages so replay takes some time
+            final int messageCount = 1_000_000;
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
             cluster.closeClient();
 
+            System.out.println("\n*** Second election");
             cluster.stopNode(firstLeader);
 
             final TestNode secondLeader = cluster.awaitLeader();
 
+            System.out.println("\n*** Third election");
             cluster.stopNode(secondLeader);
 
             final TestNode restartedFirstLeader = cluster.startStaticNode(firstLeader.index(), false);

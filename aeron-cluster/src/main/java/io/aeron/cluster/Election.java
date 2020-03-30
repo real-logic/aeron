@@ -276,6 +276,21 @@ public class Election
                     logSessionId,
                     isLeaderStartup);
             }
+            else if ((State.LEADER_TRANSITION == state || State.LEADER_REPLAY == state) &&
+                logLeadershipTermId < leadershipTermId)
+            {
+                final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
+                memberStatusPublisher.newLeadershipTerm(
+                    follower.publication(),
+                    null != termEntry ? logLeadershipTermId : this.logLeadershipTermId,
+                    null != termEntry ? termEntry.termBaseLogPosition : this.logPosition,
+                    leadershipTermId,
+                    this.logPosition,
+                    null != termEntry ? termEntry.timestamp : ctx.clusterClock().time(),
+                    thisMember.id(),
+                    logSessionId,
+                    isLeaderStartup);
+            }
             else if (logLeadershipTermId > leadershipTermId && (State.CANVASS != state && State.INIT != state))
             {
                 state(State.CANVASS);
@@ -352,16 +367,16 @@ public class Election
             return;
         }
 
-        leaderMember = leader;
-        this.isLeaderStartup = isStartup;
-
         if (leadershipTermId > this.leadershipTermId &&
             logLeadershipTermId == this.logLeadershipTermId &&
             logTruncatePosition < this.logPosition)
         {
+            leaderMember = leader;
+            this.isLeaderStartup = isStartup;
             consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logTruncatePosition);
             consensusModuleAgent.prepareForNewLeadership(logTruncatePosition);
             this.leadershipTermId = leadershipTermId;
+            this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
             this.logSessionId = logSessionId;
             this.logPosition = logTruncatePosition;
             catchupPosition = logPosition;
@@ -370,6 +385,8 @@ public class Election
         else if (leadershipTermId == candidateTermId &&
             (State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state))
         {
+            leaderMember = leader;
+            this.isLeaderStartup = isStartup;
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
             catchupPosition = logPosition;
@@ -381,9 +398,11 @@ public class Election
             {
                 if (this.logPosition <= logPosition)
                 {
+                    leaderMember = leader;
+                    this.isLeaderStartup = isStartup;
                     this.leadershipTermId = leadershipTermId;
+                    this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
                     this.logSessionId = logSessionId;
-                    candidateTermId = leadershipTermId;
                     catchupPosition = logPosition;
                     state(State.FOLLOWER_REPLAY);
                 }
@@ -394,15 +413,14 @@ public class Election
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
-        if (null != follower)
+        if (null != follower && leadershipTermId == this.leadershipTermId)
         {
             follower
                 .logPosition(logPosition)
                 .leadershipTermId(leadershipTermId)
                 .timeOfLastAppendPositionNs(nowNs);
 
-            consensusModuleAgent.trackCatchupCompletion(follower);
+            consensusModuleAgent.trackCatchupCompletion(follower, leadershipTermId);
         }
     }
 
@@ -471,6 +489,7 @@ public class Election
         if (clusterMembers.length == 1 && thisMember == clusterMembers[0])
         {
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
+            leadershipTermId = candidateTermId;
             leaderMember = thisMember;
             state(State.LEADER_REPLAY);
         }
@@ -543,6 +562,7 @@ public class Election
             ClusterMember.hasMajorityVoteWithCanvassMembers(clusterMembers, candidateTermId))
         {
             leaderMember = thisMember;
+            leadershipTermId = candidateTermId;
             state(State.LEADER_REPLAY);
             workCount += 1;
         }
@@ -551,6 +571,7 @@ public class Election
             if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
             {
                 leaderMember = thisMember;
+                leadershipTermId = candidateTermId;
                 state(State.LEADER_REPLAY);
             }
             else
@@ -639,20 +660,21 @@ public class Election
     private int leaderTransition(final long nowNs)
     {
         isLeaderStartup = isNodeStartup;
-        consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId, isLeaderStartup);
+        consensusModuleAgent.becomeLeader(leadershipTermId, logPosition, logSessionId, isLeaderStartup);
 
         final long recordingId = consensusModuleAgent.logRecordingId();
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
         final RecordingLog recordingLog = ctx.recordingLog();
 
-        for (long termId = leadershipTermId + 1; termId <= candidateTermId; termId++)
+        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
         {
-            recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
+            if (recordingLog.isUnknown(termId))
+            {
+                recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
+            }
         }
 
         recordingLog.force(ctx.fileSyncLevel());
-        leadershipTermId = candidateTermId;
-
         state(State.LEADER_READY);
 
         return 1;
@@ -993,6 +1015,7 @@ public class Election
     @SuppressWarnings("unused")
     void stateChange(final State oldState, final State newState, final int memberId)
     {
-        //System.out.println("Election: memberId=" + memberId + " " + oldState + " -> " + newState);
+        //System.out.println("Election: memberId=" + memberId + " " + oldState + " -> " + newState +
+        //    " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
     }
 }

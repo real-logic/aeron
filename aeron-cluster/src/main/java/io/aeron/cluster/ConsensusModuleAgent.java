@@ -539,7 +539,7 @@ class ConsensusModuleAgent implements Agent
                 follower
                     .logPosition(logPosition)
                     .timeOfLastAppendPositionNs(clusterTimeUnit.toNanos(clusterClock.time()));
-                trackCatchupCompletion(follower);
+                trackCatchupCompletion(follower, leadershipTermId);
             }
         }
     }
@@ -1573,7 +1573,7 @@ class ConsensusModuleAgent implements Agent
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
     }
 
-    public void trackCatchupCompletion(final ClusterMember follower)
+    public void trackCatchupCompletion(final ClusterMember follower, final long leadershipTermId)
     {
         if (NULL_VALUE != follower.catchupReplaySessionId())
         {

@@ -104,7 +104,21 @@ public class Election
     private final boolean isNodeStartup;
     private boolean isLeaderStartup;
     private boolean isExtendedCanvass;
-    private boolean shouldReplay;
+    private boolean hasReplay;
+    private int logSessionId = CommonContext.NULL_SESSION_ID;
+    private long timeOfLastStateChangeNs;
+    private long timeOfLastUpdateNs;
+    private long nominationDeadlineNs;
+    private long logPosition;
+    private long catchupPosition = NULL_POSITION;
+    private long leadershipTermId;
+    private long logLeadershipTermId;
+    private long candidateTermId = NULL_VALUE;
+    private ClusterMember leaderMember = null;
+    private State state = State.INIT;
+    private Subscription logSubscription;
+    private String liveLogDestination;
+    private LogReplay logReplay = null;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
@@ -113,22 +127,6 @@ public class Election
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final Random random;
-
-    private long timeOfLastStateChangeNs;
-    private long timeOfLastUpdateNs;
-    private long nominationDeadlineNs;
-    private long nowNs;
-    private long logPosition;
-    private long catchupPosition = NULL_POSITION;
-    private long leadershipTermId;
-    private long logLeadershipTermId;
-    private long candidateTermId = NULL_VALUE;
-    private int logSessionId = CommonContext.NULL_SESSION_ID;
-    private ClusterMember leaderMember = null;
-    private State state = State.INIT;
-    private Subscription logSubscription;
-    private String liveLogDestination;
-    private LogReplay logReplay = null;
 
     public Election(
         final boolean isNodeStartup,
@@ -143,7 +141,7 @@ public class Election
         final ConsensusModuleAgent consensusModuleAgent)
     {
         this.isNodeStartup = isNodeStartup;
-        this.shouldReplay = isNodeStartup;
+        this.hasReplay = isNodeStartup;
         this.isExtendedCanvass = isNodeStartup;
         this.logPosition = logPosition;
         this.logLeadershipTermId = leadershipTermId;
@@ -182,8 +180,7 @@ public class Election
 
     int doWork(final long nowNs)
     {
-        this.nowNs = nowNs;
-        int workCount = State.INIT == state ? init() : 0;
+        int workCount = State.INIT == state ? init(nowNs) : 0;
         workCount += memberStatusAdapter.poll();
 
         try
@@ -247,7 +244,7 @@ public class Election
         {
             ctx.countedErrorHandler().onError(ex);
             logPosition = ctx.commitPositionCounter().get();
-            state(State.INIT);
+            state(State.INIT, nowNs);
         }
 
         return workCount;
@@ -293,7 +290,7 @@ public class Election
             }
             else if (logLeadershipTermId > leadershipTermId && (State.CANVASS != state && State.INIT != state))
             {
-                state(State.CANVASS);
+                state(State.CANVASS, ctx.clusterClock().timeNanos());
             }
         }
     }
@@ -314,7 +311,7 @@ public class Election
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
-            state(State.CANVASS);
+            state(State.CANVASS, ctx.clusterClock().timeNanos());
 
             placeVote(candidateTermId, candidateId, false);
         }
@@ -322,7 +319,7 @@ public class Election
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
-            state(State.FOLLOWER_BALLOT);
+            state(State.FOLLOWER_BALLOT, ctx.clusterClock().timeNanos());
 
             placeVote(candidateTermId, candidateId, true);
         }
@@ -380,7 +377,7 @@ public class Election
             this.logSessionId = logSessionId;
             this.logPosition = logTruncatePosition;
             catchupPosition = logPosition;
-            state(State.FOLLOWER_REPLAY);
+            state(State.FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
         }
         else if (logLeadershipTermId == this.logLeadershipTermId && leadershipTermId == candidateTermId &&
             (State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state))
@@ -391,7 +388,7 @@ public class Election
             this.logSessionId = logSessionId;
             //catchupPosition = logPosition > this.logPosition ? logPosition : NULL_POSITION;
             catchupPosition = logPosition;
-            state(State.FOLLOWER_REPLAY);
+            state(State.FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
         }
         else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
         {
@@ -405,7 +402,7 @@ public class Election
                     this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
                     this.logSessionId = logSessionId;
                     catchupPosition = logPosition;
-                    state(State.FOLLOWER_REPLAY);
+                    state(State.FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
                 }
             }
         }
@@ -419,7 +416,7 @@ public class Election
             follower
                 .logPosition(logPosition)
                 .leadershipTermId(leadershipTermId)
-                .timeOfLastAppendPositionNs(nowNs);
+                .timeOfLastAppendPositionNs(ctx.clusterClock().timeNanos());
 
             consensusModuleAgent.trackCatchupCompletion(follower, leadershipTermId);
         }
@@ -436,7 +433,7 @@ public class Election
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            state(State.INIT);
+            state(State.INIT, ctx.clusterClock().timeNanos());
         }
     }
 
@@ -477,7 +474,7 @@ public class Election
         }
     }
 
-    private int init()
+    private int init(final long nowNs)
     {
         if (!isNodeStartup)
         {
@@ -492,11 +489,11 @@ public class Election
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             leadershipTermId = candidateTermId;
             leaderMember = thisMember;
-            state(State.LEADER_REPLAY);
+            state(State.LEADER_REPLAY, nowNs);
         }
         else
         {
-            state(State.CANVASS);
+            state(State.CANVASS, nowNs);
         }
 
         return 1;
@@ -534,7 +531,7 @@ public class Election
         {
             final long delayNs = (long)(random.nextDouble() * (ctx.electionTimeoutNs() >> 1));
             nominationDeadlineNs = nowNs + delayNs;
-            state(State.NOMINATE);
+            state(State.NOMINATE, nowNs);
             workCount += 1;
         }
 
@@ -548,7 +545,7 @@ public class Election
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
-            state(State.CANDIDATE_BALLOT);
+            state(State.CANDIDATE_BALLOT, nowNs);
             return 1;
         }
 
@@ -564,7 +561,7 @@ public class Election
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;
-            state(State.LEADER_REPLAY);
+            state(State.LEADER_REPLAY, nowNs);
             workCount += 1;
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
@@ -573,11 +570,11 @@ public class Election
             {
                 leaderMember = thisMember;
                 leadershipTermId = candidateTermId;
-                state(State.LEADER_REPLAY);
+                state(State.LEADER_REPLAY, nowNs);
             }
             else
             {
-                state(State.CANVASS);
+                state(State.CANVASS, nowNs);
             }
 
             workCount += 1;
@@ -604,7 +601,7 @@ public class Election
 
         if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
         {
-            state(State.CANVASS);
+            state(State.CANVASS, nowNs);
             workCount += 1;
         }
 
@@ -621,12 +618,12 @@ public class Election
             logSessionId = consensusModuleAgent.addNewLogPublication().sessionId();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
-            thisMember.logPosition(logPosition).leadershipTermId(candidateTermId);
+            thisMember.logPosition(logPosition).leadershipTermId(leadershipTermId);
 
-            if (!shouldReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
+            if (!hasReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
             {
-                shouldReplay = false;
-                state(State.LEADER_TRANSITION);
+                hasReplay = false;
+                state(State.LEADER_TRANSITION, nowNs);
                 workCount = 1;
             }
         }
@@ -636,18 +633,18 @@ public class Election
             if (logReplay.isDone())
             {
                 cleanupReplay();
-                state(State.LEADER_TRANSITION);
+                state(State.LEADER_TRANSITION, nowNs);
             }
             else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
             {
                 timeOfLastUpdateNs = nowNs;
-                final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+                final long timestamp = ctx.clusterClock().time();
 
                 for (final ClusterMember member : clusterMembers)
                 {
                     if (member != thisMember)
                     {
-                        publishNewLeadershipTerm(member.publication(), candidateTermId, timestamp);
+                        publishNewLeadershipTerm(member.publication(), leadershipTermId, timestamp);
                     }
                 }
 
@@ -676,7 +673,7 @@ public class Election
         }
 
         recordingLog.force(ctx.fileSyncLevel());
-        state(State.LEADER_READY);
+        state(State.LEADER_READY, nowNs);
 
         return 1;
     }
@@ -690,7 +687,7 @@ public class Election
             if (consensusModuleAgent.electionComplete())
             {
                 consensusModuleAgent.updateMemberDetails(this);
-                state(State.CLOSED);
+                state(State.CLOSED, nowNs);
             }
 
             workCount += 1;
@@ -723,10 +720,10 @@ public class Election
 
         if (null == logReplay)
         {
-            if (!shouldReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
+            if (!hasReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
             {
-                shouldReplay = false;
-                state(nextState);
+                hasReplay = false;
+                state(nextState, nowNs);
                 workCount = 1;
             }
         }
@@ -736,7 +733,7 @@ public class Election
             if (logReplay.isDone())
             {
                 cleanupReplay();
-                state(nextState);
+                state(nextState, nowNs);
             }
         }
 
@@ -766,7 +763,7 @@ public class Election
         {
             timeOfLastUpdateNs = nowNs;
             consensusModuleAgent.catchupInitiated(nowNs);
-            state(State.FOLLOWER_CATCHUP);
+            state(State.FOLLOWER_CATCHUP, nowNs);
         }
 
         return 1;
@@ -786,7 +783,7 @@ public class Election
         {
             logPosition = catchupPosition;
             timeOfLastUpdateNs = 0;
-            state(State.FOLLOWER_TRANSITION);
+            state(State.FOLLOWER_TRANSITION, nowNs);
             workCount += 1;
         }
         else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
@@ -795,7 +792,7 @@ public class Election
             {
                 ctx.countedErrorHandler().onError(new ClusterException("no catchup progress", WARN));
                 logPosition = ctx.commitPositionCounter().get();
-                state(State.INIT);
+                state(State.INIT, nowNs);
                 workCount += 1;
             }
             else if (consensusModuleAgent.hasReplayDestination() && sendCatchupPosition(leadershipTermId, logPosition))
@@ -844,7 +841,7 @@ public class Election
             ctx.recordingLog().force(ctx.fileSyncLevel());
         }
 
-        state(State.FOLLOWER_READY);
+        state(State.FOLLOWER_READY, nowNs);
 
         return 1;
     }
@@ -858,7 +855,7 @@ public class Election
             if (consensusModuleAgent.electionComplete())
             {
                 consensusModuleAgent.updateMemberDetails(this);
-                state(State.CLOSED);
+                state(State.CLOSED, nowNs);
             }
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
@@ -870,7 +867,7 @@ public class Election
                 consensusModuleAgent.liveLogDestination(null);
             }
 
-            state(State.CANVASS);
+            state(State.CANVASS, nowNs);
         }
 
         return 1;
@@ -946,7 +943,7 @@ public class Election
         return channelUri;
     }
 
-    private void state(final State newState)
+    private void state(final State newState, final long nowNs)
     {
         stateChange(state, newState, thisMember.id());
 
@@ -957,7 +954,7 @@ public class Election
 
         if (State.CANVASS == newState)
         {
-            resetCatchupAndLogPosition();
+            resetCatchup();
         }
 
         switch (newState)
@@ -989,7 +986,7 @@ public class Election
         timeOfLastStateChangeNs = nowNs;
     }
 
-    private void resetCatchupAndLogPosition()
+    private void resetCatchup()
     {
         consensusModuleAgent.stopAllCatchups();
         catchupPosition = NULL_POSITION;
@@ -1004,7 +1001,7 @@ public class Election
         {
             logReplay.close();
             logReplay = null;
-            shouldReplay = false;
+            hasReplay = false;
         }
     }
 

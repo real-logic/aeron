@@ -30,4 +30,7 @@ extern void aeron_int64_to_ptr_hash_map_compact_chain(aeron_int64_to_ptr_hash_ma
 
 extern void *aeron_int64_to_ptr_hash_map_remove(aeron_int64_to_ptr_hash_map_t *map, int64_t key);
 extern void aeron_int64_to_ptr_hash_map_for_each(
-        aeron_int64_to_ptr_hash_map_t *map, aeron_int64_to_ptr_hash_map_for_each_func_t func, void *clientd);
+    aeron_int64_to_ptr_hash_map_t *map, aeron_int64_to_ptr_hash_map_for_each_func_t func, void *clientd);
+extern void aeron_int64_to_ptr_hash_map_remove_if(
+    aeron_int64_to_ptr_hash_map_t *map, aeron_int64_to_ptr_hash_map_predicate_func_t func, void *clientd);
+

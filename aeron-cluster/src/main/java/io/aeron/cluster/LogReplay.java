@@ -104,14 +104,9 @@ class LogReplay
             else
             {
                 consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
-                if (logAdapter.position() == stopPosition)
+                if (logAdapter.position() >= stopPosition)
                 {
                     consensusModuleAgent.awaitServicesReplayPosition(stopPosition);
-
-                    CloseHelper.close(ctx.countedErrorHandler(), logSubscription);
-                    logSubscription = null;
-                    logAdapter = null;
-
                     state = State.DONE;
                     workCount = 1;
                 }

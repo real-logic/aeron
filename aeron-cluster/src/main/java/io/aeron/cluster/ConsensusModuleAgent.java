@@ -1483,18 +1483,16 @@ class ConsensusModuleAgent implements Agent
         if (null != recoveryPlan.log)
         {
             final RecordingLog.Log log = recoveryPlan.log;
-            final long startPosition = log.startPosition;
             final long stopPosition = min(log.stopPosition, electionPosition);
-            this.leadershipTermId = log.leadershipTermId;
 
             if (recoveryPlan.hasReplay())
             {
                 return new LogReplay(
                     archive,
                     log.recordingId,
-                    startPosition,
+                    log.startPosition,
                     stopPosition,
-                    leadershipTermId,
+                    log.leadershipTermId,
                     log.sessionId,
                     this,
                     ctx);

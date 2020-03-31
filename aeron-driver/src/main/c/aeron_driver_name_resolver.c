@@ -708,7 +708,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
     assert(0 <= entry_length || "local_cache_addr should of been correctly constructed during init");
 
-    size_t frame_length = sizeof(aeron_frame_header_t) + (ssize_t)entry_length;
+    size_t frame_length = sizeof(aeron_frame_header_t) + (size_t)entry_length;
 
     frame_header->type = AERON_HDR_TYPE_RES;
     frame_header->flags = UINT8_C(0);

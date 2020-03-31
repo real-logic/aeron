@@ -97,7 +97,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldAllowNullValues)
 TEST_F(Int64ToTaggedPtrHashMapTest, shouldReplaceExistingValueForTheSameKey)
 {
     int value = 42, new_value = 43;
-    int32_t new_tag = 234;
+    uint32_t new_tag = 234;
     uint32_t tag_out = 0;
     void *value_out = NULL;
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_TAGGED_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
@@ -174,7 +174,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveEntry)
     value_out = NULL;
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_get(&m_map, 7, &tag_out, &value_out), false);
     EXPECT_EQ(value_out, (void *)NULL);
-    EXPECT_EQ(tag_out, 0);
+    EXPECT_EQ(tag_out, 0u);
 }
 
 TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)

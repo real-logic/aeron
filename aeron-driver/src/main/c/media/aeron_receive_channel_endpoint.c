@@ -74,8 +74,8 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
-    if (aeron_int64_to_ptr_hash_map_init(
-        &_endpoint->stream_id_to_refcnt_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    if (aeron_int32_counter_map_init(
+        &_endpoint->stream_id_to_refcnt_map, 0, 16, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init stream_id_to_refcnt_map");
         return -1;
@@ -155,10 +155,7 @@ int aeron_receive_channel_endpoint_delete(
         aeron_counters_manager_free(counters_manager, endpoint->channel_status.counter_id);
     }
 
-    aeron_int64_to_ptr_hash_map_for_each(
-        &endpoint->stream_id_to_refcnt_map, aeron_receive_channel_endpoint_free_stream_id_refcnt, endpoint);
-
-    aeron_int64_to_ptr_hash_map_delete(&endpoint->stream_id_to_refcnt_map);
+    aeron_int32_counter_map_delete(&endpoint->stream_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
     endpoint->transport_bindings->close_func(&endpoint->transport);
@@ -430,24 +427,12 @@ int aeron_receive_channel_endpoint_on_rttm(
 int32_t aeron_receive_channel_endpoint_incref_to_stream(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
-    aeron_stream_id_refcnt_t *count = aeron_int64_to_ptr_hash_map_get(&endpoint->stream_id_to_refcnt_map, stream_id);
+    const int32_t count = aeron_int32_counter_map_inc_and_get(&endpoint->stream_id_to_refcnt_map, stream_id);
 
-    if (NULL == count)
+    if (1 == count)
     {
-        bool is_first_subscription = (0 == endpoint->stream_id_to_refcnt_map.size) ? true : false;
-
-        if (aeron_alloc((void **)&count, sizeof(aeron_stream_id_refcnt_t)) < 0)
-        {
-            aeron_set_err_from_last_err_code("could not allocate aeron_stream_id_refcnt");
-            return -1;
-        }
-
-        count->refcnt = 0;
-        if (aeron_int64_to_ptr_hash_map_put(&endpoint->stream_id_to_refcnt_map, stream_id, count) < 0)
-        {
-            aeron_set_err_from_last_err_code("could not put aeron_stream_id_refcnt");
-            return -1;
-        }
+        // TODO check the session specific counters too.
+        const bool is_first_subscription = (1 == endpoint->stream_id_to_refcnt_map.size) ? true : false;
 
         if (is_first_subscription)
         {
@@ -457,28 +442,25 @@ int32_t aeron_receive_channel_endpoint_incref_to_stream(
         aeron_driver_receiver_proxy_on_add_subscription(endpoint->receiver_proxy, endpoint, stream_id);
     }
 
-    return ++count->refcnt;
+    return count;
 }
 
 int32_t aeron_receive_channel_endpoint_decref_to_stream(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
-    aeron_stream_id_refcnt_t *count = aeron_int64_to_ptr_hash_map_get(&endpoint->stream_id_to_refcnt_map, stream_id);
+    int32_t count = aeron_int32_counter_map_get(&endpoint->stream_id_to_refcnt_map, stream_id);
 
-    if (NULL == count)
+    if (0 == count)
     {
         return 0;
     }
 
-    int32_t result = --count->refcnt;
+    int32_t result = aeron_int32_counter_map_dec_and_get(&endpoint->stream_id_to_refcnt_map, stream_id);
     if (0 == result)
     {
-        aeron_int64_to_ptr_hash_map_remove(&endpoint->stream_id_to_refcnt_map, stream_id);
-        aeron_free(count);
-
         aeron_driver_receiver_proxy_on_remove_subscription(endpoint->receiver_proxy, endpoint, stream_id);
 
-        if (0 == endpoint->stream_id_to_refcnt_map.size)
+        if (0 == endpoint->stream_id_to_refcnt_map.size) // TODO check the session specific counters too.
         {
             /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
             endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;

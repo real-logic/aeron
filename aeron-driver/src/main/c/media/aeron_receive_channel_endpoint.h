@@ -17,6 +17,7 @@
 #ifndef AERON_RECEIVE_CHANNEL_ENDPOINT_H
 #define AERON_RECEIVE_CHANNEL_ENDPOINT_H
 
+#include <collections/aeron_int32_counter_map.h>
 #include "aeron_data_packet_dispatcher.h"
 #include "aeron_udp_channel.h"
 #include "aeron_udp_channel_transport.h"
@@ -49,7 +50,8 @@ typedef struct aeron_receive_channel_endpoint_stct
 
     aeron_udp_channel_transport_t transport;
     aeron_data_packet_dispatcher_t dispatcher;
-    aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;
+//    aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;
+    aeron_int32_counter_map_t stream_id_to_refcnt_map;
     aeron_atomic_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
     aeron_udp_channel_transport_bindings_t *transport_bindings;

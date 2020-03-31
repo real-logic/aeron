@@ -1478,24 +1478,18 @@ class ConsensusModuleAgent implements Agent
         awaitServices(logPosition);
     }
 
-    LogReplay newLogReplay(final long electionCommitPosition)
+    LogReplay newLogReplay(final long electionPosition)
     {
-        final RecordingLog.RecoveryPlan plan = recoveryPlan;
         LogReplay logReplay = null;
 
-        if (null != plan.log)
+        if (null != recoveryPlan.log)
         {
-            final RecordingLog.Log log = plan.log;
+            final RecordingLog.Log log = recoveryPlan.log;
             final long startPosition = log.startPosition;
-            final long stopPosition = min(log.stopPosition, electionCommitPosition);
+            final long stopPosition = min(log.stopPosition, electionPosition);
             this.leadershipTermId = log.leadershipTermId;
 
-            if (log.logPosition < 0)
-            {
-                recordingLog.commitLogPosition(leadershipTermId, stopPosition);
-            }
-
-            if (plan.hasReplay())
+            if (recoveryPlan.hasReplay())
             {
                 logReplay = new LogReplay(
                     archive,

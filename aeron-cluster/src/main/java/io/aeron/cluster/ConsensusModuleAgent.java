@@ -522,7 +522,7 @@ class ConsensusModuleAgent implements Agent
             leaderId == leaderMember.id())
         {
             timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(clusterClock.time());
-            notifiedCommitPosition = logPosition;
+            notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {

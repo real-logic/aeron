@@ -693,7 +693,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
     const size_t entry_offset = sizeof(aeron_frame_header_t);
 
-    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) &aligned_buffer[0];
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *)&aligned_buffer[0];
     aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&aligned_buffer[entry_offset];
 
     const size_t name_length = resolver->name_length; // TODO: cache name length
@@ -708,7 +708,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
     assert(0 <= entry_length || "local_cache_addr should of been correctly constructed during init");
 
-    size_t frame_length = sizeof(frame_header) + (ssize_t)entry_length;
+    size_t frame_length = sizeof(aeron_frame_header_t) + (ssize_t)entry_length;
 
     frame_header->type = AERON_HDR_TYPE_RES;
     frame_header->flags = UINT8_C(0);

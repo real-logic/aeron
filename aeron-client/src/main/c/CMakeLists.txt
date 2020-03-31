@@ -34,6 +34,7 @@ endif ()
 set(SOURCE
     collections/aeron_bit_set.c
     collections/aeron_int64_to_ptr_hash_map.c
+    collections/aeron_int64_to_tagged_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c
     concurrent/aeron_atomic.c
     concurrent/aeron_broadcast_receiver.c
@@ -84,6 +85,7 @@ set(SOURCE
 set(HEADERS
     collections/aeron_bit_set.h
     collections/aeron_int64_to_ptr_hash_map.h
+    collections/aeron_int64_to_tagged_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h
     command/aeron_control_protocol.h
     concurrent/aeron_atomic.h

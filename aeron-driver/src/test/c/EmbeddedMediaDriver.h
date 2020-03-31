@@ -43,8 +43,8 @@ class EmbeddedMediaDriver
 public:
     EmbeddedMediaDriver() :
         m_running(true),
-        m_context(NULL),
-        m_driver(NULL)
+        m_context(nullptr),
+        m_driver(nullptr)
     {
     }
 

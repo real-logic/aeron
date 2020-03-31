@@ -31,9 +31,7 @@ public:
 private:
     struct FuncHolderBase
     {
-        virtual ~FuncHolderBase()
-        {
-        }
+        virtual ~FuncHolderBase() = default;
     };
 
     template<typename func_t>

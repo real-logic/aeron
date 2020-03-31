@@ -1480,8 +1480,6 @@ class ConsensusModuleAgent implements Agent
 
     LogReplay newLogReplay(final long electionPosition)
     {
-        LogReplay logReplay = null;
-
         if (null != recoveryPlan.log)
         {
             final RecordingLog.Log log = recoveryPlan.log;
@@ -1491,7 +1489,7 @@ class ConsensusModuleAgent implements Agent
 
             if (recoveryPlan.hasReplay())
             {
-                logReplay = new LogReplay(
+                return new LogReplay(
                     archive,
                     log.recordingId,
                     startPosition,
@@ -1503,7 +1501,7 @@ class ConsensusModuleAgent implements Agent
             }
         }
 
-        return logReplay;
+        return null;
     }
 
     void awaitServicesReadyForReplay(

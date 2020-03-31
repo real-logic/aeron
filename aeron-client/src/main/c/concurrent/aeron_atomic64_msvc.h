@@ -17,11 +17,10 @@
 #ifndef AERON_ATOMIC64_MSVC_H
 #define AERON_ATOMIC64_MSVC_H
 
-#include <stdbool.h>
 #include <WinSock2.h>
 #include <windows.h>
 #include <winnt.h>
-#include <stdint.h>
+#include <cstdint>
 #include <intrin.h>
 
 #define AERON_GET_VOLATILE(dst, src) \

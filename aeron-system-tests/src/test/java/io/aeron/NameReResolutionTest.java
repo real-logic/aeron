@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -369,6 +370,7 @@ public class NameReResolutionTest
 
         subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
         publication = client.addPublication(PUBLICATION_WITH_ERROR_URI, STREAM_ID);
+        final long initialErrorCount = client.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
 
         while (!subscription.isConnected())
         {
@@ -393,12 +395,15 @@ public class NameReResolutionTest
             Tests.sleep(100);
         }
 
-        final Matcher<String> execptionMessageMatcher = allOf(
+        Counters.waitForCounterIncrease(
+            client.countersReader(), SystemCounterDescriptor.ERRORS.id(), initialErrorCount, 1);
+
+        final Matcher<String> exceptionMessageMatcher = allOf(
             containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME), containsString("name-and-port=" + BAD_ADDRESS));
 
         ErrorReportTestUtil.waitForErrorToOccur(
             client.context().aeronDirectoryName(),
-            execptionMessageMatcher,
+            exceptionMessageMatcher,
             new SleepingMillisIdleStrategy(100));
     }
 }

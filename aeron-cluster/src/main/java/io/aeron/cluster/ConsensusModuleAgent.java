@@ -517,6 +517,13 @@ class ConsensusModuleAgent implements Agent
                 logSessionId,
                 isStartup);
         }
+        else if (Cluster.Role.FOLLOWER == role &&
+            leadershipTermId == this.leadershipTermId &&
+            leaderId == leaderMember.id())
+        {
+            timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(clusterClock.time());
+            notifiedCommitPosition = logPosition;
+        }
         else if (leadershipTermId > this.leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterException(

@@ -24,7 +24,6 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -399,7 +398,6 @@ public class ClusterTest
     }
 
     @Test
-    @Disabled
     @Timeout(120)
     public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime()
     {
@@ -426,11 +424,15 @@ public class ClusterTest
             cluster.awaitNotInElection(restartedFirstLeader);
             cluster.awaitNotInElection(restartedSecondLeader);
 
-            cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
             cluster.sendMessages(10);
             cluster.awaitResponseMessageCount(messageCount + 10);
+
+            cluster.awaitServiceMessageCount(leader, messageCount + 10);
+            cluster.awaitServiceMessageCount(cluster.followers().get(0), messageCount + 10);
+            cluster.awaitServiceMessageCount(cluster.followers().get(1), messageCount + 10);
         }
     }
 

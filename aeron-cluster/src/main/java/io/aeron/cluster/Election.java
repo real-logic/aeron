@@ -359,7 +359,7 @@ public class Election
         final boolean isStartup)
     {
         final ClusterMember leader = clusterMemberByIdMap.get(leaderMemberId);
-        if (null == leader || leaderMemberId == thisMember.id())
+        if (null == leader || (leaderMemberId == thisMember.id() && leadershipTermId == this.leadershipTermId))
         {
             return;
         }
@@ -368,10 +368,10 @@ public class Election
             logLeadershipTermId == this.logLeadershipTermId &&
             logTruncatePosition < this.logPosition)
         {
-            leaderMember = leader;
-            this.isLeaderStartup = isStartup;
             consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logTruncatePosition);
             consensusModuleAgent.prepareForNewLeadership(logTruncatePosition);
+            leaderMember = leader;
+            this.isLeaderStartup = isStartup;
             this.leadershipTermId = leadershipTermId;
             this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
             this.logSessionId = logSessionId;
@@ -386,8 +386,7 @@ public class Election
             this.isLeaderStartup = isStartup;
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
-            //catchupPosition = logPosition > this.logPosition ? logPosition : NULL_POSITION;
-            catchupPosition = logPosition;
+            catchupPosition = logPosition > this.logPosition ? logPosition : NULL_POSITION;
             state(State.FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
         }
         else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
@@ -399,7 +398,7 @@ public class Election
                     leaderMember = leader;
                     this.isLeaderStartup = isStartup;
                     this.leadershipTermId = leadershipTermId;
-                    this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
+                    this.candidateTermId = leadershipTermId;
                     this.logSessionId = logSessionId;
                     catchupPosition = logPosition;
                     state(State.FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());

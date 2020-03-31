@@ -35,7 +35,7 @@ public:
     {
     }
 
-    BufferBuilder(BufferBuilder &&builder) :
+    BufferBuilder(BufferBuilder &&builder) noexcept :
         m_capacity(builder.m_capacity),
         m_limit(builder.m_limit),
         m_buffer(std::move(builder.m_buffer))

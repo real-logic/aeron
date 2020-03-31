@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_INT32_COUNTER_MAP_H
-#define AERON_INT32_COUNTER_MAP_H
+#ifndef AERON_INT64_COUNTER_MAP_H
+#define AERON_INT64_COUNTER_MAP_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -32,33 +32,33 @@
 #include "util/aeron_bitutil.h"
 #include "aeron_alloc.h"
 
-typedef struct aeron_int32_counter_map_stct
+typedef struct aeron_int64_counter_map_stct
 {
-    int32_t *entries;
+    int64_t *entries;
     float load_factor;
     size_t entries_length;
     size_t size;
     size_t resize_threshold;
-    int32_t initial_value;
+    int64_t initial_value;
 }
-aeron_int32_counter_map_t;
+aeron_int64_counter_map_t;
 
 #define AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR (0.55f)
 
-inline size_t aeron_int32_counter_map_hash_key(int32_t key, size_t mask)
+inline size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask)
 {
-    uint32_t hash = (key << UINT32_C(1)) - (key << UINT32_C(8));
+    uint64_t hash = (key << UINT64_C(1)) - (key << UINT64_C(8));
 
     return hash & mask;
 }
 
-inline int aeron_int32_counter_map_init(
-    aeron_int32_counter_map_t *map,
-    int32_t initial_value,
+inline int aeron_int64_counter_map_init(
+    aeron_int64_counter_map_t *map,
+    int64_t initial_value,
     size_t initial_capacity,
     float load_factor)
 {
-    size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
+    size_t capacity = (size_t)aeron_find_next_power_of_two((int64_t)initial_capacity);
 
     map->load_factor = load_factor;
     map->resize_threshold = (size_t)(load_factor * capacity);
@@ -67,7 +67,7 @@ inline int aeron_int32_counter_map_init(
     map->initial_value = initial_value;
     map->size = 0;
 
-    if (aeron_alloc((void **)&map->entries, (map->entries_length * sizeof(int32_t))) < 0)
+    if (aeron_alloc((void **)&map->entries, (map->entries_length * sizeof(int64_t))) < 0)
     {
         return -1;
     }
@@ -79,7 +79,7 @@ inline int aeron_int32_counter_map_init(
     return 0;
 }
 
-inline void aeron_int32_counter_map_delete(aeron_int32_counter_map_t *map)
+inline void aeron_int64_counter_map_delete(aeron_int64_counter_map_t *map)
 {
     if (NULL != map->entries)
     {
@@ -87,14 +87,14 @@ inline void aeron_int32_counter_map_delete(aeron_int32_counter_map_t *map)
     }
 }
 
-inline int aeron_int32_counter_map_rehash(aeron_int32_counter_map_t *map, size_t new_entries_length)
+inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t new_entries_length)
 {
     size_t mask = new_entries_length - 1;
     map->resize_threshold = (size_t)((new_entries_length / 2) * map->load_factor);
 
-    int32_t *tmp_entries;
+    int64_t *tmp_entries;
 
-    if (aeron_alloc((void **)&tmp_entries, (new_entries_length * sizeof(int32_t))) < 0)
+    if (aeron_alloc((void **)&tmp_entries, (new_entries_length * sizeof(int64_t))) < 0)
     {
         return -1;
     }
@@ -105,12 +105,12 @@ inline int aeron_int32_counter_map_rehash(aeron_int32_counter_map_t *map, size_t
 
     for (size_t i = 0, size = map->entries_length; i < size; i += 2)
     {
-        int32_t value = map->entries[i + 1];
+        int64_t value = map->entries[i + 1];
 
         if (map->initial_value != value)
         {
-            int32_t key = map->entries[i];
-            size_t new_hash = aeron_int32_counter_map_hash_key(key, mask);
+            int64_t key = map->entries[i];
+            size_t new_hash = aeron_int64_counter_map_hash_key(key, mask);
 
             while (map->initial_value != tmp_entries[new_hash])
             {
@@ -130,7 +130,7 @@ inline int aeron_int32_counter_map_rehash(aeron_int32_counter_map_t *map, size_t
     return 0;
 }
 
-inline int aeron_int32_counter_map_put(aeron_int32_counter_map_t *map, const int32_t key, const int32_t value)
+inline int aeron_int64_counter_map_put(aeron_int64_counter_map_t *map, const int64_t key, const int64_t value)
 {
     if (map->initial_value == value)
     {
@@ -142,9 +142,9 @@ inline int aeron_int32_counter_map_put(aeron_int32_counter_map_t *map, const int
     }
 
     size_t mask = map->entries_length - 1;
-    size_t index = aeron_int32_counter_map_hash_key(key, mask);
+    size_t index = aeron_int64_counter_map_hash_key(key, mask);
 
-    int32_t old_value;
+    int64_t old_value;
     while (map->initial_value != (old_value = map->entries[index + 1]))
     {
         if (map->entries[index] == key)
@@ -168,7 +168,7 @@ inline int aeron_int32_counter_map_put(aeron_int32_counter_map_t *map, const int
     {
         size_t new_entries_length = map->entries_length << 1;
 
-        if (aeron_int32_counter_map_rehash(map, new_entries_length) < 0)
+        if (aeron_int64_counter_map_rehash(map, new_entries_length) < 0)
         {
             return -1;
         }
@@ -177,12 +177,12 @@ inline int aeron_int32_counter_map_put(aeron_int32_counter_map_t *map, const int
     return 0;
 }
 
-inline int32_t aeron_int32_counter_map_get(aeron_int32_counter_map_t *map, const int32_t key)
+inline int64_t aeron_int64_counter_map_get(aeron_int64_counter_map_t *map, const int64_t key)
 {
     size_t mask = map->entries_length - 1;
-    size_t index = aeron_int32_counter_map_hash_key(key, mask);
+    size_t index = aeron_int64_counter_map_hash_key(key, mask);
 
-    int32_t value;
+    int64_t value;
     while (map->initial_value != (value = map->entries[index + 1]))
     {
         if (map->entries[index] == key)
@@ -196,7 +196,7 @@ inline int32_t aeron_int32_counter_map_get(aeron_int32_counter_map_t *map, const
     return value;
 }
 
-inline void aeron_int32_counter_map_compact_chain(aeron_int32_counter_map_t *map, size_t delete_index)
+inline void aeron_int64_counter_map_compact_chain(aeron_int64_counter_map_t *map, size_t delete_index)
 {
     size_t mask = map->entries_length - 1;
     size_t index = delete_index;
@@ -209,7 +209,7 @@ inline void aeron_int32_counter_map_compact_chain(aeron_int32_counter_map_t *map
             break;
         }
 
-        size_t hash = aeron_int32_counter_map_hash_key(map->entries[index], mask);
+        size_t hash = aeron_int64_counter_map_hash_key(map->entries[index], mask);
 
         if ((index < hash && (hash <= delete_index || delete_index <= index)) ||
             (hash <= delete_index && delete_index <= index))
@@ -223,12 +223,12 @@ inline void aeron_int32_counter_map_compact_chain(aeron_int32_counter_map_t *map
     }
 }
 
-inline int32_t aeron_int32_counter_map_remove(aeron_int32_counter_map_t *map, int32_t key)
+inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, int64_t key)
 {
     size_t mask = map->entries_length - 1;
-    size_t index = aeron_int32_counter_map_hash_key(key, mask);
+    size_t index = aeron_int64_counter_map_hash_key(key, mask);
 
-    int32_t value;
+    int64_t value;
     while (map->initial_value != (value = map->entries[index + 1]))
     {
         if (key == map->entries[index])
@@ -236,7 +236,7 @@ inline int32_t aeron_int32_counter_map_remove(aeron_int32_counter_map_t *map, in
             map->entries[index + 1] = map->initial_value;
             --map->size;
 
-            aeron_int32_counter_map_compact_chain(map, index);
+            aeron_int64_counter_map_compact_chain(map, index);
             break;
         }
 
@@ -246,12 +246,12 @@ inline int32_t aeron_int32_counter_map_remove(aeron_int32_counter_map_t *map, in
     return value;
 }
 
-inline int aeron_int32_counter_map_get_and_add(aeron_int32_counter_map_t *map, const int32_t key, const int32_t delta)
+inline int aeron_int64_counter_map_get_and_add(aeron_int64_counter_map_t *map, const int64_t key, const int64_t delta)
 {
     size_t mask = map->entries_length - 1;
-    size_t index = aeron_int32_counter_map_hash_key(key, mask);
+    size_t index = aeron_int64_counter_map_hash_key(key, mask);
 
-    int32_t old_value;
+    int64_t old_value;
     while (map->initial_value != (old_value = map->entries[index + 1]))
     {
         if (map->entries[index] == key)
@@ -265,7 +265,7 @@ inline int aeron_int32_counter_map_get_and_add(aeron_int32_counter_map_t *map, c
 
     if (delta != 0)
     {
-        int32_t new_value = old_value + delta;
+        int64_t new_value = old_value + delta;
         map->entries[index + 1] = new_value;
 
         if (old_value == map->initial_value)
@@ -277,7 +277,7 @@ inline int aeron_int32_counter_map_get_and_add(aeron_int32_counter_map_t *map, c
             {
                 size_t new_entries_length = map->entries_length << 1;
 
-                if (aeron_int32_counter_map_rehash(map, new_entries_length) < 0)
+                if (aeron_int64_counter_map_rehash(map, new_entries_length) < 0)
                 {
                     return -1;
                 }
@@ -286,43 +286,43 @@ inline int aeron_int32_counter_map_get_and_add(aeron_int32_counter_map_t *map, c
         else if (new_value == map->initial_value)
         {
             map->size--;
-            aeron_int32_counter_map_compact_chain(map, index);
+            aeron_int64_counter_map_compact_chain(map, index);
         }
     }
 
     return old_value;
 }
 
-inline int aeron_int32_counter_map_add_and_get(aeron_int32_counter_map_t *map, const int32_t key, int32_t delta)
+inline int aeron_int64_counter_map_add_and_get(aeron_int64_counter_map_t *map, const int64_t key, int64_t delta)
 {
-    return aeron_int32_counter_map_get_and_add(map, key, delta) + delta;
+    return aeron_int64_counter_map_get_and_add(map, key, delta) + delta;
 }
 
-inline int aeron_int32_counter_map_inc_and_get(aeron_int32_counter_map_t *map, const int32_t key)
+inline int aeron_int64_counter_map_inc_and_get(aeron_int64_counter_map_t *map, const int64_t key)
 {
-    return aeron_int32_counter_map_add_and_get(map, key, 1);
+    return aeron_int64_counter_map_add_and_get(map, key, 1);
 }
 
-inline int aeron_int32_counter_map_dec_and_get(aeron_int32_counter_map_t *map, const int32_t key)
+inline int aeron_int64_counter_map_dec_and_get(aeron_int64_counter_map_t *map, const int64_t key)
 {
-    return aeron_int32_counter_map_add_and_get(map, key, -1);
+    return aeron_int64_counter_map_add_and_get(map, key, -1);
 }
 
-inline int aeron_int32_counter_map_get_and_inc(aeron_int32_counter_map_t *map, const int32_t key)
+inline int aeron_int64_counter_map_get_and_inc(aeron_int64_counter_map_t *map, const int64_t key)
 {
-    return aeron_int32_counter_map_get_and_add(map, key, 1);
+    return aeron_int64_counter_map_get_and_add(map, key, 1);
 }
 
-inline int aeron_int32_counter_map_get_and_dec(aeron_int32_counter_map_t *map, const int32_t key)
+inline int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, const int64_t key)
 {
-    return aeron_int32_counter_map_get_and_add(map, key, -1);
+    return aeron_int64_counter_map_get_and_add(map, key, -1);
 }
 
-typedef void (*aeron_int32_counter_map_for_each_func_t)(void *clientd, int32_t key, int32_t value);
+typedef void (*aeron_int64_counter_map_for_each_func_t)(void *clientd, int64_t key, int64_t value);
 
-inline void aeron_int32_counter_map_for_each(
-    aeron_int32_counter_map_t *map,
-    aeron_int32_counter_map_for_each_func_t func,
+inline void aeron_int64_counter_map_for_each(
+    aeron_int64_counter_map_t *map,
+    aeron_int64_counter_map_for_each_func_t func,
     void *clientd)
 {
     for (size_t i = 0, size = map->entries_length; i < size; i += 2)

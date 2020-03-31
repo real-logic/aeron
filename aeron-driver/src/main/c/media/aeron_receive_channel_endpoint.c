@@ -74,7 +74,7 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
-    if (aeron_int32_counter_map_init(
+    if (aeron_int64_counter_map_init(
         &_endpoint->stream_id_to_refcnt_map, 0, 16, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init stream_id_to_refcnt_map");
@@ -155,7 +155,7 @@ int aeron_receive_channel_endpoint_delete(
         aeron_counters_manager_free(counters_manager, endpoint->channel_status.counter_id);
     }
 
-    aeron_int32_counter_map_delete(&endpoint->stream_id_to_refcnt_map);
+    aeron_int64_counter_map_delete(&endpoint->stream_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
     endpoint->transport_bindings->close_func(&endpoint->transport);
@@ -427,7 +427,7 @@ int aeron_receive_channel_endpoint_on_rttm(
 int32_t aeron_receive_channel_endpoint_incref_to_stream(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
-    const int32_t count = aeron_int32_counter_map_inc_and_get(&endpoint->stream_id_to_refcnt_map, stream_id);
+    const int32_t count = aeron_int64_counter_map_inc_and_get(&endpoint->stream_id_to_refcnt_map, stream_id);
 
     if (1 == count)
     {
@@ -448,14 +448,14 @@ int32_t aeron_receive_channel_endpoint_incref_to_stream(
 int32_t aeron_receive_channel_endpoint_decref_to_stream(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
-    int32_t count = aeron_int32_counter_map_get(&endpoint->stream_id_to_refcnt_map, stream_id);
+    int32_t count = aeron_int64_counter_map_get(&endpoint->stream_id_to_refcnt_map, stream_id);
 
     if (0 == count)
     {
         return 0;
     }
 
-    int32_t result = aeron_int32_counter_map_dec_and_get(&endpoint->stream_id_to_refcnt_map, stream_id);
+    int32_t result = aeron_int64_counter_map_dec_and_get(&endpoint->stream_id_to_refcnt_map, stream_id);
     if (0 == result)
     {
         aeron_driver_receiver_proxy_on_remove_subscription(endpoint->receiver_proxy, endpoint, stream_id);

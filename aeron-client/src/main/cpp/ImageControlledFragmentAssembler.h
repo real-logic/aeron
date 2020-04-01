@@ -89,7 +89,7 @@ private:
             }
             else
             {
-                const std::uint32_t limit = builder.limit();
+                const std::uint32_t limit = m_builder.limit();
 
                 if (limit != DataFrameHeader::LENGTH)
                 {

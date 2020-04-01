@@ -15,6 +15,12 @@
  */
 package io.aeron.cluster.service;
 
+/**
+ * Data class for holding the properties used when interacting with a cluster for admin control.
+ *
+ * @see io.aeron.cluster.ClusterTool
+ * @see ClusterMarkFile
+ */
 public class ClusterNodeControlProperties
 {
     public final String aeronDirectoryName;

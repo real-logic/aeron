@@ -130,81 +130,6 @@ inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t
     return 0;
 }
 
-inline int aeron_int64_counter_map_put(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    const int64_t value,
-    int64_t *existing_value)
-{
-    if (map->initial_value == value)
-    {
-        errno = EINVAL;
-#if defined(AERON_COMPILER_MSVC)
-        SetLastError(ERROR_BAD_ARGUMENTS);
-#endif
-        return -1;
-    }
-
-    size_t mask = map->entries_length - 1;
-    size_t index = aeron_int64_counter_map_hash_key(key, mask);
-
-    int64_t old_value;
-    while (map->initial_value != (old_value = map->entries[index + 1]))
-    {
-        if (map->entries[index] == key)
-        {
-            old_value = map->entries[index + 1];
-            break;
-        }
-
-        index = (index + 2) & mask;
-    }
-
-    if (old_value == map->initial_value)
-    {
-        map->size++;
-        map->entries[index] = key;
-    }
-
-    map->entries[index + 1] = value;
-
-    if (map->size > map->resize_threshold)
-    {
-        size_t new_entries_length = map->entries_length << 1;
-
-        if (aeron_int64_counter_map_rehash(map, new_entries_length) < 0)
-        {
-            return -1;
-        }
-    }
-
-    if (NULL != existing_value)
-    {
-        *existing_value = old_value;
-    }
-
-    return 0;
-}
-
-inline int64_t aeron_int64_counter_map_get(aeron_int64_counter_map_t *map, const int64_t key)
-{
-    size_t mask = map->entries_length - 1;
-    size_t index = aeron_int64_counter_map_hash_key(key, mask);
-
-    int64_t value;
-    while (map->initial_value != (value = map->entries[index + 1]))
-    {
-        if (map->entries[index] == key)
-        {
-            break;
-        }
-
-        index = (index + 2) & mask;
-    }
-
-    return value;
-}
-
 inline void aeron_int64_counter_map_compact_chain(aeron_int64_counter_map_t *map, size_t delete_index)
 {
     size_t mask = map->entries_length - 1;
@@ -250,6 +175,93 @@ inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, in
         }
 
         index = (index + 1) & mask;
+    }
+
+    return value;
+}
+
+inline int aeron_int64_counter_map_put(
+    aeron_int64_counter_map_t *map,
+    const int64_t key,
+    const int64_t value,
+    int64_t *existing_value)
+{
+    if (value == map->initial_value)
+    {
+        int64_t old_value = aeron_int64_counter_map_remove(map, key);
+        if (NULL != existing_value)
+        {
+            *existing_value = old_value;
+        }
+        return 0;
+    }
+
+    size_t mask = map->entries_length - 1;
+    size_t index = aeron_int64_counter_map_hash_key(key, mask);
+
+    int64_t old_value;
+    while (map->initial_value != (old_value = map->entries[index + 1]))
+    {
+        if (map->entries[index] == key)
+        {
+            old_value = map->entries[index + 1];
+            break;
+        }
+
+        index = (index + 2) & mask;
+    }
+
+    if (value == map->initial_value)
+    {
+        if (old_value != map->initial_value)
+        {
+            map->size--;
+            aeron_int64_counter_map_compact_chain(map, index);
+        }
+    }
+    else
+    {
+        if (old_value == map->initial_value)
+        {
+            map->size++;
+            map->entries[index] = key;
+        }
+    }
+
+    map->entries[index + 1] = value;
+
+    if (map->size > map->resize_threshold)
+    {
+        size_t new_entries_length = map->entries_length << 1;
+
+        if (aeron_int64_counter_map_rehash(map, new_entries_length) < 0)
+        {
+            return -1;
+        }
+    }
+
+    if (NULL != existing_value)
+    {
+        *existing_value = old_value;
+    }
+
+    return 0;
+}
+
+inline int64_t aeron_int64_counter_map_get(aeron_int64_counter_map_t *map, const int64_t key)
+{
+    size_t mask = map->entries_length - 1;
+    size_t index = aeron_int64_counter_map_hash_key(key, mask);
+
+    int64_t value;
+    while (map->initial_value != (value = map->entries[index + 1]))
+    {
+        if (map->entries[index] == key)
+        {
+            break;
+        }
+
+        index = (index + 2) & mask;
     }
 
     return value;

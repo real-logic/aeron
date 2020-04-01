@@ -45,13 +45,31 @@ typedef struct aeron_command_subscription_stct
     aeron_command_base_t base;
     void *endpoint;
     int32_t stream_id;
+    int32_t session_id;
 }
 aeron_command_subscription_t;
 
 void aeron_driver_receiver_proxy_on_add_subscription(
-    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id);
+
 void aeron_driver_receiver_proxy_on_remove_subscription(
-    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id);
+
+void aeron_driver_receiver_proxy_on_add_subscription_by_session(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
+
+void aeron_driver_receiver_proxy_on_remove_subscription_by_session(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
 
 typedef struct aeron_command_publication_image_stct
 {

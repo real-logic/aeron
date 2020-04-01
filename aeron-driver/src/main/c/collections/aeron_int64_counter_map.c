@@ -18,6 +18,8 @@
 
 extern size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask);
 
+extern int64_t aeron_int64_counter_map_compound_key(int32_t high, int32_t low);
+
 extern int aeron_int64_counter_map_init(
     aeron_int64_counter_map_t *map,
     int64_t initial_value,

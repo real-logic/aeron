@@ -43,13 +43,18 @@ typedef struct aeron_int64_counter_map_stct
 }
 aeron_int64_counter_map_t;
 
-#define AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR (0.55f)
+#define AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR (0.55f)
 
 inline size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask)
 {
     uint64_t hash = (key << UINT64_C(1)) - (key << UINT64_C(8));
 
     return hash & mask;
+}
+
+inline int64_t aeron_int64_counter_map_compound_key(int32_t high, int32_t low)
+{
+    return ((int64_t)high << 32) | (low);
 }
 
 inline int aeron_int64_counter_map_init(

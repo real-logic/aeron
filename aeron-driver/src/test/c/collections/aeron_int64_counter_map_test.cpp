@@ -54,7 +54,7 @@ TEST_F(Int64CounterMapTest, shouldDoPutAndThenGetOnEmptyMap)
     int64_t key = 12;
     int64_t value = 42;
     int64_t old_value = -1;
-    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value, &old_value), 0);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), value);
@@ -70,7 +70,7 @@ TEST_F(Int64CounterMapTest, shouldReplaceExistingValueForTheSameKey)
     int64_t key = 123;
     int64_t value = 42, new_value = 43;
     int64_t old_value = -1;
-    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value, NULL), 0);
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, new_value, &old_value), 0);
@@ -83,7 +83,7 @@ TEST_F(Int64CounterMapTest, shouldIncrementAndDecrement)
 {
     int64_t key = 123;
     int64_t value = -1;
-    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, 0, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, 0, 8, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_inc_and_get(&m_map, key, &value), 0);
     EXPECT_EQ(1, value);
@@ -169,7 +169,7 @@ TEST_F(Int64CounterMapTest, shouldRemoveEntryAndCompactCollisionChain)
 
 TEST_F(Int64CounterMapTest, shouldNotForEachEmptyMap)
 {
-    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     size_t called = 0;
     for_each([&](int64_t key, int64_t value)
@@ -183,7 +183,7 @@ TEST_F(Int64CounterMapTest, shouldNotForEachEmptyMap)
 TEST_F(Int64CounterMapTest, shouldForEachNonEmptyMap)
 {
     int64_t value = 42;
-    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 7, value, NULL), 0);
 

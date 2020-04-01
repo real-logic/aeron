@@ -130,7 +130,11 @@ inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t
     return 0;
 }
 
-inline int aeron_int64_counter_map_put(aeron_int64_counter_map_t *map, const int64_t key, const int64_t value)
+inline int aeron_int64_counter_map_put(
+    aeron_int64_counter_map_t *map,
+    const int64_t key,
+    const int64_t value,
+    int64_t *existing_value)
 {
     if (map->initial_value == value)
     {
@@ -172,6 +176,11 @@ inline int aeron_int64_counter_map_put(aeron_int64_counter_map_t *map, const int
         {
             return -1;
         }
+    }
+
+    if (NULL != existing_value)
+    {
+        *existing_value = old_value;
     }
 
     return 0;
@@ -246,7 +255,11 @@ inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, in
     return value;
 }
 
-inline int aeron_int64_counter_map_get_and_add(aeron_int64_counter_map_t *map, const int64_t key, const int64_t delta)
+inline int aeron_int64_counter_map_get_and_add(
+    aeron_int64_counter_map_t *map,
+    const int64_t key,
+    const int64_t delta,
+    int64_t *value)
 {
     size_t mask = map->entries_length - 1;
     size_t index = aeron_int64_counter_map_hash_key(key, mask);
@@ -290,32 +303,47 @@ inline int aeron_int64_counter_map_get_and_add(aeron_int64_counter_map_t *map, c
         }
     }
 
-    return old_value;
+    if (NULL != value)
+    {
+        *value = old_value;
+    }
+
+    return 0;
 }
 
-inline int aeron_int64_counter_map_add_and_get(aeron_int64_counter_map_t *map, const int64_t key, int64_t delta)
+inline int aeron_int64_counter_map_add_and_get(
+    aeron_int64_counter_map_t *map,
+    const int64_t key,
+    int64_t delta,
+    int64_t *value)
 {
-    return aeron_int64_counter_map_get_and_add(map, key, delta) + delta;
+    int64_t existing_value = 0;
+    int result = aeron_int64_counter_map_get_and_add(map, key, delta, &existing_value);
+    if (NULL != value)
+    {
+        *value = (existing_value + delta);
+    }
+    return result;
 }
 
-inline int aeron_int64_counter_map_inc_and_get(aeron_int64_counter_map_t *map, const int64_t key)
+inline int aeron_int64_counter_map_inc_and_get(aeron_int64_counter_map_t *map, const int64_t key, int64_t *value)
 {
-    return aeron_int64_counter_map_add_and_get(map, key, 1);
+    return aeron_int64_counter_map_add_and_get(map, key, 1, value);
 }
 
-inline int aeron_int64_counter_map_dec_and_get(aeron_int64_counter_map_t *map, const int64_t key)
+inline int aeron_int64_counter_map_dec_and_get(aeron_int64_counter_map_t *map, const int64_t key, int64_t *value)
 {
-    return aeron_int64_counter_map_add_and_get(map, key, -1);
+    return aeron_int64_counter_map_add_and_get(map, key, -1, value);
 }
 
-inline int aeron_int64_counter_map_get_and_inc(aeron_int64_counter_map_t *map, const int64_t key)
+inline int aeron_int64_counter_map_get_and_inc(aeron_int64_counter_map_t *map, const int64_t key, int64_t *value)
 {
-    return aeron_int64_counter_map_get_and_add(map, key, 1);
+    return aeron_int64_counter_map_get_and_add(map, key, 1, value);
 }
 
-inline int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, const int64_t key)
+inline int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, const int64_t key, int64_t *value)
 {
-    return aeron_int64_counter_map_get_and_add(map, key, -1);
+    return aeron_int64_counter_map_get_and_add(map, key, -1, value);
 }
 
 typedef void (*aeron_int64_counter_map_for_each_func_t)(void *clientd, int64_t key, int64_t value);

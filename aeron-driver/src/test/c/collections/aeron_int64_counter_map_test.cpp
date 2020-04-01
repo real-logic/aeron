@@ -53,10 +53,12 @@ TEST_F(Int64CounterMapTest, shouldDoPutAndThenGetOnEmptyMap)
 {
     int64_t key = 12;
     int64_t value = 42;
+    int64_t old_value = -1;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value, &old_value), 0);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), value);
+    EXPECT_EQ(old_value, m_map.initial_value);
     EXPECT_EQ(m_map.size, 1u);
 }
 
@@ -64,29 +66,37 @@ TEST_F(Int64CounterMapTest, shouldReplaceExistingValueForTheSameKey)
 {
     int64_t key = 123;
     int64_t value = 42, new_value = 43;
+    int64_t old_value = -1;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value), 0);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, new_value), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value, NULL), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, new_value, &old_value), 0);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), new_value);
+    EXPECT_EQ(old_value, value);
     EXPECT_EQ(m_map.size, 1u);
 }
 
 TEST_F(Int64CounterMapTest, shouldIncrementAndDecrement)
 {
     int64_t key = 123;
+    int64_t value = -1;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, 0, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
-    EXPECT_EQ(aeron_int64_counter_map_inc_and_get(&m_map, key), 1);
+    EXPECT_EQ(aeron_int64_counter_map_inc_and_get(&m_map, key, &value), 0);
+    EXPECT_EQ(1, value);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), 1);
-    EXPECT_EQ(aeron_int64_counter_map_inc_and_get(&m_map, key), 2);
+    EXPECT_EQ(aeron_int64_counter_map_inc_and_get(&m_map, key, &value), 0);
+    EXPECT_EQ(2, value);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), 2);
-    EXPECT_EQ(aeron_int64_counter_map_add_and_get(&m_map, key, 2), 4);
+    EXPECT_EQ(aeron_int64_counter_map_add_and_get(&m_map, key, 2, &value), 0);
+    EXPECT_EQ(4, value);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), 4);
-    EXPECT_EQ(aeron_int64_counter_map_dec_and_get(&m_map, key), 3);
+    EXPECT_EQ(aeron_int64_counter_map_dec_and_get(&m_map, key, &value), 0);
+    EXPECT_EQ(3, value);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), 3);
     EXPECT_EQ(m_map.size, 1u);
-    EXPECT_EQ(aeron_int64_counter_map_add_and_get(&m_map, key, -3), 0);
+    EXPECT_EQ(aeron_int64_counter_map_add_and_get(&m_map, key, -3, &value), 0);
+    EXPECT_EQ(0, value);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), 0);
     EXPECT_EQ(m_map.size, 0u);
 }
@@ -98,14 +108,14 @@ TEST_F(Int64CounterMapTest, shouldGrowWhenThresholdExceeded)
 
     for (int64_t i = 0; i < 16; i++)
     {
-        EXPECT_EQ(aeron_int64_counter_map_put(&m_map, i, value), 0);
+        EXPECT_EQ(aeron_int64_counter_map_put(&m_map, i, value, NULL), 0);
     }
 
     EXPECT_EQ(m_map.resize_threshold, 16u);
     EXPECT_EQ(m_map.entries_length, 64u);
     EXPECT_EQ(m_map.size, 16u);
 
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 16, value_at_16), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 16, value_at_16, NULL), 0);
 
     EXPECT_EQ(m_map.resize_threshold, 32u);
     EXPECT_EQ(m_map.entries_length, 128u);
@@ -119,10 +129,10 @@ TEST_F(Int64CounterMapTest, shouldHandleCollisionAndThenLinearProbe)
     int64_t value = 42, collision_value = 43;
     int64_t key = 7;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 32, 0.5f), 0);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value, nullptr), 0);
 
     int64_t collision_key = (int64_t)(key + m_map.entries_length);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, collision_key, collision_value), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, collision_key, collision_value, NULL), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), value);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, collision_key), collision_value);
@@ -133,7 +143,7 @@ TEST_F(Int64CounterMapTest, shouldRemoveEntry)
     int64_t value = 42;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, 0.5f), 0);
 
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 7, value), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 7, value, NULL), 0);
     EXPECT_EQ(aeron_int64_counter_map_remove(&m_map, 7), value);
     EXPECT_EQ(m_map.size, 0u);
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, 7), m_map.initial_value);
@@ -144,12 +154,12 @@ TEST_F(Int64CounterMapTest, shouldRemoveEntryAndCompactCollisionChain)
     int64_t value_12 = 12, value_13 = 13, value_14 = 14, collision_value = 43;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, 0.55f), 0);
 
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 12, value_12), 0);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 13, value_13), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 12, value_12, NULL), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 13, value_13, NULL), 0);
 
     int64_t collision_key = (int64_t)(12 + m_map.entries_length);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, collision_key, collision_value), 0);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 14, value_14), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, collision_key, collision_value, NULL), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 14, value_14, NULL), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_remove(&m_map, 12), value_12);
 }
@@ -172,7 +182,7 @@ TEST_F(Int64CounterMapTest, shouldForEachNonEmptyMap)
     int64_t value = 42;
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_INT32_COUNTER_MAP_DEFAULT_LOAD_FACTOR), 0);
 
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 7, value), 0);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 7, value, NULL), 0);
 
     size_t called = 0;
     for_each([&](int64_t key, int64_t for_each_value)

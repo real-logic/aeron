@@ -133,8 +133,8 @@ int aeron_receive_channel_endpoint_on_setup(
 int aeron_receive_channel_endpoint_on_rttm(
     aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
-int32_t aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
-int32_t aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
 int aeron_receive_channel_endpoint_on_add_subscription(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);

@@ -586,7 +586,7 @@ public class Election
                 {
                     workCount += 1;
                     member.isBallotSent(memberStatusPublisher.requestVote(
-                        member.publication(), leadershipTermId, logPosition, candidateTermId, thisMember.id()));
+                        member.publication(), logLeadershipTermId, logPosition, candidateTermId, thisMember.id()));
                 }
             }
         }

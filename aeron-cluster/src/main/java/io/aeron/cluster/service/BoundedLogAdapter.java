@@ -16,7 +16,6 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Image;
-import io.aeron.ImageControlledFragmentAssembler;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.*;
@@ -29,10 +28,8 @@ import org.agrona.*;
 final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     private static final int FRAGMENT_LIMIT = 100;
-    private static final int INITIAL_BUFFER_LENGTH = 4096;
 
-    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
-        this, INITIAL_BUFFER_LENGTH, true);
+    private final LogFragmentAssembler fragmentAssembler = new LogFragmentAssembler(this);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();

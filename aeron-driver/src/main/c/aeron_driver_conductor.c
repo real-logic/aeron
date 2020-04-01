@@ -420,6 +420,33 @@ int aeron_confirm_publication_match(
     return 0;
 }
 
+void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link)
+{
+    aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
+
+    link->endpoint = NULL;
+    if (link->has_session_id)
+    {
+        aeron_receive_channel_endpoint_decref_to_stream_and_session(
+            endpoint, link->stream_id, link->session_id);
+    }
+    else
+    {
+        aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
+    }
+    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
+    {
+        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+
+        aeron_str_to_ptr_hash_map_remove(
+            &conductor->receive_channel_endpoint_by_channel_map,
+            udp_channel->canonical_form,
+            udp_channel->canonical_length);
+    }
+
+    aeron_driver_conductor_unlink_all_subscribable(conductor, link);
+}
+
 void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *client)
 {
     for (size_t i = 0; i < client->publication_links.length; i++)
@@ -455,29 +482,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
 
         if (client->client_id == link->client_id)
         {
-            aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
-
-            link->endpoint = NULL;
-            if (link->has_session_id)
-            {
-                aeron_receive_channel_endpoint_decref_to_stream_and_session(
-                    endpoint, link->stream_id, link->has_session_id);
-            }
-            else
-            {
-                aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
-            }
-            if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
-            {
-                aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
-
-                aeron_str_to_ptr_hash_map_remove(
-                    &conductor->receive_channel_endpoint_by_channel_map,
-                    udp_channel->canonical_form,
-                    udp_channel->canonical_length);
-            }
-
-            aeron_driver_conductor_unlink_all_subscribable(conductor, link);
+            aeron_driver_conductor_unlink_from_endpoint(conductor, link);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->network_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
@@ -2607,29 +2612,7 @@ int aeron_driver_conductor_on_remove_subscription(
 
         if (command->registration_id == link->registration_id)
         {
-            aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
-
-            link->endpoint = NULL;
-            if (link->has_session_id)
-            {
-                aeron_receive_channel_endpoint_decref_to_stream_and_session(
-                    endpoint, link->stream_id, link->session_id);
-            }
-            else
-            {
-                aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
-            }
-            if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
-            {
-                aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
-
-                aeron_str_to_ptr_hash_map_remove(
-                    &conductor->receive_channel_endpoint_by_channel_map,
-                    udp_channel->canonical_form,
-                    udp_channel->canonical_length);
-            }
-
-            aeron_driver_conductor_unlink_all_subscribable(conductor, link);
+            aeron_driver_conductor_unlink_from_endpoint(conductor, link);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->network_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);

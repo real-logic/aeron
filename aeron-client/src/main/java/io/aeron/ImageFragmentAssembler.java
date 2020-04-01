@@ -121,7 +121,7 @@ public class ImageFragmentAssembler implements FragmentHandler
         {
             builder.reset().append(buffer, offset, length);
         }
-        else
+        else if (builder.limit() > 0)
         {
             builder.append(buffer, offset, length);
 

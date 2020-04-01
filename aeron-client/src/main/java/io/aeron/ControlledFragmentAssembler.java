@@ -131,7 +131,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
             else
             {
                 final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
-                if (null != builder && builder.limit() != 0)
+                if (null != builder && builder.limit() > 0)
                 {
                     final int limit = builder.limit();
                     builder.append(buffer, offset, length);

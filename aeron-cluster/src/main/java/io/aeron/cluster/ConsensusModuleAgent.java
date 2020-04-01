@@ -2725,9 +2725,11 @@ class ConsensusModuleAgent implements Agent
         channelUri.put(ALIAS_PARAM_NAME, "log");
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
-        if (channelUri.isUdp())
+        if (channelUri.isUdp() && !channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
         {
-            channelUri.put(FLOW_CONTROL_PARAM_NAME, MinMulticastFlowControl.FC_PARAM_VALUE);
+            final String fc = MinMulticastFlowControl.FC_PARAM_VALUE + ",t:" +
+                TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() / 2) + "s";
+            channelUri.put(FLOW_CONTROL_PARAM_NAME, fc);
         }
 
         if (null != plan.log)

@@ -131,23 +131,26 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
             else
             {
                 final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
-                if (null != builder && builder.limit() > 0)
+                if (null != builder)
                 {
                     final int limit = builder.limit();
-                    builder.append(buffer, offset, length);
-
-                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                    if (limit > 0)
                     {
-                        final int msgLength = builder.limit();
-                        action = delegate.onFragment(builder.buffer(), 0, msgLength, header);
+                        builder.append(buffer, offset, length);
 
-                        if (Action.ABORT == action)
+                        if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                         {
-                            builder.limit(limit);
-                        }
-                        else
-                        {
-                            builder.reset();
+                            final int msgLength = builder.limit();
+                            action = delegate.onFragment(builder.buffer(), 0, msgLength, header);
+
+                            if (Action.ABORT == action)
+                            {
+                                builder.limit(limit);
+                            }
+                            else
+                            {
+                                builder.reset();
+                            }
                         }
                     }
                 }

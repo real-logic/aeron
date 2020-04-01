@@ -119,22 +119,25 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
             {
                 builder.reset().append(buffer, offset, length);
             }
-            else if (builder.limit() > 0)
+            else
             {
                 final int limit = builder.limit();
-                builder.append(buffer, offset, length);
-
-                if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                if (limit > 0)
                 {
-                    action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
+                    builder.append(buffer, offset, length);
 
-                    if (Action.ABORT == action)
+                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
-                        builder.limit(limit);
-                    }
-                    else
-                    {
-                        builder.reset();
+                        action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
+
+                        if (Action.ABORT == action)
+                        {
+                            builder.limit(limit);
+                        }
+                        else
+                        {
+                            builder.reset();
+                        }
                     }
                 }
             }

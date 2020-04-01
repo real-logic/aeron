@@ -400,15 +400,14 @@ public:
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
     }
 
-    int addNetworkSubscription(
-        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, int64_t registration_id)
+    int addNetworkSubscription(int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id)
     {
         command::SubscriptionMessageFlyweight command(m_command, 0);
 
         command.clientId(client_id);
         command.correlationId(correlation_id);
         command.streamId(stream_id);
-        command.registrationCorrelationId(registration_id);
+        command.registrationCorrelationId(-1);
         command.channel(channel);
 
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
@@ -631,6 +630,7 @@ protected:
 
 static auto null_handler = [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
 {
+    printf("%d\n", msgTypeId);
 };
 
 #endif //AERON_DRIVER_CONDUCTOR_TEST_H

@@ -153,6 +153,54 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscriptionBySession)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
+    doWork();
+    auto add_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+
+        const command::SubscriptionReadyFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), sub_id);
+    };
+
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(add_handler), 1u);
+
+    aeron_receive_channel_endpoint_t *receive_endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1_WITH_SESSION_ID_1);
+
+    ASSERT_EQ(1, aeron_int64_counter_map_get(
+        &receive_endpoint->stream_and_session_id_to_refcnt_map,
+        aeron_int64_counter_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
+
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+    doWork();
+    auto remove_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::OperationSucceededFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), remove_correlation_id);
+    };
+
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 1u);
+
+    ASSERT_EQ(0, aeron_int64_counter_map_get(
+        &receive_endpoint->stream_and_session_id_to_refcnt_map,
+        aeron_int64_counter_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
+
+    ASSERT_EQ(AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING, receive_endpoint->conductor_fields.status);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublications)
 {
     int64_t client_id = nextCorrelationId();

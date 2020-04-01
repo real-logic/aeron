@@ -91,8 +91,10 @@ typedef struct aeron_subscription_link_stct
     bool is_sparse;
     bool is_reliable;
     bool is_rejoin;
+    bool has_session_id;
     aeron_inferable_boolean_t group;
     int32_t stream_id;
+    int32_t session_id;
     int32_t channel_length;
     int64_t registration_id;
     int64_t client_id;

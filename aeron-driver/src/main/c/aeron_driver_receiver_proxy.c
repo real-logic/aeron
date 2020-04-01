@@ -146,7 +146,8 @@ void aeron_driver_receiver_proxy_on_remove_subscription(
             {
                 .base = { .func = aeron_driver_receiver_on_remove_subscription, .item = NULL },
                 .endpoint = endpoint,
-                .stream_id = stream_id
+                .stream_id = stream_id,
+                .session_id = 0 // ignored.
             };
 
         aeron_driver_receiver_on_remove_subscription(receiver_proxy->receiver, &cmd);
@@ -165,6 +166,7 @@ void aeron_driver_receiver_proxy_on_remove_subscription(
         cmd->base.item = NULL;
         cmd->endpoint = endpoint;
         cmd->stream_id = stream_id;
+        cmd->session_id = 0; // ignored.
 
         aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
     }

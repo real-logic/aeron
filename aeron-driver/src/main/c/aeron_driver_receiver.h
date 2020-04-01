@@ -115,6 +115,8 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *item);
 
 void aeron_driver_receiver_on_add_subscription(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item);
+void aeron_driver_receiver_on_add_subscription_by_session(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_subscription_by_session(void *clientd, void *item);
 
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item);

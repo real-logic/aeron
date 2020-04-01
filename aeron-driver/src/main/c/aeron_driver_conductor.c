@@ -59,6 +59,7 @@ static bool aeron_driver_conductor_has_clashing_subscription(
 
         if (endpoint == link->endpoint && stream_id == link->stream_id)
         {
+            // TODO handle subscriptions here too.....
             if (params->is_reliable != link->is_reliable)
             {
                 const char *value = params->is_reliable ? "true" : "false";
@@ -457,7 +458,15 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
             aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
 
             link->endpoint = NULL;
-            aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
+            if (link->has_session_id)
+            {
+                aeron_receive_channel_endpoint_decref_to_stream_and_session(
+                    endpoint, link->stream_id, link->has_session_id);
+            }
+            else
+            {
+                aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
+            }
             if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
             {
                 aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
@@ -2485,9 +2494,20 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    if (aeron_receive_channel_endpoint_incref_to_stream(endpoint, command->stream_id) < 0)
+    if (params.has_session_id)
     {
-        return -1;
+        if (aeron_receive_channel_endpoint_incref_to_stream_and_session(
+            endpoint, command->stream_id, params.session_id) < 0)
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        if (aeron_receive_channel_endpoint_incref_to_stream(endpoint, command->stream_id) < 0)
+        {
+            return -1;
+        }
     }
 
     int ensure_capacity_result = 0;
@@ -2502,6 +2522,8 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->endpoint = endpoint;
         link->spy_channel = NULL;
         link->stream_id = command->stream_id;
+        link->has_session_id = params.has_session_id;
+        link->session_id = params.session_id;
         link->client_id = command->correlated.client_id;
         link->registration_id = command->correlated.correlation_id;
         link->is_reliable = params.is_reliable;
@@ -2588,7 +2610,15 @@ int aeron_driver_conductor_on_remove_subscription(
             aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
 
             link->endpoint = NULL;
-            aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
+            if (link->has_session_id)
+            {
+                aeron_receive_channel_endpoint_decref_to_stream_and_session(
+                    endpoint, link->stream_id, link->session_id);
+            }
+            else
+            {
+                aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
+            }
             if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
             {
                 aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;

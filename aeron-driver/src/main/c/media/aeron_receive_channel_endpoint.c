@@ -81,6 +81,13 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
+    if (aeron_int64_counter_map_init(
+        &_endpoint->stream_and_session_id_to_refcnt_map, 0, 16, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        aeron_set_err_from_last_err_code("could not init stream_and_session_id_to_refcnt_map");
+        return -1;
+    }
+
     _endpoint->conductor_fields.udp_channel = channel;
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
     _endpoint->conductor_fields.managed_resource.registration_id = -1;
@@ -434,8 +441,8 @@ int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoi
 
     if (1 == count)
     {
-        // TODO check the session specific counters too.
-        const bool is_first_subscription = (1 == endpoint->stream_id_to_refcnt_map.size) ? true : false;
+        const bool is_first_subscription =
+            (1 == endpoint->stream_id_to_refcnt_map.size && 0 == endpoint->stream_and_session_id_to_refcnt_map.size);
 
         if (is_first_subscription)
         {
@@ -443,38 +450,6 @@ int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoi
         }
 
         aeron_driver_receiver_proxy_on_add_subscription(endpoint->receiver_proxy, endpoint, stream_id);
-    }
-
-    return 0;
-}
-
-int aeron_receive_channel_endpoint_incref_to_stream_and_session(
-    aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int32_t session_id)
-{
-    int64_t count;
-    if (aeron_int64_counter_map_inc_and_get(
-        &endpoint->stream_and_session_id_to_refcnt_map,
-        aeron_int64_counter_map_compound_key(stream_id, session_id),
-        &count) < 0)
-    {
-        return -1;
-    }
-
-    if (1 == count)
-    {
-        const bool is_first_subscription =
-            (1 == endpoint->stream_and_session_id_to_refcnt_map.size && 0 == endpoint->stream_id_to_refcnt_map.size);
-
-        if (is_first_subscription)
-        {
-            aeron_driver_receiver_proxy_on_add_endpoint(endpoint->receiver_proxy, endpoint);
-        }
-
-        return -1;
-        // TODO
-        // aeron_driver_receiver_proxy_on_add_subscription(endpoint->receiver_proxy, endpoint, stream_id);
     }
 
     return 0;
@@ -501,7 +476,75 @@ int aeron_receive_channel_endpoint_decref_to_stream(
     {
         aeron_driver_receiver_proxy_on_remove_subscription(endpoint->receiver_proxy, endpoint, stream_id);
 
-        if (0 == endpoint->stream_id_to_refcnt_map.size) // TODO check the session specific counters too.
+        if (0 == endpoint->stream_id_to_refcnt_map.size && 0 == endpoint->stream_and_session_id_to_refcnt_map.size)
+        {
+            /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
+            endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;
+            aeron_driver_receiver_proxy_on_remove_endpoint(endpoint->receiver_proxy, endpoint);
+        }
+    }
+
+    return result;
+}
+
+int aeron_receive_channel_endpoint_incref_to_stream_and_session(
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    int64_t count;
+    if (aeron_int64_counter_map_inc_and_get(
+        &endpoint->stream_and_session_id_to_refcnt_map,
+        aeron_int64_counter_map_compound_key(stream_id, session_id),
+        &count) < 0)
+    {
+        return -1;
+    }
+
+    if (1 == count)
+    {
+        const bool is_first_subscription =
+            (0 == endpoint->stream_id_to_refcnt_map.size && 1 == endpoint->stream_and_session_id_to_refcnt_map.size);
+
+        if (is_first_subscription)
+        {
+            aeron_driver_receiver_proxy_on_add_endpoint(endpoint->receiver_proxy, endpoint);
+        }
+
+        aeron_driver_receiver_proxy_on_add_subscription_by_session(
+            endpoint->receiver_proxy, endpoint, stream_id, session_id);
+    }
+
+    return 0;
+}
+
+int aeron_receive_channel_endpoint_decref_to_stream_and_session(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id)
+{
+    const int64_t stream_and_session_key = aeron_int64_counter_map_compound_key(stream_id, session_id);
+    const int64_t count = aeron_int64_counter_map_get(
+        &endpoint->stream_and_session_id_to_refcnt_map, stream_and_session_key);
+
+    if (0 == count)
+    {
+        return 0;
+    }
+
+    int64_t count_after_dec = 0;
+    int result = aeron_int64_counter_map_dec_and_get(
+        &endpoint->stream_and_session_id_to_refcnt_map, stream_and_session_key, &count_after_dec);
+
+    if (result < 0)
+    {
+        return -1;
+    }
+
+    if (0 == count_after_dec)
+    {
+        aeron_driver_receiver_proxy_on_remove_subscription_by_session(
+            endpoint->receiver_proxy, endpoint, stream_id, session_id);
+
+        if (0 == endpoint->stream_id_to_refcnt_map.size && 0 == endpoint->stream_and_session_id_to_refcnt_map.size)
         {
             /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
             endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;
@@ -522,6 +565,18 @@ int aeron_receive_channel_endpoint_on_remove_subscription(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
     return aeron_data_packet_dispatcher_remove_subscription(&endpoint->dispatcher, stream_id);
+}
+
+int aeron_receive_channel_endpoint_on_add_subscription_by_session(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id)
+{
+    return aeron_data_packet_dispatcher_add_subscription_by_session(&endpoint->dispatcher, stream_id, session_id);
+}
+
+int aeron_receive_channel_endpoint_on_remove_subscription_by_session(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id)
+{
+    return aeron_data_packet_dispatcher_remove_subscription_by_session(&endpoint->dispatcher, stream_id, session_id);
 }
 
 int aeron_receive_channel_endpoint_on_add_publication_image(

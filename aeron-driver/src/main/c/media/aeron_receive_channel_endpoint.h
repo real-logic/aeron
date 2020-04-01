@@ -135,17 +135,26 @@ int aeron_receive_channel_endpoint_on_rttm(
 
 int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
+int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+
 int aeron_receive_channel_endpoint_incref_to_stream_and_session(
     aeron_receive_channel_endpoint_t *endpoint,
     int32_t stream_id,
     int32_t session_id);
 
-int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+int aeron_receive_channel_endpoint_decref_to_stream_and_session(
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
 
 int aeron_receive_channel_endpoint_on_add_subscription(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 int aeron_receive_channel_endpoint_on_remove_subscription(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+int aeron_receive_channel_endpoint_on_add_subscription_by_session(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
+int aeron_receive_channel_endpoint_on_remove_subscription_by_session(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
 int aeron_receive_channel_endpoint_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
 int aeron_receive_channel_endpoint_on_remove_publication_image(

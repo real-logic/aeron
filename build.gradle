@@ -34,6 +34,7 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.4.1'
+def agronaVersionRange = '[1.4,1.5[' // allow any patch release of 1.4.x
 def sbeVersion = '1.17.0'
 def checkstyleVersion = '8.28'
 def hamcrestVersion = '2.2'
@@ -236,7 +237,12 @@ project(':aeron-client') {
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
-        api "org.agrona:agrona:${agronaVersion}"
+        api("org.agrona:agrona") {
+            version {
+                strictly(agronaVersionRange)
+                prefer(agronaVersion)
+            }
+        }
     }
 
     jar {
@@ -706,9 +712,8 @@ project(':aeron-system-tests') {
 
 project(':aeron-test-support') {
     dependencies {
-        api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        api "org.agrona:agrona:${agronaVersion}"
         api project(':aeron-client')
+        api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         implementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     }
 }

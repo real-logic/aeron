@@ -1182,6 +1182,48 @@ public class DriverConductorTest
     }
 
     @Test
+    public void shouldErrorWhenConflictingUnreliableSessionSpecificSubscriptionAdded()
+    {
+        driverProxy.addSubscription(CHANNEL_4000 + "|session-id=1024", STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|session-id=1024|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
+    }
+
+    @Test
+    public void shouldNotErrorWhenConflictingUnreliableSessionSpecificSubscriptionAddedToDifferentSessions()
+    {
+        final long id1 = driverProxy.addSubscription(CHANNEL_4000 + "|session-id=1024|reliable=true", STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|session-id=1025|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onSubscriptionReady(eq(id1), anyInt());
+        verify(mockClientProxy).onSubscriptionReady(eq(id2), anyInt());
+    }
+
+    @Test
+    public void shouldNotErrorWhenConflictingUnreliableSessionSpecificSubscriptionAddedToDifferentSessionsVsWildcard()
+    {
+        final long id1 = driverProxy.addSubscription(CHANNEL_4000 + "|session-id=1024|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=true", STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id3 = driverProxy.addSubscription(CHANNEL_4000 + "|session-id=1025|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onSubscriptionReady(eq(id1), anyInt());
+        verify(mockClientProxy).onSubscriptionReady(eq(id2), anyInt());
+        verify(mockClientProxy).onSubscriptionReady(eq(id3), anyInt());
+    }
+
+    @Test
     public void shouldErrorWhenConflictingDefaultReliableSubscriptionAdded()
     {
         driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);

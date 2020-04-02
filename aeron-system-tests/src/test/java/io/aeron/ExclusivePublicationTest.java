@@ -24,6 +24,7 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -31,8 +32,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.BACK_PRESSURED;
 import static io.aeron.Publication.CLOSED;
 import static io.aeron.logbuffer.FrameDescriptor.*;
@@ -49,7 +50,7 @@ public class ExclusivePublicationTest
         return asList(
             "aeron:udp?endpoint=224.20.30.39:24323|interface=localhost|term-length=64k",
             "aeron:udp?endpoint=localhost:24325|term-length=64k",
-            IPC_CHANNEL + "?term-length=64k");
+            "aeron:ipc?term-length=64k");
     }
 
     private static final int STREAM_ID = 1007;
@@ -60,6 +61,7 @@ public class ExclusivePublicationTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
+        .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();
@@ -125,8 +127,9 @@ public class ExclusivePublicationTest
     @Timeout(10)
     void offerBlockThrowsIllegalArgumentExceptionIfLengthExceedsAvailableSpaceWithinTheTerm()
     {
-        try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
+        final String channel = "aeron:ipc?term-length=64k";
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
             awaitConnection(subscription, 1);
 
@@ -150,10 +153,10 @@ public class ExclusivePublicationTest
     @Timeout(10)
     void offerBlockReturnsClosedWhenPublicationIsClosed()
     {
-        try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
+        final String channel = "aeron:ipc?term-length=64k";
+        try (Subscription ignore = aeron.addSubscription(channel, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            awaitConnection(subscription, 1);
             publication.close();
 
             final long result = publication.offerBlock(srcBuffer, 0, MESSAGE_LENGTH);
@@ -165,10 +168,11 @@ public class ExclusivePublicationTest
     @Timeout(10)
     void offerBlockThrowsIllegalArgumentExceptionUponInvalidFirstFrame()
     {
-        try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
+        final String channel = "aeron:ipc?term-length=64k";
+        try (Subscription ignore = aeron.addSubscription(channel, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            awaitConnection(subscription, 1);
+            Tests.await(publication::isConnected, TimeUnit.SECONDS.toNanos(5));
 
             final int sessionId = publication.sessionId();
             final int streamId = publication.streamId();
@@ -196,11 +200,12 @@ public class ExclusivePublicationTest
     @Timeout(10)
     void offerBlockAcceptsUpToAnEntireTermOfData()
     {
-        final String channel = IPC_CHANNEL + "?term-length=64k";
+        final String channel = "aeron:ipc?term-length=64k";
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
             awaitConnection(subscription, 1);
+            Tests.await(publication::isConnected, TimeUnit.SECONDS.toNanos(5));
 
             final int sessionId = publication.sessionId();
             final int streamId = publication.streamId();
@@ -239,11 +244,12 @@ public class ExclusivePublicationTest
     @Timeout(10)
     void offerBlockReturnsBackPressuredStatus()
     {
-        final String channel = IPC_CHANNEL + "?term-length=64k";
+        final String channel = "aeron:ipc?term-length=64k";
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
             awaitConnection(subscription, 1);
+            Tests.await(publication::isConnected, TimeUnit.SECONDS.toNanos(5));
 
             final int length = publication.termBufferLength() / 2;
             final int sessionId = publication.sessionId();

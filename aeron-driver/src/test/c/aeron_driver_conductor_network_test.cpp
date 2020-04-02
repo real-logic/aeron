@@ -1631,3 +1631,43 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscriptionWit
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddSubscriptionWithDifferentReliabilityParameter)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_UNRELIABLE, STREAM_ID_1), 0);
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldAllowDifferentReliabilityParameterWithSpecificSession)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_UNRELIABLE, STREAM_ID_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}

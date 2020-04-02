@@ -59,6 +59,8 @@ using namespace aeron;
 #define STR(x) STR_HELPER(x)
 
 #define CHANNEL_1 "aeron:udp?endpoint=localhost:40001"
+#define CHANNEL_1_UNRELIABLE "aeron:udp?endpoint=localhost:40001|reliable=false"
+#define CHANNEL_1_NOREJOIN "aeron:udp?endpoint=localhost:40001|rejoin=false"
 #define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
 #define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
 #define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
@@ -630,7 +632,6 @@ protected:
 
 static auto null_handler = [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
 {
-    printf("%d\n", msgTypeId);
 };
 
 #endif //AERON_DRIVER_CONDUCTOR_TEST_H

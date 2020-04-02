@@ -483,45 +483,6 @@ inline bool aeron_driver_conductor_is_subscribable_linked(
     return result;
 }
 
-inline bool aeron_driver_conductor_has_network_subscription_interest(
-    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
-{
-    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
-    {
-        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
-
-        if (endpoint == link->endpoint && stream_id == link->stream_id)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-inline bool aeron_driver_conductor_is_oldest_subscription_sparse(
-    aeron_driver_conductor_t *conductor,
-    const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int64_t highest_id)
-{
-    int64_t registration_id = highest_id;
-    bool is_sparse = conductor->context->term_buffer_sparse_file;
-
-    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
-    {
-        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
-
-        if (endpoint == link->endpoint && stream_id == link->stream_id && link->registration_id < registration_id)
-        {
-            registration_id = link->registration_id;
-            is_sparse = link->is_sparse;
-        }
-    }
-
-    return is_sparse;
-}
-
 inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)
 {
     return conductor->clients.length;

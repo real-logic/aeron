@@ -47,6 +47,73 @@ static int64_t aeron_driver_conductor_null_epoch_clock()
     return 0;
 }
 
+static inline bool aeron_subscription_link_matches(
+    const aeron_subscription_link_t *link,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    bool has_session_id,
+    int32_t session_id)
+{
+    return link->endpoint == endpoint &&
+        link->stream_id == stream_id &&
+        (link->has_session_id == has_session_id && (!has_session_id || link->session_id == session_id));
+}
+
+static inline bool aeron_subscription_link_matches_allowing_wildcard(
+    const aeron_subscription_link_t *link,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    return link->endpoint == endpoint &&
+        link->stream_id == stream_id &&
+        (!link->has_session_id || (link->session_id == session_id));
+}
+
+static inline bool aeron_driver_conductor_has_network_subscription_interest(
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (aeron_subscription_link_matches_allowing_wildcard(link, endpoint, stream_id, session_id))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static inline bool aeron_driver_conductor_is_oldest_subscription_sparse(
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t highest_id)
+{
+    int64_t registration_id = highest_id;
+    bool is_sparse = conductor->context->term_buffer_sparse_file;
+
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (aeron_subscription_link_matches_allowing_wildcard(link, endpoint, stream_id, session_id) &&
+            link->registration_id < registration_id)
+        {
+            registration_id = link->registration_id;
+            is_sparse = link->is_sparse;
+        }
+    }
+
+    return is_sparse;
+}
+
 static bool aeron_driver_conductor_has_clashing_subscription(
     aeron_driver_conductor_t *conductor,
     const aeron_receive_channel_endpoint_t *endpoint,
@@ -57,9 +124,9 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     {
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
-        if (endpoint == link->endpoint && stream_id == link->stream_id)
+        if (aeron_subscription_link_matches(
+            link, endpoint, stream_id, params->has_session_id, params->session_id))
         {
-            // TODO handle subscriptions here too.....
             if (params->is_reliable != link->is_reliable)
             {
                 const char *value = params->is_reliable ? "true" : "false";
@@ -2478,17 +2545,17 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
-    {
-        return -1;
-    }
-
     if (aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id) == NULL)
     {
         return -1;
     }
 
     if ((endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(conductor, udp_channel)) == NULL)
+    {
+        return -1;
+    }
+
+    if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {
         return -1;
     }
@@ -2950,7 +3017,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         return;
     }
 
-    if (!aeron_driver_conductor_has_network_subscription_interest(conductor, endpoint, command->stream_id))
+    if (!aeron_driver_conductor_has_network_subscription_interest(
+        conductor, endpoint, command->stream_id, command->session_id))
     {
         return;
     }
@@ -3032,7 +3100,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         command->mtu_length,
         &conductor->loss_reporter,
         is_reliable,
-        aeron_driver_conductor_is_oldest_subscription_sparse(conductor, endpoint, command->stream_id, registration_id),
+        aeron_driver_conductor_is_oldest_subscription_sparse(
+            conductor, endpoint, command->stream_id, command->session_id, registration_id),
         treat_as_multicast,
         &conductor->system_counters) < 0)
     {
@@ -3047,7 +3116,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         char source_identity[AERON_MAX_PATH];
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
-        if (endpoint != link->endpoint || command->stream_id != link->stream_id)
+        if (!aeron_subscription_link_matches_allowing_wildcard(link, endpoint, command->stream_id, command->session_id))
         {
             continue;
         }
@@ -3154,15 +3223,6 @@ extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_ad
 
 extern bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable);
-
-extern bool aeron_driver_conductor_has_network_subscription_interest(
-    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
-
-extern bool aeron_driver_conductor_is_oldest_subscription_sparse(
-    aeron_driver_conductor_t *conductor,
-    const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int64_t highest_id);
 
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
 

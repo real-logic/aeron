@@ -460,11 +460,6 @@ public class TestCluster implements AutoCloseable
         testNode.close();
     }
 
-    void stopBackupNode()
-    {
-        backupNode.close();
-    }
-
     void stopAllNodes()
     {
         CloseHelper.closeAll(nodes);
@@ -662,7 +657,7 @@ public class TestCluster implements AutoCloseable
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
-            Tests.sleep(1000);
+            Tests.sleep(100);
         }
 
         return leaderNode;
@@ -690,32 +685,34 @@ public class TestCluster implements AutoCloseable
 
     void awaitBackupState(final ClusterBackup.State targetState)
     {
-        if (null != backupNode)
+        if (null == backupNode)
         {
-            while (backupNode.state() != targetState)
-            {
-                Tests.sleep(100);
-            }
-
-            return;
+            throw new IllegalStateException("no backup node present");
         }
 
-        throw new IllegalStateException("no backup node present");
+        while (backupNode.state() != targetState)
+        {
+            Tests.sleep(10);
+        }
     }
 
     void awaitBackupLiveLogPosition(final long position)
     {
-        if (null != backupNode)
+        if (null == backupNode)
         {
-            while (backupNode.liveLogPosition() != position)
-            {
-                Tests.sleep(100);
-            }
-
-            return;
+            throw new IllegalStateException("no backup node present");
         }
 
-        throw new IllegalStateException("no backup node present");
+        while (true)
+        {
+            final long livePosition = backupNode.liveLogPosition();
+            if (livePosition >= position)
+            {
+                return;
+            }
+
+            Tests.sleep(10, "awaiting position=%d livePosition=%d", position, livePosition);
+        }
     }
 
     TestNode node(final int index)

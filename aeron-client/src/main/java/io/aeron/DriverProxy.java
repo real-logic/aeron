@@ -159,7 +159,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new AeronException("could not write destination command");
+            throw new AeronException("could not write add destination command");
         }
 
         return correlationId;
@@ -176,7 +176,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new AeronException("could not write destination command");
+            throw new AeronException("could not write remove destination command");
         }
 
         return correlationId;
@@ -193,7 +193,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new AeronException("could not write rcv destination command");
+            throw new AeronException("could not write add rcv destination command");
         }
 
         return correlationId;
@@ -210,7 +210,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new AeronException("could not write rcv destination command");
+            throw new AeronException("could not write remove rcv destination command");
         }
 
         return correlationId;

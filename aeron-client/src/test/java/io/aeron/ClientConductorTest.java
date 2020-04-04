@@ -265,28 +265,6 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldFailToClosePublicationOnMediaDriverError()
-    {
-        whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
-
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
-
-        whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_ERROR,
-            errorMessageBuffer,
-            (buffer) ->
-            {
-                errorResponse.errorCode(INVALID_CHANNEL);
-                errorResponse.errorMessage("channel unknown");
-                errorResponse.offendingCommandCorrelationId(CLOSE_CORRELATION_ID);
-                return errorResponse.length();
-            });
-
-        assertThrows(RegistrationException.class, publication::close);
-    }
-
-    @Test
     public void shouldFailToAddPublicationOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(

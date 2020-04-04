@@ -140,23 +140,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
 
                 forceCloseResources();
-
-                for (int i = closeHandlers.size() - 1; i >= 0; i--)
-                {
-                    isInCallback = true;
-                    try
-                    {
-                        closeHandlers.get(i).run();
-                    }
-                    catch (final Exception ex)
-                    {
-                        handleError(ex);
-                    }
-                    finally
-                    {
-                        isInCallback = false;
-                    }
-                }
+                notifyCloseHandlers();
 
                 try
                 {
@@ -388,19 +372,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 final UnavailableImageHandler handler = subscription.unavailableImageHandler();
                 if (null != handler)
                 {
-                    isInCallback = true;
-                    try
-                    {
-                        handler.onUnavailableImage(image);
-                    }
-                    catch (final Throwable ex)
-                    {
-                        handleError(ex);
-                    }
-                    finally
-                    {
-                        isInCallback = false;
-                    }
+                    notifyImageUnavailable(handler, image);
                 }
             }
         }
@@ -417,25 +389,13 @@ class ClientConductor implements Agent, DriverEventsListener
         for (int i = 0, size = availableCounterHandlers.size(); i < size; i++)
         {
             final AvailableCounterHandler handler = availableCounterHandlers.get(i);
-            isInCallback = true;
-            try
-            {
-                handler.onAvailableCounter(countersReader, registrationId, counterId);
-            }
-            catch (final Exception ex)
-            {
-                handleError(ex);
-            }
-            finally
-            {
-                isInCallback = false;
-            }
+            notifyImageAvailable(registrationId, counterId, handler);
         }
     }
 
     public void onUnavailableCounter(final long registrationId, final int counterId)
     {
-        callUnavailableCounterHandlers(registrationId, counterId);
+        notifyUnavailableCounterHandlers(registrationId, counterId);
     }
 
     public void onClientTimeout()
@@ -519,7 +479,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 if (publication == resourceByRegIdMap.remove(publication.registrationId()))
                 {
                     releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-                    awaitResponse(driverProxy.removePublication(publication.registrationId()));
+                    asyncCommandIdSet.add(driverProxy.removePublication(publication.registrationId()));
                 }
             }
         }
@@ -584,7 +544,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 final long registrationId = subscription.registrationId();
                 if (subscription == resourceByRegIdMap.remove(registrationId))
                 {
-                    awaitResponse(driverProxy.removeSubscription(registrationId));
+                    asyncCommandIdSet.add(driverProxy.removeSubscription(registrationId));
                 }
             }
         }
@@ -932,7 +892,7 @@ class ClientConductor implements Agent, DriverEventsListener
             final long registrationId = counter.registrationId();
             if (counter == resourceByRegIdMap.remove(registrationId))
             {
-                awaitResponse(driverProxy.removeCounter(registrationId));
+                asyncCommandIdSet.add(driverProxy.removeCounter(registrationId));
             }
         }
         finally
@@ -983,19 +943,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             for (final Image image : images)
             {
-                isInCallback = true;
-                try
-                {
-                    unavailableImageHandler.onUnavailableImage(image);
-                }
-                catch (final Throwable ex)
-                {
-                    handleError(ex);
-                }
-                finally
-                {
-                    isInCallback = false;
-                }
+                notifyImageUnavailable(unavailableImageHandler, image);
             }
         }
     }
@@ -1239,14 +1187,26 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 final Counter counter = (Counter)resource;
                 counter.internalClose();
-                callUnavailableCounterHandlers(counter.registrationId(), counter.id());
+                notifyUnavailableCounterHandlers(counter.registrationId(), counter.id());
             }
         }
 
         resourceByRegIdMap.clear();
     }
 
-    private void callUnavailableCounterHandlers(final long registrationId, final int counterId)
+    private void deleteResource(final ManagedResource resource)
+    {
+        try
+        {
+            resource.delete();
+        }
+        catch (final Throwable throwable)
+        {
+            handleError(throwable);
+        }
+    }
+
+    private void notifyUnavailableCounterHandlers(final long registrationId, final int counterId)
     {
         for (int i = 0, size = unavailableCounterHandlers.size(); i < size; i++)
         {
@@ -1267,15 +1227,58 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    private void deleteResource(final ManagedResource resource)
+    private void notifyImageUnavailable(final UnavailableImageHandler handler, final Image image)
     {
+        isInCallback = true;
         try
         {
-            resource.delete();
+            handler.onUnavailableImage(image);
         }
-        catch (final Throwable throwable)
+        catch (final Throwable ex)
         {
-            handleError(throwable);
+            handleError(ex);
+        }
+        finally
+        {
+            isInCallback = false;
+        }
+    }
+
+    private void notifyImageAvailable(
+        final long registrationId, final int counterId, final AvailableCounterHandler handler)
+    {
+        isInCallback = true;
+        try
+        {
+            handler.onAvailableCounter(countersReader, registrationId, counterId);
+        }
+        catch (final Exception ex)
+        {
+            handleError(ex);
+        }
+        finally
+        {
+            isInCallback = false;
+        }
+    }
+
+    private void notifyCloseHandlers()
+    {
+        for (int i = closeHandlers.size() - 1; i >= 0; i--)
+        {
+            isInCallback = true;
+            try
+            {
+                closeHandlers.get(i).run();
+            }
+            catch (final Exception ex)
+            {
+                handleError(ex);
+            }
+            finally
+            {
+                isInCallback = false;
+            }
         }
     }
 }

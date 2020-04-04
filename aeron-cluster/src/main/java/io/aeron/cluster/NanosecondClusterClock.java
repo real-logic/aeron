@@ -40,4 +40,28 @@ public class NanosecondClusterClock implements ClusterClock
     {
         return HighResolutionClock.epochNanos();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long timeMillis()
+    {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long timeMicros()
+    {
+        return HighResolutionClock.epochMicros();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long timeNanos()
+    {
+        return HighResolutionClock.epochNanos();
+    }
 }

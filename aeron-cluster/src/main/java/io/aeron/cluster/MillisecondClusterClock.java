@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.ClusterClock;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * A {@link ClusterClock} implemented by calling {@link System#currentTimeMillis()}.
  */
@@ -28,5 +30,29 @@ public class MillisecondClusterClock implements ClusterClock
     public long time()
     {
         return System.currentTimeMillis();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long timeMillis()
+    {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long timeMicros()
+    {
+        return TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long timeNanos()
+    {
+        return TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis());
     }
 }

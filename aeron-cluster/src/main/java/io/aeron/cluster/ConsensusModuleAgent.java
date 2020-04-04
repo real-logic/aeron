@@ -475,7 +475,7 @@ class ConsensusModuleAgent implements Agent
         {
             ctx.countedErrorHandler().onError(new ClusterException(
                 "unexpected vote request", AeronException.Category.WARN));
-            enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
+            enterElection(clusterClock.timeNanos());
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
     }
@@ -521,14 +521,14 @@ class ConsensusModuleAgent implements Agent
             leadershipTermId == this.leadershipTermId &&
             leaderId == leaderMember.id())
         {
-            timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(clusterClock.time());
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
             notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterException(
                 "unexpected new leadership term", AeronException.Category.WARN));
-            enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
+            enterElection(clusterClock.timeNanos());
         }
     }
 
@@ -545,7 +545,7 @@ class ConsensusModuleAgent implements Agent
             {
                 follower
                     .logPosition(logPosition)
-                    .timeOfLastAppendPositionNs(clusterTimeUnit.toNanos(clusterClock.time()));
+                    .timeOfLastAppendPositionNs(clusterClock.timeNanos());
                 trackCatchupCompletion(follower, leadershipTermId);
             }
         }
@@ -561,13 +561,13 @@ class ConsensusModuleAgent implements Agent
             leadershipTermId == this.leadershipTermId &&
             leaderMemberId == leaderMember.id())
         {
-            timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(clusterClock.time());
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
             notifiedCommitPosition = logPosition;
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterException("unexpected commit position from new leader"));
-            enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
+            enterElection(clusterClock.timeNanos());
         }
     }
 
@@ -702,8 +702,7 @@ class ConsensusModuleAgent implements Agent
             {
                 member.hasTerminated(true);
 
-                final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
-                if (clusterTermination.canTerminate(clusterMembers, terminationPosition, nowNs))
+                if (clusterTermination.canTerminate(clusterMembers, terminationPosition, clusterClock.timeNanos()))
                 {
                     recordingLog.commitLogPosition(leadershipTermId, logPosition);
                     state(ConsensusModule.State.CLOSED);
@@ -802,9 +801,8 @@ class ConsensusModuleAgent implements Agent
     {
         if (isExtendedRequest)
         {
-            final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
             serviceProxy.clusterMembersExtendedResponse(
-                correlationId, nowNs, leaderMember.id(), memberId, clusterMembers, passiveMembers);
+                correlationId, clusterClock.timeNanos(), leaderMember.id(), memberId, clusterMembers, passiveMembers);
         }
         else
         {
@@ -1003,7 +1001,7 @@ class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
 
-                final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
+                final long nowNs = clusterClock.timeNanos();
                 if (NULL_POSITION == terminationPosition)
                 {
                     state(ConsensusModule.State.ACTIVE);
@@ -1041,7 +1039,7 @@ class ConsensusModuleAgent implements Agent
                 {
                     clusterTermination.onServicesTerminated();
                     canTerminate = clusterTermination.canTerminate(
-                        clusterMembers, terminationPosition, clusterTimeUnit.toNanos(clusterClock.time()));
+                        clusterMembers, terminationPosition, clusterClock.timeNanos());
                 }
 
                 if (canTerminate)
@@ -1225,7 +1223,7 @@ class ConsensusModuleAgent implements Agent
                     if (hasCurrentLeaderSteppedDown)
                     {
                         commitPosition.proposeMaxOrdered(logPosition);
-                        enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
+                        enterElection(clusterClock.timeNanos());
                     }
                 }
             }
@@ -1338,7 +1336,7 @@ class ConsensusModuleAgent implements Agent
                 }
             }
 
-            final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
+            final long nowNs = clusterClock.timeNanos();
             for (final ClusterSession session : sessionByIdMap.values())
             {
                 if (session.state() != CLOSED)

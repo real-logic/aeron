@@ -118,8 +118,6 @@ public class DriverNameResolverTest
             .resolverInterface("0.0.0.0:8052")
             .resolverBootstrapNeighbor("localhost:8051"), testWatcher));
 
-        Tests.sleep(3000);
-
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
             .aeronDirectoryName(baseDir + "-A")
             .resolverName("A")

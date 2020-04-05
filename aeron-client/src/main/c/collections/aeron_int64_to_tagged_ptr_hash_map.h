@@ -61,11 +61,6 @@ inline size_t aeron_int64_to_tagged_ptr_hash_map_hash_key(int64_t key, size_t ma
     return (key * 31) & mask;
 }
 
-inline int64_t aeron_int64_to_tagged_ptr_hash_map_compound_key(int32_t high, int32_t low)
-{
-    return ((int64_t)high << 32) | (low);
-}
-
 inline int aeron_int64_to_tagged_ptr_hash_map_init(aeron_int64_to_tagged_ptr_hash_map_t *map, size_t initial_capacity, float load_factor)
 {
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);

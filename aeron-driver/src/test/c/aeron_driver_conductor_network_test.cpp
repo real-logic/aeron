@@ -178,7 +178,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
 
     ASSERT_EQ(1, aeron_int64_counter_map_get(
         &receive_endpoint->stream_and_session_id_to_refcnt_map,
-        aeron_int64_counter_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
+        aeron_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
@@ -196,7 +196,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
 
     ASSERT_EQ(0, aeron_int64_counter_map_get(
         &receive_endpoint->stream_and_session_id_to_refcnt_map,
-        aeron_int64_counter_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
+        aeron_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
 
     ASSERT_EQ(AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING, receive_endpoint->conductor_fields.status);
 }

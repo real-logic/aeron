@@ -90,7 +90,7 @@ int aeron_retransmit_handler_on_nak(
 
     if (!aeron_retransmit_handler_is_invalid(handler, term_offset, term_length))
     {
-        const int64_t key = aeron_int64_to_ptr_hash_map_compound_key(term_id, term_offset);
+        const int64_t key = aeron_map_compound_key(term_id, term_offset);
 
         if (NULL == aeron_int64_to_ptr_hash_map_get(&handler->active_retransmits_map, key) &&
             handler->active_retransmits_map.size < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS)
@@ -151,7 +151,7 @@ int aeron_retransmit_handler_process_timeouts(
             {
                 if (now_ns > action->expire_ns)
                 {
-                    const int64_t key = aeron_int64_to_ptr_hash_map_compound_key(action->term_id, action->term_offset);
+                    const int64_t key = aeron_map_compound_key(action->term_id, action->term_offset);
 
                     action->state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
                     aeron_int64_to_ptr_hash_map_remove(&handler->active_retransmits_map, key);

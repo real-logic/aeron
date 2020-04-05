@@ -495,7 +495,7 @@ int aeron_receive_channel_endpoint_incref_to_stream_and_session(
     int64_t count;
     if (aeron_int64_counter_map_inc_and_get(
         &endpoint->stream_and_session_id_to_refcnt_map,
-        aeron_int64_counter_map_compound_key(stream_id, session_id),
+        aeron_map_compound_key(stream_id, session_id),
         &count) < 0)
     {
         return -1;
@@ -521,7 +521,7 @@ int aeron_receive_channel_endpoint_incref_to_stream_and_session(
 int aeron_receive_channel_endpoint_decref_to_stream_and_session(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id)
 {
-    const int64_t stream_and_session_key = aeron_int64_counter_map_compound_key(stream_id, session_id);
+    const int64_t stream_and_session_key = aeron_map_compound_key(stream_id, session_id);
     const int64_t count = aeron_int64_counter_map_get(
         &endpoint->stream_and_session_id_to_refcnt_map, stream_and_session_key);
 

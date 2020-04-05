@@ -19,22 +19,9 @@
 
 #define AERON_MAP_DEFAULT_LOAD_FACTOR (0.55f)
 
-inline size_t aeron_map_hash_key(int64_t key, size_t mask)
-{
-    return (key * 31) & mask;
-}
-
-inline size_t aeron_map_even_hash_key(int64_t key, size_t mask)
-{
-    uint64_t hash = (key << UINT64_C(1)) - (key << UINT64_C(8));
-
-    return hash & mask;
-}
-
 inline int64_t aeron_map_compound_key(int32_t high, int32_t low)
 {
     return ((int64_t)high << 32) | (low);
 }
-
 
 #endif //AERON_AERON_MAP_H

@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <stdint.h>
 
 #include "collections/aeron_map.h"
-
-extern size_t aeron_map_hash_key(int64_t key, size_t mask);
-
-extern size_t aeron_map_even_hash_key(int64_t key, size_t mask);
 
 extern int64_t aeron_map_compound_key(int32_t high, int32_t low);

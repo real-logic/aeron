@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
 #include <string.h>
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
@@ -145,12 +146,17 @@ int aeron_data_packet_dispatcher_add_subscription_by_session(
             aeron_data_packet_dispatcher_stream_interest_init(stream_interest, false) < 0 ||
             aeron_int64_to_ptr_hash_map_put(&dispatcher->session_by_stream_id_map, stream_id, stream_interest) < 0)
         {
-            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription");
+            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription_by_session");
             return -1;
         }
     }
 
-    aeron_int64_to_ptr_hash_map_put(&stream_interest->subscribed_sessions, session_id, &dispatcher->tokens.subscribed);
+    if (aeron_int64_to_ptr_hash_map_put(
+        &stream_interest->subscribed_sessions, session_id, &dispatcher->tokens.subscribed) < 0)
+    {
+        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription_by_session");
+        return -1;
+    }
 
     uint32_t tag;
     if (aeron_int64_to_tagged_ptr_hash_map_get(&stream_interest->image_by_session_id_map, session_id, &tag, NULL) &&
@@ -168,7 +174,7 @@ int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatche
 
     if ((stream_interest = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
     {
-        // TODO: set error
+        aeron_set_err(-1, "No subscription for stream: %" PRIi32, stream_id);
         return -1;
     }
 
@@ -194,7 +200,7 @@ int aeron_data_packet_dispatcher_remove_subscription_by_session(
 
     if ((stream_interest = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
     {
-        // TODO: set error
+        aeron_set_err(-1, "No subscription for stream: %" PRIi32, stream_id);
         return -1;
     }
 
@@ -252,13 +258,24 @@ int aeron_data_packet_dispatcher_remove_publication_image(
             if (aeron_int64_to_tagged_ptr_hash_map_put(
                 &stream_interest->image_by_session_id_map, image->session_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN, NULL) < 0)
             {
-                aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_put_publication_image");
+                aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_remove_publication_image");
                 return -1;
             }
         }
     }
 
     return 0;
+}
+
+static void aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated_hash_lookups(
+    aeron_int64_to_tagged_ptr_hash_map_t *image_by_session_id_map,
+    int32_t session_id)
+{
+    // This is here as an optimisation so that streams that we don't care about don't trigger the slow
+    // path and require checking for interest.  As it is an optimisation, we are ignoring the possible
+    // put failure from the hash map (occurs if a rehash fails to allocation memory).
+    aeron_int64_to_tagged_ptr_hash_map_put(
+        image_by_session_id_map, session_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST, NULL);
 }
 
 int aeron_data_packet_dispatcher_on_data(
@@ -291,11 +308,8 @@ int aeron_data_packet_dispatcher_on_data(
             }
             else
             {
-                aeron_int64_to_tagged_ptr_hash_map_put(
-                    &stream_interest->image_by_session_id_map,
-                    header->session_id,
-                    AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST,
-                    NULL);
+                aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated_hash_lookups(
+                    &stream_interest->image_by_session_id_map, header->session_id);
             }
         }
     }
@@ -316,7 +330,7 @@ int aeron_data_packet_dispatcher_create_publication(
         AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS,
         NULL) < 0)
     {
-        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_on_setup");
+        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_create_publication");
         return -1;
     }
 
@@ -381,11 +395,8 @@ int aeron_data_packet_dispatcher_on_setup(
             }
             else
             {
-                aeron_int64_to_tagged_ptr_hash_map_put(
-                    &stream_interest->image_by_session_id_map,
-                    header->session_id,
-                    AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST,
-                    NULL);
+                aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated_hash_lookups(
+                    &stream_interest->image_by_session_id_map, header->session_id);
             }
         }
     }

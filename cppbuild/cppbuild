@@ -32,6 +32,10 @@ do
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DBUILD_AERON_ARCHIVE_API=ON"
       shift
       ;;
+    --slow-system-tests)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_SLOW_SYSTEM_TESTS=ON -DAERON_SYSTEM_TESTS=OFF"
+      shift
+      ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
       shift

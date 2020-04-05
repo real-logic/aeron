@@ -51,3 +51,36 @@ jobs:
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
           path: ${{ steps.copy_crash_logs.outputs.dir }}
+
+  c-driver-slow-system-test-build:
+    name: C++ GCC ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '9' ]
+    env:
+      CC: gcc-${{ matrix.version }}
+      CXX: g++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Install compiler
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
+      - name: Build
+        run: cppbuild/cppbuild --slow-system-tests

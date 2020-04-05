@@ -33,7 +33,7 @@ endif ()
 
 set(SOURCE
     collections/aeron_bit_set.c
-    ../../../../aeron-driver/src/main/c/collections/aeron_int64_counter_map.c
+    collections/aeron_int64_counter_map.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_int64_to_tagged_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c
@@ -85,7 +85,7 @@ set(SOURCE
 
 set(HEADERS
     collections/aeron_bit_set.h
-    ../../../../aeron-driver/src/main/c/collections/aeron_int64_counter_map.h
+    collections/aeron_int64_counter_map.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_int64_to_tagged_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h

@@ -23,6 +23,7 @@
 #include <errno.h>
 
 #include "util/aeron_platform.h"
+#include "collections/aeron_map.h"
 
 #if defined(AERON_COMPILER_MSVC)
 #include <WinSock2.h>
@@ -42,8 +43,6 @@ typedef struct aeron_int64_to_ptr_hash_map_stct
     size_t resize_threshold;
 }
 aeron_int64_to_ptr_hash_map_t;
-
-#define AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR (0.55f)
 
 inline size_t aeron_int64_to_ptr_hash_map_hash_key(int64_t key, size_t mask)
 {

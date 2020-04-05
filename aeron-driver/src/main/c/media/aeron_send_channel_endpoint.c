@@ -97,7 +97,7 @@ int aeron_send_channel_endpoint_create(
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &_endpoint->publication_dispatch_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &_endpoint->publication_dispatch_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_send_channel_endpoint_delete(NULL, _endpoint);
         return -1;

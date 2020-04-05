@@ -25,14 +25,14 @@ int aeron_data_packet_dispatcher_init(
     aeron_driver_receiver_t *receiver)
 {
     if (aeron_int64_to_ptr_hash_map_init(
-        &dispatcher->ignored_sessions_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &dispatcher->ignored_sessions_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init ignored_session_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &dispatcher->session_by_stream_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &dispatcher->session_by_stream_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init session_by_stream_id_map");
         return -1;
@@ -49,14 +49,14 @@ int aeron_data_packet_dispatcher_stream_interest_init(
 {
     stream_interest->is_all_sessions = is_all_sessions;
     if (aeron_int64_to_tagged_ptr_hash_map_init(
-        &stream_interest->image_by_session_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &stream_interest->image_by_session_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init image_by_session_id_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &stream_interest->subscribed_sessions, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &stream_interest->subscribed_sessions, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init subscribed_sessions");
         return -1;

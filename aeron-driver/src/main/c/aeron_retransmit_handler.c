@@ -27,7 +27,7 @@ int aeron_retransmit_handler_init(
     uint64_t linger_timeout_ns)
 {
     if (aeron_int64_to_ptr_hash_map_init(
-        &handler->active_retransmits_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &handler->active_retransmits_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init retransmit handler map");
         return -1;

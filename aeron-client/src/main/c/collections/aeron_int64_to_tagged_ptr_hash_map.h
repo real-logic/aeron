@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "util/aeron_platform.h"
+#include "collections/aeron_map.h"
 
 #if defined(AERON_COMPILER_MSVC)
 #include <WinSock2.h>
@@ -52,7 +53,6 @@ typedef struct aeron_int64_to_tagged_ptr_hash_map_stct
 }
 aeron_int64_to_tagged_ptr_hash_map_t;
 
-#define AERON_INT64_TO_TAGGED_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR (0.55f)
 #define AERON_INT64_TO_TAGGED_PTR_VALUE_PRESENT UINT32_C(1)
 #define AERON_INT64_TO_TAGGED_PTR_VALUE_ABSENT UINT32_C(0)
 

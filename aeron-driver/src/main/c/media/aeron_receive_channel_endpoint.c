@@ -75,14 +75,14 @@ int aeron_receive_channel_endpoint_create(
     }
 
     if (aeron_int64_counter_map_init(
-        &_endpoint->stream_id_to_refcnt_map, 0, 16, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &_endpoint->stream_id_to_refcnt_map, 0, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init stream_id_to_refcnt_map");
         return -1;
     }
 
     if (aeron_int64_counter_map_init(
-        &_endpoint->stream_and_session_id_to_refcnt_map, 0, 16, AERON_INT64_COUNTER_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &_endpoint->stream_and_session_id_to_refcnt_map, 0, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_set_err_from_last_err_code("could not init stream_and_session_id_to_refcnt_map");
         return -1;

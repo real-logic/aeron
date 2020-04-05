@@ -66,7 +66,7 @@ protected:
 TEST_F(Int64ToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
 {
     int value = 42;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_get(&m_map, 7), &value);
@@ -76,7 +76,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
 TEST_F(Int64ToPtrHashMapTest, shouldReplaceExistingValueForTheSameKey)
 {
     int value = 42, new_value = 43;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&new_value), 0);
@@ -149,7 +149,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
 
 TEST_F(Int64ToPtrHashMapTest, shouldNotForEachEmptyMap)
 {
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     size_t called = 0;
     for_each([&](int64_t key, void *value_ptr)
@@ -163,7 +163,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldNotForEachEmptyMap)
 TEST_F(Int64ToPtrHashMapTest, shouldForEachNonEmptyMap)
 {
     int value = 42;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
 
@@ -180,7 +180,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldForEachNonEmptyMap)
 
 TEST_F(Int64ToPtrHashMapTest, shouldNotRemoveIfEmptyMap)
 {
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     size_t called = 0;
     remove_if([&](int64_t key, void *value_ptr)
@@ -196,7 +196,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldRemoveIfNonEmptyMap)
 {
     int value0 = 42;
     int value1 = 43;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     for (int i = 0; i < 100; i++)
     {

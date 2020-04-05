@@ -199,13 +199,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
 
     if (aeron_str_to_ptr_hash_map_init(
-        &conductor->send_channel_endpoint_by_channel_map, 64, AERON_STR_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &conductor->send_channel_endpoint_by_channel_map, 64, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         return -1;
     }
 
     if (aeron_str_to_ptr_hash_map_init(
-        &conductor->receive_channel_endpoint_by_channel_map, 64, AERON_STR_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &conductor->receive_channel_endpoint_by_channel_map, 64, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         return -1;
     }

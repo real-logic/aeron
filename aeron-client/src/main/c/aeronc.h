@@ -186,8 +186,12 @@ aeron_context_t *aeron_context(aeron_t *client);
 int64_t aeron_client_id(aeron_t *client);
 int64_t aeron_next_correlation_id(aeron_t *client);
 
-int64_t aeron_add_publication(aeron_t *client, const char *uri);
-int aeron_find_publication(aeron_publication_t **publication, aeron_t *client, int64_t registration_id);
+typedef struct aeron_client_registering_resource_stct aeron_async_add_publication_t;
+
+int aeron_async_add_publication(
+    aeron_async_add_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id);
+int aeron_async_add_publication_poll(
+    aeron_publication_t **publication, aeron_async_add_publication_t *async);
 
 int64_t aeron_add_exclusive_publication(aeron_t *client, const char *uri);
 int aeron_find_exclusive_publication(

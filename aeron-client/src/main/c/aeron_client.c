@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "aeronc.h"
 #include "aeron_client.h"
@@ -170,4 +171,73 @@ int aeron_close(aeron_t *client)
     }
 
     return 0;
+}
+
+inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *async)
+{
+    if (NULL != async)
+    {
+        aeron_free(async->error_message);
+        aeron_free(async->filename);
+        aeron_free(async->uri);
+        aeron_free(async);
+    }
+}
+
+int aeron_async_add_publication(
+    aeron_async_add_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id)
+{
+    if (NULL == async || NULL == client || NULL == uri)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_async_add_publication: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_async_add_publication(async, &client->conductor, uri, stream_id);
+}
+
+int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_async_add_publication_t *async)
+{
+    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_PUBLICATION == async->type)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_async_add_publication_poll: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    *publication = NULL;
+
+    aeron_client_registration_status_t registration_status;
+    AERON_GET_VOLATILE(registration_status, async->registration_status);
+
+    switch (registration_status)
+    {
+        case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
+        {
+            return 0;
+        }
+
+        case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
+        {
+            aeron_set_err(EINVAL, "async_add_publication registration (error code %" PRId32 "): %*s",
+                async->error_code, async->error_message_length, async->error_message);
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+
+        case AERON_CLIENT_REGISTERED_MEDIA_DRIVER:
+        {
+            *publication = async->resource.publication;
+            aeron_async_cmd_free(async);
+            return 1;
+        }
+
+        default:
+        {
+            aeron_set_err(EINVAL, "async_add_publication async status %s", "unknown");
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+    }
 }

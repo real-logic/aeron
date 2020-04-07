@@ -15,12 +15,16 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.BufferBuilder;
 import io.aeron.Image;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.*;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
+
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 
 /**
  * Adapter for reading a log with a upper bound applied beyond which the consumer cannot progress.
@@ -29,7 +33,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 {
     private static final int FRAGMENT_LIMIT = 100;
 
-    private final LogFragmentAssembler fragmentAssembler = new LogFragmentAssembler(this);
+    private final BufferBuilder builder = new BufferBuilder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
@@ -67,11 +71,57 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
     public int poll()
     {
-        return image.boundedControlledPoll(fragmentAssembler, upperBound.get(), FRAGMENT_LIMIT);
+        return image.boundedControlledPoll(this, upperBound.get(), FRAGMENT_LIMIT);
+    }
+
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        final byte flags = header.flags();
+        Action action = Action.CONTINUE;
+
+        if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
+        {
+            action = onMessage(buffer, offset, length, header);
+        }
+        else
+        {
+            if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
+            {
+                builder.reset().append(buffer, offset, length);
+            }
+            else
+            {
+                final int limit = builder.limit();
+                if (0 == limit)
+                {
+                    throw new ClusterException("unexpected beginning of message at position " + header.position());
+                }
+                else
+                {
+                    builder.append(buffer, offset, length);
+
+                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                    {
+                        action = onMessage(builder.buffer(), 0, builder.limit(), header);
+
+                        if (Action.ABORT == action)
+                        {
+                            builder.limit(limit);
+                        }
+                        else
+                        {
+                            builder.reset();
+                        }
+                    }
+                }
+            }
+        }
+
+        return action;
     }
 
     @SuppressWarnings("MethodLength")
-    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private Action onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

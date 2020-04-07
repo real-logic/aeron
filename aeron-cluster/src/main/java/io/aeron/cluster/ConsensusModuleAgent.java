@@ -1066,6 +1066,7 @@ class ConsensusModuleAgent implements Agent
 
             serviceAcks[id] = serviceAck;
         }
+
         return serviceAcks;
     }
 

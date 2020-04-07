@@ -15,8 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Image;
-import io.aeron.ImageControlledFragmentAssembler;
+import io.aeron.*;
 import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
@@ -24,11 +23,14 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
+
 final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     private static final int FRAGMENT_LIMIT = 100;
 
-    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
+    private final BufferBuilder builder = new BufferBuilder();
     private final Image image;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -58,7 +60,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 
     int poll(final long boundPosition)
     {
-        return image.boundedControlledPoll(fragmentAssembler, boundPosition, FRAGMENT_LIMIT);
+        return image.boundedControlledPoll(this, boundPosition, FRAGMENT_LIMIT);
     }
 
     boolean isImageClosed()
@@ -79,8 +81,50 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
         }
     }
 
-    @SuppressWarnings("MethodLength")
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        final byte flags = header.flags();
+        Action action = Action.CONTINUE;
+
+        if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
+        {
+            action = onMessage(buffer, offset, header);
+        }
+        else
+        {
+            if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
+            {
+                builder.reset().append(buffer, offset, length);
+            }
+            else
+            {
+                final int limit = builder.limit();
+                if (limit > 0)
+                {
+                    builder.append(buffer, offset, length);
+
+                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                    {
+                        action = onMessage(builder.buffer(), 0, header);
+
+                        if (Action.ABORT == action)
+                        {
+                            builder.limit(limit);
+                        }
+                        else
+                        {
+                            builder.reset();
+                        }
+                    }
+                }
+            }
+        }
+
+        return action;
+    }
+
+    @SuppressWarnings("MethodLength")
+    private Action onMessage(final DirectBuffer buffer, final int offset, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

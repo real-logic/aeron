@@ -361,7 +361,8 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
 void aeron_driver_receiver_proxy_on_resolution_change(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     const char *endpoint_name,
-    aeron_receive_channel_endpoint_t *endpoint,
+    void *endpoint,
+    void *destination,
     struct sockaddr_storage *new_addr)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
@@ -369,8 +370,9 @@ void aeron_driver_receiver_proxy_on_resolution_change(
         aeron_command_receiver_resolution_change_t cmd =
             {
                 .base = { .func = aeron_driver_receiver_on_resolution_change, .item = NULL },
+                .endpoint_name = endpoint_name,
                 .endpoint = endpoint,
-                .endpoint_name = endpoint_name
+                .destination = destination
             };
         memcpy(&cmd.new_addr, new_addr, sizeof(cmd.new_addr));
 
@@ -388,8 +390,9 @@ void aeron_driver_receiver_proxy_on_resolution_change(
 
         cmd->base.func = aeron_driver_receiver_on_resolution_change;
         cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
         cmd->endpoint_name = endpoint_name;
+        cmd->endpoint = endpoint;
+        cmd->destination = destination;
         memcpy(&cmd->new_addr, new_addr, sizeof(cmd->new_addr));
 
         aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);

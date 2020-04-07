@@ -229,6 +229,7 @@ void aeron_send_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,
     void *sender_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)

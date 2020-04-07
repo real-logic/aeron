@@ -54,6 +54,7 @@ typedef struct aeron_command_re_resolve_stct
     aeron_command_base_t base;
     const char *endpoint_name;
     void *endpoint;
+    void *destination;
     struct sockaddr_storage existing_addr;
 }
 aeron_command_re_resolve_t;
@@ -83,6 +84,7 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
     void *endpoint,
+    void *destination,
     struct sockaddr_storage *existing_addr);
 
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

@@ -281,6 +281,7 @@ static void aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated
 int aeron_data_packet_dispatcher_on_data(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_data_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -304,7 +305,7 @@ int aeron_data_packet_dispatcher_on_data(
             if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
             {
                 return aeron_data_packet_dispatcher_elicit_setup_from_source(
-                    dispatcher, stream_interest, endpoint, addr, header->stream_id, header->session_id);
+                    dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id);
             }
             else
             {
@@ -356,6 +357,7 @@ int aeron_data_packet_dispatcher_create_publication(
 int aeron_data_packet_dispatcher_on_setup(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_setup_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -407,6 +409,7 @@ int aeron_data_packet_dispatcher_on_setup(
 int aeron_data_packet_dispatcher_on_rttm(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_rttm_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -444,6 +447,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id)
@@ -467,7 +471,8 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         return -1;
     }
 
-    return aeron_driver_receiver_add_pending_setup(dispatcher->receiver, endpoint, session_id, stream_id, NULL);
+    return aeron_driver_receiver_add_pending_setup(
+        dispatcher->receiver, endpoint, destination, session_id, stream_id, NULL);
 }
 
 extern int aeron_data_packet_dispatcher_remove_with_state(

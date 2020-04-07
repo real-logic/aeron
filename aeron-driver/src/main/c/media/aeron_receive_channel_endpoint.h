@@ -24,6 +24,7 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver_context.h"
 #include "aeron_system_counters.h"
+#include "media/aeron_receive_destination.h"
 
 typedef enum aeron_receive_channel_endpoint_status_enum
 {
@@ -38,6 +39,12 @@ typedef struct aeron_stream_id_refcnt_stct
 }
 aeron_stream_id_refcnt_t;
 
+typedef struct aeron_receive_destination_entry_stct
+{
+    aeron_receive_destination_t *destination;
+}
+aeron_receive_destination_entry_t;
+
 typedef struct aeron_receive_channel_endpoint_stct
 {
     struct aeron_receive_channel_endpoint_conductor_fields_stct
@@ -48,19 +55,23 @@ typedef struct aeron_receive_channel_endpoint_stct
     }
     conductor_fields;
 
-    aeron_udp_channel_transport_t transport;
+    struct destination_stct
+    {
+        size_t length;
+        size_t capacity;
+        aeron_receive_destination_entry_t *array;
+    }
+    destinations;
+
     aeron_data_packet_dispatcher_t dispatcher;
     aeron_int64_counter_map_t stream_id_to_refcnt_map;
     aeron_int64_counter_map_t stream_and_session_id_to_refcnt_map;
     aeron_atomic_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
-    aeron_udp_channel_data_paths_t *data_paths;
     aeron_clock_cache_t *cached_clock;
-    struct sockaddr_storage current_control_addr;
 
     int64_t receiver_id;
-    size_t so_rcvbuf;
     bool has_receiver_released;
     struct
     {
@@ -68,8 +79,6 @@ typedef struct aeron_receive_channel_endpoint_stct
         int64_t value;
     }
     group_tag;
-
-    int64_t time_of_last_activity_ns;
 
     int64_t *short_sends_counter;
     int64_t *possible_ttl_asymmetry_counter;
@@ -79,6 +88,7 @@ aeron_receive_channel_endpoint_t;
 int aeron_receive_channel_endpoint_create(
     aeron_receive_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
+    aeron_receive_destination_t *straight_through_destination,
     aeron_atomic_counter_t *status_indicator,
     aeron_system_counters_t *system_counters,
     aeron_driver_context_t *context);
@@ -120,18 +130,31 @@ void aeron_receive_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr);
 
 int aeron_receive_channel_endpoint_on_data(
-    aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_receive_channel_endpoint_on_setup(
-    aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_receive_channel_endpoint_on_rttm(
-    aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
@@ -170,7 +193,20 @@ void aeron_receive_channel_endpoint_check_for_re_resolution(
 
 void aeron_receive_channel_endpoint_update_control_address(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *address);
+
+int aeron_receive_channel_endpoint_add_poll_transports(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_transport_poller_t *poller);
+
+int aeron_receive_channel_endpoint_remove_poll_transports(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_transport_poller_t *poller);
+
+int aeron_receive_channel_endpoint_add_pending_setup(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_driver_receiver_t *receiver);
 
 inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)
@@ -205,7 +241,17 @@ inline bool aeron_receive_channel_endpoint_should_elicit_setup_message(aeron_rec
 inline int aeron_receive_channel_endpoint_bind_addr_and_port(
     aeron_receive_channel_endpoint_t *endpoint, char *buffer, size_t length)
 {
-    return endpoint->transport_bindings->bind_addr_and_port_func(&endpoint->transport, buffer, length);
+    if (0 < endpoint->destinations.length)
+    {
+        aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
+        return endpoint->transport_bindings->bind_addr_and_port_func(&destination->transport, buffer, length);
+    }
+    else
+    {
+        buffer[0] = '\0';
+    }
+    
+    return 0;
 }
 
 #endif //AERON_RECEIVE_CHANNEL_ENDPOINT_H

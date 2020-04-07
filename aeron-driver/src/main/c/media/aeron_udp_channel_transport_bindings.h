@@ -52,6 +52,7 @@ typedef void (*aeron_udp_transport_recv_func_t)(
     aeron_udp_channel_data_paths_t *data_paths,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr);
@@ -159,6 +160,7 @@ typedef void (*aeron_udp_channel_interceptor_incoming_func_t)(
     aeron_udp_channel_incoming_interceptor_t *delegate,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr);
@@ -271,6 +273,7 @@ inline void aeron_udp_channel_incoming_interceptor_recv_func(
     aeron_udp_channel_data_paths_t *data_paths,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)
@@ -282,6 +285,7 @@ inline void aeron_udp_channel_incoming_interceptor_recv_func(
         interceptor->next_interceptor,
         receiver_clientd,
         endpoint_clientd,
+        destination_clientd,
         buffer,
         length,
         addr);
@@ -292,6 +296,7 @@ inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
     aeron_udp_channel_incoming_interceptor_t *delegate,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)
@@ -305,7 +310,7 @@ inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
 #pragma GCC diagnostic pop
 #endif
 
-    func(NULL, receiver_clientd, endpoint_clientd, buffer, length, addr);
+    func(NULL, receiver_clientd, endpoint_clientd, destination_clientd, buffer, length, addr);
 }
 
 int aeron_udp_channel_data_paths_init(

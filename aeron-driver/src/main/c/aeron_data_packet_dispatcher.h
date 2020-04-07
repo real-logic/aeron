@@ -21,6 +21,7 @@
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "collections/aeron_int64_to_tagged_ptr_hash_map.h"
 #include "aeron_driver_conductor_proxy.h"
+#include "media/aeron_receive_destination.h"
 
 #define AERON_DATA_PACKET_DISPATCHER_IMAGE_ACTIVE UINT32_C(1)
 #define AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME UINT32_C(2)
@@ -83,6 +84,7 @@ int aeron_data_packet_dispatcher_remove_publication_image(
 int aeron_data_packet_dispatcher_on_data(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_data_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -91,6 +93,7 @@ int aeron_data_packet_dispatcher_on_data(
 int aeron_data_packet_dispatcher_on_setup(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_setup_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -99,6 +102,7 @@ int aeron_data_packet_dispatcher_on_setup(
 int aeron_data_packet_dispatcher_on_rttm(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_rttm_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -108,6 +112,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id);

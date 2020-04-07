@@ -138,6 +138,7 @@ void aeron_udp_channel_interceptor_loss_incoming(
     aeron_udp_channel_incoming_interceptor_t *delegate,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)
@@ -151,6 +152,7 @@ void aeron_udp_channel_interceptor_loss_incoming(
             delegate->next_interceptor,
             receiver_clientd,
             endpoint_clientd,
+            destination_clientd,
             buffer,
             length,
             addr);

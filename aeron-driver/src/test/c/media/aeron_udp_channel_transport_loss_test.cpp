@@ -50,6 +50,7 @@ void aeron_udp_channel_interceptor_loss_incoming_delegate(
     aeron_udp_channel_incoming_interceptor_t *delegate,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)
@@ -85,9 +86,9 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
     aeron_udp_channel_interceptor_loss_configure(&params);
 
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, data_0, 1024, NULL);
+        NULL, &delegate, NULL, NULL, NULL, data_0, 1024, NULL);
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, data_1, 1024, NULL);
+        NULL, &delegate, NULL, NULL, NULL, data_1, 1024, NULL);
 
     EXPECT_EQ(delegate_recv_state.messages_received, 0);
 }
@@ -118,9 +119,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
     aeron_udp_channel_interceptor_loss_configure(&params);
 
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, data_0, 1024, NULL);
+        NULL, &delegate, NULL, NULL, NULL, data_0, 1024, NULL);
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, data_1, 1024, NULL);
+        NULL, &delegate, NULL, NULL, NULL, data_1, 1024, NULL);
 
     EXPECT_EQ(delegate_recv_state.messages_received, 2);
 }
@@ -150,9 +151,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
     aeron_udp_channel_interceptor_loss_configure(&params);
 
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, data_0, 1024, NULL);
+        NULL, &delegate, NULL, NULL, NULL, data_0, 1024, NULL);
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, data_1, 1024, NULL);
+        NULL, &delegate, NULL, NULL, NULL, data_1, 1024, NULL);
 
     EXPECT_EQ(delegate_recv_state.messages_received, 2);
 }
@@ -183,7 +184,7 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
         frame_header->type = msg_type;
 
         aeron_udp_channel_interceptor_loss_incoming(
-            NULL, &delegate, NULL, NULL, data + (i * 1024), 1024, NULL);
+            NULL, &delegate, NULL, NULL, NULL, data + (i * 1024), 1024, NULL);
     }
 
     EXPECT_LT(delegate_recv_state.messages_received, static_cast<int>(vlen));

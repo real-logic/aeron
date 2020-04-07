@@ -1379,6 +1379,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_channel_endpoint(
     aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
 {
+    // TODO: handle partial failure...
+    aeron_receive_destination_t *destination = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
 
     if ((endpoint = aeron_driver_conductor_find_receive_channel_endpoint_by_tag(conductor, channel->tag_id)) != NULL)
@@ -1416,14 +1418,29 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         status_indicator.value_addr = aeron_counters_manager_addr(&conductor->counters_manager,
                                                                   status_indicator.counter_id);
 
-        if (status_indicator.counter_id < 0 ||
-            aeron_receive_channel_endpoint_create(
-                &endpoint,
-                channel,
-                &status_indicator,
-                &conductor->system_counters,
-                conductor->context) < 0)
+        if (status_indicator.counter_id < 0)
         {
+            return NULL;
+        }
+
+        // TODO: ensure the logic for determining that this is truly MDS is correct...
+        if (!channel->is_manual_control_mode)
+        {
+            if (aeron_receive_destination_create(&destination, channel, conductor->context) < 0)
+            {
+                return NULL;
+            }
+        }
+
+        if (aeron_receive_channel_endpoint_create(
+            &endpoint,
+            channel,
+            destination,
+            &status_indicator,
+            &conductor->system_counters,
+            conductor->context) < 0)
+        {
+            aeron_receive_destination_delete(destination);
             return NULL;
         }
 
@@ -3169,6 +3186,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
         aeron_free(command);
         /* do not know where it came from originally, so just free command on the conductor duty cycle */
     }
+
+//    TODO: cleanup.
 }
 
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
@@ -3213,7 +3232,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
     {
         aeron_driver_receiver_proxy_on_resolution_change(
-            conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
+            conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, cmd->destination, &resolved_addr);
     }
 
     aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);

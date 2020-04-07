@@ -115,6 +115,7 @@ void aeron_driver_name_resolver_receive(
     aeron_udp_channel_data_paths_t *data_paths,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr);
@@ -488,6 +489,7 @@ void aeron_driver_name_resolver_receive(
     aeron_udp_channel_data_paths_t *data_paths,
     void *receiver_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)

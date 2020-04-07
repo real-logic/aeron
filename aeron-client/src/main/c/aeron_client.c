@@ -178,7 +178,6 @@ inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *asy
     if (NULL != async)
     {
         aeron_free(async->error_message);
-        aeron_free(async->log_file);
         aeron_free(async->uri);
         aeron_free(async);
     }

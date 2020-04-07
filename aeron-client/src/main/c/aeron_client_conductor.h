@@ -66,13 +66,11 @@ typedef struct aeron_client_registering_resource_stct
 
     char *error_message;
     char *uri;
-    char *log_file;
     int64_t registration_id;
     long long registration_deadline_ms;
     int32_t error_code;
     int32_t error_message_length;
     int32_t uri_length;
-    int32_t log_file_length;
     int32_t stream_id;
     aeron_client_registration_status_t registration_status;
     aeron_client_managed_resource_type_t type;

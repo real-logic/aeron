@@ -174,7 +174,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ms = conductor->epoch_clock();
+    async->registration_deadline_ms = conductor->epoch_clock() + conductor->registration_timeout_ms;
 }
 
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
@@ -222,7 +222,6 @@ int aeron_client_conductor_async_add_publication(
     cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->registration_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
-    cmd->log_file = NULL;
     cmd->uri_length = uri_length;
     cmd->stream_id = stream_id;
     cmd->registration_id = -1;
@@ -295,29 +294,20 @@ int aeron_client_conductor_on_publication_ready(
     for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
     {
         aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
+        char log_file[AERON_MAX_PATH];
 
         if (response->correlation_id == resource->registration_id)
         {
-            resource->log_file_length = response->log_file_length;
-            resource->registration_id = response->correlation_id;
             // TODO: = response->registration_id;
             // TODO: = response->session_id;
             // TODO: = response->channel_status_indicator_id;
             // TODO: = response->position_limit_counter_id;
 
-            if (aeron_alloc((void **)&resource->log_file, response->log_file_length + 1) < 0)
-            {
-                int errcode = errno;
-
-                aeron_set_err(errcode, "aeron_client_conductor_on_publication_ready (%d): %s", errcode, strerror(errcode));
-                return -1;
-            }
-
             memcpy(
-                resource->log_file,
+                log_file,
                 (const char *)response + sizeof(aeron_publication_buffers_ready_t),
-                resource->log_file_length);
-            resource->log_file[resource->log_file_length] = '\0';
+                response->log_file_length);
+            log_file[response->log_file_length] = '\0';
 
             // TODO: create the aeron_publication_t at this point.
 

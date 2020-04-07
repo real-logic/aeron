@@ -51,6 +51,4 @@ uint8_t aeron_semantic_version_minor(int32_t version);
 
 uint8_t aeron_semantic_version_patch(int32_t version);
 
-#define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 0, 16))
-
 #endif //AERON_DRIVER_H

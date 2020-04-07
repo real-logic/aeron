@@ -103,6 +103,18 @@ int aeron_mkdir(const char *path, int permission)
     return _mkdir(path);
 }
 
+int64_t aeron_file_length(const char *path)
+{
+    WIN32_FILE_ATTRIBUTE_DATA info;
+
+    if (GetFileAttributesEx(filename, GetFileExInfoStandard, &info) == 0)
+    {
+        return -1;
+    }
+
+    return ((int64_t)info.nFileSizeHigh << 32) | (info.nFileSizeLow);
+}
+
 uint64_t aeron_usable_fs_space(const char *path)
 {
     ULARGE_INTEGER lpAvailableToCaller, lpTotalNumberOfBytes, lpTotalNumberOfFreeBytes;
@@ -201,6 +213,12 @@ int aeron_is_directory(const char* dirname)
 {
     struct stat sb;
     return stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode);
+}
+
+int64_t aeron_file_length(const char *path)
+{
+    struct stat sb;
+    return stat(path, &sb) == 0 ? sb.st_size : -1;
 }
 
 uint64_t aeron_usable_fs_space(const char *path)

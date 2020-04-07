@@ -229,6 +229,7 @@ SET(HEADERS
     aeron_driver_context.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_cnc_file_descriptor.h
     aeron_system_counters.h
     aeron_driver_conductor.h
     aeron_driver_sender.h

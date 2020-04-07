@@ -31,28 +31,9 @@
 #include "aeron_agent.h"
 #include "aeron_name_resolver.h"
 #include "aeron_system_counters.h"
+#include "aeron_cnc_file_descriptor.h"
 
-#define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
-
-#pragma pack(push)
-#pragma pack(4)
-typedef struct aeron_cnc_metadata_stct
-{
-    int32_t cnc_version;
-    int32_t to_driver_buffer_length;
-    int32_t to_clients_buffer_length;
-    int32_t counter_metadata_buffer_length;
-    int32_t counter_values_buffer_length;
-    int32_t error_log_buffer_length;
-    int64_t client_liveness_timeout;
-    int64_t start_timestamp;
-    int64_t pid;
-}
-aeron_cnc_metadata_t;
-#pragma pack(pop)
-
-#define AERON_CNC_VERSION_AND_META_DATA_LENGTH (AERON_ALIGN(sizeof(aeron_cnc_metadata_t), AERON_CACHE_LINE_LENGTH * 2))
 
 #define AERON_COMMAND_QUEUE_CAPACITY (256)
 

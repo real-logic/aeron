@@ -20,6 +20,8 @@
 #include "aeronc.h"
 #include "aeron_agent.h"
 
+#define AERON_CNC_FILE "cnc.dat"
+
 typedef struct aeron_context_stct
 {
     char *aeron_dir;

@@ -28,7 +28,7 @@ void aeron_driver_receiver_proxy_offer(aeron_driver_receiver_proxy_t *receiver_p
     }
 }
 
-void aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(
+void aeron_driver_receiver_proxy_on_delete_cmd(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_command_base_t *cmd)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))

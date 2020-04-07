@@ -309,6 +309,8 @@ void aeron_driver_sender_on_resolution_change(void *clientd, void *command)
     aeron_send_channel_endpoint_resolution_change(
         endpoint, resolution_change->endpoint_name, &resolution_change->new_addr);
     aeron_counter_add_ordered(sender->resolution_changes_counter, 1);
+
+    aeron_driver_conductor_proxy_on_delete_cmd(sender->context->conductor_proxy, command);
 }
 
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns)

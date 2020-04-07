@@ -32,7 +32,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Publication.BACK_PRESSURED;
 import static io.aeron.Publication.CLOSED;
@@ -82,8 +81,6 @@ public class ExclusivePublicationTest
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
             ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            awaitConnection(subscription, 2);
-
             final int expectedNumberOfFragments = 778;
             int totalFragmentsRead = 0;
             final MutableInteger messageCount = new MutableInteger();
@@ -93,6 +90,8 @@ public class ExclusivePublicationTest
                     assertEquals(MESSAGE_LENGTH, length);
                     messageCount.value++;
                 };
+
+            awaitConnection(subscription, 2);
 
             for (int i = 0; i < expectedNumberOfFragments; i += 2)
             {
@@ -128,11 +127,9 @@ public class ExclusivePublicationTest
     void offerBlockThrowsIllegalArgumentExceptionIfLengthExceedsAvailableSpaceWithinTheTerm()
     {
         final String channel = "aeron:ipc?term-length=64k";
-        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+        try (Subscription ignore = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            awaitConnection(subscription, 1);
-
             while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
             {
                 Thread.yield();
@@ -145,7 +142,7 @@ public class ExclusivePublicationTest
                 () -> publication.offerBlock(srcBuffer, 0, termBufferLength));
 
             assertEquals("invalid block length " + termBufferLength +
-                ", remaining space in term " + (termBufferLength - termOffset), exception.getMessage());
+                ", remaining space in term is " + (termBufferLength - termOffset), exception.getMessage());
         }
     }
 
@@ -172,8 +169,6 @@ public class ExclusivePublicationTest
         try (Subscription ignore = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            Tests.await(publication::isConnected, TimeUnit.SECONDS.toNanos(5));
-
             final int sessionId = publication.sessionId();
             final int streamId = publication.streamId();
             final int termId = publication.termId();
@@ -182,6 +177,12 @@ public class ExclusivePublicationTest
             frameType(srcBuffer, offset, HDR_TYPE_NAK);
             frameSessionId(srcBuffer, offset, -19);
             srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, 42, LITTLE_ENDIAN);
+
+            while (publication.availableWindow() <= 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
 
             final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> publication.offerBlock(srcBuffer, offset, 1000));
@@ -204,25 +205,11 @@ public class ExclusivePublicationTest
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            awaitConnection(subscription, 1);
-            Tests.await(publication::isConnected, TimeUnit.SECONDS.toNanos(5));
-
             final int sessionId = publication.sessionId();
             final int streamId = publication.streamId();
             final int currentTermId = publication.termId();
             final int termBufferLength = publication.termBufferLength();
             final int offset = 1024;
-
-            frameType(srcBuffer, offset, HDR_TYPE_DATA);
-            frameLengthOrdered(srcBuffer, offset, termBufferLength);
-            frameSessionId(srcBuffer, offset, sessionId);
-            srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-            srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, currentTermId, LITTLE_ENDIAN);
-            srcBuffer.setMemory(offset + DATA_OFFSET, termBufferLength - HEADER_LENGTH, (byte)13);
-
-            final long position = publication.position();
-            final long result = publication.offerBlock(srcBuffer, offset, termBufferLength);
-            assertEquals(position + termBufferLength, result);
 
             final RawBlockHandler rawBlockHandler =
                 (fileChannel, fileOffset, termBuffer, termOffset, length, pollSessionId, termId) ->
@@ -233,7 +220,26 @@ public class ExclusivePublicationTest
                     assertEquals(streamId, termBuffer.getInt(termOffset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN));
                 };
 
+            frameType(srcBuffer, offset, HDR_TYPE_DATA);
+            frameLengthOrdered(srcBuffer, offset, termBufferLength);
+            frameSessionId(srcBuffer, offset, sessionId);
+            srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+            srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, currentTermId, LITTLE_ENDIAN);
+            srcBuffer.setMemory(offset + DATA_OFFSET, termBufferLength - HEADER_LENGTH, (byte)13);
+
+            awaitConnection(subscription, 1);
+            while (publication.availableWindow() <= 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            final long position = publication.position();
+            final long result = publication.offerBlock(srcBuffer, offset, termBufferLength);
+            assertEquals(position + termBufferLength, result);
+
             final long pollBytes = subscription.rawPoll(rawBlockHandler, termBufferLength);
+
             assertEquals(termBufferLength, pollBytes);
             assertEquals(publication.termBufferLength(), publication.termOffset());
             assertEquals(currentTermId, publication.termId());
@@ -245,12 +251,9 @@ public class ExclusivePublicationTest
     void offerBlockReturnsBackPressuredStatus()
     {
         final String channel = "aeron:ipc?term-length=64k";
-        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+        try (Subscription ignore = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
         {
-            awaitConnection(subscription, 1);
-            Tests.await(publication::isConnected, TimeUnit.SECONDS.toNanos(5));
-
             final int length = publication.termBufferLength() / 2;
             final int sessionId = publication.sessionId();
             final int streamId = publication.streamId();
@@ -264,10 +267,14 @@ public class ExclusivePublicationTest
             srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
             srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
             srcBuffer.setMemory(offset + DATA_OFFSET, dataLength, (byte)6);
-            publication.offerBlock(srcBuffer, offset, length);
+
+            while (publication.offerBlock(srcBuffer, offset, length) < 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
 
             final long result = publication.offerBlock(srcBuffer, 0, offset);
-
             assertEquals(BACK_PRESSURED, result);
         }
     }

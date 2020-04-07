@@ -194,14 +194,14 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
     {
-        LogBufferDescriptor.isConnected(metaDataBuffer, true);
         subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
-
         if (!subscriptionLink.isTether())
         {
             untetheredSubscriptions.add(new UntetheredSubscription(
                 subscriptionLink, subscriberPosition, timeOfLastConsumerPositionUpdateNs));
         }
+
+        LogBufferDescriptor.isConnected(metaDataBuffer, true);
     }
 
     public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)

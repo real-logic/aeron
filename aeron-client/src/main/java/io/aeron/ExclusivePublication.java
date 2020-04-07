@@ -455,7 +455,7 @@ public class ExclusivePublication extends Publication
         if (length > remaining)
         {
             throw new IllegalArgumentException(
-                "invalid block length " + length + ", remaining space in term " + remaining);
+                "invalid block length " + length + ", remaining space in term is " + remaining);
         }
     }
 

@@ -406,8 +406,8 @@ public class NetworkPublication
 
         if (spiesSimulateConnection)
         {
-            LogBufferDescriptor.isConnected(metaDataBuffer, true);
             isConnected = true;
+            LogBufferDescriptor.isConnected(metaDataBuffer, true);
         }
     }
 

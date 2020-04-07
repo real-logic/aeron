@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CNC_FILE_DESCRIPTOR_H
-#define AERON_CNC_FILE_DESCRIPTOR_H
+#ifndef AERON_C_CNC_FILE_DESCRIPTOR_H
+#define AERON_C_CNC_FILE_DESCRIPTOR_H
 
 #include <stdint.h>
 
@@ -42,4 +42,4 @@ aeron_cnc_metadata_t;
 
 #define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 0, 16))
 
-#endif //AERON_CNC_FILE_DESCRIPTOR_H
+#endif //AERON_C_CNC_FILE_DESCRIPTOR_H

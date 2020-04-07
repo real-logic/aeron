@@ -216,7 +216,7 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
         {
             if (async->epoch_clock() > async->registration_deadline_ms)
             {
-                aeron_set_err(EINVAL, "async_add_publication no response from driver");
+                aeron_set_err(ETIMEDOUT, "async_add_publication no response from driver");
                 aeron_async_cmd_free(async);
                 return -1;
             }

@@ -107,7 +107,7 @@ int64_t aeron_file_length(const char *path)
 {
     WIN32_FILE_ATTRIBUTE_DATA info;
 
-    if (GetFileAttributesEx(filename, GetFileExInfoStandard, &info) == 0)
+    if (GetFileAttributesEx(path, GetFileExInfoStandard, &info) == 0)
     {
         return -1;
     }

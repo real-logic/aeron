@@ -30,7 +30,6 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Timeout;
@@ -119,20 +118,17 @@ public class PubAndSubTest
 
         publishMessage();
 
-        final MutableLong bytesRead = new MutableLong();
-        Tests.executeUntil(
-            () -> bytesRead.value > 0,
-            (i) ->
+        while (true)
+        {
+            final long bytes = subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
+            if (bytes > 0)
             {
-                final long bytes = subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
-                if (0 == bytes)
-                {
-                    Thread.yield();
-                }
-                bytesRead.value += bytes;
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(9900));
+                break;
+            }
+
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
 
         final long expectedOffset = 0L;
         final int expectedLength = BitUtil.align(HEADER_LENGTH + SIZE_OF_INT, FRAME_ALIGNMENT);
@@ -164,8 +160,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -174,21 +168,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentsRead.value > 0,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            pollForFragment();
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
@@ -214,8 +194,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         // lock step reception until we get to within 8 messages of the end
         for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
         {
@@ -225,21 +203,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentsRead.value > 0,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            pollForFragment();
         }
 
         for (int i = 7; i > 0; i--)
@@ -265,7 +229,8 @@ public class PubAndSubTest
             Tests.checkInterruptStatus();
         }
 
-        fragmentsRead.set(0);
+        final MutableInteger fragmentsRead = new MutableInteger();
+
 
         Tests.executeUntil(
             () -> fragmentsRead.value == 9,
@@ -323,7 +288,6 @@ public class PubAndSubTest
         TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
 
         launch(channel);
-        final MutableInteger fragmentRead = new MutableInteger();
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -333,21 +297,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentRead.value > 0,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(900));
+            pollForFragment();
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
@@ -385,8 +335,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         for (int i = 0; i < numBatches; i++)
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
@@ -398,21 +346,7 @@ public class PubAndSubTest
                 }
             }
 
-            fragmentsRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentsRead.value >= numMessagesPerBatch,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(900));
+            pollForBatch(numMessagesPerBatch);
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
@@ -440,8 +374,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
@@ -453,21 +385,7 @@ public class PubAndSubTest
                 }
             }
 
-            fragmentsRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentsRead.value >= numMessagesPerBatch,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(900));
+            pollForBatch(numMessagesPerBatch);
         }
 
         while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -476,7 +394,7 @@ public class PubAndSubTest
             Tests.checkInterruptStatus();
         }
 
-        fragmentsRead.set(0);
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         Tests.executeUntil(
             () -> fragmentsRead.value > 0,
@@ -518,8 +436,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -528,20 +444,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-            Tests.executeUntil(
-                () -> fragmentsRead.value > 0,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            pollForFragment();
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
@@ -572,8 +475,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
@@ -585,20 +486,7 @@ public class PubAndSubTest
                 }
             }
 
-            fragmentsRead.set(0);
-            Tests.executeUntil(
-                () -> fragmentsRead.value >= numMessagesPerBatch,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(900));
+            pollForBatch(numMessagesPerBatch);
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
@@ -698,8 +586,6 @@ public class PubAndSubTest
             Tests.checkInterruptStatus();
         }
 
-        final MutableInteger fragmentsRead = new MutableInteger();
-
         for (int i = 0; i < numMessagesToSendStageOne; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -708,21 +594,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentsRead.value > 0,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(900));
+            pollForFragment();
         }
 
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
@@ -746,21 +618,7 @@ public class PubAndSubTest
                 Tests.checkInterruptStatus();
             }
 
-            fragmentsRead.set(0);
-
-            Tests.executeUntil(
-                () -> fragmentsRead.value > 0,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(900));
+            pollForFragment();
         }
 
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
@@ -830,7 +688,7 @@ public class PubAndSubTest
 
         while (!publication.isConnected())
         {
-            Tests.sleep(1);
+            Thread.yield();
             Tests.checkInterruptStatus();
         }
 
@@ -851,6 +709,43 @@ public class PubAndSubTest
         {
             Thread.yield();
             Tests.checkInterruptStatus();
+        }
+    }
+
+    private void pollForFragment()
+    {
+        while (true)
+        {
+            final int fragments = subscription.poll(fragmentHandler, 10);
+            if (fragments > 0)
+            {
+                break;
+            }
+
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+    }
+
+    private void pollForBatch(final int batchSize)
+    {
+        long fragmentsRead = 0;
+
+        while (true)
+        {
+            final int fragments = subscription.poll(fragmentHandler, 10);
+            fragmentsRead += fragments;
+
+            if (fragmentsRead >= batchSize)
+            {
+                break;
+            }
+
+            if (0 == fragments)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
         }
     }
 }

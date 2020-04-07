@@ -210,6 +210,11 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();
 
+        if (subscriberPositions.length == 0)
+        {
+            LogBufferDescriptor.isConnected(metaDataBuffer, false);
+        }
+
         if (!subscriptionLink.isTether())
         {
             for (int lastIndex = untetheredSubscriptions.size() - 1, i = lastIndex; i >= 0; i--)
@@ -220,11 +225,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                     break;
                 }
             }
-        }
-
-        if (subscriberPositions.length == 0)
-        {
-            LogBufferDescriptor.isConnected(metaDataBuffer, false);
         }
     }
 
@@ -401,9 +401,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                             consumerPosition,
                             rawLog.fileName(),
                             CommonContext.IPC_CHANNEL);
-                        LogBufferDescriptor.isConnected(metaDataBuffer, true);
                         untethered.state = UntetheredSubscription.ACTIVE;
                         untethered.timeOfLastUpdateNs = nowNs;
+                        LogBufferDescriptor.isConnected(metaDataBuffer, true);
                     }
                     break;
             }

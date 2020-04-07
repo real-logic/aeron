@@ -406,8 +406,8 @@ public class NetworkPublication
 
         if (spiesSimulateConnection)
         {
-            isConnected = true;
             LogBufferDescriptor.isConnected(metaDataBuffer, true);
+            isConnected = true;
         }
     }
 
@@ -789,9 +789,9 @@ public class NetworkPublication
                             senderPosition,
                             rawLog.fileName(),
                             CommonContext.IPC_CHANNEL);
-                        LogBufferDescriptor.isConnected(metaDataBuffer, true);
                         untethered.state = UntetheredSubscription.ACTIVE;
                         untethered.timeOfLastUpdateNs = nowNs;
+                        LogBufferDescriptor.isConnected(metaDataBuffer, true);
                     }
                     break;
             }

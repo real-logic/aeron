@@ -50,6 +50,8 @@ typedef struct aeron_publication_image_stct
 
     uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 
+    // TODO-MDS: Can we manage this as an array of pointers to the control addresses
+    // TODO-MDS: from the destinations or should we hold references to the destination instead?
     struct sockaddr_storage control_address;
     struct sockaddr_storage source_address;
     aeron_loss_detector_t loss_detector;

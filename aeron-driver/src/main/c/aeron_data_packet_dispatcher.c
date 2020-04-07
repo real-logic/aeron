@@ -375,6 +375,7 @@ int aeron_data_packet_dispatcher_on_setup(
 
         if (NULL == image && AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME == tag)
         {
+            // TODO-MDS: Will this move down to the destination???
             if (endpoint->conductor_fields.udp_channel->is_multicast &&
                 endpoint->conductor_fields.udp_channel->multicast_ttl < header->ttl)
             {

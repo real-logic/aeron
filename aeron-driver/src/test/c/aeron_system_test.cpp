@@ -40,14 +40,40 @@ protected:
     EmbeddedMediaDriver m_driver;
 };
 
-TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
+TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScope)
 {
     std::shared_ptr<Aeron> aeron = Aeron::connect();
 
-    aeron->addSubscription("aeron:udp?endpoint=localhost:24325", 10);
     const auto pub_reg_id = aeron->addPublication("aeron:udp?endpoint=localhost:24325", 10);
-
     auto pub = aeron->findPublication(pub_reg_id);
     while (!pub)
+    {
+        std::this_thread::yield();
         pub = aeron->findPublication(pub_reg_id);
+    }
+
+    {
+        const auto sub_reg_id = aeron->addSubscription("aeron:udp?endpoint=localhost:24325", 10);
+        auto sub = aeron->findSubscription(sub_reg_id);
+        while (!sub)
+        {
+            std::this_thread::yield();
+            sub = aeron->findSubscription(sub_reg_id);
+        }
+
+        while (!sub->isConnected())
+        {
+            std::this_thread::yield();
+        }
+
+        while (!pub->isConnected())
+        {
+            std::this_thread::yield();
+        }
+    }
+
+    while (pub->isConnected())
+    {
+        std::this_thread::yield();
+    }
 }

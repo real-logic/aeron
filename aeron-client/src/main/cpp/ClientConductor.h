@@ -85,8 +85,8 @@ public:
         m_driverActive(true),
         m_isClosed(false),
         m_timeOfLastDoWorkMs(m_epochClock()),
-        m_timeOfLastKeepaliveMs(m_epochClock()),
-        m_timeOfLastCheckManagedResourcesMs(m_epochClock()),
+        m_timeOfLastKeepaliveMs(m_timeOfLastDoWorkMs),
+        m_timeOfLastCheckManagedResourcesMs(m_timeOfLastDoWorkMs),
         m_padding()
     {
         static_cast<void>(m_padding);

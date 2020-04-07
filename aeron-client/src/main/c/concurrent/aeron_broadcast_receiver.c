@@ -54,7 +54,7 @@ extern bool aeron_broadcast_receiver_validate_at(volatile aeron_broadcast_receiv
 extern bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_receiver_t *receiver);
 
 int aeron_broadcast_receiver_receive(
-    volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler)
+    volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler, void *clientd)
 {
     int messages_received = 0;
     const long last_seen_lapped_count = receiver->lapped_count;
@@ -90,7 +90,7 @@ int aeron_broadcast_receiver_receive(
             return -1;
         }
 
-        handler(type_id, (uint8_t *)receiver->scratch_buffer, 0, (int)length);
+        handler(type_id, (uint8_t *)receiver->scratch_buffer, length, clientd);
 
         messages_received = 1;
     }

@@ -61,6 +61,10 @@ int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handle
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
 
+#define AERON_ERRCODE_UNKNOWN_RESPONSE()
+#define AERON_ERRCODE_MALFORMED_RESPONSE ()
+#define AERON_ERRCODE_
+
 /**
  * Function called by Aeron to deliver notification that the media driver has added a Publication successfully.
  *

@@ -17,11 +17,15 @@
 #ifndef AERON_C_CLIENT_CONDUCTOR_H
 #define AERON_C_CLIENT_CONDUCTOR_H
 
-#include <concurrent/aeron_mpsc_concurrent_array_queue.h>
+#include "concurrent/aeron_mpsc_concurrent_array_queue.h"
+#include "concurrent/aeron_broadcast_receiver.h"
+#include "concurrent/aeron_mpsc_rb.h"
+#include "command/aeron_control_protocol.h"
 #include "aeronc.h"
 
 #define AERON_CLIENT_COMMAND_QUEUE_CAPACITY (256)
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
+#define AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD (10)
 
 typedef enum aeron_client_registration_status_en
 {
@@ -58,16 +62,17 @@ typedef struct aeron_client_registering_resource_stct
         aeron_counter_t *counter;
     }
     resource;
+    aeron_clock_func_t epoch_clock;
 
     char *error_message;
     char *uri;
-    char *filename;
+    char *log_file;
     int64_t registration_id;
-    int64_t original_registration_id;
-    long long time_of_registration_ms;
+    long long registration_deadline_ms;
     int32_t error_code;
     int32_t error_message_length;
-    int32_t session_id;
+    int32_t uri_length;
+    int32_t log_file_length;
     int32_t stream_id;
     aeron_client_registration_status_t registration_status;
     aeron_client_managed_resource_type_t type;
@@ -99,6 +104,8 @@ aeron_client_managed_resource_t;
 typedef struct aeron_client_conductor_stct
 {
     aeron_mpsc_concurrent_array_queue_t command_queue;
+    aeron_broadcast_receiver_t broadcast_receiver;
+    aeron_mpsc_rb_t to_driver_rb;
 
     struct lingering_resources_stct
     {
@@ -124,11 +131,20 @@ typedef struct aeron_client_conductor_stct
     }
     registering_resources;
 
+    long long registration_timeout_ms;
+
+    int64_t client_id;
+
+    aeron_error_handler_t error_handler;
+    void *error_handler_clientd;
+
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
     bool invoker_mode;
 }
 aeron_client_conductor_t;
+
+#define AERON_CLIENT_FORMAT_BUFFER(buffer, format, ...) snprintf(buffer, sizeof(buffer) - 1, format, __VA_ARGS__)
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context);
 int aeron_client_conductor_do_work(aeron_client_conductor_t *conductor);
@@ -138,5 +154,9 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item);
 
 int aeron_client_conductor_async_add_publication(
     aeron_async_add_publication_t **async, aeron_client_conductor_t *conductor, const char *uri, int32_t stream_id);
+
+int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
+int aeron_client_conductor_on_publication_ready(
+    aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);
 
 #endif //AERON_C_CLIENT_CONDUCTOR_H

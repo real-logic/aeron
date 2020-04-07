@@ -178,7 +178,7 @@ inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *asy
     if (NULL != async)
     {
         aeron_free(async->error_message);
-        aeron_free(async->filename);
+        aeron_free(async->log_file);
         aeron_free(async->uri);
         aeron_free(async);
     }
@@ -215,6 +215,13 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
     {
         case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
         {
+            if (async->epoch_clock() > async->registration_deadline_ms)
+            {
+                aeron_set_err(EINVAL, "async_add_publication no response from driver");
+                aeron_async_cmd_free(async);
+                return -1;
+            }
+
             return 0;
         }
 

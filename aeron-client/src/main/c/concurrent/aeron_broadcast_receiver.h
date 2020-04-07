@@ -69,7 +69,7 @@ typedef struct aeron_broadcast_receiver_stct
 }
 aeron_broadcast_receiver_t;
 
-typedef void (*aeron_broadcast_receiver_handler_t)(int32_t type_id, uint8_t *buffer, int offset, int length);
+typedef void (*aeron_broadcast_receiver_handler_t)(int32_t type_id, uint8_t *buffer, size_t length, void *clientd);
 
 int aeron_broadcast_receiver_init(volatile aeron_broadcast_receiver_t *receiver, void *buffer, size_t length);
 
@@ -131,6 +131,6 @@ inline bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_recei
 }
 
 int aeron_broadcast_receiver_receive(
-    volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler);
+    volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler, void *clientd);
 
 #endif //AERON_BROADCAST_RECEIVER_H

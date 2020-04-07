@@ -49,5 +49,8 @@ TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
 
     auto pub = aeron->findPublication(pub_reg_id);
     while (!pub)
+    {
+        std::this_thread::yield();
         pub = aeron->findPublication(pub_reg_id);
+    }
 }

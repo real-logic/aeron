@@ -359,9 +359,19 @@ void aeron_driver_receiver_on_remove_subscription_by_session(void *clientd, void
 void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
-    aeron_command_rcv_destination_t *command = (aeron_command_rcv_destination_t *)item;
+    aeron_command_add_rcv_destination_t *command = (aeron_command_add_rcv_destination_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
     aeron_receive_destination_t *destination = (aeron_receive_destination_t *)command->destination;
+
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
+}
+
+void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_remove_rcv_destination_t *command = (aeron_command_remove_rcv_destination_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
+    aeron_udp_channel_t *channel = (aeron_udp_channel_t *)command->channel;
 
     aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }

@@ -445,6 +445,10 @@ int aeron_driver_conductor_on_add_receive_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command);
 
+int aeron_driver_conductor_on_remove_receive_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
 int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, aeron_counter_command_t *command);
 
 int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor, aeron_remove_command_t *command);

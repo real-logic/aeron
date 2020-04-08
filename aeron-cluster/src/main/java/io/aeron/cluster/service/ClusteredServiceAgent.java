@@ -80,7 +80,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
-    private String logChannel = null;
     private TimeUnit timeUnit = null;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -318,16 +317,13 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final boolean isStartup,
         final String logChannel)
     {
-        if (null != logAdapter && !logChannel.equals(this.logChannel))
+        if (null != logAdapter)
         {
-            checkLogPosition(logAdapter.position(), logPosition);
-            CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
-            logAdapter = null;
+            logAdapter.maxLogPosition(logPosition);
         }
 
         activeLogEvent = new ActiveLogEvent(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, isStartup, logChannel);
-        role(Role.get((int)roleCounter.get()));
     }
 
     void onServiceTerminationPosition(final long logPosition)
@@ -633,22 +629,23 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             }
 
             final Image image = awaitImage(activeLog.sessionId, subscription);
-            final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
-            consumeImage(image, adapter, activeLog.maxLogPosition);
+            final BoundedLogAdapter adapter = new BoundedLogAdapter(
+                activeLog.maxLogPosition, image, commitPosition, this);
+            consumeImage(image, adapter);
         }
     }
 
-    private void consumeImage(final Image image, final BoundedLogAdapter adapter, final long maxLogPosition)
+    private void consumeImage(final Image image, final BoundedLogAdapter adapter)
     {
         while (true)
         {
             final int workCount = adapter.poll();
             if (workCount == 0)
             {
-                if (adapter.position() >= maxLogPosition)
+                if (adapter.position() >= adapter.maxLogPosition())
                 {
                     final long id = ackId++;
-                    while (!consensusModuleProxy.ack(image.position(), clusterTime, id, NULL_VALUE, serviceId))
+                    while (!consensusModuleProxy.ack(adapter.position(), clusterTime, id, NULL_VALUE, serviceId))
                     {
                         idle();
                     }
@@ -682,6 +679,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private void joinActiveLog(final ActiveLogEvent activeLog)
     {
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+        role(Role.get((int)roleCounter.get()));
 
         final long id = ackId++;
         idleStrategy.reset();
@@ -693,8 +691,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
         memberId = activeLog.memberId;
         ctx.clusterMarkFile().memberId(memberId);
-        logChannel = activeLog.channel;
-        logAdapter = new BoundedLogAdapter(awaitImage(activeLog.sessionId, logSubscription), commitPosition, this);
+        logAdapter = new BoundedLogAdapter(
+            activeLog.maxLogPosition, awaitImage(activeLog.sessionId, logSubscription), commitPosition, this);
 
         for (final ClientSession session : sessionByIdMap.values())
         {
@@ -712,8 +710,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 session.disconnect(ctx.countedErrorHandler());
             }
         }
-
-        role(Role.get((int)roleCounter.get()));
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)
@@ -994,14 +990,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         catch (final InterruptedException ignore)
         {
             Thread.currentThread().interrupt();
-        }
-    }
-
-    private static void checkLogPosition(final long existingPosition, final long activeLogPosition)
-    {
-        if (existingPosition != activeLogPosition)
-        {
-            throw new ClusterException("existing position " + existingPosition + " new position " + activeLogPosition);
         }
     }
 }

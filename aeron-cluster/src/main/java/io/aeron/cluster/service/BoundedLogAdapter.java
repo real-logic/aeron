@@ -33,6 +33,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 {
     private static final int FRAGMENT_LIMIT = 100;
 
+    private long maxLogPosition;
     private final BufferBuilder builder = new BufferBuilder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
@@ -47,8 +48,13 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private final ReadableCounter upperBound;
     private final ClusteredServiceAgent agent;
 
-    BoundedLogAdapter(final Image image, final ReadableCounter upperBound, final ClusteredServiceAgent agent)
+    BoundedLogAdapter(
+        final long maxLogPosition,
+        final Image image,
+        final ReadableCounter upperBound,
+        final ClusteredServiceAgent agent)
     {
+        this.maxLogPosition = maxLogPosition;
         this.image = image;
         this.upperBound = upperBound;
         this.agent = agent;
@@ -59,9 +65,19 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         CloseHelper.close(image.subscription());
     }
 
+    void maxLogPosition(final long position)
+    {
+        maxLogPosition = position;
+    }
+
+    long maxLogPosition()
+    {
+        return maxLogPosition;
+    }
+
     boolean isDone()
     {
-        return image.isEndOfStream() || image.isClosed();
+        return image.position() >= maxLogPosition || image.isEndOfStream() || image.isClosed();
     }
 
     public long position()

@@ -450,16 +450,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    @SuppressWarnings("unused")
     void onMembershipChange(
-        final long leadershipTermId,
-        final long logPosition,
-        final long timestamp,
-        final int leaderMemberId,
-        final int clusterSize,
-        final ChangeType changeType,
-        final int memberId,
-        final String clusterMembers)
+        final long logPosition, final long timestamp, final ChangeType changeType, final int memberId)
     {
         clusterLogPosition = logPosition;
         clusterTime = timestamp;
@@ -628,24 +620,23 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 idle();
             }
 
-            final Image image = awaitImage(activeLog.sessionId, subscription);
-            final BoundedLogAdapter adapter = new BoundedLogAdapter(
-                activeLog.maxLogPosition, image, commitPosition, this);
-            consumeImage(image, adapter);
+            consumeLog(new BoundedLogAdapter(
+                activeLog.maxLogPosition, awaitImage(activeLog.sessionId, subscription), commitPosition, this));
         }
     }
 
-    private void consumeImage(final Image image, final BoundedLogAdapter adapter)
+    private void consumeLog(final BoundedLogAdapter adapter)
     {
         while (true)
         {
             final int workCount = adapter.poll();
             if (workCount == 0)
             {
-                if (adapter.position() >= adapter.maxLogPosition())
+                final long position = adapter.position();
+                if (position >= adapter.maxLogPosition())
                 {
                     final long id = ackId++;
-                    while (!consensusModuleProxy.ack(adapter.position(), clusterTime, id, NULL_VALUE, serviceId))
+                    while (!consensusModuleProxy.ack(position, clusterTime, id, NULL_VALUE, serviceId))
                     {
                         idle();
                     }
@@ -653,7 +644,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                     break;
                 }
 
-                if (image.isClosed())
+                if (adapter.image().isClosed())
                 {
                     throw new ClusterException("unexpected close of replay");
                 }

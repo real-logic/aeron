@@ -65,31 +65,6 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         CloseHelper.close(image.subscription());
     }
 
-    void maxLogPosition(final long position)
-    {
-        maxLogPosition = position;
-    }
-
-    long maxLogPosition()
-    {
-        return maxLogPosition;
-    }
-
-    boolean isDone()
-    {
-        return image.position() >= maxLogPosition || image.isEndOfStream() || image.isClosed();
-    }
-
-    public long position()
-    {
-        return image.position();
-    }
-
-    public int poll()
-    {
-        return image.boundedControlledPoll(this, upperBound.get(), FRAGMENT_LIMIT);
-    }
-
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
@@ -134,6 +109,36 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         }
 
         return action;
+    }
+
+    void maxLogPosition(final long position)
+    {
+        maxLogPosition = position;
+    }
+
+    long maxLogPosition()
+    {
+        return maxLogPosition;
+    }
+
+    boolean isDone()
+    {
+        return image.position() >= maxLogPosition || image.isEndOfStream() || image.isClosed();
+    }
+
+    long position()
+    {
+        return image.position();
+    }
+
+    Image image()
+    {
+        return image;
+    }
+
+    int poll()
+    {
+        return image.boundedControlledPoll(this, upperBound.get(), FRAGMENT_LIMIT);
     }
 
     @SuppressWarnings("MethodLength")
@@ -259,14 +264,10 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     messageHeaderDecoder.version());
 
                 agent.onMembershipChange(
-                    membershipChangeEventDecoder.leadershipTermId(),
                     membershipChangeEventDecoder.logPosition(),
                     membershipChangeEventDecoder.timestamp(),
-                    membershipChangeEventDecoder.leaderMemberId(),
-                    membershipChangeEventDecoder.clusterSize(),
                     membershipChangeEventDecoder.changeType(),
-                    membershipChangeEventDecoder.memberId(),
-                    membershipChangeEventDecoder.clusterMembers());
+                    membershipChangeEventDecoder.memberId());
                 break;
         }
 

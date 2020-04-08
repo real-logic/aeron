@@ -538,6 +538,23 @@ public:
         return writeCommand(AERON_COMMAND_ADD_DESTINATION, command.length());
     }
 
+    int addReceiveDestination(
+        int64_t client_id,
+        int64_t correlation_id,
+        int64_t subscription_id,
+        const char *channel,
+        int32_t stream_id)
+    {
+        command::DestinationMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.registrationId(subscription_id);
+        command.channel(channel);
+
+        return writeCommand(AERON_COMMAND_ADD_RCV_DESTINATION, command.length());
+    }
+
     int removeDestination(
         int64_t client_id, int64_t correlation_id, int64_t publication_registration_id, const char *channel)
     {

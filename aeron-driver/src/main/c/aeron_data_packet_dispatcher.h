@@ -31,6 +31,7 @@
 
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 typedef struct aeron_receive_channel_endpoint_stct aeron_receive_channel_endpoint_t;
+typedef struct aeron_receive_destination_stct aeron_receive_destination_t;
 typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
 
 typedef struct aeron_data_packet_dispatcher_stct

@@ -1671,3 +1671,89 @@ TEST_F(DriverConductorNetworkTest, shouldAllowDifferentReliabilityParameterWithS
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
+
+TEST_F(DriverConductorNetworkTest, shouldAddMdsWithSingleUnicastSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
+    doWork();
+
+    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
+    doWork();
+
+    auto dest_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(dest_ready_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscriptionWithInvalidRegistrationId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t invalid_sub_id = sub_id + 1000000;
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
+    doWork();
+
+    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, invalid_sub_id, CHANNEL_1, STREAM_ID_1), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscriptionWithInvalidNonManualControlEndpoint)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_2, STREAM_ID_1), 0);
+    doWork();
+
+    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+

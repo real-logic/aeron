@@ -1787,6 +1787,22 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             break;
         }
 
+        case AERON_COMMAND_ADD_RCV_DESTINATION:
+        {
+            aeron_destination_command_t *command = (aeron_destination_command_t *)message;
+
+            if (length < sizeof(aeron_destination_command_t) ||
+                length < (sizeof(aeron_destination_command_t) + command->channel_length))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductor_on_add_receive_destination(conductor, command);
+            break;
+        }
+
         case AERON_COMMAND_ADD_COUNTER:
         {
             aeron_counter_command_t *command = (aeron_counter_command_t *)message;
@@ -2896,12 +2912,69 @@ int aeron_driver_conductor_on_remove_destination(
 
     aeron_set_err(
         -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
-        "unknown remove destination registration_id=%" PRId64,
+        "unknown remove destination, client_id=%" PRId64 " registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
 
     return -1;
 }
+
+int aeron_driver_conductor_on_add_receive_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command)
+{
+    aeron_receive_channel_endpoint_t *endpoint = NULL;
+
+    for (size_t i = 0, size = conductor->network_subscriptions.length; i < size; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (command->registration_id == link->registration_id)
+        {
+            endpoint = link->endpoint;
+            break;
+        }
+    }
+
+    if (NULL == endpoint)
+    {
+        aeron_set_err(
+            -AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
+            "unknown add destination client_id=%" PRId64 " registration_id=%" PRId64,
+            command->correlated.client_id,
+            command->registration_id);
+
+        return -1;
+    }
+
+    if (!endpoint->conductor_fields.udp_channel->is_manual_control_mode)
+    {
+        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "channel does not allow manual control");
+        return -1;
+    }
+
+    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+
+    aeron_udp_channel_t *udp_channel;
+    if (aeron_udp_channel_parse(command->channel_length, command_uri, &conductor->name_resolver, &udp_channel) < 0)
+    {
+        // TODO-MDS: should the error be set here or can we just use the lower down value...
+        return -1;
+    }
+
+    aeron_receive_destination_t *destination = NULL;
+
+    if (aeron_receive_destination_create(&destination, udp_channel, conductor->context) < 0)
+    {
+        return -1;
+    }
+
+    aeron_driver_receiver_proxy_on_add_destination(conductor->context->receiver_proxy, endpoint, destination);
+
+    aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+    return 0;
+}
+
 
 int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, aeron_counter_command_t *command)
 {

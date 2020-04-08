@@ -94,6 +94,7 @@ protected:
         aeron_driver_context_set_threading_mode(m_context, AERON_THREADING_MODE_SHARED);
         aeron_driver_context_set_dir_delete_on_start(m_context, true);
         aeron_driver_context_set_dir_delete_on_shutdown(m_context, true);
+        aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
 
         if (aeron_driver_init(&m_driver, m_context) < 0)
         {

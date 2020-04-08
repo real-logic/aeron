@@ -3052,7 +3052,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
+    aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(conductor->context->receiver_proxy, item);
 }
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
@@ -3100,8 +3100,6 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
         aeron_driver_sender_proxy_on_resolution_change(
             conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
     }
-
-    aeron_driver_sender_proxy_on_delete_cmd(conductor->context->sender_proxy, item);
 }
 
 void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
@@ -3124,8 +3122,6 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
         aeron_driver_receiver_proxy_on_resolution_change(
             conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
     }
-
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
 }
 
 extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr);

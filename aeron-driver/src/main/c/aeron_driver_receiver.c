@@ -425,8 +425,6 @@ void aeron_driver_receiver_on_resolution_change(void *clientd, void *item)
     }
 
     aeron_receive_channel_endpoint_update_control_address(endpoint, &cmd->new_addr);
-
-    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
 int aeron_driver_receiver_add_pending_setup(

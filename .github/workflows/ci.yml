@@ -202,7 +202,7 @@ jobs:
         run: |
           sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api --no-system-tests
+        run: cppbuild/cppbuild --no-system-tests
 
   cpp-msvc-build:
     name: C++ MSVC (Windows)
@@ -216,4 +216,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build
-        run: cppbuild/cppbuild-vs.cmd --build-archive-api
+        run: cppbuild/cppbuild-vs.cmd

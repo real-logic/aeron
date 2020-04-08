@@ -95,6 +95,8 @@ protected:
         aeron_driver_context_set_dir_delete_on_start(m_context, true);
         aeron_driver_context_set_dir_delete_on_shutdown(m_context, true);
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
+        aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
+        aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
 
         if (aeron_driver_init(&m_driver, m_context) < 0)
         {

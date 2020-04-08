@@ -69,7 +69,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final ServiceAdapter serviceAdapter;
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
-    private final ClusterMarkFile markFile;
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(
         new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
@@ -94,7 +93,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
         epochClock = ctx.epochClock();
-        markFile = ctx.clusterMarkFile();
 
         final String channel = ctx.serviceControlChannel();
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
@@ -169,10 +167,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 if (logAdapter.isDone())
                 {
-                    final long logPosition = logAdapter.position();
                     CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
                     logAdapter = null;
-                    checkLogPosition(logPosition, activeLogEvent);
                     role(Role.get((int)roleCounter.get()));
                 }
             }
@@ -324,12 +320,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         if (null != logAdapter && !logChannel.equals(this.logChannel))
         {
-            final long existingPosition = logAdapter.position();
-            if (existingPosition != logPosition)
-            {
-                throw new ClusterException("existing position " + existingPosition + " new position " + logPosition);
-            }
-
+            checkLogPosition(logAdapter.position(), logPosition);
             CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
             logAdapter = null;
         }
@@ -699,13 +690,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             idle();
         }
 
-        final Image image = awaitImage(activeLog.sessionId, logSubscription);
-
         sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
         memberId = activeLog.memberId;
         ctx.clusterMarkFile().memberId(memberId);
         logChannel = activeLog.channel;
-        logAdapter = new BoundedLogAdapter(image, commitPosition, this);
+        logAdapter = new BoundedLogAdapter(awaitImage(activeLog.sessionId, logSubscription), commitPosition, this);
 
         for (final ClientSession session : sessionByIdMap.values())
         {
@@ -936,7 +925,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (nowMs >= (timeOfLastMarkFileUpdateMs + MARK_FILE_UPDATE_INTERVAL_MS))
             {
-                markFile.updateActivityTimestamp(nowMs);
+                ctx.clusterMarkFile().updateActivityTimestamp(nowMs);
                 timeOfLastMarkFileUpdateMs = nowMs;
             }
 
@@ -1008,12 +997,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    private static void checkLogPosition(final long existingPosition, final ActiveLogEvent activeLogEvent)
+    private static void checkLogPosition(final long existingPosition, final long activeLogPosition)
     {
-        if (null != activeLogEvent && existingPosition != activeLogEvent.logPosition)
+        if (existingPosition != activeLogPosition)
         {
-            throw new ClusterException(
-                "existing position " + existingPosition + " new position " + activeLogEvent.logPosition);
+            throw new ClusterException("existing position " + existingPosition + " new position " + activeLogPosition);
         }
     }
 }

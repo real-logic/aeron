@@ -202,7 +202,7 @@ jobs:
         run: |
           sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cppbuild/cppbuild --build-archive-api --no-system-tests
 
   cpp-msvc-build:
     name: C++ MSVC (Windows)

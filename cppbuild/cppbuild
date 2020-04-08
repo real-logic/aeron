@@ -48,6 +48,11 @@ do
       ncpus=1
       shift
       ;;
+    --no-system-tests)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_SYSTEM_TESTS=OFF"
+      echo "Disabling system tests"
+      shift
+      ;;
     --sanitise-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DSANITISE_BUILD=ON"
       echo "Enabling sanitise build"

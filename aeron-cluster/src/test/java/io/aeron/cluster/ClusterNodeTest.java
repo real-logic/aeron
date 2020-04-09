@@ -333,14 +333,15 @@ public class ClusterNodeTest
                 }
                 else
                 {
-                    for (final ClientSession clientSession : cluster.clientSessions())
-                    {
-                        idleStrategy.reset();
-                        while (clientSession.offer(buffer, offset, length) < 0)
+                    cluster.forEachClientSession(
+                        (clientSession) ->
                         {
-                            idleStrategy.idle();
-                        }
-                    }
+                            idleStrategy.reset();
+                            while (clientSession.offer(buffer, offset, length) < 0)
+                            {
+                                idleStrategy.idle();
+                            }
+                        });
                 }
             }
         };

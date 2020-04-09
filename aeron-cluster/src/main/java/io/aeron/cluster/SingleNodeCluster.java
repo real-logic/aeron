@@ -42,6 +42,8 @@ import org.agrona.console.ContinueBarrier;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
+
 /**
  * Single Node Cluster that includes everything needed to run all in one place. Includes a simple service to show
  * event processing. And also includes a cluster client.
@@ -156,15 +158,17 @@ public class SingleNodeCluster implements AutoCloseable
             System.out.println("onTimerEvent " + correlationId);
 
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-            for (final ClientSession session : cluster.clientSessions())
-            {
-                buffer.putInt(0, 1);
-                idleStrategy.reset();
-                while (session.offer(buffer, 0, 4) < 0)
+            buffer.putInt(0, 1);
+
+            cluster.forEachClientSession(
+                (clientSession) ->
                 {
-                    idleStrategy.idle();
-                }
-            }
+                    idleStrategy.reset();
+                    while (clientSession.offer(buffer, 0, SIZE_OF_INT) < 0)
+                    {
+                        idleStrategy.idle();
+                    }
+                });
         }
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)

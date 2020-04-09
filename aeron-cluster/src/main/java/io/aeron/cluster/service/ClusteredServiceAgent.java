@@ -34,6 +34,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -41,7 +42,6 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_ID;
-import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
@@ -63,7 +63,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
-    private final Collection<ClientSession> readOnlyClientSessions = unmodifiableCollection(sessionByIdMap.values());
+    private final Collection<ClientSession> unmodifiableClientSessions =
+        new UnmodifiableClientSessionCollection(sessionByIdMap.values());
     private final ClusteredService service;
     private final ConsensusModuleProxy consensusModuleProxy;
     private final ServiceAdapter serviceAdapter;
@@ -75,7 +76,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
     private final Runnable abortHandler = this::abort;
 
-    private BoundedLogAdapter logAdapter;
+    private final BoundedLogAdapter logAdapter;
     private ReadableCounter roleCounter;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
@@ -209,7 +210,12 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public Collection<ClientSession> clientSessions()
     {
-        return readOnlyClientSessions;
+        return unmodifiableClientSessions;
+    }
+
+    public void forEachClientSession(final Consumer<? super ClientSession> action)
+    {
+        sessionByIdMap.values().forEach(action);
     }
 
     public boolean closeClientSession(final long clusterSessionId)

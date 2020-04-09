@@ -27,6 +27,7 @@ import org.agrona.concurrent.IdleStrategy;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
@@ -154,6 +155,13 @@ public interface Cluster
      * @return the current collection of cluster client sessions.
      */
     Collection<ClientSession> clientSessions();
+
+    /**
+     * For each iterator over {@link ClientSession}s using the most efficient method possible.
+     *
+     * @param action to be taken for each {@link ClientSession} in turn.
+     */
+    void forEachClientSession(Consumer<? super ClientSession> action);
 
     /**
      * Request the close of a {@link ClientSession} by sending the request to the consensus module.

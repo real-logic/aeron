@@ -147,6 +147,9 @@ public interface Cluster
 
     /**
      * Get the current collection of cluster client sessions.
+     * <p>
+     * The {@link java.util.Iterator} on this class does not support nested iteration. It reuses the iterator to
+     * avoid allocation.
      *
      * @return the current collection of cluster client sessions.
      */
@@ -159,7 +162,7 @@ public interface Cluster
      * @return true if the event to close a session was sent or false if back pressure was applied.
      * @throws ClusterException if the clusterSessionId is not recognised.
      */
-    boolean closeSession(long clusterSessionId);
+    boolean closeClientSession(long clusterSessionId);
 
     /**
      * Cluster time as {@link #timeUnit()}s since 1 Jan 1970 UTC.

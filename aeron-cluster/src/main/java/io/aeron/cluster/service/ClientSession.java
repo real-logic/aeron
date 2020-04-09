@@ -103,7 +103,7 @@ public class ClientSession
     {
         if (null != clusteredServiceAgent.getClientSession(id))
         {
-            clusteredServiceAgent.closeSession(id);
+            clusteredServiceAgent.closeClientSession(id);
         }
     }
 

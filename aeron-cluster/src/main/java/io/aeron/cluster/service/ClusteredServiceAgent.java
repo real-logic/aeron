@@ -212,7 +212,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         return readOnlyClientSessions;
     }
 
-    public boolean closeSession(final long clusterSessionId)
+    public boolean closeClientSession(final long clusterSessionId)
     {
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
         if (clientSession == null)

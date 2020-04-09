@@ -108,6 +108,13 @@ class UdpChannelNamesParameterisedTest :
 {
 };
 
+class UdpChannelEqualityParameterisedTest :
+    public testing::TestWithParam<std::tuple<bool, const char *, const char *>>,
+    public UdpChannelTestBase
+{
+};
+
+
 TEST_F(UdpChannelTest, shouldParseExplicitLocalAddressAndPortFormat)
 {
     ASSERT_EQ(parse_udp_channel("aeron:udp?interface=localhost:40123|endpoint=localhost:40124"), 0) << aeron_errmsg();
@@ -392,3 +399,52 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(
             "[fe80::5246:5dff:fe73:df06]:40456", "[fe80::5246:5dff:fe73:df06]", (const char *)NULL, (const char *)NULL,
             "UDP-127.0.0.1:0-[fe80::5246:5dff:fe73:df06]:40456")));
+
+TEST_P(UdpChannelEqualityParameterisedTest, shouldMatch)
+{
+    const bool should_match = std::get<0>(GetParam());
+    const char *uri_1 = std::get<1>(GetParam());
+    const char *uri_2 = std::get<2>(GetParam());
+
+    aeron_udp_channel_t *channel_1 = NULL;
+    aeron_udp_channel_t *channel_2 = NULL;
+
+    aeron_name_resolver_t resolver;
+    aeron_default_name_resolver_supplier(&resolver, NULL, NULL);
+
+    if (NULL != uri_1)
+    {
+        ASSERT_LE(0, aeron_udp_channel_parse(strlen(uri_1), uri_1, &resolver, &channel_1)) << uri_1;
+    }
+
+    if (NULL != uri_2)
+    {
+        ASSERT_LE(0, aeron_udp_channel_parse(strlen(uri_2), uri_2, &resolver, &channel_2)) << uri_2;
+    }
+
+    EXPECT_EQ(should_match, aeron_udp_channel_equals(channel_1, channel_2))
+        << uri_1 << "(" << (NULL != channel_1 ? channel_1->canonical_form : "null") << ")"
+        << " vs "
+        << uri_2 << "(" << (NULL != channel_2 ? channel_2->canonical_form : "null") << ")";
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    UdpChannelEqualityTest,
+    UdpChannelEqualityParameterisedTest,
+    testing::Values(
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090"),
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090|session-id=12", "aeron:udp?endpoint=localhost:9090"),
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090|session-id=12", "aeron:udp?endpoint=localhost:9090|session-id=13"),
+        std::make_tuple(
+            true,
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090",
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090"),
+        std::make_tuple(
+            false,
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090",
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9091"),
+        std::make_tuple(false, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=127.0.0.1:9090"),
+        std::make_tuple(false, (const char *)NULL, "aeron:udp?endpoint=localhost:9091"),
+        std::make_tuple(true, (const char *)NULL, (const char *)NULL),
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090")
+        ));

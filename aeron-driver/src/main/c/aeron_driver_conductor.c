@@ -3157,6 +3157,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = command->endpoint;
+    aeron_receive_destination_t *destination = command->destination;
 
     if (aeron_receiver_channel_endpoint_validate_sender_mtu_length(
         endpoint, (size_t)command->mtu_length, conductor->context->initial_window_length) < 0)
@@ -3232,6 +3233,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     if (aeron_publication_image_create(
         &image,
         endpoint,
+        destination,
         conductor->context,
         registration_id,
         command->session_id,

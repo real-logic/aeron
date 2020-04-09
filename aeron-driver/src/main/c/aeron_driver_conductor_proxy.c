@@ -56,7 +56,8 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     int32_t mtu_length,
     struct sockaddr_storage *control_address,
     struct sockaddr_storage *src_address,
-    void *endpoint)
+    void *endpoint,
+    void *destination)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
@@ -70,7 +71,8 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
                 .term_offset = term_offset,
                 .term_length = term_length,
                 .mtu_length = mtu_length,
-                .endpoint = endpoint
+                .endpoint = endpoint,
+                .destination = destination
             };
 
         memcpy(&cmd.control_address, control_address, sizeof(struct sockaddr_storage));
@@ -99,6 +101,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
         cmd->term_length = term_length;
         cmd->mtu_length = mtu_length;
         cmd->endpoint = endpoint;
+        cmd->destination = destination;
         memcpy(&cmd->control_address, control_address, sizeof(struct sockaddr_storage));
         memcpy(&cmd->src_address, src_address, sizeof(struct sockaddr_storage));
 

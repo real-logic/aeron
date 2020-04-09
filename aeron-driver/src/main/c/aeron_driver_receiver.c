@@ -414,6 +414,11 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
             break;
         }
     }
+
+    // TODO-MDS: Add destination to poller
+    // TODO-MDS: Add destination to pending setup
+    // TODO-MDS: Add destination to endpoint
+    // TODO-MDS: Add destination to image
 }
 
 void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item)

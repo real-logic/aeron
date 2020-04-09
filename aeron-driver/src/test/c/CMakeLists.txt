@@ -21,6 +21,7 @@ include_directories(${AERON_DRIVER_SOURCE_PATH})
 
 set(TEST_HEADERS
     aeron_driver_conductor_test.h
+    aeron_receiver_test.h
     EmbeddedMediaDriver.h
     aeron_test_udp_bindings.h)
 
@@ -91,3 +92,4 @@ aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)
 aeron_driver_test(name_resolver_test aeron_name_resolver_test.cpp)
 aeron_driver_test(name_resolver_cache_test aeron_name_resolver_cache_test.cpp)
 aeron_driver_test(data_patch_dispatcher_test aeron_data_packet_dispatcher_test.cpp)
+aeron_driver_test(publication_image_test aeron_publication_image_test.cpp)

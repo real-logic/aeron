@@ -32,6 +32,13 @@ typedef enum aeron_publication_image_state_enum
 }
 aeron_publication_image_state_t;
 
+typedef struct aeron_publication_image_connection_stct
+{
+    aeron_receive_destination_t *destination;
+    bool is_eos;
+}
+aeron_publication_image_connection_t;
+
 typedef struct aeron_publication_image_stct
 {
     uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
@@ -52,6 +59,13 @@ typedef struct aeron_publication_image_stct
 
     // TODO-MDS: Can we manage this as an array of pointers to the control addresses
     // TODO-MDS: from the destinations or should we hold references to the destination instead?
+    struct image_connection_entries
+    {
+        size_t length;
+        size_t capacity;
+        aeron_publication_image_connection_t *array;
+    }
+    connections;
     struct sockaddr_storage control_address;
     struct sockaddr_storage source_address;
     aeron_loss_detector_t loss_detector;
@@ -115,6 +129,7 @@ aeron_publication_image_t;
 int aeron_publication_image_create(
     aeron_publication_image_t **image,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_driver_context_t *context,
     int64_t correlation_id,
     int32_t session_id,
@@ -155,6 +170,10 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image);
 
 int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int64_t now_ns);
+
+int aeron_publication_image_add_destination(aeron_publication_image_t *image, aeron_receive_destination_t *destination);
+
+int aeron_publication_image_remove_destination(aeron_publication_image_t *image, aeron_udp_channel_t *channel);
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);

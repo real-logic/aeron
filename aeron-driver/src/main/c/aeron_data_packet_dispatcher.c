@@ -321,6 +321,7 @@ int aeron_data_packet_dispatcher_on_data(
 int aeron_data_packet_dispatcher_create_publication(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_setup_header_t *header,
     struct sockaddr_storage *addr,
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest)
@@ -349,7 +350,8 @@ int aeron_data_packet_dispatcher_create_publication(
         header->mtu,
         control_addr,
         addr,
-        endpoint);
+        endpoint,
+        destination);
 
     return 0;
 }
@@ -382,7 +384,8 @@ int aeron_data_packet_dispatcher_on_setup(
                 aeron_counter_ordered_increment(endpoint->possible_ttl_asymmetry_counter, 1);
             }
 
-            if (aeron_data_packet_dispatcher_create_publication(dispatcher, endpoint, header, addr, stream_interest) < 0)
+            if (aeron_data_packet_dispatcher_create_publication(
+                dispatcher, endpoint, destination, header, addr, stream_interest) < 0)
             {
                 return -1;
             }
@@ -391,7 +394,8 @@ int aeron_data_packet_dispatcher_on_setup(
         {
             if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
             {
-                if (aeron_data_packet_dispatcher_create_publication(dispatcher, endpoint, header, addr, stream_interest) < 0)
+                if (aeron_data_packet_dispatcher_create_publication(
+                    dispatcher, endpoint, destination, header, addr, stream_interest) < 0)
                 {
                     return -1;
                 }

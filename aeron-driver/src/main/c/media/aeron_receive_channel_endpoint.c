@@ -603,6 +603,48 @@ int aeron_receive_channel_endpoint_on_add_subscription_by_session(
     return aeron_data_packet_dispatcher_add_subscription_by_session(&endpoint->dispatcher, stream_id, session_id);
 }
 
+int aeron_receive_channel_endpoint_add_destination(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination)
+{
+    int capacity_result = 0;
+    AERON_ARRAY_ENSURE_CAPACITY(capacity_result, endpoint->destinations, aeron_receive_channel_endpoint_t);
+
+    if (capacity_result < 0)
+    {
+        aeron_set_err_from_last_err_code("%s:%d - %s", __FILE__, __LINE__, aeron_errmsg());
+        return -1;
+    }
+
+    endpoint->destinations.array[endpoint->destinations.length].destination = destination;
+    endpoint->destinations.length++;
+
+    return endpoint->destinations.length;
+}
+
+int aeron_receive_channel_endpoint_remove_destination(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel)
+{
+    int deleted = 0;
+
+    for (int last_index = (int)endpoint->destinations.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+        if (aeron_udp_channel_equals(channel, destination->conductor_fields.udp_channel))
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)endpoint->destinations.array, sizeof(aeron_receive_destination_entry_t), i, last_index);
+
+            --endpoint->destinations.length;
+            ++deleted;
+            break;
+        }
+    }
+
+    return deleted;
+}
+
 int aeron_receive_channel_endpoint_on_remove_subscription_by_session(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id)
 {

@@ -142,8 +142,14 @@ protected:
             &congestion_control_strategy, 0, 0, 0, 0, 0, TERM_BUFFER_SIZE, MTU,
             &m_channel->remote_control, &m_channel->remote_data, m_context, &m_counters_manager);
 
+        if (1u != m_receive_endpoint->destinations.length)
+        {
+            return NULL;
+        }
+
         if (aeron_publication_image_create(
-            &image, m_receive_endpoint, m_context, correlation_id, session_id, stream_id, 0, 0, 0,
+            &image, m_receive_endpoint, m_receive_endpoint->destinations.array[0].destination,
+            m_context, correlation_id, session_id, stream_id, 0, 0, 0,
             &hwm_position, &pos_position, congestion_control_strategy,
             &m_channel->remote_control, &m_channel->local_data,
             TERM_BUFFER_SIZE, MTU, NULL, true, true, false, &m_system_counters) < 0)

@@ -16,8 +16,9 @@
 
 #include <inttypes.h>
 #include "util/aeron_netutil.h"
-#include "concurrent/aeron_term_rebuilder.h"
+#include "util/aeron_arrayutil.h"
 #include "util/aeron_error.h"
+#include "concurrent/aeron_term_rebuilder.h"
 #include "aeron_publication_image.h"
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_driver_conductor.h"
@@ -26,6 +27,7 @@
 int aeron_publication_image_create(
     aeron_publication_image_t **image,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_driver_context_t *context,
     int64_t correlation_id,
     int32_t session_id,
@@ -98,6 +100,11 @@ int aeron_publication_image_create(
         return -1;
     }
     _image->map_raw_log_close_func = context->map_raw_log_close_func;
+
+    if (aeron_publication_image_add_destination(_image, destination) < 0)
+    {
+        return -1;
+    }
 
     strncpy(_image->log_file_name, path, (size_t)path_length);
     _image->log_file_name[path_length] = '\0';
@@ -524,6 +531,46 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
     }
 
     return work_count;
+}
+
+int aeron_publication_image_add_destination(aeron_publication_image_t *image, aeron_receive_destination_t *destination)
+{
+    int capacity_result = 0;
+    AERON_ARRAY_ENSURE_CAPACITY(capacity_result, image->connections, aeron_publication_image_connection_t);
+
+    if (capacity_result < 0)
+    {
+        aeron_set_err_from_last_err_code("%s:%d - %s", __FILE__, __LINE__, aeron_errmsg());
+        return -1;
+    }
+
+    aeron_publication_image_connection_t *new_image = &image->connections.array[image->connections.length];
+    new_image->destination = destination;
+    new_image->is_eos = false;
+    image->connections.length++;
+
+    return image->connections.length;
+}
+
+int aeron_publication_image_remove_destination(aeron_publication_image_t *image, aeron_udp_channel_t *channel)
+{
+    int deleted = 0;
+
+    for (int last_index = (int)image->connections.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_receive_destination_t *destination = image->connections.array[i].destination;
+        if (aeron_udp_channel_equals(channel, destination->conductor_fields.udp_channel))
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)image->connections.array, sizeof(aeron_publication_image_connection_t), i, last_index);
+
+            --image->connections.length;
+            ++deleted;
+            break;
+        }
+    }
+
+    return deleted;
 }
 
 void aeron_publication_image_check_untethered_subscriptions(

@@ -178,6 +178,14 @@ int aeron_receive_channel_endpoint_on_add_subscription_by_session(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
 int aeron_receive_channel_endpoint_on_remove_subscription_by_session(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
+
+int aeron_receive_channel_endpoint_add_destination(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination);
+int aeron_receive_channel_endpoint_remove_destination(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel);
+
 int aeron_receive_channel_endpoint_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
 int aeron_receive_channel_endpoint_on_remove_publication_image(

@@ -46,6 +46,7 @@ typedef struct aeron_command_create_publication_image_stct
     struct sockaddr_storage control_address;
     struct sockaddr_storage src_address;
     void *endpoint;
+    void *destination;
 }
 aeron_command_create_publication_image_t;
 
@@ -70,7 +71,8 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     int32_t mtu_length,
     struct sockaddr_storage *control_address,
     struct sockaddr_storage *src_address,
-    void *endpoint);
+    void *endpoint,
+    void *destination);
 
 void aeron_driver_conductor_proxy_on_linger_buffer(aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer);
 

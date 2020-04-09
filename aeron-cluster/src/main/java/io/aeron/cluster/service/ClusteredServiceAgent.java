@@ -56,7 +56,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private long timeOfLastMarkFileUpdateMs;
     private long cachedTimeMs;
     private long clusterTime;
-    private long clusterLogPosition = NULL_POSITION;
+    private long logPosition = NULL_POSITION;
     private long terminationPosition = NULL_POSITION;
 
     private final ClusteredServiceContainer.Context ctx;
@@ -247,7 +247,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public long logPosition()
     {
-        return clusterLogPosition;
+        return logPosition;
     }
 
     public boolean scheduleTimer(final long correlationId, final long deadline)
@@ -340,7 +340,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final int length,
         final Header header)
     {
-        clusterLogPosition = logPosition;
+        this.logPosition = logPosition;
         clusterTime = timestamp;
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
 
@@ -349,7 +349,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     void onTimerEvent(final long logPosition, final long correlationId, final long timestamp)
     {
-        clusterLogPosition = logPosition;
+        this.logPosition = logPosition;
         clusterTime = timestamp;
         service.onTimerEvent(correlationId, timestamp);
     }
@@ -363,7 +363,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
-        clusterLogPosition = logPosition;
+        this.logPosition = logPosition;
         clusterTime = timestamp;
 
         if (sessionByIdMap.containsKey(clusterSessionId))
@@ -391,7 +391,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final long timestamp,
         final CloseReason closeReason)
     {
-        clusterLogPosition = logPosition;
+        this.logPosition = logPosition;
         clusterTime = timestamp;
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
 
@@ -409,7 +409,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     void onServiceAction(
         final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
     {
-        clusterLogPosition = logPosition;
+        this.logPosition = logPosition;
         clusterTime = timestamp;
         executeAction(action, logPosition, leadershipTermId);
     }
@@ -434,7 +434,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         else
         {
             sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
-            clusterLogPosition = logPosition;
+            this.logPosition = logPosition;
             clusterTime = timestamp;
             this.timeUnit = timeUnit;
 
@@ -453,7 +453,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     void onMembershipChange(
         final long logPosition, final long timestamp, final ChangeType changeType, final int memberId)
     {
-        clusterLogPosition = logPosition;
+        this.logPosition = logPosition;
         clusterTime = timestamp;
 
         if (memberId == this.memberId && changeType == ChangeType.QUIT)
@@ -571,10 +571,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private void recoverState(final CountersReader counters)
     {
         final int recoveryCounterId = awaitRecoveryCounter(counters);
-        clusterLogPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
+        logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         clusterTime = RecoveryState.getTimestamp(counters, recoveryCounterId);
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         final boolean hasReplay = RecoveryState.hasReplay(counters, recoveryCounterId);
+        sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         isServiceActive = true;
 
         if (NULL_VALUE != leadershipTermId)
@@ -588,7 +589,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         final long id = ackId++;
         idleStrategy.reset();
-        while (!consensusModuleProxy.ack(clusterLogPosition, clusterTime, id, NULL_VALUE, serviceId))
+        while (!consensusModuleProxy.ack(logPosition, clusterTime, id, NULL_VALUE, serviceId))
         {
             idle();
         }

@@ -90,6 +90,7 @@ typedef struct aeron_client_managed_resource_stct
         aeron_exclusive_publication_t *exclusive_publication;
         aeron_subscription_t *subscription;
         aeron_image_t *image;
+        aeron_counter_t *counter;
     }
     resource;
     aeron_client_managed_resource_type_t type;

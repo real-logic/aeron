@@ -49,6 +49,18 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         return -1;
     }
 
+    conductor->registering_resources.array = NULL;
+    conductor->registering_resources.capacity = 0;
+    conductor->registering_resources.length = 0;
+
+    conductor->active_resources.array = NULL;
+    conductor->active_resources.capacity = 0;
+    conductor->active_resources.length = 0;
+
+    conductor->lingering_resources.array = NULL;
+    conductor->lingering_resources.capacity = 0;
+    conductor->lingering_resources.length = 0;
+
     conductor->command_queue = &context->command_queue;
 
     conductor->error_handler = context->error_handler;
@@ -200,6 +212,7 @@ int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *co
     {
         if (++fail_count > AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD)
         {
+            // TODO: error message
             return -1;
         }
 
@@ -313,10 +326,15 @@ int aeron_client_conductor_on_publication_ready(
 
         if (response->correlation_id == resource->registration_id)
         {
-            // TODO: = response->registration_id;
-            // TODO: = response->session_id;
-            // TODO: = response->channel_status_indicator_id;
-            // TODO: = response->position_limit_counter_id;
+            int ensure_capacity_result = 0;
+
+            AERON_ARRAY_ENSURE_CAPACITY(
+                ensure_capacity_result, conductor->active_resources, aeron_client_managed_resource_t);
+            if (ensure_capacity_result < 0)
+            {
+                // TODO: error
+                return -1;
+            }
 
             memcpy(
                 log_file,
@@ -324,7 +342,22 @@ int aeron_client_conductor_on_publication_ready(
                 response->log_file_length);
             log_file[response->log_file_length] = '\0';
 
-            // TODO: create the aeron_publication_t at this point.
+            aeron_publication_t *publication = NULL;
+
+            if (aeron_publication_init(
+                &publication,
+                conductor,
+                resource->uri,
+                resource->stream_id,
+                response->session_id,
+                response->position_limit_counter_id,
+                response->channel_status_indicator_id,
+                log_file,
+                response->registration_id,
+                response->correlation_id) < 0)
+            {
+                return -1;
+            }
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->registering_resources.array,
@@ -333,6 +366,15 @@ int aeron_client_conductor_on_publication_ready(
                 last_index);
             conductor->registering_resources.length--;
 
+            aeron_client_managed_resource_t *active_resource =
+                &conductor->active_resources.array[conductor->active_resources.length++];
+
+            active_resource->registration_id = response->registration_id;
+            active_resource->time_of_last_state_change_ns = conductor->nano_clock();
+            active_resource->type = AERON_CLIENT_TYPE_PUBLICATION;
+            active_resource->resource.publication = publication;
+
+            resource->resource.publication = publication;
             AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
             break;
         }

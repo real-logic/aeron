@@ -14,30 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CLIENT_H
-#define AERON_CLIENT_H
+#include <errno.h>
 
 #include "aeronc.h"
-#include "aeron_agent.h"
-#include "aeron_context.h"
-#include "aeron_client_conductor.h"
-
-typedef struct aeron_stct
-{
-    aeron_client_conductor_t conductor;
-    aeron_agent_runner_t runner;
-    aeron_context_t *context;
-}
-aeron_t;
-
-typedef struct aeron_publication_stct
-{
-    aeron_client_conductor_t *conductor;
-    const char *channel;
-}
-aeron_publication_t;
-
-int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context);
+#include "aeron_common.h"
+#include "aeron_client.h"
+#include "aeron_alloc.h"
+#include "util/aeron_error.h"
 
 int aeron_publication_init(
     aeron_publication_t **publication,
@@ -49,6 +32,32 @@ int aeron_publication_init(
     int32_t channel_status_id,
     const char *log_file,
     int64_t original_registration_id,
-    int64_t registration_id);
+    int64_t registration_id)
+{
+    aeron_publication_t *_publication;
 
-#endif //AERON_CLIENT_H
+    *publication = NULL;
+    if (aeron_alloc((void **)&_publication, sizeof(aeron_publication_t)) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_publication_init (%d): %s", errcode, strerror(errcode));
+        return -1;
+    }
+
+    _publication->conductor = conductor;
+    _publication->channel = channel;
+
+    *publication = _publication;
+    return -1;
+}
+
+int aeron_publication_close(aeron_publication_t *publication)
+{
+    if (NULL != publication)
+    {
+
+    }
+
+    return 0;
+}

@@ -69,6 +69,7 @@ set(SOURCE
     aeron_client.c
     aeron_client_conductor.c
     aeron_context.c
+    aeron_publication.c
     aeron_socket.c
     aeron_windows.c
     )

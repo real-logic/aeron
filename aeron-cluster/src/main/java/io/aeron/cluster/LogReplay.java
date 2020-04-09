@@ -38,11 +38,11 @@ class LogReplay
     private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context ctx;
     private final String channel;
+    private final LogAdapter logAdapter;
 
     private int replaySessionId = Aeron.NULL_VALUE;
     private State state = State.INIT;
     private Subscription logSubscription;
-    private LogAdapter logAdapter;
 
     LogReplay(
         final AeronArchive archive,
@@ -51,7 +51,7 @@ class LogReplay
         final long stopPosition,
         final long leadershipTermId,
         final int logSessionId,
-        final ConsensusModuleAgent consensusModuleAgent,
+        final LogAdapter logAdapter,
         final ConsensusModule.Context ctx)
     {
         this.archive = archive;
@@ -60,7 +60,8 @@ class LogReplay
         this.stopPosition = stopPosition;
         this.leadershipTermId = leadershipTermId;
         this.logSessionId = logSessionId;
-        this.consensusModuleAgent = consensusModuleAgent;
+        this.logAdapter = logAdapter;
+        this.consensusModuleAgent = logAdapter.consensusModuleAgent();
         this.ctx = ctx;
         this.replayStreamId = ctx.replayStreamId();
 
@@ -73,6 +74,7 @@ class LogReplay
 
     public void close()
     {
+        logAdapter.image(null);
         CloseHelper.close(ctx.countedErrorHandler(), logSubscription);
     }
 
@@ -92,12 +94,12 @@ class LogReplay
         }
         else if (State.REPLAY == state)
         {
-            if (null == logAdapter)
+            if (null == logAdapter.image())
             {
                 final Image image = logSubscription.imageBySessionId(replaySessionId);
                 if (null != image)
                 {
-                    logAdapter = new LogAdapter(image, consensusModuleAgent);
+                    logAdapter.image(image);
                     workCount = 1;
                 }
             }

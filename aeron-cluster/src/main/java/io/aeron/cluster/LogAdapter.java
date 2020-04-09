@@ -21,18 +21,18 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 
-final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
+final class LogAdapter implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 100;
 
-    private final BufferBuilder builder = new BufferBuilder();
-    private final Image image;
+    private Image image;
     private final ConsensusModuleAgent consensusModuleAgent;
+    private final BufferBuilder builder = new BufferBuilder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder sessionOpenEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder sessionCloseEventDecoder = new SessionCloseEventDecoder();
@@ -42,15 +42,23 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
     private final MembershipChangeEventDecoder membershipChangeEventDecoder = new MembershipChangeEventDecoder();
 
-    LogAdapter(final Image image, final ConsensusModuleAgent consensusModuleAgent)
+    LogAdapter(final ConsensusModuleAgent consensusModuleAgent)
     {
-        this.image = image;
         this.consensusModuleAgent = consensusModuleAgent;
     }
 
-    public void close()
+    void disconnect(final ErrorHandler errorHandler)
     {
-        image.subscription().close();
+        if (null != image)
+        {
+            CloseHelper.close(errorHandler, image.subscription());
+            image = null;
+        }
+    }
+
+    ConsensusModuleAgent consensusModuleAgent()
+    {
+        return consensusModuleAgent;
     }
 
     long position()
@@ -71,6 +79,11 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     Image image()
     {
         return image;
+    }
+
+    void image(final Image image)
+    {
+        this.image = image;
     }
 
     void asyncRemoveDestination(final String destination)

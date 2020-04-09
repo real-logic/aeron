@@ -820,7 +820,7 @@ public class Election
             liveLogDestination = addLiveLogDestination();
         }
 
-        consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
+        consensusModuleAgent.awaitFollowerLogImage(logSubscription, logSessionId);
 
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
         final long recordingId = consensusModuleAgent.logRecordingId();

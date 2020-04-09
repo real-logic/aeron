@@ -109,7 +109,7 @@ class ConsensusModuleAgent implements Agent
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogPublisher logPublisher;
-    private LogAdapter logAdapter;
+    private final LogAdapter logAdapter;
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
@@ -200,6 +200,7 @@ class ConsensusModuleAgent implements Agent
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
         ingressAdapter = new IngressAdapter(ctx.ingressFragmentLimit(), this, ctx.invalidRequestCounter());
+        logAdapter = new LogAdapter(this);
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
             aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
@@ -219,7 +220,7 @@ class ConsensusModuleAgent implements Agent
             }
 
             CloseHelper.close(errorHandler, ingressAdapter);
-            logPublisher.disconnect(errorHandler);
+            closeExistingLog();
             ClusterMember.closeMemberPublications(errorHandler, clusterMembers);
             CloseHelper.close(errorHandler, memberStatusAdapter);
             CloseHelper.close(errorHandler, serviceProxy);
@@ -597,8 +598,7 @@ class ConsensusModuleAgent implements Agent
 
     public void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        if (null != logAdapter && null != replayLogDestination &&
-            followerMemberId == memberId && leadershipTermId == this.leadershipTermId)
+        if (null != replayLogDestination && followerMemberId == memberId && leadershipTermId == this.leadershipTermId)
         {
             logAdapter.asyncRemoveDestination(replayLogDestination);
             replayLogDestination = null;
@@ -903,19 +903,16 @@ class ConsensusModuleAgent implements Agent
             logSubscriptionId = NULL_VALUE;
         }
 
-        if (null != logAdapter)
+        if (null != replayLogDestination)
         {
-            if (null != replayLogDestination)
-            {
-                logAdapter.asyncRemoveDestination(replayLogDestination);
-                replayLogDestination = null;
-            }
+            logAdapter.asyncRemoveDestination(replayLogDestination);
+            replayLogDestination = null;
+        }
 
-            if (null != liveLogDestination)
-            {
-                logAdapter.asyncRemoveDestination(liveLogDestination);
-                liveLogDestination = null;
-            }
+        if (null != liveLogDestination)
+        {
+            logAdapter.asyncRemoveDestination(liveLogDestination);
+            liveLogDestination = null;
         }
     }
 
@@ -1422,16 +1419,16 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    boolean findImageAndLogAdapter(final Subscription subscription, final int logSessionId)
+    boolean findLogImage(final Subscription subscription, final int logSessionId)
     {
         boolean result = false;
 
-        if (null == logAdapter)
+        if (null == logAdapter.image())
         {
             final Image image = subscription.imageBySessionId(logSessionId);
             if (null != image)
             {
-                logAdapter = new LogAdapter(image, this);
+                logAdapter.image(image);
                 lastAppendPosition = 0;
                 createAppendPosition(logSessionId);
                 appendDynamicJoinTermAndSnapshots();
@@ -1447,11 +1444,11 @@ class ConsensusModuleAgent implements Agent
         return result;
     }
 
-    void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
+    void awaitFollowerLogImage(final Subscription subscription, final int logSessionId)
     {
         leadershipTermId(election.leadershipTermId());
         idleStrategy.reset();
-        while (!findImageAndLogAdapter(subscription, logSessionId))
+        while (!findLogImage(subscription, logSessionId))
         {
             idle();
         }
@@ -1500,7 +1497,7 @@ class ConsensusModuleAgent implements Agent
                     stopPosition,
                     log.leadershipTermId,
                     log.sessionId,
-                    this,
+                    logAdapter,
                     ctx);
             }
         }
@@ -1687,7 +1684,7 @@ class ConsensusModuleAgent implements Agent
     int catchupPoll(final Subscription subscription, final int logSessionId, final long limitPosition, final long nowNs)
     {
         int workCount = 0;
-        if (!findImageAndLogAdapter(subscription, logSessionId))
+        if (!findLogImage(subscription, logSessionId))
         {
             return workCount;
         }
@@ -1722,14 +1719,14 @@ class ConsensusModuleAgent implements Agent
 
     boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)
     {
-        return findImageAndLogAdapter(subscription, logSessionId) && commitPosition.getWeak() >= position;
+        return findLogImage(subscription, logSessionId) && commitPosition.getWeak() >= position;
     }
 
     boolean hasAppendReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
     {
         boolean result = false;
 
-        if (findImageAndLogAdapter(subscription, logSessionId))
+        if (findLogImage(subscription, logSessionId))
         {
             final long localPosition = commitPosition.getWeak();
             final long window = logAdapter.image().termBufferLength() * 2L;
@@ -1998,7 +1995,7 @@ class ConsensusModuleAgent implements Agent
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT))
                 {
-                    final long position = logPosition();
+                    final long position = logPublisher.position();
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
                     clusterTermination.terminationPosition(memberStatusPublisher, clusterMembers, thisMember, position);
                     terminationPosition = position;
@@ -2009,7 +2006,7 @@ class ConsensusModuleAgent implements Agent
             case ABORT:
                 if (ConsensusModule.State.ACTIVE == state)
                 {
-                    final long position = logPosition();
+                    final long position = logPublisher.position();
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
                     clusterTermination.terminationPosition(memberStatusPublisher, clusterMembers, thisMember, position);
                     terminationPosition = position;
@@ -2415,11 +2412,6 @@ class ConsensusModuleAgent implements Agent
         ++serviceAckId;
     }
 
-    private long logPosition()
-    {
-        return null != logAdapter ? logAdapter.position() : logPublisher.position();
-    }
-
     private void handleMemberRemovals(final long commitPosition)
     {
         ClusterMember[] newClusterMembers = clusterMembers;
@@ -2803,8 +2795,7 @@ class ConsensusModuleAgent implements Agent
     private void closeExistingLog()
     {
         logPublisher.disconnect(ctx.countedErrorHandler());
-        CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
-        logAdapter = null;
+        logAdapter.disconnect(ctx.countedErrorHandler());
     }
 
     private void onUnavailableIngressImage(final Image image)

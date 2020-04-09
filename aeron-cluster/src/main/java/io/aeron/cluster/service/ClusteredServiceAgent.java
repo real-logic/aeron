@@ -84,6 +84,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
+        logAdapter = new BoundedLogAdapter(this);
         this.ctx = ctx;
 
         aeron = ctx.aeron();
@@ -159,19 +160,17 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             workCount += 1;
         }
 
-        if (null != logAdapter)
+        if (null != logAdapter.image())
         {
-            final int polled = logAdapter.poll();
+            final int polled = logAdapter.poll(commitPosition.get());
             if (0 == polled)
             {
                 if (logAdapter.isDone())
                 {
                     CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
-                    logAdapter = null;
                     role(Role.get((int)roleCounter.get()));
                 }
             }
-
             workCount += polled;
         }
 
@@ -317,11 +316,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final boolean isStartup,
         final String logChannel)
     {
-        if (null != logAdapter)
-        {
-            logAdapter.maxLogPosition(logPosition);
-        }
-
+        logAdapter.maxLogPosition(logPosition);
         activeLogEvent = new ActiveLogEvent(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, isStartup, logChannel);
     }
@@ -621,8 +616,13 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 idle();
             }
 
-            consumeLog(new BoundedLogAdapter(
-                activeLog.maxLogPosition, awaitImage(activeLog.sessionId, subscription), commitPosition, this));
+            logAdapter.image(awaitImage(activeLog.sessionId, subscription));
+            logAdapter.maxLogPosition(activeLog.maxLogPosition);
+            consumeLog(logAdapter);
+        }
+        finally
+        {
+            logAdapter.image(null);
         }
     }
 
@@ -630,8 +630,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         while (true)
         {
-            final int workCount = adapter.poll();
-            if (workCount == 0)
+            final int workCount = adapter.poll(commitPosition.get());
+            if (0 == workCount)
             {
                 final long position = adapter.position();
                 if (position >= adapter.maxLogPosition())
@@ -683,8 +683,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
         memberId = activeLog.memberId;
         ctx.clusterMarkFile().memberId(memberId);
-        logAdapter = new BoundedLogAdapter(
-            activeLog.maxLogPosition, awaitImage(activeLog.sessionId, logSubscription), commitPosition, this);
+        logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
+        logAdapter.maxLogPosition(activeLog.maxLogPosition);
 
         for (final ClientSession session : sessionByIdMap.values())
         {
@@ -927,7 +927,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         serviceAdapter.poll();
 
-        if (null != activeLogEvent && null == logAdapter)
+        if (null != activeLogEvent && null == logAdapter.image())
         {
             final ActiveLogEvent event = activeLogEvent;
             activeLogEvent = null;

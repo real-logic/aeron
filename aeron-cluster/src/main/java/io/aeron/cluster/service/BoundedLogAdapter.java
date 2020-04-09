@@ -20,7 +20,6 @@ import io.aeron.Image;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.*;
-import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
@@ -34,35 +33,30 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private static final int FRAGMENT_LIMIT = 100;
 
     private long maxLogPosition;
+    private Image image;
+    private final ClusteredServiceAgent agent;
     private final BufferBuilder builder = new BufferBuilder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
-    private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionMessageHeaderDecoder sessionHeaderDecoder = new SessionMessageHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
+    private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
+    private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
     private final MembershipChangeEventDecoder membershipChangeEventDecoder = new MembershipChangeEventDecoder();
 
-    private final Image image;
-    private final ReadableCounter upperBound;
-    private final ClusteredServiceAgent agent;
-
-    BoundedLogAdapter(
-        final long maxLogPosition,
-        final Image image,
-        final ReadableCounter upperBound,
-        final ClusteredServiceAgent agent)
+    BoundedLogAdapter(final ClusteredServiceAgent agent)
     {
-        this.maxLogPosition = maxLogPosition;
-        this.image = image;
-        this.upperBound = upperBound;
         this.agent = agent;
     }
 
     public void close()
     {
-        CloseHelper.close(image.subscription());
+        if (null != image)
+        {
+            CloseHelper.close(image.subscription());
+            image = null;
+        }
     }
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -85,7 +79,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                 final int limit = builder.limit();
                 if (0 == limit)
                 {
-                    throw new ClusterException("unexpected beginning of message at position " + header.position());
+                    throw new ClusterException("unexpected middle of message at position " + header.position());
                 }
                 else
                 {
@@ -131,14 +125,19 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         return image.position();
     }
 
+    void image(final Image image)
+    {
+        this.image = image;
+    }
+
     Image image()
     {
         return image;
     }
 
-    int poll()
+    int poll(final long limit)
     {
-        return image.boundedControlledPoll(this, upperBound.get(), FRAGMENT_LIMIT);
+        return image.boundedControlledPoll(this, limit, FRAGMENT_LIMIT);
     }
 
     @SuppressWarnings("MethodLength")

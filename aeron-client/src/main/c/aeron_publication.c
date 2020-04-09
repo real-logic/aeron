@@ -21,8 +21,9 @@
 #include "aeron_client.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
+#include "util/aeron_fileutil.h"
 
-int aeron_publication_init(
+int aeron_publication_create(
     aeron_publication_t **publication,
     aeron_client_conductor_t *conductor,
     const char *channel,
@@ -32,7 +33,8 @@ int aeron_publication_init(
     int32_t channel_status_id,
     const char *log_file,
     int64_t original_registration_id,
-    int64_t registration_id)
+    int64_t registration_id,
+    bool pre_touch)
 {
     aeron_publication_t *_publication;
 
@@ -41,23 +43,39 @@ int aeron_publication_init(
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "aeron_publication_init (%d): %s", errcode, strerror(errcode));
+        aeron_set_err(errcode, "aeron_publication_create (%d): %s", errcode, strerror(errcode));
+        return -1;
+    }
+
+    if (aeron_map_existing_log(&_publication->mapped_raw_log, log_file, pre_touch) < 0)
+    {
+        aeron_free(_publication);
         return -1;
     }
 
     _publication->conductor = conductor;
     _publication->channel = channel;
+    _publication->registration_id = registration_id;
+    _publication->original_registration_id = original_registration_id;
+    _publication->stream_id = stream_id;
+    _publication->session_id = session_id;
+    _publication->is_closed = false;
 
     *publication = _publication;
     return -1;
 }
 
-int aeron_publication_close(aeron_publication_t *publication)
+int aeron_publication_delete(aeron_publication_t *publication)
 {
-    if (NULL != publication)
-    {
-
-    }
+    aeron_map_raw_log_close(&publication->mapped_raw_log, NULL);
+    aeron_free((void *)publication->channel);
+    aeron_free(publication);
 
     return 0;
+}
+
+int aeron_publication_close(aeron_publication_t *publication)
+{
+    return NULL != publication ?
+        aeron_client_conductor_async_close_publication(publication->conductor, publication) : 0;
 }

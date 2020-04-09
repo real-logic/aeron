@@ -115,6 +115,11 @@ int aeron_map_raw_log(
     uint64_t term_length,
     uint64_t page_size);
 
+int aeron_map_existing_log(
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool pre_touch);
+
 int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename);
 
 #endif //AERON_FILEUTIL_H

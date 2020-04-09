@@ -416,6 +416,78 @@ int aeron_map_raw_log(
     return result;
 }
 
+int aeron_map_existing_log(
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool pre_touch)
+{
+    struct stat sb;
+    int fd, result = -1;
+
+    if ((fd = open(path, O_RDWR)) >= 0)
+    {
+        if (fstat(fd, &sb) == 0)
+        {
+            mapped_raw_log->mapped_file.length = (size_t)sb.st_size;
+
+            if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0) < 0)
+            {
+                aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            }
+        }
+        else
+        {
+            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        }
+
+        mapped_raw_log->log_meta_data.addr =
+            (uint8_t *)mapped_raw_log->mapped_file.addr + (mapped_raw_log->mapped_file.length - AERON_LOGBUFFER_META_DATA_LENGTH);
+        mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+
+        aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)mapped_raw_log->log_meta_data.addr;
+        size_t term_length = (size_t)log_meta_data->term_length;
+        size_t page_size = (size_t)log_meta_data->page_size;
+
+        if (aeron_logbuffer_check_term_length(term_length) < 0 ||
+            aeron_logbuffer_check_page_size(page_size) < 0)
+        {
+            aeron_unmap(&mapped_raw_log->mapped_file);
+            return -1;
+        }
+
+        mapped_raw_log->term_length = term_length;
+
+        for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+        {
+            mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
+            mapped_raw_log->term_buffers[i].length = term_length;
+        }
+
+        if (pre_touch)
+        {
+            volatile int32_t value = 0;
+
+            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+            {
+                uint8_t *base_addr = mapped_raw_log->term_buffers[i].addr;
+
+                for (size_t offset = 0; offset < term_length; offset += page_size)
+                {
+                    aeron_cmpxchg32((volatile int32_t *)(base_addr + offset), value, value);
+                }
+            }
+        }
+
+        result = 0;
+    }
+    else
+    {
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+    }
+
+    return result;
+}
+
 int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
     int result = 0;

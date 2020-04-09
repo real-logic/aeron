@@ -71,6 +71,7 @@ do \
 while(false)
 
 int aeron_logbuffer_check_term_length(uint64_t term_length);
+int aeron_logbuffer_check_page_size(uint64_t page_size);
 
 inline uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size)
 {

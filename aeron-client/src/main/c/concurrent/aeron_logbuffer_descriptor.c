@@ -25,7 +25,7 @@ int aeron_logbuffer_check_term_length(uint64_t term_length)
     {
         aeron_set_err(
             EINVAL,
-            "Term length less than min length of %" PRIu64 ": length=%" PRIu64,
+            "term length less than min length of %" PRIu64 ": length=%" PRIu64,
             AERON_LOGBUFFER_TERM_MIN_LENGTH, term_length);
         return -1;
     }
@@ -34,7 +34,7 @@ int aeron_logbuffer_check_term_length(uint64_t term_length)
     {
         aeron_set_err(
             EINVAL,
-            "Term length greater than max length of %" PRIu64 ": length=%" PRIu64,
+            "term length greater than max length of %" PRIu64 ": length=%" PRIu64,
             AERON_LOGBUFFER_TERM_MAX_LENGTH, term_length);
         return -1;
     }
@@ -43,8 +43,40 @@ int aeron_logbuffer_check_term_length(uint64_t term_length)
     {
         aeron_set_err(
             EINVAL,
-            "Term length not a power of 2: length=%" PRIu64,
+            "term length not a power of 2: length=%" PRIu64,
             term_length);
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_logbuffer_check_page_size(uint64_t page_size)
+{
+    if (page_size < AERON_PAGE_MIN_SIZE)
+    {
+        aeron_set_err(
+            EINVAL,
+            "page size less than min size of %" PRIu64 ": size=%" PRIu64,
+            AERON_PAGE_MIN_SIZE, page_size);
+        return -1;
+    }
+
+    if (page_size > AERON_PAGE_MAX_SIZE)
+    {
+        aeron_set_err(
+            EINVAL,
+            "page size greater than max size of %" PRIu64 ": size=%" PRIu64,
+            AERON_PAGE_MAX_SIZE, page_size);
+        return -1;
+    }
+
+    if (!AERON_IS_POWER_OF_TWO(page_size))
+    {
+        aeron_set_err(
+            EINVAL,
+            "page size not a power of 2: size=%" PRIu64,
+            page_size);
         return -1;
     }
 

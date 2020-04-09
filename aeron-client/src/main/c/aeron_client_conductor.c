@@ -67,6 +67,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler_clientd = context->error_handler_clientd;
 
     conductor->invoker_mode = context->use_conductor_agent_invoker;
+    conductor->pre_touch = context->pre_touch_mapped_memory;
 
     return 0;
 }
@@ -204,6 +205,35 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     async->registration_deadline_ms = conductor->epoch_clock() + conductor->registration_timeout_ms;
 }
 
+void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *) clientd;
+    aeron_publication_t *publication = (aeron_publication_t *) item;
+
+    if (publication->is_closed)
+    {
+        return;
+    }
+
+    for (size_t i = 0, size = conductor->active_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_managed_resource_t *resource = &conductor->active_resources.array[i];
+
+        if (AERON_CLIENT_TYPE_PUBLICATION == resource->type &&
+            publication->registration_id == resource->registration_id)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->active_resources.array,
+                sizeof(aeron_client_managed_resource_t),
+                i,
+                last_index);
+            conductor->active_resources.length--;
+
+            aeron_publication_delete(publication);
+        }
+    }
+}
+
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
 {
     int fail_count = 0;
@@ -271,6 +301,27 @@ int aeron_client_conductor_async_add_publication(
         }
 
         *async = cmd;
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_close_publication(
+    aeron_client_conductor_t *conductor, aeron_publication_t *publication)
+{
+    publication->command_base.func = aeron_client_conductor_on_cmd_close_publication;
+    publication->command_base.item = NULL;
+
+    if (conductor->invoker_mode)
+    {
+        aeron_client_conductor_on_cmd_close_publication(conductor, publication);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, publication) < 0)
+        {
+            return -1;
+        }
     }
 
     return 0;
@@ -344,7 +395,7 @@ int aeron_client_conductor_on_publication_ready(
 
             aeron_publication_t *publication = NULL;
 
-            if (aeron_publication_init(
+            if (aeron_publication_create(
                 &publication,
                 conductor,
                 resource->uri,
@@ -354,7 +405,8 @@ int aeron_client_conductor_on_publication_ready(
                 response->channel_status_indicator_id,
                 log_file,
                 response->registration_id,
-                response->correlation_id) < 0)
+                response->correlation_id,
+                conductor->pre_touch) < 0)
             {
                 return -1;
             }

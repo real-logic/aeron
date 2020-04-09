@@ -32,14 +32,24 @@ aeron_t;
 
 typedef struct aeron_publication_stct
 {
+    aeron_client_command_base_t command_base;
     aeron_client_conductor_t *conductor;
     const char *channel;
+
+    aeron_mapped_raw_log_t mapped_raw_log;
+
+    int64_t registration_id;
+    int64_t original_registration_id;
+    int32_t stream_id;
+    int32_t session_id;
+
+    bool is_closed;
 }
 aeron_publication_t;
 
 int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context);
 
-int aeron_publication_init(
+int aeron_publication_create(
     aeron_publication_t **publication,
     aeron_client_conductor_t *conductor,
     const char *channel,
@@ -49,6 +59,9 @@ int aeron_publication_init(
     int32_t channel_status_id,
     const char *log_file,
     int64_t original_registration_id,
-    int64_t registration_id);
+    int64_t registration_id,
+    bool pre_touch);
+
+int aeron_publication_delete(aeron_publication_t *publication);
 
 #endif //AERON_CLIENT_H

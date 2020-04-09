@@ -97,11 +97,6 @@ int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
     return cnc_version;
 }
 
-uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;
-}
-
 int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context)
 {
     long long start_ms = context->epoch_clock();
@@ -204,6 +199,12 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
 
     return 0;
 }
+
+extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
 
 extern int aeron_number_of_trailing_zeroes(int32_t value);
 extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);

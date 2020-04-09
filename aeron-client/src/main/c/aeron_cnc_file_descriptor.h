@@ -40,6 +40,40 @@ aeron_cnc_metadata_t;
 
 #define AERON_CNC_VERSION_AND_META_DATA_LENGTH (AERON_ALIGN(sizeof(aeron_cnc_metadata_t), AERON_CACHE_LINE_LENGTH * 2))
 
+inline uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
+{
+    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;
+}
+
+inline uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata)
+{
+    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH + metadata->to_driver_buffer_length;
+}
+
+inline uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata)
+{
+    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
+        metadata->to_driver_buffer_length +
+        metadata->to_clients_buffer_length;
+}
+
+inline uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata)
+{
+    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
+        metadata->to_driver_buffer_length +
+        metadata->to_clients_buffer_length +
+        metadata->counter_metadata_buffer_length;
+}
+
+inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
+{
+    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
+        metadata->to_driver_buffer_length +
+        metadata->to_clients_buffer_length +
+        metadata->counter_metadata_buffer_length +
+        metadata->counter_values_buffer_length;
+}
+
 #define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 0, 16))
 
 #endif //AERON_C_CNC_FILE_DESCRIPTOR_H

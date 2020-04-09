@@ -19,6 +19,7 @@
 
 #include "aeronc.h"
 #include "aeron_agent.h"
+#include "aeron_context.h"
 #include "aeron_client_conductor.h"
 
 typedef struct aeron_stct
@@ -28,5 +29,7 @@ typedef struct aeron_stct
     aeron_context_t *context;
 }
 aeron_t;
+
+int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context);
 
 #endif //AERON_CLIENT_H

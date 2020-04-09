@@ -226,40 +226,6 @@ inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, i
     AERON_PUT_VOLATILE(metadata->cnc_version, cnc_version);
 }
 
-inline uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;
-}
-
-inline uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH + metadata->to_driver_buffer_length;
-}
-
-inline uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length +
-        metadata->to_clients_buffer_length;
-}
-
-inline uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length +
-        metadata->to_clients_buffer_length +
-        metadata->counter_metadata_buffer_length;
-}
-
-inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length +
-        metadata->to_clients_buffer_length +
-        metadata->counter_metadata_buffer_length +
-        metadata->counter_values_buffer_length;
-}
-
 inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment)
 {
     return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);

@@ -19,8 +19,12 @@
 
 #include "aeronc.h"
 #include "aeron_agent.h"
+#include "util/aeron_fileutil.h"
+#include "concurrent/aeron_mpsc_concurrent_array_queue.h"
 
 #define AERON_CNC_FILE "cnc.dat"
+
+#define AERON_CLIENT_COMMAND_QUEUE_CAPACITY (256)
 
 typedef struct aeron_context_stct
 {
@@ -67,6 +71,10 @@ typedef struct aeron_context_stct
 
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
+
+    aeron_mapped_file_t cnc_map;
+
+    aeron_mpsc_concurrent_array_queue_t command_queue;
 }
 aeron_context_t;
 

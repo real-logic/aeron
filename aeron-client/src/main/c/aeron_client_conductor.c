@@ -25,16 +25,31 @@
 #include "aeron_client.h"
 #include "command/aeron_control_protocol.h"
 #include "util/aeron_arrayutil.h"
+#include "aeron_cnc_file_descriptor.h"
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context)
 {
-    if (aeron_mpsc_concurrent_array_queue_init(&conductor->command_queue, AERON_CLIENT_COMMAND_QUEUE_CAPACITY) < 0)
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)context->cnc_map.addr;
+
+    if (aeron_broadcast_receiver_init(
+        &conductor->to_client_buffer, aeron_cnc_to_clients_buffer(metadata), metadata->to_clients_buffer_length) < 0)
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "aeron_client_conductor_init - command_queue: %s", strerror(errcode));
+        aeron_set_err(errcode, "aeron_client_conductor_init - broadcast_receiver: %s", strerror(errcode));
         return -1;
     }
+
+    if (aeron_mpsc_rb_init(
+        &conductor->to_driver_buffer, aeron_cnc_to_driver_buffer(metadata), metadata->to_driver_buffer_length) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_client_conductor_init - to_driver_rb: %s", strerror(errcode));
+        return -1;
+    }
+
+    conductor->command_queue = &context->command_queue;
 
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
@@ -122,17 +137,17 @@ int aeron_client_conductor_do_work(aeron_client_conductor_t *conductor)
     int work_count = 0;
 
     work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
-        &conductor->command_queue, aeron_client_conductor_on_command, conductor, 10);
+        conductor->command_queue, aeron_client_conductor_on_command, conductor, 10);
 
     work_count += aeron_broadcast_receiver_receive(
-        &conductor->broadcast_receiver, aeron_client_conductor_on_driver_response, conductor);
+        &conductor->to_client_buffer, aeron_client_conductor_on_driver_response, conductor);
 
     return work_count;
 }
 
 void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 {
-    aeron_mpsc_concurrent_array_queue_close(&conductor->command_queue);
+    aeron_mpsc_concurrent_array_queue_close(conductor->command_queue);
 }
 
 void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
@@ -151,7 +166,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-        &conductor->to_driver_rb,
+        &conductor->to_driver_buffer,
         AERON_COMMAND_ADD_PUBLICATION,
         buffer,
         sizeof(aeron_publication_command_t) + async->uri_length))
@@ -235,7 +250,7 @@ int aeron_client_conductor_async_add_publication(
     }
     else
     {
-        if (aeron_client_conductor_command_offer(&conductor->command_queue, cmd) < 0)
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
         {
             aeron_free(cmd->uri);
             aeron_free(cmd);

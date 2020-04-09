@@ -34,6 +34,7 @@
 #include "util/aeron_error.h"
 #include "aeron_alloc.h"
 #include "aeron_context.h"
+#include "aeron_cnc_file_descriptor.h"
 
 inline static int aeron_do_work(void *clientd)
 {
@@ -70,6 +71,11 @@ int aeron_init(aeron_t **client, aeron_context_t *context)
     _client->runner.agent_state = AERON_AGENT_STATE_UNUSED;
     _client->runner.role_name = NULL;
     _client->runner.on_close = NULL;
+
+    if (aeron_client_connect_to_driver(&context->cnc_map, context) < 0)
+    {
+        goto error;
+    }
 
     if (aeron_client_conductor_init(&_client->conductor, context) < 0)
     {

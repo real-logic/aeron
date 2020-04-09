@@ -23,7 +23,6 @@
 #include "command/aeron_control_protocol.h"
 #include "aeronc.h"
 
-#define AERON_CLIENT_COMMAND_QUEUE_CAPACITY (256)
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
 #define AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD (10)
 
@@ -101,9 +100,8 @@ aeron_client_managed_resource_t;
 
 typedef struct aeron_client_conductor_stct
 {
-    aeron_mpsc_concurrent_array_queue_t command_queue;
-    aeron_broadcast_receiver_t broadcast_receiver;
-    aeron_mpsc_rb_t to_driver_rb;
+    aeron_broadcast_receiver_t to_client_buffer;
+    aeron_mpsc_rb_t to_driver_buffer;
 
     struct lingering_resources_stct
     {
@@ -128,6 +126,8 @@ typedef struct aeron_client_conductor_stct
         aeron_client_registering_resource_entry_t *array;
     }
     registering_resources;
+
+    aeron_mpsc_concurrent_array_queue_t *command_queue;
 
     long long registration_timeout_ms;
 

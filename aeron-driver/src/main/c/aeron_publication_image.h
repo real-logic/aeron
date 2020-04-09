@@ -34,8 +34,9 @@ aeron_publication_image_state_t;
 
 typedef struct aeron_publication_image_connection_stct
 {
+    struct sockaddr_storage resolved_control_address_for_implicit_unicast_channels;
     aeron_receive_destination_t *destination;
-    bool is_eos;
+    struct sockaddr_storage *control_addr;
 }
 aeron_publication_image_connection_t;
 
@@ -57,8 +58,6 @@ typedef struct aeron_publication_image_stct
 
     uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 
-    // TODO-MDS: Can we manage this as an array of pointers to the control addresses
-    // TODO-MDS: from the destinations or should we hold references to the destination instead?
     struct image_connection_entries
     {
         size_t length;
@@ -66,7 +65,8 @@ typedef struct aeron_publication_image_stct
         aeron_publication_image_connection_t *array;
     }
     connections;
-    struct sockaddr_storage control_address;
+
+    // TODO-MDS: Get rid of source address (I think)
     struct sockaddr_storage source_address;
     aeron_loss_detector_t loss_detector;
 
@@ -160,7 +160,13 @@ void aeron_publication_image_track_rebuild(
     aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout);
 
 int aeron_publication_image_insert_packet(
-    aeron_publication_image_t *image, int32_t term_id, int32_t term_offset, const uint8_t *buffer, size_t length);
+    aeron_publication_image_t *image,
+    aeron_receive_destination_t *destination,
+    int32_t term_id,
+    int32_t term_offset,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_publication_image_on_rttm(
     aeron_publication_image_t *image, aeron_rttm_header_t *header, struct sockaddr_storage *addr);

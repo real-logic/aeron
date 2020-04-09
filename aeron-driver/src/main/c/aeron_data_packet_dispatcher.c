@@ -298,7 +298,8 @@ int aeron_data_packet_dispatcher_on_data(
 
         if (NULL != image)
         {
-            return aeron_publication_image_insert_packet(image, header->term_id, header->term_offset, buffer, length);
+            return aeron_publication_image_insert_packet(
+                image, destination, header->term_id, header->term_offset, buffer, length, addr);
         }
         else if (!found && (header->frame_header.flags & AERON_DATA_HEADER_EOS_FLAG) == 0)
         {

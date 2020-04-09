@@ -37,7 +37,7 @@ typedef struct aeron_receive_destination_stct
     struct sockaddr_storage current_control_addr;
     size_t so_rcvbuf;
     int64_t time_of_last_activity_ns;
-    bool has_valid_control_addr;
+    bool has_control_addr;
 }
 aeron_receive_destination_t;
 

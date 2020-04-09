@@ -10,10 +10,12 @@
 
 typedef struct aeron_test_udp_bindings_state_stct
 {
-    int64_t mmsg_count;
-    int64_t msg_count;
-    int64_t sm_count;
-    int64_t setup_count;
+    int mmsg_count;
+    int msg_count;
+    int sm_count;
+    int nak_count;
+    int setup_count;
+    int rttm_count;
 }
 aeron_test_udp_bindings_state_t;
 
@@ -85,6 +87,14 @@ int aeron_test_udp_channel_transport_sendmsg(
 
         case AERON_HDR_TYPE_SM:
             state->sm_count++;
+            break;
+
+        case AERON_HDR_TYPE_NAK:
+            state->nak_count++;
+            break;
+
+        case AERON_HDR_TYPE_RTTM:
+            state->rttm_count++;
             break;
     }
 

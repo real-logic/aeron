@@ -62,7 +62,7 @@ int aeron_receive_destination_create(
 
     memcpy(&_destination->current_control_addr, &channel->local_control, sizeof(_destination->current_control_addr));
 
-    _destination->has_valid_control_addr =
+    _destination->has_control_addr =
         channel->is_multicast ||
         channel->has_explicit_control ||
         channel->is_manual_control_mode ||

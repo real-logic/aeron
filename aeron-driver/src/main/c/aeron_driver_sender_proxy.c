@@ -256,3 +256,19 @@ void aeron_driver_sender_proxy_on_resolution_change(
     }
 }
 
+void aeron_driver_sender_proxy_on_delete_cmd(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_command_base_t *cmd)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
+    {
+        /* should not get here! */
+    }
+    else
+    {
+        cmd->func = aeron_command_on_delete_cmd;
+        cmd->item = NULL;
+
+        aeron_driver_sender_proxy_offer(sender_proxy, cmd);
+    }
+}
+

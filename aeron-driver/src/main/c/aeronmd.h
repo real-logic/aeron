@@ -560,6 +560,7 @@ bool aeron_driver_context_get_tether_subscriptions(aeron_driver_context_t *conte
  */
 #define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_ENV_VAR "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT"
 
+
 int aeron_driver_context_set_untethered_window_limit_timeout_ns(aeron_driver_context_t *context, uint64_t value);
 uint64_t aeron_driver_context_get_untethered_window_limit_timeout_ns(aeron_driver_context_t *context);
 

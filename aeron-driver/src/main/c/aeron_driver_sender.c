@@ -117,11 +117,14 @@ void aeron_driver_sender_on_command(void *clientd, volatile void *item)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;
+    bool is_delete_cmd = cmd->func == aeron_command_on_delete_cmd;
 
     cmd->func(clientd, cmd);
 
-    /* recycle cmd by sending to conductor as on_cmd_free */
-    aeron_driver_conductor_proxy_on_delete_cmd(sender->context->conductor_proxy, cmd);
+    if (!is_delete_cmd)
+    {
+        aeron_driver_conductor_proxy_on_delete_cmd(sender->context->conductor_proxy, cmd);
+    }
 }
 
 int aeron_driver_sender_do_work(void *clientd)

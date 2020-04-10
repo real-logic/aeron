@@ -261,9 +261,18 @@ class ReplaySession implements Session, AutoCloseable
 
     private int init() throws IOException
     {
-        if (null == fileChannel && segmentFile.exists())
+        if (null == fileChannel)
         {
-            if (segmentFile.exists())
+            if (!segmentFile.exists())
+            {
+                if (epochClock.time() > connectDeadlineMs)
+                {
+                    onError("recording segment not found " + segmentFile);
+                }
+
+                return 0;
+            }
+            else
             {
                 final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
                 final int segmentOffset = (int)((replayPosition - startTermBasePosition) & (segmentLength - 1));
@@ -283,11 +292,6 @@ class ReplaySession implements Session, AutoCloseable
                         return 0;
                     }
                 }
-            }
-            else if (epochClock.time() > connectDeadlineMs)
-            {
-                onError("recording segment not found " + segmentFile);
-                return 0;
             }
         }
 

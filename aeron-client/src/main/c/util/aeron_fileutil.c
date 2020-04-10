@@ -441,7 +441,8 @@ int aeron_map_existing_log(
         }
 
         mapped_raw_log->log_meta_data.addr =
-            (uint8_t *)mapped_raw_log->mapped_file.addr + (mapped_raw_log->mapped_file.length - AERON_LOGBUFFER_META_DATA_LENGTH);
+            (uint8_t *)mapped_raw_log->mapped_file.addr +
+            (mapped_raw_log->mapped_file.length - AERON_LOGBUFFER_META_DATA_LENGTH);
         mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
 
         aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)mapped_raw_log->log_meta_data.addr;

@@ -581,12 +581,6 @@ abstract class ArchiveConductor
             replayPosition = position;
         }
 
-        final File segmentFile = segmentFile(controlSession, archiveDir, replayPosition, recordingId, correlationId);
-        if (null == segmentFile)
-        {
-            return;
-        }
-
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 
@@ -603,7 +597,6 @@ abstract class ArchiveConductor
             ctx.replayBuffer(),
             catalog,
             archiveDir,
-            segmentFile,
             cachedEpochClock,
             replayPublication,
             recordingSummary,
@@ -651,16 +644,9 @@ abstract class ArchiveConductor
             replayPosition = position;
         }
 
-        final File segmentFile = segmentFile(controlSession, archiveDir, replayPosition, recordingId, correlationId);
-        if (null == segmentFile)
-        {
-            return;
-        }
-
-        final Counter limitCounter = getOrAddCounter(limitCounterId);
-
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
+        final Counter limitCounter = getOrAddCounter(limitCounterId);
 
         final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
         final ReplaySession replaySession = new ReplaySession(
@@ -674,7 +660,6 @@ abstract class ArchiveConductor
             ctx.replayBuffer(),
             catalog,
             archiveDir,
-            segmentFile,
             cachedEpochClock,
             replayPublication,
             recordingSummary,
@@ -1748,31 +1733,6 @@ abstract class ArchiveConductor
         }
 
         return true;
-    }
-
-    private File segmentFile(
-        final ControlSession controlSession,
-        final File archiveDir,
-        final long position,
-        final long recordingId,
-        final long correlationId)
-    {
-        final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
-        final long segmentFileBasePosition = segmentFileBasePosition(
-            recordingSummary.startPosition,
-            fromPosition,
-            recordingSummary.termBufferLength,
-            recordingSummary.segmentFileLength);
-
-        final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
-        if (!segmentFile.exists())
-        {
-            final String msg = "initial segment file does not exist for replay recording id " + recordingId;
-            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-            return null;
-        }
-
-        return segmentFile;
     }
 
     private boolean eraseRemainingSegment(

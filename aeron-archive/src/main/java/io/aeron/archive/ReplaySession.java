@@ -113,7 +113,6 @@ class ReplaySession implements Session, AutoCloseable
         final UnsafeBuffer replayBuffer,
         final Catalog catalog,
         final File archiveDir,
-        final File initialSegmentFile,
         final CachedEpochClock epochClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
@@ -129,7 +128,6 @@ class ReplaySession implements Session, AutoCloseable
         this.streamId = recordingSummary.streamId;
         this.epochClock = epochClock;
         this.archiveDir = archiveDir;
-        this.segmentFile = initialSegmentFile;
         this.publication = publication;
         this.limitPosition = replayLimitPosition;
         this.replayBuffer = replayBuffer;
@@ -167,6 +165,9 @@ class ReplaySession implements Session, AutoCloseable
             startPosition, fromPosition, termLength, segmentLength);
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;
+
+        final String segmentFileName = segmentFileName(recordingId, segmentFileBasePosition);
+        segmentFile = new File(archiveDir, segmentFileName);
 
         controlSession.sendOkResponse(correlationId, replaySessionId, controlResponseProxy);
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
@@ -260,25 +261,33 @@ class ReplaySession implements Session, AutoCloseable
 
     private int init() throws IOException
     {
-        if (null == fileChannel)
+        if (null == fileChannel && segmentFile.exists())
         {
-            final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
-            final int segmentOffset = (int)((replayPosition - startTermBasePosition) & (segmentLength - 1));
-            final int termId = LogBufferDescriptor.computeTermIdFromPosition(
-                replayPosition, publication.positionBitsToShift(), publication.initialTermId());
-
-            openRecordingSegment();
-
-            termOffset = (int)(replayPosition & (termLength - 1));
-            termBaseSegmentOffset = segmentOffset - termOffset;
-
-            if (replayPosition > startPosition && replayPosition != stopPosition)
+            if (segmentFile.exists())
             {
-                if (notHeaderAligned(fileChannel, replayBuffer, segmentOffset, termOffset, termId, streamId))
+                final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
+                final int segmentOffset = (int)((replayPosition - startTermBasePosition) & (segmentLength - 1));
+                final int termId = LogBufferDescriptor.computeTermIdFromPosition(
+                    replayPosition, publication.positionBitsToShift(), publication.initialTermId());
+
+                openRecordingSegment();
+
+                termOffset = (int)(replayPosition & (termLength - 1));
+                termBaseSegmentOffset = segmentOffset - termOffset;
+
+                if (replayPosition > startPosition && replayPosition != stopPosition)
                 {
-                    onError(replayPosition + " position not aligned to data header");
-                    return 0;
+                    if (notHeaderAligned(fileChannel, replayBuffer, segmentOffset, termOffset, termId, streamId))
+                    {
+                        onError(replayPosition + " position not aligned to data header");
+                        return 0;
+                    }
                 }
+            }
+            else if (epochClock.time() > connectDeadlineMs)
+            {
+                onError("recording segment not found " + segmentFile);
+                return 0;
             }
         }
 

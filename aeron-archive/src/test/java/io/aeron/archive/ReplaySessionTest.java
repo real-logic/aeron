@@ -726,13 +726,11 @@ public class ReplaySessionTest
             replayBuffer,
             mockCatalog,
             archiveDir,
-            null,
             epochClock,
             replay,
             recordingSummary,
             recordingPositionCounter,
-            checksum
-        );
+            checksum);
     }
 
     static void validateFrame(

@@ -18,7 +18,7 @@ can be recorded by the [Archive](https://github.com/real-logic/aeron/tree/master
 storage for later, or real-time, replay.
 
 Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable
-latency possible of any messaging system. Aeron integrates with
+latency of any messaging system. Aeron integrates with
 [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible performance
 in message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to
 the [Agrona](https://github.com/real-logic/agrona) project.

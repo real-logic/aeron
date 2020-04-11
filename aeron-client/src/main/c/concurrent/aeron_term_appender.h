@@ -221,4 +221,168 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
     return resulting_offset;
 }
 
+inline int32_t aeron_term_appender_append_fragmented_message(
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    uint8_t *buffer,
+    size_t length,
+    size_t max_payload_length,
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd,
+    int32_t active_term_id,
+    int32_t session_id,
+    int32_t stream_id)
+{
+    const size_t num_max_payloads = length / max_payload_length;
+    const size_t remaining_payload = length % max_payload_length;
+    const size_t last_frame_length = (remaining_payload > 0) ?
+        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
+    const size_t required_length =
+        (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+    const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, required_length);
+    const int64_t term_offset = raw_tail & 0xFFFFFFFF;
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = term_buffer->length;
+
+    if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
+    {
+        return -1;
+    }
+
+    int64_t resulting_offset = term_offset + required_length;
+    if (resulting_offset > term_length)
+    {
+        resulting_offset = aeron_term_appender_handle_end_of_log_condition(
+            term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+    }
+    else
+    {
+        uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
+        size_t remaining = length;
+        int32_t frame_offset = term_offset;
+
+        do
+        {
+            size_t bytes_to_write = remaining < max_payload_length ? remaining : max_payload_length;
+            size_t frame_length = bytes_to_write + AERON_DATA_HEADER_LENGTH;
+            size_t aligned_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+            aeron_term_appender_header_write(term_buffer, frame_offset, frame_length, term_id, session_id, stream_id);
+            memcpy(
+                term_buffer->addr + frame_offset + AERON_DATA_HEADER_LENGTH,
+                buffer + (length - remaining),
+                bytes_to_write);
+
+            if (remaining <= max_payload_length)
+            {
+                flags |= AERON_DATA_HEADER_END_FLAG;
+            }
+
+            aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
+            data_header->frame_header.flags = flags;
+            data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + term_offset, frame_length);
+            AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+
+            flags = 0;
+            frame_offset += aligned_length;
+            remaining -= bytes_to_write;
+        }
+        while (remaining > 0);
+    }
+
+    return resulting_offset;
+}
+
+inline int32_t aeron_term_appender_append_fragmented_messagev(
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    aeron_iovec_t *iov,
+    size_t iovcnt,
+    size_t length,
+    size_t max_payload_length,
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd,
+    int32_t active_term_id,
+    int32_t session_id,
+    int32_t stream_id)
+{
+    const size_t num_max_payloads = length / max_payload_length;
+    const size_t remaining_payload = length % max_payload_length;
+    const size_t last_frame_length = (remaining_payload > 0) ?
+         AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
+    const size_t required_length =
+        (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+    const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, required_length);
+    const int64_t term_offset = raw_tail & 0xFFFFFFFF;
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = term_buffer->length;
+
+    if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
+    {
+        return -1;
+    }
+
+    int64_t resulting_offset = term_offset + required_length;
+    if (resulting_offset > term_length)
+    {
+        resulting_offset = aeron_term_appender_handle_end_of_log_condition(
+            term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+    }
+    else
+    {
+        uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
+        size_t remaining = length, i = 0;
+        int32_t frame_offset = term_offset;
+        int32_t current_buffer_offset = 0;
+
+        do
+        {
+            int32_t bytes_to_write = remaining < max_payload_length ? remaining : max_payload_length;
+            size_t frame_length = bytes_to_write + AERON_DATA_HEADER_LENGTH;
+            size_t aligned_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+            aeron_term_appender_header_write(term_buffer, frame_offset, frame_length, term_id, session_id, stream_id);
+
+            int32_t bytes_written = 0;
+            int32_t payload_offset = frame_offset + AERON_DATA_HEADER_LENGTH;
+
+            do
+            {
+                int32_t current_buffer_remaining = iov[i].iov_len - current_buffer_offset;
+                int32_t num_bytes = (bytes_to_write - bytes_written) < current_buffer_remaining ?
+                    (bytes_to_write - bytes_written) : current_buffer_remaining;
+                memcpy(term_buffer->addr + payload_offset, iov[i].iov_base, num_bytes);
+
+                bytes_written += num_bytes;
+                payload_offset += num_bytes;
+                current_buffer_offset += num_bytes;
+
+                if (current_buffer_remaining <= num_bytes)
+                {
+                    i++;
+                    current_buffer_offset = 0;
+                }
+            }
+            while (bytes_written < bytes_to_write);
+
+            if (remaining <= max_payload_length)
+            {
+                flags |= AERON_DATA_HEADER_END_FLAG;
+            }
+
+            aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
+            data_header->frame_header.flags = flags;
+            data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + term_offset, frame_length);
+            AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+
+            flags = 0;
+            frame_offset += aligned_length;
+            remaining -= bytes_to_write;
+        }
+        while (remaining > 0);
+    }
+
+    return resulting_offset;
+}
+
 #endif //AERON_C_TERM_APPENDER_H

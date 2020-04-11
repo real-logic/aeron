@@ -240,12 +240,22 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_t handler,
 #define AERON_PUBLICATION_MAX_POSITION_EXCEEDED (-5L)
 
 typedef int64_t (*aeron_reserved_value_supplier_t)(void *clientd, uint8_t *buffer, size_t frame_length);
+
+// TODO: make this a typedef for struct iovec if available.
 typedef struct aeron_iovec_stct
 {
     uint8_t *iov_base;
     size_t iov_len;
 }
 aeron_iovec_t;
+
+typedef struct aeron_buffer_claim_stct
+{
+    uint8_t *frame_header;
+    uint8_t *data;
+    size_t length;
+}
+aeron_buffer_claim_t;
 
 int64_t aeron_publication_offer(
     aeron_publication_t *publication,

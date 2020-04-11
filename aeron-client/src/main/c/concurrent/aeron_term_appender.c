@@ -15,3 +15,12 @@
  */
 
 #include "aeron_term_appender.h"
+
+extern int32_t aeron_term_appender_claim(
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    size_t length,
+    aeron_buffer_claim_t *buffer_claim,
+    int32_t active_term_id,
+    int32_t session_id,
+    int32_t stream_id);

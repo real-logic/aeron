@@ -131,6 +131,7 @@ typedef struct aeron_client_conductor_stct
     aeron_mpsc_concurrent_array_queue_t *command_queue;
 
     long long registration_timeout_ms;
+    long long inter_service_timeout_ms;
 
     int64_t client_id;
 

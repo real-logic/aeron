@@ -66,6 +66,8 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
 
+    conductor->inter_service_timeout_ms = metadata->client_liveness_timeout / 1000000;
+
     conductor->invoker_mode = context->use_conductor_agent_invoker;
     conductor->pre_touch = context->pre_touch_mapped_memory;
 

@@ -257,6 +257,9 @@ typedef struct aeron_buffer_claim_stct
 }
 aeron_buffer_claim_t;
 
+int aeron_buffer_claim_commit(aeron_buffer_claim_t *buffer_claim);
+int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim);
+
 int64_t aeron_publication_offer(
     aeron_publication_t *publication,
     uint8_t *buffer,

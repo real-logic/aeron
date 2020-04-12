@@ -91,3 +91,30 @@ extern int32_t aeron_term_appender_append_fragmented_messagev(
     int32_t active_term_id,
     int32_t session_id,
     int32_t stream_id);
+
+int aeron_buffer_claim_commit(aeron_buffer_claim_t *buffer_claim)
+{
+    if (NULL != buffer_claim && NULL != buffer_claim->frame_header)
+    {
+        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
+
+        AERON_PUT_ORDERED(
+            data_header->frame_header.frame_length, buffer_claim->length + AERON_DATA_HEADER_LENGTH);
+    }
+
+    return 0;
+}
+
+int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim)
+{
+    if (NULL != buffer_claim)
+    {
+        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
+
+        data_header->frame_header.type = AERON_HDR_TYPE_PAD;
+        AERON_PUT_ORDERED(
+            data_header->frame_header.frame_length, buffer_claim->length + AERON_DATA_HEADER_LENGTH);
+    }
+
+    return 0;
+}

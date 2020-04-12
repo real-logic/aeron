@@ -113,6 +113,14 @@ inline int64_t aeron_logbuffer_compute_position(
     return (term_count << position_bits_to_shift) + term_offset;
 }
 
+inline int64_t aeron_logbuffer_compute_term_begin_position(
+    int32_t active_term_id, size_t position_bits_to_shift, int32_t initial_term_id)
+{
+    int64_t term_count = active_term_id - initial_term_id;
+
+    return (term_count << position_bits_to_shift);
+}
+
 inline int32_t aeron_logbuffer_compute_term_id_from_position(
     int64_t position, size_t position_bits_to_shift, int32_t initial_term_id)
 {
@@ -133,6 +141,14 @@ inline bool aeron_logbuffer_cas_raw_tail(
     int64_t update_raw_tail)
 {
     return aeron_cmpxchg64(&log_meta_data->term_tail_counters[partition_index], expected_raw_tail, update_raw_tail);
+}
+
+inline int32_t aeron_logbuffer_active_term_count(aeron_logbuffer_metadata_t *log_meta_data)
+{
+    int32_t active_term_count;
+
+    AERON_GET_VOLATILE(active_term_count, log_meta_data->active_term_count);
+    return active_term_count;
 }
 
 inline bool aeron_logbuffer_cas_active_term_count(

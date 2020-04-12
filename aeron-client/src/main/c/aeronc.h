@@ -238,6 +238,7 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_t handler,
 #define AERON_PUBLICATION_ADMIN_ACTION (-3L)
 #define AERON_PUBLICATION_CLOSED (-4L)
 #define AERON_PUBLICATION_MAX_POSITION_EXCEEDED (-5L)
+#define AERON_PUBLICATION_ERROR (-6L)
 
 typedef int64_t (*aeron_reserved_value_supplier_t)(void *clientd, uint8_t *buffer, size_t frame_length);
 

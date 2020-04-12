@@ -17,6 +17,8 @@
 #include "aeron_term_appender.h"
 
 extern int64_t aeron_term_appender_get_and_add_raw_tail(volatile int64_t *addr, size_t aligned_length);
+extern int64_t aeron_term_appender_raw_tail_volatile(volatile int64_t *addr);
+
 extern int aeron_term_appender_check_term(int32_t expected_term_id, int32_t term_id);
 
 extern void aeron_term_appender_header_write(

@@ -91,6 +91,8 @@ extern size_t aeron_logbuffer_index_by_term(int32_t initial_term_id, int32_t act
 extern size_t aeron_logbuffer_index_by_term_count(int64_t term_count);
 extern int64_t aeron_logbuffer_compute_position(
     int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id);
+extern int64_t aeron_logbuffer_compute_term_begin_position(
+    int32_t active_term_id, size_t position_bits_to_shift, int32_t initial_term_id);
 extern int32_t aeron_logbuffer_compute_term_id_from_position(
     int64_t position, size_t position_bits_to_shift, int32_t initial_term_id);
 extern int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t position, size_t position_bits_to_shift);
@@ -99,6 +101,7 @@ extern bool aeron_logbuffer_cas_raw_tail(
     size_t partition_index,
     int64_t expected_raw_tail,
     int64_t update_raw_tail);
+extern int32_t aeron_logbuffer_active_term_count(aeron_logbuffer_metadata_t *log_meta_data);
 extern bool aeron_logbuffer_cas_active_term_count(
     aeron_logbuffer_metadata_t *log_meta_data,
     int32_t expected_term_count,

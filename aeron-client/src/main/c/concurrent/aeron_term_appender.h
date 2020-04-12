@@ -35,6 +35,14 @@ inline int64_t aeron_term_appender_get_and_add_raw_tail(volatile int64_t *addr, 
     return result;
 }
 
+inline int64_t aeron_term_appender_raw_tail_volatile(volatile int64_t *addr)
+{
+    int64_t raw_tail = 0;
+
+    AERON_GET_VOLATILE(raw_tail, *addr);
+    return raw_tail;
+}
+
 inline int aeron_term_appender_check_term(int32_t expected_term_id, int32_t term_id)
 {
     if (expected_term_id != term_id)

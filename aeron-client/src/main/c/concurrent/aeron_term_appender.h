@@ -351,7 +351,7 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
                 int32_t current_buffer_remaining = iov[i].iov_len - current_buffer_offset;
                 int32_t num_bytes = (bytes_to_write - bytes_written) < current_buffer_remaining ?
                     (bytes_to_write - bytes_written) : current_buffer_remaining;
-                memcpy(term_buffer->addr + payload_offset, iov[i].iov_base, num_bytes);
+                memcpy(term_buffer->addr + payload_offset, iov[i].iov_base + current_buffer_offset, num_bytes);
 
                 bytes_written += num_bytes;
                 payload_offset += num_bytes;
@@ -372,7 +372,7 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
 
             aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
             data_header->frame_header.flags = flags;
-            data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + term_offset, frame_length);
+            data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + frame_offset, frame_length);
             AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
 
             flags = 0;

@@ -263,3 +263,131 @@ TEST_F(CTermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
     EXPECT_EQ(aeron_buffer_claim_commit(&buffer_claim), 0);
     EXPECT_EQ(data_header->frame_header.frame_length, frameLength);
 }
+
+TEST_F(CTermAppenderTest, shouldAppendUnfragmentedFromVectorsToEmptyLog)
+{
+    uint8_t bufferOne[64], bufferTwo[256];
+    const int32_t msgLength = sizeof(bufferOne) + 200;
+    const int32_t frameLength = msgLength + AERON_DATA_HEADER_LENGTH;
+    const int64_t alignedFrameLength = AERON_ALIGN(frameLength, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    int32_t tail = 0;
+    aeron_iovec_t iov[2];
+
+    memset(bufferOne, '1', sizeof(bufferOne));
+    memset(bufferTwo, '2', sizeof(bufferTwo));
+    iov[0].iov_base = bufferOne;
+    iov[0].iov_len = sizeof(bufferOne);
+    iov[1].iov_base = bufferTwo;
+    iov[1].iov_len = 200;
+
+    *m_term_tail_counter = packRawTail(TERM_ID, tail);
+
+    const int32_t resultingOffset = aeron_term_appender_append_unfragmented_messagev(
+        &m_term_buffer,
+        m_term_tail_counter,
+        iov,
+        2,
+        msgLength,
+        reserved_value_supplier,
+        nullptr,
+        TERM_ID,
+        SESSION_ID,
+        STREAM_ID);
+
+    EXPECT_EQ(resultingOffset, alignedFrameLength);
+    EXPECT_EQ(*m_term_tail_counter, packRawTail(TERM_ID, tail + alignedFrameLength));
+
+    aeron_data_header_t *data_header = (aeron_data_header_t *)m_logBuffer.data();
+    uint8_t *data = m_logBuffer.data() + AERON_DATA_HEADER_LENGTH;
+
+    EXPECT_EQ(data_header->frame_header.frame_length, frameLength);
+    EXPECT_EQ(data_header->reserved_value, RESERVED_VALUE);
+    EXPECT_EQ(memcmp(data, iov[0].iov_base, iov[0].iov_len), 0);
+    EXPECT_EQ(memcmp(data + iov[0].iov_len, iov[1].iov_base, iov[1].iov_len), 0);
+}
+
+TEST_F(CTermAppenderTest, shouldAppendFragmentedFromVectorsToEmptyLog)
+{
+    uint8_t bufferOne[64], bufferTwo[3000];
+    const int32_t mtu = 2048;
+    const int32_t maxPayloadLength = mtu - AERON_DATA_HEADER_LENGTH;
+    const int32_t msgLength = sizeof(bufferOne) + sizeof(bufferTwo);
+    const int32_t frameOneLength = mtu;
+    const int32_t frameTwoLength = (msgLength - (mtu - AERON_DATA_HEADER_LENGTH)) + AERON_DATA_HEADER_LENGTH;
+    const int32_t requiredCapacity = frameOneLength + AERON_ALIGN(frameTwoLength, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    int32_t tail = 0;
+    aeron_data_header_t *data_header;
+    uint8_t *data;
+    aeron_iovec_t iov[2];
+
+    memset(bufferOne, '1', sizeof(bufferOne));
+    memset(bufferTwo, '2', sizeof(bufferTwo));
+    iov[0].iov_base = bufferOne;
+    iov[0].iov_len = sizeof(bufferOne);
+    iov[1].iov_base = bufferTwo;
+    iov[1].iov_len = sizeof(bufferTwo);
+
+    *m_term_tail_counter = packRawTail(TERM_ID, tail);
+
+    int32_t resultingOffset;
+
+    resultingOffset = aeron_term_appender_append_fragmented_messagev(
+        &m_term_buffer,
+        m_term_tail_counter,
+        iov,
+        2,
+        msgLength,
+        maxPayloadLength,
+        reserved_value_supplier,
+        nullptr,
+        TERM_ID,
+        SESSION_ID,
+        STREAM_ID);
+
+    EXPECT_EQ(resultingOffset, requiredCapacity);
+    EXPECT_EQ(*m_term_tail_counter, packRawTail(TERM_ID, tail + requiredCapacity));
+
+    data_header = (aeron_data_header_t *) m_logBuffer.data();
+    data = m_logBuffer.data() + AERON_DATA_HEADER_LENGTH;
+
+    EXPECT_EQ(data_header->frame_header.frame_length, frameOneLength);
+    EXPECT_EQ(data_header->frame_header.flags, AERON_DATA_HEADER_BEGIN_FLAG);
+    EXPECT_EQ(data_header->reserved_value, RESERVED_VALUE);
+
+    EXPECT_EQ(memcmp(data, iov[0].iov_base, iov[0].iov_len), 0);
+    EXPECT_EQ(memcmp(data + iov[0].iov_len, iov[1].iov_base, maxPayloadLength - iov[0].iov_len), 0);
+
+    data_header = (aeron_data_header_t *) (m_logBuffer.data() + frameOneLength);
+    data = m_logBuffer.data() + frameOneLength + AERON_DATA_HEADER_LENGTH;
+
+    EXPECT_EQ(data_header->frame_header.frame_length, frameTwoLength);
+    EXPECT_EQ(data_header->frame_header.flags, AERON_DATA_HEADER_END_FLAG);
+    EXPECT_EQ(data_header->reserved_value, RESERVED_VALUE);
+    EXPECT_EQ(memcmp(
+        data,
+        iov[1].iov_base + (maxPayloadLength - iov[0].iov_len),
+        iov[1].iov_len - (maxPayloadLength - iov[0].iov_len)),
+        0);
+}
+
+TEST_F(CTermAppenderTest, shouldDetectInvalidTerm)
+{
+    uint8_t msgBuffer[128];
+    const int32_t msgLength = 128;
+    int32_t tail = 0;
+
+    *m_term_tail_counter = packRawTail(TERM_ID, tail);
+
+    const int32_t resultingOffset = aeron_term_appender_append_unfragmented_message(
+        &m_term_buffer,
+        m_term_tail_counter,
+        msgBuffer,
+        msgLength,
+        reserved_value_supplier,
+        nullptr,
+        TERM_ID + 1,
+        SESSION_ID,
+        STREAM_ID);
+
+    EXPECT_EQ(resultingOffset, -1);
+}

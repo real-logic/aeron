@@ -128,7 +128,8 @@ protected:
         counters_clientd_t *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
         if (counters_clientd->type_id == type_id)
         {
-            int64_t *counter_addr = aeron_counter_addr((aeron_counters_manager_t *)counters_clientd->counters, id);
+            int64_t *counter_addr = aeron_counters_manager_addr((aeron_counters_manager_t *) counters_clientd->counters,
+                                                                id);
             AERON_GET_VOLATILE(counters_clientd->value, *counter_addr);
         }
     }

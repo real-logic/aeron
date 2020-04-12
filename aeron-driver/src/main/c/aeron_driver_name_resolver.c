@@ -249,8 +249,8 @@ int aeron_driver_name_resolver_init(
         goto error_cleanup;
     }
 
-    _driver_resolver->neighbor_counter.value_addr = aeron_counter_addr(
-        context->counters_manager, _driver_resolver->neighbor_counter.counter_id);
+    _driver_resolver->neighbor_counter.value_addr = aeron_counters_manager_addr(
+    context->counters_manager, _driver_resolver->neighbor_counter.counter_id);
     char cache_entries_label[512];
     snprintf(
         cache_entries_label, sizeof(cache_entries_label), "Resolver cache entries: name %s", _driver_resolver->name);
@@ -264,8 +264,8 @@ int aeron_driver_name_resolver_init(
         goto error_cleanup;
     }
 
-    _driver_resolver->cache_size_counter.value_addr = aeron_counter_addr(
-        context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
+    _driver_resolver->cache_size_counter.value_addr = aeron_counters_manager_addr(
+    context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
 
     _driver_resolver->short_sends_counter = aeron_system_counter_addr(
         context->system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);

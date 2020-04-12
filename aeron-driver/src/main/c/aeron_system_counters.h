@@ -76,7 +76,7 @@ void aeron_system_counters_close(aeron_system_counters_t *counters);
 
 inline int64_t *aeron_system_counter_addr(aeron_system_counters_t *counters, aeron_system_counter_enum_t type)
 {
-    return aeron_counter_addr(counters->manager, counters->counter_ids[type]);
+    return aeron_counters_manager_addr(counters->manager, counters->counter_ids[type]);
 }
 
 #endif //AERON_SYSTEM_COUNTERS_H

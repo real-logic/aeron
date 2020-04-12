@@ -148,8 +148,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
 
     conductor->conductor_proxy.command_queue = &context->conductor_command_queue;
-    conductor->conductor_proxy.fail_counter = aeron_counter_addr(
-        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_PROXY_FAILS);
+    conductor->conductor_proxy.fail_counter = aeron_counters_manager_addr(
+    &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_PROXY_FAILS);
     conductor->conductor_proxy.threading_mode = context->threading_mode;
     conductor->conductor_proxy.conductor = conductor;
 
@@ -214,11 +214,11 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->spy_subscriptions.length = 0;
     conductor->spy_subscriptions.capacity = 0;
 
-    conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
-    conductor->unblocked_commands_counter = aeron_counter_addr(
-        &conductor->counters_manager, AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS);
-    conductor->client_timeouts_counter = aeron_counter_addr(
-        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS);
+    conductor->errors_counter = aeron_counters_manager_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
+    conductor->unblocked_commands_counter = aeron_counters_manager_addr(
+    &conductor->counters_manager, AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS);
+    conductor->client_timeouts_counter = aeron_counters_manager_addr(
+    &conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS);
 
     int64_t now_ns = context->nano_clock();
 
@@ -273,7 +273,8 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
             client_heartbeat.counter_id = aeron_counter_client_heartbeat_timestamp_allocate(
                 &conductor->counters_manager, client_id);
-            client_heartbeat.value_addr = aeron_counter_addr(&conductor->counters_manager, client_heartbeat.counter_id);
+            client_heartbeat.value_addr = aeron_counters_manager_addr(&conductor->counters_manager,
+                                                                      client_heartbeat.counter_id);
 
             if (client_heartbeat.counter_id >= 0)
             {
@@ -891,12 +892,12 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
-                pub_pos_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, pub_pos_position.counter_id);
+                pub_pos_position.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
-                pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, pub_lmt_position.counter_id);
+                pub_lmt_position.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, pub_lmt_position.counter_id);
 
                 if (pub_pos_position.counter_id < 0 || pub_lmt_position.counter_id < 0)
                 {
@@ -1086,16 +1087,16 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     return NULL;
                 }
 
-                pub_pos_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, pub_pos_position.counter_id);
-                pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, pub_lmt_position.counter_id);
-                snd_pos_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, snd_pos_position.counter_id);
-                snd_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, snd_lmt_position.counter_id);
-                snd_bpe_counter.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, snd_bpe_counter.counter_id);
+                pub_pos_position.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, pub_pos_position.counter_id);
+                pub_lmt_position.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, pub_lmt_position.counter_id);
+                snd_pos_position.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, snd_pos_position.counter_id);
+                snd_lmt_position.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, snd_lmt_position.counter_id);
+                snd_bpe_counter.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, snd_bpe_counter.counter_id);
 
                 if (params->has_position)
                 {
@@ -1245,7 +1246,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         status_indicator.counter_id = aeron_counter_send_channel_status_allocate(
             &conductor->counters_manager, channel->uri_length, channel->original_uri);
 
-        status_indicator.value_addr = aeron_counter_addr(&conductor->counters_manager, status_indicator.counter_id);
+        status_indicator.value_addr = aeron_counters_manager_addr(&conductor->counters_manager,
+                                                                  status_indicator.counter_id);
 
         if (status_indicator.counter_id < 0 ||
             aeron_send_channel_endpoint_create(&endpoint, channel, &status_indicator, conductor->context) < 0)
@@ -1324,7 +1326,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
             &conductor->counters_manager, channel->uri_length, channel->original_uri);
 
-        status_indicator.value_addr = aeron_counter_addr(&conductor->counters_manager, status_indicator.counter_id);
+        status_indicator.value_addr = aeron_counters_manager_addr(&conductor->counters_manager,
+                                                                  status_indicator.counter_id);
 
         if (status_indicator.counter_id < 0 ||
             aeron_receive_channel_endpoint_create(
@@ -1993,7 +1996,7 @@ int aeron_driver_conductor_link_subscribable(
 
         if (counter_id >= 0)
         {
-            int64_t *position_addr = aeron_counter_addr(&conductor->counters_manager, counter_id);
+            int64_t *position_addr = aeron_counters_manager_addr(&conductor->counters_manager, counter_id);
 
             if (aeron_driver_subscribable_add_position(subscribable, link, counter_id, position_addr, now_ns) >= 0)
             {
@@ -2981,8 +2984,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         return;
     }
 
-    rcv_hwm_position.value_addr = aeron_counter_addr(&conductor->counters_manager, rcv_hwm_position.counter_id);
-    rcv_pos_position.value_addr = aeron_counter_addr(&conductor->counters_manager, rcv_pos_position.counter_id);
+    rcv_hwm_position.value_addr = aeron_counters_manager_addr(&conductor->counters_manager, rcv_hwm_position.counter_id);
+    rcv_pos_position.value_addr = aeron_counters_manager_addr(&conductor->counters_manager, rcv_pos_position.counter_id);
 
     bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
     aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;

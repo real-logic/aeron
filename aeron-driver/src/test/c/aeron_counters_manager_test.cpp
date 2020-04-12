@@ -97,7 +97,7 @@ TEST_F(CountersManagerTest, shouldNotIterateOverEmptyCounters)
 {
     ASSERT_EQ(counters_manager_init(), 0);
 
-    aeron_counters_reader_foreach(m_metadata.data(), m_metadata.size(), func_should_never_be_called, NULL);
+    aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_should_never_be_called, NULL);
 }
 
 TEST_F(CountersManagerTest, shouldErrorOnAllocatingWhenFull)
@@ -135,7 +135,8 @@ TEST_F(CountersManagerTest, shouldAllocateIntoEmptyCounters)
         allocated[id] = label;
     }
 
-    aeron_counters_reader_foreach(m_metadata.data(), m_metadata.size(), func_check_and_remove_from_map, &allocated);
+    aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_check_and_remove_from_map,
+                                           &allocated);
 
     ASSERT_TRUE(allocated.empty());
 }
@@ -267,5 +268,5 @@ TEST_F(CountersManagerTest, shouldStoreMetaData)
             info[1].label.length()),
         info[1].counter_id);
 
-    aeron_counters_reader_foreach(m_metadata.data(), m_metadata.size(), func_should_store_metadata, info);
+    aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_should_store_metadata, info);
 }

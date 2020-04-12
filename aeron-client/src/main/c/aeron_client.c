@@ -35,6 +35,7 @@
 #include "aeron_alloc.h"
 #include "aeron_context.h"
 #include "aeron_cnc_file_descriptor.h"
+#include "concurrent/aeron_counters_manager.h"
 
 inline static int aeron_do_work(void *clientd)
 {
@@ -177,6 +178,70 @@ int aeron_close(aeron_t *client)
     }
 
     return 0;
+}
+
+typedef struct aeron_print_counters_stream_out_stct
+{
+    void (*stream_out)(const char *);
+}
+aeron_print_counters_stream_out_t;
+
+void aeron_print_counters_format(int64_t value, int32_t id, const char *label, size_t label_length, void *clientd)
+{
+    char buffer[AERON_MAX_PATH];
+    aeron_print_counters_stream_out_t *out = (aeron_print_counters_stream_out_t *)clientd;
+
+    snprintf(buffer, AERON_MAX_PATH - 1, "%3" PRId32 ": %20" PRId64 " - %*s\r\n",
+        id, value, (int)label_length, label);
+    out->stream_out(buffer);
+}
+
+void aeron_print_counters(aeron_t *client, void (*stream_out)(const char *))
+{
+    if (NULL == client || NULL == stream_out)
+    {
+        return;
+    }
+
+    aeron_print_counters_stream_out_t out;
+
+    aeron_counters_reader_foreach_counter(&client->conductor.counters_reader, aeron_print_counters_format, &out);
+}
+
+aeron_context_t *aeron_context(aeron_t *client)
+{
+    if (NULL == client)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_context(NULL): %s", strerror(EINVAL));
+        return NULL;
+    }
+
+    return client->context;
+}
+
+int64_t aeron_client_id(aeron_t *client)
+{
+    if (NULL == client)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_client_id(NULL): %s", strerror(EINVAL));
+        return -1;
+    }
+
+    return client->conductor.client_id;
+}
+
+int64_t aeron_next_correlation_id(aeron_t *client)
+{
+    if (NULL == client)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_next_correlation_id(NULL): %s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_mpsc_rb_next_correlation_id(&client->conductor.to_driver_buffer);
 }
 
 inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *async)

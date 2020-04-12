@@ -174,10 +174,10 @@ int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int3
     return 0;
 }
 
-void aeron_counters_reader_foreach(
+void aeron_counters_reader_foreach_metadata(
     uint8_t *metadata_buffer,
     size_t metadata_length,
-    aeron_counters_reader_foreach_func_t func,
+    aeron_counters_reader_foreach_metadata_func_t func,
     void *clientd)
 {
     int32_t id = 0;
@@ -212,7 +212,52 @@ void aeron_counters_reader_foreach(
     }
 }
 
+void aeron_counters_reader_foreach_counter(
+    aeron_counters_reader_t *counters_reader,
+    aeron_counters_reader_foreach_counter_func_t func,
+    void *clientd)
+{
+    int32_t id = 0;
+
+    for (size_t i = 0; i < counters_reader->metadata_length; i += AERON_COUNTERS_MANAGER_METADATA_LENGTH)
+    {
+        aeron_counter_metadata_descriptor_t *record = (aeron_counter_metadata_descriptor_t *)(
+            counters_reader->metadata + i);
+        int32_t record_state;
+
+        AERON_GET_VOLATILE(record_state, record->state);
+
+        if (AERON_COUNTER_RECORD_UNUSED == record_state)
+        {
+            break;
+        }
+        else if (AERON_COUNTER_RECORD_ALLOCATED == record_state)
+        {
+            int64_t *value_addr = (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(id));
+            int32_t label_length;
+
+            AERON_GET_VOLATILE(label_length, record->label_length);
+
+            func(
+                aeron_counter_get_volatile(value_addr),
+                id,
+                (const char *)record->label,
+                (size_t)label_length,
+                clientd);
+        }
+
+        id++;
+    }
+}
+
 extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *manager, int32_t counter_id);
+
+extern int aeron_counters_reader_init(
+    volatile aeron_counters_reader_t *reader,
+    uint8_t *metadata_buffer,
+    size_t metadata_length,
+    uint8_t *values_buffer,
+    size_t values_length);
 
 extern void aeron_counter_set_ordered(volatile int64_t *addr, int64_t value);
 

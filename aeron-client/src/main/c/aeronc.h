@@ -230,6 +230,18 @@ int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_t handler, vo
 int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_t handler, void *clientd);
 
 /*
+ * Counters Reader functions
+ */
+
+typedef void (*aeron_counters_reader_foreach_counter_func_t)(
+    int64_t value, int32_t id, const char *label, size_t label_length, void *clientd);
+
+void aeron_counters_reader_foreach_counter(
+    aeron_counters_reader_t *counters_reader,
+    aeron_counters_reader_foreach_counter_func_t func,
+    void *clientd);
+
+/*
  * Publication functions
  */
 

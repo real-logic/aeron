@@ -74,6 +74,16 @@ typedef struct aeron_counters_manager_stct
 }
 aeron_counters_manager_t;
 
+typedef struct aeron_counters_reader_stct
+{
+    uint8_t *values;
+    uint8_t *metadata;
+    size_t values_length;
+    size_t metadata_length;
+    size_t max_counter_id;
+}
+aeron_counters_reader_t;
+
 #define AERON_COUNTERS_MANAGER_IS_VALID_BUFFER_SIZES(metadata,values) ((metadata) >= ((values) * 2))
 
 int aeron_counters_manager_init(
@@ -102,13 +112,13 @@ int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t
 
 int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int32_t counter_id);
 
-typedef void (*aeron_counters_reader_foreach_func_t)
+typedef void (*aeron_counters_reader_foreach_metadata_func_t)
     (int32_t, int32_t, const uint8_t *, size_t, const uint8_t *, size_t, void *);
 
-void aeron_counters_reader_foreach(
+void aeron_counters_reader_foreach_metadata(
     uint8_t *metadata_buffer,
     size_t metadata_length,
-    aeron_counters_reader_foreach_func_t func,
+    aeron_counters_reader_foreach_metadata_func_t func,
     void *clientd);
 
 #define AERON_COUNTER_OFFSET(id) ((id) * AERON_COUNTERS_MANAGER_VALUE_LENGTH)
@@ -116,6 +126,22 @@ void aeron_counters_reader_foreach(
 inline int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *manager, int32_t counter_id)
 {
     return (int64_t *)(manager->values + AERON_COUNTER_OFFSET(counter_id));
+}
+
+inline int aeron_counters_reader_init(
+    volatile aeron_counters_reader_t *reader,
+    uint8_t *metadata_buffer,
+    size_t metadata_length,
+    uint8_t *values_buffer,
+    size_t values_length)
+{
+    reader->metadata = metadata_buffer;
+    reader->metadata_length = metadata_length;
+    reader->values = values_buffer;
+    reader->values_length = values_length;
+    reader->max_counter_id = values_length / AERON_COUNTERS_MANAGER_VALUE_LENGTH;
+
+    return 0;
 }
 
 inline void aeron_counter_set_ordered(volatile int64_t *addr, int64_t value)

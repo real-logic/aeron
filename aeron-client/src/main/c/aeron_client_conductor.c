@@ -49,6 +49,21 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         return -1;
     }
 
+    if (aeron_counters_reader_init(
+        &conductor->counters_reader,
+        aeron_cnc_counters_metadata_buffer(metadata),
+        metadata->counter_metadata_buffer_length,
+        aeron_cnc_counters_values_buffer(metadata),
+        metadata->counter_values_buffer_length) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_client_conductor_init - counters_reader: %s", strerror(errcode));
+        return -1;
+    }
+
+    conductor->client_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+
     conductor->registering_resources.array = NULL;
     conductor->registering_resources.capacity = 0;
     conductor->registering_resources.length = 0;

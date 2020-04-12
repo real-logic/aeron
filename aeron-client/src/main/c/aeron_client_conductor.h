@@ -22,6 +22,7 @@
 #include "concurrent/aeron_mpsc_rb.h"
 #include "command/aeron_control_protocol.h"
 #include "aeronc.h"
+#include "concurrent/aeron_counters_manager.h"
 
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
 #define AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD (10)
@@ -103,6 +104,7 @@ typedef struct aeron_client_conductor_stct
 {
     aeron_broadcast_receiver_t to_client_buffer;
     aeron_mpsc_rb_t to_driver_buffer;
+    aeron_counters_reader_t counters_reader;
 
     struct lingering_resources_stct
     {

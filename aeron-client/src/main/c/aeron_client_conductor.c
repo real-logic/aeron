@@ -20,10 +20,11 @@
 #include <inttypes.h>
 
 #include "aeron_client_conductor.h"
+#include "aeron_publication.h"
+#include "aeron_subscription.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "aeron_context.h"
-#include "aeron_client.h"
 #include "command/aeron_control_protocol.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_cnc_file_descriptor.h"

@@ -19,7 +19,7 @@
 
 #include "aeronc.h"
 #include "aeron_common.h"
-#include "aeron_client.h"
+#include "aeron_publication.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "util/aeron_fileutil.h"

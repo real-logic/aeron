@@ -112,6 +112,9 @@ int aeron_publication_image_create(
     }
     _image->map_raw_log_close_func = context->map_raw_log_close_func;
 
+    _image->nano_clock = context->nano_clock;
+    _image->cached_clock = context->cached_clock;
+
     if (aeron_publication_image_add_destination(_image, destination) < 0)
     {
         return -1;
@@ -141,8 +144,6 @@ int aeron_publication_image_create(
     _image->congestion_control = congestion_control;
     _image->loss_reporter = loss_reporter;
     _image->loss_reporter_offset = -1;
-    _image->nano_clock = context->nano_clock;
-    _image->cached_clock = context->cached_clock;
     _image->conductor_fields.subscribable.array = NULL;
     _image->conductor_fields.subscribable.length = 0;
     _image->conductor_fields.subscribable.capacity = 0;
@@ -171,7 +172,6 @@ int aeron_publication_image_create(
     _image->last_loss_change_number = -1;
     _image->is_end_of_stream = false;
 
-//    memcpy(&_image->control_address, control_address, sizeof(_image->control_address));
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
 
     _image->heartbeats_received_counter = aeron_system_counter_addr(
@@ -429,6 +429,14 @@ static inline bool aeron_publication_image_all_eos(
     return all_eos;
 }
 
+static inline bool aeron_publication_image_connection_is_alive(
+    const aeron_publication_image_connection_t *connection,
+    const int64_t now_ns)
+{
+    return NULL != connection->control_addr &&
+        now_ns < connection->time_of_last_activity_ns + AERON_RECEIVE_DESTINATION_TIMEOUT_NS;
+}
+
 int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image,
     aeron_receive_destination_t *destination,
@@ -508,13 +516,14 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                 const int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
                     sm_position, image->position_bits_to_shift, image->initial_term_id);
                 const int32_t term_offset = (int32_t)(sm_position & image->term_length_mask);
+                const int64_t now_ns = aeron_clock_cached_nano_time(image->cached_clock);
 
                 int active_count = 0;
                 for (size_t i = 0, len = image->connections.length; i < len; i++)
                 {
                     aeron_publication_image_connection_t *connection = &image->connections.array[i];
 
-                    if (NULL != connection->control_addr)
+                    if (aeron_publication_image_connection_is_alive(connection, now_ns))
                     {
                         int send_sm_result = aeron_receive_channel_endpoint_send_sm(
                             image->endpoint,
@@ -533,8 +542,12 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                         }
 
                         work_count++;
-                        active_count++;
                         aeron_counter_ordered_increment(image->status_messages_sent_counter, 1);
+                    }
+
+                    if (now_ns < connection->time_of_last_frame_ns + image->conductor_fields.liveness_timeout_ns)
+                    {
+                        active_count++;
                     }
                 }
 
@@ -571,11 +584,13 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
             {
                 if (image->conductor_fields.is_reliable)
                 {
+                    const int64_t now_ns = aeron_clock_cached_nano_time(image->cached_clock);
+
                     for (size_t i = 0, len = image->connections.length; i < len; i++)
                     {
                         aeron_publication_image_connection_t *connection = &image->connections.array[i];
 
-                        if (NULL != connection->control_addr)
+                        if (aeron_publication_image_connection_is_alive(connection, now_ns))
                         {
                             int send_nak_result = aeron_receive_channel_endpoint_send_nak(
                                 image->endpoint,
@@ -630,7 +645,7 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
             {
                 aeron_publication_image_connection_t *connection = &image->connections.array[i];
 
-                if (NULL != connection->control_addr)
+                if (aeron_publication_image_connection_is_alive(connection, now_ns))
                 {
                     int send_rttm_result = aeron_receive_channel_endpoint_send_rttm(
                         image->endpoint,
@@ -670,6 +685,8 @@ int aeron_publication_image_add_destination(aeron_publication_image_t *image, ae
     aeron_publication_image_connection_t *new_image = &image->connections.array[image->connections.length];
     new_image->destination = destination;
     new_image->control_addr = destination->has_control_addr ? &destination->current_control_addr : NULL;
+    new_image->time_of_last_activity_ns = aeron_clock_cached_nano_time(image->cached_clock);
+    new_image->time_of_last_frame_ns = 0;
     image->connections.length++;
 
     return image->connections.length;

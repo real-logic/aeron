@@ -252,6 +252,8 @@ void aeron_counters_reader_foreach_counter(
 
 extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *manager, int32_t counter_id);
 
+extern int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id);
+
 extern int aeron_counters_reader_init(
     volatile aeron_counters_reader_t *reader,
     uint8_t *metadata_buffer,

@@ -95,7 +95,8 @@ inline static const char *username()
 
 #define AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT (false)
 #define AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000L)
-#define AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT (500 * 1000 * 1000 * 1000L)
+#define AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT (500 * 1000 * 1000LL)
+#define AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT (3 * 1000 * 1000 * 1000LL)
 
 void aeron_default_error_handler(void *clientd, int errcode, const char *message)
 {
@@ -158,6 +159,7 @@ int aeron_context_init(aeron_context_t **context)
 
     _context->driver_timeout_ms = AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT;
     _context->keepalive_interval_ns = AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT;
+    _context->resource_linger_duration_ns = AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT;
 
     char *value = NULL;
 
@@ -180,6 +182,19 @@ int aeron_context_init(aeron_context_t **context)
         }
 
         _context->driver_timeout_ms = result;
+    }
+
+    if ((value = getenv(AERON_CLIENT_RESOURCE_LINGER_DURATION_ENV_VAR)))
+    {
+        uint64_t result;
+        if (aeron_parse_duration_ns(value, &result) < 0)
+        {
+            errno = EINVAL;
+            aeron_set_err(EINVAL, "could not parse: %s=%s", AERON_CLIENT_RESOURCE_LINGER_DURATION_ENV_VAR, value);
+            return -1;
+        }
+
+        _context->resource_linger_duration_ns = result;
     }
 
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
@@ -260,6 +275,19 @@ int aeron_context_set_keepalive_interval_ns(aeron_context_t *context, uint64_t v
 uint64_t aeron_context_get_keepalive_interval_ns(aeron_context_t *context)
 {
     return (NULL == context) ? AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT : context->keepalive_interval_ns;
+}
+
+int aeron_context_set_resource_linger_duration_ns(aeron_context_t *context, uint64_t value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->resource_linger_duration_ns = value;
+    return 0;
+}
+
+uint64_t aeron_context_get_resource_linger_duration_ns(aeron_context_t *context)
+{
+    return (NULL == context) ? AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT : context->resource_linger_duration_ns;
 }
 
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd)

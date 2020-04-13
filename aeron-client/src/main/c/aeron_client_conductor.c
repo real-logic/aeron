@@ -77,6 +77,9 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->lingering_resources.capacity = 0;
     conductor->lingering_resources.length = 0;
 
+    conductor->heartbeat_timestamp.addr = NULL;
+    conductor->heartbeat_timestamp.counter_id = AERON_NULL_COUNTER_ID;
+
     conductor->command_queue = &context->command_queue;
 
     conductor->error_handler = context->error_handler;
@@ -86,6 +89,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->driver_timeout_ns = context->driver_timeout_ms * 1000000;
     conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
     conductor->keepalive_interval_ns = context->keepalive_interval_ns;
+    conductor->resource_linger_duration_ns = context->resource_linger_duration_ns;
 
     conductor->invoker_mode = context->use_conductor_agent_invoker;
     conductor->pre_touch = context->pre_touch_mapped_memory;
@@ -188,7 +192,39 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
             return -1;
         }
 
-        // TODO: finish
+        if (AERON_NULL_COUNTER_ID == conductor->heartbeat_timestamp.counter_id)
+        {
+            const int32_t id = aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
+                &conductor->counters_reader, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID, conductor->client_id);
+
+            if (AERON_NULL_COUNTER_ID != id)
+            {
+                conductor->heartbeat_timestamp.counter_id = id;
+                conductor->heartbeat_timestamp.addr = aeron_counters_reader_addr(
+                    &conductor->counters_reader, conductor->heartbeat_timestamp.counter_id);
+
+                aeron_counter_set_ordered(conductor->heartbeat_timestamp.addr, now_ms);
+                conductor->time_of_last_keepalive_ns = now_ns;
+            }
+        }
+        else
+        {
+            const int32_t id = conductor->heartbeat_timestamp.counter_id;
+            if (!aeron_counter_heartbeat_timestamp_is_active(
+                &conductor->counters_reader, id, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID, conductor->client_id))
+            {
+                char buffer[AERON_MAX_PATH];
+
+                conductor->is_terminating = true;
+                // TODO: forceCloseReasources
+                snprintf(buffer, sizeof(buffer) - 1, "unexpected close of heartbeat timestamp counter: %" PRId32, id);
+                conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, buffer);
+                return -1;
+            }
+
+            aeron_counter_set_ordered(conductor->heartbeat_timestamp.addr, now_ms);
+            conductor->time_of_last_keepalive_ns = now_ns;
+        }
 
         return 1;
     }
@@ -198,8 +234,26 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
 
 int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *conductor, long long now_ns)
 {
-    // TODO: finish
-    return 0;
+    int work_count = 0;
+
+    for (size_t i = 0, size = conductor->lingering_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_managed_resource_t *resource = &conductor->lingering_resources.array[i];
+
+        if ((resource->time_of_last_state_change_ns + conductor->resource_linger_duration_ns) - now_ns < 0)
+        {
+            // TODO: delete resource
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->lingering_resources.array,
+                sizeof(aeron_client_managed_resource_t),
+                i,
+                last_index);
+            conductor->lingering_resources.length--;
+            work_count += 1;
+        }
+    }
+
+    return work_count;
 }
 
 int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor)
@@ -541,3 +595,8 @@ int aeron_client_conductor_on_publication_ready(
 
     return 0;
 }
+
+extern int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
+    aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id);
+extern bool aeron_counter_heartbeat_timestamp_is_active(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t type_id, int64_t registration_id);

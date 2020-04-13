@@ -138,12 +138,12 @@ int aeron_subscription_poll(
 
     for (size_t i = starting_index; i < length && fragments_read < fragment_limit; i++)
     {
-        fragments_read = aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        fragments_read += aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
     }
 
     for (size_t i = 0; i < starting_index &&fragments_read < fragment_limit; i++)
     {
-        fragments_read = aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        fragments_read += aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
     }
 
     if (image_list->change_number > subscription->last_image_list_change_number)

@@ -22,11 +22,31 @@
 #include "aeron_context.h"
 #include "aeron_client_conductor.h"
 
+typedef struct aeron_image_list_stct
+{
+    uint32_t length;
+    int32_t change_number;
+    volatile struct aeron_image_list_stct *next_list;
+    aeron_image_t **array;
+}
+aeron_image_list_t;
+
+#define AERON_IMAGE_LIST_ALLOC_SIZE(l) (sizeof(aeron_image_list_t) + (l * sizeof(aeron_image_t *)))
+
 typedef struct aeron_subscription_stct
 {
     aeron_client_command_base_t command_base;
     aeron_client_conductor_t *conductor;
     const char *channel;
+
+    struct subscription_conductor_fields_stct
+    {
+        aeron_image_list_t image_lists_head;
+        int32_t next_change_number;
+    }
+    conductor_fields;
+
+    long long last_image_list_change_number;
 
     int64_t registration_id;
     int32_t stream_id;
@@ -34,6 +54,7 @@ typedef struct aeron_subscription_stct
     aeron_on_available_image_t on_available_image;
     aeron_on_unavailable_image_t on_unavailable_image;
 
+    uint32_t round_robin_index;
     bool is_closed;
 }
 aeron_subscription_t;
@@ -48,5 +69,12 @@ int aeron_subscription_create(
     aeron_on_unavailable_image_t on_unavailable_image);
 
 int aeron_subscription_delete(aeron_subscription_t *subscription);
+
+int aeron_subscription_alloc_image_list(aeron_image_list_t **image_list, size_t length);
+
+int aeron_client_conductor_subscription_new_image_list(
+    aeron_subscription_t *subscription, aeron_image_list_t *image_list);
+
+int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *subscription);
 
 #endif //AERON_C_SUBSCRIPTION_H

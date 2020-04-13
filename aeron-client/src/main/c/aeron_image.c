@@ -44,5 +44,9 @@ int aeron_image_create(
 
     *image = _image;
     return -1;
+}
 
+int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int fragment_limit)
+{
+    return 0;
 }

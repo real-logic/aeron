@@ -56,6 +56,7 @@ final class AeronClient implements DriverManagedResource
         if (timeMs > (heartbeatTimestamp.get() + clientLivenessTimeoutMs))
         {
             reachedEndOfLife = true;
+            conductor.unavailableCounter(clientId, heartbeatTimestamp.id());
 
             if (!closedByCommand)
             {
@@ -88,6 +89,6 @@ final class AeronClient implements DriverManagedResource
     void onClosedByCommand()
     {
         closedByCommand = true;
-        heartbeatTimestamp.set(0);
+        heartbeatTimestamp.setOrdered(0);
     }
 }

@@ -95,6 +95,7 @@ public class DriverLoggingAgentTest
             SEND_CHANNEL_CLOSE,
             RECEIVE_CHANNEL_CLOSE,
             CMD_OUT_SUBSCRIPTION_READY,
+            CMD_OUT_ON_UNAVAILABLE_COUNTER,
             CMD_IN_CLIENT_CLOSE));
     }
 

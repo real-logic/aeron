@@ -596,6 +596,11 @@ public class DriverConductor implements Agent
         clientProxy.onClientTimeout(clientId);
     }
 
+    void unavailableCounter(final long registrationId, final int counterId)
+    {
+        clientProxy.onUnavailableCounter(registrationId, counterId);
+    }
+
     void onAddIpcPublication(
         final String channel,
         final int streamId,

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
+@Timeout(10)
 public class CounterTest
 {
     private static final int COUNTER_TYPE_ID = 1101;
@@ -78,7 +79,6 @@ public class CounterTest
     }
 
     @Test
-    @Timeout(10)
     public void shouldBeAbleToAddCounter()
     {
         launch();
@@ -101,7 +101,6 @@ public class CounterTest
     }
 
     @Test
-    @Timeout(10)
     public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
         availableCounterHandlerClientB = this::createReadableCounter;
@@ -128,7 +127,6 @@ public class CounterTest
     }
 
     @Test
-    @Timeout(10)
     public void shouldCloseReadableCounterOnUnavailableCounter()
     {
         availableCounterHandlerClientB = this::createReadableCounter;

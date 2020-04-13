@@ -14,22 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CLIENT_H
-#define AERON_CLIENT_H
+#ifndef AERON_C_IMAGE_H
+#define AERON_C_IMAGE_H
 
 #include "aeronc.h"
 #include "aeron_agent.h"
 #include "aeron_context.h"
 #include "aeron_client_conductor.h"
 
-typedef struct aeron_stct
+typedef struct aeron_image_stct
 {
-    aeron_client_conductor_t conductor;
-    aeron_agent_runner_t runner;
-    aeron_context_t *context;
+    aeron_client_command_base_t command_base;
+    aeron_client_conductor_t *conductor;
+
+    int64_t correlation_id;
+    int32_t session_id;
+
+    bool is_closed;
 }
-aeron_t;
+aeron_image_t;
 
-int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context);
+int aeron_image_create(
+    aeron_image_t **image,
+    aeron_client_conductor_t *conductor,
+    int64_t correlation_id,
+    int32_t session_id);
 
-#endif //AERON_CLIENT_H
+#endif //AERON_C_IMAGE_H

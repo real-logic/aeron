@@ -70,8 +70,10 @@ set(SOURCE
     aeron_client.c
     aeron_client_conductor.c
     aeron_context.c
+    aeron_image.c
     aeron_publication.c
     aeron_socket.c
+    aeron_subscription.c
     aeron_windows.c
     )
 
@@ -123,7 +125,10 @@ set(HEADERS
     aeron_cnc_file_descriptor.h
     aeron_common.h
     aeron_context.h
+    aeron_image.h
+    aeron_publication.h
     aeron_socket.h
+    aeron_subscription.h
     aeron_windows.h
     )
 

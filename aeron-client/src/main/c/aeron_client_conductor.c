@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "aeron_client_conductor.h"
 #include "aeron_alloc.h"
@@ -81,10 +82,11 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
 
-    conductor->inter_service_timeout_ms = metadata->client_liveness_timeout / 1000000;
+    conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
 
     conductor->invoker_mode = context->use_conductor_agent_invoker;
     conductor->pre_touch = context->pre_touch_mapped_memory;
+    conductor->is_terminating = false;
 
     return 0;
 }
@@ -162,15 +164,81 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
     conductor->error_handler(conductor->error_handler_clientd, AERON_ERROR_CODE_MALFORMED_COMMAND, error_message);
 }
 
+int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, long long now_ns)
+{
+    if ((conductor->time_of_last_keepalive_ns + conductor->keepalive_interval_ns) - now_ns < 0)
+    {
+        // TODO: finish
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *conductor, long long now_ns)
+{
+    // TODO: finish
+    return 0;
+}
+
+int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor)
+{
+    int work_count = 0, result = 0;
+    const long long now_ns = conductor->nano_clock();
+
+    if ((conductor->time_of_last_service_ns + AERON_CLIENT_CONDUCTOR_IDLE_SLEEP_NS) - now_ns < 0)
+    {
+        if ((conductor->time_of_last_service_ns + conductor->inter_service_timeout_ns) - now_ns < 0)
+        {
+            char buffer[AERON_MAX_PATH];
+
+            conductor->is_terminating = true;
+            // TODO: forceCloseResources
+            snprintf(buffer, sizeof(buffer) - 1,
+                "service interval exceeded (ns): timeout=%" PRId64 ", interval=%" PRId64,
+                (int64_t)conductor->inter_service_timeout_ns,
+                (int64_t)(now_ns - conductor->time_of_last_service_ns));
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, buffer);
+            return -1;
+        }
+
+        conductor->time_of_last_service_ns = now_ns;
+
+        if ((result = aeron_client_conductor_check_liveness(conductor, now_ns)) < 0)
+        {
+            return -1;
+        }
+        work_count += result;
+
+        if ((result = aeron_client_conductor_check_lingering_resources(conductor, now_ns)) < 0)
+        {
+            return -1;
+        }
+        work_count += result;
+    }
+
+    return work_count;
+}
+
 int aeron_client_conductor_do_work(aeron_client_conductor_t *conductor)
 {
-    int work_count = 0;
+    int work_count = 0, result = 0;
+
+    if (conductor->is_terminating)
+    {
+        return 0;
+    }
 
     work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
         conductor->command_queue, aeron_client_conductor_on_command, conductor, 10);
 
     work_count += aeron_broadcast_receiver_receive(
         &conductor->to_client_buffer, aeron_client_conductor_on_driver_response, conductor);
+
+    if ((result = aeron_client_conductor_on_check_timeouts(conductor)) < 0)
+    {
+        return work_count;
+    }
+    work_count += result;
 
     return work_count;
 }

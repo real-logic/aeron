@@ -27,6 +27,8 @@
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
 #define AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD (10)
 
+#define AERON_CLIENT_CONDUCTOR_IDLE_SLEEP_NS (16 * 1000 * 1000L)
+
 typedef enum aeron_client_registration_status_en
 {
     AERON_CLIENT_AWAITING_MEDIA_DRIVER,
@@ -133,7 +135,11 @@ typedef struct aeron_client_conductor_stct
     aeron_mpsc_concurrent_array_queue_t *command_queue;
 
     long long registration_timeout_ms;
-    long long inter_service_timeout_ms;
+    long long inter_service_timeout_ns;
+    long long keepalive_interval_ns;
+
+    long long time_of_last_service_ns;
+    long long time_of_last_keepalive_ns;
 
     int64_t client_id;
 
@@ -144,6 +150,7 @@ typedef struct aeron_client_conductor_stct
     aeron_clock_func_t epoch_clock;
     bool invoker_mode;
     bool pre_touch;
+    bool is_terminating;
 }
 aeron_client_conductor_t;
 

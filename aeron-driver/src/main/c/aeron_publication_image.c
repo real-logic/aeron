@@ -375,27 +375,58 @@ void aeron_publication_image_track_rebuild(
     }
 }
 
+// TODO: Local definition of macro until we merge and share code with the C driver.
+#if defined(__GNUC__)
+#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp,c) (__builtin_expect((exp),c))
+#else
+#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp,c) (exp)
+#endif
+
 static inline void aeron_publication_image_track_connection(
     aeron_publication_image_t *image,
     aeron_receive_destination_t *destination,
-    struct sockaddr_storage *source_addr)
+    struct sockaddr_storage *source_addr,
+    int64_t now_ns)
 {
-    // TODO-MDS: Optimise this...
     for (size_t i = 0, len = image->connections.length; i < len; i++)
     {
         aeron_publication_image_connection_t *connection = &image->connections.array[i];
         if (connection->destination == destination)
         {
-            if (NULL == connection->control_addr)
+            connection->time_of_last_activity_ns = now_ns;
+            connection->time_of_last_frame_ns = now_ns;
+
+            if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection->control_addr, 0))
             {
                 aeron_publication_image_connection_set_control_address(connection, source_addr);
             }
-            else
-            {
-                break;
-            }
+
+            break;
         }
     }
+}
+
+static inline bool aeron_publication_image_all_eos(
+    aeron_publication_image_t *image,
+    aeron_receive_destination_t *destination,
+    bool is_eos)
+{
+    bool all_eos = true;
+
+    for (size_t i = 0, len = image->connections.length; i < len; i++)
+    {
+        aeron_publication_image_connection_t *connection = &image->connections.array[i];
+        if (connection->destination == destination)
+        {
+            connection->is_eos = is_eos;
+        }
+        else
+        {
+            all_eos &= connection->is_eos;
+        }
+    }
+
+    return all_eos;
 }
 
 int aeron_publication_image_insert_packet(
@@ -415,12 +446,14 @@ int aeron_publication_image_insert_packet(
     if (!aeron_publication_image_is_flow_control_under_run(image, packet_position) &&
         !aeron_publication_image_is_flow_control_over_run(image, proposed_position))
     {
+        int64_t now_ns = aeron_clock_cached_nano_time(image->cached_clock);
         // TODO-MDS: also track connections on some over run cases (see Java implementation).
-        aeron_publication_image_track_connection(image, destination, addr);
+        aeron_publication_image_track_connection(image, destination, addr, now_ns);
         
         if (is_heartbeat)
         {
-            if (!image->is_end_of_stream && aeron_publication_image_is_end_of_stream(buffer, length))
+            const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
+            if (is_eos && !image->is_end_of_stream && aeron_publication_image_all_eos(image, destination, is_eos))
             {
                 AERON_PUT_ORDERED(image->is_end_of_stream, true);
                 AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
@@ -546,7 +579,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
                         {
                             int send_nak_result = aeron_receive_channel_endpoint_send_nak(
                                 image->endpoint,
-                                &image->connections.array[0].destination->current_control_addr,
+                                connection->control_addr,
                                 image->stream_id,
                                 image->session_id,
                                 term_id,

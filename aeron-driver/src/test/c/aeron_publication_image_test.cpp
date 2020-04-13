@@ -16,6 +16,7 @@
 
 
 #include <vector>
+#include <protocol/aeron_udp_protocol.h>
 #include "aeron_receiver_test.h"
 
 extern "C"
@@ -169,4 +170,60 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
 
     aeron_publication_image_initiate_rttm(image, 1000000000);
     ASSERT_EQ(3, test_bindings_state->rttm_count);
+}
+
+TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
+{
+    struct sockaddr_storage addr; // Don't really care what value this is.
+    uint8_t data[128];
+    memset(data, 0, sizeof(data));
+
+    aeron_data_header_t *heartbeat = reinterpret_cast<aeron_data_header_t *>(data);
+    const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
+    const char *uri_2 = "aeron:udp?endpoint=localhost:9091";
+    aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
+    int32_t stream_id = 1001;
+    int32_t session_id = 1000001;
+
+    aeron_udp_channel_t *channel_1;
+    aeron_receive_destination_t *dest_1;
+    aeron_udp_channel_t *channel_2;
+    aeron_receive_destination_t *dest_2;
+
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
+    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
+
+    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
+
+    aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
+
+    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
+
+    ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
+
+    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
+    image->congestion_control->should_measure_rtt = always_measure_rtt;
+
+    heartbeat->stream_id = stream_id;
+    heartbeat->session_id = session_id;
+    heartbeat->frame_header.frame_length = 0;
+    heartbeat->term_id = 0;
+    heartbeat->term_offset = 0;
+    heartbeat->frame_header.flags |= AERON_DATA_HEADER_EOS_FLAG;
+
+    bool is_eos = true;
+    AERON_GET_VOLATILE(is_eos, image->is_end_of_stream);
+    ASSERT_EQ(false, is_eos);
+
+    aeron_publication_image_insert_packet(image, dest_2, 0, 0, data, AERON_DATA_HEADER_LENGTH, &addr);
+
+    AERON_GET_VOLATILE(is_eos, image->is_end_of_stream);
+    ASSERT_EQ(false, is_eos);
+
+    aeron_publication_image_insert_packet(image, dest_1, 0, 0, data, AERON_DATA_HEADER_LENGTH, &addr);
+
+    AERON_GET_VOLATILE(is_eos, image->is_end_of_stream);
+    ASSERT_EQ(true, is_eos);
 }

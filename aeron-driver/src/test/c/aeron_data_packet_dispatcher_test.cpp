@@ -99,7 +99,7 @@ protected:
         aeron_atomic_counter_t status_indicator;
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
             &m_counters_manager, m_channel->uri_length, m_channel->original_uri);
-        status_indicator.value_addr = aeron_counter_addr(&m_counters_manager, status_indicator.counter_id);
+        status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
         aeron_receive_destination_t *destination = NULL;
         aeron_receive_destination_create(&destination, m_channel, m_context);
@@ -133,10 +133,10 @@ protected:
         aeron_position_t pos_position;
         pos_position.counter_id = aeron_counter_publisher_position_allocate(
             &m_counters_manager, 0, session_id, stream_id, strlen("foo"), "foo");
-        pos_position.value_addr = aeron_counter_addr(&m_counters_manager, pos_position.counter_id);
+        pos_position.value_addr = aeron_counters_manager_addr(&m_counters_manager, pos_position.counter_id);
         hwm_position.counter_id = aeron_counter_publisher_position_allocate(
             &m_counters_manager, 0, session_id, stream_id, strlen("foo"), "foo");
-        hwm_position.value_addr = aeron_counter_addr(&m_counters_manager, hwm_position.counter_id);
+        hwm_position.value_addr = aeron_counters_manager_addr(&m_counters_manager, hwm_position.counter_id);
 
         m_context->congestion_control_supplier_func(
             &congestion_control_strategy, 0, 0, 0, 0, 0, TERM_BUFFER_SIZE, MTU,

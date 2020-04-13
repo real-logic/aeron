@@ -248,6 +248,7 @@ struct TestDriverConductor
         }
 
         context.m_context->receiver_proxy = &m_receiver.receiver_proxy;
+        m_destination.has_control_addr = false;
     }
 
     virtual ~TestDriverConductor()
@@ -265,6 +266,7 @@ struct TestDriverConductor
     aeron_driver_conductor_t m_conductor;
     aeron_driver_sender_t m_sender;
     aeron_driver_receiver_t m_receiver;
+    aeron_receive_destination_t m_destination;
 };
 
 class DriverConductorTest : public testing::Test
@@ -619,6 +621,7 @@ public:
         cmd.base.func = aeron_driver_conductor_on_create_publication_image;
         cmd.base.item = NULL;
         cmd.endpoint = endpoint;
+        cmd.destination = &m_conductor.m_destination;
         cmd.session_id = SESSION_ID;
         cmd.stream_id = stream_id;
         cmd.term_offset = 0;

@@ -37,6 +37,9 @@ typedef struct aeron_publication_image_connection_stct
     struct sockaddr_storage resolved_control_address_for_implicit_unicast_channels;
     aeron_receive_destination_t *destination;
     struct sockaddr_storage *control_addr;
+    int64_t time_of_last_activity_ns;
+    int64_t time_of_last_frame_ns;
+    bool is_eos;
 }
 aeron_publication_image_connection_t;
 

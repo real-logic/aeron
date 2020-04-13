@@ -60,13 +60,18 @@ int aeron_receive_destination_create(
     _destination->transport.destination_clientd = _destination;
     _destination->time_of_last_activity_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
-    memcpy(&_destination->current_control_addr, &channel->local_control, sizeof(_destination->current_control_addr));
+    if (channel->is_multicast)
+    {
+        memcpy(&_destination->current_control_addr, &channel->remote_control, sizeof(_destination->current_control_addr));
+    }
+    else if (channel->has_explicit_control)
+    {
+        memcpy(&_destination->current_control_addr, &channel->local_control, sizeof(_destination->current_control_addr));
+    }
 
     _destination->has_control_addr =
         channel->is_multicast ||
-        channel->has_explicit_control ||
-        channel->is_manual_control_mode ||
-        !aeron_is_wildcard_addr(&_destination->current_control_addr);
+        channel->has_explicit_control;
 
     *destination = _destination;
 

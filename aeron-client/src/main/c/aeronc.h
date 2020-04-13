@@ -191,35 +191,41 @@ int64_t aeron_client_id(aeron_t *client);
 int64_t aeron_next_correlation_id(aeron_t *client);
 
 typedef struct aeron_client_registering_resource_stct aeron_async_add_publication_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_publication_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
 
 int aeron_async_add_publication(
     aeron_async_add_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id);
-int aeron_async_add_publication_poll(
-    aeron_publication_t **publication, aeron_async_add_publication_t *async);
+int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_async_add_publication_t *async);
 
-int64_t aeron_add_exclusive_publication(aeron_t *client, const char *uri);
-int aeron_find_exclusive_publication(
-    aeron_exclusive_publication_t **publication, aeron_t *client, int64_t registration_id);
+int aeron_async_add_exclusive_publication(
+    aeron_async_add_exclusive_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id);
+int aeron_async_add_exclusive_publication_poll(
+    aeron_exclusive_publication_t **publication, aeron_async_add_exclusive_publication_t *async);
 
-int64_t aeron_add_subscription(
+int aeron_async_add_subscription(
+    aeron_async_add_subscription_t **async,
     aeron_t *client,
     const char *uri,
+    int32_t stream_id,
     aeron_on_available_image_t on_available_image_handler,
     void *on_available_image_clientd,
     aeron_on_unavailable_image_t on_unavailable_image_handler,
     void *on_unavailable_image_clientd);
-int aeron_find_subscription(aeron_subscription_t **subscription, aeron_t *client, int64_t registration_id);
+int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron_async_add_subscription_t *async);
 
 aeron_counters_reader_t *aeron_counters_reader(aeron_t *client);
 
-int64_t aeron_add_counter(
+int aeron_async_add_counter(
+    aeron_async_add_counter_t **async,
     aeron_t *client,
     int32_t type_id,
     const uint8_t *key_buffer,
     size_t key_buffer_length,
     const char *label_buffer,
     size_t label_buffer_length);
-int aeron_find_counter(aeron_counter_t **counter, aeron_t *client, int64_t registration_id);
+int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
 
 int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_t handler, void *clientd);
 int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_t handler, void *clientd);
@@ -302,13 +308,15 @@ int64_t aeron_exclusive_publication_offer(
     aeron_exclusive_publication_t *publication,
     uint8_t *buffer,
     size_t length,
-    aeron_reserved_value_supplier_t reserved_value_supplier);
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd);
 
 int64_t aeron_exclusive_publication_offerv(
     aeron_exclusive_publication_t *publication,
     aeron_iovec_t *iov,
     size_t iovcnt,
-    aeron_reserved_value_supplier_t reserved_value_supplier);
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd);
 
 int64_t aeron_exclusive_publication_try_claim(
     aeron_exclusive_publication_t *publication,

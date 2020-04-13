@@ -172,7 +172,12 @@ inline int32_t aeron_term_appender_append_unfragmented_message(
 
         aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
 
-        data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + term_offset, frame_length);
+        if (NULL != reserved_value_supplier)
+        {
+            data_header->reserved_value = reserved_value_supplier(
+                clientd, term_buffer->addr + term_offset, frame_length);
+        }
+
         AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
     }
 
@@ -222,7 +227,12 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
             memcpy(term_buffer->addr + offset, iov[i].iov_base, iov[i].iov_len);
         }
 
-        data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + term_offset, frame_length);
+        if (NULL != reserved_value_supplier)
+        {
+            data_header->reserved_value = reserved_value_supplier(
+                clientd, term_buffer->addr + term_offset, frame_length);
+        }
+
         AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
     }
 
@@ -288,7 +298,13 @@ inline int32_t aeron_term_appender_append_fragmented_message(
 
             aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
             data_header->frame_header.flags = flags;
-            data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + term_offset, frame_length);
+
+            if (NULL != reserved_value_supplier)
+            {
+                data_header->reserved_value = reserved_value_supplier(
+                    clientd, term_buffer->addr + term_offset, frame_length);
+            }
+
             AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
 
             flags = 0;
@@ -380,7 +396,13 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
 
             aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
             data_header->frame_header.flags = flags;
-            data_header->reserved_value = reserved_value_supplier(clientd, term_buffer->addr + frame_offset, frame_length);
+
+            if (NULL != reserved_value_supplier)
+            {
+                data_header->reserved_value = reserved_value_supplier(
+                    clientd, term_buffer->addr + frame_offset, frame_length);
+            }
+
             AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
 
             flags = 0;

@@ -244,6 +244,18 @@ int64_t aeron_next_correlation_id(aeron_t *client)
     return aeron_mpsc_rb_next_correlation_id(&client->conductor.to_driver_buffer);
 }
 
+aeron_counters_reader_t *aeron_counters_reader(aeron_t *client)
+{
+    if (NULL == client)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_counters_reader(NULL): %s", strerror(EINVAL));
+        return NULL;
+    }
+
+    return &client->conductor.counters_reader;
+}
+
 inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *async)
 {
     if (NULL != async)

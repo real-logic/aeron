@@ -30,6 +30,12 @@
 
 #define AERON_MIN(a,b) ((a) < (b) ? (a) : (b))
 
+#if defined(__GNUC__)
+#define AERON_C_COND_EXPECT(exp,c) (__builtin_expect((exp),c))
+#else
+#define AERON_C_COND_EXPECT(exp,c) (exp)
+#endif
+
 /* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
 inline int aeron_number_of_trailing_zeroes(int32_t value)
 {

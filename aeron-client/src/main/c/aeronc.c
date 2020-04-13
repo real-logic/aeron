@@ -100,7 +100,7 @@ int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
 int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context)
 {
     long long start_ms = context->epoch_clock();
-    long long deadline_ms = start_ms + context->media_driver_timeout_ms;
+    long long deadline_ms = start_ms + context->driver_timeout_ms;
     char filename[AERON_MAX_PATH];
 
 #if defined(_MSC_VER)
@@ -179,7 +179,7 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
         }
 
         long long now_ms = context->epoch_clock();
-        if (aeron_mpsc_rb_consumer_heartbeat_time_value(&rb) < (now_ms - context->media_driver_timeout_ms))
+        if (aeron_mpsc_rb_consumer_heartbeat_time_value(&rb) < (now_ms - (long long)context->driver_timeout_ms))
         {
             if (now_ms > deadline_ms)
             {

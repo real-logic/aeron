@@ -51,15 +51,6 @@ int32_t aeron_heartbeat_timestamp_allocate(
     int32_t type_id,
     int64_t registration_id);
 
-#define AERON_COUNTER_PUBLISHER_LIMIT_NAME "pub-lmt"
-#define AERON_COUNTER_PUBLISHER_LIMIT_TYPE_ID (1)
-
-#define AERON_COUNTER_SENDER_POSITION_NAME "snd-pos"
-#define AERON_COUNTER_SENDER_POSITION_TYPE_ID (2)
-
-#define AERON_COUNTER_SENDER_LIMIT_NAME "snd-lmt"
-#define AERON_COUNTER_SENDER_LIMIT_TYPE_ID (9)
-
 int32_t aeron_counter_publisher_limit_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
@@ -84,9 +75,6 @@ int32_t aeron_counter_sender_limit_allocate(
     size_t channel_length,
     const char *channel);
 
-#define AERON_COUNTER_SUBSCRIPTION_POSITION_NAME "sub-pos"
-#define AERON_COUNTER_SUBSCRIPTION_POSITION_TYPE_ID (4)
-
 int32_t aeron_counter_subscription_position_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
@@ -96,9 +84,6 @@ int32_t aeron_counter_subscription_position_allocate(
     const char *channel,
     int64_t joining_position);
 
-#define AERON_COUNTER_RECEIVER_HWM_NAME "rcv-hwm"
-#define AERON_COUNTER_RECEIVER_HWM_TYPE_ID (3)
-
 int32_t aeron_counter_receiver_hwm_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
@@ -107,9 +92,6 @@ int32_t aeron_counter_receiver_hwm_allocate(
     size_t channel_length,
     const char *channel);
 
-#define AERON_COUNTER_RECEIVER_POSITION_NAME "rcv-pos"
-#define AERON_COUNTER_RECEIVER_POSITION_TYPE_ID (5)
-
 int32_t aeron_counter_receiver_position_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
@@ -117,17 +99,6 @@ int32_t aeron_counter_receiver_position_allocate(
     int32_t stream_id,
     size_t channel_length,
     const char *channel);
-
-#define AERON_COUNTER_SEND_CHANNEL_STATUS_NAME "snd-channel"
-#define AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID (6)
-
-#define AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME "rcv-channel"
-#define AERON_COUNTER_RECEIVE_CHANNEL_STATUS_TYPE_ID (7)
-
-#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_INITIALIZING (0)
-#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ERRORED (-1)
-#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE (1)
-#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING (2)
 
 int32_t aeron_counter_send_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
@@ -139,15 +110,9 @@ int32_t aeron_counter_receive_channel_status_allocate(
     size_t channel_length,
     const char *channel);
 
-#define AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_NAME "client-heartbeat"
-#define AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID (11)
-
 int32_t aeron_counter_client_heartbeat_timestamp_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t client_id);
-
-#define AERON_COUNTER_PUBLISHER_POSITION_NAME "pub-pos (sampled)"
-#define AERON_COUNTER_PUBLISHER_POSITION_TYPE_ID (12)
 
 int32_t aeron_counter_publisher_position_allocate(
     aeron_counters_manager_t *counters_manager,
@@ -156,9 +121,6 @@ int32_t aeron_counter_publisher_position_allocate(
     int32_t stream_id,
     size_t channel_length,
     const char *channel);
-
-#define AERON_COUNTER_SENDER_BPE_NAME "snd-bpe"
-#define AERON_COUNTER_SENDER_BPE_TYPE_ID  (13)
 
 int32_t aeron_counter_sender_bpe_allocate(
     aeron_counters_manager_t *counters_manager,

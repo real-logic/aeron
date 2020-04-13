@@ -82,7 +82,10 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
 
+    conductor->driver_timeout_ms = context->driver_timeout_ms;
+    conductor->driver_timeout_ns = context->driver_timeout_ms * 1000000;
     conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
+    conductor->keepalive_interval_ns = context->keepalive_interval_ns;
 
     conductor->invoker_mode = context->use_conductor_agent_invoker;
     conductor->pre_touch = context->pre_touch_mapped_memory;
@@ -168,7 +171,26 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
 {
     if ((conductor->time_of_last_keepalive_ns + conductor->keepalive_interval_ns) - now_ns < 0)
     {
+        const long long last_keepalive_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&conductor->to_driver_buffer);
+        const long long now_ms = conductor->epoch_clock();
+
+        if (now_ms > (last_keepalive_ms + (long long)conductor->driver_timeout_ms))
+        {
+            char buffer[AERON_MAX_PATH];
+
+            conductor->is_terminating = true;
+            // TODO: forceCloseResources
+            snprintf(buffer, sizeof(buffer) - 1,
+                "MediaDriver keepalive age exceeded (ms): timeout=%" PRId64 ", age=%" PRId64,
+                (int64_t)conductor->driver_timeout_ms,
+                (int64_t)(now_ms - last_keepalive_ms));
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, buffer);
+            return -1;
+        }
+
         // TODO: finish
+
+        return 1;
     }
 
     return 0;
@@ -287,7 +309,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ms = conductor->epoch_clock() + conductor->registration_timeout_ms;
+    async->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
 }
 
 void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
@@ -362,7 +384,7 @@ int aeron_client_conductor_async_add_publication(
     cmd->command_base.item = NULL;
     cmd->resource.publication = NULL;
     cmd->epoch_clock = conductor->epoch_clock;
-    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->registration_timeout_ms;
+    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
     cmd->uri_length = uri_length;

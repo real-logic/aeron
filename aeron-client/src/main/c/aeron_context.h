@@ -63,8 +63,9 @@ typedef struct aeron_context_stct
     aeron_idle_strategy_func_t idle_strategy_func;
     void *idle_strategy_state;
 
-    long media_driver_timeout_ms;
-    long resource_linger_timeout_ms;
+    uint64_t driver_timeout_ms;
+    uint64_t keepalive_interval_ns;
+    uint64_t resource_linger_timeout_ms;
 
     bool use_conductor_agent_invoker;
     bool pre_touch_mapped_memory;

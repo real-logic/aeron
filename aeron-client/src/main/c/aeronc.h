@@ -52,6 +52,14 @@ typedef struct aeron_counters_reader_stct aeron_counters_reader_t;
 int aeron_context_set_dir(aeron_context_t *context, const char *value);
 const char *aeron_context_get_dir(aeron_context_t *context);
 
+#define AERON_DRIVER_TIMEOUT_ENV_VAR "AERON_DRIVER_TIMEOUT"
+
+int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value);
+uint64_t aeron_context_get_driver_timeout_ms(aeron_context_t *context);
+
+int aeron_context_set_keepalive_interval_ns(aeron_context_t *context, uint64_t value);
+uint64_t aeron_context_get_keepalive_interval_ns(aeron_context_t *context);
+
 /**
  * The error handler to be called when an error occurs.
  */

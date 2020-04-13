@@ -28,6 +28,7 @@
 #include "aeron_alloc.h"
 #include "aeron_context.h"
 #include "util/aeron_error.h"
+#include "util/aeron_parse_util.h"
 
 #if defined(__clang__)
     #pragma clang diagnostic push
@@ -93,6 +94,8 @@ inline static const char *username()
 }
 
 #define AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT (false)
+#define AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000L)
+#define AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT (500 * 1000 * 1000 * 1000L)
 
 void aeron_default_error_handler(void *clientd, int errcode, const char *message)
 {
@@ -153,11 +156,30 @@ int aeron_context_init(aeron_context_t **context)
     _context->agent_on_start_func = NULL;
     _context->agent_on_start_state = NULL;
 
+    _context->driver_timeout_ms = AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT;
+    _context->keepalive_interval_ns = AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT;
+
     char *value = NULL;
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    }
+
+    if ((value = getenv(AERON_DRIVER_TIMEOUT_ENV_VAR)))
+    {
+        errno = 0;
+        char *end_ptr = NULL;
+        uint64_t result = strtoull(value, &end_ptr, 0);
+
+        if ((0 == result && 0 != errno) || '\0' != *end_ptr)
+        {
+            errno = EINVAL;
+            aeron_set_err(EINVAL, "could not parse driver timeout: %s=%s", AERON_DRIVER_TIMEOUT_ENV_VAR, value);
+            return -1;
+        }
+
+        _context->driver_timeout_ms = result;
     }
 
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
@@ -214,12 +236,38 @@ const char *aeron_context_get_dir(aeron_context_t *context)
     return NULL != context ? context->aeron_dir : NULL;
 }
 
+int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->driver_timeout_ms = value;
+    return 0;
+}
+
+uint64_t aeron_context_get_driver_timeout_ms(aeron_context_t *context)
+{
+    return (NULL == context) ? AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT : context->driver_timeout_ms;
+}
+
+int aeron_context_set_keepalive_interval_ns(aeron_context_t *context, uint64_t value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->keepalive_interval_ns = value;
+    return 0;
+}
+
+uint64_t aeron_context_get_keepalive_interval_ns(aeron_context_t *context)
+{
+    return (NULL == context) ? AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT : context->keepalive_interval_ns;
+}
+
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd)
 {
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->error_handler = handler;
-    context->error_handler_clientd = NULL;
+    context->error_handler_clientd = clientd;
     return 0;
 }
 

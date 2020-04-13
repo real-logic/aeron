@@ -611,7 +611,6 @@ public class ClusterTest
         }
     }
 
-
     @Test
     @Timeout(40)
     public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers()
@@ -628,13 +627,33 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            while (leader.service().roleChangedTo() == Cluster.Role.LEADER)
+            while (leader.service().roleChangedTo() != Cluster.Role.LEADER)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.sleep(1);
+            }
+        }
+    }
+
+    @Test
+    @Timeout(40)
+    public void shouldTerminateLeaderWhenServiceStops()
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            leader.terminationExpected(true);
+            leader.container().close();
+
+            while (leader.moduleState() != ConsensusModule.State.CLOSED)
+            {
+                Tests.sleep(1);
             }
 
-            assertEquals(Cluster.Role.FOLLOWER, leader.service().roleChangedTo());
+            while (!leader.hasMemberTerminated())
+            {
+                Tests.sleep(1);
+            }
         }
     }
 

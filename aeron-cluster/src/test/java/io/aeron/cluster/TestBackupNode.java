@@ -63,7 +63,7 @@ public class TestBackupNode implements AutoCloseable
         return isClosed;
     }
 
-    ClusterBackup.State state()
+    ClusterBackup.State backupState()
     {
         return ClusterBackup.State.get((int)clusterBackupMediaDriver.clusterBackup().context().stateCounter().get());
     }

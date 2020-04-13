@@ -118,8 +118,7 @@ public class TestCluster implements AutoCloseable
     {
         if ((staticMemberCount + dynamicMemberCount + 1) >= 10)
         {
-            throw new IllegalArgumentException(
-                "too many members memberCount=" + staticMemberCount + ": max 9");
+            throw new IllegalArgumentException("too many members memberCount=" + staticMemberCount + ": max 9");
         }
 
         this.nodes = new TestNode[staticMemberCount + dynamicMemberCount + 1];
@@ -462,8 +461,8 @@ public class TestCluster implements AutoCloseable
 
     void stopAllNodes()
     {
-        CloseHelper.closeAll(nodes);
         CloseHelper.close(backupNode);
+        CloseHelper.closeAll(nodes);
     }
 
     void restartAllNodes(final boolean cleanStart)
@@ -690,7 +689,7 @@ public class TestCluster implements AutoCloseable
             throw new IllegalStateException("no backup node present");
         }
 
-        while (backupNode.state() != targetState)
+        while (backupNode.backupState() != targetState)
         {
             Tests.sleep(10);
         }

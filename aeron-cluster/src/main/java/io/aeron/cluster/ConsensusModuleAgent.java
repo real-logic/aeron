@@ -37,9 +37,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -95,6 +93,7 @@ class ConsensusModuleAgent implements Agent
     private ClusterMember leaderMember;
     private ClusterMember thisMember;
     private long[] rankedPositions;
+    private final long[] serviceClientIds;
     private final ArrayDeque<ServiceAck>[] serviceAckQueues;
     private final Counter clusterRoleCounter;
     private final ClusterMarkFile markFile;
@@ -173,6 +172,8 @@ class ConsensusModuleAgent implements Agent
         this.markFile = ctx.clusterMarkFile();
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
+        this.serviceClientIds = new long[ctx.serviceCount()];
+        Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArray(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(clusterMembers);
         this.logPublicationChannelTag = (int)aeron.nextCorrelationId();
@@ -245,7 +246,13 @@ class ConsensusModuleAgent implements Agent
                     recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
                 }
 
-                awaitServices(expectedAckPosition);
+                while (!ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAckQueues))
+                {
+                    idle(consensusModuleAdapter.poll());
+                }
+
+                captureServiceClientIds();
+                ++serviceAckId;
             }
 
             if (ConsensusModule.State.SUSPENDED != state)
@@ -265,6 +272,8 @@ class ConsensusModuleAgent implements Agent
                 ctx,
                 this);
         }
+
+        aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
     }
 
     public int doWork()
@@ -1147,7 +1156,8 @@ class ConsensusModuleAgent implements Agent
         if (timeUnit != clusterTimeUnit)
         {
             ctx.errorHandler().onError(new ClusterException(
-                "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit));
+                "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit,
+                AeronException.Category.FATAL));
             state(ConsensusModule.State.CLOSED);
             ctx.terminationHook().run();
             return;
@@ -1157,7 +1167,8 @@ class ConsensusModuleAgent implements Agent
         {
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
-                " log=" + SemanticVersion.toString(appVersion)));
+                " log=" + SemanticVersion.toString(appVersion),
+                AeronException.Category.FATAL));
             state(ConsensusModule.State.CLOSED);
             ctx.terminationHook().run();
             return;
@@ -1478,7 +1489,7 @@ class ConsensusModuleAgent implements Agent
             }
         }
 
-        awaitServices(logPosition);
+        awaitServicesAt(logPosition);
     }
 
     LogReplay newLogReplay(final long electionPosition)
@@ -1515,12 +1526,12 @@ class ConsensusModuleAgent implements Agent
     {
         serviceProxy.joinLog(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, true, channel);
-        awaitServices(logPosition);
+        awaitServicesAt(logPosition);
     }
 
     void awaitServicesReplayPosition(final long logPosition)
     {
-        awaitServices(logPosition);
+        awaitServicesAt(logPosition);
     }
 
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
@@ -1801,8 +1812,9 @@ class ConsensusModuleAgent implements Agent
 
         if (ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAckQueues))
         {
+            captureServiceClientIds();
             ++serviceAckId;
-            ServiceAck.removeHead(serviceAckQueues);
+
             CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
             if (ConsensusModule.State.SUSPENDED != state)
             {
@@ -2399,7 +2411,7 @@ class ConsensusModuleAgent implements Agent
         return null;
     }
 
-    private void awaitServices(final long logPosition)
+    private void awaitServicesAt(final long logPosition)
     {
         expectedAckPosition = logPosition;
 
@@ -2410,6 +2422,15 @@ class ConsensusModuleAgent implements Agent
 
         ServiceAck.removeHead(serviceAckQueues);
         ++serviceAckId;
+    }
+
+    private void captureServiceClientIds()
+    {
+        for (int i = 0, length = serviceClientIds.length; i < length; i++)
+        {
+            final ServiceAck serviceAck = serviceAckQueues[i].pollFirst();
+            serviceClientIds[i] = Objects.requireNonNull(serviceAck).relevantId();
+        }
     }
 
     private void handleMemberRemovals(final long commitPosition)
@@ -2886,5 +2907,21 @@ class ConsensusModuleAgent implements Agent
             MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
 
         return buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER) <= logServiceSessionId;
+    }
+
+    private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
+    {
+        for (final long clientId : serviceClientIds)
+        {
+            if (registrationId == clientId &&
+                ConsensusModule.State.TERMINATING != state &&
+                ConsensusModule.State.QUITTING != state)
+            {
+                ctx.errorHandler().onError(
+                    new ClusterException("Aeron client for service closed unexpectedly", AeronException.Category.WARN));
+                state(ConsensusModule.State.CLOSED);
+                ctx.terminationHook().run();
+            }
+        }
     }
 }

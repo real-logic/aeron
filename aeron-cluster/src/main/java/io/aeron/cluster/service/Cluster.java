@@ -24,6 +24,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -100,6 +101,18 @@ public interface Cluster
             }
 
             return ROLES[code];
+        }
+
+        /**
+         * Get the role by reading the code from a counter.
+         *
+         * @param counter containing the value of the role.
+         *
+         * @return the role for the cluster member.
+         */
+        public static Role get(final AtomicCounter counter)
+        {
+            return get((int)counter.get());
         }
     }
 

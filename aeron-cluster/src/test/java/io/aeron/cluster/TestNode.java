@@ -70,6 +70,11 @@ class TestNode implements AutoCloseable
         return clusteredMediaDriver.consensusModule();
     }
 
+    ClusteredServiceContainer container()
+    {
+        return container;
+    }
+
     TestService service()
     {
         return service;
@@ -80,7 +85,7 @@ class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(container, clusteredMediaDriver);
+            CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
         }
     }
 
@@ -146,19 +151,24 @@ class TestNode implements AutoCloseable
         }
     }
 
-    Cluster.Role role()
-    {
-        return Cluster.Role.get((int)clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter().get());
-    }
-
     boolean isClosed()
     {
         return isClosed;
     }
 
+    Cluster.Role role()
+    {
+        return Cluster.Role.get(clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter());
+    }
+
     Election.State electionState()
     {
-        return Election.State.get((int)clusteredMediaDriver.consensusModule().context().electionStateCounter().get());
+        return Election.State.get(clusteredMediaDriver.consensusModule().context().electionStateCounter());
+    }
+
+    ConsensusModule.State moduleState()
+    {
+        return ConsensusModule.State.get(clusteredMediaDriver.consensusModule().context().moduleStateCounter());
     }
 
     long commitPosition()

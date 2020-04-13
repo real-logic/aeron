@@ -20,6 +20,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +99,11 @@ public class Election
             }
 
             return STATES[code];
+        }
+
+        public static State get(final AtomicCounter counter)
+        {
+            return get((int)counter.get());
         }
     }
 

@@ -40,10 +40,17 @@ int aeron_subscription_create(
         return -1;
     }
 
+    _subscription->conductor_fields.image_lists_head.next_list = NULL;
+    _subscription->conductor_fields.next_change_number = 0;
+    _subscription->last_image_list_change_number = -1;
+
     _subscription->conductor = conductor;
     _subscription->channel = channel;
     _subscription->registration_id = registration_id;
     _subscription->stream_id = stream_id;
+    _subscription->on_available_image = on_available_image;
+    _subscription->on_unavailable_image = on_unavailable_image;
+
     _subscription->round_robin_index = 0;
     _subscription->is_closed = false;
 

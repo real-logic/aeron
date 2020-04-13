@@ -46,10 +46,11 @@ typedef struct aeron_subscription_stct
     }
     conductor_fields;
 
-    long long last_image_list_change_number;
 
     int64_t registration_id;
     int32_t stream_id;
+
+    int32_t last_image_list_change_number;
 
     aeron_on_available_image_t on_available_image;
     aeron_on_unavailable_image_t on_unavailable_image;

@@ -259,7 +259,7 @@ public class ArchiveTool
         else if (args.length == 2 && args[1].equals("migrate"))
         {
             System.out.print("WARNING: please ensure archive is not running and that a backup has been taken of " +
-                "archive directory before attempting migration(s).");
+                "the archive directory before attempting migration(s).");
 
             if (readContinueAnswer("Continue? (y/n)"))
             {

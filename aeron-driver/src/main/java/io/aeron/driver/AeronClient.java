@@ -34,7 +34,6 @@ final class AeronClient implements DriverManagedResource
     AeronClient(
         final long clientId,
         final long clientLivenessTimeoutNs,
-        final long nowMs,
         final AtomicCounter clientTimeouts,
         final AtomicCounter heartbeatTimestamp)
     {
@@ -42,8 +41,6 @@ final class AeronClient implements DriverManagedResource
         this.clientLivenessTimeoutMs = Math.max(1, TimeUnit.NANOSECONDS.toMillis(clientLivenessTimeoutNs));
         this.clientTimeouts = clientTimeouts;
         this.heartbeatTimestamp = heartbeatTimestamp;
-
-        heartbeatTimestamp.setOrdered(nowMs);
     }
 
     public void close()

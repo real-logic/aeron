@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Timeout;
 import static org.mockito.Mockito.*;
 
 @Timeout(10)
-public class ClientTest
+public class LifecycleTest
 {
     @Test
     public void shouldStartAndStopInstantly()
@@ -49,7 +49,7 @@ public class ClientTest
     }
 
     @Test
-    public void shouldNotifyOfClientTimestampCounterUnavailable()
+    public void shouldNotifyOfClientTimestampCounter()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
@@ -65,15 +65,20 @@ public class ClientTest
 
             try (Aeron aeron = Aeron.connect(clientCtxOne))
             {
-                final UnavailableCounterHandler handler = mock(UnavailableCounterHandler.class);
-                aeron.addUnavailableCounterHandler(handler);
+                final AvailableCounterHandler availableHandler = mock(AvailableCounterHandler.class);
+                aeron.addAvailableCounterHandler(availableHandler);
+                final UnavailableCounterHandler unavailableHandler = mock(UnavailableCounterHandler.class);
+                aeron.addUnavailableCounterHandler(unavailableHandler);
 
                 try (Aeron aeronTwo = Aeron.connect(clientCtxTwo))
                 {
                     aeronTwo.addSubscription("aeron:ipc", 1001);
+                    verify(availableHandler, timeout(5000))
+                        .onAvailableCounter(any(), eq(clientCtxTwo.clientId()), anyInt());
                 }
 
-                verify(handler, timeout(5000)).onUnavailableCounter(any(), eq(clientCtxTwo.clientId()), anyInt());
+                verify(unavailableHandler, timeout(5000))
+                    .onUnavailableCounter(any(), eq(clientCtxTwo.clientId()), anyInt());
             }
         }
         finally

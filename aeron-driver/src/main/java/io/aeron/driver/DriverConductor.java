@@ -1461,13 +1461,17 @@ public class DriverConductor implements Agent
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
+            final AtomicCounter counter = ClientHeartbeatTimestamp.allocate(tempBuffer, countersManager, clientId);
+            counter.setOrdered(cachedEpochClock.time());
+
             client = new AeronClient(
                 clientId,
                 clientLivenessTimeoutNs,
-                cachedEpochClock.time(),
                 ctx.systemCounters().get(SystemCounterDescriptor.CLIENT_TIMEOUTS),
-                ClientHeartbeatTimestamp.allocate(tempBuffer, countersManager, clientId));
+                counter);
             clients.add(client);
+
+            clientProxy.onCounterReady(clientId, counter.id());
         }
 
         return client;

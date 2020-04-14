@@ -63,8 +63,8 @@ public class AuthenticationTest
     public void after()
     {
         CloseHelper.close(aeronCluster);
-        CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
+        CloseHelper.close(container);
 
         if (null != clusteredMediaDriver)
         {

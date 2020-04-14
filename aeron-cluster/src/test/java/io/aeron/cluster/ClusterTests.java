@@ -75,6 +75,11 @@ class ClusterTests
                     }
                 }
 
+                if (ex instanceof AgentTerminationException)
+                {
+                    return;
+                }
+
                 addError(ex);
 
                 System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");

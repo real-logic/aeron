@@ -127,8 +127,8 @@ public class MultipleClusteredServicesTest
         finally
         {
             CloseHelper.closeAll(client, clientMediaDriver);
-            clusteredServiceContainers.forEach(CloseHelper::close);
             clusteredMediaDrivers.forEach(CloseHelper::close);
+            clusteredServiceContainers.forEach(CloseHelper::close);
 
             clientMediaDriver.context().deleteDirectory();
             clusteredMediaDrivers.forEach((driver) -> driver.mediaDriver().context().deleteDirectory());

@@ -143,6 +143,7 @@ class ConsensusModuleAgent implements Agent
     private String liveLogDestination;
     private String replayLogDestination;
     private String clientFacingEndpoints;
+    private final UnavailableCounterHandler unavailableCounterHandler = this::onUnavailableCounter;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -214,6 +215,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (!ctx.ownsAeronClient() && !aeron.isClosed())
         {
+            aeron.removeUnavailableCounterHandler(unavailableCounterHandler);
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             for (final ClusterSession session : sessionByIdMap.values())
             {
@@ -273,7 +275,7 @@ class ConsensusModuleAgent implements Agent
                 this);
         }
 
-        aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
+        aeron.addUnavailableCounterHandler(unavailableCounterHandler);
     }
 
     public int doWork()
@@ -1832,6 +1834,11 @@ class ConsensusModuleAgent implements Agent
 
     private int slowTickWork(final long nowMs, final long nowNs)
     {
+        if (ConsensusModule.State.CLOSED == state)
+        {
+            throw new AgentTerminationException("module is closed");
+        }
+
         int workCount = aeronClientInvoker.invoke();
         if (aeron.isClosed())
         {

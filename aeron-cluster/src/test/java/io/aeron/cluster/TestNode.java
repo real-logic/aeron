@@ -15,8 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Image;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
@@ -85,7 +84,7 @@ class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
+            CloseHelper.closeAll(clusteredMediaDriver, container);
         }
     }
 
@@ -156,19 +155,42 @@ class TestNode implements AutoCloseable
         return isClosed;
     }
 
+    int clusterMemberId()
+    {
+        return clusteredMediaDriver.consensusModule().context().clusterMemberId();
+    }
+
     Cluster.Role role()
     {
-        return Cluster.Role.get(clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter());
+        final Counter counter = clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter();
+        if (counter.isClosed())
+        {
+            return Cluster.Role.FOLLOWER;
+        }
+
+        return Cluster.Role.get(counter);
     }
 
     Election.State electionState()
     {
-        return Election.State.get(clusteredMediaDriver.consensusModule().context().electionStateCounter());
+        final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+        if (counter.isClosed())
+        {
+            return Election.State.CLOSED;
+        }
+
+        return Election.State.get(counter);
     }
 
     ConsensusModule.State moduleState()
     {
-        return ConsensusModule.State.get(clusteredMediaDriver.consensusModule().context().moduleStateCounter());
+        final Counter counter = clusteredMediaDriver.consensusModule().context().moduleStateCounter();
+        if (counter.isClosed())
+        {
+            return ConsensusModule.State.CLOSED;
+        }
+
+        return ConsensusModule.State.get(counter);
     }
 
     long commitPosition()
@@ -196,7 +218,7 @@ class TestNode implements AutoCloseable
 
     boolean isLeader()
     {
-        return role() == Cluster.Role.LEADER;
+        return role() == Cluster.Role.LEADER && moduleState() != ConsensusModule.State.CLOSED;
     }
 
     boolean isFollower()

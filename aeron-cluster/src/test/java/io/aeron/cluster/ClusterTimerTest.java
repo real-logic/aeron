@@ -69,13 +69,14 @@ public class ClusterTimerTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
+        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver, container);
 
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteDirectory();
             clusteredMediaDriver.mediaDriver().context().deleteDirectory();
+            container.context().deleteDirectory();
         }
     }
 

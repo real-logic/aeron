@@ -656,16 +656,16 @@ public class ArchiveTool
 
     private static boolean truncateFileOnPageStraddle(final File maxSegmentFile)
     {
-        return readContinueAnswer(String.format("Last fragment in the segment file: %s straddles the page boundary,%n" +
-                "i.e. it is not possible to verify if it was written correctly.%n%n" +
-                "Please choose the corrective action: (y) - to truncate the file and " +
-                "(n) - to do nothing",
+        return readContinueAnswer(String.format(
+            "Last fragment in segment file: %s straddles a page boundary,%n" +
+            "i.e. it is not possible to verify if it was written correctly.%n%n" +
+            "Please choose the corrective action: (y) to truncate the file or (n) to do nothing",
             maxSegmentFile.getAbsolutePath()));
     }
 
     private static boolean continueOnFrameLimit(final Long frameLimit)
     {
-        return readContinueAnswer(String.format("Specified frame limit %d reached. Continue? (y/n)", frameLimit));
+        return readContinueAnswer("Specified frame limit " + frameLimit + " reached. Continue? (y/n)");
     }
 
     private static boolean readContinueAnswer(final String msg)

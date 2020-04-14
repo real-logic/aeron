@@ -723,10 +723,10 @@ class Catalog implements AutoCloseable
                 decoder.segmentFileLength(),
                 (segmentFile) ->
                 {
-                    throw new ArchiveException(String.format("Found potentially incomplete last fragment in the " +
-                            "file: %s.%nPlease run `ArchiveTool verify` to run the " +
-                            "corrective action!",
-                        segmentFile.getAbsolutePath()));
+                    throw new ArchiveException(
+                        "Found potentially incomplete last fragment straddling page boundary in file: " +
+                        segmentFile.getAbsolutePath() +
+                        "\nRun `ArchiveTool verify` for corrective action!");
                 }));
 
             encoder.stopTimestamp(epochClock.time());

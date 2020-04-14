@@ -437,6 +437,16 @@ static inline bool aeron_publication_image_connection_is_alive(
         now_ns < connection->time_of_last_activity_ns + AERON_RECEIVE_DESTINATION_TIMEOUT_NS;
 }
 
+void aeron_publication_image_add_connection_if_unknown(
+    aeron_publication_image_t *image,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *src_addr)
+{
+    aeron_publication_image_track_connection(
+        image, destination, src_addr, aeron_clock_cached_nano_time(image->cached_clock));
+}
+
+
 int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image,
     aeron_receive_destination_t *destination,

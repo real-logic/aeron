@@ -101,15 +101,14 @@ protected:
             &m_counters_manager, m_channel->uri_length, m_channel->original_uri);
         status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
-        aeron_receive_destination_t *destination = NULL;
-        aeron_receive_destination_create(&destination, m_channel, m_context);
+        aeron_receive_destination_create(&m_receive_destination, m_channel, m_context);
 
         aeron_receive_channel_endpoint_create(
-            &m_receive_endpoint, m_channel, destination, &status_indicator, &m_system_counters, m_context);
+            &m_receive_endpoint, m_channel, m_receive_destination, &status_indicator, &m_system_counters, m_context);
 
         m_dispatcher = &m_receive_endpoint->dispatcher;
 
-        m_test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(destination->transport.bindings_clientd);
+        m_test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(m_receive_destination->transport.bindings_clientd);
     };
 
     virtual void TearDown()
@@ -404,7 +403,7 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
     aeron_data_packet_dispatcher_on_data(
         m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
+        m_dispatcher, m_receive_endpoint, m_receive_destination, setup_header, data_buffer.data(), sizeof(*setup_header),
         &m_channel->local_data);
 
     ASSERT_EQ(1, m_test_bindings_state->sm_count);

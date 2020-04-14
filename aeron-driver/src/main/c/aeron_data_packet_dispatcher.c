@@ -378,9 +378,8 @@ int aeron_data_packet_dispatcher_on_setup(
 
         if (NULL == image && AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME == tag)
         {
-            // TODO-MDS: Will this move down to the destination???
-            if (endpoint->conductor_fields.udp_channel->is_multicast &&
-                endpoint->conductor_fields.udp_channel->multicast_ttl < header->ttl)
+            if (destination->conductor_fields.udp_channel->is_multicast &&
+                destination->conductor_fields.udp_channel->multicast_ttl < header->ttl)
             {
                 aeron_counter_ordered_increment(endpoint->possible_ttl_asymmetry_counter, 1);
             }
@@ -390,6 +389,10 @@ int aeron_data_packet_dispatcher_on_setup(
             {
                 return -1;
             }
+        }
+        else if (NULL != image)
+        {
+            aeron_publication_image_add_connection_if_unknown(image, destination, addr);
         }
         else if (!found)
         {

@@ -69,7 +69,6 @@ typedef struct aeron_publication_image_stct
     }
     connections;
 
-    // TODO-MDS: Get rid of source address (I think)
     struct sockaddr_storage source_address;
     aeron_loss_detector_t loss_detector;
 
@@ -183,6 +182,11 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
 int aeron_publication_image_add_destination(aeron_publication_image_t *image, aeron_receive_destination_t *destination);
 
 int aeron_publication_image_remove_destination(aeron_publication_image_t *image, aeron_udp_channel_t *channel);
+
+void aeron_publication_image_add_connection_if_unknown(
+    aeron_publication_image_t *image,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *src_addr);
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);

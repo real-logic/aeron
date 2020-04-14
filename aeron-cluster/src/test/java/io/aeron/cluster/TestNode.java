@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TestNode implements AutoCloseable
@@ -155,11 +156,6 @@ class TestNode implements AutoCloseable
         return isClosed;
     }
 
-    int clusterMemberId()
-    {
-        return clusteredMediaDriver.consensusModule().context().clusterMemberId();
-    }
-
     Cluster.Role role()
     {
         final Counter counter = clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter();
@@ -195,7 +191,13 @@ class TestNode implements AutoCloseable
 
     long commitPosition()
     {
-        return clusteredMediaDriver.consensusModule().context().commitPositionCounter().get();
+        final Counter counter = clusteredMediaDriver.consensusModule().context().commitPositionCounter();
+        if (counter.isClosed())
+        {
+            return NULL_POSITION;
+        }
+
+        return counter.get();
     }
 
     long appendPosition()

@@ -15,11 +15,14 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
+
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 public class TestBackupNode implements AutoCloseable
 {
@@ -65,12 +68,24 @@ public class TestBackupNode implements AutoCloseable
 
     ClusterBackup.State backupState()
     {
-        return ClusterBackup.State.get((int)clusterBackupMediaDriver.clusterBackup().context().stateCounter().get());
+        final Counter counter = clusterBackupMediaDriver.clusterBackup().context().stateCounter();
+        if (counter.isClosed())
+        {
+            return null;
+        }
+
+        return ClusterBackup.State.get((int)counter.get());
     }
 
     long liveLogPosition()
     {
-        return clusterBackupMediaDriver.clusterBackup().context().liveLogPositionCounter().get();
+        final Counter counter = clusterBackupMediaDriver.clusterBackup().context().liveLogPositionCounter();
+        if (counter.isClosed())
+        {
+            return NULL_POSITION;
+        }
+
+        return counter.get();
     }
 
     EpochClock epochClock()

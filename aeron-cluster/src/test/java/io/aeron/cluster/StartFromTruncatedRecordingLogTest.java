@@ -21,8 +21,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.EgressListener;
+import io.aeron.cluster.client.*;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -159,16 +158,16 @@ public class StartFromTruncatedRecordingLogTest
         ClusterTests.awaitElectionState(electionStateFollowerB, Election.State.CLOSED);
 
         takeSnapshot(leaderMemberId);
-        awaitSnapshotCounter(leaderMemberId, 1);
-        awaitSnapshotCounter(followerMemberIdA, 1);
-        awaitSnapshotCounter(followerMemberIdB, 1);
+        awaitSnapshotCount(leaderMemberId, 1);
+        awaitSnapshotCount(followerMemberIdA, 1);
+        awaitSnapshotCount(followerMemberIdB, 1);
 
         awaitNeutralCounter(leaderMemberId);
 
         shutdown(leaderMemberId);
-        awaitSnapshotCounter(leaderMemberId, 2);
-        awaitSnapshotCounter(followerMemberIdA, 2);
-        awaitSnapshotCounter(followerMemberIdB, 2);
+        awaitSnapshotCount(leaderMemberId, 2);
+        awaitSnapshotCount(followerMemberIdA, 2);
+        awaitSnapshotCount(followerMemberIdB, 2);
 
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
@@ -541,7 +540,7 @@ public class StartFromTruncatedRecordingLogTest
         }
     }
 
-    private void awaitSnapshotCounter(final int index, final long value)
+    private void awaitSnapshotCount(final int index, final long value)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
         final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
@@ -550,6 +549,10 @@ public class StartFromTruncatedRecordingLogTest
         {
             Thread.yield();
             Tests.checkInterruptStatus();
+            if (snapshotCounter.isClosed())
+            {
+                throw new ClusterException("snapshot counter was unexpectedly closed");
+            }
         }
     }
 }

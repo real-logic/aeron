@@ -166,8 +166,12 @@ public class ClusterControl
          */
         public static ToggleState get(final AtomicCounter controlToggle)
         {
-            final long toggleValue = controlToggle.get();
+            if (controlToggle.isClosed())
+            {
+                throw new ClusterException("counter is closed");
+            }
 
+            final long toggleValue = controlToggle.get();
             if (toggleValue < 0 || toggleValue > (STATES.length - 1))
             {
                 throw new ClusterException("invalid toggle value: " + toggleValue);

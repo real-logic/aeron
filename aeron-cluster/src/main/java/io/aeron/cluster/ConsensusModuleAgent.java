@@ -1003,7 +1003,7 @@ class ConsensusModuleAgent implements Agent
     void onServiceAck(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
-        serviceAckQueues[serviceId].offerLast(new ServiceAck(ackId, logPosition, relevantId));
+        captureServiceAck(logPosition, ackId, relevantId, serviceId);
 
         if (ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
         {
@@ -1062,6 +1062,17 @@ class ConsensusModuleAgent implements Agent
                 }
             }
         }
+    }
+
+    private void captureServiceAck(final long logPosition, final long ackId, final long relevantId, final int serviceId)
+    {
+        if (0 == ackId && NULL_VALUE != serviceClientIds[serviceId])
+        {
+            throw new ClusterException(
+                "initial ack already received from service: possible duplicate serviceId=" + serviceId);
+        }
+
+        serviceAckQueues[serviceId].offerLast(new ServiceAck(ackId, logPosition, relevantId));
     }
 
     private ServiceAck[] pollServiceAcks(final long logPosition, final int serviceId)

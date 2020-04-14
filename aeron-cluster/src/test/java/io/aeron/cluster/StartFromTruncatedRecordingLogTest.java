@@ -103,25 +103,24 @@ public class StartFromTruncatedRecordingLogTest
         CloseHelper.closeAll(client, clientMediaDriver);
         clientMediaDriver.context().deleteDirectory();
 
-        for (final ClusteredServiceContainer container : containers)
-        {
-            CloseHelper.close(container);
-
-            if (null != container)
-            {
-                container.context().deleteDirectory();
-            }
-        }
+        CloseHelper.closeAll(clusteredMediaDrivers);
+        CloseHelper.closeAll(containers);
 
         for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
         {
-            CloseHelper.close(driver);
-
             if (null != driver)
             {
                 driver.consensusModule().context().deleteDirectory();
                 driver.archive().context().deleteDirectory();
                 driver.mediaDriver().context().deleteDirectory();
+            }
+        }
+
+        for (final ClusteredServiceContainer container : containers)
+        {
+            if (null != container)
+            {
+                container.context().deleteDirectory();
             }
         }
     }
@@ -354,6 +353,7 @@ public class StartFromTruncatedRecordingLogTest
                 .ingressChannel("aeron:udp?term-length=64k")
                 .logChannel(memberSpecificPort(LOG_CHANNEL, index))
                 .archiveContext(archiveCtx.clone())
+                .shouldTerminateWhenClosed(false)
                 .deleteDirOnStart(cleanStart));
 
         containers[index] = ClusteredServiceContainer.launch(
@@ -547,12 +547,7 @@ public class StartFromTruncatedRecordingLogTest
 
         while (snapshotCounter.get() != value)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
-            if (snapshotCounter.isClosed())
-            {
-                throw new ClusterException("snapshot counter was unexpectedly closed");
-            }
+            Tests.sleep(1);
         }
     }
 }

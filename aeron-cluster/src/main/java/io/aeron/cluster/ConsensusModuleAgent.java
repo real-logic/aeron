@@ -1834,7 +1834,7 @@ class ConsensusModuleAgent implements Agent
 
     private int slowTickWork(final long nowMs, final long nowNs)
     {
-        if (ConsensusModule.State.CLOSED == state)
+        if (ctx.shouldTerminateWhenClosed() && ConsensusModule.State.CLOSED == state)
         {
             throw new AgentTerminationException("module is closed");
         }

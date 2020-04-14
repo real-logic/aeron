@@ -363,16 +363,16 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
     aeron_receive_destination_t *destination = (aeron_receive_destination_t *)command->destination;
 
-    if (endpoint->transport_bindings->poller_add_func(&receiver->poller, &destination->transport) < 0)
+    if (aeron_receive_channel_endpoint_add_destination(endpoint, destination) < 0)
     {
-        AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to poller: %s", aeron_errmsg());
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to endpoint: %s", aeron_errmsg());
         // TODO-MDS: cleanup
         return;
     }
 
-    if (aeron_receive_channel_endpoint_add_destination(endpoint, destination) < 0)
+    if (endpoint->transport_bindings->poller_add_func(&receiver->poller, &destination->transport) < 0)
     {
-        AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to endpoint: %s", aeron_errmsg());
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to poller: %s", aeron_errmsg());
         // TODO-MDS: cleanup
         return;
     }
@@ -403,8 +403,25 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
     aeron_command_remove_rcv_destination_t *command = (aeron_command_remove_rcv_destination_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
     aeron_udp_channel_t *channel = (aeron_udp_channel_t *)command->channel;
+    aeron_receive_destination_t *destination = NULL;
 
-    aeron_receive_channel_endpoint_remove_destination(endpoint, channel);
+    if (0 < aeron_receive_channel_endpoint_remove_destination(endpoint, channel, &destination) && NULL != destination)
+    {
+        endpoint->transport_bindings->poller_remove_func(&receiver->poller, &destination->transport);
+        endpoint->transport_bindings->close_func(&destination->transport);
+
+        for (size_t i = 0, len = receiver->images.length; i < len; i++)
+        {
+            aeron_publication_image_t *image = receiver->images.array[i].image;
+            if (endpoint == image->endpoint)
+            {
+                // TODO-MDS: We could probably use the destination rather than the channel here...
+                aeron_publication_image_remove_destination(image, channel);
+            }
+        }
+
+        aeron_driver_conductor_proxy_on_delete_receive_destination(receiver->context->conductor_proxy, destination);
+    }
 }
 
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)

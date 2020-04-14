@@ -60,6 +60,7 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
     int32_t stream_id = 1001;
     int32_t session_id = 1000001;
+    aeron_receive_destination_t *destination = NULL;
 
     aeron_udp_channel_t *channel_1;
     aeron_receive_destination_t *dest_1;
@@ -84,26 +85,30 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     aeron_udp_channel_t *remove_channel_1;
     aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &remove_channel_1);
 
-    ASSERT_EQ(1, aeron_receive_channel_endpoint_remove_destination(endpoint, remove_channel_1));
+    ASSERT_EQ(1, aeron_receive_channel_endpoint_remove_destination(endpoint, remove_channel_1, &destination));
     ASSERT_EQ(1u, endpoint->destinations.length);
     ASSERT_EQ(1, aeron_publication_image_remove_destination(image, remove_channel_1));
     ASSERT_EQ(1u, image->connections.length);
+    ASSERT_EQ(dest_1, destination);
 
     aeron_udp_channel_t *channel_not_added;
     aeron_udp_channel_parse(strlen(uri_3), uri_3, &m_resolver, &channel_not_added);
 
-    ASSERT_EQ(0, aeron_receive_channel_endpoint_remove_destination(endpoint, channel_not_added));
+    destination = NULL;
+    ASSERT_EQ(0, aeron_receive_channel_endpoint_remove_destination(endpoint, channel_not_added, &destination));
     ASSERT_EQ(1u, endpoint->destinations.length);
     ASSERT_EQ(0, aeron_publication_image_remove_destination(image, channel_not_added));
     ASSERT_EQ(1u, image->connections.length);
+    ASSERT_EQ(nullptr, destination);
 
     aeron_udp_channel_t *remove_channel_2;
     aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &remove_channel_2);
 
-    ASSERT_EQ(1, aeron_receive_channel_endpoint_remove_destination(endpoint, remove_channel_2));
+    ASSERT_EQ(1, aeron_receive_channel_endpoint_remove_destination(endpoint, remove_channel_2, &destination));
     ASSERT_EQ(0u, endpoint->destinations.length);
     ASSERT_EQ(1, aeron_publication_image_remove_destination(image, remove_channel_2));
     ASSERT_EQ(0u, image->connections.length);
+    ASSERT_EQ(dest_2, destination);
 }
 
 TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)

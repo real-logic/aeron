@@ -119,18 +119,10 @@ int aeron_receive_channel_endpoint_create(
 
     if (NULL != straight_through_destination)
     {
-        straight_through_destination->transport.dispatch_clientd = _endpoint;
-
-        int capacity_result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(capacity_result, _endpoint->destinations, aeron_receive_destination_entry_t);
-        if (capacity_result < 0)
+        if (aeron_receive_channel_endpoint_add_destination(_endpoint, straight_through_destination) < 0)
         {
-            aeron_receive_channel_endpoint_delete(NULL, _endpoint);
             return -1;
         }
-
-        _endpoint->destinations.array[0].destination = straight_through_destination;
-        _endpoint->destinations.length = 1;
     }
 
     *endpoint = _endpoint;
@@ -617,6 +609,8 @@ int aeron_receive_channel_endpoint_add_destination(
     }
 
     endpoint->destinations.array[endpoint->destinations.length].destination = destination;
+    destination->transport.dispatch_clientd = endpoint;
+
     endpoint->destinations.length++;
 
     return endpoint->destinations.length;
@@ -624,7 +618,8 @@ int aeron_receive_channel_endpoint_add_destination(
 
 int aeron_receive_channel_endpoint_remove_destination(
     aeron_receive_channel_endpoint_t *endpoint,
-    aeron_udp_channel_t *channel)
+    aeron_udp_channel_t *channel,
+    aeron_receive_destination_t **destination_out)
 {
     int deleted = 0;
 
@@ -638,6 +633,12 @@ int aeron_receive_channel_endpoint_remove_destination(
 
             --endpoint->destinations.length;
             ++deleted;
+
+            if (NULL != destination)
+            {
+                *destination_out = destination;
+            }
+
             break;
         }
     }

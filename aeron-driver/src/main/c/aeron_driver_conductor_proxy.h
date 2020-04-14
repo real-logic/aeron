@@ -89,4 +89,8 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
     void *destination,
     struct sockaddr_storage *existing_addr);
 
+void aeron_driver_conductor_proxy_on_delete_receive_destination(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *destination);
+
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

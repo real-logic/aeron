@@ -184,7 +184,8 @@ int aeron_receive_channel_endpoint_add_destination(
     aeron_receive_destination_t *destination);
 int aeron_receive_channel_endpoint_remove_destination(
     aeron_receive_channel_endpoint_t *endpoint,
-    aeron_udp_channel_t *channel);
+    aeron_udp_channel_t *channel,
+    aeron_receive_destination_t **destination_out);
 
 int aeron_receive_channel_endpoint_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);

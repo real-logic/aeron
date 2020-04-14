@@ -760,7 +760,7 @@ int aeron_receive_channel_endpoint_add_poll_transports(
 {
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
-        aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
         if (endpoint->transport_bindings->poller_add_func(poller, &destination->transport))
         {
             return -1;
@@ -776,11 +776,47 @@ int aeron_receive_channel_endpoint_remove_poll_transports(
 {
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
-        aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
         if (endpoint->transport_bindings->poller_remove_func(poller, &destination->transport))
         {
             return -1;
         }
+    }
+
+    return 0;
+}
+
+int aeron_receive_channel_endpoint_add_pending_setup_destination(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_driver_receiver_t *receiver,
+    aeron_receive_destination_t *destination)
+{
+    aeron_udp_channel_t *udp_channel = destination->conductor_fields.udp_channel;
+
+    if (destination->conductor_fields.udp_channel->has_explicit_control)
+    {
+        if (aeron_driver_receiver_add_pending_setup(
+            receiver, endpoint, destination, 0, 0, &udp_channel->local_control) < 0)
+        {
+            aeron_set_err(-1, "receiver on_add_endpoint: %s", aeron_errmsg());
+            return -1;
+        }
+
+        if (aeron_receive_channel_endpoint_send_sm(
+            endpoint,
+            &destination->current_control_addr,
+            0,
+            0,
+            0,
+            0,
+            0,
+            AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+        {
+            aeron_set_err(-1, "aeron_receive_channel_endpoint_add_pending_setup send SM: %s", aeron_errmsg());
+            return -1;
+        }
+
+        return 1;
     }
 
     return 0;
@@ -793,29 +829,9 @@ int aeron_receive_channel_endpoint_add_pending_setup(
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
-        aeron_udp_channel_t *udp_channel = destination->conductor_fields.udp_channel;
-
-        if (udp_channel->has_explicit_control)
+        if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
-            if (aeron_driver_receiver_add_pending_setup(
-                receiver, endpoint, destination, 0, 0, &udp_channel->local_control) < 0)
-            {
-                AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint: %s", aeron_errmsg());
-            }
-
-            if (aeron_receive_channel_endpoint_send_sm(
-                endpoint,
-                &destination->current_control_addr,
-                0,
-                0,
-                0,
-                0,
-                0,
-                AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
-            {
-                AERON_DRIVER_RECEIVER_ERROR(
-                    receiver, "aeron_receive_channel_endpoint_add_pending_setup send SM: %s", aeron_errmsg());
-            }
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "%s", aeron_errmsg());
         }
     }
 

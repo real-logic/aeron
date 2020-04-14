@@ -358,22 +358,53 @@ void aeron_driver_receiver_on_remove_subscription_by_session(void *clientd, void
 
 void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
 {
-//    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
-//    aeron_command_add_rcv_destination_t *command = (aeron_command_add_rcv_destination_t *)item;
-//    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
-//    aeron_receive_destination_t *destination = (aeron_receive_destination_t *)command->destination;
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_add_rcv_destination_t *command = (aeron_command_add_rcv_destination_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
+    aeron_receive_destination_t *destination = (aeron_receive_destination_t *)command->destination;
 
-//    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
+    if (endpoint->transport_bindings->poller_add_func(&receiver->poller, &destination->transport) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to poller: %s", aeron_errmsg());
+        // TODO-MDS: cleanup
+        return;
+    }
+
+    if (aeron_receive_channel_endpoint_add_destination(endpoint, destination) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to endpoint: %s", aeron_errmsg());
+        // TODO-MDS: cleanup
+        return;
+    }
+
+    if (destination->conductor_fields.udp_channel->has_explicit_control)
+    {
+        if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
+        {
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, pending_setup: %s", aeron_errmsg());
+            // TODO-MDS: cleanup
+            return;
+        }
+    }
+
+    for (size_t i = 0, len = receiver->images.length; i < len; i++)
+    {
+        aeron_publication_image_t *image = receiver->images.array[i].image;
+        if (endpoint == image->endpoint)
+        {
+            aeron_publication_image_add_destination(image, destination);
+        }
+    }
 }
 
 void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
 {
-//    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
-//    aeron_command_remove_rcv_destination_t *command = (aeron_command_remove_rcv_destination_t *)item;
-//    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
-//    aeron_udp_channel_t *channel = (aeron_udp_channel_t *)command->channel;
-//
-//    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_remove_rcv_destination_t *command = (aeron_command_remove_rcv_destination_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
+    aeron_udp_channel_t *channel = (aeron_udp_channel_t *)command->channel;
+
+    aeron_receive_channel_endpoint_remove_destination(endpoint, channel);
 }
 
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
@@ -414,11 +445,6 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
             break;
         }
     }
-
-    // TODO-MDS: Add destination to poller
-    // TODO-MDS: Add destination to pending setup
-    // TODO-MDS: Add destination to endpoint
-    // TODO-MDS: Add destination to image
 }
 
 void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item)

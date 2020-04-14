@@ -216,6 +216,11 @@ int aeron_receive_channel_endpoint_add_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_driver_receiver_t *receiver);
 
+int aeron_receive_channel_endpoint_add_pending_setup_destination(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_driver_receiver_t *receiver,
+    aeron_receive_destination_t *destination);
+
 inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)
 {
@@ -258,7 +263,7 @@ inline int aeron_receive_channel_endpoint_bind_addr_and_port(
     {
         buffer[0] = '\0';
     }
-    
+
     return 0;
 }
 

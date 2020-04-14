@@ -174,7 +174,7 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
 
 int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, long long now_ns)
 {
-    if ((conductor->time_of_last_keepalive_ns + conductor->keepalive_interval_ns) - now_ns < 0)
+    if (now_ns > (conductor->time_of_last_keepalive_ns + (long long)conductor->keepalive_interval_ns))
     {
         const long long last_keepalive_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&conductor->to_driver_buffer);
         const long long now_ms = conductor->epoch_clock();
@@ -241,7 +241,7 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
     {
         aeron_client_managed_resource_t *resource = &conductor->lingering_resources.array[i];
 
-        if ((resource->time_of_last_state_change_ns + conductor->resource_linger_duration_ns) - now_ns < 0)
+        if (now_ns > (resource->time_of_last_state_change_ns + (long long)conductor->resource_linger_duration_ns))
         {
             // TODO: delete resource
             aeron_array_fast_unordered_remove(
@@ -262,9 +262,9 @@ int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor
     int work_count = 0, result = 0;
     const long long now_ns = conductor->nano_clock();
 
-    if ((conductor->time_of_last_service_ns + AERON_CLIENT_CONDUCTOR_IDLE_SLEEP_NS) - now_ns < 0)
+    if (now_ns > (conductor->time_of_last_service_ns + AERON_CLIENT_CONDUCTOR_IDLE_SLEEP_NS))
     {
-        if ((conductor->time_of_last_service_ns + conductor->inter_service_timeout_ns) - now_ns < 0)
+        if (now_ns > (conductor->time_of_last_service_ns + (long long)conductor->inter_service_timeout_ns))
         {
             char buffer[AERON_MAX_PATH];
 

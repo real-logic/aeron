@@ -141,7 +141,7 @@ int64_t aeron_publication_offer(
                 if (length > publication->max_message_length)
                 {
                     errno = EINVAL;
-                    aeron_set_err(EINVAL, "aeron_publication_offer: length=%" PRIu32 " > max_message_length=%" PRIu32,
+                    aeron_set_err(EINVAL, "aeron_publication_offer: length=%zu > max_message_length=%zu",
                         length, publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
@@ -234,8 +234,8 @@ int64_t aeron_publication_offerv(
                 if (length > publication->max_message_length)
                 {
                     errno = EINVAL;
-                    aeron_set_err(EINVAL, "aeron_publication_offerv: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                                  length, publication->max_message_length);
+                    aeron_set_err(EINVAL, "aeron_publication_offerv: length==%zu > max_message_length=%zu",
+                        length, publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -282,7 +282,7 @@ int64_t aeron_publication_try_claim(
     else if (length > publication->max_payload_length)
     {
         errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_publication_try_claim: length=%" PRIu32 " > max_payload_length=%" PRIu32,
+        aeron_set_err(EINVAL, "aeron_publication_try_claim: length=%=%zu > max_payload_length=%zu",
             length, publication->max_payload_length);
         return AERON_PUBLICATION_ERROR;
     }
@@ -335,5 +335,6 @@ extern int64_t aeron_publication_new_position(
     int32_t term_id,
     int64_t position,
     int32_t resulting_offset);
+
 extern int64_t aeron_publication_back_pressure_status(
     aeron_publication_t *publication, int64_t current_position, int32_t message_length);

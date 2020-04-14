@@ -508,7 +508,7 @@ public class TestCluster implements AutoCloseable
                 .clusterMemberEndpoints(staticClusterMemberEndpoints));
     }
 
-    void connectClient()
+    AeronCluster connectClient()
     {
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 
@@ -526,6 +526,8 @@ public class TestCluster implements AutoCloseable
                 .ingressChannel("aeron:udp?term-length=64k")
                 .egressChannel(CLUSTER_EGRESS_CHANNEL)
                 .clusterMemberEndpoints(staticClusterMemberEndpoints));
+
+        return client;
     }
 
     void closeClient()

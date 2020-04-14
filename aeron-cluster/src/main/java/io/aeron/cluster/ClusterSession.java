@@ -34,7 +34,7 @@ class ClusterSession
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSING, CLOSED
     }
 
     private boolean hasNewLeaderEventPending = false;
@@ -110,10 +110,10 @@ class ClusterSession
         return responseChannel;
     }
 
-    void close(final CloseReason closeReason, final ErrorHandler errorHandler)
+    void closeReason(final CloseReason closeReason)
     {
         this.closeReason = closeReason;
-        close(errorHandler);
+        state(State.CLOSING);
     }
 
     CloseReason closeReason()

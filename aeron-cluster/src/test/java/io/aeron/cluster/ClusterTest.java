@@ -658,6 +658,30 @@ public class ClusterTest
     }
 
     @Test
+    @Timeout(20)
+    public void shouldCloseClientOnTimeout()
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            final AeronCluster client = cluster.connectClient();
+            assertEquals(0, leader.consensusModule().context().timedOutClientCounter().get());
+            assertFalse(client.isClosed());
+
+            Tests.sleep(TimeUnit.NANOSECONDS.toMillis(leader.consensusModule().context().sessionTimeoutNs()));
+
+            while (!client.isClosed())
+            {
+                Tests.sleep(1);
+                client.pollEgress();
+            }
+
+            assertEquals(1, leader.consensusModule().context().timedOutClientCounter().get());
+        }
+    }
+
+    @Test
     @Timeout(70)
     public void shouldRecoverWhileMessagesContinue() throws InterruptedException
     {

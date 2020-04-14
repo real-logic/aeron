@@ -356,13 +356,15 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (leadershipTermId == this.leadershipTermId && null != session && Cluster.Role.LEADER == role)
         {
-            session.close(CloseReason.CLIENT_ACTION, ctx.countedErrorHandler());
+            session.closeReason(CloseReason.CLIENT_ACTION);
+            session.disconnect(ctx.errorHandler());
 
             if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
             {
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
+                session.close(ctx.errorHandler());
             }
         }
     }
@@ -388,7 +390,6 @@ class ConsensusModuleAgent implements Agent
         if (session.state() == OPEN)
         {
             final long now = clusterClock.time();
-
             if (logPublisher.appendMessage(leadershipTermId, clusterSessionId, now, buffer, offset, length) > 0)
             {
                 session.timeOfLastActivityNs(clusterTimeUnit.toNanos(now));
@@ -940,12 +941,14 @@ class ConsensusModuleAgent implements Agent
             if (session.openedLogPosition() > logPosition)
             {
                 i.remove();
+                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
                 session.close(ctx.countedErrorHandler());
             }
         }
 
         for (final ClusterSession session : pendingSessions)
         {
+            egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
             session.close(ctx.countedErrorHandler());
         }
 
@@ -957,7 +960,7 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            session.close(CloseReason.SERVICE_ACTION, ctx.countedErrorHandler());
+            session.closeReason(CloseReason.SERVICE_ACTION);
 
             if (Cluster.Role.LEADER == role &&
                 logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
@@ -967,6 +970,7 @@ class ConsensusModuleAgent implements Agent
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
+                session.close(ctx.errorHandler());
             }
         }
     }
@@ -1005,7 +1009,7 @@ class ConsensusModuleAgent implements Agent
         {
             if (ConsensusModule.State.SNAPSHOT == state)
             {
-                final ServiceAck[] serviceAcks = consumeServiceAcks(logPosition, serviceId);
+                final ServiceAck[] serviceAcks = pollServiceAcks(logPosition, serviceId);
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
 
@@ -1060,7 +1064,7 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    private ServiceAck[] consumeServiceAcks(final long logPosition, final int serviceId)
+    private ServiceAck[] pollServiceAcks(final long logPosition, final int serviceId)
     {
         final ServiceAck[] serviceAcks = new ServiceAck[serviceAckQueues.length];
         for (int id = 0, length = serviceAckQueues.length; id < length; id++)
@@ -1124,7 +1128,8 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession clusterSession = sessionByIdMap.remove(clusterSessionId);
         if (null != clusterSession)
         {
-            clusterSession.close(closeReason, ctx.countedErrorHandler());
+            clusterSession.closeReason(closeReason);
+            clusterSession.close(ctx.countedErrorHandler());
         }
     }
 
@@ -1341,7 +1346,7 @@ class ConsensusModuleAgent implements Agent
         {
             for (final ClusterSession session : sessionByIdMap.values())
             {
-                if (session.state() != CLOSED)
+                if (session.state() == OPEN)
                 {
                     session.connect(aeron);
                 }
@@ -1350,7 +1355,7 @@ class ConsensusModuleAgent implements Agent
             final long nowNs = clusterClock.timeNanos();
             for (final ClusterSession session : sessionByIdMap.values())
             {
-                if (session.state() != CLOSED)
+                if (session.state() == OPEN)
                 {
                     session.timeOfLastActivityNs(nowNs);
                     session.hasNewLeaderEventPending(true);
@@ -1486,7 +1491,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    session.close(CloseReason.TIMEOUT, ctx.countedErrorHandler());
+                    session.closeReason(CloseReason.TIMEOUT);
                 }
             }
         }
@@ -2193,7 +2198,7 @@ class ConsensusModuleAgent implements Agent
                 final long now = clusterClock.time();
 
                 if (logPublisher.appendMembershipChangeEvent(
-                    this.leadershipTermId,
+                    leadershipTermId,
                     now,
                     thisMember.id(),
                     newMembers.length,
@@ -2228,7 +2233,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    session.close(CloseReason.TIMEOUT, ctx.countedErrorHandler());
+                    session.closeReason(CloseReason.TIMEOUT);
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
                         final String msg = session.closeReason().name();
@@ -2236,10 +2241,11 @@ class ConsensusModuleAgent implements Agent
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
+                        session.close(ctx.countedErrorHandler());
                         ctx.timedOutClientCounter().incrementOrdered();
                     }
                 }
-                else if (session.state() == CLOSED)
+                else if (session.state() == CLOSING)
                 {
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
@@ -2248,6 +2254,7 @@ class ConsensusModuleAgent implements Agent
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
+                        session.close(ctx.errorHandler());
 
                         if (session.closeReason() == CloseReason.TIMEOUT)
                         {
@@ -2576,6 +2583,8 @@ class ConsensusModuleAgent implements Agent
         {
             if (session.closedLogPosition() > commitPosition)
             {
+                session.closedLogPosition(NULL_POSITION);
+                session.state(CLOSING);
                 sessionByIdMap.put(session.id(), session);
             }
         }

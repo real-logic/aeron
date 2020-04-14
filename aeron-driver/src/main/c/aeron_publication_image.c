@@ -451,34 +451,40 @@ int aeron_publication_image_insert_packet(
         term_id, term_offset, image->position_bits_to_shift, image->initial_term_id);
     const int64_t proposed_position = is_heartbeat ? packet_position : packet_position + (int64_t)length;
 
-    if (!aeron_publication_image_is_flow_control_under_run(image, packet_position) &&
-        !aeron_publication_image_is_flow_control_over_run(image, proposed_position))
+    if (!aeron_publication_image_is_flow_control_over_run(image, proposed_position))
     {
         int64_t now_ns = aeron_clock_cached_nano_time(image->cached_clock);
-        // TODO-MDS: also track connections on some over run cases (see Java implementation).
-        aeron_publication_image_track_connection(image, destination, addr, now_ns);
-        
-        if (is_heartbeat)
+
+        if (!aeron_publication_image_is_flow_control_under_run(image, packet_position))
         {
-            const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
-            if (is_eos && !image->is_end_of_stream && aeron_publication_image_all_eos(image, destination, is_eos))
+            aeron_publication_image_track_connection(image, destination, addr, now_ns);
+
+            if (is_heartbeat)
             {
-                AERON_PUT_ORDERED(image->is_end_of_stream, true);
-                AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
+                const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
+                if (is_eos && !image->is_end_of_stream && aeron_publication_image_all_eos(image, destination, is_eos))
+                {
+                    AERON_PUT_ORDERED(image->is_end_of_stream, true);
+                    AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
+                }
+
+                aeron_counter_ordered_increment(image->heartbeats_received_counter, 1);
+            }
+            else
+            {
+                const size_t index = aeron_logbuffer_index_by_position(packet_position, image->position_bits_to_shift);
+                uint8_t *term_buffer = image->mapped_raw_log.term_buffers[index].addr;
+
+                aeron_term_rebuilder_insert(term_buffer + term_offset, buffer, length);
             }
 
-            aeron_counter_ordered_increment(image->heartbeats_received_counter, 1);
+            AERON_PUT_ORDERED(image->last_packet_timestamp_ns, aeron_clock_cached_nano_time(image->cached_clock));
+            aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
         }
-        else
+        else if (proposed_position >= (image->last_sm_position - image->next_sm_receiver_window_length))
         {
-            const size_t index = aeron_logbuffer_index_by_position(packet_position, image->position_bits_to_shift);
-            uint8_t *term_buffer = image->mapped_raw_log.term_buffers[index].addr;
-
-            aeron_term_rebuilder_insert(term_buffer + term_offset, buffer, length);
+            aeron_publication_image_track_connection(image, destination, addr, now_ns);
         }
-
-        AERON_PUT_ORDERED(image->last_packet_timestamp_ns, aeron_clock_cached_nano_time(image->cached_clock));
-        aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
     }
 
     return (int)length;

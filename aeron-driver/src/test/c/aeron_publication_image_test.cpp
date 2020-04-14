@@ -168,10 +168,12 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
     aeron_publication_image_schedule_status_message(image, 2000000000, 1, TERM_BUFFER_SIZE);
     aeron_publication_image_send_pending_status_message(image);
     ASSERT_EQ(3, test_bindings_state->sm_count);
+    ASSERT_EQ(3, aeron_counter_get(image->status_messages_sent_counter));
 
     aeron_publication_image_on_gap_detected(image, 0, 0, 1);
     aeron_publication_image_send_pending_loss(image);
     ASSERT_EQ(3, test_bindings_state->nak_count);
+    ASSERT_EQ(3, aeron_counter_get(image->nak_messages_sent_counter));
 
     aeron_publication_image_initiate_rttm(image, 2000000000);
     ASSERT_EQ(3, test_bindings_state->rttm_count);

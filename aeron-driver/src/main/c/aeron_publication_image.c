@@ -624,7 +624,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
                             }
 
                             work_count++;
-                            aeron_counter_ordered_increment(image->status_messages_sent_counter, 1);
+                            aeron_counter_ordered_increment(image->nak_messages_sent_counter, 1);
                         }
                     }
                 }

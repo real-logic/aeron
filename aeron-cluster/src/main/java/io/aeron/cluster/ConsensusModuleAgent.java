@@ -2924,8 +2924,8 @@ class ConsensusModuleAgent implements Agent
                 ConsensusModule.State.TERMINATING != state &&
                 ConsensusModule.State.QUITTING != state)
             {
-                ctx.errorHandler().onError(
-                    new ClusterException("Aeron client for service closed unexpectedly", AeronException.Category.WARN));
+                ctx.errorHandler().onError(new ClusterException(
+                    "Aeron client for service closed unexpectedly", AeronException.Category.WARN));
                 state(ConsensusModule.State.CLOSED);
                 ctx.terminationHook().run();
             }

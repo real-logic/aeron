@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #if defined(AERON_COMPILER_MSVC)
 #include <winsock2.h>
 #include <inaddr.h>
@@ -401,8 +402,8 @@ static int aeron_driver_name_resolver_add_neighbor(
         if (ensure_capacity_result < 0)
         {
             aeron_set_err_from_last_err_code(
-                "Failed to allocate rows for neighbors table (%zu,%zu) - %s:%d",
-                resolver->neighbors.length, resolver->neighbors.capacity, __FILE__, __LINE__);
+                "Failed to allocate rows for neighbors table (%" PRIu32 ",%" PRIu32 ") - %s:%d",
+                (uint32_t)resolver->neighbors.length, (uint32_t)resolver->neighbors.capacity, __FILE__, __LINE__);
 
             return ensure_capacity_result;
         }

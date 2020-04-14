@@ -86,8 +86,8 @@ int aeron_name_resolver_cache_add_or_update(
         if (ensure_capacity_result < 0)
         {
             aeron_set_err_from_last_err_code(
-                "Failed to allocate rows for lookup table (%zu,%zu) - %s:%d",
-                cache->entries.length, cache->entries.capacity, __FILE__, __LINE__);
+                "Failed to allocate rows for lookup table (%" PRIu32 ",%" PRIu32 ") - %s:%d",
+                (uint32_t)cache->entries.length, (uint32_t)cache->entries.capacity, __FILE__, __LINE__);
             return -1;
         }
 

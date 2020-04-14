@@ -21,11 +21,12 @@
 
 #include <errno.h>
 #include <string.h>
+#include <inttypes.h>
+
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_strutil.h"
-
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
 #include "aeron_udp_transport_poller.h"
@@ -130,7 +131,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
     if (interceptors_length >= (size_t)AERON_MAX_INTERCEPTORS_LEN)
     {
         aeron_set_err(
-            EINVAL, "Interceptors list too long, must have: %zu < %d", interceptors_length, AERON_MAX_INTERCEPTORS_LEN);
+            EINVAL, "Interceptors list too long, must have: %" PRIu32 " < %d", (uint32_t)interceptors_length, AERON_MAX_INTERCEPTORS_LEN);
         return NULL;
     }
 

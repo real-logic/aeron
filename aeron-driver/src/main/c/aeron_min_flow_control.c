@@ -353,8 +353,8 @@ int aeron_tagged_flow_control_strategy_to_string(
     return snprintf(
         buffer,
         buffer_len - 1,
-        "group_tag: %" PRId64 ", group_min_size: %" PRId32 ", receiver_count: %zu",
+        "group_tag: %" PRId64 ", group_min_size: %" PRId32 ", receiver_count: %" PRIu32,
         strategy_state->group_tag,
         strategy_state->group_min_size,
-        strategy_state->receivers.length);
+        (uint32_t)strategy_state->receivers.length);
 }

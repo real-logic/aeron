@@ -1061,8 +1061,16 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            if (!catalog.forEntry(recordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                checksum(out, archiveDir, allFiles, checksum, descriptorDecoder)))
+            final CatalogEntryProcessor catalogEntryProcessor =
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    final ByteBuffer buffer = ByteBuffer.allocateDirect(
+                        align(descriptorDecoder.mtuLength(), CACHE_LINE_LENGTH));
+                    buffer.order(LITTLE_ENDIAN);
+                    checksum(buffer, out, archiveDir, allFiles, checksum, descriptorDecoder);
+                };
+
+            if (!catalog.forEntry(recordingId, catalogEntryProcessor))
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
@@ -1070,6 +1078,7 @@ public class ArchiveTool
     }
 
     private static void checksum(
+        final ByteBuffer buffer,
         final PrintStream out,
         final File archiveDir,
         final boolean allFiles,
@@ -1085,21 +1094,24 @@ public class ArchiveTool
 
         final long startPosition = descriptorDecoder.startPosition();
         final int termLength = descriptorDecoder.termBufferLength();
+
         if (allFiles)
         {
             for (final String fileName : segmentFiles)
             {
-                checksumSegmentFile(out, archiveDir, checksum, recordingId, fileName, startPosition, termLength);
+                checksumSegmentFile(
+                    buffer, out, archiveDir, checksum, recordingId, fileName, startPosition, termLength);
             }
         }
         else
         {
             final String lastFile = findSegmentFileWithHighestPosition(segmentFiles);
-            checksumSegmentFile(out, archiveDir, checksum, recordingId, lastFile, startPosition, termLength);
+            checksumSegmentFile(buffer, out, archiveDir, checksum, recordingId, lastFile, startPosition, termLength);
         }
     }
 
     private static void checksumSegmentFile(
+        final ByteBuffer buffer,
         final PrintStream out,
         final File archiveDir,
         final Checksum checksum,
@@ -1115,9 +1127,6 @@ public class ArchiveTool
 
         try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
         {
-            final ByteBuffer buffer = ByteBuffer.allocateDirect(
-                align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
-            buffer.order(LITTLE_ENDIAN);
             final HeaderFlyweight headerFlyweight = new HeaderFlyweight(buffer);
             final long bufferAddress = headerFlyweight.addressOffset();
             final long size = channel.size();
@@ -1181,19 +1190,24 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-            {
-                try
+            final ByteBuffer buffer = ByteBuffer.allocateDirect(
+                align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
+            buffer.order(LITTLE_ENDIAN);
+
+            catalog.forEach(
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
-                    checksum(out, archiveDir, allFiles, checksum, descriptorDecoder);
-                }
-                catch (final Exception ex)
-                {
-                    out.println(
-                        "(recordingId=" + descriptorDecoder.recordingId() + ") ERR: failed to compute checksums");
-                    out.println(ex);
-                }
-            });
+                    try
+                    {
+                        checksum(buffer, out, archiveDir, allFiles, checksum, descriptorDecoder);
+                    }
+                    catch (final Exception ex)
+                    {
+                        out.println(
+                            "(recordingId=" + descriptorDecoder.recordingId() + ") ERR: failed to compute checksums");
+                        out.println(ex);
+                    }
+                });
         }
     }
 

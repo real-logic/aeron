@@ -67,7 +67,12 @@ public class ClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
+            cluster.awaitCommitPosition(leader, 1);
+            final long commitPosition = leader.commitPosition();
+
             cluster.connectClient();
+            cluster.awaitCommitPosition(cluster.followers().get(0), commitPosition + 1);
+
             cluster.stopNode(leader);
             cluster.awaitLeadershipEvent(1);
         }

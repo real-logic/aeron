@@ -605,8 +605,7 @@ public class TestCluster implements AutoCloseable
     {
         while (newLeaderEvent.get() < count)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.sleep(1);
             client.pollEgress();
         }
     }

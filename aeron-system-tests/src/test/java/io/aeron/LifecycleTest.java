@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -32,7 +33,7 @@ public class LifecycleTest
             .dirDeleteOnStart(true)
             .errorHandler(Tests::onError);
 
-        try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
+        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx))
         {
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
@@ -55,7 +56,7 @@ public class LifecycleTest
             .dirDeleteOnStart(true)
             .errorHandler(Tests::onError);
 
-        try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
+        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx))
         {
             final Aeron.Context clientCtxOne = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());

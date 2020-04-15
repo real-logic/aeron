@@ -29,6 +29,15 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublication)
 
     doWork();
 
+    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
+    auto client_counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
+    {
+        EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
+        EXPECT_EQ(label, "client-heartbeat: 0");
+        EXPECT_EQ(key.getInt64(0), client_id);
+    };
+    EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
+
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
 
     ASSERT_NE(publication, (aeron_ipc_publication_t *)NULL);
@@ -80,6 +89,15 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscription)
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
 
     doWork();
+
+    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
+    auto client_counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
+    {
+        EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
+        EXPECT_EQ(label, "client-heartbeat: 0");
+        EXPECT_EQ(key.getInt64(0), client_id);
+    };
+    EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {

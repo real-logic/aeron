@@ -273,8 +273,9 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
             client_heartbeat.counter_id = aeron_counter_client_heartbeat_timestamp_allocate(
                 &conductor->counters_manager, client_id);
-            client_heartbeat.value_addr = aeron_counters_manager_addr(&conductor->counters_manager,
-                                                                      client_heartbeat.counter_id);
+
+            client_heartbeat.value_addr = aeron_counters_manager_addr(
+                &conductor->counters_manager, client_heartbeat.counter_id);
 
             if (client_heartbeat.counter_id >= 0)
             {
@@ -299,6 +300,8 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
                 client->counter_links.length = 0;
                 client->counter_links.capacity = 0;
                 conductor->clients.length++;
+
+                aeron_driver_conductor_on_counter_ready(conductor, client_id, client_heartbeat.counter_id);
             }
         }
     }
@@ -323,6 +326,9 @@ void aeron_client_on_time_event(
             aeron_counter_ordered_increment(conductor->client_timeouts_counter, 1);
             aeron_driver_conductor_on_client_timeout(conductor, client->client_id);
         }
+
+        aeron_driver_conductor_on_unavailable_counter(
+            conductor, client->client_id, client->heartbeat_timestamp.counter_id);
     }
 }
 

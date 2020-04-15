@@ -61,8 +61,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        final byte flags = header.flags();
         Action action = Action.CONTINUE;
+        final byte flags = header.flags();
 
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
         {
@@ -77,11 +77,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
             else
             {
                 final int limit = builder.limit();
-                if (0 == limit)
-                {
-                    throw new ClusterException("unexpected middle of message at position " + header.position());
-                }
-                else
+                if (limit > 0)
                 {
                     builder.append(buffer, offset, length);
 

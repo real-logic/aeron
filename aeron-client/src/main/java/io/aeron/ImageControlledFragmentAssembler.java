@@ -105,8 +105,8 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
      */
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        final byte flags = header.flags();
         Action action = Action.CONTINUE;
+        final byte flags = header.flags();
 
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
         {

@@ -117,7 +117,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(10)
+    @Timeout(20)
     public void shouldReResolveEndpointOnNoConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -167,7 +167,7 @@ public class NameReResolutionTest
             Tests.yieldingWait("No message received on second subscription");
         }
 
-        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -178,7 +178,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(10)
+    @Timeout(20)
     public void shouldReResolveMdcManualEndpointOnNoConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -229,7 +229,7 @@ public class NameReResolutionTest
             Tests.yieldingWait("No message received on second subscription");
         }
 
-        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -240,7 +240,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(15)
+    @Timeout(20)
     public void shouldReResolveMdcDynamicControlOnNoConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -289,7 +289,7 @@ public class NameReResolutionTest
             Tests.yieldingWait("No message received on second subscription");
         }
 
-        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -300,7 +300,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(15)
+    @Timeout(20)
     public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -352,7 +352,7 @@ public class NameReResolutionTest
             Tests.yieldingWait("No message received on second subscription");
         }
 
-        Counters.waitForCounterIncrease(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
             any(DirectBuffer.class),
@@ -363,7 +363,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(10)
+    @Timeout(20)
     public void shouldReportErrorOnReResolveFailure() throws IOException
     {
         buffer.putInt(0, 1);
@@ -395,7 +395,7 @@ public class NameReResolutionTest
             Tests.sleep(100);
         }
 
-        Counters.waitForCounterIncrease(
+        Tests.awaitCounterDelta(
             client.countersReader(), SystemCounterDescriptor.ERRORS.id(), initialErrorCount, 1);
 
         final Matcher<String> exceptionMessageMatcher = allOf(

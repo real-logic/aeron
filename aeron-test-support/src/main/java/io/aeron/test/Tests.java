@@ -24,6 +24,7 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
@@ -343,6 +344,28 @@ public class Tests
                 unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
                 fail("unexpected interrupt");
             }
+        }
+    }
+
+    public static void awaitCounterDelta(final CountersReader reader, final int counterId, final long delta)
+    {
+        awaitCounterDelta(reader, counterId, reader.getCounterValue(counterId), delta);
+    }
+
+    public static void awaitCounterDelta(
+        final CountersReader reader,
+        final int counterId,
+        final long initialValue,
+        final long delta)
+    {
+        final long expectedValue = initialValue + delta;
+        final Supplier<String> counterMessage = () ->
+            "Timed out waiting for counter '" + reader.getCounterLabel(counterId) +
+            "' to increase to at least " + expectedValue;
+
+        while (reader.getCounterValue(counterId) < expectedValue)
+        {
+            wait(SLEEP_1_MS, counterMessage);
         }
     }
 }

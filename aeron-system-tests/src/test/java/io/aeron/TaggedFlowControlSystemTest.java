@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static io.aeron.FlowControlTests.waitForConnectionAndStatusMessages;
+import static io.aeron.FlowControlTests.awaitConnectionAndStatusMessages;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -378,7 +378,7 @@ public class TaggedFlowControlSystemTest
             subscription3 = clientB.addSubscription(uriWithGroupTag, STREAM_ID);
             subscription4 = clientC.addSubscription(uriWithGroupTag, STREAM_ID);
 
-            waitForConnectionAndStatusMessages(
+            awaitConnectionAndStatusMessages(
                 clientA.countersReader(),
                 subscription0, subscription1, subscription2, subscription3, subscription4);
 
@@ -488,7 +488,7 @@ public class TaggedFlowControlSystemTest
 
         subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
 
-        waitForConnectionAndStatusMessages(countersReader, subscriptionA);
+        awaitConnectionAndStatusMessages(countersReader, subscriptionA);
 
         assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
 

@@ -110,7 +110,7 @@ class ClusterSession
         return responseChannel;
     }
 
-    void closeReason(final CloseReason closeReason)
+    void closing(final CloseReason closeReason)
     {
         this.closeReason = closeReason;
         state(State.CLOSING);

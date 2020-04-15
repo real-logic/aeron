@@ -356,7 +356,7 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (leadershipTermId == this.leadershipTermId && null != session && Cluster.Role.LEADER == role)
         {
-            session.closeReason(CloseReason.CLIENT_ACTION);
+            session.closing(CloseReason.CLIENT_ACTION);
             session.disconnect(ctx.errorHandler());
 
             if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
@@ -960,7 +960,7 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            session.closeReason(CloseReason.SERVICE_ACTION);
+            session.closing(CloseReason.SERVICE_ACTION);
 
             if (Cluster.Role.LEADER == role &&
                 logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
@@ -1064,35 +1064,6 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    private void captureServiceAck(final long logPosition, final long ackId, final long relevantId, final int serviceId)
-    {
-        if (0 == ackId && NULL_VALUE != serviceClientIds[serviceId])
-        {
-            throw new ClusterException(
-                "initial ack already received from service: possible duplicate serviceId=" + serviceId);
-        }
-
-        serviceAckQueues[serviceId].offerLast(new ServiceAck(ackId, logPosition, relevantId));
-    }
-
-    private ServiceAck[] pollServiceAcks(final long logPosition, final int serviceId)
-    {
-        final ServiceAck[] serviceAcks = new ServiceAck[serviceAckQueues.length];
-        for (int id = 0, length = serviceAckQueues.length; id < length; id++)
-        {
-            final ServiceAck serviceAck = serviceAckQueues[id].pollFirst();
-            if (null == serviceAck || serviceAck.logPosition() != logPosition)
-            {
-                throw new ClusterException("invalid ack for serviceId=" + serviceId +
-                    " logPosition=" + logPosition + " " + serviceAck);
-            }
-
-            serviceAcks[id] = serviceAck;
-        }
-
-        return serviceAcks;
-    }
-
     void onReplaySessionMessage(final long clusterSessionId, final long timestamp)
     {
         final ClusterSession clusterSession = sessionByIdMap.get(clusterSessionId);
@@ -1139,7 +1110,7 @@ class ConsensusModuleAgent implements Agent
         final ClusterSession clusterSession = sessionByIdMap.remove(clusterSessionId);
         if (null != clusterSession)
         {
-            clusterSession.closeReason(closeReason);
+            clusterSession.closing(closeReason);
             clusterSession.close(ctx.countedErrorHandler());
         }
     }
@@ -1502,7 +1473,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    session.closeReason(CloseReason.TIMEOUT);
+                    session.closing(CloseReason.TIMEOUT);
                 }
             }
         }
@@ -1872,8 +1843,8 @@ class ConsensusModuleAgent implements Agent
             timeOfLastMarkFileUpdateNs = nowMs;
         }
 
-        workCount += processRedirectSessions(redirectSessions, nowNs);
-        workCount += processRejectedSessions(rejectedSessions, nowNs);
+        workCount += sendRedirects(redirectSessions, nowNs);
+        workCount += sendRejections(rejectedSessions, nowNs);
 
         if (null == election)
         {
@@ -2140,7 +2111,7 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    private int processRejectedSessions(final ArrayList<ClusterSession> rejectedSessions, final long nowNs)
+    private int sendRejections(final ArrayList<ClusterSession> rejectedSessions, final long nowNs)
     {
         int workCount = 0;
 
@@ -2162,7 +2133,7 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    private int processRedirectSessions(final ArrayList<ClusterSession> redirectSessions, final long nowNs)
+    private int sendRedirects(final ArrayList<ClusterSession> redirectSessions, final long nowNs)
     {
         int workCount = 0;
 
@@ -2244,7 +2215,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    session.closeReason(CloseReason.TIMEOUT);
+                    session.closing(CloseReason.TIMEOUT);
                     if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                     {
                         final String msg = session.closeReason().name();
@@ -2294,6 +2265,35 @@ class ConsensusModuleAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private void captureServiceAck(final long logPosition, final long ackId, final long relevantId, final int serviceId)
+    {
+        if (0 == ackId && NULL_VALUE != serviceClientIds[serviceId])
+        {
+            throw new ClusterException(
+                "initial ack already received from service: possible duplicate serviceId=" + serviceId);
+        }
+
+        serviceAckQueues[serviceId].offerLast(new ServiceAck(ackId, logPosition, relevantId));
+    }
+
+    private ServiceAck[] pollServiceAcks(final long logPosition, final int serviceId)
+    {
+        final ServiceAck[] serviceAcks = new ServiceAck[serviceAckQueues.length];
+        for (int id = 0, length = serviceAckQueues.length; id < length; id++)
+        {
+            final ServiceAck serviceAck = serviceAckQueues[id].pollFirst();
+            if (null == serviceAck || serviceAck.logPosition() != logPosition)
+            {
+                throw new ClusterException("invalid ack for serviceId=" + serviceId +
+                    " logPosition=" + logPosition + " " + serviceAck);
+            }
+
+            serviceAcks[id] = serviceAck;
+        }
+
+        return serviceAcks;
     }
 
     private void sendNewLeaderEvent(final ClusterSession session)

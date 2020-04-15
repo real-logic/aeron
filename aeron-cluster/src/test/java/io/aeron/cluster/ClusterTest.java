@@ -405,14 +405,19 @@ public class ClusterTest
         {
             final TestNode firstLeader = cluster.awaitLeader();
 
-            cluster.connectClient();
-
             // Add enough messages so replay takes some time
             final int messageCount = 1_000_000;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
+            final long commitPosition = firstLeader.commitPosition();
             cluster.closeClient();
+
+            cluster.awaitCommitPosition(firstLeader, commitPosition + 1);
+            cluster.awaitCommitPosition(cluster.followers().get(0), firstLeader.commitPosition());
+            cluster.awaitCommitPosition(cluster.followers().get(1), firstLeader.commitPosition());
+
             cluster.stopNode(firstLeader);
 
             final TestNode secondLeader = cluster.awaitLeader();

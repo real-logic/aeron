@@ -363,13 +363,16 @@ int aeron_subscription_controlled_poll(
 int aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
-aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id);
+aeron_image_t *aeron_subscription_image_by_session_id(
+    aeron_subscription_t *subscription, int32_t session_id, bool require_release);
 
 int aeron_subscription_close(aeron_subscription_t *subscription);
 
 /*
  * Image functions
  */
+
+int aeron_image_release(aeron_image_t *image);
 
 int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int fragment_limit);
 int aeron_image_controlled_poll(

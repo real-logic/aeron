@@ -707,7 +707,7 @@ int aeron_client_conductor_on_publication_ready(
                 ensure_capacity_result, conductor->active_resources, aeron_client_managed_resource_t);
             if (ensure_capacity_result < 0)
             {
-                aeron_set_err(aeron_errcode(), "on_pubcalition_ready active_resources: %s", aeron_errmsg());
+                aeron_set_err(aeron_errcode(), "on_publication_ready active_resources: %s", aeron_errmsg());
                 return -1;
             }
 

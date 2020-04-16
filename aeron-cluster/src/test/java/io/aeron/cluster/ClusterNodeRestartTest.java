@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Publication;
@@ -66,15 +65,10 @@ public class ClusterNodeRestartTest
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final AtomicReference<String> serviceState = new AtomicReference<>();
-    private final AtomicLong snapshotCount = new AtomicLong();
-    private final Counter mockSnapshotCounter = mock(Counter.class);
 
     @BeforeEach
     public void before()
     {
-        when(mockSnapshotCounter.incrementOrdered()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
-        when(mockSnapshotCounter.increment()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
-
         launchClusteredMediaDriver(true);
     }
 
@@ -156,7 +150,7 @@ public class ClusterNodeRestartTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         forceCloseForRestart();
 
@@ -196,7 +190,7 @@ public class ClusterNodeRestartTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         forceCloseForRestart();
 
@@ -236,7 +230,7 @@ public class ClusterNodeRestartTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendCountedMessageIntoCluster(3);
 
@@ -278,7 +272,7 @@ public class ClusterNodeRestartTest
             }
         }
 
-        assertEquals(3L, snapshotCount.get());
+        assertEquals(3L, clusteredMediaDriver.consensusModule().context().snapshotCounter().get());
 
         ClusterTests.failOnClusterError();
     }
@@ -304,7 +298,7 @@ public class ClusterNodeRestartTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendCountedMessageIntoCluster(4);
 
@@ -349,7 +343,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(20)
     public void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
@@ -368,7 +362,7 @@ public class ClusterNodeRestartTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendCountedMessageIntoCluster(3);
 
@@ -624,7 +618,6 @@ public class ClusterNodeRestartTest
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
-                .snapshotCounter(mockSnapshotCounter)
                 .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }

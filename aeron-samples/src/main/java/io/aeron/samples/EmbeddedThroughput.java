@@ -28,7 +28,6 @@ import io.aeron.ConcurrentPublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -58,7 +57,6 @@ public class EmbeddedThroughput
         loadPropertiesFiles(args);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
-        final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final AtomicBoolean running = new AtomicBoolean(true);
 
@@ -69,7 +67,7 @@ public class EmbeddedThroughput
         {
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(
-                rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+                rateReporterHandler(reporter), FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
             final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();

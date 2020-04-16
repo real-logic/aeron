@@ -16,10 +16,8 @@
 package io.aeron.samples;
 
 import io.aeron.Aeron;
-import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.SigInt;
 
@@ -57,7 +55,6 @@ public class RateSubscriber
         }
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
-        final FragmentHandler rateReporterHandler = new FragmentAssembler(rateReporterHandler(reporter));
         final AtomicBoolean running = new AtomicBoolean(true);
 
         SigInt.register(() ->
@@ -70,7 +67,7 @@ public class RateSubscriber
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final Future<?> future = executor.submit(() -> SamplesUtil.subscriberLoop(
-                rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+                rateReporterHandler(reporter), FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             reporter.run();
 

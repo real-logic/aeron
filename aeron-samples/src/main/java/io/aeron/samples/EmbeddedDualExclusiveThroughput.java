@@ -18,7 +18,6 @@ package io.aeron.samples;
 import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.IdleStrategy;
@@ -58,7 +57,6 @@ public class EmbeddedDualExclusiveThroughput
 
         final RateReporter reporter = new RateReporter(
             TimeUnit.SECONDS.toNanos(1), EmbeddedDualExclusiveThroughput::printRate);
-        final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final AtomicBoolean running = new AtomicBoolean(true);
         final AvailableImageHandler handler =
@@ -87,7 +85,7 @@ public class EmbeddedDualExclusiveThroughput
 
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(
-                rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+                rateReporterHandler(reporter), FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
             final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();

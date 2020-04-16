@@ -330,3 +330,70 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
         }
     }
 }
+
+int aeron_async_add_exclusive_publication(
+    aeron_async_add_exclusive_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id)
+{
+    if (NULL == async || NULL == client || NULL == uri)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_async_add_exclusive_publication: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_async_add_exclusive_publication(async, &client->conductor, uri, stream_id);
+
+}
+
+int aeron_async_add_exclusive_publication_poll(
+    aeron_exclusive_publication_t **publication, aeron_async_add_exclusive_publication_t *async)
+{
+    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == async->type)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_async_add_exclusive_publication_poll: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    *publication = NULL;
+
+    aeron_client_registration_status_t registration_status;
+    AERON_GET_VOLATILE(registration_status, async->registration_status);
+
+    switch (registration_status)
+    {
+        case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
+        {
+            if (async->epoch_clock() > async->registration_deadline_ms)
+            {
+                aeron_set_err(ETIMEDOUT, "async_add_exclusive_publication no response from driver");
+                aeron_async_cmd_free(async);
+                return -1;
+            }
+
+            return 0;
+        }
+
+        case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
+        {
+            aeron_set_err(EINVAL, "async_add_exclusive_publication registration (error code %" PRId32 "): %*s",
+                async->error_code, async->error_message_length, async->error_message);
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+
+        case AERON_CLIENT_REGISTERED_MEDIA_DRIVER:
+        {
+            *publication = async->resource.exclusive_publication;
+            aeron_async_cmd_free(async);
+            return 1;
+        }
+
+        default:
+        {
+            aeron_set_err(EINVAL, "async_add_exclusive_publication async status %s", "unknown");
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+    }
+}

@@ -21,6 +21,7 @@
 
 #include "aeron_client_conductor.h"
 #include "aeron_publication.h"
+#include "aeron_exclusive_publication.h"
 #include "aeron_subscription.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
@@ -396,6 +397,77 @@ void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
     }
 }
 
+void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_exclusive_publication_t *async = (aeron_async_add_exclusive_publication_t *)item;
+
+    char buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
+    aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
+    int ensure_capacity_result = 0, rb_offer_fail_count = 0;
+
+    command->correlated.correlation_id = async->registration_id;
+    command->correlated.client_id = conductor->client_id;
+    command->stream_id = async->stream_id;
+    command->channel_length = async->uri_length;
+    memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, async->uri_length);
+
+    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+        &conductor->to_driver_buffer,
+        AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION,
+        buffer,
+        sizeof(aeron_publication_command_t) + async->uri_length))
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            // TODO: error
+            return;
+        }
+
+        sched_yield();
+    }
+
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+    if (ensure_capacity_result < 0)
+    {
+        // TODO: error
+        return;
+    }
+
+    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
+    async->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+}
+
+void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *) clientd;
+    aeron_exclusive_publication_t *publication = (aeron_exclusive_publication_t *) item;
+
+    if (publication->is_closed)
+    {
+        return;
+    }
+
+    for (size_t i = 0, size = conductor->active_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_managed_resource_t *resource = &conductor->active_resources.array[i];
+
+        if (AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == resource->type &&
+            publication->registration_id == resource->registration_id)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->active_resources.array,
+                sizeof(aeron_client_managed_resource_t),
+                i,
+                last_index);
+            conductor->active_resources.length--;
+
+            aeron_exclusive_publication_delete(publication);
+        }
+    }
+}
+
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
 {
     int fail_count = 0;
@@ -477,6 +549,81 @@ int aeron_client_conductor_async_close_publication(
     if (conductor->invoker_mode)
     {
         aeron_client_conductor_on_cmd_close_publication(conductor, publication);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, publication) < 0)
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_add_exclusive_publication(
+    aeron_async_add_exclusive_publication_t **async, aeron_client_conductor_t *conductor, const char *uri, int32_t stream_id)
+{
+    aeron_async_add_exclusive_publication_t *cmd = NULL;
+    char *uri_copy = NULL;
+    size_t uri_length = strlen(uri);
+
+    *async = NULL;
+
+    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_exclusive_publication_t)) < 0 ||
+        aeron_alloc((void **)&uri_copy, uri_length + 1) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_async_add_exclusive_publication (%d): %s", errcode, strerror(errcode));
+        return -1;
+    }
+
+    memcpy(uri_copy, uri, uri_length);
+    uri_copy[uri_length] = '\0';
+
+    cmd->command_base.func = aeron_client_conductor_on_cmd_add_exclusive_publication;
+    cmd->command_base.item = NULL;
+    cmd->resource.exclusive_publication = NULL;
+    cmd->epoch_clock = conductor->epoch_clock;
+    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+    cmd->error_message = NULL;
+    cmd->uri = uri_copy;
+    cmd->uri_length = uri_length;
+    cmd->stream_id = stream_id;
+    cmd->registration_id = -1;
+    cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
+    cmd->type = AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION;
+
+    if (conductor->invoker_mode)
+    {
+        *async = cmd;
+        aeron_client_conductor_on_cmd_add_exclusive_publication(conductor, cmd);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
+        {
+            aeron_free(cmd->uri);
+            aeron_free(cmd);
+            return -1;
+        }
+
+        *async = cmd;
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_close_exclusive_publication(
+    aeron_client_conductor_t *conductor, aeron_exclusive_publication_t *publication)
+{
+    publication->command_base.func = aeron_client_conductor_on_cmd_close_exclusive_publication;
+    publication->command_base.item = NULL;
+
+    if (conductor->invoker_mode)
+    {
+        aeron_client_conductor_on_cmd_close_exclusive_publication(conductor, publication);
     }
     else
     {

@@ -177,6 +177,11 @@ int aeron_client_conductor_async_add_publication(
 int aeron_client_conductor_async_close_publication(
     aeron_client_conductor_t *conductor, aeron_publication_t *publication);
 
+int aeron_client_conductor_async_add_exclusive_publication(
+    aeron_async_add_exclusive_publication_t **async, aeron_client_conductor_t *conductor, const char *uri, int32_t stream_id);
+int aeron_client_conductor_async_close_exclusive_publication(
+    aeron_client_conductor_t *conductor, aeron_exclusive_publication_t *publication);
+
 int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
 int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);

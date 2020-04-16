@@ -96,7 +96,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(0);
         Tests.awaitValue(serviceMsgCounter, 1);
 
         forceCloseForRestart();
@@ -119,7 +119,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(0);
         Tests.awaitValue(serviceMsgCounter, 1);
 
         forceCloseForRestart();
@@ -130,7 +130,7 @@ public class ClusterNodeRestartTest
         launchService(restartServiceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(1);
         Tests.awaitValue(restartServiceMsgCounter, 1);
 
         ClusterTests.failOnClusterError();
@@ -179,9 +179,9 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
+        sendNumberedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(2);
 
         Tests.awaitValue(serviceMsgCounter, 3);
 
@@ -219,9 +219,9 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
+        sendNumberedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(2);
 
         Tests.awaitValue(serviceMsgCounter, 3);
 
@@ -232,7 +232,7 @@ public class ClusterNodeRestartTest
 
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
-        sendCountedMessageIntoCluster(3);
+        sendNumberedMessageIntoCluster(3);
 
         Tests.awaitValue(serviceMsgCounter, 4);
 
@@ -286,9 +286,9 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
+        sendNumberedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(2);
         sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
 
         Tests.awaitValue(serviceMsgCounter, 4);
@@ -300,7 +300,7 @@ public class ClusterNodeRestartTest
 
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
-        sendCountedMessageIntoCluster(4);
+        sendNumberedMessageIntoCluster(4);
 
         Tests.awaitValue(serviceMsgCounter, 5);
 
@@ -327,7 +327,7 @@ public class ClusterNodeRestartTest
         launchReschedulingService(triggeredTimersCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(0);
         Tests.awaitValue(triggeredTimersCounter, 2);
 
         forceCloseForRestart();
@@ -351,9 +351,9 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
+        sendNumberedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(2);
 
         Tests.awaitValue(serviceMsgCounter, 3);
 
@@ -364,7 +364,7 @@ public class ClusterNodeRestartTest
 
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
-        sendCountedMessageIntoCluster(3);
+        sendNumberedMessageIntoCluster(3);
 
         Tests.awaitValue(serviceMsgCounter, 4);
 
@@ -385,7 +385,7 @@ public class ClusterNodeRestartTest
         assertEquals("4", serviceState.get());
 
         connectClient();
-        sendCountedMessageIntoCluster(4);
+        sendNumberedMessageIntoCluster(4);
         Tests.awaitValue(serviceMsgCounter, 5);
 
         forceCloseForRestart();
@@ -400,7 +400,7 @@ public class ClusterNodeRestartTest
         ClusterTests.failOnClusterError();
     }
 
-    private void sendCountedMessageIntoCluster(final int value)
+    private void sendNumberedMessageIntoCluster(final int value)
     {
         msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
 

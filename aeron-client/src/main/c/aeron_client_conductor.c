@@ -136,6 +136,7 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
         }
 
         case AERON_RESPONSE_ON_PUBLICATION_READY:
+        case AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY:
         {
             aeron_publication_buffers_ready_t *response = (aeron_publication_buffers_ready_t *)buffer;
 
@@ -349,7 +350,10 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
-            // TODO: error
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, err_buffer);
             return;
         }
 
@@ -360,7 +364,10 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
         ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
     if (ensure_capacity_result < 0)
     {
-        // TODO: error
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "publication registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
         return;
     }
 
@@ -420,7 +427,11 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
-            // TODO: error
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)",
+                __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, err_buffer);
             return;
         }
 
@@ -431,7 +442,10 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
         ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
     if (ensure_capacity_result < 0)
     {
-        // TODO: error
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "exclusive_publication registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
         return;
     }
 
@@ -476,7 +490,7 @@ int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *co
     {
         if (++fail_count > AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD)
         {
-            // TODO: error message
+            aeron_set_err(ETIMEDOUT, "%s", "could not offer to conductor command queue");
             return -1;
         }
 
@@ -687,12 +701,13 @@ int aeron_client_conductor_on_publication_ready(
         if (response->correlation_id == resource->registration_id)
         {
             int ensure_capacity_result = 0;
+            bool is_exclusive = (AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == resource->type) ? true : false;
 
             AERON_ARRAY_ENSURE_CAPACITY(
                 ensure_capacity_result, conductor->active_resources, aeron_client_managed_resource_t);
             if (ensure_capacity_result < 0)
             {
-                // TODO: error
+                aeron_set_err(aeron_errcode(), "on_pubcalition_ready active_resources: %s", aeron_errmsg());
                 return -1;
             }
 
@@ -702,22 +717,58 @@ int aeron_client_conductor_on_publication_ready(
                 response->log_file_length);
             log_file[response->log_file_length] = '\0';
 
-            aeron_publication_t *publication = NULL;
+            aeron_client_managed_resource_t *active_resource =
+                &conductor->active_resources.array[conductor->active_resources.length++];
 
-            if (aeron_publication_create(
-                &publication,
-                conductor,
-                resource->uri,
-                resource->stream_id,
-                response->session_id,
-                response->position_limit_counter_id,
-                response->channel_status_indicator_id,
-                log_file,
-                response->registration_id,
-                response->correlation_id,
-                conductor->pre_touch) < 0)
+            if (is_exclusive)
             {
-                return -1;
+                aeron_exclusive_publication_t *publication = NULL;
+
+                if (aeron_exclusive_publication_create(
+                    &publication,
+                    conductor,
+                    resource->uri,
+                    resource->stream_id,
+                    response->session_id,
+                    response->position_limit_counter_id,
+                    response->channel_status_indicator_id,
+                    log_file,
+                    response->registration_id,
+                    response->correlation_id,
+                    conductor->pre_touch) < 0)
+                {
+                    return -1;
+                }
+
+                active_resource->type = AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION;
+                active_resource->resource.exclusive_publication = publication;
+
+                resource->resource.exclusive_publication = publication;
+            }
+            else
+            {
+                aeron_publication_t *publication = NULL;
+
+                if (aeron_publication_create(
+                    &publication,
+                    conductor,
+                    resource->uri,
+                    resource->stream_id,
+                    response->session_id,
+                    response->position_limit_counter_id,
+                    response->channel_status_indicator_id,
+                    log_file,
+                    response->registration_id,
+                    response->correlation_id,
+                    conductor->pre_touch) < 0)
+                {
+                    return -1;
+                }
+
+                active_resource->type = AERON_CLIENT_TYPE_PUBLICATION;
+                active_resource->resource.publication = publication;
+
+                resource->resource.publication = publication;
             }
 
             aeron_array_fast_unordered_remove(
@@ -727,15 +778,9 @@ int aeron_client_conductor_on_publication_ready(
                 last_index);
             conductor->registering_resources.length--;
 
-            aeron_client_managed_resource_t *active_resource =
-                &conductor->active_resources.array[conductor->active_resources.length++];
-
             active_resource->registration_id = response->registration_id;
             active_resource->time_of_last_state_change_ns = conductor->nano_clock();
-            active_resource->type = AERON_CLIENT_TYPE_PUBLICATION;
-            active_resource->resource.publication = publication;
 
-            resource->resource.publication = publication;
             AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
             break;
         }

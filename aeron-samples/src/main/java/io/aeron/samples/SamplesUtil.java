@@ -15,15 +15,12 @@
  */
 package io.aeron.samples;
 
-import io.aeron.CommonContext;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -36,8 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.archive.Archive.Configuration.DEFAULT_IDLE_STRATEGY;
-import static io.aeron.driver.Configuration.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 /**
@@ -79,17 +74,11 @@ public class SamplesUtil
         return
             (subscription) ->
             {
-                try
+                final FragmentAssembler assembler = new FragmentAssembler(fragmentHandler);
+                while (running.get())
                 {
-                    while (running.get())
-                    {
-                        final int fragmentsRead = subscription.poll(fragmentHandler, limit);
-                        idleStrategy.idle(fragmentsRead);
-                    }
-                }
-                catch (final Exception ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
+                    final int fragmentsRead = subscription.poll(assembler, limit);
+                    idleStrategy.idle(fragmentsRead);
                 }
             };
     }
@@ -260,35 +249,5 @@ public class SamplesUtil
         return new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
             createCountersValuesBuffer(cncByteBuffer, cncMetaData));
-    }
-
-    /**
-     * Create an {@link IdleStrategy} that can be used to.
-     *
-     * @param strategyName of the class to be created.
-     * @return the newly created IdleStrategy.
-     */
-    public static IdleStrategy newIdleStrategy(final String strategyName)
-    {
-        IdleStrategy idleStrategy = null;
-
-        if (DEFAULT_IDLE_STRATEGY.equals(strategyName))
-        {
-            idleStrategy = new BackoffIdleStrategy(
-                IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
-        }
-        else
-        {
-            try
-            {
-                idleStrategy = (IdleStrategy)Class.forName(strategyName).getConstructor().newInstance();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-        }
-
-        return idleStrategy;
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.aeron.samples;
 
+import io.aeron.driver.Configuration;
 import org.agrona.concurrent.IdleStrategy;
 
 /**
@@ -85,6 +86,6 @@ public class SampleConfiguration
 
     public static IdleStrategy newIdleStrategy()
     {
-        return SamplesUtil.newIdleStrategy(IDLE_STRATEGY_NAME);
+        return Configuration.agentIdleStrategy(IDLE_STRATEGY_NAME, null);
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.aeron.samples;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -44,9 +45,9 @@ public class RateReporter implements Runnable
     private long lastTotalBytes;
     private long lastTotalMessages;
     private long lastTimestamp;
-    private volatile long totalBytes;
-    private volatile long totalMessages;
     private volatile boolean halt = false;
+    private final AtomicLong totalBytes = new AtomicLong();
+    private final AtomicLong totalMessages = new AtomicLong();
     private final Reporter reportingFunc;
 
     /**
@@ -72,8 +73,8 @@ public class RateReporter implements Runnable
         {
             LockSupport.parkNanos(parkNs);
 
-            final long currentTotalMessages = totalMessages;
-            final long currentTotalBytes = totalBytes;
+            final long currentTotalMessages = totalMessages.get();
+            final long currentTotalBytes = totalBytes.get();
             final long currentTimestamp = System.nanoTime();
 
             final long timeSpanNs = currentTimestamp - lastTimestamp;
@@ -107,7 +108,7 @@ public class RateReporter implements Runnable
      */
     public void onMessage(final long messages, final long bytes)
     {
-        totalBytes += bytes;
-        totalMessages += messages;
+        totalBytes.lazySet(totalBytes.get() + bytes);
+        totalMessages.lazySet(totalMessages.get() + messages);
     }
 }

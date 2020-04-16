@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -281,12 +282,14 @@ class TestNode implements AutoCloseable
         }
     }
 
+    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     static class TestService extends StubClusteredService
     {
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;
         static final int SNAPSHOT_MSG_LENGTH = 1000;
 
         private int index;
+        private volatile int activeSessionCount;
         private volatile int messageCount;
         private volatile boolean wasSnapshotTaken = false;
         private volatile boolean wasSnapshotLoaded = false;
@@ -302,6 +305,11 @@ class TestNode implements AutoCloseable
         int index()
         {
             return index;
+        }
+
+        int activeSessionCount()
+        {
+            return activeSessionCount;
         }
 
         int messageCount()
@@ -342,6 +350,8 @@ class TestNode implements AutoCloseable
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
             super.onStart(cluster, snapshotImage);
+
+            activeSessionCount = cluster.clientSessions().size();
 
             if (null != snapshotImage)
             {
@@ -430,7 +440,6 @@ class TestNode implements AutoCloseable
                 }
             }
 
-            //noinspection NonAtomicOperationOnVolatileField
             ++messageCount;
         }
 
@@ -449,6 +458,18 @@ class TestNode implements AutoCloseable
             }
 
             wasSnapshotTaken = true;
+        }
+
+        public void onSessionOpen(final ClientSession session, final long timestamp)
+        {
+            super.onSessionOpen(session, timestamp);
+            activeSessionCount += 1;
+        }
+
+        public void onSessionClose(final ClientSession session, final long timestamp, final CloseReason closeReason)
+        {
+            super.onSessionClose(session, timestamp, closeReason);
+            activeSessionCount -= 1;
         }
 
         public void onRoleChange(final Cluster.Role newRole)

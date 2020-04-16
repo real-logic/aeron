@@ -628,6 +628,14 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void awaitActiveSessionCount(final TestNode node, final int count)
+    {
+        while (node.service().activeSessionCount() != count)
+        {
+            Tests.sleep(1);
+        }
+    }
+
     TestNode findLeader(final int skipIndex)
     {
         for (int i = 0; i < nodes.length; i++)

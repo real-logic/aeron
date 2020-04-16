@@ -67,11 +67,8 @@ public class ClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.awaitCommitPosition(leader, 1);
-            final long commitPosition = leader.commitPosition();
-
             cluster.connectClient();
-            cluster.awaitCommitPosition(cluster.followers().get(0), commitPosition + 1);
+            cluster.awaitActiveSessionCount(cluster.followers().get(0), 1);
 
             cluster.stopNode(leader);
             cluster.awaitLeadershipEvent(1);
@@ -410,18 +407,15 @@ public class ClusterTest
         {
             final TestNode firstLeader = cluster.awaitLeader();
 
-            // Add enough messages so replay takes some time
-            final int messageCount = 1_000_000;
+            final int messageCount = 1_000_000; // Add enough messages so replay takes some time
             cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
-            final long commitPosition = firstLeader.commitPosition();
             cluster.closeClient();
 
-            cluster.awaitCommitPosition(firstLeader, commitPosition + 1);
-            cluster.awaitCommitPosition(cluster.followers().get(0), firstLeader.commitPosition());
-            cluster.awaitCommitPosition(cluster.followers().get(1), firstLeader.commitPosition());
+            cluster.awaitActiveSessionCount(cluster.followers().get(0), 0);
+            cluster.awaitActiveSessionCount(cluster.followers().get(0), 0);
 
             cluster.stopNode(firstLeader);
 

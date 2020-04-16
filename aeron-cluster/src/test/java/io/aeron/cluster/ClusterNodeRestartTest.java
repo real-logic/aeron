@@ -593,7 +593,7 @@ public class ClusterNodeRestartTest
 
     private void forceCloseForRestart()
     {
-        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
+        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver, container);
     }
 
     private void connectClient()

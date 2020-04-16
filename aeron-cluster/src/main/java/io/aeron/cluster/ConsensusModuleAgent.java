@@ -894,8 +894,6 @@ class ConsensusModuleAgent implements Agent
             }
 
             lastAppendPosition = logPosition;
-            notifiedCommitPosition = logPosition;
-
             commitPosition.setOrdered(logPosition);
             restoreUncommittedEntries(logPosition);
 
@@ -1344,11 +1342,6 @@ class ConsensusModuleAgent implements Agent
                 }
             }
         }
-    }
-
-    void notifiedCommitPosition(final long logPosition)
-    {
-        notifiedCommitPosition = logPosition;
     }
 
     void updateMemberDetails(final Election election)

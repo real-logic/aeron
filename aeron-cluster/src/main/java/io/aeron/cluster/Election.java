@@ -619,7 +619,6 @@ public class Election
 
         if (null == logReplay)
         {
-            consensusModuleAgent.notifiedCommitPosition(logPosition);
             logSessionId = consensusModuleAgent.addNewLogPublication().sessionId();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);

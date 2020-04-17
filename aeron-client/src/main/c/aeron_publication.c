@@ -32,8 +32,8 @@ int aeron_publication_create(
     const char *channel,
     int32_t stream_id,
     int32_t session_id,
-    int32_t position_limit_id,
-    int32_t channel_status_id,
+    int64_t *position_limit_addr,
+    int64_t *channel_status_addr,
     const char *log_file,
     int64_t original_registration_id,
     int64_t registration_id,
@@ -58,6 +58,9 @@ int aeron_publication_create(
 
     _publication->log_meta_data = (aeron_logbuffer_metadata_t *)_publication->mapped_raw_log.log_meta_data.addr;
 
+    _publication->position_limit = position_limit_addr;
+    _publication->channel_status_indicator = channel_status_addr;
+
     _publication->conductor = conductor;
     _publication->channel = channel;
     _publication->registration_id = registration_id;
@@ -65,6 +68,14 @@ int aeron_publication_create(
     _publication->stream_id = stream_id;
     _publication->session_id = session_id;
     _publication->is_closed = false;
+
+    size_t term_length = (size_t)_publication->log_meta_data->term_length;
+
+    _publication->max_possible_position = ((int64_t)term_length << 31L);
+    _publication->max_payload_length = (size_t)(_publication->log_meta_data->mtu_length - AERON_DATA_HEADER_LENGTH);
+    _publication->max_message_length = aeron_frame_compute_max_message_length(term_length);
+    _publication->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_length);
+    _publication->initial_term_id = _publication->log_meta_data->initial_term_id;
 
     *publication = _publication;
     return -1;

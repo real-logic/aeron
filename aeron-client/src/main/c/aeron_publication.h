@@ -32,6 +32,7 @@ typedef struct aeron_publication_stct
     aeron_logbuffer_metadata_t *log_meta_data;
 
     int64_t *position_limit;
+    int64_t *channel_status_indicator;
 
     int64_t registration_id;
     int64_t original_registration_id;
@@ -54,8 +55,8 @@ int aeron_publication_create(
     const char *channel,
     int32_t stream_id,
     int32_t session_id,
-    int32_t position_limit_id,
-    int32_t channel_status_id,
+    int64_t *position_limit_addr,
+    int64_t *channel_status_addr,
     const char *log_file,
     int64_t original_registration_id,
     int64_t registration_id,

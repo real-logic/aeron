@@ -723,6 +723,10 @@ int aeron_client_conductor_on_publication_ready(
             if (is_exclusive)
             {
                 aeron_exclusive_publication_t *publication = NULL;
+                int64_t *position_limit_addr = aeron_counters_reader_addr(
+                    &conductor->counters_reader, response->position_limit_counter_id);
+                int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
+                    &conductor->counters_reader, response->channel_status_indicator_id);
 
                 if (aeron_exclusive_publication_create(
                     &publication,
@@ -730,8 +734,8 @@ int aeron_client_conductor_on_publication_ready(
                     resource->uri,
                     resource->stream_id,
                     response->session_id,
-                    response->position_limit_counter_id,
-                    response->channel_status_indicator_id,
+                    position_limit_addr,
+                    channel_status_indicator_addr,
                     log_file,
                     response->registration_id,
                     response->correlation_id,
@@ -748,6 +752,10 @@ int aeron_client_conductor_on_publication_ready(
             else
             {
                 aeron_publication_t *publication = NULL;
+                int64_t *position_limit_addr = aeron_counters_reader_addr(
+                    &conductor->counters_reader, response->position_limit_counter_id);
+                int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
+                    &conductor->counters_reader, response->channel_status_indicator_id);
 
                 if (aeron_publication_create(
                     &publication,
@@ -755,8 +763,8 @@ int aeron_client_conductor_on_publication_ready(
                     resource->uri,
                     resource->stream_id,
                     response->session_id,
-                    response->position_limit_counter_id,
-                    response->channel_status_indicator_id,
+                    position_limit_addr,
+                    channel_status_indicator_addr,
                     log_file,
                     response->registration_id,
                     response->correlation_id,

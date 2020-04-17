@@ -133,7 +133,7 @@ public class Ping
             {
                 OFFER_BUFFER.putLong(0, System.nanoTime());
             }
-            while ((offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
+            while ((offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null)) < 0L);
 
             POLLING_IDLE_STRATEGY.reset();
 

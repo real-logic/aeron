@@ -109,7 +109,7 @@ public class EmbeddedDualExclusiveThroughput
 
                     if (a < NUMBER_OF_MESSAGES)
                     {
-                        if (publicationOne.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) > 0)
+                        if (publicationOne.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null) > 0)
                         {
                             a++;
                         }
@@ -122,7 +122,7 @@ public class EmbeddedDualExclusiveThroughput
 
                     if (b < NUMBER_OF_MESSAGES)
                     {
-                        if (publicationTwo.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) > 0)
+                        if (publicationTwo.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null) > 0)
                         {
                             b++;
                         }

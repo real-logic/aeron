@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.ThreadingMode.DEDICATED;
@@ -917,8 +918,9 @@ public class Configuration
                 break;
 
             case CONTROLLABLE_IDLE_STRATEGY:
-                idleStrategy = new ControllableIdleStrategy(controllableStatus);
+                Objects.requireNonNull(controllableStatus);
                 controllableStatus.setOrdered(ControllableIdleStrategy.PARK);
+                idleStrategy = new ControllableIdleStrategy(controllableStatus);
                 break;
 
             default:

@@ -177,7 +177,7 @@ public class EmbeddedPingPong
             {
                 OFFER_BUFFER.putLong(0, System.nanoTime());
             }
-            while ((offeredPosition = pingPublication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
+            while ((offeredPosition = pingPublication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null)) < 0L);
 
             PONG_HANDLER_IDLE_STRATEGY.reset();
             do
@@ -212,14 +212,14 @@ public class EmbeddedPingPong
     public static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (pongPublication.offer(buffer, offset, length) > 0L)
+        if (pongPublication.offer(buffer, offset, length, null) > 0L)
         {
             return;
         }
 
         PING_HANDLER_IDLE_STRATEGY.reset();
 
-        while (pongPublication.offer(buffer, offset, length) < 0L)
+        while (pongPublication.offer(buffer, offset, length, null) < 0L)
         {
             PING_HANDLER_IDLE_STRATEGY.idle();
         }

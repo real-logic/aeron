@@ -41,7 +41,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 public class SamplesUtil
 {
     /**
-     * Return a reusable, parametrised event loop that calls a default idler when no messages are received.
+     * Return a reusable, parametrised event loop that calls a default {@link IdleStrategy} when no messages
+     * are received.
      *
      * @param fragmentHandler to be called back for each message.
      * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}.
@@ -111,7 +112,7 @@ public class SamplesUtil
      */
     public static FragmentHandler rateReporterHandler(final RateReporter reporter)
     {
-        return (buffer, offset, length, header) -> reporter.onMessage(1, length);
+        return (buffer, offset, length, header) -> reporter.onMessage(length);
     }
 
     /**

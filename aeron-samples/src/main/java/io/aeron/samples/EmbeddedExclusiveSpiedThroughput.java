@@ -91,7 +91,7 @@ public class EmbeddedExclusiveSpiedThroughput
                     OFFER_BUFFER.putLong(0, i);
 
                     idleStrategy.reset();
-                    while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) < 0)
+                    while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null) < 0)
                     {
                         backPressureCount++;
                         idleStrategy.idle();

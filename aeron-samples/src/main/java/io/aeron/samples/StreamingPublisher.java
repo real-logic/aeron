@@ -87,7 +87,7 @@ public class StreamingPublisher
                 System.out.format(
                     "%nStreaming %,d messages of%s size %d bytes to %s on stream id %d%n",
                     NUMBER_OF_MESSAGES,
-                    (RANDOM_MESSAGE_LENGTH) ? " random" : "",
+                    RANDOM_MESSAGE_LENGTH ? " random" : "",
                     MESSAGE_LENGTH,
                     CHANNEL,
                     STREAM_ID);
@@ -100,7 +100,7 @@ public class StreamingPublisher
 
                     OFFER_BUFFER.putLong(0, i);
                     idleStrategy.reset();
-                    while (publication.offer(OFFER_BUFFER, 0, length) < 0L)
+                    while (publication.offer(OFFER_BUFFER, 0, length, null) < 0L)
                     {
                         // The offer failed, which is usually due to the publication
                         // being temporarily blocked.  Retry the offer after a short
@@ -109,7 +109,7 @@ public class StreamingPublisher
                         idleStrategy.idle();
                     }
 
-                    reporter.onMessage(1, length);
+                    reporter.onMessage(length);
                 }
 
                 System.out.println(

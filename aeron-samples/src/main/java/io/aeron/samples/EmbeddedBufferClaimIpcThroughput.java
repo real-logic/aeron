@@ -19,17 +19,12 @@ import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
-import static org.agrona.UnsafeAccess.UNSAFE;
 
 /**
  * Throughput test using {@link ExclusivePublication#tryClaim(int, BufferClaim)} over UDP transport.
@@ -38,7 +33,7 @@ public class EmbeddedBufferClaimIpcThroughput
 {
     public static final int BURST_LENGTH = 1_000_000;
     public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
-    public static final int MESSAGE_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    public static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     public static final String CHANNEL = CommonContext.IPC_CHANNEL;
     public static final int STREAM_ID = SampleConfiguration.STREAM_ID;
 
@@ -57,12 +52,12 @@ public class EmbeddedBufferClaimIpcThroughput
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            final Subscriber subscriber = new Subscriber(running, subscription);
+            final ImageRateSubscriber subscriber = new ImageRateSubscriber(FRAGMENT_COUNT_LIMIT, running, subscription);
             final Thread subscriberThread = new Thread(subscriber);
             subscriberThread.setName("subscriber");
             final Thread publisherThread = new Thread(new Publisher(running, publication));
             publisherThread.setName("publisher");
-            final Thread rateReporterThread = new Thread(new RateReporter(running, subscriber));
+            final Thread rateReporterThread = new Thread(new ImageRateReporter(MESSAGE_LENGTH, running, subscriber));
             rateReporterThread.setName("rate-reporter");
 
             rateReporterThread.start();
@@ -72,42 +67,6 @@ public class EmbeddedBufferClaimIpcThroughput
             subscriberThread.join();
             publisherThread.join();
             rateReporterThread.join();
-        }
-    }
-
-    public static final class RateReporter implements Runnable
-    {
-        private final AtomicBoolean running;
-        private final Subscriber subscriber;
-
-        public RateReporter(final AtomicBoolean running, final Subscriber subscriber)
-        {
-            this.running = running;
-            this.subscriber = subscriber;
-        }
-
-        public void run()
-        {
-            long lastTimestampMs = System.currentTimeMillis();
-            long lastTotalBytes = subscriber.totalBytes();
-
-            while (running.get())
-            {
-                LockSupport.parkNanos(1_000_000_000);
-
-                final long newTimestampMs = System.currentTimeMillis();
-                final long newTotalBytes = subscriber.totalBytes();
-
-                final long durationMs = newTimestampMs - lastTimestampMs;
-                final long bytesTransferred = newTotalBytes - lastTotalBytes;
-
-                System.out.format(
-                    "Duration %dms - %,d messages - %,d payload bytes%n",
-                    durationMs, bytesTransferred / MESSAGE_LENGTH, bytesTransferred);
-
-                lastTimestampMs = newTimestampMs;
-                lastTotalBytes = newTotalBytes;
-            }
         }
     }
 
@@ -158,76 +117,6 @@ public class EmbeddedBufferClaimIpcThroughput
 
             final double backPressureRatio = backPressureCount / (double)totalMessageCount;
             System.out.format("Publisher back pressure ratio: %f%n", backPressureRatio);
-        }
-    }
-
-    public static final class Subscriber implements Runnable, FragmentHandler
-    {
-        private static final long TOTAL_BYTES_OFFSET;
-
-        static
-        {
-            try
-            {
-                TOTAL_BYTES_OFFSET = UNSAFE.objectFieldOffset(Subscriber.class.getDeclaredField("totalBytes"));
-            }
-            catch (final Exception ex)
-            {
-                throw new RuntimeException(ex);
-            }
-        }
-
-        private final AtomicBoolean running;
-        private final Subscription subscription;
-
-        private volatile long totalBytes = 0;
-
-        public Subscriber(final AtomicBoolean running, final Subscription subscription)
-        {
-            this.running = running;
-            this.subscription = subscription;
-        }
-
-        public long totalBytes()
-        {
-            return totalBytes;
-        }
-
-        public void run()
-        {
-            while (!subscription.isConnected())
-            {
-                Thread.yield();
-            }
-
-            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
-            final Image image = subscription.images().get(0);
-
-            long failedPolls = 0;
-            long successfulPolls = 0;
-
-            while (running.get())
-            {
-                final int fragmentsRead = image.poll(this, MESSAGE_COUNT_LIMIT);
-                if (0 == fragmentsRead)
-                {
-                    ++failedPolls;
-                }
-                else
-                {
-                    ++successfulPolls;
-                }
-
-                idleStrategy.idle(fragmentsRead);
-            }
-
-            final double failureRatio = failedPolls / (double)(successfulPolls + failedPolls);
-            System.out.format("Subscriber poll failure ratio: %f%n", failureRatio);
-        }
-
-        public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
-        {
-            UNSAFE.putOrderedLong(this, TOTAL_BYTES_OFFSET, totalBytes + length);
         }
     }
 }

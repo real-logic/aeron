@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.*;
 import org.HdrHistogram.Histogram;
 
 import io.aeron.Aeron;
@@ -28,8 +29,6 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -143,12 +142,13 @@ public class EmbeddedPingPong
                     aeron.addExclusivePublication(PONG_CHANNEL, PONG_STREAM_ID) :
                     aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID))
             {
-                final FragmentAssembler dataHandler = new FragmentAssembler(
-                    (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
+                final BufferClaim bufferClaim = new BufferClaim();
+                final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+                    pingHandler(bufferClaim, pongPublication, buffer, offset, length, header);
 
                 while (RUNNING.get())
                 {
-                    PING_HANDLER_IDLE_STRATEGY.idle(pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT));
+                    PING_HANDLER_IDLE_STRATEGY.idle(pingSubscription.poll(fragmentHandler, FRAME_COUNT_LIMIT));
                 }
 
                 System.out.println("Shutting down...");
@@ -210,18 +210,22 @@ public class EmbeddedPingPong
     }
 
     public static void pingHandler(
-        final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
+        final BufferClaim bufferClaim,
+        final Publication pongPublication,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
     {
-        if (pongPublication.offer(buffer, offset, length, null) > 0L)
-        {
-            return;
-        }
-
         PING_HANDLER_IDLE_STRATEGY.reset();
-
-        while (pongPublication.offer(buffer, offset, length, null) < 0L)
+        while (pongPublication.tryClaim(length, bufferClaim) <= 0)
         {
             PING_HANDLER_IDLE_STRATEGY.idle();
         }
+
+        bufferClaim
+            .flags(header.flags())
+            .putBytes(buffer, offset, length)
+            .commit();
     }
 }

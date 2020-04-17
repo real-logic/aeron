@@ -27,6 +27,69 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
+@SuppressWarnings("unused")
+abstract class ExclusivePublicationLhsPadding extends Publication
+{
+    ExclusivePublicationLhsPadding(
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final ReadablePosition positionLimit,
+        final int channelStatusId,
+        final LogBuffers logBuffers,
+        final long originalRegistrationId,
+        final long registrationId)
+    {
+        super(
+            clientConductor,
+            channel,
+            streamId,
+            sessionId,
+            positionLimit,
+            channelStatusId,
+            logBuffers,
+            originalRegistrationId,
+            registrationId);
+    }
+
+    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
+    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
+    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
+    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+}
+
+abstract class ExclusivePublicationValues extends ExclusivePublicationLhsPadding
+{
+    ExclusivePublicationValues(
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final ReadablePosition positionLimit,
+        final int channelStatusId,
+        final LogBuffers logBuffers,
+        final long originalRegistrationId,
+        final long registrationId)
+    {
+        super(
+            clientConductor,
+            channel,
+            streamId,
+            sessionId,
+            positionLimit,
+            channelStatusId,
+            logBuffers,
+            originalRegistrationId,
+            registrationId);
+    }
+
+    int termOffset;
+    int termId;
+    int activePartitionIndex;
+    long termBeginPosition;
+}
+
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
  * each get their own session id so multiple can be concurrently active on the same media driver as independent streams.
@@ -44,12 +107,12 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  *
  * @see Aeron#addExclusivePublication(String, int)
  */
-public class ExclusivePublication extends Publication
+public class ExclusivePublication extends ExclusivePublicationValues
 {
-    private int termOffset;
-    private int termId;
-    private int activePartitionIndex;
-    private long termBeginPosition;
+    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
+    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
+    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
+    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
     private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
 

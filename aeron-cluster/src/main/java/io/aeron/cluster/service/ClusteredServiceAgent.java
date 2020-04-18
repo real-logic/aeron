@@ -168,6 +168,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 if (logAdapter.isDone())
                 {
+                    logPosition = logAdapter.image().position();
                     CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
                     role(Role.get((int)roleCounter.get()));
                 }
@@ -459,7 +460,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (memberId == this.memberId && changeType == ChangeType.QUIT)
         {
-            terminate(logPosition);
+            terminate();
         }
     }
 
@@ -640,11 +641,10 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             final int workCount = adapter.poll(commitPosition.get());
             if (0 == workCount)
             {
-                final long position = adapter.position();
-                if (position >= adapter.maxLogPosition())
+                if (logPosition >= adapter.maxLogPosition())
                 {
                     final long id = ackId++;
-                    while (!consensusModuleProxy.ack(position, clusterTime, id, NULL_VALUE, serviceId))
+                    while (!consensusModuleProxy.ack(logPosition, clusterTime, id, NULL_VALUE, serviceId))
                     {
                         idle();
                     }
@@ -941,23 +941,13 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             joinActiveLog(event);
         }
 
-        if (NULL_POSITION != terminationPosition)
+        if (NULL_POSITION != terminationPosition && logPosition >= terminationPosition)
         {
-            checkForTermination();
+            terminate();
         }
     }
 
-    private void checkForTermination()
-    {
-        if (null != logAdapter && logAdapter.position() >= terminationPosition)
-        {
-            final long logPosition = terminationPosition;
-            terminationPosition = NULL_VALUE;
-            terminate(logPosition);
-        }
-    }
-
-    private void terminate(final long logPosition)
+    private void terminate()
     {
         isServiceActive = false;
         try
@@ -975,6 +965,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             idle();
         }
 
+        terminationPosition = NULL_VALUE;
         ctx.terminationHook().run();
     }
 

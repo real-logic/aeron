@@ -30,6 +30,7 @@ final class LogAdapter implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 100;
 
+    private long logPosition;
     private Image image;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final BufferBuilder builder = new BufferBuilder();
@@ -51,6 +52,7 @@ final class LogAdapter implements ControlledFragmentHandler
     {
         if (null != image)
         {
+            logPosition = image.position();
             CloseHelper.close(errorHandler, image.subscription());
             image = null;
         }
@@ -63,6 +65,11 @@ final class LogAdapter implements ControlledFragmentHandler
 
     long position()
     {
+        if (null == image)
+        {
+            return logPosition;
+        }
+
         return image.position();
     }
 
@@ -83,6 +90,11 @@ final class LogAdapter implements ControlledFragmentHandler
 
     void image(final Image image)
     {
+        if (null != this.image)
+        {
+            logPosition = this.image.position();
+        }
+
         this.image = image;
     }
 

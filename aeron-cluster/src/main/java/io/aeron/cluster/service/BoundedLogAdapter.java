@@ -116,11 +116,6 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         return image.position() >= maxLogPosition || image.isEndOfStream() || image.isClosed();
     }
 
-    long position()
-    {
-        return image.position();
-    }
-
     void image(final Image image)
     {
         this.image = image;

@@ -37,12 +37,11 @@ class LogReplay
     private final AeronArchive archive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context ctx;
-    private final String channel;
     private final LogAdapter logAdapter;
+    private final Subscription logSubscription;
 
     private int replaySessionId = Aeron.NULL_VALUE;
     private State state = State.INIT;
-    private Subscription logSubscription;
 
     LogReplay(
         final AeronArchive archive,
@@ -67,9 +66,7 @@ class LogReplay
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        this.channel = channelUri.toString();
-
-        logSubscription = ctx.aeron().addSubscription(channel, replayStreamId);
+        logSubscription = ctx.aeron().addSubscription(channelUri.toString(), replayStreamId);
     }
 
     public void close()
@@ -84,6 +81,7 @@ class LogReplay
 
         if (State.INIT == state)
         {
+            final String channel = logSubscription.channel();
             consensusModuleAgent.awaitServicesReadyForReplay(
                 channel, replayStreamId, logSessionId, leadershipTermId, startPosition, stopPosition);
 

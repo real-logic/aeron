@@ -47,9 +47,10 @@ public class ReadableCounter implements AutoCloseable
      */
     public ReadableCounter(final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        if (countersReader.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+        final int counterState = countersReader.getCounterState(counterId);
+        if (counterState != CountersReader.RECORD_ALLOCATED)
         {
-            throw new IllegalStateException("Counter id has not been allocated: " + counterId);
+            throw new IllegalStateException("Counter not allocated: id=" + counterId + " state=" + counterState);
         }
 
         this.countersReader = countersReader;

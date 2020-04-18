@@ -589,10 +589,9 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             service.onStart(this, null);
         }
 
-        final long aeronClientId = aeron.context().clientId();
         final long id = ackId++;
         idleStrategy.reset();
-        while (!consensusModuleProxy.ack(logPosition, clusterTime, id, aeronClientId, serviceId))
+        while (!consensusModuleProxy.ack(logPosition, clusterTime, id, aeron.clientId(), serviceId))
         {
             idle();
         }

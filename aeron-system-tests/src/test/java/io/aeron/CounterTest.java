@@ -23,10 +23,10 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 
+import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
+import static org.agrona.concurrent.status.CountersReader.metaDataOffset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
@@ -43,14 +43,10 @@ public class CounterTest
     private Aeron clientB;
     private TestMediaDriver driver;
 
-    private final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
-    private final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
-    private AvailableCounterHandler availableCounterHandlerClientB = mock(AvailableCounterHandler.class);
-    private UnavailableCounterHandler unavailableCounterHandlerClientB = mock(UnavailableCounterHandler.class);
-
     private volatile ReadableCounter readableCounter;
 
-    private void launch()
+    @BeforeEach
+    public void before()
     {
         labelBuffer.putStringWithoutLengthAscii(0, COUNTER_LABEL);
 
@@ -59,29 +55,25 @@ public class CounterTest
                 .errorHandler(Tests::onError)
                 .threadingMode(ThreadingMode.SHARED));
 
-        clientA = Aeron.connect(
-            new Aeron.Context()
-                .availableCounterHandler(availableCounterHandlerClientA)
-                .unavailableCounterHandler(unavailableCounterHandlerClientA));
-
-        clientB = Aeron.connect(
-            new Aeron.Context()
-                .availableCounterHandler(availableCounterHandlerClientB)
-                .unavailableCounterHandler(unavailableCounterHandlerClientB));
+        clientA = Aeron.connect();
+        clientB = Aeron.connect();
     }
 
     @AfterEach
     public void after()
     {
         CloseHelper.closeAll(clientA, clientB, driver);
-
         driver.context().deleteDirectory();
     }
 
     @Test
     public void shouldBeAbleToAddCounter()
     {
-        launch();
+        final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
+        clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
+
+        final AvailableCounterHandler availableCounterHandlerClientB = mock(AvailableCounterHandler.class);
+        clientB.addAvailableCounterHandler(availableCounterHandlerClientB);
 
         final Counter counter = clientA.addCounter(
             COUNTER_TYPE_ID,
@@ -103,9 +95,7 @@ public class CounterTest
     @Test
     public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
-        availableCounterHandlerClientB = this::createReadableCounter;
-
-        launch();
+        clientB.addAvailableCounterHandler(this::createReadableCounter);
 
         final Counter counter = clientA.addCounter(
             COUNTER_TYPE_ID,
@@ -129,10 +119,8 @@ public class CounterTest
     @Test
     public void shouldCloseReadableCounterOnUnavailableCounter()
     {
-        availableCounterHandlerClientB = this::createReadableCounter;
-        unavailableCounterHandlerClientB = this::unavailableCounterHandler;
-
-        launch();
+        clientB.addAvailableCounterHandler(this::createReadableCounter);
+        clientB.addUnavailableCounterHandler(this::unavailableCounterHandler);
 
         final Counter counter = clientA.addCounter(
             COUNTER_TYPE_ID,
@@ -162,7 +150,10 @@ public class CounterTest
     private void createReadableCounter(
         final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        readableCounter = new ReadableCounter(countersReader, registrationId, counterId);
+        if (COUNTER_TYPE_ID == countersReader.metaDataBuffer().getInt(metaDataOffset(counterId) + TYPE_ID_OFFSET))
+        {
+            readableCounter = new ReadableCounter(countersReader, registrationId, counterId);
+        }
     }
 
     private void unavailableCounterHandler(

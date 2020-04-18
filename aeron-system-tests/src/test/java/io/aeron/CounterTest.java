@@ -159,9 +159,9 @@ public class CounterTest
     private void unavailableCounterHandler(
         @SuppressWarnings("unused") final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        assertEquals(readableCounter.registrationId(), registrationId);
-        assertEquals(readableCounter.counterId(), counterId);
-
-        readableCounter.close();
+        if (null != readableCounter && readableCounter.registrationId() == registrationId)
+        {
+            readableCounter.close();
+        }
     }
 }

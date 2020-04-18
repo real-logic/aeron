@@ -450,6 +450,9 @@ public class ClusterTest
             final List<TestNode> followers = cluster.followers();
             TestNode followerA = followers.get(0), followerB = followers.get(1);
 
+            awaitElectionClosed(followerA);
+            awaitElectionClosed(followerB);
+
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
@@ -498,8 +501,8 @@ public class ClusterTest
             }
 
             final long targetPosition = leader.appendPosition();
-            cluster.closeClient();
             cluster.stopNode(leader);
+            cluster.closeClient();
 
             followerA = cluster.startStaticNode(followerA.index(), false);
             followerB = cluster.startStaticNode(followerB.index(), false);
@@ -507,10 +510,11 @@ public class ClusterTest
             cluster.awaitLeader();
             cluster.connectClient();
 
+            final int messageLength = 128;
             int messageCount = 0;
             while (followerA.commitPosition() < targetPosition)
             {
-                cluster.sendMessage(128);
+                cluster.sendMessage(messageLength);
                 messageCount++;
             }
 

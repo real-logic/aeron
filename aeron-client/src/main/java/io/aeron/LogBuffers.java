@@ -23,7 +23,6 @@ import org.agrona.ManagedResource;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -62,6 +61,11 @@ public class LogBuffers implements AutoCloseable, ManagedResource
      */
     public LogBuffers(final String logFileName)
     {
+        int termLength = 0;
+        FileChannel fileChannel = null;
+        UnsafeBuffer logMetaDataBuffer = null;
+        MappedByteBuffer[] mappedByteBuffers = null;
+
         try
         {
             fileChannel = FileChannel.open(Paths.get(logFileName), FILE_OPTIONS, NO_ATTRIBUTES);
@@ -76,12 +80,11 @@ public class LogBuffers implements AutoCloseable, ManagedResource
                 logMetaDataBuffer = new UnsafeBuffer(
                     mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
 
-                final int termLength = LogBufferDescriptor.termLength(logMetaDataBuffer);
+                termLength = LogBufferDescriptor.termLength(logMetaDataBuffer);
                 final int pageSize = LogBufferDescriptor.pageSize(logMetaDataBuffer);
 
                 checkTermLength(termLength);
                 checkPageSize(pageSize);
-                this.termLength = termLength;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
@@ -122,7 +125,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
                         " does not match metadata: termLength=" + metaDataTermLength);
                 }
 
-                this.termLength = assumedTermLength;
+                termLength = assumedTermLength;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
@@ -136,13 +139,18 @@ public class LogBuffers implements AutoCloseable, ManagedResource
         }
         catch (final IOException ex)
         {
-            throw new UncheckedIOException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
         catch (final IllegalStateException ex)
         {
             close();
             throw ex;
         }
+
+        this.termLength = termLength;
+        this.fileChannel = fileChannel;
+        this.logMetaDataBuffer = logMetaDataBuffer;
+        this.mappedByteBuffers = mappedByteBuffers;
     }
 
     /**

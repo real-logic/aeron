@@ -168,7 +168,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 if (logAdapter.isDone())
                 {
-                    logPosition = logAdapter.image().position();
+                    logPosition = Math.max(logAdapter.image().position(), logPosition);
                     CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
                     role(Role.get((int)roleCounter.get()));
                 }

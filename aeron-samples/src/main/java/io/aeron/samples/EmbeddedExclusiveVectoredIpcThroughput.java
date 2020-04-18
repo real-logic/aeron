@@ -34,7 +34,7 @@ public class EmbeddedExclusiveVectoredIpcThroughput
 {
     public static final int BURST_LENGTH = 1_000_000;
     public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
-    public static final int VEC_ONE_LENGTH = 32;
+    public static final int VEC_ONE_LENGTH = 16;
     public static final int VEC_TWO_LENGTH = MESSAGE_LENGTH - VEC_ONE_LENGTH;
     public static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     public static final String CHANNEL = CommonContext.IPC_CHANNEL;
@@ -87,14 +87,15 @@ public class EmbeddedExclusiveVectoredIpcThroughput
         public void run()
         {
             final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
+            final AtomicBoolean running = this.running;
             final ExclusivePublication publication = this.publication;
             final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH);
             final UnsafeBuffer bufferOne = new UnsafeBuffer(byteBuffer, 0, VEC_ONE_LENGTH);
             final UnsafeBuffer bufferTwo = new UnsafeBuffer(byteBuffer, VEC_ONE_LENGTH, VEC_TWO_LENGTH);
             final DirectBufferVector[] vectors = new DirectBufferVector[]
             {
-                new DirectBufferVector(bufferOne, 0, bufferOne.capacity()),
-                new DirectBufferVector(bufferTwo, 0, bufferTwo.capacity()),
+                new DirectBufferVector(bufferOne, 0, VEC_ONE_LENGTH),
+                new DirectBufferVector(bufferTwo, 0, VEC_TWO_LENGTH),
             };
 
             long backPressureCount = 0;

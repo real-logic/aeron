@@ -84,6 +84,7 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
         public void run()
         {
             final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
+            final AtomicBoolean running = this.running;
             final Publication publication = this.publication;
             final BufferClaim bufferClaim = new BufferClaim();
             long backPressureCount = 0;

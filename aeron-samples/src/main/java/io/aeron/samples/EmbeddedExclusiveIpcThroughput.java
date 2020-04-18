@@ -84,6 +84,7 @@ public class EmbeddedExclusiveIpcThroughput
         public void run()
         {
             final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
+            final AtomicBoolean running = this.running;
             final ExclusivePublication publication = this.publication;
             final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
                 publication.maxMessageLength(), CACHE_LINE_LENGTH);

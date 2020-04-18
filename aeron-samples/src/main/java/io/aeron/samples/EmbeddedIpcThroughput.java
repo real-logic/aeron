@@ -85,6 +85,7 @@ public class EmbeddedIpcThroughput
         {
             final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
             final Publication publication = this.publication;
+            final AtomicBoolean running = this.running;
             final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
                 publication.maxMessageLength(), CACHE_LINE_LENGTH);
             final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);

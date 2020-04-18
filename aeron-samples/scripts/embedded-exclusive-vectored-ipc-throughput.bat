@@ -25,6 +25,6 @@ set /p VERSION=<..\..\version.txt
     -XX:+UseParallelOldGC ^
     -Djava.net.preferIPv4Stack=true ^
     -Dagrona.disable.bounds.checks=true ^
-    -Daeron.sample.messageLength=256 ^
+    -Daeron.sample.messageLength=32 ^
     -Daeron.ipc.mtu.length=16k ^
     %JVM_OPTS% io.aeron.samples.EmbeddedExclusiveVectoredIpcThroughput %*

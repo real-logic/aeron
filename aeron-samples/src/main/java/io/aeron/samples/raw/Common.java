@@ -31,8 +31,8 @@ public class Common
 {
     public static final int NUM_MESSAGES = 10_000;
 
-    public static final int PONG_PORT = 40123;
-    public static final int PING_PORT = 50123;
+    public static final int PONG_PORT = 20123;
+    public static final int PING_PORT = 20124;
 
     static final Field SELECTED_KEYS_FIELD;
     static final Field PUBLIC_SELECTED_KEYS_FIELD;

@@ -768,6 +768,17 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void awaitServicesMessageCount(final int messageCount)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitServiceMessageCount(node, messageCount);
+            }
+        }
+    }
+
     void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();

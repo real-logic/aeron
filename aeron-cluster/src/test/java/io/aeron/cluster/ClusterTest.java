@@ -19,21 +19,14 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.YieldingIdleStrategy;
-import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.TestCluster.awaitElectionClosed;
-import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -578,25 +571,6 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldHaveOnlyOneCommitPositionCounter()
-    {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final List<TestNode> followers = cluster.followers();
-            final TestNode followerA = followers.get(0), followerB = followers.get(1);
-
-            cluster.stopNode(leader);
-
-            cluster.awaitLeader(leader.index());
-
-            assertEquals(1, countersOfType(followerA.countersReader(), COMMIT_POSITION_TYPE_ID));
-            assertEquals(1, countersOfType(followerB.countersReader(), COMMIT_POSITION_TYPE_ID));
-        }
-    }
-
-    @Test
-    @Timeout(40)
     public void shouldCallOnRoleChangeOnBecomingLeader()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
@@ -706,7 +680,7 @@ public class ClusterTest
             TestNode followerB = followers.get(1);
 
             cluster.connectClient();
-            final Thread messageThread = startMessageThread(cluster, TimeUnit.MICROSECONDS.toNanos(500));
+            final Thread messageThread = ClusterTests.startMessageThread(cluster, TimeUnit.MICROSECONDS.toNanos(500));
             try
             {
                 cluster.stopNode(followerB);
@@ -800,20 +774,6 @@ public class ClusterTest
             cluster.awaitSnapshotCount(cluster.node(2), 1);
             assertTrue(cluster.node(2).service().wasSnapshotTaken());
         }
-    }
-
-    @Test
-    @Timeout(30)
-    public void shouldCatchUpAfterFollowerMissesOneMessage()
-    {
-        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.NO_OP_MSG);
-    }
-
-    @Test
-    @Timeout(30)
-    public void shouldCatchUpAfterFollowerMissesTimerRegistration()
-    {
-        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.REGISTER_TIMER_MSG);
     }
 
     @Test
@@ -978,14 +938,14 @@ public class ClusterTest
 
             final int numMessages = 3;
             cluster.sendMessages(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages);
+            cluster.awaitServicesMessageCount(numMessages);
 
             // Snapshot
             cluster.takeSnapshot(leader0);
             cluster.awaitSnapshotCount(leader0, 1);
 
             cluster.sendMessages(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages * 2);
+            cluster.awaitServicesMessageCount(numMessages * 2);
 
             // Snapshot
             cluster.takeSnapshot(leader0);
@@ -997,7 +957,7 @@ public class ClusterTest
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages * 3);
+            cluster.awaitServicesMessageCount(numMessages * 3);
 
             // Stop without snapshot
             cluster.node(0).terminationExpected(true);
@@ -1028,7 +988,7 @@ public class ClusterTest
             final int numMessages = 3;
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages);
+            cluster.awaitServicesMessageCount(numMessages);
 
             cluster.stopNode(leader0);
             final TestNode leader1 = cluster.awaitLeader(leader0.index());
@@ -1037,7 +997,7 @@ public class ClusterTest
 
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages * 2);
-            awaitAllServiceMessageCount(cluster, 3, numMessages * 2);
+            cluster.awaitServicesMessageCount(numMessages * 2);
 
             cluster.stopNode(leader1);
             cluster.awaitLeader(leader1.index());
@@ -1046,7 +1006,7 @@ public class ClusterTest
 
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages * 3);
-            awaitAllServiceMessageCount(cluster, 3, numMessages * 3);
+            cluster.awaitServicesMessageCount(numMessages * 3);
         }
     }
 
@@ -1062,7 +1022,7 @@ public class ClusterTest
 
             final int numMessages = 3;
             cluster.sendMessages(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages);
+            cluster.awaitServicesMessageCount(numMessages);
 
             // Leadership Term 1
             cluster.stopNode(leader0);
@@ -1070,7 +1030,7 @@ public class ClusterTest
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages * 2);
+            cluster.awaitServicesMessageCount(numMessages * 2);
 
             // Snapshot
             cluster.takeSnapshot(leader1);
@@ -1082,7 +1042,7 @@ public class ClusterTest
             cluster.startStaticNode(leader1.index(), false);
 
             cluster.sendMessages(numMessages);
-            awaitAllServiceMessageCount(cluster, 3, numMessages * 3);
+            cluster.awaitServicesMessageCount(numMessages * 3);
 
             // No snapshot for Term 2
 
@@ -1103,12 +1063,18 @@ public class ClusterTest
         }
     }
 
-    private void awaitAllServiceMessageCount(final TestCluster cluster, final int numNodes, final int numMessages)
+    @Test
+    @Timeout(30)
+    public void shouldCatchUpAfterFollowerMissesOneMessage()
     {
-        for (int i = 0; i < numNodes; i++)
-        {
-            cluster.awaitServiceMessageCount(cluster.node(i), numMessages);
-        }
+        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.NO_OP_MSG);
+    }
+
+    @Test
+    @Timeout(30)
+    public void shouldCatchUpAfterFollowerMissesTimerRegistration()
+    {
+        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.REGISTER_TIMER_MSG);
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)
@@ -1132,48 +1098,5 @@ public class ClusterTest
             awaitElectionClosed(follower);
             assertEquals(Cluster.Role.FOLLOWER, follower.role());
         }
-    }
-
-    private int countersOfType(final CountersReader countersReader, final int typeIdToCount)
-    {
-        final MutableInteger count = new MutableInteger();
-
-        countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                if (typeId == typeIdToCount)
-                {
-                    count.value++;
-                }
-            });
-
-        return count.get();
-    }
-
-    private Thread startMessageThread(final TestCluster cluster, final long intervalNs)
-    {
-        final Thread thread = new Thread(
-            () ->
-            {
-                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-                final AeronCluster client = cluster.client();
-                final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
-                msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.HELLO_WORLD_MSG);
-
-                while (!Thread.interrupted())
-                {
-                    if (client.offer(msgBuffer, 0, ClusterTests.HELLO_WORLD_MSG.length()) < 0)
-                    {
-                        LockSupport.parkNanos(intervalNs);
-                    }
-
-                    idleStrategy.idle(client.pollEgress());
-                }
-            });
-
-        thread.setDaemon(true);
-        thread.setName("message-thread");
-
-        return thread;
     }
 }

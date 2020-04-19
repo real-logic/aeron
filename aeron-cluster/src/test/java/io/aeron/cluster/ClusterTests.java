@@ -16,15 +16,15 @@
 package io.aeron.cluster;
 
 import io.aeron.Counter;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.exceptions.AeronException;
 import io.aeron.test.Tests;
-import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
-import org.agrona.SystemUtil;
-import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.*;
+import org.agrona.concurrent.*;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 class ClusterTests
 {
@@ -119,5 +119,32 @@ class ClusterTests
             Thread.yield();
             Tests.checkInterruptStatus();
         }
+    }
+
+    public static Thread startMessageThread(final TestCluster cluster, final long intervalNs)
+    {
+        final Thread thread = new Thread(
+            () ->
+            {
+                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
+                final AeronCluster client = cluster.client();
+                final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+                msgBuffer.putStringWithoutLengthAscii(0, HELLO_WORLD_MSG);
+
+                while (!Thread.interrupted())
+                {
+                    if (client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length()) < 0)
+                    {
+                        LockSupport.parkNanos(intervalNs);
+                    }
+
+                    idleStrategy.idle(client.pollEgress());
+                }
+            });
+
+        thread.setDaemon(true);
+        thread.setName("message-thread");
+
+        return thread;
     }
 }

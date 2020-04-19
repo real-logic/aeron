@@ -16,9 +16,8 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <signal.h>
+#include <csignal>
 #include <thread>
-#include <array>
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"
@@ -79,7 +78,11 @@ void printRate(double messagesPerSec, double bytesPerSec, long totalFragments, l
 
 fragment_handler_t rateReporterHandler(RateReporter& rateReporter)
 {
-    return [&](AtomicBuffer&, util::index_t, util::index_t length, Header&) { rateReporter.onMessage(1, length); };
+    return
+        [&](AtomicBuffer&, util::index_t, util::index_t length, Header&)
+        {
+            rateReporter.onMessage(1, length);
+        };
 }
 
 int main(int argc, char **argv)
@@ -91,7 +94,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
     cp.addOption(CommandOption(optFrags,    1, 1, "limit           Fragment Count Limit."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {
@@ -112,13 +115,15 @@ int main(int argc, char **argv)
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
 
-        context.availableImageHandler([](Image &image)
+        context.availableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 
-        context.unavailableImageHandler([](Image &image)
+        context.unavailableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
@@ -142,13 +147,15 @@ int main(int argc, char **argv)
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
         fragment_handler_t handler = fragmentAssembler.handler();
 
-        std::thread rateReporterThread([&](){ rateReporter.run(); });
+        std::thread rateReporterThread(
+            [&]()
+            {
+                rateReporter.run();
+            });
 
         while (running)
         {
-            const int fragmentsRead = subscription->poll(handler, settings.fragmentCountLimit);
-
-            idleStrategy.idle(fragmentsRead);
+            idleStrategy.idle(subscription->poll(handler, settings.fragmentCountLimit));
         }
 
         std::cout << "Shutting down...\n";

@@ -15,10 +15,8 @@
  */
 
 #include <cstdint>
-#include <cstdio>
-#include <signal.h>
+#include <csignal>
 #include <thread>
-#include <array>
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"
@@ -86,7 +84,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optPongStreamId, 1, 1, "streamId        Pong Stream ID."));
     cp.addOption(CommandOption(optFrags,        1, 1, "limit           Fragment Count Limit."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {
@@ -114,13 +112,15 @@ int main(int argc, char **argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        context.availableImageHandler([](Image &image)
+        context.availableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 
-        context.unavailableImageHandler([](Image &image)
+        context.unavailableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
         Aeron aeron(context);
 
         std::int64_t subscriptionId = aeron.addSubscription(settings.pingChannel, settings.pingStreamId);
-        std::int64_t publicationId = aeron.addPublication(settings.pongChannel, settings.pongStreamId);
+        std::int64_t publicationId = aeron.addExclusivePublication(settings.pongChannel, settings.pongStreamId);
 
         std::shared_ptr<Subscription> pingSubscription = aeron.findSubscription(subscriptionId);
         while (!pingSubscription)
@@ -140,14 +140,14 @@ int main(int argc, char **argv)
             pingSubscription = aeron.findSubscription(subscriptionId);
         }
 
-        std::shared_ptr<Publication> pongPublication = aeron.findPublication(publicationId);
+        std::shared_ptr<ExclusivePublication> pongPublication = aeron.findExclusivePublication(publicationId);
         while (!pongPublication)
         {
             std::this_thread::yield();
-            pongPublication = aeron.findPublication(publicationId);
+            pongPublication = aeron.findExclusivePublication(publicationId);
         }
 
-        Publication &pongPublicationRef = *pongPublication;
+        ExclusivePublication &pongPublicationRef = *pongPublication;
         Subscription &pingSubscriptionRef = *pingSubscription;
 
         BusySpinIdleStrategy idleStrategy;
@@ -160,6 +160,7 @@ int main(int argc, char **argv)
                     return;
                 }
 
+                pingHandlerIdleStrategy.reset();
                 while (pongPublicationRef.offer(buffer, offset, length) < 0L)
                 {
                     pingHandlerIdleStrategy.idle();

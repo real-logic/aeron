@@ -22,6 +22,8 @@
 #include <thread>
 #include <chrono>
 
+#include "util/BitUtil.h"
+
 namespace aeron {
 
 using namespace std::chrono;
@@ -36,34 +38,34 @@ public:
         m_onReport(onReport),
         m_lastTimestamp(steady_clock::now())
     {
+        static_cast<void>(m_paddingBefore);
+        static_cast<void>(m_paddingAfter);
     }
 
     void run()
     {
-        do
+        while (m_running)
         {
             std::this_thread::sleep_for(m_reportInterval);
-
             report();
         }
-        while (!m_halt);
     }
 
     void report()
     {
-        long currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
-        long currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
-        steady_clock::time_point currentTimestamp = steady_clock::now();
+        long totalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_acquire);
+        long totalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_acquire);
+        steady_clock::time_point timestamp = steady_clock::now();
 
-        const double timeSpanSec = duration<double, std::ratio<1,1>>(currentTimestamp - m_lastTimestamp).count();
-        const double messagesPerSec = (currentTotalMessages - m_lastTotalMessages) / timeSpanSec;
-        const double bytesPerSec = (currentTotalBytes - m_lastTotalBytes) / timeSpanSec;
+        const double timeSpanSec = duration<double, std::ratio<1, 1>>(timestamp - m_lastTimestamp).count();
+        const double messagesPerSec = (totalMessages - m_lastTotalMessages) / timeSpanSec;
+        const double bytesPerSec = (totalBytes - m_lastTotalBytes) / timeSpanSec;
 
-        m_onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
+        m_onReport(messagesPerSec, bytesPerSec, totalMessages, totalBytes);
 
-        m_lastTotalBytes = currentTotalBytes;
-        m_lastTotalMessages = currentTotalMessages;
-        m_lastTimestamp = currentTimestamp;
+        m_lastTotalBytes = totalBytes;
+        m_lastTotalMessages = totalMessages;
+        m_lastTimestamp = timestamp;
     }
 
     void reset()
@@ -79,24 +81,27 @@ public:
 
     inline void halt()
     {
-        m_halt = true;
+        m_running = false;
     }
 
     inline void onMessage(long messages, long bytes)
     {
-        long currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
-        long currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
+        long totalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
+        long totalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
 
-        std::atomic_store_explicit(&m_totalBytes, currentTotalBytes + bytes, std::memory_order_relaxed);
-        std::atomic_store_explicit(&m_totalMessages, currentTotalMessages + messages, std::memory_order_relaxed);
+        std::atomic_store_explicit(&m_totalBytes, totalBytes + bytes, std::memory_order_release);
+        std::atomic_store_explicit(&m_totalMessages, totalMessages + messages, std::memory_order_release);
     }
 
 private:
     const nanoseconds m_reportInterval;
     const on_rate_report_t m_onReport;
-    std::atomic<bool> m_halt = { false };
+
+    char m_paddingBefore[aeron::util::BitUtil::CACHE_LINE_LENGTH]{};
+    std::atomic<bool> m_running = { true };
     std::atomic<long> m_totalBytes = { 0 };
     std::atomic<long> m_totalMessages = { 0 };
+    char m_paddingAfter[aeron::util::BitUtil::CACHE_LINE_LENGTH]{};
 
     long m_lastTotalBytes = 0;
     long m_lastTotalMessages = 0;

@@ -22,10 +22,10 @@
 #include <atomic>
 #include <thread>
 #include <cstdio>
-#include <signal.h>
+#include <csignal>
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
+#include <cinttypes>
 
 #include "Context.h"
 
@@ -76,7 +76,7 @@ int main (int argc, char** argv)
     cp.addOption(CommandOption(optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
     cp.addOption(CommandOption(optPeriod, 1, 1, "update period   Update period in milliseconds. Default: 1000ms"));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {

@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-#include <cstdint>
 #include <cstdio>
-#include <signal.h>
 #include <thread>
-#include <array>
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
+#include <cinttypes>
+#include <csignal>
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"
@@ -109,10 +107,7 @@ on_new_length_t composeLengthGenerator(bool random, int max)
         std::uniform_int_distribution<int>::param_type param(sizeof(std::int64_t), max);
         uniformLengthDistribution.param(param);
 
-        return [&]()
-        {
-            return uniformLengthDistribution(randomEngine);
-        };
+        return [&]() { return uniformLengthDistribution(randomEngine); };
     }
     else
     {
@@ -133,7 +128,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optLength,   1, 1, "length          Length of Messages."));
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {

@@ -17,11 +17,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <thread>
-#include <array>
-#include <signal.h>
+#include <csignal>
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 
 extern "C"
 {
@@ -175,7 +173,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optFrags,          1, 1, "limit           Fragment Count Limit."));
     cp.addOption(CommandOption(optWarmupMessages, 1, 1, "number          Number of Messages for warmup."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {

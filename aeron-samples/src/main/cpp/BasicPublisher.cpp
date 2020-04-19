@@ -18,7 +18,7 @@
 #include <cstdio>
 #include <thread>
 #include <array>
-#include <signal.h>
+#include <csignal>
 #include "util/CommandOptionParser.h"
 #include "Configuration.h"
 #include "Aeron.h"
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
     cp.addOption(CommandOption(optMessages, 1, 1, "number          Number of Messages."));
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {

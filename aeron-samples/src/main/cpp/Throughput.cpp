@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#include <cstdint>
 #include <cstdio>
 #include <signal.h>
 #include <thread>
-#include <array>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -120,7 +118,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
     cp.addOption(CommandOption(optFrags,    1, 1, "limit           Fragment Count Limit."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {
@@ -152,13 +150,15 @@ int main(int argc, char **argv)
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
 
-        context.availableImageHandler([](Image &image)
+        context.availableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 
-        context.unavailableImageHandler([](Image &image)
+        context.unavailableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << std::endl;
@@ -199,13 +199,12 @@ int main(int argc, char **argv)
             rateReporterThread = std::make_shared<std::thread>([&rateReporter](){ rateReporter.run(); });
         }
 
-        std::thread pollThread([&subscription, &pollIdleStrategy, &settings, &handler]()
+        std::thread pollThread(
+            [&subscription, &pollIdleStrategy, &settings, &handler]()
             {
                 while (isRunning())
                 {
-                    const int fragmentsRead = subscription->poll(handler, settings.fragmentCountLimit);
-
-                    pollIdleStrategy.idle(fragmentsRead);
+                    pollIdleStrategy.idle(subscription->poll(handler, settings.fragmentCountLimit));
                 }
             });
 

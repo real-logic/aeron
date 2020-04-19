@@ -15,14 +15,11 @@
  */
 
 #include <iostream>
-#include <atomic>
 #include <thread>
-#include <signal.h>
 #include <cstdio>
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-#include <iomanip>
+#include <cinttypes>
 
 #include "util/MemoryMappedFile.h"
 #include "util/CommandOptionParser.h"
@@ -115,10 +112,10 @@ int main (int argc, char** argv)
         const int distinctErrorCount = ErrorLogReader::read(
             errorBuffer,
             [](
-                std::int32_t observationCount,
-                std::int64_t firstObservationTimestamp,
-                std::int64_t lastObservationTimestamp,
-                const std::string &encodedException)
+                    std::int32_t observationCount,
+                    std::int64_t firstObservationTimestamp,
+                    std::int64_t lastObservationTimestamp,
+                    const std::string &encodedException)
                 {
                     std::printf(
                         "***\n%d observations from %s to %s for:\n %s\n",

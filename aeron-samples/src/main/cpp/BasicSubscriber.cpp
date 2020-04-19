@@ -15,9 +15,8 @@
  */
 
 #include <cstdint>
-#include <cstdio>
 #include <thread>
-#include <signal.h>
+#include <csignal>
 
 #include "Configuration.h"
 #include "util/CommandOptionParser.h"
@@ -68,12 +67,13 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 
 fragment_handler_t printStringMessage()
 {
-    return [&](const AtomicBuffer& buffer, util::index_t offset, util::index_t length, const Header& header)
-    {
-        std::cout << "Message to stream " << header.streamId() << " from session " << header.sessionId();
-        std::cout << "(" << length << "@" << offset << ") <<";
-        std::cout << std::string(reinterpret_cast<const char *>(buffer.buffer()) + offset, static_cast<std::size_t>(length)) << ">>" << std::endl;
-    };
+    return
+        [&](const AtomicBuffer& buffer, util::index_t offset, util::index_t length, const Header& header)
+        {
+            std::cout << "Message to stream " << header.streamId() << " from session " << header.sessionId();
+            std::cout << "(" << length << "@" << offset << ") <<";
+            std::cout << std::string(reinterpret_cast<const char *>(buffer.buffer()) + offset, static_cast<std::size_t>(length)) << ">>" << std::endl;
+        };
 }
 
 int main(int argc, char** argv)
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     cp.addOption(CommandOption(optChannel,  1, 1, "channel     Channel."));
     cp.addOption(CommandOption(optStreamId, 1, 1, "streamId    Stream ID."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {
@@ -105,13 +105,15 @@ int main(int argc, char** argv)
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
 
-        context.availableImageHandler([](Image &image)
+        context.availableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 
-        context.unavailableImageHandler([](Image &image)
+        context.unavailableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;

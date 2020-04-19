@@ -15,14 +15,11 @@
  */
 
 #include <iostream>
-#include <atomic>
 #include <thread>
-#include <signal.h>
 #include <cstdio>
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-#include <iomanip>
+#include <cinttypes>
 
 #include "util/MemoryMappedFile.h"
 #include "util/CommandOptionParser.h"

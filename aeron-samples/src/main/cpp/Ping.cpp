@@ -16,12 +16,10 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <signal.h>
+#include <csignal>
 #include <thread>
-#include <array>
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 
 extern "C"
 {
@@ -95,7 +93,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 
 void sendPingAndReceivePong(
     const fragment_handler_t& fragmentHandler,
-    Publication &publication,
+    ExclusivePublication &publication,
     Subscription &subscription,
     const Settings& settings)
 {
@@ -111,7 +109,7 @@ void sendPingAndReceivePong(
 
         do
         {
-            // timestamps in the message are relative to this app, so just send the timepoint directly.
+            // timestamps in the message are relative to this app, so just send the timestamp directly.
             steady_clock::time_point start = steady_clock::now();
 
             srcBuffer.putBytes(0, (std::uint8_t*)&start, sizeof(steady_clock::time_point));
@@ -144,7 +142,7 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optFrags,         1, 1, "limit           Fragment Count Limit."));
     cp.addOption(CommandOption(optWarmupMessages,1, 1, "number          Number of Messages for warmup."));
 
-    signal (SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandler);
 
     try
     {
@@ -187,7 +185,8 @@ int main(int argc, char **argv)
                 }
             });
 
-        context.unavailableImageHandler([](Image &image)
+        context.unavailableImageHandler(
+            [](Image &image)
             {
                 std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
@@ -198,7 +197,7 @@ int main(int argc, char **argv)
         Aeron aeron(context);
 
         subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);
-        publicationId = aeron.addPublication(settings.pingChannel, settings.pingStreamId);
+        publicationId = aeron.addExclusivePublication(settings.pingChannel, settings.pingStreamId);
 
         std::shared_ptr<Subscription> pongSubscription = aeron.findSubscription(subscriptionId);
         while (!pongSubscription)
@@ -207,11 +206,11 @@ int main(int argc, char **argv)
             pongSubscription = aeron.findSubscription(subscriptionId);
         }
 
-        std::shared_ptr<Publication> pingPublication = aeron.findPublication(publicationId);
+        std::shared_ptr<ExclusivePublication> pingPublication = aeron.findExclusivePublication(publicationId);
         while (!pingPublication)
         {
             std::this_thread::yield();
-            pingPublication = aeron.findPublication(publicationId);
+            pingPublication = aeron.findExclusivePublication(publicationId);
         }
 
         while (countDown > 0)

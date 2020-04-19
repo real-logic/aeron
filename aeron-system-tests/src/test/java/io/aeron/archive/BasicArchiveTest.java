@@ -52,7 +52,8 @@ public class BasicArchiveTest
         .endpoint("localhost:6666")
         .build();
 
-    private ArchivingMediaDriver archivingMediaDriver;
+    private MediaDriver mediaDriver;
+    private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
@@ -61,14 +62,16 @@ public class BasicArchiveTest
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        archivingMediaDriver = ArchivingMediaDriver.launch(
+        mediaDriver = MediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true));
+
+        archive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
@@ -89,10 +92,10 @@ public class BasicArchiveTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
 
-        archivingMediaDriver.archive().context().deleteDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteDirectory();
+        archive.context().deleteDirectory();
+        mediaDriver.context().deleteDirectory();
     }
 
     @Test

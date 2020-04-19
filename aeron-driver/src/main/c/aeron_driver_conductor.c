@@ -2835,8 +2835,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             false,
             &destination_addr) < 0)
         {
-            aeron_distinct_error_log_record(
-                conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+            aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
 
@@ -2910,8 +2909,7 @@ int aeron_driver_conductor_on_remove_destination(
             true,
             &destination_addr) < 0)
         {
-            aeron_distinct_error_log_record(
-                conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+            aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
 
@@ -3328,8 +3326,6 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
         aeron_free(command);
         /* do not know where it came from originally, so just free command on the conductor duty cycle */
     }
-
-//    TODO: cleanup.
 }
 
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
@@ -3342,8 +3338,7 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
     {
-        aeron_distinct_error_log_record(
-            conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
         return;
     }
 
@@ -3366,8 +3361,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
     {
-        aeron_distinct_error_log_record(
-            conductor->context->error_log, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
         return;
     }
 

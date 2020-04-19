@@ -149,7 +149,7 @@ void aeron_driver_conductor_proxy_on_re_resolve(
         cmd.destination = destination;
         memcpy(&cmd.existing_addr, existing_addr, sizeof(cmd.existing_addr));
 
-        aeron_driver_conductor_on_re_resolve_control(conductor_proxy->conductor, &cmd);
+        resolve_func(conductor_proxy->conductor, &cmd);
     }
     else
     {

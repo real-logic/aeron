@@ -48,6 +48,7 @@ public class ClusterTest
             cluster.awaitLeader();
             TestNode follower = cluster.followers().get(0);
 
+            awaitElectionClosed(follower);
             cluster.stopNode(follower);
 
             Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
@@ -302,7 +303,6 @@ public class ClusterTest
             cluster.awaitResponseMessageCount(messageCount);
 
             final TestNode leader = cluster.awaitLeader();
-
             cluster.stopNode(leader);
 
             cluster.awaitLeader(leader.index());
@@ -318,6 +318,7 @@ public class ClusterTest
             cluster.awaitLeader();
             TestNode follower = cluster.followers().get(0);
 
+            awaitElectionClosed(follower);
             cluster.stopNode(follower);
 
             Tests.sleep(10_000);
@@ -346,6 +347,7 @@ public class ClusterTest
             final TestNode followerA = cluster.followers().get(0);
             TestNode followerB = cluster.followers().get(1);
 
+            awaitElectionClosed(followerB);
             cluster.stopNode(followerB);
 
             Tests.sleep(10_000);
@@ -632,6 +634,9 @@ public class ClusterTest
 
             assertEquals(Cluster.Role.LEADER, leader.service().roleChangedTo());
 
+            awaitElectionClosed(followerA);
+            awaitElectionClosed(followerB);
+
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
@@ -733,6 +738,7 @@ public class ClusterTest
             final List<TestNode> followers = cluster.followers();
             TestNode followerB = followers.get(1);
 
+            awaitElectionClosed(followerB);
             cluster.stopNode(followerB);
 
             cluster.connectClient();

@@ -304,7 +304,6 @@ public class NameReResolutionTest
     public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-Destination-Subscriptions");
 
         buffer.putInt(0, 1);
 
@@ -363,7 +362,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @Timeout(200000)
     public void shouldReportErrorOnReResolveFailure() throws IOException
     {
         buffer.putInt(0, 1);

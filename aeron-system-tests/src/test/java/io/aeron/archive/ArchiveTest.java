@@ -27,6 +27,8 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.CTestMediaDriver;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.*;
 import org.agrona.collections.MutableBoolean;
@@ -85,7 +87,7 @@ public class ArchiveTest
     private String publishUri;
     private Aeron client;
     private Archive archive;
-    private MediaDriver driver;
+    private TestMediaDriver driver;
     private long recordingId;
     private long remaining;
     private int messageCount;
@@ -107,6 +109,11 @@ public class ArchiveTest
 
     private void before(final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
+        if (archiveThreadingMode == ArchiveThreadingMode.SHARED)
+        {
+            TestMediaDriver.notSupportedOnCMediaDriverYet("Foo");
+        }
+
         rnd.setSeed(seed);
         requestedInitialTermId = rnd.nextInt(1234);
 
@@ -129,7 +136,7 @@ public class ArchiveTest
         requestedStartPosition =
             ((requestedStartTermId - requestedInitialTermId) * (long)termLength) + requestedStartTermOffset;
 
-        driver = MediaDriver.launch(
+        driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .termBufferSparseFile(true)
                 .threadingMode(threadingMode)
@@ -138,18 +145,22 @@ public class ArchiveTest
                 .errorHandler(Tests::onError)
                 .dirDeleteOnStart(true));
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-                .fileSyncLevel(SYNC_LEVEL)
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .deleteArchiveOnStart(true)
-                .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
-                .segmentFileLength(segmentFileLength)
-                .threadingMode(archiveThreadingMode)
-                .idleStrategySupplier(YieldingIdleStrategy::new)
-                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
-                .errorHandler(driver.context().errorHandler()));
+        final Archive.Context archiveContext = new Archive.Context()
+            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .fileSyncLevel(SYNC_LEVEL)
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
+            .segmentFileLength(segmentFileLength)
+            .threadingMode(archiveThreadingMode)
+            .idleStrategySupplier(YieldingIdleStrategy::new)
+            .errorHandler(Tests::onError);
+
+        if (archiveThreadingMode == ArchiveThreadingMode.SHARED)
+        {
+            archiveContext.mediaDriverAgentInvoker(driver.sharedAgentInvoker());
+        }
+
+        archive = Archive.launch(archiveContext);
 
         client = Aeron.connect();
 
@@ -171,8 +182,14 @@ public class ArchiveTest
 
         CloseHelper.closeAll(client, archive, driver);
 
-        archive.context().deleteDirectory();
-        driver.context().deleteDirectory();
+        if (null != archive)
+        {
+            archive.context().deleteDirectory();
+        }
+        if (null != driver)
+        {
+            driver.context().deleteDirectory();
+        }
     }
 
     @ParameterizedTest

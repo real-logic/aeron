@@ -20,6 +20,7 @@ import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.collections.Object2ObjectHashMap;
+import org.agrona.concurrent.AgentInvoker;
 
 import java.io.File;
 import java.io.IOException;
@@ -256,6 +257,11 @@ public final class CTestMediaDriver implements TestMediaDriver
     public String aeronDirectoryName()
     {
         return context.aeronDirectoryName();
+    }
+
+    public AgentInvoker sharedAgentInvoker()
+    {
+        throw new UnsupportedOperationException("Not supported in C media driver");
     }
 
     public static void enableLossGenerationOnReceive(

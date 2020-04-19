@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -52,7 +53,7 @@ public class BasicArchiveTest
         .endpoint("localhost:6666")
         .build();
 
-    private MediaDriver mediaDriver;
+    private TestMediaDriver mediaDriver;
     private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
@@ -62,7 +63,7 @@ public class BasicArchiveTest
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        mediaDriver = MediaDriver.launch(
+        mediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)

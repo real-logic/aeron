@@ -25,6 +25,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -73,7 +74,8 @@ public class ExtendRecordingTest
         .endpoint("localhost:3333")
         .build();
 
-    private ArchivingMediaDriver archivingMediaDriver;
+    private TestMediaDriver archivingMediaDriver;
+    private Archive archive;
     private Aeron aeron;
     private File archiveDir;
     private AeronArchive aeronArchive;
@@ -92,9 +94,10 @@ public class ExtendRecordingTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
-        archivingMediaDriver.archive().context().deleteDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteDirectory();
+        CloseHelper.closeAll(aeronArchive, aeron, archive, archivingMediaDriver);
+
+        archive.context().deleteDirectory();
+        archivingMediaDriver.context().deleteDirectory();
     }
 
     @Test
@@ -144,6 +147,8 @@ public class ExtendRecordingTest
                 pollForSignal(recordingSignalAdapter);
             }
         }
+
+        Tests.sleep(1000); // Replace this with code to look for the channel endpoint being removed
 
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
@@ -259,14 +264,16 @@ public class ExtendRecordingTest
             archiveDir = new File(SystemUtil.tmpDirName(), "archive");
         }
 
-        archivingMediaDriver = ArchivingMediaDriver.launch(
+        archivingMediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true));
+
+        archive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)

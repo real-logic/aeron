@@ -22,6 +22,8 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.MediaDriverTestWatcher;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 
@@ -65,12 +68,17 @@ public class ReplicateRecordingTest
         .termLength(TERM_LENGTH)
         .build();
 
-    private ArchivingMediaDriver srcArchivingMediaDriver;
-    private ArchivingMediaDriver dstArchivingMediaDriver;
+    private TestMediaDriver srcMediaDriver;
+    private Archive srcArchive;
+    private TestMediaDriver dstMediaDriver;
+    private Archive dstArchive;
     private Aeron srcAeron;
     private Aeron dstAeron;
     private AeronArchive srcAeronArchive;
     private AeronArchive dstAeronArchive;
+
+    @RegisterExtension
+    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @BeforeEach
     public void before()
@@ -78,14 +86,16 @@ public class ReplicateRecordingTest
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();
 
-        srcArchivingMediaDriver = ArchivingMediaDriver.launch(
+        srcMediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(srcAeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true), testWatcher);
+
+        srcArchive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(srcAeronDirectoryName)
@@ -98,14 +108,16 @@ public class ReplicateRecordingTest
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
-        dstArchivingMediaDriver = ArchivingMediaDriver.launch(
+        dstMediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(dstAeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true), testWatcher);
+
+        dstArchive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(dstAeronDirectoryName)
@@ -149,13 +161,15 @@ public class ReplicateRecordingTest
             dstAeronArchive,
             srcAeron,
             dstAeron,
-            dstArchivingMediaDriver,
-            srcArchivingMediaDriver);
+            srcArchive,
+            dstArchive,
+            dstMediaDriver,
+            srcMediaDriver);
 
-        dstArchivingMediaDriver.archive().context().deleteDirectory();
-        dstArchivingMediaDriver.mediaDriver().context().deleteDirectory();
-        srcArchivingMediaDriver.archive().context().deleteDirectory();
-        srcArchivingMediaDriver.mediaDriver().context().deleteDirectory();
+        dstArchive.context().deleteDirectory();
+        dstMediaDriver.context().deleteDirectory();
+        srcArchive.context().deleteDirectory();
+        srcMediaDriver.context().deleteDirectory();
     }
 
     @Test

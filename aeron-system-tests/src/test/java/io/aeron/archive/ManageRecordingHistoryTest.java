@@ -23,6 +23,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -52,21 +53,24 @@ public class ManageRecordingHistoryTest
         .mtu(MTU_LENGTH)
         .termLength(Common.TERM_LENGTH);
 
-    private ArchivingMediaDriver archivingMediaDriver;
+    private TestMediaDriver archivingMediaDriver;
+    private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
     @BeforeEach
     public void before()
     {
-        archivingMediaDriver = ArchivingMediaDriver.launch(
+        archivingMediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .publicationTermBufferLength(Common.TERM_LENGTH)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true));
+
+        archive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
                 .segmentFileLength(SEGMENT_LENGTH)
@@ -85,10 +89,10 @@ public class ManageRecordingHistoryTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, archivingMediaDriver);
 
-        archivingMediaDriver.archive().context().deleteDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteDirectory();
+        archive.context().deleteDirectory();
+        archivingMediaDriver.context().deleteDirectory();
     }
 
     @Test

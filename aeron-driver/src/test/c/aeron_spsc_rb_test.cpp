@@ -279,11 +279,6 @@ TEST_F(SpscRbTest, shouldReadSingleMessage)
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);
     EXPECT_EQ(rb.descriptor->head_position, (int64_t)(head + alignedRecordLength));
-
-    for (size_t i = 0; i < AERON_RB_ALIGNMENT; i += 4)
-    {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
-    }
 }
 
 TEST_F(SpscRbTest, shouldNotReadSingleMessagePartWayThroughWriting)
@@ -340,11 +335,6 @@ TEST_F(SpscRbTest, shouldReadTwoMessages)
     EXPECT_EQ(messagesRead, (size_t)2);
     EXPECT_EQ(timesCalled, (size_t)2);
     EXPECT_EQ(rb.descriptor->head_position, (int64_t)(head + (alignedRecordLength * 2)));
-
-    for (size_t i = 0; i < AERON_RB_ALIGNMENT * 2; i += 4)
-    {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
-    }
 }
 
 TEST_F(SpscRbTest, shouldLimitReadOfMessages)
@@ -376,11 +366,6 @@ TEST_F(SpscRbTest, shouldLimitReadOfMessages)
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);
     EXPECT_EQ(rb.descriptor->head_position, (int64_t)(head + alignedRecordLength));
-
-    for (size_t i = 0; i < AERON_RB_ALIGNMENT; i += 4)
-    {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
-    }
 }
 
 #define NUM_MESSAGES (10 * 1000 * 1000)

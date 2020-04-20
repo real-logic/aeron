@@ -59,7 +59,8 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     }
 
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
-    const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
+    const size_t aligned_record_length = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
+    const size_t required_capacity = aligned_record_length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t mask = ring_buffer->capacity - 1;
 
     int64_t head = ring_buffer->descriptor->head_cache_position;
@@ -69,7 +70,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     size_t padding = 0;
     size_t record_index = (size_t)tail & mask;
     const size_t to_buffer_end_length = ring_buffer->capacity - record_index;
-    aeron_rb_record_descriptor_t *record_header = NULL;
+    aeron_rb_record_descriptor_t *record_header = NULL, *next_header = NULL;
 
     if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
     {
@@ -111,13 +112,16 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     if (0 != padding)
     {
         record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+        next_header = (aeron_rb_record_descriptor_t *)ring_buffer->buffer;
 
+        next_header->length = 0;
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
         AERON_PUT_ORDERED(record_header->length, (int32_t)padding);
         record_index = 0;
     }
 
     record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+    next_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index + aligned_record_length);
 
     size_t current_vector_offset = 0;
     for (int i = 0; i < iovcnt; i++)
@@ -127,9 +131,10 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
         current_vector_offset += iov[i].iov_len;
     }
 
+    next_header->length = 0;
     record_header->msg_type_id = msg_type_id;
     AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
-    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + required_capacity + padding);
+    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + aligned_record_length + padding);
 
     return AERON_RB_SUCCESS;
 }
@@ -180,7 +185,6 @@ size_t aeron_spsc_rb_read(
 
     if (0 != bytes_read)
     {
-        memset(ring_buffer->buffer + head_index, 0, bytes_read);
         AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
     }
 

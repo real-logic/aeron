@@ -3412,6 +3412,9 @@ extern aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
 extern aeron_network_publication_t *aeron_driver_conductor_find_network_publication(
     aeron_driver_conductor_t *conductor, int64_t id);
 
+extern aeron_network_publication_t *aeron_driver_conductor_find_network_publication_by_tag(
+    aeron_driver_conductor_t *conductor, int64_t tag_id);
+
 extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 

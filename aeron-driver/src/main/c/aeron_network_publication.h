@@ -82,6 +82,7 @@ typedef struct aeron_network_publication_stct
     int64_t time_of_last_send_or_heartbeat_ns;
     int64_t time_of_last_setup_ns;
     int64_t status_message_deadline_ns;
+    int64_t tag;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;

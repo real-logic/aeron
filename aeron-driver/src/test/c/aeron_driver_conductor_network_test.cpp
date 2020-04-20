@@ -1452,6 +1452,69 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddSubscrip
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldUseExistingPublicationOnAddPublicationWithSameSessionTagIdAndSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 2u);
+    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
+
+    aeron_network_publication_t *pub_1 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *pub_2 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_2);
+
+    EXPECT_EQ(pub_1->session_id, pub_2->session_id);
+
+    doWorkForNs(
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 0u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorWithUnknownSessionIdTag)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorWithInvalidSessionIdTag)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002a", STREAM_ID_1, false), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveDestinationToManualMdcPublication)
 {
     int64_t client_id = nextCorrelationId();

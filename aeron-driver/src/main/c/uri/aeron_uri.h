@@ -76,6 +76,7 @@ typedef struct aeron_uri_publication_params_stct
     uint64_t linger_timeout_ns;
     bool has_session_id;
     int32_t session_id;
+    int64_t entity_tag;
 }
 aeron_uri_publication_params_t;
 

@@ -662,6 +662,22 @@ inline aeron_network_publication_t * aeron_driver_conductor_find_network_publica
     return NULL;
 }
 
+inline aeron_network_publication_t *aeron_driver_conductor_find_network_publication_by_tag(
+    aeron_driver_conductor_t *conductor, int64_t tag_id)
+{
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
+
+        if (tag_id == publication->tag && AERON_URI_INVALID_TAG != publication->tag)
+        {
+            return publication;
+        }
+    }
+
+    return NULL;
+}
+
 inline aeron_publication_image_t * aeron_driver_conductor_find_publication_image(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {

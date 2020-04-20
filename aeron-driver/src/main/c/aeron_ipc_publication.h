@@ -59,6 +59,7 @@ typedef struct aeron_ipc_publication_stct
     int64_t term_window_length;
     int64_t trip_gain;
     int64_t unblock_timeout_ns;
+    int64_t tag;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;

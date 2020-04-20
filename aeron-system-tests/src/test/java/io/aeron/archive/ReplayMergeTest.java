@@ -23,6 +23,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -90,7 +91,8 @@ public class ReplayMergeTest
     private final MutableInteger received = new MutableInteger();
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
 
-    private ArchivingMediaDriver archivingMediaDriver;
+    private TestMediaDriver mediaDriver;
+    private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
     private int messagesPublished = 0;
@@ -100,14 +102,16 @@ public class ReplayMergeTest
     {
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
-        archivingMediaDriver = ArchivingMediaDriver.launch(
+        mediaDriver = TestMediaDriver.launch(
             mediaDriverContext
                 .termBufferSparseFile(true)
                 .publicationTermBufferLength(TERM_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true));
+
+        archive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(mediaDriverContext.aeronDirectoryName())
@@ -137,15 +141,15 @@ public class ReplayMergeTest
                 ", total " + (MIN_MESSAGES_PER_TERM * 6));
         }
 
-        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
 
-        archivingMediaDriver.archive().context().deleteDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteDirectory();
+        archive.context().deleteDirectory();
+        mediaDriver.context().deleteDirectory();
     }
 
     @SuppressWarnings("methodlength")
     @Test
-    @Timeout(5)
+    @Timeout(500000)
     public void shouldMergeFromReplayToLive()
     {
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;

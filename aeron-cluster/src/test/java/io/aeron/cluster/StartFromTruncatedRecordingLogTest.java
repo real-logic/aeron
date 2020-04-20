@@ -101,10 +101,10 @@ public class StartFromTruncatedRecordingLogTest
     public void after()
     {
         CloseHelper.closeAll(client, clientMediaDriver);
-        clientMediaDriver.context().deleteDirectory();
-
         CloseHelper.closeAll(clusteredMediaDrivers);
         CloseHelper.closeAll(containers);
+
+        clientMediaDriver.context().deleteDirectory();
 
         for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
         {

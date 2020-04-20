@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.Archive;
@@ -43,8 +42,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ClusterTimerTest
 {
@@ -55,21 +52,19 @@ public class ClusterTimerTest
     private ClusteredServiceContainer container;
     private AeronCluster aeronCluster;
 
-    private final AtomicLong snapshotCount = new AtomicLong();
-    private final Counter mockSnapshotCounter = mock(Counter.class);
-
     @BeforeEach
     public void before()
     {
-        when(mockSnapshotCounter.incrementOrdered()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
-
         launchClusteredMediaDriver(true);
     }
 
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver, container);
+        final ConsensusModule consensusModule = null == clusteredMediaDriver ?
+            null : clusteredMediaDriver.consensusModule();
+
+        CloseHelper.closeAll(aeronCluster, consensusModule, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {
@@ -100,7 +95,7 @@ public class ClusterTimerTest
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Tests.awaitValue(snapshotCount, 1);
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
         Tests.awaitValue(triggeredTimersCounter, 4);
 
         forceCloseForRestart();
@@ -269,7 +264,6 @@ public class ClusterTimerTest
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
-                .snapshotCounter(mockSnapshotCounter)
                 .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }

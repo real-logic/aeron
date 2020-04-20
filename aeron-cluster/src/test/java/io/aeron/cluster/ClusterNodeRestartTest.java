@@ -75,7 +75,7 @@ public class ClusterNodeRestartTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver, container);
+        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {

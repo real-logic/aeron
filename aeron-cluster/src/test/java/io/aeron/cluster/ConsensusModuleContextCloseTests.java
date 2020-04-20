@@ -59,7 +59,6 @@ class ConsensusModuleContextCloseTests
     private final UnknownError timedOutClientCounterException = new UnknownError();
     private ConsensusModule.Context context;
 
-
     @BeforeEach
     void before() throws Exception
     {
@@ -115,15 +114,18 @@ class ConsensusModuleContextCloseTests
         final IllegalStateException ex = assertThrows(IllegalStateException.class, context::close);
 
         assertSame(moduleStateException, ex);
-        assertArrayEquals(new Throwable[]
-            {
+
+        final Throwable[] expected =
+        {
             clusterNodeRoleException,
             commitPositionException,
             controlToggleException,
             snapshotCounterException,
             invalidRequestCounterException,
             timedOutClientCounterException
-            }, ex.getSuppressed());
+        };
+
+        assertArrayEquals(expected, ex.getSuppressed());
 
         final InOrder inOrder = inOrder(countedErrorHandler, errorHandler, aeron);
         inOrder.verify(countedErrorHandler).onError(recodingLogException);

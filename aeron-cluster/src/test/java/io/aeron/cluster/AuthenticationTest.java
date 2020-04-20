@@ -62,9 +62,10 @@ public class AuthenticationTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeronCluster);
-        CloseHelper.close(clusteredMediaDriver);
-        CloseHelper.close(container);
+        final ConsensusModule consensusModule = null == clusteredMediaDriver ?
+            null : clusteredMediaDriver.consensusModule();
+
+        CloseHelper.closeAll(aeronCluster, consensusModule, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {
@@ -446,8 +447,6 @@ public class AuthenticationTest
             }
         };
 
-        container = null;
-
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
@@ -464,14 +463,11 @@ public class AuthenticationTest
 
     private void connectClient(final CredentialsSupplier credentialsSupplier)
     {
-        aeronCluster = null;
         aeronCluster = connectToCluster(credentialsSupplier);
     }
 
     private void launchClusteredMediaDriver(final AuthenticatorSupplier authenticatorSupplier)
     {
-        clusteredMediaDriver = null;
-
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .warnIfDirectoryExists(true)

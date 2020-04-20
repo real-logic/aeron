@@ -71,7 +71,10 @@ public class ClusterNodeTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver, container);
+        final ConsensusModule consensusModule = null == clusteredMediaDriver ?
+            null : clusteredMediaDriver.consensusModule();
+
+        CloseHelper.closeAll(aeronCluster, consensusModule, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {

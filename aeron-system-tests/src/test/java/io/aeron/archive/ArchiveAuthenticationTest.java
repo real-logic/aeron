@@ -24,6 +24,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -58,7 +59,8 @@ public class ArchiveAuthenticationTest
     private final byte[] encodedCredentials = CREDENTIALS_STRING.getBytes();
     private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
 
-    private ArchivingMediaDriver archivingMediaDriver;
+    private TestMediaDriver mediaDriver;
+    private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
@@ -67,12 +69,10 @@ public class ArchiveAuthenticationTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
-        CloseHelper.close(archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
 
-        archivingMediaDriver.archive().context().deleteDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteDirectory();
+        archive.context().deleteDirectory();
+        mediaDriver.context().deleteDirectory();
     }
 
     @Test
@@ -341,14 +341,16 @@ public class ArchiveAuthenticationTest
 
     private void launchArchivingMediaDriver(final AuthenticatorSupplier authenticatorSupplier)
     {
-        archivingMediaDriver = ArchivingMediaDriver.launch(
+        mediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true));
+
+        archive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)

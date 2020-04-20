@@ -23,6 +23,7 @@
 #include "aeron_publication.h"
 #include "aeron_exclusive_publication.h"
 #include "aeron_subscription.h"
+#include "aeron_log_buffer.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "aeron_context.h"
@@ -62,6 +63,15 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         int errcode = errno;
 
         aeron_set_err(errcode, "aeron_client_conductor_init - counters_reader: %s", strerror(errcode));
+        return -1;
+    }
+
+    if (aeron_int64_to_ptr_hash_map_init(
+        &conductor->log_buffer_by_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_client_conductor_init - log_buffer_by_id_map: %s", strerror(errcode));
         return -1;
     }
 
@@ -322,8 +332,15 @@ int aeron_client_conductor_do_work(aeron_client_conductor_t *conductor)
     return work_count;
 }
 
+void aeron_client_conductor_delete_log_buffer(void *clientd, int64_t key, void *value)
+{
+    aeron_log_buffer_delete((aeron_log_buffer_t *)value);
+}
+
 void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 {
+    aeron_int64_to_ptr_hash_map_for_each(
+        &conductor->log_buffer_by_id_map, aeron_client_conductor_delete_log_buffer, NULL);
     aeron_mpsc_concurrent_array_queue_close(conductor->command_queue);
 }
 
@@ -399,6 +416,7 @@ void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
                 last_index);
             conductor->active_resources.length--;
 
+            aeron_client_conductor_release_log_buffer(conductor, publication->log_buffer);
             aeron_publication_delete(publication);
         }
     }
@@ -477,6 +495,7 @@ void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, vo
                 last_index);
             conductor->active_resources.length--;
 
+            aeron_client_conductor_release_log_buffer(conductor, publication->log_buffer);
             aeron_exclusive_publication_delete(publication);
         }
     }
@@ -690,6 +709,48 @@ int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_e
     return 0;
 }
 
+int aeron_client_conductor_get_or_create_log_buffer(
+    aeron_client_conductor_t *conductor,
+    aeron_log_buffer_t **log_buffer,
+    const char *log_file,
+    int64_t original_registration_id,
+    bool pre_touch)
+{
+    if (NULL == (*log_buffer = aeron_int64_to_ptr_hash_map_get(
+        &conductor->log_buffer_by_id_map, original_registration_id)))
+    {
+        if (aeron_log_buffer_create(log_buffer, log_file, original_registration_id, pre_touch) < 0)
+        {
+            return -1;
+        }
+
+        if (aeron_int64_to_ptr_hash_map_put(
+            &conductor->log_buffer_by_id_map, original_registration_id, *log_buffer) < 0)
+        {
+            aeron_log_buffer_delete(*log_buffer);
+            return -1;
+        }
+    }
+
+    (*log_buffer)->refcnt++;
+
+    return 0;
+}
+
+int aeron_client_conductor_release_log_buffer(
+    aeron_client_conductor_t *conductor,
+    aeron_log_buffer_t *log_buffer)
+{
+    if (--log_buffer->refcnt <= 0)
+    {
+        aeron_int64_to_ptr_hash_map_remove(&conductor->log_buffer_by_id_map, log_buffer->correlation_id);
+
+        aeron_log_buffer_delete(log_buffer);
+    }
+
+    return 0;
+}
+
 int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response)
 {
@@ -720,6 +781,14 @@ int aeron_client_conductor_on_publication_ready(
             aeron_client_managed_resource_t *active_resource =
                 &conductor->active_resources.array[conductor->active_resources.length++];
 
+            aeron_log_buffer_t *log_buffer;
+
+            if (aeron_client_conductor_get_or_create_log_buffer(
+                conductor, &log_buffer, log_file, response->registration_id, conductor->pre_touch) < 0)
+            {
+                return -1;
+            }
+
             if (is_exclusive)
             {
                 aeron_exclusive_publication_t *publication = NULL;
@@ -736,10 +805,9 @@ int aeron_client_conductor_on_publication_ready(
                     response->session_id,
                     position_limit_addr,
                     channel_status_indicator_addr,
-                    log_file,
+                    log_buffer,
                     response->registration_id,
-                    response->correlation_id,
-                    conductor->pre_touch) < 0)
+                    response->correlation_id) < 0)
                 {
                     return -1;
                 }
@@ -765,10 +833,9 @@ int aeron_client_conductor_on_publication_ready(
                     response->session_id,
                     position_limit_addr,
                     channel_status_indicator_addr,
-                    log_file,
+                    log_buffer,
                     response->registration_id,
-                    response->correlation_id,
-                    conductor->pre_touch) < 0)
+                    response->correlation_id) < 0)
                 {
                     return -1;
                 }

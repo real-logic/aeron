@@ -28,7 +28,7 @@ typedef struct aeron_exclusive_publication_stct
     aeron_client_conductor_t *conductor;
     const char *channel;
 
-    aeron_mapped_raw_log_t mapped_raw_log;
+    aeron_log_buffer_t *log_buffer;
     aeron_logbuffer_metadata_t *log_meta_data;
 
     int64_t *position_limit;
@@ -57,10 +57,9 @@ int aeron_exclusive_publication_create(
     int32_t session_id,
     int64_t *position_limit_addr,
     int64_t *channel_status_addr,
-    const char *log_file,
+    aeron_log_buffer_t *log_buffer,
     int64_t original_registration_id,
-    int64_t registration_id,
-    bool pre_touch);
+    int64_t registration_id);
 
 int aeron_exclusive_publication_delete(aeron_exclusive_publication_t *publication);
 

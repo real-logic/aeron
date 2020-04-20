@@ -25,6 +25,7 @@
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "concurrent/aeron_term_appender.h"
+#include "aeron_log_buffer.h"
 
 int aeron_exclusive_publication_create(
     aeron_exclusive_publication_t **publication,
@@ -34,10 +35,9 @@ int aeron_exclusive_publication_create(
     int32_t session_id,
     int64_t *position_limit_addr,
     int64_t *channel_status_addr,
-    const char *log_file,
+    aeron_log_buffer_t *log_buffer,
     int64_t original_registration_id,
-    int64_t registration_id,
-    bool pre_touch)
+    int64_t registration_id)
 {
     aeron_exclusive_publication_t *_publication;
 
@@ -50,13 +50,8 @@ int aeron_exclusive_publication_create(
         return -1;
     }
 
-    if (aeron_map_existing_log(&_publication->mapped_raw_log, log_file, pre_touch) < 0)
-    {
-        aeron_free(_publication);
-        return -1;
-    }
-
-    _publication->log_meta_data = (aeron_logbuffer_metadata_t *)_publication->mapped_raw_log.log_meta_data.addr;
+    _publication->log_buffer = log_buffer;
+    _publication->log_meta_data = (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
 
     _publication->position_limit = position_limit_addr;
     _publication->channel_status_indicator = channel_status_addr;
@@ -83,7 +78,6 @@ int aeron_exclusive_publication_create(
 
 int aeron_exclusive_publication_delete(aeron_exclusive_publication_t *publication)
 {
-    aeron_map_raw_log_close(&publication->mapped_raw_log, NULL);
     aeron_free((void *)publication->channel);
     aeron_free(publication);
 

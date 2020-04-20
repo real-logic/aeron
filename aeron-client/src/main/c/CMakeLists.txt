@@ -72,6 +72,7 @@ set(SOURCE
     aeron_context.c
     aeron_exclusive_publication.c
     aeron_image.c
+    aeron_log_buffer.c
     aeron_publication.c
     aeron_socket.c
     aeron_subscription.c
@@ -128,6 +129,7 @@ set(HEADERS
     aeron_context.h
     aeron_exclusive_publication.h
     aeron_image.h
+    aeron_log_buffer.h
     aeron_publication.h
     aeron_socket.h
     aeron_subscription.h

@@ -37,6 +37,7 @@ typedef struct aeron_header_stct aeron_header_t;
 typedef struct aeron_subscription_stct aeron_subscription_t;
 typedef struct aeron_image_stct aeron_image_t;
 typedef struct aeron_counter_stct aeron_counter_t;
+typedef struct aeron_log_buffer_stct aeron_log_buffer_t;
 
 typedef struct aeron_counters_reader_stct aeron_counters_reader_t;
 

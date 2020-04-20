@@ -23,6 +23,7 @@
 #include "command/aeron_control_protocol.h"
 #include "aeronc.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "collections/aeron_int64_to_ptr_hash_map.h"
 
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
 #define AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD (10)
@@ -42,7 +43,8 @@ typedef enum aeron_client_managed_resource_type_en
     AERON_CLIENT_TYPE_PUBLICATION,
     AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION,
     AERON_CLIENT_TYPE_SUBSCRIPTION,
-    AERON_CLIENT_TYPE_IMAGE
+    AERON_CLIENT_TYPE_IMAGE,
+    AERON_CLIENT_TYPE_LOGBUFFER
 }
 aeron_client_managed_resource_type_t;
 
@@ -94,6 +96,7 @@ typedef struct aeron_client_managed_resource_stct
         aeron_subscription_t *subscription;
         aeron_image_t *image;
         aeron_counter_t *counter;
+        aeron_log_buffer_t *log_buffer;
     }
     resource;
     aeron_client_managed_resource_type_t type;
@@ -107,6 +110,8 @@ typedef struct aeron_client_conductor_stct
     aeron_broadcast_receiver_t to_client_buffer;
     aeron_mpsc_rb_t to_driver_buffer;
     aeron_counters_reader_t counters_reader;
+
+    aeron_int64_to_ptr_hash_map_t log_buffer_by_id_map;
 
     struct lingering_resources_stct
     {
@@ -185,6 +190,16 @@ int aeron_client_conductor_async_close_exclusive_publication(
 int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
 int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);
+
+int aeron_client_conductor_get_or_create_log_buffer(
+    aeron_client_conductor_t *conductor,
+    aeron_log_buffer_t **log_buffer,
+    const char *log_file,
+    int64_t original_registration_id,
+    bool pre_touch);
+int aeron_client_conductor_release_log_buffer(
+    aeron_client_conductor_t *conductor,
+    aeron_log_buffer_t *log_buffer);
 
 inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id)

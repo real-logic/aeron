@@ -16,6 +16,8 @@
 package io.aeron.cluster;
 
 import io.aeron.test.SlowTest;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -141,6 +143,47 @@ public class ClusterBackupTest
 
             assertEquals(10, node.service().messageCount());
             assertTrue(node.service().wasSnapshotLoaded());
+        }
+    }
+
+    @Test
+    @Timeout(60)
+    @Disabled
+    public void shouldBackupClusterAfterCleanShutdown()
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            final int messageCount = 10;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(leader, messageCount);
+
+            cluster.node(0).terminationExpected(true);
+            cluster.node(1).terminationExpected(true);
+            cluster.node(2).terminationExpected(true);
+
+            cluster.shutdownCluster(leader);
+
+            cluster.awaitNodeTermination(cluster.node(0));
+            cluster.awaitNodeTermination(cluster.node(1));
+            cluster.awaitNodeTermination(cluster.node(2));
+
+            assertTrue(cluster.node(0).service().wasSnapshotTaken());
+            assertTrue(cluster.node(1).service().wasSnapshotTaken());
+            assertTrue(cluster.node(2).service().wasSnapshotTaken());
+
+            cluster.stopAllNodes();
+            cluster.restartAllNodes(false);
+            final TestNode newLeader = cluster.awaitLeader();
+            final long logPosition = newLeader.service().cluster().logPosition();
+
+            cluster.startClusterBackupNode(true);
+
+            cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+            cluster.awaitBackupLiveLogPosition(logPosition);
         }
     }
 

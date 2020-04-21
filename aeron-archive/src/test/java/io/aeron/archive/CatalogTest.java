@@ -24,7 +24,6 @@ import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +43,7 @@ import static io.aeron.archive.Catalog.fragmentStraddlesPageBoundary;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -211,13 +211,15 @@ class CatalogTest
 
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(1024);
             log.write(bb);
+
             bb.clear();
             flyweight.frameLength(128);
             log.write(bb, 1024);
+
             bb.clear();
             flyweight.frameLength(0);
             log.write(bb, 1024 + 128);
@@ -255,16 +257,21 @@ class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(PAGE_SIZE - 128);
             log.write(bb);
+
             bb.clear();
             flyweight.frameLength(256);
             log.write(bb, PAGE_SIZE - 128);
+
+            bb.clear();
+            bb.put(0, (byte)0).limit(1).position(0);
+            log.write(bb, PAGE_SIZE + 127);
         }
 
-        final ArchiveException exception = Assertions.assertThrows(
+        final ArchiveException exception = assertThrows(
             ArchiveException.class,
             () ->
             {
@@ -304,10 +311,11 @@ class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(SEGMENT_LENGTH - 128);
             log.write(bb);
+
             bb.clear();
             flyweight.frameLength(128);
             log.write(bb, SEGMENT_LENGTH - 128);
@@ -377,7 +385,7 @@ class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(recordingThreeId, SEGMENT_LENGTH * 2));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(256);
             log.write(bb);

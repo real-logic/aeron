@@ -44,6 +44,7 @@ import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.AsciiEncoding.parseLongAscii;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
 
 /**
@@ -840,9 +841,10 @@ class Catalog implements AutoCloseable
         final Checksum checksum)
     {
         final File file = new File(archiveDir, segmentFile);
+        MappedByteBuffer mappedByteBuffer = null;
         try (FileChannel segment = FileChannel.open(file.toPath(), READ, WRITE))
         {
-            final MappedByteBuffer mappedByteBuffer = segment.map(READ_WRITE, 0, segment.size());
+            mappedByteBuffer = segment.map(READ_WRITE, 0, segment.size());
             final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
 
             int lastFragmentOffset = offset;
@@ -865,7 +867,7 @@ class Catalog implements AutoCloseable
             while (nextFragmentOffset < offsetLimit);
 
             if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength) &&
-                !hasValidChecksum(buffer, lastFragmentOffset, lastFrameLength, checksum) &&
+                !isValidFragment(buffer, lastFragmentOffset, lastFrameLength, checksum) &&
                 truncateFileOnPageStraddle.test(file))
             {
                 segment.truncate(lastFragmentOffset);
@@ -885,6 +887,10 @@ class Catalog implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
             return Aeron.NULL_VALUE;
         }
+        finally
+        {
+            IoUtil.unmap(mappedByteBuffer);
+        }
     }
 
     static boolean fragmentStraddlesPageBoundary(final int fragmentOffset, final int fragmentLength)
@@ -892,19 +898,50 @@ class Catalog implements AutoCloseable
         return fragmentOffset / PAGE_SIZE != (fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE;
     }
 
-    private static boolean hasValidChecksum(
+    private static boolean isValidFragment(
         final UnsafeBuffer buffer, final int fragmentOffset, final int fragmentLength, final Checksum checksum)
     {
-        if (null == checksum)
-        {
-            return false;
-        }
+        final int alignedFragmentLength = align(fragmentLength, FRAME_ALIGNMENT);
+        return null != checksum && hasValidChecksum(buffer, fragmentOffset, alignedFragmentLength, checksum) ||
+            hasDataInAllPagesAfterStraddle(buffer, fragmentOffset, alignedFragmentLength);
+    }
 
+    private static boolean hasValidChecksum(
+        final UnsafeBuffer buffer, final int fragmentOffset, final int alignedFragmentLength, final Checksum checksum)
+    {
         final int computedChecksum = checksum.compute(
             buffer.addressOffset(),
             fragmentOffset + HEADER_LENGTH,
-            align(fragmentLength, FRAME_ALIGNMENT) - HEADER_LENGTH);
+            alignedFragmentLength - HEADER_LENGTH);
         final int recordedChecksum = frameSessionId(buffer, fragmentOffset);
         return recordedChecksum == computedChecksum;
+    }
+
+    private static boolean hasDataInAllPagesAfterStraddle(
+        final UnsafeBuffer buffer, final int fragmentOffset, final int alignedFragmentLength)
+    {
+        int straddleOffset = (fragmentOffset / PAGE_SIZE + 1) * PAGE_SIZE;
+        final int endOffset = fragmentOffset + alignedFragmentLength;
+        while (straddleOffset < endOffset)
+        {
+            if (isEmptyPage(buffer, straddleOffset, endOffset))
+            {
+                return false;
+            }
+            straddleOffset += PAGE_SIZE;
+        }
+        return true;
+    }
+
+    private static boolean isEmptyPage(final UnsafeBuffer buffer, final int pageStart, final int endOffset)
+    {
+        for (int i = pageStart, pageEnd = min(pageStart + PAGE_SIZE, endOffset); i < pageEnd; i += SIZE_OF_LONG)
+        {
+            if (0L != buffer.getLong(i))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

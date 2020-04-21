@@ -456,7 +456,7 @@ class ArchiveToolTests
                 byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(3 * PAGE_SIZE);
                 dataHeaderFlyweight.termOffset(64);
-                dataHeaderFlyweight.setMemory(HEADER_LENGTH, 2 * PAGE_SIZE - HEADER_LENGTH, (byte)111);
+                dataHeaderFlyweight.setMemory(PAGE_SIZE - 64, PAGE_SIZE, (byte)111);
                 dataHeaderFlyweight.setMemory(3 * PAGE_SIZE - 64, 64, (byte)-128);
                 fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
             });
@@ -772,7 +772,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, NULL_TIMESTAMP,
+            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, 100,
                 0, 52, "ch2", "src2");
         }
     }
@@ -930,11 +930,11 @@ class ArchiveToolTests
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
             assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
                 0, 20, "ch2", "src2");
-            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, 777,
+            assertRecording(catalog, validRecording52, INVALID, 0, NULL_POSITION, 21, NULL_TIMESTAMP,
                 0, 52, "ch2", "src2");
-            assertRecording(catalog, validRecording53, VALID, 0, 64, 22, 777,
+            assertRecording(catalog, validRecording53, INVALID, 0, NULL_POSITION, 22, NULL_TIMESTAMP,
                 0, 53, "ch2", "src2");
-            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 500, 0, 6, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 23, 400, 0, 6, "ch2", "src2");
         }
 
         Mockito.verify(out, times(24)).println(any(String.class));

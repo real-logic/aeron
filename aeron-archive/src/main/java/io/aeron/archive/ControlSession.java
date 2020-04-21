@@ -37,10 +37,11 @@ import static io.aeron.archive.codecs.ControlResponseCode.*;
  * Control sessions are interacted with from the {@link ArchiveConductor}. The interaction may result in pending
  * send actions being queued for execution by the {@link ArchiveConductor}.
  */
-class ControlSession implements Session
+final class ControlSession implements Session
 {
     private static final long RESEND_INTERVAL_MS = 200L;
     private static final String SESSION_REJECTED_MSG = "authentication rejected";
+
 
     enum State
     {
@@ -418,6 +419,15 @@ class ControlSession implements Session
                 streamId,
                 channelFragment,
                 this);
+        }
+    }
+
+    void onStopRecordingByIdentity(final long correlationId, final long recordingId)
+    {
+        attemptToGoActive();
+        if (State.ACTIVE == state)
+        {
+            conductor.stopRecordingByIdentity(correlationId, recordingId, this);
         }
     }
 

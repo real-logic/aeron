@@ -44,34 +44,35 @@ public class ArchiveProxy
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
     private final Publication publication;
-    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private StartRecordingRequestEncoder startRecordingRequestEncoder;
-    private StartRecordingRequest2Encoder startRecordingRequest2Encoder;
-    private StopRecordingRequestEncoder stopRecordingRequestEncoder;
-    private StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequestEncoder;
-    private ReplayRequestEncoder replayRequestEncoder;
-    private StopReplayRequestEncoder stopReplayRequestEncoder;
-    private ListRecordingsRequestEncoder listRecordingsRequestEncoder;
-    private ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder;
-    private ListRecordingRequestEncoder listRecordingRequestEncoder;
-    private ExtendRecordingRequestEncoder extendRecordingRequestEncoder;
-    private ExtendRecordingRequest2Encoder extendRecordingRequest2Encoder;
-    private RecordingPositionRequestEncoder recordingPositionRequestEncoder;
-    private TruncateRecordingRequestEncoder truncateRecordingRequestEncoder;
-    private StopPositionRequestEncoder stopPositionRequestEncoder;
-    private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequestEncoder;
-    private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequestEncoder;
-    private BoundedReplayRequestEncoder boundedReplayRequestEncoder;
-    private StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder;
-    private ReplicateRequestEncoder replicateRequestEncoder;
-    private StopReplicationRequestEncoder stopReplicationRequestEncoder;
-    private StartPositionRequestEncoder startPositionRequestEncoder;
-    private DetachSegmentsRequestEncoder detachSegmentsRequestEncoder;
-    private DeleteDetachedSegmentsRequestEncoder deleteDetachedSegmentsRequestEncoder;
-    private PurgeSegmentsRequestEncoder purgeSegmentsRequestEncoder;
-    private AttachSegmentsRequestEncoder attachSegmentsRequestEncoder;
-    private MigrateSegmentsRequestEncoder migrateSegmentsRequestEncoder;
-    private TaggedReplicateRequestEncoder taggedReplicateRequestEncoder;
+    private final MessageHeaderEncoder messageHeader = new MessageHeaderEncoder();
+    private StartRecordingRequestEncoder startRecordingRequest;
+    private StartRecordingRequest2Encoder startRecordingRequest2;
+    private StopRecordingRequestEncoder stopRecordingRequest;
+    private StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequest;
+    private StopRecordingByIdentityRequestEncoder stopRecordingByIdentityRequest;
+    private ReplayRequestEncoder replayRequest;
+    private StopReplayRequestEncoder stopReplayRequest;
+    private ListRecordingsRequestEncoder listRecordingsRequest;
+    private ListRecordingsForUriRequestEncoder listRecordingsForUriRequest;
+    private ListRecordingRequestEncoder listRecordingRequest;
+    private ExtendRecordingRequestEncoder extendRecordingRequest;
+    private ExtendRecordingRequest2Encoder extendRecordingRequest2;
+    private RecordingPositionRequestEncoder recordingPositionRequest;
+    private TruncateRecordingRequestEncoder truncateRecordingRequest;
+    private StopPositionRequestEncoder stopPositionRequest;
+    private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
+    private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
+    private BoundedReplayRequestEncoder boundedReplayRequest;
+    private StopAllReplaysRequestEncoder stopAllReplaysRequest;
+    private ReplicateRequestEncoder replicateRequest;
+    private StopReplicationRequestEncoder stopReplicationRequest;
+    private StartPositionRequestEncoder startPositionRequest;
+    private DetachSegmentsRequestEncoder detachSegmentsRequest;
+    private DeleteDetachedSegmentsRequestEncoder deleteDetachedSegmentsRequest;
+    private PurgeSegmentsRequestEncoder purgeSegmentsRequest;
+    private AttachSegmentsRequestEncoder attachSegmentsRequest;
+    private MigrateSegmentsRequestEncoder migrateSegmentsRequest;
+    private TaggedReplicateRequestEncoder taggedReplicateRequest;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -143,7 +144,7 @@ public class ArchiveProxy
 
         final AuthConnectRequestEncoder connectRequestEncoder = new AuthConnectRequestEncoder();
         connectRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
@@ -168,7 +169,7 @@ public class ArchiveProxy
 
         final AuthConnectRequestEncoder connectRequestEncoder = new AuthConnectRequestEncoder();
         connectRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
@@ -199,7 +200,7 @@ public class ArchiveProxy
 
         final AuthConnectRequestEncoder connectRequestEncoder = new AuthConnectRequestEncoder();
         connectRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
@@ -220,7 +221,7 @@ public class ArchiveProxy
     {
         final KeepAliveRequestEncoder keepAliveRequestEncoder = new KeepAliveRequestEncoder();
         keepAliveRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId);
 
@@ -237,7 +238,7 @@ public class ArchiveProxy
     {
         final CloseSessionRequestEncoder closeSessionRequestEncoder = new CloseSessionRequestEncoder();
         closeSessionRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId);
 
         return offer(closeSessionRequestEncoder.encodedLength());
@@ -257,7 +258,7 @@ public class ArchiveProxy
     {
         final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
         challengeResponseEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
@@ -284,20 +285,20 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == startRecordingRequestEncoder)
+        if (null == startRecordingRequest)
         {
-            startRecordingRequestEncoder = new StartRecordingRequestEncoder();
+            startRecordingRequest = new StartRecordingRequestEncoder();
         }
 
-        startRecordingRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        startRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .streamId(streamId)
             .sourceLocation(sourceLocation)
             .channel(channel);
 
-        return offer(startRecordingRequestEncoder.encodedLength());
+        return offer(startRecordingRequest.encodedLength());
     }
 
     /**
@@ -319,13 +320,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == startRecordingRequest2Encoder)
+        if (null == startRecordingRequest2)
         {
-            startRecordingRequest2Encoder = new StartRecordingRequest2Encoder();
+            startRecordingRequest2 = new StartRecordingRequest2Encoder();
         }
 
-        startRecordingRequest2Encoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        startRecordingRequest2
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .streamId(streamId)
@@ -333,7 +334,7 @@ public class ArchiveProxy
             .autoStop(autoStop ? BooleanType.TRUE : BooleanType.FALSE)
             .channel(channel);
 
-        return offer(startRecordingRequest2Encoder.encodedLength());
+        return offer(startRecordingRequest2.encodedLength());
     }
 
     /**
@@ -348,23 +349,23 @@ public class ArchiveProxy
     public boolean stopRecording(
         final String channel, final int streamId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopRecordingRequestEncoder)
+        if (null == stopRecordingRequest)
         {
-            stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
+            stopRecordingRequest = new StopRecordingRequestEncoder();
         }
 
-        stopRecordingRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        stopRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .streamId(streamId)
             .channel(channel);
 
-        return offer(stopRecordingRequestEncoder.encodedLength());
+        return offer(stopRecordingRequest.encodedLength());
     }
 
     /**
-     * Stop an active recording by the {@link Subscription#registrationId()} it was registered with.
+     * Stop a recording by the {@link Subscription#registrationId()} it was registered with.
      *
      * @param subscriptionId   that identifies the subscription in the archive doing the recording.
      * @param correlationId    for this request.
@@ -373,18 +374,43 @@ public class ArchiveProxy
      */
     public boolean stopRecording(final long subscriptionId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopRecordingSubscriptionRequestEncoder)
+        if (null == stopRecordingSubscriptionRequest)
         {
-            stopRecordingSubscriptionRequestEncoder = new StopRecordingSubscriptionRequestEncoder();
+            stopRecordingSubscriptionRequest = new StopRecordingSubscriptionRequestEncoder();
         }
 
-        stopRecordingSubscriptionRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        stopRecordingSubscriptionRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .subscriptionId(subscriptionId);
 
-        return offer(stopRecordingSubscriptionRequestEncoder.encodedLength());
+        return offer(stopRecordingSubscriptionRequest.encodedLength());
+    }
+
+    /**
+     * Stop an active recording by the recording id. This is not the {@link Subscription#registrationId()}.
+     *
+     * @param recordingId      that identifies a recording in the archive.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean stopRecordingByIdentity(
+        final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == stopRecordingByIdentityRequest)
+        {
+            stopRecordingByIdentityRequest = new StopRecordingByIdentityRequestEncoder();
+        }
+
+        stopRecordingByIdentityRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(stopRecordingByIdentityRequest.encodedLength());
     }
 
     /**
@@ -408,13 +434,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replayRequestEncoder)
+        if (null == replayRequest)
         {
-            replayRequestEncoder = new ReplayRequestEncoder();
+            replayRequest = new ReplayRequestEncoder();
         }
 
-        replayRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        replayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
@@ -423,7 +449,7 @@ public class ArchiveProxy
             .replayStreamId(replayStreamId)
             .replayChannel(replayChannel);
 
-        return offer(replayRequestEncoder.encodedLength());
+        return offer(replayRequest.encodedLength());
     }
 
     /**
@@ -449,13 +475,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == boundedReplayRequestEncoder)
+        if (null == boundedReplayRequest)
         {
-            boundedReplayRequestEncoder = new BoundedReplayRequestEncoder();
+            boundedReplayRequest = new BoundedReplayRequestEncoder();
         }
 
-        boundedReplayRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        boundedReplayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
@@ -465,7 +491,7 @@ public class ArchiveProxy
             .replayStreamId(replayStreamId)
             .replayChannel(replayChannel);
 
-        return offer(boundedReplayRequestEncoder.encodedLength());
+        return offer(boundedReplayRequest.encodedLength());
     }
 
     /**
@@ -478,18 +504,18 @@ public class ArchiveProxy
      */
     public boolean stopReplay(final long replaySessionId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopReplayRequestEncoder)
+        if (null == stopReplayRequest)
         {
-            stopReplayRequestEncoder = new StopReplayRequestEncoder();
+            stopReplayRequest = new StopReplayRequestEncoder();
         }
 
-        stopReplayRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        stopReplayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .replaySessionId(replaySessionId);
 
-        return offer(stopReplayRequestEncoder.encodedLength());
+        return offer(stopReplayRequest.encodedLength());
     }
 
     /**
@@ -502,18 +528,18 @@ public class ArchiveProxy
      */
     public boolean stopAllReplays(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopAllReplaysRequestEncoder)
+        if (null == stopAllReplaysRequest)
         {
-            stopAllReplaysRequestEncoder = new StopAllReplaysRequestEncoder();
+            stopAllReplaysRequest = new StopAllReplaysRequestEncoder();
         }
 
-        stopAllReplaysRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        stopAllReplaysRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(stopAllReplaysRequestEncoder.encodedLength());
+        return offer(stopAllReplaysRequest.encodedLength());
     }
 
     /**
@@ -528,19 +554,19 @@ public class ArchiveProxy
     public boolean listRecordings(
         final long fromRecordingId, final int recordCount, final long correlationId, final long controlSessionId)
     {
-        if (null == listRecordingsRequestEncoder)
+        if (null == listRecordingsRequest)
         {
-            listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
+            listRecordingsRequest = new ListRecordingsRequestEncoder();
         }
 
-        listRecordingsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        listRecordingsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .fromRecordingId(fromRecordingId)
             .recordCount(recordCount);
 
-        return offer(listRecordingsRequestEncoder.encodedLength());
+        return offer(listRecordingsRequest.encodedLength());
     }
 
     /**
@@ -562,13 +588,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == listRecordingsForUriRequestEncoder)
+        if (null == listRecordingsForUriRequest)
         {
-            listRecordingsForUriRequestEncoder = new ListRecordingsForUriRequestEncoder();
+            listRecordingsForUriRequest = new ListRecordingsForUriRequestEncoder();
         }
 
-        listRecordingsForUriRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        listRecordingsForUriRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .fromRecordingId(fromRecordingId)
@@ -576,7 +602,7 @@ public class ArchiveProxy
             .streamId(streamId)
             .channel(channelFragment);
 
-        return offer(listRecordingsForUriRequestEncoder.encodedLength());
+        return offer(listRecordingsForUriRequest.encodedLength());
     }
 
     /**
@@ -589,18 +615,18 @@ public class ArchiveProxy
      */
     public boolean listRecording(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == listRecordingRequestEncoder)
+        if (null == listRecordingRequest)
         {
-            listRecordingRequestEncoder = new ListRecordingRequestEncoder();
+            listRecordingRequest = new ListRecordingRequestEncoder();
         }
 
-        listRecordingRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        listRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(listRecordingRequestEncoder.encodedLength());
+        return offer(listRecordingRequest.encodedLength());
     }
 
     /**
@@ -626,13 +652,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == extendRecordingRequestEncoder)
+        if (null == extendRecordingRequest)
         {
-            extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
+            extendRecordingRequest = new ExtendRecordingRequestEncoder();
         }
 
-        extendRecordingRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        extendRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
@@ -640,7 +666,7 @@ public class ArchiveProxy
             .sourceLocation(sourceLocation)
             .channel(channel);
 
-        return offer(extendRecordingRequestEncoder.encodedLength());
+        return offer(extendRecordingRequest.encodedLength());
     }
 
     /**
@@ -668,13 +694,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == extendRecordingRequest2Encoder)
+        if (null == extendRecordingRequest2)
         {
-            extendRecordingRequest2Encoder = new ExtendRecordingRequest2Encoder();
+            extendRecordingRequest2 = new ExtendRecordingRequest2Encoder();
         }
 
-        extendRecordingRequest2Encoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        extendRecordingRequest2
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
@@ -683,7 +709,7 @@ public class ArchiveProxy
             .autoStop(autoStop ? BooleanType.TRUE : BooleanType.FALSE)
             .channel(channel);
 
-        return offer(extendRecordingRequest2Encoder.encodedLength());
+        return offer(extendRecordingRequest2.encodedLength());
     }
 
     /**
@@ -696,18 +722,18 @@ public class ArchiveProxy
      */
     public boolean getRecordingPosition(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == recordingPositionRequestEncoder)
+        if (null == recordingPositionRequest)
         {
-            recordingPositionRequestEncoder = new RecordingPositionRequestEncoder();
+            recordingPositionRequest = new RecordingPositionRequestEncoder();
         }
 
-        recordingPositionRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        recordingPositionRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(recordingPositionRequestEncoder.encodedLength());
+        return offer(recordingPositionRequest.encodedLength());
     }
 
     /**
@@ -723,19 +749,19 @@ public class ArchiveProxy
     public boolean truncateRecording(
         final long recordingId, final long position, final long correlationId, final long controlSessionId)
     {
-        if (null == truncateRecordingRequestEncoder)
+        if (null == truncateRecordingRequest)
         {
-            truncateRecordingRequestEncoder = new TruncateRecordingRequestEncoder();
+            truncateRecordingRequest = new TruncateRecordingRequestEncoder();
         }
 
-        truncateRecordingRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        truncateRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
             .position(position);
 
-        return offer(truncateRecordingRequestEncoder.encodedLength());
+        return offer(truncateRecordingRequest.encodedLength());
     }
 
     /**
@@ -748,18 +774,18 @@ public class ArchiveProxy
      */
     public boolean getStartPosition(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == startPositionRequestEncoder)
+        if (null == startPositionRequest)
         {
-            startPositionRequestEncoder = new StartPositionRequestEncoder();
+            startPositionRequest = new StartPositionRequestEncoder();
         }
 
-        startPositionRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        startPositionRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(startPositionRequestEncoder.encodedLength());
+        return offer(startPositionRequest.encodedLength());
     }
 
     /**
@@ -772,18 +798,18 @@ public class ArchiveProxy
      */
     public boolean getStopPosition(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopPositionRequestEncoder)
+        if (null == stopPositionRequest)
         {
-            stopPositionRequestEncoder = new StopPositionRequestEncoder();
+            stopPositionRequest = new StopPositionRequestEncoder();
         }
 
-        stopPositionRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        stopPositionRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(stopPositionRequestEncoder.encodedLength());
+        return offer(stopPositionRequest.encodedLength());
     }
 
     /**
@@ -805,13 +831,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == findLastMatchingRecordingRequestEncoder)
+        if (null == findLastMatchingRecordingRequest)
         {
-            findLastMatchingRecordingRequestEncoder = new FindLastMatchingRecordingRequestEncoder();
+            findLastMatchingRecordingRequest = new FindLastMatchingRecordingRequestEncoder();
         }
 
-        findLastMatchingRecordingRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        findLastMatchingRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .minRecordingId(minRecordingId)
@@ -819,7 +845,7 @@ public class ArchiveProxy
             .streamId(streamId)
             .channel(channelFragment);
 
-        return offer(findLastMatchingRecordingRequestEncoder.encodedLength());
+        return offer(findLastMatchingRecordingRequest.encodedLength());
     }
 
     /**
@@ -843,13 +869,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == listRecordingSubscriptionsRequestEncoder)
+        if (null == listRecordingSubscriptionsRequest)
         {
-            listRecordingSubscriptionsRequestEncoder = new ListRecordingSubscriptionsRequestEncoder();
+            listRecordingSubscriptionsRequest = new ListRecordingSubscriptionsRequestEncoder();
         }
 
-        listRecordingSubscriptionsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        listRecordingSubscriptionsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .pseudoIndex(pseudoIndex)
@@ -858,7 +884,7 @@ public class ArchiveProxy
             .streamId(streamId)
             .channel(channelFragment);
 
-        return offer(listRecordingSubscriptionsRequestEncoder.encodedLength());
+        return offer(listRecordingSubscriptionsRequest.encodedLength());
     }
 
     /**
@@ -892,13 +918,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequestEncoder)
+        if (null == replicateRequest)
         {
-            replicateRequestEncoder = new ReplicateRequestEncoder();
+            replicateRequest = new ReplicateRequestEncoder();
         }
 
-        replicateRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        replicateRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .srcRecordingId(srcRecordingId)
@@ -907,7 +933,7 @@ public class ArchiveProxy
             .srcControlChannel(srcControlChannel)
             .liveDestination(liveDestination);
 
-        return offer(replicateRequestEncoder.encodedLength());
+        return offer(replicateRequest.encodedLength());
     }
 
     /**
@@ -945,13 +971,13 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == taggedReplicateRequestEncoder)
+        if (null == taggedReplicateRequest)
         {
-            taggedReplicateRequestEncoder = new TaggedReplicateRequestEncoder();
+            taggedReplicateRequest = new TaggedReplicateRequestEncoder();
         }
 
-        taggedReplicateRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        taggedReplicateRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .srcRecordingId(srcRecordingId)
@@ -962,7 +988,7 @@ public class ArchiveProxy
             .srcControlChannel(srcControlChannel)
             .liveDestination(liveDestination);
 
-        return offer(taggedReplicateRequestEncoder.encodedLength());
+        return offer(taggedReplicateRequest.encodedLength());
     }
 
     /**
@@ -975,18 +1001,18 @@ public class ArchiveProxy
      */
     public boolean stopReplication(final long replicationId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopReplicationRequestEncoder)
+        if (null == stopReplicationRequest)
         {
-            stopReplicationRequestEncoder = new StopReplicationRequestEncoder();
+            stopReplicationRequest = new StopReplicationRequestEncoder();
         }
 
-        stopReplicationRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        stopReplicationRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .replicationId(replicationId);
 
-        return offer(stopReplicationRequestEncoder.encodedLength());
+        return offer(stopReplicationRequest.encodedLength());
     }
 
     /**
@@ -1006,19 +1032,19 @@ public class ArchiveProxy
     public boolean detachSegments(
         final long recordingId, final long newStartPosition, final long correlationId, final long controlSessionId)
     {
-        if (null == detachSegmentsRequestEncoder)
+        if (null == detachSegmentsRequest)
         {
-            detachSegmentsRequestEncoder = new DetachSegmentsRequestEncoder();
+            detachSegmentsRequest = new DetachSegmentsRequestEncoder();
         }
 
-        detachSegmentsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        detachSegmentsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
             .newStartPosition(newStartPosition);
 
-        return offer(detachSegmentsRequestEncoder.encodedLength());
+        return offer(detachSegmentsRequest.encodedLength());
     }
 
     /**
@@ -1032,18 +1058,18 @@ public class ArchiveProxy
      */
     public boolean deleteDetachedSegments(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == deleteDetachedSegmentsRequestEncoder)
+        if (null == deleteDetachedSegmentsRequest)
         {
-            deleteDetachedSegmentsRequestEncoder = new DeleteDetachedSegmentsRequestEncoder();
+            deleteDetachedSegmentsRequest = new DeleteDetachedSegmentsRequestEncoder();
         }
 
-        deleteDetachedSegmentsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        deleteDetachedSegmentsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(deleteDetachedSegmentsRequestEncoder.encodedLength());
+        return offer(deleteDetachedSegmentsRequest.encodedLength());
     }
 
     /**
@@ -1065,19 +1091,19 @@ public class ArchiveProxy
     public boolean purgeSegments(
         final long recordingId, final long newStartPosition, final long correlationId, final long controlSessionId)
     {
-        if (null == purgeSegmentsRequestEncoder)
+        if (null == purgeSegmentsRequest)
         {
-            purgeSegmentsRequestEncoder = new PurgeSegmentsRequestEncoder();
+            purgeSegmentsRequest = new PurgeSegmentsRequestEncoder();
         }
 
-        purgeSegmentsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        purgeSegmentsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
             .newStartPosition(newStartPosition);
 
-        return offer(purgeSegmentsRequestEncoder.encodedLength());
+        return offer(purgeSegmentsRequest.encodedLength());
     }
 
     /**
@@ -1094,18 +1120,18 @@ public class ArchiveProxy
      */
     public boolean attachSegments(final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == attachSegmentsRequestEncoder)
+        if (null == attachSegmentsRequest)
         {
-            attachSegmentsRequestEncoder = new AttachSegmentsRequestEncoder();
+            attachSegmentsRequest = new AttachSegmentsRequestEncoder();
         }
 
-        attachSegmentsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        attachSegmentsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(attachSegmentsRequestEncoder.encodedLength());
+        return offer(attachSegmentsRequest.encodedLength());
     }
 
     /**
@@ -1126,19 +1152,19 @@ public class ArchiveProxy
     public boolean migrateSegments(
         final long srcRecordingId, final long dstRecordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == migrateSegmentsRequestEncoder)
+        if (null == migrateSegmentsRequest)
         {
-            migrateSegmentsRequestEncoder = new MigrateSegmentsRequestEncoder();
+            migrateSegmentsRequest = new MigrateSegmentsRequestEncoder();
         }
 
-        migrateSegmentsRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        migrateSegmentsRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .srcRecordingId(srcRecordingId)
             .dstRecordingId(dstRecordingId);
 
-        return offer(migrateSegmentsRequestEncoder.encodedLength());
+        return offer(migrateSegmentsRequest.encodedLength());
     }
 
     private boolean offer(final int length)

@@ -35,7 +35,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BasicArchiveTest
 {
@@ -135,6 +135,8 @@ public class BasicArchiveTest
         final long recordingId = aeronArchive.findLastMatchingRecording(
             0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
 
+        assertFalse(aeronArchive.tryStopRecordingByIdentity(recordingId));
+
         assertEquals(recordingIdFromCounter, recordingId);
         assertEquals(stopPosition, aeronArchive.getStopPosition(recordingIdFromCounter));
 
@@ -196,7 +198,8 @@ public class BasicArchiveTest
 
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
 
-            aeronArchive.stopRecording(publication);
+            assertTrue(aeronArchive.tryStopRecordingByIdentity(recordingId));
+
             while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))
             {
                 Thread.yield();

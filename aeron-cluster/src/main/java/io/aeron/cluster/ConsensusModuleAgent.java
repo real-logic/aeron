@@ -267,6 +267,11 @@ class ConsensusModuleAgent implements Agent
                 state(ConsensusModule.State.ACTIVE);
             }
 
+            if (null != recoveryPlan.log)
+            {
+                archive.tryStopRecordingByIdentity(recoveryPlan.log.recordingId);
+            }
+
             election = new Election(
                 true,
                 recoveryPlan.lastLeadershipTermId,

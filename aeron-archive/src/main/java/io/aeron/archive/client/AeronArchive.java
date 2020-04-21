@@ -838,15 +838,42 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Try stop a recording by its recording id.
+     *
+     * @param recordingId for which active recording should be stopped.
+     * @return true if the recording was stopped or false if the recording is not currently active.
+     */
+    public boolean tryStopRecordingByIdentity(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopRecordingByIdentity(recordingId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop recording request");
+            }
+
+            return pollForResponse(lastCorrelationId) != 0;
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Stop recording a sessionId specific recording that pertains to the given {@link Publication}.
      *
      * @param publication to stop recording for.
      */
     public void stopRecording(final Publication publication)
     {
-        final String recordingChannel = ChannelUri.addSessionId(publication.channel(), publication.sessionId());
-
-        stopRecording(recordingChannel, publication.streamId());
+        stopRecording(ChannelUri.addSessionId(publication.channel(), publication.sessionId()), publication.streamId());
     }
 
     /**
@@ -2008,7 +2035,7 @@ public class AeronArchive implements AutoCloseable
     public static class Configuration
     {
         public static final int PROTOCOL_MAJOR_VERSION = 1;
-        public static final int PROTOCOL_MINOR_VERSION = 4;
+        public static final int PROTOCOL_MINOR_VERSION = 5;
         public static final int PROTOCOL_PATCH_VERSION = 0;
         public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
             PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);

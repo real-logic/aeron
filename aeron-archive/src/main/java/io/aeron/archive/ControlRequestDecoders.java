@@ -42,6 +42,8 @@ class ControlRequestDecoders
         new FindLastMatchingRecordingRequestDecoder();
     final ListRecordingSubscriptionsRequestDecoder listRecordingSubscriptionsRequest =
         new ListRecordingSubscriptionsRequestDecoder();
+    final StopRecordingByIdentityRequestDecoder stopRecordingByIdentityRequest =
+        new StopRecordingByIdentityRequestDecoder();
     final BoundedReplayRequestDecoder boundedReplayRequest = new BoundedReplayRequestDecoder();
     final StopAllReplaysRequestDecoder stopAllReplaysRequest = new StopAllReplaysRequestDecoder();
     final ReplicateRequestDecoder replicateRequest = new ReplicateRequestDecoder();

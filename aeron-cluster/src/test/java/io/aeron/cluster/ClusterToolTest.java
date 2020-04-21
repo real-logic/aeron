@@ -33,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SlowTest
 class ClusterToolTest
 {
-    private final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
-
     @Test
     @Timeout(30)
     void shouldHandleSnapshotOnLeaderOnly()
@@ -43,6 +41,7 @@ class ClusterToolTest
         {
             final TestNode leader = cluster.awaitLeader();
             final long initialSnapshotCount = cluster.countRecordingLogSnapshots(leader);
+            final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
             assertTrue(ClusterTool.snapshot(
                 leader.consensusModule().context().clusterDir(),
@@ -52,7 +51,12 @@ class ClusterToolTest
                 capturingPrintStream.flushAndGetContent(),
                 containsString("SNAPSHOT applied successfully"));
 
-            assertEquals(initialSnapshotCount + 1, cluster.countRecordingLogSnapshots(leader));
+            final long expectedSnapshotCount = initialSnapshotCount + 1;
+            cluster.awaitSnapshotCount(leader, expectedSnapshotCount);
+            cluster.awaitSnapshotCount(cluster.followers().get(0), expectedSnapshotCount);
+            cluster.awaitSnapshotCount(cluster.followers().get(1), expectedSnapshotCount);
+
+            assertEquals(expectedSnapshotCount, cluster.countRecordingLogSnapshots(leader));
 
             for (final TestNode follower : cluster.followers())
             {
@@ -75,6 +79,7 @@ class ClusterToolTest
         {
             final TestNode leader = cluster.awaitLeader();
             final long initialSnapshotCount = cluster.countRecordingLogSnapshots(leader);
+            final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
             assertTrue(ClusterTool.suspend(
                 leader.consensusModule().context().clusterDir(),
@@ -103,6 +108,7 @@ class ClusterToolTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
+            final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
             assertTrue(ClusterTool.suspend(
                 leader.consensusModule().context().clusterDir(),
@@ -123,8 +129,10 @@ class ClusterToolTest
     }
 
     @Test
-    void failIfMarkFileUnavailable(final @TempDir Path emptyClusterDir)
+    void shouldFailIfMarkFileUnavailable(final @TempDir Path emptyClusterDir)
     {
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
         assertFalse(ClusterTool.snapshot(emptyClusterDir.toFile(), capturingPrintStream.resetAndGetPrintStream()));
         assertThat(
             capturingPrintStream.flushAndGetContent(),

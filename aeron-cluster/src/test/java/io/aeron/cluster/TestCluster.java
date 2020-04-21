@@ -928,16 +928,6 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    public long countRecordingLogSnapshots(final TestNode node)
-    {
-        return node.consensusModule().context().recordingLog()
-            .entries()
-            .stream()
-            .filter((e) -> RecordingLog.ENTRY_TYPE_SNAPSHOT == e.type &&
-                ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
-            .count();
-    }
-
     static class ServiceContext
     {
         final Aeron.Context aeron = new Aeron.Context();

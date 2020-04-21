@@ -40,7 +40,7 @@ class ClusterToolTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-            final long initialSnapshotCount = cluster.countRecordingLogSnapshots(leader);
+            final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
             final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
             assertTrue(ClusterTool.snapshot(
@@ -55,8 +55,6 @@ class ClusterToolTest
             cluster.awaitSnapshotCount(leader, expectedSnapshotCount);
             cluster.awaitSnapshotCount(cluster.followers().get(0), expectedSnapshotCount);
             cluster.awaitSnapshotCount(cluster.followers().get(1), expectedSnapshotCount);
-
-            assertEquals(expectedSnapshotCount, cluster.countRecordingLogSnapshots(leader));
 
             for (final TestNode follower : cluster.followers())
             {
@@ -78,7 +76,7 @@ class ClusterToolTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-            final long initialSnapshotCount = cluster.countRecordingLogSnapshots(leader);
+            final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
             final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
             assertTrue(ClusterTool.suspend(
@@ -97,7 +95,7 @@ class ClusterToolTest
                 "Unable to SNAPSHOT as the state of the consensus module is SUSPENDED, but needs to be ACTIVE";
             assertThat(capturingPrintStream.flushAndGetContent(), containsString(expectedMessage));
 
-            assertEquals(initialSnapshotCount, cluster.countRecordingLogSnapshots(leader));
+            assertEquals(initialSnapshotCount, leader.consensusModule().context().snapshotCounter().get());
         }
     }
 

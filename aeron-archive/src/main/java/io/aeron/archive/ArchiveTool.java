@@ -291,7 +291,7 @@ public class ArchiveTool
      */
     public static int maxEntries(final File archiveDir, final long newMaxEntries)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, INSTANCE))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, INSTANCE, null))
         {
             return catalog.maxEntries();
         }

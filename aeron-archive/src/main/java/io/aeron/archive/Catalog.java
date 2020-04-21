@@ -126,6 +126,7 @@ class Catalog implements AutoCloseable
     private boolean isClosed;
     private final File archiveDir;
     private final EpochClock epochClock;
+    private final Checksum checksum;
     private final FileChannel catalogChannel;
     private long nextRecordingId = 0;
 
@@ -134,12 +135,14 @@ class Catalog implements AutoCloseable
         final FileChannel archiveDirChannel,
         final int fileSyncLevel,
         final long maxNumEntries,
-        final EpochClock epochClock)
+        final EpochClock epochClock,
+        final Checksum checksum)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = fileSyncLevel > 0;
         this.forceMetadata = fileSyncLevel > 1;
         this.epochClock = epochClock;
+        this.checksum = checksum;
 
         validateMaxEntries(maxNumEntries);
 
@@ -227,6 +230,7 @@ class Catalog implements AutoCloseable
         this.forceWrites = false;
         this.forceMetadata = false;
         this.epochClock = epochClock;
+        this.checksum = null;
         this.catalogChannel = null;
 
         try
@@ -723,7 +727,7 @@ class Catalog implements AutoCloseable
                 decoder.startPosition(),
                 decoder.termBufferLength(),
                 decoder.segmentFileLength(),
-                null,
+                checksum,
                 (segmentFile) ->
                 {
                     throw new ArchiveException(

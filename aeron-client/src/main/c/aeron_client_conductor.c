@@ -310,6 +310,32 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
     return work_count;
 }
 
+int aeron_client_conductor_check_registering_resources(aeron_client_conductor_t *conductor, long long now_ns)
+{
+    int work_count = 0;
+
+    for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
+
+        if (now_ns > resource->registration_deadline_ns)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->registering_resources.array,
+                sizeof(aeron_client_registering_resource_entry_t),
+                i,
+                last_index);
+            conductor->registering_resources.length--;
+
+            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_TIMEOUT_MEDIA_DRIVER);
+
+            work_count += 1;
+        }
+    }
+
+    return work_count;
+}
+
 int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor)
 {
     int work_count = 0, result = 0;
@@ -340,6 +366,12 @@ int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor
         work_count += result;
 
         if ((result = aeron_client_conductor_check_lingering_resources(conductor, now_ns)) < 0)
+        {
+            return -1;
+        }
+        work_count += result;
+
+        if ((result = aeron_client_conductor_check_registering_resources(conductor, now_ns)) < 0)
         {
             return -1;
         }
@@ -430,7 +462,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
 }
 
 void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
@@ -509,7 +541,7 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
 }
 
 void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, void *item)
@@ -588,7 +620,7 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
 }
 
 void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
@@ -663,8 +695,6 @@ int aeron_client_conductor_async_add_publication(
     cmd->command_base.func = aeron_client_conductor_on_cmd_add_publication;
     cmd->command_base.item = NULL;
     cmd->resource.publication = NULL;
-    cmd->epoch_clock = conductor->epoch_clock;
-    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
     cmd->uri_length = (int32_t)uri_length;
@@ -738,8 +768,6 @@ int aeron_client_conductor_async_add_exclusive_publication(
     cmd->command_base.func = aeron_client_conductor_on_cmd_add_exclusive_publication;
     cmd->command_base.item = NULL;
     cmd->resource.exclusive_publication = NULL;
-    cmd->epoch_clock = conductor->epoch_clock;
-    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
     cmd->uri_length = (int32_t)uri_length;
@@ -820,8 +848,6 @@ int aeron_client_conductor_async_add_subscription(
     cmd->command_base.func = aeron_client_conductor_on_cmd_add_subscription;
     cmd->command_base.item = NULL;
     cmd->resource.subscription = NULL;
-    cmd->epoch_clock = conductor->epoch_clock;
-    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
     cmd->uri_length = (int32_t)uri_length;

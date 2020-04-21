@@ -297,13 +297,6 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
     {
         case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
         {
-            if (async->epoch_clock() > async->registration_deadline_ms)
-            {
-                aeron_set_err(ETIMEDOUT, "async_add_publication no response from driver");
-                aeron_async_cmd_free(async);
-                return -1;
-            }
-
             return 0;
         }
 
@@ -320,6 +313,13 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
             *publication = async->resource.publication;
             aeron_async_cmd_free(async);
             return 1;
+        }
+
+        case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
+        {
+            aeron_set_err(ETIMEDOUT, "%s", "async_add_publication no response from media driver");
+            aeron_async_cmd_free(async);
+            return -1;
         }
 
         default:
@@ -363,13 +363,6 @@ int aeron_async_add_exclusive_publication_poll(
     {
         case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
         {
-            if (async->epoch_clock() > async->registration_deadline_ms)
-            {
-                aeron_set_err(ETIMEDOUT, "async_add_exclusive_publication no response from driver");
-                aeron_async_cmd_free(async);
-                return -1;
-            }
-
             return 0;
         }
 
@@ -386,6 +379,13 @@ int aeron_async_add_exclusive_publication_poll(
             *publication = async->resource.exclusive_publication;
             aeron_async_cmd_free(async);
             return 1;
+        }
+
+        case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
+        {
+            aeron_set_err(ETIMEDOUT, "%s", "async_add_exclusive_publication no response from media driver");
+            aeron_async_cmd_free(async);
+            return -1;
         }
 
         default:
@@ -422,7 +422,7 @@ int aeron_async_add_subscription(
         on_available_image_handler,
         on_available_image_clientd,
         on_unavailable_image_handler,
-        on_available_image_clientd);
+        on_unavailable_image_clientd);
 }
 
 int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron_async_add_subscription_t *async)
@@ -443,13 +443,6 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
     {
         case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
         {
-            if (async->epoch_clock() > async->registration_deadline_ms)
-            {
-                aeron_set_err(ETIMEDOUT, "async_add_subscription no response from driver");
-                aeron_async_cmd_free(async);
-                return -1;
-            }
-
             return 0;
         }
 
@@ -466,6 +459,13 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
             *subscription = async->resource.subscription;
             aeron_async_cmd_free(async);
             return 1;
+        }
+
+        case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
+        {
+            aeron_set_err(ETIMEDOUT, "%s", "async_add_subscription no response from media driver");
+            aeron_async_cmd_free(async);
+            return -1;
         }
 
         default:

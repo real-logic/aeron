@@ -34,7 +34,8 @@ typedef enum aeron_client_registration_status_en
 {
     AERON_CLIENT_AWAITING_MEDIA_DRIVER,
     AERON_CLIENT_REGISTERED_MEDIA_DRIVER,
-    AERON_CLIENT_ERRORED_MEDIA_DRIVER
+    AERON_CLIENT_ERRORED_MEDIA_DRIVER,
+    AERON_CLIENT_TIMEOUT_MEDIA_DRIVER
 }
 aeron_client_registration_status_t;
 
@@ -66,7 +67,6 @@ typedef struct aeron_client_registering_resource_stct
         aeron_counter_t *counter;
     }
     resource;
-    aeron_clock_func_t epoch_clock;
 
     aeron_on_available_image_t on_available_image;
     void *on_available_image_clientd;
@@ -76,7 +76,7 @@ typedef struct aeron_client_registering_resource_stct
     char *error_message;
     char *uri;
     int64_t registration_id;
-    long long registration_deadline_ms;
+    long long registration_deadline_ns;
     int32_t error_code;
     int32_t error_message_length;
     int32_t uri_length;

@@ -1481,7 +1481,7 @@ class ConsensusModuleAgent implements Agent
             final RecordingLog.Log log = recoveryPlan.log;
             final long stopPosition = min(log.stopPosition, electionPosition);
 
-            if (recoveryPlan.hasReplay())
+            if (recoveryPlan.hasReplay() && stopPosition > log.startPosition)
             {
                 return new LogReplay(
                     archive,
@@ -1557,6 +1557,7 @@ class ConsensusModuleAgent implements Agent
     {
         archive.truncateRecording(logRecordingId(), logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
     }
 
     public void trackCatchupCompletion(final ClusterMember follower, final long leadershipTermId)

@@ -24,7 +24,9 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <string.h>
+
 #include "util/aeron_strutil.h"
+#include "aeron_windows.h"
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp)
 {

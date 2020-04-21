@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -31,7 +30,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +47,9 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static java.nio.ByteBuffer.allocate;
+import static java.nio.file.Files.createTempDirectory;
+import static java.nio.file.Files.deleteIfExists;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.emptySet;
@@ -56,14 +57,13 @@ import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.of;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 class ArchiveToolTests
 {
-    private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int MTU_LENGTH = PAGE_SIZE * 4;
+    private static final int TERM_LENGTH = MTU_LENGTH * 8;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
-    private static final int MTU_LENGTH = 1024;
     private static Path validationDir;
 
     private long invalidRecording0;
@@ -86,24 +86,26 @@ class ArchiveToolTests
     private long validRecording2;
     private long validRecording3;
     private long validRecording4;
-    private long validRecording5;
+    private long validRecording51;
+    private long validRecording52;
+    private long validRecording53;
     private long validRecording6;
 
     private long currentTimeMillis = 0;
     private final EpochClock epochClock = () -> currentTimeMillis += 100;
-    private final PrintStream out = mock(PrintStream.class);
+    private final PrintStream out = Mockito.mock(PrintStream.class);
     private File archiveDir;
 
     @BeforeAll
     static void beforeAll() throws IOException
     {
-        validationDir = Files.createTempDirectory("validation-tests");
+        validationDir = createTempDirectory("validation-tests");
     }
 
     @AfterAll
     static void afterAll() throws IOException
     {
-        Files.deleteIfExists(validationDir);
+        deleteIfExists(validationDir);
     }
 
     @SuppressWarnings("MethodLength")
@@ -156,9 +158,13 @@ class ArchiveToolTests
             validRecording4 = catalog.addNewRecording(
                 21 * TERM_LENGTH + (TERM_LENGTH - 64), 22 * TERM_LENGTH + 992, 19, 1, -25,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -999, 7, "ch2", "ch2?tag=OK", "src2");
-            validRecording5 = catalog.addNewRecording(0, 64 + PAGE_SIZE, 20, 777, 0,
+            validRecording51 = catalog.addNewRecording(0, 64 + PAGE_SIZE, 20, 777, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -1, 20, "ch2", "ch2?tag=OK", "src2");
-            validRecording6 = catalog.addNewRecording(352, NULL_POSITION, 21, NULL_TIMESTAMP, 0,
+            validRecording52 = catalog.addNewRecording(0, NULL_POSITION, 21, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 52, 52, "ch2", "ch2?tag=OK", "src2");
+            validRecording53 = catalog.addNewRecording(0, NULL_POSITION, 22, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 53, 53, "ch2", "ch2?tag=OK", "src2");
+            validRecording6 = catalog.addNewRecording(352, NULL_POSITION, 23, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 10, 6, "ch2", "ch2?tag=OK", "src2");
         }
 
@@ -196,6 +202,7 @@ class ArchiveToolTests
                 dataHeaderFlyweight.termOffset(0);
                 dataHeaderFlyweight.termId(5);
                 fileChannel.write(byteBuffer);
+
                 byteBuffer.clear();
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
                 dataHeaderFlyweight.frameLength(40);
@@ -214,6 +221,7 @@ class ArchiveToolTests
                 dataHeaderFlyweight.termOffset(0);
                 dataHeaderFlyweight.termId(9);
                 fileChannel.write(byteBuffer);
+
                 byteBuffer.clear();
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
                 dataHeaderFlyweight.frameLength(50);
@@ -232,6 +240,7 @@ class ArchiveToolTests
                 dataHeaderFlyweight.termOffset(0);
                 dataHeaderFlyweight.termId(0);
                 fileChannel.write(byteBuffer);
+
                 byteBuffer.clear();
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
                 dataHeaderFlyweight.frameLength(60);
@@ -263,28 +272,26 @@ class ArchiveToolTests
                     dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
                     dataHeaderFlyweight.streamId(2);
                     dataHeaderFlyweight.frameLength(MTU_LENGTH);
-                    dataHeaderFlyweight.sessionId(790663674);
+                    dataHeaderFlyweight.sessionId(876814387);
                     dataHeaderFlyweight.termOffset(termOffset);
                     fileChannel.write(byteBuffer, termOffset);
                 }
 
                 byteBuffer.clear().limit(256);
-                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
-                dataHeaderFlyweight.streamId(2);
                 dataHeaderFlyweight.frameLength(256);
                 dataHeaderFlyweight.termOffset(TERM_LENGTH - MTU_LENGTH);
                 dataHeaderFlyweight.sessionId(1025596259);
                 fileChannel.write(byteBuffer, TERM_LENGTH - MTU_LENGTH);
+
                 byteBuffer.clear().limit(MTU_LENGTH - 256);
                 dataHeaderFlyweight.headerType(HDR_TYPE_PAD);
-                dataHeaderFlyweight.streamId(2);
                 dataHeaderFlyweight.sessionId(-1); // should not be checked
                 dataHeaderFlyweight.frameLength(MTU_LENGTH - 256);
                 dataHeaderFlyweight.termOffset(TERM_LENGTH - MTU_LENGTH + 256);
                 fileChannel.write(byteBuffer, TERM_LENGTH - MTU_LENGTH + 256);
+
                 byteBuffer.clear().limit(64);
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
-                dataHeaderFlyweight.streamId(2);
                 dataHeaderFlyweight.frameLength(64);
                 dataHeaderFlyweight.termOffset(0);
                 dataHeaderFlyweight.termId(1);
@@ -341,8 +348,8 @@ class ArchiveToolTests
                 {
                     dataHeaderFlyweight.setMemory(HEADER_LENGTH + i, 1, (byte)i);
                 }
-                dataHeaderFlyweight.setMemory(HEADER_LENGTH, 1, Byte.MIN_VALUE);
-                dataHeaderFlyweight.setMemory(lastFrameLength - 1, 1, Byte.MAX_VALUE);
+                dataHeaderFlyweight.setMemory(HEADER_LENGTH, 1, (byte)-128);
+                dataHeaderFlyweight.setMemory(lastFrameLength - 1, 1, (byte)127);
                 fileChannel.write(byteBuffer, fileOffset);
             });
 
@@ -357,6 +364,7 @@ class ArchiveToolTests
                 dataHeaderFlyweight.termId(18);
                 dataHeaderFlyweight.termOffset(0);
                 fileChannel.write(byteBuffer);
+
                 byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(128);
                 dataHeaderFlyweight.termId(18);
@@ -386,6 +394,7 @@ class ArchiveToolTests
                 dataHeaderFlyweight.termId(-4);
                 dataHeaderFlyweight.termOffset(TERM_LENGTH - 64);
                 fileChannel.write(byteBuffer, TERM_LENGTH - 64);
+
                 byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(992);
                 dataHeaderFlyweight.termId(-3);
@@ -393,8 +402,9 @@ class ArchiveToolTests
                 fileChannel.write(byteBuffer, TERM_LENGTH);
             });
 
+        // Page straddle: valid checksum
         writeToSegmentFile(
-            createFile(segmentFileName(validRecording5, 0)),
+            createFile(segmentFileName(validRecording51, 0)),
             SEGMENT_LENGTH,
             (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
@@ -403,14 +413,52 @@ class ArchiveToolTests
                 dataHeaderFlyweight.streamId(20);
                 dataHeaderFlyweight.sessionId(420107693);
                 fileChannel.write(byteBuffer);
-                for (int i = 0; i < PAGE_SIZE / MTU_LENGTH; i++)
-                {
-                    byteBuffer.clear();
-                    dataHeaderFlyweight.frameLength(MTU_LENGTH);
-                    dataHeaderFlyweight.termOffset(64 + i * MTU_LENGTH);
-                    dataHeaderFlyweight.sessionId(790663674);
-                    fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
-                }
+
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(PAGE_SIZE);
+                dataHeaderFlyweight.termOffset(64);
+                dataHeaderFlyweight.sessionId(790663674);
+                fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
+            });
+
+        // Page straddle: non-zero bytes in every page since the straddle
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording52, 0)),
+            SEGMENT_LENGTH,
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(111);
+                dataHeaderFlyweight.streamId(52);
+                fileChannel.write(byteBuffer);
+
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(MTU_LENGTH);
+                dataHeaderFlyweight.termOffset(128);
+                dataHeaderFlyweight.putBytes(PAGE_SIZE + 1, new byte[]{ 0, 0, -1, 0, 7 });
+                dataHeaderFlyweight.putByte(2 * PAGE_SIZE + 512, (byte)127);
+                dataHeaderFlyweight.putByte(MTU_LENGTH - 128 - 1, (byte)1);
+                dataHeaderFlyweight.putByte(MTU_LENGTH - 1, (byte)-128);
+                fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
+            });
+
+        // Page straddle: all zeroes in one of the pages after the straddle
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording53, 0)),
+            SEGMENT_LENGTH,
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(60);
+                dataHeaderFlyweight.streamId(53);
+                fileChannel.write(byteBuffer);
+
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(3 * PAGE_SIZE);
+                dataHeaderFlyweight.termOffset(64);
+                dataHeaderFlyweight.setMemory(HEADER_LENGTH, 2 * PAGE_SIZE - HEADER_LENGTH, (byte)111);
+                dataHeaderFlyweight.setMemory(3 * PAGE_SIZE - 64, 64, (byte)-128);
+                fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
             });
 
         writeToSegmentFile(
@@ -422,13 +470,14 @@ class ArchiveToolTests
                 dataHeaderFlyweight.frameLength(64);
                 dataHeaderFlyweight.streamId(6);
                 dataHeaderFlyweight.termOffset(352);
-                dataHeaderFlyweight.sessionId(-1960800604); // CRC
+                dataHeaderFlyweight.sessionId(-1960800604); // CRC32
                 dataHeaderFlyweight.setMemory(HEADER_LENGTH, 20, (byte)1);
                 fileChannel.write(byteBuffer, 352);
+
                 byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(544);
                 dataHeaderFlyweight.termOffset(416);
-                dataHeaderFlyweight.sessionId(-327206874); // CRC
+                dataHeaderFlyweight.sessionId(-327206874); // CRC32
                 dataHeaderFlyweight.setMemory(HEADER_LENGTH, 256, (byte)11);
                 dataHeaderFlyweight.setMemory(HEADER_LENGTH + 256, 256, (byte)-20);
                 fileChannel.write(byteBuffer, 416);
@@ -705,25 +754,46 @@ class ArchiveToolTests
     }
 
     @Test
-    void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddle()
+    void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddleValidChecksum()
     {
-        verifyRecording(out, archiveDir, validRecording5, emptySet(), null, epochClock, (file) -> true);
+        verifyRecording(out, archiveDir, validRecording51, emptySet(), null, epochClock, (file) -> true);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE - MTU_LENGTH, 20, 100,
-                0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777, 0, 20, "ch2", "src2");
+        }
+    }
+
+    @Test
+    void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddleNonZeroBytesInEveryPageAfterTheStraddle()
+    {
+        verifyRecording(out, archiveDir, validRecording52, emptySet(), null, epochClock, (file) -> true);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, NULL_TIMESTAMP, 0, 52, "ch2", "src2");
+        }
+    }
+
+    @Test
+    void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddle()
+    {
+        verifyRecording(out, archiveDir, validRecording53, emptySet(), null, epochClock, (file) -> true);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording53, VALID, 0, 64, 22, 100, 0, 53, "ch2", "src2");
         }
     }
 
     @Test
     void verifyRecordingValidRecordingDoNotTruncateSegmentFileOnPageStraddle()
     {
-        verifyRecording(out, archiveDir, validRecording5, emptySet(), null, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording53, emptySet(), null, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777, 0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording53, VALID, 0, 64 + 3 * PAGE_SIZE, 22, 100, 0, 53, "ch2", "src2");
         }
     }
 
@@ -735,7 +805,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 100, 0, 6, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 23, 100, 0, 6, "ch2", "src2");
         }
     }
 
@@ -798,12 +868,16 @@ class ArchiveToolTests
                 11 * TERM_LENGTH + 320, 18, 400, 7, 13, "ch2", "src2");
             assertRecording(catalog, validRecording4, VALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
-            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
                 0, 20, "ch2", "src2");
-            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 500, 0, 6, "ch2", "src2");
+            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, 500,
+                0, 52, "ch2", "src2");
+            assertRecording(catalog, validRecording53, VALID, 0, 64 + 3 * PAGE_SIZE, 22, 600,
+                0, 53, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 23, 700, 0, 6, "ch2", "src2");
         }
 
-        Mockito.verify(out, times(22)).println(any(String.class));
+        Mockito.verify(out, times(24)).println(any(String.class));
     }
 
     @Test
@@ -852,12 +926,16 @@ class ArchiveToolTests
                 18, NULL_TIMESTAMP, 7, 13, "ch2", "src2");
             assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
-            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE - MTU_LENGTH, 20, 400,
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
                 0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, 777,
+                0, 52, "ch2", "src2");
+            assertRecording(catalog, validRecording53, VALID, 0, 64, 22, 777,
+                0, 53, "ch2", "src2");
             assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 500, 0, 6, "ch2", "src2");
         }
 
-        Mockito.verify(out, times(22)).println(any(String.class));
+        Mockito.verify(out, times(24)).println(any(String.class));
     }
 
     @Test
@@ -914,9 +992,9 @@ class ArchiveToolTests
                 18, NULL_TIMESTAMP, 7, 13, "ch2", "src2");
             assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
-            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
                 0, 20, "ch2", "src2");
-            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 400, 0, 6, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 23, 600, 0, 6, "ch2", "src2");
         }
     }
 
@@ -938,9 +1016,9 @@ class ArchiveToolTests
                 18, 400, 7, 13, "ch2", "src2");
             assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
-            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
                 0, 20, "ch2", "src2");
-            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 500, 0, 6, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 23, 700, 0, 6, "ch2", "src2");
         }
     }
 
@@ -1032,7 +1110,8 @@ class ArchiveToolTests
     @FunctionalInterface
     interface SegmentWriter
     {
-        void write(ByteBuffer bb, DataHeaderFlyweight flyweight, FileChannel channel) throws IOException;
+        void write(ByteBuffer byteBuffer, DataHeaderFlyweight dataHeaderFlyweight, FileChannel channel)
+            throws IOException;
     }
 
     private File createFile(final String name) throws IOException
@@ -1051,11 +1130,11 @@ class ArchiveToolTests
     private void writeToSegmentFile(
         final File file, final int fileLength, final SegmentWriter segmentWriter) throws IOException
     {
-        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(MTU_LENGTH);
-        final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(byteBuffer);
+        final ByteBuffer byteBuffer = allocate(MTU_LENGTH);
+        final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight(byteBuffer);
         try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
         {
-            segmentWriter.write(byteBuffer, flyweight, channel);
+            segmentWriter.write(byteBuffer, dataHeaderFlyweight, channel);
             final long size = channel.size();
             if (fileLength != size)
             {

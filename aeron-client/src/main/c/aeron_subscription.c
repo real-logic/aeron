@@ -87,7 +87,7 @@ int aeron_subscription_alloc_image_list(aeron_image_list_t **image_list, size_t 
 
     _image_list->change_number = -1;
     _image_list->array = (aeron_image_t **)((uint8_t *)_image_list + sizeof(aeron_image_list_t));
-    _image_list->length = length;
+    _image_list->length = (uint32_t)length;
     _image_list->next_list = NULL;
 
     *image_list = _image_list;

@@ -101,7 +101,7 @@ int aeron_buffer_claim_commit(aeron_buffer_claim_t *buffer_claim)
         aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
 
         AERON_PUT_ORDERED(
-            data_header->frame_header.frame_length, buffer_claim->length + AERON_DATA_HEADER_LENGTH);
+            data_header->frame_header.frame_length, (int32_t)buffer_claim->length + AERON_DATA_HEADER_LENGTH);
     }
 
     return 0;
@@ -115,7 +115,7 @@ int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim)
 
         data_header->frame_header.type = AERON_HDR_TYPE_PAD;
         AERON_PUT_ORDERED(
-            data_header->frame_header.frame_length, buffer_claim->length + AERON_DATA_HEADER_LENGTH);
+            data_header->frame_header.frame_length, (int32_t)buffer_claim->length + AERON_DATA_HEADER_LENGTH);
     }
 
     return 0;

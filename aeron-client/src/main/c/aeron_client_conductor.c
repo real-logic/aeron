@@ -588,7 +588,7 @@ int aeron_client_conductor_async_add_publication(
     cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
-    cmd->uri_length = uri_length;
+    cmd->uri_length = (int32_t)uri_length;
     cmd->stream_id = stream_id;
     cmd->registration_id = -1;
     cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
@@ -663,7 +663,7 @@ int aeron_client_conductor_async_add_exclusive_publication(
     cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
     cmd->error_message = NULL;
     cmd->uri = uri_copy;
-    cmd->uri_length = uri_length;
+    cmd->uri_length = (int32_t)uri_length;
     cmd->stream_id = stream_id;
     cmd->registration_id = -1;
     cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;

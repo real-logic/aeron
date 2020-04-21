@@ -230,7 +230,7 @@ inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
         {
             if (type_id == metadata->type_id && registration_id == *(int64_t *)(metadata->key))
             {
-                return i;
+                return (int)i;
             }
         }
     }

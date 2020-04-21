@@ -58,7 +58,7 @@ typedef struct aeron_subscription_stct
     aeron_on_unavailable_image_t on_unavailable_image;
     void *on_unavailable_image_clientd;
 
-    uint32_t round_robin_index;
+    size_t round_robin_index;
     bool is_closed;
 }
 aeron_subscription_t;

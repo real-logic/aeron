@@ -65,7 +65,7 @@ inline void aeron_term_appender_header_write(
 {
     aeron_data_header_t *header = (aeron_data_header_t *)(term_buffer->addr + offset);
 
-    AERON_PUT_ORDERED(header->frame_header.frame_length, (-length));
+    AERON_PUT_ORDERED(header->frame_header.frame_length, (-(int32_t)length));
     aeron_release();
 
     header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -112,7 +112,7 @@ inline int32_t aeron_term_appender_claim(
     const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, aligned_frame_length);
     const int64_t term_offset = raw_tail & 0xFFFFFFFF;
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-    const int32_t term_length = term_buffer->length;
+    const int32_t term_length = (int32_t)term_buffer->length;
 
     if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
     {
@@ -123,17 +123,18 @@ inline int32_t aeron_term_appender_claim(
     if (resulting_offset > term_length)
     {
         resulting_offset = aeron_term_appender_handle_end_of_log_condition(
-            term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+            term_buffer, (int32_t)term_offset, term_length, term_id, session_id, stream_id);
     }
     else
     {
-        aeron_term_appender_header_write(term_buffer, term_offset, frame_length, term_id, session_id, stream_id);
+        aeron_term_appender_header_write(
+            term_buffer, (int32_t)term_offset, frame_length, term_id, session_id, stream_id);
         buffer_claim->frame_header = term_buffer->addr + term_offset;
         buffer_claim->data = buffer_claim->frame_header + AERON_DATA_HEADER_LENGTH;
         buffer_claim->length = length;
     }
 
-    return resulting_offset;
+    return (int32_t)resulting_offset;
 }
 
 inline int32_t aeron_term_appender_append_unfragmented_message(
@@ -152,7 +153,7 @@ inline int32_t aeron_term_appender_append_unfragmented_message(
     const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, aligned_frame_length);
     const int64_t term_offset = raw_tail & 0xFFFFFFFF;
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-    const int32_t term_length = term_buffer->length;
+    const int32_t term_length = (int32_t)term_buffer->length;
 
     if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
     {
@@ -163,11 +164,12 @@ inline int32_t aeron_term_appender_append_unfragmented_message(
     if (resulting_offset > term_length)
     {
         resulting_offset = aeron_term_appender_handle_end_of_log_condition(
-            term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+            term_buffer, (int32_t)term_offset, term_length, term_id, session_id, stream_id);
     }
     else
     {
-        aeron_term_appender_header_write(term_buffer, term_offset, frame_length, term_id, session_id, stream_id);
+        aeron_term_appender_header_write(
+            term_buffer, (int32_t)term_offset, frame_length, term_id, session_id, stream_id);
         memcpy(term_buffer->addr + term_offset + AERON_DATA_HEADER_LENGTH, buffer, length);
 
         aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
@@ -178,10 +180,10 @@ inline int32_t aeron_term_appender_append_unfragmented_message(
                 clientd, term_buffer->addr + term_offset, frame_length);
         }
 
-        AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+        AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
     }
 
-    return resulting_offset;
+    return (int32_t)resulting_offset;
 }
 
 inline int32_t aeron_term_appender_append_unfragmented_messagev(
@@ -201,7 +203,7 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
     const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, aligned_frame_length);
     const int64_t term_offset = raw_tail & 0xFFFFFFFF;
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-    const int32_t term_length = term_buffer->length;
+    const int32_t term_length = (int32_t)term_buffer->length;
 
     if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
     {
@@ -212,17 +214,20 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
     if (resulting_offset > term_length)
     {
         resulting_offset = aeron_term_appender_handle_end_of_log_condition(
-        term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+            term_buffer, (int32_t)term_offset, term_length, term_id, session_id, stream_id);
     }
     else
     {
-        aeron_term_appender_header_write(term_buffer, term_offset, frame_length, term_id, session_id, stream_id);
+        aeron_term_appender_header_write(
+            term_buffer, (int32_t)term_offset, frame_length, term_id, session_id, stream_id);
 
         aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
-        int32_t offset = term_offset + AERON_DATA_HEADER_LENGTH;
+        int32_t offset = (int32_t)term_offset + AERON_DATA_HEADER_LENGTH;
         size_t i = 0;
 
-        for (int32_t ending_offset = offset + length; offset < ending_offset; offset += iov[i].iov_len, i++)
+        for (int32_t ending_offset = offset + (int32_t)length;
+            offset < ending_offset;
+            offset += (int32_t)iov[i].iov_len, i++)
         {
             memcpy(term_buffer->addr + offset, iov[i].iov_base, iov[i].iov_len);
         }
@@ -233,10 +238,10 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
                 clientd, term_buffer->addr + term_offset, frame_length);
         }
 
-        AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+        AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
     }
 
-    return resulting_offset;
+    return (int32_t)resulting_offset;
 }
 
 inline int32_t aeron_term_appender_append_fragmented_message(
@@ -260,7 +265,7 @@ inline int32_t aeron_term_appender_append_fragmented_message(
     const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, required_length);
     const int64_t term_offset = raw_tail & 0xFFFFFFFF;
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-    const int32_t term_length = term_buffer->length;
+    const int32_t term_length = (int32_t)term_buffer->length;
 
     if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
     {
@@ -271,13 +276,13 @@ inline int32_t aeron_term_appender_append_fragmented_message(
     if (resulting_offset > term_length)
     {
         resulting_offset = aeron_term_appender_handle_end_of_log_condition(
-            term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+            term_buffer, (int32_t)term_offset, term_length, term_id, session_id, stream_id);
     }
     else
     {
         uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
         size_t remaining = length;
-        int32_t frame_offset = term_offset;
+        int32_t frame_offset = (int32_t)term_offset;
 
         do
         {
@@ -305,16 +310,16 @@ inline int32_t aeron_term_appender_append_fragmented_message(
                     clientd, term_buffer->addr + term_offset, frame_length);
             }
 
-            AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+            AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
 
             flags = 0;
-            frame_offset += aligned_length;
+            frame_offset += (int32_t)aligned_length;
             remaining -= bytes_to_write;
         }
         while (remaining > 0);
     }
 
-    return resulting_offset;
+    return (int32_t)resulting_offset;
 }
 
 inline int32_t aeron_term_appender_append_fragmented_messagev(
@@ -339,7 +344,7 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
     const int64_t raw_tail = aeron_term_appender_get_and_add_raw_tail(term_tail_counter, required_length);
     const int64_t term_offset = raw_tail & 0xFFFFFFFF;
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-    const int32_t term_length = term_buffer->length;
+    const int32_t term_length = (int32_t)term_buffer->length;
 
     if (aeron_term_appender_check_term(active_term_id, term_id) < 0)
     {
@@ -350,29 +355,31 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
     if (resulting_offset > term_length)
     {
         resulting_offset = aeron_term_appender_handle_end_of_log_condition(
-            term_buffer, term_offset, term_length, term_id, session_id, stream_id);
+            term_buffer, (int32_t)term_offset, term_length, term_id, session_id, stream_id);
     }
     else
     {
         uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
         size_t remaining = length, i = 0;
-        int32_t frame_offset = term_offset;
+        int32_t frame_offset = (int32_t)term_offset;
         int32_t current_buffer_offset = 0;
 
         do
         {
-            int32_t bytes_to_write = remaining < max_payload_length ? remaining : max_payload_length;
+            int32_t bytes_to_write = remaining < max_payload_length ?
+                (int32_t)remaining : (int32_t)max_payload_length;
             size_t frame_length = bytes_to_write + AERON_DATA_HEADER_LENGTH;
             size_t aligned_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
 
-            aeron_term_appender_header_write(term_buffer, frame_offset, frame_length, term_id, session_id, stream_id);
+            aeron_term_appender_header_write(
+                term_buffer, frame_offset, frame_length, term_id, session_id, stream_id);
 
             int32_t bytes_written = 0;
             int32_t payload_offset = frame_offset + AERON_DATA_HEADER_LENGTH;
 
             do
             {
-                int32_t current_buffer_remaining = iov[i].iov_len - current_buffer_offset;
+                int32_t current_buffer_remaining = (int32_t)iov[i].iov_len - current_buffer_offset;
                 int32_t num_bytes = (bytes_to_write - bytes_written) < current_buffer_remaining ?
                     (bytes_to_write - bytes_written) : current_buffer_remaining;
                 memcpy(term_buffer->addr + payload_offset, iov[i].iov_base + current_buffer_offset, num_bytes);
@@ -403,16 +410,16 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
                     clientd, term_buffer->addr + frame_offset, frame_length);
             }
 
-            AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+            AERON_PUT_ORDERED(data_header->frame_header.frame_length, ((int32_t)frame_length));
 
             flags = 0;
-            frame_offset += aligned_length;
+            frame_offset += (int32_t)aligned_length;
             remaining -= bytes_to_write;
         }
         while (remaining > 0);
     }
 
-    return resulting_offset;
+    return (int32_t)resulting_offset;
 }
 
 #endif //AERON_C_TERM_APPENDER_H

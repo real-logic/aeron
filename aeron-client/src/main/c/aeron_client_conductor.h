@@ -210,6 +210,9 @@ int aeron_client_conductor_on_available_image(
     const char *log_file,
     int32_t source_identity_length,
     const char *source_identity);
+int aeron_client_conductor_on_unavailable_image(
+    aeron_client_conductor_t *conductor,
+    aeron_image_message_t *response);
 
 int aeron_client_conductor_get_or_create_log_buffer(
     aeron_client_conductor_t *conductor,

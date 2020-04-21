@@ -206,6 +206,20 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             break;
         }
 
+        case AERON_RESPONSE_ON_UNAVAILABLE_IMAGE:
+        {
+            aeron_image_message_t *response = (aeron_image_message_t *)buffer;
+
+            if (length < sizeof(aeron_image_message_t) ||
+                length < (sizeof(aeron_image_message_t) + response->channel_length))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_client_conductor_on_unavailable_image(conductor, response);
+            break;
+        }
+
         default:
             AERON_CLIENT_FORMAT_BUFFER(error_message, "response=%d unknown", type_id);
             conductor->error_handler(
@@ -922,6 +936,10 @@ int aeron_client_conductor_get_or_create_log_buffer(
         if (aeron_int64_to_ptr_hash_map_put(
             &conductor->log_buffer_by_id_map, original_registration_id, *log_buffer) < 0)
         {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "aeron_client_conductor_get_or_create_log_buffer (%d): %s",
+                errcode, strerror(errcode));
             aeron_log_buffer_delete(*log_buffer);
             return -1;
         }
@@ -1000,6 +1018,10 @@ int aeron_client_conductor_on_publication_ready(
                 if (aeron_int64_to_ptr_hash_map_put(
                     &conductor->resource_by_id_map, resource->registration_id, publication) < 0)
                 {
+                    int errcode = errno;
+
+                    aeron_set_err(errcode, "on_publication_ready - resource_by_id_map put (%d): %s",
+                        errcode, strerror(errcode));
                     return -1;
                 }
             }
@@ -1031,6 +1053,10 @@ int aeron_client_conductor_on_publication_ready(
                 if (aeron_int64_to_ptr_hash_map_put(
                     &conductor->resource_by_id_map, resource->registration_id, publication) < 0)
                 {
+                    int errcode = errno;
+
+                    aeron_set_err(errcode, "on_publication_ready - resource_by_id_map put (%d): %s",
+                        errcode, strerror(errcode));
                     return -1;
                 }
             }
@@ -1090,6 +1116,10 @@ int aeron_client_conductor_on_subscription_ready(
             if (aeron_int64_to_ptr_hash_map_put(
                 &conductor->resource_by_id_map, resource->registration_id, subscription) < 0)
             {
+                int errcode = errno;
+
+                aeron_set_err(errcode, "on_subscription_ready - resource_by_id_map put (%d): %s",
+                    errcode, strerror(errcode));
                 return -1;
             }
 
@@ -1160,6 +1190,10 @@ int aeron_client_conductor_on_available_image(
 
         if (aeron_int64_to_ptr_hash_map_put(&conductor->resource_by_id_map, response->correlation_id, image) < 0)
         {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "on_available_image - resource_by_id_map put (%d): %s",
+                errcode, strerror(errcode));
             return -1;
         }
 
@@ -1169,6 +1203,32 @@ int aeron_client_conductor_on_available_image(
         }
 
         // TODO: add image to subscription
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_on_unavailable_image(
+    aeron_client_conductor_t *conductor,
+    aeron_image_message_t *response)
+{
+    aeron_subscription_t *subscription = aeron_client_conductor_find_subscription_by_id(
+        conductor, response->subscription_registration_id);
+
+    if (NULL != subscription)
+    {
+        aeron_image_t *image = aeron_int64_to_ptr_hash_map_remove(
+            &conductor->resource_by_id_map, response->correlation_id);
+
+        // TODO: remove image from subscription
+
+        if (NULL != image)
+        {
+            if (NULL != subscription->on_unavailable_image)
+            {
+                subscription->on_unavailable_image(subscription->on_unavailable_image_clientd, image);
+            }
+        }
     }
 
     return 0;

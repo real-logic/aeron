@@ -43,6 +43,8 @@ int aeron_subscription_create(
         return -1;
     }
 
+    _subscription->command_base.type = AERON_CLIENT_TYPE_SUBSCRIPTION;
+
     _subscription->conductor_fields.image_lists_head.next_list = NULL;
     _subscription->conductor_fields.next_change_number = 0;
     _subscription->last_image_list_change_number = -1;

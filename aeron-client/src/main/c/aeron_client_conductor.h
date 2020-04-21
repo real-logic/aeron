@@ -53,6 +53,7 @@ typedef struct aeron_client_command_base_stct
 {
     void (*func)(void *clientd, void *command);
     void *item;
+    aeron_client_managed_resource_type_t type;
 }
 aeron_client_command_base_t;
 
@@ -117,6 +118,7 @@ typedef struct aeron_client_conductor_stct
     aeron_counters_reader_t counters_reader;
 
     aeron_int64_to_ptr_hash_map_t log_buffer_by_id_map;
+    aeron_int64_to_ptr_hash_map_t resource_by_id_map;
 
     struct lingering_resources_stct
     {
@@ -125,14 +127,6 @@ typedef struct aeron_client_conductor_stct
         aeron_client_managed_resource_t *array;
     }
     lingering_resources;
-
-    struct active_resources_stct
-    {
-        size_t length;
-        size_t capacity;
-        aeron_client_managed_resource_t *array;
-    }
-    active_resources;
 
     struct registering_resources_stct
     {

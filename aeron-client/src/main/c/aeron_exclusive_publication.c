@@ -50,6 +50,8 @@ int aeron_exclusive_publication_create(
         return -1;
     }
 
+    _publication->command_base.type = AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION;
+
     _publication->log_buffer = log_buffer;
     _publication->log_meta_data = (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
 

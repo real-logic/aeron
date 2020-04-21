@@ -39,6 +39,8 @@ int aeron_image_create(
         return -1;
     }
 
+    _image->command_base.type = AERON_CLIENT_TYPE_IMAGE;
+
     _image->log_buffer = log_buffer;
 
     _image->subscriber_position = subscriber_position;

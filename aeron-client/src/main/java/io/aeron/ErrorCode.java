@@ -67,6 +67,16 @@ public enum ErrorCode
      */
     NOT_SUPPORTED(8),
 
+    /**
+     * Attempted to send a command that had a host name the could be resolved.
+     */
+    UNKNOWN_HOST(9),
+
+    /**
+     * Attempted to send a command that referred to a resource that currently was unavailable.
+     */
+    RESOURCE_TEMPORARILY_UNAVAILABLE(10),
+
     // *** Insert new codes above here.
 
     /**
@@ -124,7 +134,7 @@ public enum ErrorCode
      */
     public static ErrorCode get(final int value)
     {
-        if (value >= 0 && value < (ERROR_CODES.length - 2))
+        if (0 <= value && value <= (ERROR_CODES.length - 2))
         {
             return ERROR_CODES[value];
         }

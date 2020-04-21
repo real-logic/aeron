@@ -148,8 +148,6 @@ public class ExtendRecordingTest
             }
         }
 
-        Tests.sleep(1000); // Replace this with code to look for the channel endpoint being removed
-
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
@@ -157,8 +155,8 @@ public class ExtendRecordingTest
             .mtu(MTU_LENGTH)
             .build();
 
-        try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(EXTEND_CHANNEL, RECORDED_STREAM_ID))
+        try (Subscription subscription = Tests.reAddSubscription(aeron, EXTEND_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID))
         {
             subscriptionIdTwo = aeronArchive
                 .extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);

@@ -109,7 +109,7 @@ public class ArchiveTest
 
     private void before(final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
-        if (archiveThreadingMode == ArchiveThreadingMode.SHARED)
+        if (threadingMode == ThreadingMode.INVOKER)
         {
             TestMediaDriver.notSupportedOnCMediaDriverYet("Foo");
         }
@@ -155,7 +155,7 @@ public class ArchiveTest
             .idleStrategySupplier(YieldingIdleStrategy::new)
             .errorHandler(Tests::onError);
 
-        if (archiveThreadingMode == ArchiveThreadingMode.SHARED)
+        if (threadingMode == ThreadingMode.INVOKER)
         {
             archiveContext.mediaDriverAgentInvoker(driver.sharedAgentInvoker());
         }

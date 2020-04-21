@@ -27,6 +27,10 @@ typedef struct aeron_image_stct
     aeron_client_command_base_t command_base;
     aeron_client_conductor_t *conductor;
 
+    aeron_log_buffer_t *log_buffer;
+
+    int64_t *subscriber_position;
+
     int64_t correlation_id;
     int32_t session_id;
 
@@ -37,6 +41,8 @@ aeron_image_t;
 int aeron_image_create(
     aeron_image_t **image,
     aeron_client_conductor_t *conductor,
+    aeron_log_buffer_t *log_buffer,
+    int64_t *subscriber_position,
     int64_t correlation_id,
     int32_t session_id);
 

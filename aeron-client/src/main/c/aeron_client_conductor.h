@@ -68,6 +68,11 @@ typedef struct aeron_client_registering_resource_stct
     resource;
     aeron_clock_func_t epoch_clock;
 
+    aeron_on_available_image_t on_available_image;
+    void *on_available_image_clientd;
+    aeron_on_unavailable_image_t on_unavailable_image;
+    void *on_unavailable_image_clientd;
+
     char *error_message;
     char *uri;
     int64_t registration_id;
@@ -190,6 +195,15 @@ int aeron_client_conductor_async_close_exclusive_publication(
 int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
 int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);
+int aeron_client_conductor_on_subscription_ready(
+    aeron_client_conductor_t *conductor, aeron_subscription_ready_t *response);
+int aeron_client_conductor_on_available_image(
+    aeron_client_conductor_t *conductor,
+    aeron_image_buffers_ready_t *response,
+    int32_t log_file_length,
+    const char *log_file,
+    int32_t source_identity_length,
+    const char *source_identity);
 
 int aeron_client_conductor_get_or_create_log_buffer(
     aeron_client_conductor_t *conductor,

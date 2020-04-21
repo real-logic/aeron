@@ -26,8 +26,11 @@ int aeron_subscription_create(
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
+    int64_t *channel_status_indicator_addr,
     aeron_on_available_image_t on_available_image,
-    aeron_on_unavailable_image_t on_unavailable_image)
+    void *on_available_image_clientd,
+    aeron_on_unavailable_image_t on_unavailable_image,
+    void *on_unavailable_image_clientd)
 {
     aeron_subscription_t *_subscription;
 
@@ -44,12 +47,16 @@ int aeron_subscription_create(
     _subscription->conductor_fields.next_change_number = 0;
     _subscription->last_image_list_change_number = -1;
 
+    _subscription->channel_status_indicator = channel_status_indicator_addr;
+
     _subscription->conductor = conductor;
     _subscription->channel = channel;
     _subscription->registration_id = registration_id;
     _subscription->stream_id = stream_id;
     _subscription->on_available_image = on_available_image;
+    _subscription->on_available_image_clientd = on_available_image_clientd;
     _subscription->on_unavailable_image = on_unavailable_image;
+    _subscription->on_unavailable_image_clientd = on_unavailable_image_clientd;
 
     _subscription->round_robin_index = 0;
     _subscription->is_closed = false;

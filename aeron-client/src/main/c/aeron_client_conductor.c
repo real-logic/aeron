@@ -30,6 +30,7 @@
 #include "command/aeron_control_protocol.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_cnc_file_descriptor.h"
+#include "aeron_image.h"
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context)
 {
@@ -140,11 +141,6 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             break;
         }
 
-        case AERON_RESPONSE_ON_AVAILABLE_IMAGE:
-        {
-            break;
-        }
-
         case AERON_RESPONSE_ON_PUBLICATION_READY:
         case AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY:
         {
@@ -157,6 +153,51 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             }
 
             result = aeron_client_conductor_on_publication_ready(conductor, response);
+            break;
+        }
+
+        case AERON_RESPONSE_ON_SUBSCRIPTION_READY:
+        {
+            aeron_subscription_ready_t *response = (aeron_subscription_ready_t *)buffer;
+
+            if (length < sizeof(aeron_subscription_ready_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_client_conductor_on_subscription_ready(conductor, response);
+            break;
+        }
+
+        case AERON_RESPONSE_ON_AVAILABLE_IMAGE:
+        {
+            aeron_image_buffers_ready_t *response = (aeron_image_buffers_ready_t *)buffer;
+            uint8_t *ptr = buffer + sizeof(aeron_image_buffers_ready_t);
+            int32_t log_file_length, source_identity_length;
+            const char *log_file = (const char *)(ptr + sizeof(int32_t));
+            const char *source_identity;
+
+            memcpy(&log_file_length, ptr, sizeof(int32_t));
+
+            if (length < sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) ||
+                length < sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) + log_file_length)
+            {
+                goto malformed_command;
+            }
+
+            ptr += sizeof(int32_t) + log_file_length;
+            memcpy(&source_identity_length, ptr, sizeof(int32_t));
+
+            if (length <
+                sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) + log_file_length + source_identity_length)
+            {
+                goto malformed_command;
+            }
+
+            source_identity = (const char *)(ptr + sizeof(int32_t));
+
+            result = aeron_client_conductor_on_available_image(
+                conductor, response, log_file_length, log_file, source_identity_length, source_identity);
             break;
         }
 
@@ -859,6 +900,160 @@ int aeron_client_conductor_on_publication_ready(
             AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
             break;
         }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_on_subscription_ready(
+    aeron_client_conductor_t *conductor, aeron_subscription_ready_t *response)
+{
+    for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
+
+        if (response->correlation_id == resource->registration_id)
+        {
+            int ensure_capacity_result = 0;
+
+            AERON_ARRAY_ENSURE_CAPACITY(
+                ensure_capacity_result, conductor->active_resources, aeron_client_managed_resource_t);
+            if (ensure_capacity_result < 0)
+            {
+                aeron_set_err(aeron_errcode(), "on_subscription_ready active_resources: %s", aeron_errmsg());
+                return -1;
+            }
+
+            aeron_client_managed_resource_t *active_resource =
+                &conductor->active_resources.array[conductor->active_resources.length++];
+
+            aeron_subscription_t *subscription;
+            int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
+                &conductor->counters_reader, response->channel_status_indicator_id);
+
+            if (aeron_subscription_create(
+                &subscription,
+                conductor,
+                resource->uri,
+                resource->stream_id,
+                resource->registration_id,
+                channel_status_indicator_addr,
+                resource->on_available_image,
+                resource->on_available_image_clientd,
+                resource->on_unavailable_image,
+                resource->on_unavailable_image_clientd) < 0)
+            {
+                return -1;
+            }
+
+            active_resource->type = AERON_CLIENT_TYPE_SUBSCRIPTION;
+            active_resource->resource.subscription = subscription;
+
+            resource->resource.subscription = subscription;
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->registering_resources.array,
+                sizeof(aeron_client_registering_resource_entry_t),
+                i,
+                last_index);
+            conductor->registering_resources.length--;
+
+            active_resource->registration_id = response->correlation_id;
+            active_resource->time_of_last_state_change_ns = conductor->nano_clock();
+
+            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            break;
+        }
+    }
+
+    return 0;
+}
+
+aeron_subscription_t *aeron_client_conductor_find_subscription_by_id(
+    aeron_client_conductor_t *conductor, int64_t registration_id)
+{
+    aeron_subscription_t *subscription = NULL;
+
+    for (size_t i = 0, size = conductor->active_resources.length; i < size; i++)
+    {
+        aeron_client_managed_resource_t *resource = &conductor->active_resources.array[i];
+
+        if (registration_id == resource->registration_id && AERON_CLIENT_TYPE_SUBSCRIPTION == resource->type)
+        {
+            subscription = resource->resource.subscription;
+            break;
+        }
+    }
+
+    return subscription;
+}
+
+int aeron_client_conductor_on_available_image(
+    aeron_client_conductor_t *conductor,
+    aeron_image_buffers_ready_t *response,
+    int32_t log_file_length,
+    const char *log_file,
+    int32_t source_identity_length,
+    const char *source_identity)
+{
+    aeron_subscription_t *subscription = aeron_client_conductor_find_subscription_by_id(
+        conductor, response->subscriber_registration_id);
+
+    if (NULL != subscription)
+    {
+        char log_file_str[AERON_MAX_PATH], source_identity_str[AERON_MAX_PATH];
+        int ensure_capacity_result = 0;
+
+        AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result, conductor->active_resources, aeron_client_managed_resource_t);
+        if (ensure_capacity_result < 0)
+        {
+            aeron_set_err(aeron_errcode(), "on_available_image active_resources: %s", aeron_errmsg());
+            return -1;
+        }
+
+        aeron_client_managed_resource_t *active_resource =
+            &conductor->active_resources.array[conductor->active_resources.length++];
+
+        memcpy(log_file_str, log_file, log_file_length);
+        log_file_str[log_file_length] = '\0';
+        memcpy(source_identity_str, source_identity, source_identity_length);
+        source_identity_str[source_identity_length] = '\0';
+
+        aeron_log_buffer_t *log_buffer;
+
+        if (aeron_client_conductor_get_or_create_log_buffer(
+            conductor, &log_buffer, log_file, response->correlation_id, conductor->pre_touch) < 0)
+        {
+            return -1;
+        }
+
+        aeron_image_t *image;
+        int64_t *subscriber_position = aeron_counters_reader_addr(
+            &conductor->counters_reader, response->subscriber_position_id);
+
+        if (aeron_image_create(
+            &image,
+            conductor,
+            log_buffer,
+            subscriber_position,
+            response->correlation_id,
+            response->session_id) < 0)
+        {
+            return -1;
+        }
+
+        active_resource->type = AERON_CLIENT_TYPE_IMAGE;
+        active_resource->resource.image = image;
+        active_resource->registration_id = response->correlation_id;
+        active_resource->time_of_last_state_change_ns = conductor->nano_clock();
+
+        if (NULL != subscription->on_available_image)
+        {
+            subscription->on_available_image(subscription->on_available_image_clientd, image);
+        }
+
+        // TODO: add image to subscription
     }
 
     return 0;

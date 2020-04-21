@@ -23,6 +23,8 @@
 int aeron_image_create(
     aeron_image_t **image,
     aeron_client_conductor_t *conductor,
+    aeron_log_buffer_t *log_buffer,
+    int64_t *subscriber_position,
     int64_t correlation_id,
     int32_t session_id)
 {
@@ -33,9 +35,13 @@ int aeron_image_create(
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "aeron_subscription_create (%d): %s", errcode, strerror(errcode));
+        aeron_set_err(errcode, "aeron_image_create (%d): %s", errcode, strerror(errcode));
         return -1;
     }
+
+    _image->log_buffer = log_buffer;
+
+    _image->subscriber_position = subscriber_position;
 
     _image->conductor = conductor;
     _image->correlation_id = correlation_id;

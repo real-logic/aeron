@@ -525,7 +525,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         else if (pollForResponse(clusterArchive, correlationId))
         {
             final long snapshotStopPosition = (int)clusterArchive.controlResponsePoller().relevantId();
-
             correlationId = NULL_VALUE;
 
             if (NULL_POSITION == snapshotStopPosition)
@@ -711,8 +710,12 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private int updateRecordingLog(final long nowMs)
     {
         boolean wasRecordingLogUpdated = false;
+        final long snapshotLeadershipTermId = snapshotsRetrieved.isEmpty() ?
+            NULL_VALUE : snapshotsRetrieved.get(0).leadershipTermId;
 
-        if (null != leaderLogEntry && recordingLog.isUnknown(leaderLogEntry.leadershipTermId))
+        if (null != leaderLogEntry &&
+            recordingLog.isUnknown(leaderLogEntry.leadershipTermId) &&
+            leaderLogEntry.leadershipTermId <= snapshotLeadershipTermId)
         {
             recordingLog.appendTerm(
                 liveLogRecordingId,
@@ -721,7 +724,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 leaderLogEntry.timestamp);
 
             wasRecordingLogUpdated = true;
-
             leaderLogEntry = null;
         }
 
@@ -752,7 +754,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 leaderLastTermEntry.timestamp);
 
             wasRecordingLogUpdated = true;
-
             leaderLastTermEntry = null;
         }
 

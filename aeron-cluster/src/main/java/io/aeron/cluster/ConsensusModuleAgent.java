@@ -216,6 +216,10 @@ class ConsensusModuleAgent implements Agent
         if (!ctx.ownsAeronClient() && !aeron.isClosed())
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandler);
+
+            closeExistingLog();
+            asyncStopLogRecording();
+
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             for (final ClusterSession session : sessionByIdMap.values())
             {
@@ -223,12 +227,13 @@ class ConsensusModuleAgent implements Agent
             }
 
             CloseHelper.close(errorHandler, ingressAdapter);
-            closeExistingLog();
             ClusterMember.closeMemberPublications(errorHandler, clusterMembers);
             CloseHelper.close(errorHandler, memberStatusAdapter);
             CloseHelper.close(errorHandler, serviceProxy);
             CloseHelper.close(errorHandler, consensusModuleAdapter);
             CloseHelper.close(errorHandler, archive);
+
+            state(ConsensusModule.State.CLOSED);
         }
 
         ctx.close();
@@ -717,8 +722,7 @@ class ConsensusModuleAgent implements Agent
                 if (clusterTermination.canTerminate(clusterMembers, terminationPosition, clusterClock.timeNanos()))
                 {
                     recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
+                    closeAndTerminate();
                 }
             }
         }
@@ -1034,8 +1038,7 @@ class ConsensusModuleAgent implements Agent
             }
             else if (ConsensusModule.State.QUITTING == state)
             {
-                state(ConsensusModule.State.CLOSED);
-                ctx.terminationHook().run();
+                closeAndTerminate();
             }
             else if (ConsensusModule.State.TERMINATING == state)
             {
@@ -1055,8 +1058,7 @@ class ConsensusModuleAgent implements Agent
                 if (canTerminate)
                 {
                     recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
+                    closeAndTerminate();
                 }
             }
         }
@@ -1145,8 +1147,7 @@ class ConsensusModuleAgent implements Agent
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit,
                 AeronException.Category.FATAL));
-            state(ConsensusModule.State.CLOSED);
-            ctx.terminationHook().run();
+            closeAndTerminate();
             return;
         }
 
@@ -1156,8 +1157,7 @@ class ConsensusModuleAgent implements Agent
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion),
                 AeronException.Category.FATAL));
-            state(ConsensusModule.State.CLOSED);
-            ctx.terminationHook().run();
+            closeAndTerminate();
             return;
         }
 
@@ -1865,8 +1865,7 @@ class ConsensusModuleAgent implements Agent
                     if (clusterTermination.canTerminate(clusterMembers, terminationPosition, nowNs))
                     {
                         recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
-                        state(ConsensusModule.State.CLOSED);
-                        ctx.terminationHook().run();
+                        closeAndTerminate();
                     }
                 }
             }
@@ -2940,9 +2939,33 @@ class ConsensusModuleAgent implements Agent
             {
                 ctx.errorHandler().onError(new ClusterException(
                     "Aeron client for service closed unexpectedly", AeronException.Category.WARN));
-                state(ConsensusModule.State.CLOSED);
-                ctx.terminationHook().run();
+                closeAndTerminate();
             }
+        }
+    }
+
+    private void closeAndTerminate()
+    {
+        asyncStopLogRecording();
+        state(ConsensusModule.State.CLOSED);
+        ctx.terminationHook().run();
+    }
+
+    private void asyncStopLogRecording()
+    {
+        if (NULL_VALUE != logSubscriptionId)
+        {
+            try
+            {
+                final long correlationId = aeron.nextCorrelationId();
+                archive.archiveProxy().stopRecording(logSubscriptionId, correlationId, archive.controlSessionId());
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(ex);
+            }
+
+            logSubscriptionId = NULL_VALUE;
         }
     }
 }

@@ -72,6 +72,12 @@ int aeron_subscription_delete(aeron_subscription_t *subscription)
     return 0;
 }
 
+int aeron_subscription_close(aeron_subscription_t *subscription)
+{
+    return NULL != subscription ?
+        aeron_client_conductor_async_close_subscription(subscription->conductor, subscription) : 0;
+}
+
 int aeron_subscription_alloc_image_list(aeron_image_list_t **image_list, size_t length)
 {
     aeron_image_list_t *_image_list;

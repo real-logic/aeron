@@ -192,6 +192,18 @@ int aeron_client_conductor_async_add_exclusive_publication(
 int aeron_client_conductor_async_close_exclusive_publication(
     aeron_client_conductor_t *conductor, aeron_exclusive_publication_t *publication);
 
+int aeron_client_conductor_async_add_subscription(
+    aeron_async_add_subscription_t **async,
+    aeron_client_conductor_t *conductor,
+    const char *uri,
+    int32_t stream_id,
+    aeron_on_available_image_t on_available_image_handler,
+    void *on_available_image_clientd,
+    aeron_on_unavailable_image_t on_unavailable_image_handler,
+    void *on_unavailable_image_clientd);
+int aeron_client_conductor_async_close_subscription(
+    aeron_client_conductor_t *conductor, aeron_subscription_t *subscription);
+
 int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
 int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);

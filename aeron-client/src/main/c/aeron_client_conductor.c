@@ -542,6 +542,85 @@ void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, vo
     }
 }
 
+void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_subscription_t *async = (aeron_async_add_subscription_t *)item;
+
+    char buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
+    aeron_subscription_command_t *command = (aeron_subscription_command_t *)buffer;
+    int ensure_capacity_result = 0, rb_offer_fail_count = 0;
+
+    command->correlated.correlation_id = async->registration_id;
+    command->correlated.client_id = conductor->client_id;
+    command->stream_id = async->stream_id;
+    command->channel_length = async->uri_length;
+    memcpy(buffer + sizeof(aeron_subscription_command_t), async->uri, async->uri_length);
+
+    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+        &conductor->to_driver_buffer,
+        AERON_COMMAND_ADD_SUBSCRIPTION,
+        buffer,
+        sizeof(aeron_subscription_command_t) + async->uri_length))
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)",
+                __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, err_buffer);
+            return;
+        }
+
+        sched_yield();
+    }
+
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+    if (ensure_capacity_result < 0)
+    {
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "subscription registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
+        return;
+    }
+
+    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
+    async->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+}
+
+void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_subscription_t *subscription = (aeron_subscription_t *)item;
+
+    if (subscription->is_closed)
+    {
+        return;
+    }
+
+    for (size_t i = 0, size = conductor->active_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_managed_resource_t *resource = &conductor->active_resources.array[i];
+
+        if (AERON_CLIENT_TYPE_SUBSCRIPTION == resource->type &&
+            subscription->registration_id == resource->registration_id)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->active_resources.array,
+                sizeof(aeron_client_managed_resource_t),
+                i,
+                last_index);
+            conductor->active_resources.length--;
+
+            // TODO: release images
+            aeron_subscription_delete(subscription);
+        }
+    }
+}
+
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
 {
     int fail_count = 0;
@@ -702,6 +781,92 @@ int aeron_client_conductor_async_close_exclusive_publication(
     else
     {
         if (aeron_client_conductor_command_offer(conductor->command_queue, publication) < 0)
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_add_subscription(
+    aeron_async_add_subscription_t **async,
+    aeron_client_conductor_t *conductor,
+    const char *uri,
+    int32_t stream_id,
+    aeron_on_available_image_t on_available_image_handler,
+    void *on_available_image_clientd,
+    aeron_on_unavailable_image_t on_unavailable_image_handler,
+    void *on_unavailable_image_clientd)
+{
+    aeron_async_add_subscription_t *cmd = NULL;
+    char *uri_copy = NULL;
+    size_t uri_length = strlen(uri);
+
+    *async = NULL;
+
+    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_subscription_t)) < 0 ||
+        aeron_alloc((void **)&uri_copy, uri_length + 1) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_async_add_subscription (%d): %s", errcode, strerror(errcode));
+        return -1;
+    }
+
+    memcpy(uri_copy, uri, uri_length);
+    uri_copy[uri_length] = '\0';
+
+    cmd->command_base.func = aeron_client_conductor_on_cmd_add_subscription;
+    cmd->command_base.item = NULL;
+    cmd->resource.subscription = NULL;
+    cmd->epoch_clock = conductor->epoch_clock;
+    cmd->registration_deadline_ms = conductor->epoch_clock() + conductor->driver_timeout_ms;
+    cmd->error_message = NULL;
+    cmd->uri = uri_copy;
+    cmd->uri_length = (int32_t)uri_length;
+    cmd->stream_id = stream_id;
+    cmd->registration_id = -1;
+    cmd->on_available_image = on_unavailable_image_handler;
+    cmd->on_available_image_clientd = on_available_image_clientd;
+    cmd->on_unavailable_image = on_unavailable_image_handler;
+    cmd->on_unavailable_image_clientd = on_unavailable_image_clientd;
+    cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
+    cmd->type = AERON_CLIENT_TYPE_SUBSCRIPTION;
+
+    if (conductor->invoker_mode)
+    {
+        *async = cmd;
+        aeron_client_conductor_on_cmd_add_subscription(conductor, cmd);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
+        {
+            aeron_free(cmd->uri);
+            aeron_free(cmd);
+            return -1;
+        }
+
+        *async = cmd;
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_close_subscription(
+    aeron_client_conductor_t *conductor, aeron_subscription_t *subscription)
+{
+    subscription->command_base.func = aeron_client_conductor_on_cmd_close_subscription;
+    subscription->command_base.item = NULL;
+
+    if (conductor->invoker_mode)
+    {
+        aeron_client_conductor_on_cmd_close_subscription(conductor, subscription);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, subscription) < 0)
         {
             return -1;
         }

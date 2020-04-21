@@ -834,6 +834,7 @@ public class ArchiveTool
                 startPosition,
                 termLength,
                 segmentLength,
+                checksum,
                 truncateFileOnPageStraddle::confirm);
         }
         catch (final Exception ex)

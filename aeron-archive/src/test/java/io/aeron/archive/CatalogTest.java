@@ -448,7 +448,7 @@ class CatalogTest
 
     @ParameterizedTest(name = "fragmentCrossesPageBoundary({0}, {1}, {2})")
     @MethodSource("pageBoundaryTestData")
-    void detectPageBoundaryStraddle(final long fragmentOffset, final long fragmentLength, final boolean expected)
+    void detectPageBoundaryStraddle(final int fragmentOffset, final int fragmentLength, final boolean expected)
     {
         assertEquals(expected, fragmentStraddlesPageBoundary(fragmentOffset, fragmentLength));
     }

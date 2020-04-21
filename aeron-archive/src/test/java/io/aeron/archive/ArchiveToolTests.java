@@ -417,7 +417,7 @@ class ArchiveToolTests
                 byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(PAGE_SIZE);
                 dataHeaderFlyweight.termOffset(64);
-                dataHeaderFlyweight.sessionId(790663674);
+                dataHeaderFlyweight.sessionId(2057703623);
                 fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
             });
 
@@ -756,22 +756,24 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddleValidChecksum()
     {
-        verifyRecording(out, archiveDir, validRecording51, emptySet(), null, epochClock, (file) -> true);
+        verifyRecording(out, archiveDir, validRecording51, emptySet(), crc32(), epochClock, (file) -> true);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777, 0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
         }
     }
 
     @Test
     void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddleNonZeroBytesInEveryPageAfterTheStraddle()
     {
-        verifyRecording(out, archiveDir, validRecording52, emptySet(), null, epochClock, (file) -> true);
+        verifyRecording(out, archiveDir, validRecording52, emptySet(), crc32(), epochClock, (file) -> true);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, NULL_TIMESTAMP, 0, 52, "ch2", "src2");
+            assertRecording(catalog, validRecording52, VALID, 0, 128 + MTU_LENGTH, 21, NULL_TIMESTAMP,
+                0, 52, "ch2", "src2");
         }
     }
 

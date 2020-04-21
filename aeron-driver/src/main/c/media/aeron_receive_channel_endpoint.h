@@ -29,7 +29,8 @@
 typedef enum aeron_receive_channel_endpoint_status_enum
 {
     AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE,
-    AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING
+    AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING,
+    AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSED
 }
 aeron_receive_channel_endpoint_status_t;
 
@@ -95,6 +96,8 @@ int aeron_receive_channel_endpoint_create(
 
 int aeron_receive_channel_endpoint_delete(
     aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *endpoint);
+
+int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpoint);
 
 int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr);
 

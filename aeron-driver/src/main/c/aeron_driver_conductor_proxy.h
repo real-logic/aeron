@@ -93,4 +93,8 @@ void aeron_driver_conductor_proxy_on_delete_receive_destination(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     void *destination);
 
+void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *endpoint);
+
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

@@ -155,7 +155,11 @@ int aeron_receive_channel_endpoint_delete(
         deleted_this_channel |= destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel;
         aeron_udp_channel_delete(destination->conductor_fields.udp_channel);
 
-        endpoint->transport_bindings->close_func(&destination->transport);
+        if (endpoint->conductor_fields.status != AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSED)
+        {
+            endpoint->transport_bindings->close_func(&destination->transport);
+        }
+
         aeron_receive_destination_delete(destination);
     }
 
@@ -166,6 +170,19 @@ int aeron_receive_channel_endpoint_delete(
 
     aeron_free(endpoint->destinations.array);
     aeron_free(endpoint);
+
+    return 0;
+}
+
+int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpoint)
+{
+    for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
+    {
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+        endpoint->transport_bindings->close_func(&destination->transport);
+    }
+
+    endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSED;
 
     return 0;
 }

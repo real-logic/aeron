@@ -501,15 +501,15 @@ void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *condu
     {
         aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
     }
-    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
-    {
-        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
-
-        aeron_str_to_ptr_hash_map_remove(
-            &conductor->receive_channel_endpoint_by_channel_map,
-            udp_channel->canonical_form,
-            udp_channel->canonical_length);
-    }
+//    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
+//    {
+//        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+//
+//        aeron_str_to_ptr_hash_map_remove(
+//            &conductor->receive_channel_endpoint_by_channel_map,
+//            udp_channel->canonical_form,
+//            udp_channel->canonical_length);
+//    }
 
     aeron_driver_conductor_unlink_all_subscribable(conductor, link);
 }
@@ -2609,10 +2609,14 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
+    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
     {
-        aeron_set_err(EINVAL, "%s", "receive_channel_endpoint found in CLOSING state");
+        aeron_set_err(
+            -AERON_ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE,
+            "receive_channel_endpoint found in CLOSING state, please retry");
         return -1;
+//        endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE;
+//        printf("%s\n", "Restoring closing endpoint...");
     }
 
     if (params.has_session_id)
@@ -3372,6 +3376,28 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     }
 
     aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
+}
+
+void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_base_t *cmd = item;
+    aeron_receive_channel_endpoint_t *endpoint = cmd->item;
+
+    if (endpoint->conductor_fields.status == AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING)
+    {
+        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+
+        aeron_str_to_ptr_hash_map_remove(
+            &conductor->receive_channel_endpoint_by_channel_map,
+            udp_channel->canonical_form,
+            udp_channel->canonical_length);
+
+        aeron_receive_channel_endpoint_close(endpoint);
+        aeron_receive_channel_endpoint_receiver_release(endpoint);
+    }
+
+    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, cmd);
 }
 
 extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr);

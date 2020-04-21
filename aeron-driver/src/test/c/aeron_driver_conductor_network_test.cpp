@@ -198,7 +198,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
         &receive_endpoint->stream_and_session_id_to_refcnt_map,
         aeron_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
 
-    ASSERT_EQ(AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING, receive_endpoint->conductor_fields.status);
+    ASSERT_EQ(AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSED, receive_endpoint->conductor_fields.status);
 }
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublications)

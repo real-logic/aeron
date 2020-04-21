@@ -206,6 +206,12 @@ const char *aeron_error_code_str(int errcode)
         case AERON_ERROR_CODE_NOT_SUPPORTED:
             return "not supported";
 
+        case AERON_ERROR_CODE_UNKNOWN_HOST:
+            return "unknown host";
+
+        case AERON_ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE:
+            return "resource temporarily unavailable";
+
         default:
             return "unknown error code";
     }

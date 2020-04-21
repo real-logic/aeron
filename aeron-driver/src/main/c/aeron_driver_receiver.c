@@ -301,7 +301,7 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
         }
     }
 
-    aeron_receive_channel_endpoint_receiver_release(endpoint);
+    aeron_driver_conductor_proxy_on_receive_endpoint_removed(receiver->context->conductor_proxy, endpoint);
 }
 
 void aeron_driver_receiver_on_add_subscription(void *clientd, void *item)

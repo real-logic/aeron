@@ -48,6 +48,7 @@ int aeron_image_create(
     _image->conductor = conductor;
     _image->correlation_id = correlation_id;
     _image->session_id = session_id;
+    _image->removal_change_number = INT32_MAX;
     _image->is_closed = false;
 
     *image = _image;

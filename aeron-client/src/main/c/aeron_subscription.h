@@ -77,11 +77,29 @@ int aeron_subscription_create(
 
 int aeron_subscription_delete(aeron_subscription_t *subscription);
 
-int aeron_subscription_alloc_image_list(aeron_image_list_t **image_list, size_t length);
+int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list, size_t length);
 
-int aeron_client_conductor_subscription_new_image_list(
-    aeron_subscription_t *subscription, aeron_image_list_t *image_list);
+int aeron_client_conductor_subscription_add_image(aeron_subscription_t *subscription, aeron_image_t *image);
+int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subscription, aeron_image_t *image);
+
+int aeron_client_conductor_subscription_install_new_image_list(
+    aeron_subscription_t *subscription, volatile aeron_image_list_t *image_list);
 
 int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *subscription);
+
+inline int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image)
+{
+    size_t length = (NULL == image_list) ? 0 : image_list->length;
+
+    for (size_t i = 0; i < length; i++)
+    {
+        if (image == image_list->array[i])
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
 
 #endif //AERON_C_SUBSCRIPTION_H

@@ -24,7 +24,6 @@ import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,9 +40,11 @@ import java.util.stream.Stream;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.Catalog.fragmentStraddlesPageBoundary;
+import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -71,7 +72,7 @@ class CatalogTest
     @BeforeEach
     void before()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 6, 1, "channelG", "channelG?tag=f", "sourceA");
@@ -127,7 +128,7 @@ class CatalogTest
     void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, () -> 3L))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, () -> 3L, null))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
@@ -155,7 +156,7 @@ class CatalogTest
     {
         final long newMaxEntries = MAX_ENTRIES * 2;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock, null))
         {
             assertEquals(newMaxEntries, catalog.maxEntries());
         }
@@ -166,7 +167,7 @@ class CatalogTest
     {
         final long newMaxEntries = 1;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock, null))
         {
             assertEquals(MAX_ENTRIES, catalog.maxEntries());
         }
@@ -188,7 +189,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
         {
             final Catalog.CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -211,13 +212,15 @@ class CatalogTest
 
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(1024);
             log.write(bb);
+
             bb.clear();
             flyweight.frameLength(128);
             log.write(bb, 1024);
+
             bb.clear();
             flyweight.frameLength(0);
             log.write(bb, 1024 + 128);
@@ -236,7 +239,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -255,29 +258,71 @@ class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(PAGE_SIZE - 128);
             log.write(bb);
+
             bb.clear();
             flyweight.frameLength(256);
             log.write(bb, PAGE_SIZE - 128);
+
+            bb.clear();
+            bb.put(0, (byte)0).limit(1).position(0);
+            log.write(bb, PAGE_SIZE + 127);
         }
 
-        final ArchiveException exception = Assertions.assertThrows(
+        final ArchiveException exception = assertThrows(
             ArchiveException.class,
             () ->
             {
-                final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock);
-                catalog.close();
+                try (Catalog ignore = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+                {
+                }
             });
         assertThat(exception.getMessage(), containsString(segmentFile.getAbsolutePath()));
+    }
+
+    @Test
+    void shouldUseChecksumToVerifyLastFragmentAfterPageStraddle() throws Exception
+    {
+        final long newRecordingId = newRecording();
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
+        try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
+        {
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
+            final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
+            flyweight.frameLength(PAGE_SIZE - 128);
+            log.write(bb);
+
+            bb.clear();
+            flyweight.frameLength(256);
+            flyweight.sessionId(1025596259);
+            log.write(bb, PAGE_SIZE - 128);
+
+            bb.clear();
+            bb.put(0, (byte)0).limit(1).position(0);
+            log.write(bb, PAGE_SIZE + 127);
+        }
+
+        currentTimeMs = 42L;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, crc32()))
+        {
+            assertTrue(catalog.forEntry(
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    assertEquals(42L, descriptorDecoder.stopTimestamp());
+                    assertEquals(PAGE_SIZE + 128, descriptorDecoder.stopPosition());
+                }));
+        }
     }
 
     private long newRecording()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
         {
             newRecordingId = catalog.addNewRecording(
                 0L,
@@ -304,10 +349,11 @@ class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(SEGMENT_LENGTH - 128);
             log.write(bb);
+
             bb.clear();
             flyweight.frameLength(128);
             log.write(bb, SEGMENT_LENGTH - 128);
@@ -327,7 +373,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -346,7 +392,7 @@ class CatalogTest
         final File archiveDir = ArchiveTests.makeTestDirectory();
         final long maxEntries = 2;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null))
         {
             for (int i = 0; i < maxEntries; i++)
             {
@@ -365,7 +411,7 @@ class CatalogTest
             }
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null))
         {
             assertEquals(maxEntries, catalog.countEntries());
         }
@@ -377,20 +423,20 @@ class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(recordingThreeId, SEGMENT_LENGTH * 2));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final ByteBuffer bb = allocate(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(256);
             log.write(bb);
         }
 
-        final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock);
+        final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null);
         catalog.close();
     }
 
     @Test
     void shouldContainChannelFragment()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
         {
             final String originalChannel = "aeron:udp?endpoint=localhost:7777|tags=777|alias=TestString";
             final String strippedChannel = "strippedChannelUri";
@@ -448,7 +494,7 @@ class CatalogTest
 
     @ParameterizedTest(name = "fragmentCrossesPageBoundary({0}, {1}, {2})")
     @MethodSource("pageBoundaryTestData")
-    void detectPageBoundaryStraddle(final long fragmentOffset, final long fragmentLength, final boolean expected)
+    void detectPageBoundaryStraddle(final int fragmentOffset, final int fragmentLength, final boolean expected)
     {
         assertEquals(expected, fragmentStraddlesPageBoundary(fragmentOffset, fragmentLength));
     }

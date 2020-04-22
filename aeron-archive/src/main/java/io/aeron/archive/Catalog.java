@@ -874,6 +874,8 @@ class Catalog implements AutoCloseable
                 !isValidFragment(buffer, lastFragmentOffset, lastFrameLength, checksum) &&
                 truncateFileOnPageStraddle.test(file))
             {
+                IoUtil.unmap(mappedByteBuffer); // unmap buffer before the truncate for Windows interop
+
                 segment.truncate(lastFragmentOffset);
                 final ByteBuffer tmp = ByteBuffer.allocate(1);
                 tmp.put((byte)0).position(0);

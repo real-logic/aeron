@@ -59,9 +59,10 @@ public class ClusterBackupTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 10);
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             final long logPosition = leader.service().cluster().logPosition();
 
@@ -75,7 +76,7 @@ public class ClusterBackupTest
             final TestNode node = cluster.startStaticNodeFromBackup();
             cluster.awaitLeader();
 
-            assertEquals(10, node.service().messageCount());
+            assertEquals(messageCount, node.service().messageCount());
             assertFalse(node.service().wasSnapshotLoaded());
         }
     }
@@ -92,9 +93,10 @@ public class ClusterBackupTest
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
 
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 10);
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             final long logPosition = leader.service().cluster().logPosition();
 
@@ -105,7 +107,7 @@ public class ClusterBackupTest
             final TestNode node = cluster.startStaticNodeFromBackup();
             cluster.awaitLeader();
 
-            assertEquals(10, node.service().messageCount());
+            assertEquals(messageCount, node.service().messageCount());
             assertFalse(node.service().wasSnapshotLoaded());
         }
     }
@@ -119,9 +121,10 @@ public class ClusterBackupTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 10);
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.takeSnapshot(leader);
             cluster.awaitSnapshotCount(cluster.node(0), 1);
@@ -140,7 +143,7 @@ public class ClusterBackupTest
             final TestNode node = cluster.startStaticNodeFromBackup();
             cluster.awaitLeader();
 
-            assertEquals(10, node.service().messageCount());
+            assertEquals(messageCount, node.service().messageCount());
             assertTrue(node.service().wasSnapshotLoaded());
         }
     }
@@ -157,7 +160,7 @@ public class ClusterBackupTest
             cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.node(0).terminationExpected(true);
             cluster.node(1).terminationExpected(true);
@@ -199,7 +202,7 @@ public class ClusterBackupTest
             final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
             cluster.sendMessages(preSnapshotMessageCount);
             cluster.awaitResponseMessageCount(preSnapshotMessageCount);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), preSnapshotMessageCount);
+            cluster.awaitServicesMessageCount(preSnapshotMessageCount);
 
             cluster.takeSnapshot(leader);
             cluster.awaitSnapshotCount(cluster.node(0), 1);
@@ -242,7 +245,7 @@ public class ClusterBackupTest
             final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
             cluster.sendMessages(preSnapshotMessageCount);
             cluster.awaitResponseMessageCount(preSnapshotMessageCount);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), preSnapshotMessageCount);
+            cluster.awaitServicesMessageCount(preSnapshotMessageCount);
 
             cluster.takeSnapshot(leader);
             cluster.awaitSnapshotCount(cluster.node(0), 1);
@@ -296,9 +299,10 @@ public class ClusterBackupTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 10);
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             final long logPosition = leader.service().cluster().logPosition();
 
@@ -310,8 +314,8 @@ public class ClusterBackupTest
             assertTrue(backupNode.nextBackupQueryDeadlineMs(0));
 
             cluster.sendMessages(5);
-            cluster.awaitResponseMessageCount(15);
-            cluster.awaitServiceMessageCount(leader, 15);
+            cluster.awaitResponseMessageCount(messageCount + 5);
+            cluster.awaitServiceMessageCount(leader, messageCount + 5);
 
             final long nextLogPosition = leader.service().cluster().logPosition();
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
@@ -322,7 +326,7 @@ public class ClusterBackupTest
             final TestNode node = cluster.startStaticNodeFromBackup();
             cluster.awaitLeader();
 
-            assertEquals(15, node.service().messageCount());
+            assertEquals(messageCount + 5, node.service().messageCount());
         }
     }
 
@@ -335,9 +339,10 @@ public class ClusterBackupTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 10);
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.stopNode(leader);
 
@@ -354,7 +359,7 @@ public class ClusterBackupTest
             final TestNode node = cluster.startStaticNodeFromBackup();
             cluster.awaitLeader();
 
-            assertEquals(10, node.service().messageCount());
+            assertEquals(messageCount, node.service().messageCount());
             assertFalse(node.service().wasSnapshotLoaded());
         }
     }
@@ -368,9 +373,10 @@ public class ClusterBackupTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 10);
+            final int messageCount = 10;
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             final long logPosition = leader.service().cluster().logPosition();
 
@@ -384,8 +390,7 @@ public class ClusterBackupTest
             final TestNode nextLeader = cluster.awaitLeader();
 
             cluster.sendMessages(5);
-            cluster.awaitResponseMessageCount(15);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), 15);
+            cluster.awaitResponseMessageCount(messageCount + 5);
 
             final long nextLogPosition = nextLeader.service().cluster().logPosition();
 
@@ -397,7 +402,7 @@ public class ClusterBackupTest
             final TestNode node = cluster.startStaticNodeFromBackup();
             cluster.awaitLeader();
 
-            assertEquals(15, node.service().messageCount());
+            assertEquals(messageCount + 5, node.service().messageCount());
             assertFalse(node.service().wasSnapshotLoaded());
         }
     }

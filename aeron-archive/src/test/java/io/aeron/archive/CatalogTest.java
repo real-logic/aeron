@@ -276,9 +276,8 @@ class CatalogTest
             ArchiveException.class,
             () ->
             {
-                try (Catalog ignore = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
-                {
-                }
+                final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null);
+                catalog.close();
             });
         assertThat(exception.getMessage(), containsString(segmentFile.getAbsolutePath()));
     }

@@ -41,6 +41,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.ByteOrder.nativeOrder;
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.AsciiEncoding.parseLongAscii;
@@ -239,13 +240,12 @@ class Catalog implements AutoCloseable
             final MappedByteBuffer catalogMappedByteBuffer;
             final long catalogLength;
 
-            final StandardOpenOption[] openOptions =
-                writable ? new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
+            final StandardOpenOption[] openOptions = writable ?
+                new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
                 catalogLength = channel.size();
-                catalogMappedByteBuffer = channel.map(
-                    writable ? READ_WRITE : FileChannel.MapMode.READ_ONLY, 0, catalogLength);
+                catalogMappedByteBuffer = channel.map(writable ? READ_WRITE : READ_ONLY, 0, catalogLength);
             }
             catch (final Exception ex)
             {
@@ -732,10 +732,9 @@ class Catalog implements AutoCloseable
                 {
                     throw new ArchiveException(
                         "Found potentially incomplete last fragment straddling page boundary in file: " +
-                            segmentFile.getAbsolutePath() +
-                            "\nRun `ArchiveTool verify` for corrective action!");
-                }
-            ));
+                        segmentFile.getAbsolutePath() +
+                        "\nRun `ArchiveTool verify` for corrective action!");
+                }));
 
             encoder.stopTimestamp(epochClock.time());
         }
@@ -761,6 +760,7 @@ class Catalog implements AutoCloseable
     static String[] listSegmentFiles(final File archiveDir, final long recordingId)
     {
         final String prefix = recordingId + "-";
+
         return archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
     }
 
@@ -875,6 +875,7 @@ class Catalog implements AutoCloseable
                 truncateFileOnPageStraddle.test(file))
             {
                 IoUtil.unmap(mappedByteBuffer); // unmap buffer before the truncate for Windows interop
+                mappedByteBuffer = null;
 
                 segment.truncate(lastFragmentOffset);
                 final ByteBuffer tmp = ByteBuffer.allocate(1);
@@ -908,6 +909,7 @@ class Catalog implements AutoCloseable
         final UnsafeBuffer buffer, final int fragmentOffset, final int fragmentLength, final Checksum checksum)
     {
         final int alignedFragmentLength = align(fragmentLength, FRAME_ALIGNMENT);
+
         return null != checksum && hasValidChecksum(buffer, fragmentOffset, alignedFragmentLength, checksum) ||
             hasDataInAllPagesAfterStraddle(buffer, fragmentOffset, alignedFragmentLength);
     }
@@ -920,6 +922,7 @@ class Catalog implements AutoCloseable
             fragmentOffset + HEADER_LENGTH,
             alignedFragmentLength - HEADER_LENGTH);
         final int recordedChecksum = frameSessionId(buffer, fragmentOffset);
+
         return recordedChecksum == computedChecksum;
     }
 
@@ -936,6 +939,7 @@ class Catalog implements AutoCloseable
             }
             straddleOffset += PAGE_SIZE;
         }
+
         return true;
     }
 
@@ -948,6 +952,7 @@ class Catalog implements AutoCloseable
                 return false;
             }
         }
+
         return true;
     }
 }

@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.*;
-import org.agrona.ExpandableArrayBuffer;
 
 class ControlRequestDecoders
 {
@@ -59,6 +58,4 @@ class ControlRequestDecoders
     final ChallengeResponseDecoder challengeResponse = new ChallengeResponseDecoder();
     final KeepAliveRequestDecoder keepAliveRequest = new KeepAliveRequestDecoder();
     final TaggedReplicateRequestDecoder taggedReplicateRequest = new TaggedReplicateRequestDecoder();
-
-    final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
 }

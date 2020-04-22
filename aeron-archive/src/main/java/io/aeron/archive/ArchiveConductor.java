@@ -327,7 +327,6 @@ abstract class ArchiveConductor
         }
 
         final ControlSession controlSession = new ControlSession(
-            SemanticVersion.major(version),
             nextSessionId++,
             correlationId,
             connectTimeoutMs,

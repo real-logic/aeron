@@ -48,7 +48,6 @@ final class ControlSession implements Session
         INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED
     }
 
-    private final int majorVersion;
     private final long controlSessionId;
     private final long connectTimeoutMs;
     private long correlationId;
@@ -67,7 +66,6 @@ final class ControlSession implements Session
     private State state = State.INIT;
 
     ControlSession(
-        final int majorVersion,
         final long controlSessionId,
         final long correlationId,
         final long connectTimeoutMs,
@@ -80,7 +78,6 @@ final class ControlSession implements Session
         final Authenticator authenticator,
         final ControlSessionProxy controlSessionProxy)
     {
-        this.majorVersion = majorVersion;
         this.controlSessionId = controlSessionId;
         this.correlationId = correlationId;
         this.connectTimeoutMs = connectTimeoutMs;
@@ -93,11 +90,6 @@ final class ControlSession implements Session
         this.authenticator = authenticator;
         this.controlSessionProxy = controlSessionProxy;
         this.activityDeadlineMs = cachedEpochClock.time() + connectTimeoutMs;
-    }
-
-    public int majorVersion()
-    {
-        return majorVersion;
     }
 
     public long sessionId()

@@ -585,11 +585,18 @@ public class TestCluster implements AutoCloseable
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long heartbeatDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        long count;
 
-        while (responseCount.get() < messageCount)
+        while ((count = responseCount.get()) < messageCount)
         {
             Thread.yield();
-            Tests.checkInterruptStatus();
+            if (Thread.interrupted())
+            {
+                final String message = "unexpected interrupt - count=" + count + " awaiting=" + messageCount;
+                Tests.unexpectedInterruptStackTrace(message);
+                fail(message);
+            }
+
             client.pollEgress();
 
             final long nowMs = epochClock.time();

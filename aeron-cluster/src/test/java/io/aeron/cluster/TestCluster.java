@@ -592,7 +592,7 @@ public class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                final String message = "unexpected interrupt - count=" + count + " awaiting=" + messageCount;
+                final String message = "count=" + count + " awaiting=" + messageCount;
                 Tests.unexpectedInterruptStackTrace(message);
                 fail(message);
             }
@@ -798,7 +798,7 @@ public class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                final String message = "unexpected interrupt - count=" + count + " awaiting=" + messageCount;
+                final String message = "count=" + count + " awaiting=" + messageCount;
                 Tests.unexpectedInterruptStackTrace(message);
                 fail(message);
             }

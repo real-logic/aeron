@@ -65,11 +65,6 @@ typedef struct aeron_data_packet_dispatcher_stream_interest_stct
 }
 aeron_data_packet_dispatcher_stream_interest_t;
 
-int aeron_data_packet_dispatcher_stream_interest_init(
-    aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
-    bool is_all_sessions);
-int aeron_data_packet_dispatcher_stream_interest_close(aeron_data_packet_dispatcher_stream_interest_t *stream_interest);
-
 int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id);
 int aeron_data_packet_dispatcher_add_subscription_by_session(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);

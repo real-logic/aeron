@@ -193,26 +193,29 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
 
 void aeron_driver_conductor_proxy_on_delete_receive_destination(
     aeron_driver_conductor_proxy_t *conductor_proxy,
-    void *destination)
+    void *destination,
+    void *channel)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
-        aeron_command_base_t cmd;
-        cmd.item = destination;
+        aeron_command_delete_destination_t cmd;
+        cmd.destination = destination;
+        cmd.channel = channel;
 
         aeron_driver_conductor_on_delete_receive_destination(conductor_proxy->conductor, &cmd);
     }
     else
     {
-        aeron_command_base_t *cmd;
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        aeron_command_delete_destination_t *cmd;
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_delete_destination_t)) < 0)
         {
             aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
             return;
         }
 
-        cmd->func = aeron_driver_conductor_on_delete_receive_destination;
-        cmd->item = destination;
+        cmd->base.func = aeron_driver_conductor_on_delete_receive_destination;
+        cmd->destination = destination;
+        cmd->channel = channel;
 
         aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
     }

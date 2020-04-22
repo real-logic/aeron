@@ -145,6 +145,7 @@ int aeron_receive_channel_endpoint_delete(
     }
 
     aeron_int64_counter_map_delete(&endpoint->stream_id_to_refcnt_map);
+    aeron_int64_counter_map_delete(&endpoint->stream_and_session_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     bool deleted_this_channel = false;
     
@@ -152,14 +153,13 @@ int aeron_receive_channel_endpoint_delete(
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
 
-        deleted_this_channel |= destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel;
-        aeron_udp_channel_delete(destination->conductor_fields.udp_channel);
-
         if (endpoint->conductor_fields.status != AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSED)
         {
             endpoint->transport_bindings->close_func(&destination->transport);
         }
 
+        // The endpoint will be deleted by the destination, for simple endpoints, i.e. non-mds the channel is shared.
+        deleted_this_channel |= destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel;
         aeron_receive_destination_delete(destination);
     }
 

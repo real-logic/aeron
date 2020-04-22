@@ -60,6 +60,14 @@ typedef struct aeron_command_re_resolve_stct
 }
 aeron_command_re_resolve_t;
 
+typedef struct aeron_command_delete_destination_stct
+{
+    aeron_command_base_t base;
+    void *destination;
+    void *channel;
+}
+aeron_command_delete_destination_t;
+
 void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     int32_t session_id,
@@ -91,7 +99,8 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
 
 void aeron_driver_conductor_proxy_on_delete_receive_destination(
     aeron_driver_conductor_proxy_t *conductor_proxy,
-    void *destination);
+    void *destination,
+    void *channel);
 
 void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
     aeron_driver_conductor_proxy_t *conductor_proxy,

@@ -81,8 +81,7 @@ int aeron_receive_destination_create(
 void aeron_receive_destination_delete(aeron_receive_destination_t *destination)
 {
     // TODO: Correctly clean up here.  Have the endpoint delegate cleanup where necessary...
-//    aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
-//    destination->transport_bindings->close_func(&destination->transport);
+    aeron_udp_channel_delete(destination->conductor_fields.udp_channel);
     aeron_free(destination);
 }
 

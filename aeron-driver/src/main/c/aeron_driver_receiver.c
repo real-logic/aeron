@@ -426,7 +426,8 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
             }
         }
 
-        aeron_driver_conductor_proxy_on_delete_receive_destination(receiver->context->conductor_proxy, destination);
+        aeron_driver_conductor_proxy_on_delete_receive_destination(
+            receiver->context->conductor_proxy, destination, channel);
     }
 }
 

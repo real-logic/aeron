@@ -44,7 +44,7 @@ int aeron_data_packet_dispatcher_init(
     return 0;
 }
 
-int aeron_data_packet_dispatcher_stream_interest_init(
+static int aeron_data_packet_dispatcher_stream_interest_init(
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
     bool is_all_sessions)
 {
@@ -66,18 +66,25 @@ int aeron_data_packet_dispatcher_stream_interest_init(
     return 0;
 }
 
-int aeron_data_packet_dispatcher_stream_interest_close(aeron_data_packet_dispatcher_stream_interest_t *stream_interest)
+static int aeron_data_packet_dispatcher_stream_interest_close(
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest)
 {
     aeron_int64_to_tagged_ptr_hash_map_delete(&stream_interest->image_by_session_id_map);
+    aeron_int64_to_ptr_hash_map_delete(&stream_interest->subscribed_sessions);
     return 0;
 }
 
-void aeron_data_packet_dispatcher_delete_stream_interest(void *clientd, int64_t key, void *value)
+static void aeron_data_packet_dispatcher_stream_interest_delete(
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest)
 {
-    aeron_data_packet_dispatcher_stream_interest_t *stream_interest = value;
-
     aeron_data_packet_dispatcher_stream_interest_close(stream_interest);
     aeron_free(stream_interest);
+}
+
+static void aeron_data_packet_dispatcher_delete_stream_interest(void *clientd, int64_t key, void *value)
+{
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest = value;
+    aeron_data_packet_dispatcher_stream_interest_delete(stream_interest);
 }
 
 int aeron_data_packet_dispatcher_close(aeron_data_packet_dispatcher_t *dispatcher)
@@ -186,8 +193,7 @@ int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatche
     if (0 == stream_interest->image_by_session_id_map.size)
     {
         aeron_int64_to_ptr_hash_map_remove(&dispatcher->session_by_stream_id_map, stream_id);
-        aeron_int64_to_tagged_ptr_hash_map_delete(&stream_interest->image_by_session_id_map);
-        aeron_free(stream_interest);
+        aeron_data_packet_dispatcher_stream_interest_delete(stream_interest);
     }
 
     return 0;
@@ -214,8 +220,7 @@ int aeron_data_packet_dispatcher_remove_subscription_by_session(
     if (!stream_interest->is_all_sessions && 0 == stream_interest->image_by_session_id_map.size)
     {
         aeron_int64_to_ptr_hash_map_remove(&dispatcher->session_by_stream_id_map, stream_id);
-        aeron_int64_to_tagged_ptr_hash_map_delete(&stream_interest->image_by_session_id_map);
-        aeron_free(stream_interest);
+        aeron_data_packet_dispatcher_stream_interest_delete(stream_interest);
     }
 
     return 0;

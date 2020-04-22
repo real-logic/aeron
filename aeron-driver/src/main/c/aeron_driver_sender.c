@@ -296,10 +296,16 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_destination_t *cmd = (aeron_command_destination_t *)command;
+    aeron_uri_t *old_uri = NULL;
 
-    if (aeron_send_channel_endpoint_remove_destination(cmd->endpoint, &cmd->control_address) < 0)
+    if (aeron_send_channel_endpoint_remove_destination(cmd->endpoint, &cmd->control_address, &old_uri) < 0)
     {
         AERON_DRIVER_SENDER_ERROR(sender, "sender on_remove_destination: %s", aeron_errmsg());
+    }
+
+    if (NULL != old_uri)
+    {
+        aeron_conductor_proxy_on_delete_send_destination(sender->context->conductor_proxy, old_uri);
     }
 }
 

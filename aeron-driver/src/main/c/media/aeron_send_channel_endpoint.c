@@ -411,7 +411,9 @@ extern int aeron_send_channel_endpoint_add_destination(
     struct sockaddr_storage *addr);
 
 extern int aeron_send_channel_endpoint_remove_destination(
-    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    aeron_uri_t **removed_uri);
 
 extern bool aeron_send_channel_endpoint_tags_match(
     aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel);

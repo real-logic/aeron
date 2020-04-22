@@ -133,9 +133,11 @@ inline int aeron_send_channel_endpoint_add_destination(
 }
 
 inline int aeron_send_channel_endpoint_remove_destination(
-    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    aeron_uri_t **removed_uri)
 {
-    return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr);
+    return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr, removed_uri);
 }
 
 inline int aeron_send_channel_endpoint_bind_addr_and_port(

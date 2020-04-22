@@ -221,6 +221,34 @@ void aeron_driver_conductor_proxy_on_delete_receive_destination(
     }
 }
 
+void aeron_conductor_proxy_on_delete_send_destination(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *removed_uri)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_command_base_t cmd;
+        cmd.func = aeron_driver_conductor_on_delete_send_destination;
+        cmd.item = removed_uri;
+
+        aeron_driver_conductor_on_delete_send_destination(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_conductor_on_delete_send_destination;
+        cmd->item = removed_uri;
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
+}
+
 void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     void *endpoint)

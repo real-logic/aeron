@@ -3051,6 +3051,18 @@ void aeron_driver_conductor_on_delete_receive_destination(void *clientd, void *i
     aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, (aeron_command_base_t *)command);
 }
 
+void aeron_driver_conductor_on_delete_send_destination(void *clientd, void *cmd)
+{
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+    aeron_command_base_t *command = (aeron_command_base_t *)cmd;
+    aeron_uri_t *uri = (aeron_uri_t *)command->item;
+
+    aeron_uri_close(uri);
+    aeron_free(uri);
+
+    aeron_driver_sender_proxy_on_delete_cmd(conductor->context->sender_proxy, command);
+}
+
 int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, aeron_counter_command_t *command)
 {
     aeron_client_t *client = NULL;

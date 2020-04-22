@@ -21,7 +21,8 @@
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
@@ -59,7 +60,7 @@ public:
         m_isCodeError = false;
         m_isControlResponse = false;
         m_wasChallenged = false;
-        delete [] m_encodedChallenge.first;
+        delete[] m_encodedChallenge.first;
         m_encodedChallenge.first = nullptr;
         m_encodedChallenge.second = 0;
 
@@ -186,7 +187,7 @@ public:
         return m_encodedChallenge;
     }
 
-    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     ControlledFragmentAssembler m_fragmentAssembler;
@@ -209,4 +210,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H

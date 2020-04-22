@@ -21,7 +21,8 @@
 #include "ControlResponseAdapter.h"
 #include "aeron_archive_client/RecordingSignal.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /**
  * An signal has been received from the Archive indicating an operation on a recording.
@@ -91,7 +92,7 @@ public:
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
 
-    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     ControlledFragmentAssembler m_fragmentAssembler;
@@ -105,4 +106,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H

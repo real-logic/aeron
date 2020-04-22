@@ -23,9 +23,10 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::controlled_poll_fragment_handler_t controlHandler(ControlResponsePoller& poller)
+static aeron::controlled_poll_fragment_handler_t controlHandler(ControlResponsePoller &poller)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             return poller.onFragment(buffer, offset, length, header);
         };
@@ -40,7 +41,7 @@ ControlResponsePoller::ControlResponsePoller(std::shared_ptr<Subscription> subsc
 }
 
 ControlledPollAction ControlResponsePoller::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     if (m_pollComplete)
     {

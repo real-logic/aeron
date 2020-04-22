@@ -25,10 +25,11 @@ using namespace aeron::archive::client;
 
 static aeron::fragment_handler_t fragmentHandler(ControlResponseAdapter &adapter)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        adapter.onFragment(buffer, offset, length, header);
-    };
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            adapter.onFragment(buffer, offset, length, header);
+        };
 }
 
 ControlResponseAdapter::ControlResponseAdapter(
@@ -45,7 +46,7 @@ ControlResponseAdapter::ControlResponseAdapter(
 }
 
 void ControlResponseAdapter::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     MessageHeader msgHeader(
         buffer.sbeData() + offset,

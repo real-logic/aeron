@@ -18,7 +18,8 @@
 
 #include "Aeron.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /**
  * Fired when a recording is started.
@@ -35,8 +36,8 @@ typedef std::function<void(
     std::int64_t startPosition,
     std::int32_t sessionId,
     std::int32_t streamId,
-    const std::string& channel,
-    const std::string& sourceIdentity)> on_recording_start_t;
+    const std::string &channel,
+    const std::string &sourceIdentity)> on_recording_start_t;
 
 /**
  * Progress indication of an active recording or Indication of a stopped recording.
@@ -66,9 +67,9 @@ public:
      * @param fragmentLimit to apply for each polling operation.
      */
     RecordingEventsAdapter(
-        const on_recording_start_t& onStart,
-        const on_recording_event_t& onProgress,
-        const on_recording_event_t& onStop,
+        const on_recording_start_t &onStart,
+        const on_recording_event_t &onProgress,
+        const on_recording_event_t &onStop,
         std::shared_ptr<Subscription> subscription,
         int fragmentLimit = 10);
 
@@ -92,7 +93,7 @@ public:
         return m_subscription->poll(m_fragmentHandler, m_fragmentLimit);
     }
 
-    void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     fragment_handler_t m_fragmentHandler;
@@ -104,4 +105,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_RECORDING_EVENTS_ADAPTER_H

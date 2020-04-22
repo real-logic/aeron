@@ -21,9 +21,9 @@ using namespace aeron::archive::client;
 ReplayMerge::ReplayMerge(
     std::shared_ptr<Subscription> subscription,
     std::shared_ptr<AeronArchive> archive,
-    const std::string& replayChannel,
-    const std::string& replayDestination,
-    const std::string& liveDestination,
+    const std::string &replayChannel,
+    const std::string &replayDestination,
+    const std::string &liveDestination,
     std::int64_t recordingId,
     std::int64_t startPosition,
     epoch_clock_t epochClock,
@@ -181,7 +181,7 @@ int ReplayMerge::catchup(long long nowMs)
         }
         else if (m_image->isClosed())
         {
-            throw TimeoutException("ReplayMerge Image closed unexpectedly.", SOURCEINFO);
+            throw TimeoutException("ReplayMerge Image closed unexpectedly", SOURCEINFO);
         }
         else if (m_image->position() > m_positionOfLastProgress)
         {
@@ -273,9 +273,9 @@ void ReplayMerge::checkProgress(long long nowMs)
     }
 }
 
-bool ReplayMerge::pollForResponse(AeronArchive& archive, std::int64_t correlationId)
+bool ReplayMerge::pollForResponse(AeronArchive &archive, std::int64_t correlationId)
 {
-    ControlResponsePoller& poller = archive.controlResponsePoller();
+    ControlResponsePoller &poller = archive.controlResponsePoller();
 
     if (poller.poll() > 0 && poller.isPollComplete())
     {

@@ -20,7 +20,8 @@
 #include "RecordingDescriptorPoller.h"
 #include "RecordingEventsAdapter.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /// Control Response Code of OK
 constexpr const std::int32_t CONTROL_RESPONSE_CODE_OK = 0;
@@ -45,7 +46,7 @@ typedef std::function<void(
     std::int64_t correlationId,
     std::int64_t relevantId,
     std::int32_t code,
-    const std::string& errorMessage)> on_control_response_t;
+    const std::string &errorMessage)> on_control_response_t;
 
 class ControlResponseAdapter
 {
@@ -59,8 +60,8 @@ public:
      * @param fragmentLimit to apply for each polling operation.
      */
     ControlResponseAdapter(
-        const on_control_response_t& onResponse,
-        const recording_descriptor_consumer_t& onRecordingDescriptor,
+        const on_control_response_t &onResponse,
+        const recording_descriptor_consumer_t &onRecordingDescriptor,
         std::shared_ptr<Subscription> subscription,
         int fragmentLimit = 10);
 
@@ -84,7 +85,7 @@ public:
         return m_subscription->poll(m_fragmentHandler, m_fragmentLimit);
     }
 
-    void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     fragment_handler_t m_fragmentHandler;
@@ -95,4 +96,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_CONTROL_RESPONSE_ADAPTER_H

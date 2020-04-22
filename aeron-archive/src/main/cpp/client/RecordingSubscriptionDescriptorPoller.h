@@ -36,7 +36,7 @@ typedef std::function<void(
     std::int64_t correlationId,
     std::int64_t subscriptionId,
     std::int32_t streamId,
-    const std::string& strippedChannel)> recording_subscription_descriptor_consumer_t;
+    const std::string &strippedChannel)> recording_subscription_descriptor_consumer_t;
 
 /**
  * Encapsulate the polling, decoding, dispatching of recording descriptors from an archive.
@@ -46,7 +46,7 @@ class RecordingSubscriptionDescriptorPoller
 public:
     RecordingSubscriptionDescriptorPoller(
         std::shared_ptr<Subscription> subscription,
-        const exception_handler_t& errorHandler,
+        const exception_handler_t &errorHandler,
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
 
@@ -112,7 +112,7 @@ public:
     inline void reset(
         std::int64_t correlationId,
         std::int32_t subscriptionCount,
-        const recording_subscription_descriptor_consumer_t& consumer)
+        const recording_subscription_descriptor_consumer_t &consumer)
     {
         m_correlationId = correlationId;
         m_remainingSubscriptionCount = subscriptionCount;
@@ -120,7 +120,7 @@ public:
         m_isDispatchComplete = false;
     }
 
-    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     ControlledFragmentAssembler m_fragmentAssembler;
@@ -138,4 +138,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_RECORDING_SUBSCRIPTION_DESCRIPTOR_POLLER_H

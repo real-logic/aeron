@@ -23,12 +23,13 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingSignalAdapter& adapter)
+static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingSignalAdapter &adapter)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        return adapter.onFragment(buffer, offset, length, header);
-    };
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            return adapter.onFragment(buffer, offset, length, header);
+        };
 }
 
 RecordingSignalAdapter::RecordingSignalAdapter(
@@ -48,7 +49,7 @@ RecordingSignalAdapter::RecordingSignalAdapter(
 }
 
 ControlledPollAction RecordingSignalAdapter::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     if (m_isAbort)
     {
@@ -112,6 +113,7 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
                 m_isAbort = true;
                 return ControlledPollAction::BREAK;
             }
+            break;
         }
     }
 

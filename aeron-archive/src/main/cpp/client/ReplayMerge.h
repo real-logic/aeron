@@ -18,7 +18,8 @@
 
 #include "AeronArchive.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 constexpr const std::int64_t REPLAY_MERGE_LIVE_ADD_THRESHOLD = LogBufferDescriptor::TERM_MIN_LENGTH / 4;
 constexpr const std::int64_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
@@ -55,9 +56,9 @@ public:
     ReplayMerge(
         std::shared_ptr<Subscription> subscription,
         std::shared_ptr<AeronArchive> archive,
-        const std::string& replayChannel,
-        const std::string& replayDestination,
-        const std::string& liveDestination,
+        const std::string &replayChannel,
+        const std::string &replayDestination,
+        const std::string &liveDestination,
         std::int64_t recordingId,
         std::int64_t startPosition,
         epoch_clock_t epochClock = aeron::currentTimeMillis,
@@ -121,7 +122,7 @@ public:
      * @return number of fragments processed.
      */
     template<typename F>
-    inline int poll(F&& fragmentHandler, int fragmentLimit)
+    inline int poll(F &&fragmentHandler, int fragmentLimit)
     {
         doWork();
         return nullptr == m_image ? 0 : m_image->poll(fragmentHandler, fragmentLimit);
@@ -218,8 +219,11 @@ private:
     }
 
     int getRecordingPosition(long long nowMs);
+
     int replay(long long nowMs);
+
     int catchup(long long nowMs);
+
     int attemptLiveJoin(long long nowMs);
 
     inline bool hasProgressStalled(long long nowMs)
@@ -228,9 +232,12 @@ private:
     }
 
     void stopReplay();
+
     void checkProgress(long long nowMs);
-    static bool pollForResponse(AeronArchive& archive, std::int64_t correlationId);
+
+    static bool pollForResponse(AeronArchive &archive, std::int64_t correlationId);
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_REPLAY_MERGE_H

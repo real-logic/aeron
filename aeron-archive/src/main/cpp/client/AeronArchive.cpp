@@ -20,7 +20,7 @@
 using namespace aeron::archive::client;
 
 AeronArchive::AsyncConnect::AsyncConnect(
-    Context_t& context,
+    Context_t &context,
     std::shared_ptr<Aeron> aeron,
     std::int64_t subscriptionId,
     std::int64_t publicationId) :

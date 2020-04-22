@@ -24,18 +24,19 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::fragment_handler_t fragmentHandler(RecordingEventsAdapter& poller)
+static aeron::fragment_handler_t fragmentHandler(RecordingEventsAdapter &poller)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        poller.onFragment(buffer, offset, length, header);
-    };
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            poller.onFragment(buffer, offset, length, header);
+        };
 }
 
 RecordingEventsAdapter::RecordingEventsAdapter(
-    const on_recording_start_t& onStart,
-    const on_recording_event_t& onProgress,
-    const on_recording_event_t& onStop,
+    const on_recording_start_t &onStart,
+    const on_recording_event_t &onProgress,
+    const on_recording_event_t &onStop,
     std::shared_ptr<aeron::Subscription> subscription,
     int fragmentLimit) :
     m_fragmentHandler(fragmentHandler(*this)),
@@ -48,7 +49,7 @@ RecordingEventsAdapter::RecordingEventsAdapter(
 }
 
 void RecordingEventsAdapter::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     MessageHeader msgHeader(
         buffer.sbeData() + offset,
@@ -82,8 +83,8 @@ void RecordingEventsAdapter::onFragment(
                 event.streamId(),
                 event.channel(),
                 event.sourceIdentity());
+            break;
         }
-        break;
 
         case RecordingProgress::sbeTemplateId():
         {
@@ -97,8 +98,8 @@ void RecordingEventsAdapter::onFragment(
                 event.recordingId(),
                 event.startPosition(),
                 event.position());
+            break;
         }
-        break;
 
         case RecordingStopped::sbeTemplateId():
         {
@@ -112,8 +113,8 @@ void RecordingEventsAdapter::onFragment(
                 event.recordingId(),
                 event.startPosition(),
                 event.stopPosition());
+            break;
         }
-        break;
 
         default:
             break;

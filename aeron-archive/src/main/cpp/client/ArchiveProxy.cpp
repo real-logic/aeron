@@ -56,20 +56,20 @@ using namespace aeron::concurrent;
 using namespace aeron::archive::client;
 
 template<typename Codec>
-inline static Codec& wrapAndApplyHeader(Codec& codec, AtomicBuffer& buffer)
+inline static Codec &wrapAndApplyHeader(Codec &codec, AtomicBuffer &buffer)
 {
     return codec.wrapAndApplyHeader(buffer.sbeData(), 0, static_cast<std::uint64_t>(buffer.capacity()));
 }
 
 template<typename Codec>
-inline static util::index_t messageAndHeaderLength(Codec& codec)
+inline static util::index_t messageAndHeaderLength(Codec &codec)
 {
     return static_cast<util::index_t>(MessageHeader::encodedLength() + codec.encodedLength());
 }
 
 util::index_t ArchiveProxy::connectRequest(
-    AtomicBuffer& buffer,
-    const std::string& responseChannel,
+    AtomicBuffer &buffer,
+    const std::string &responseChannel,
     std::int32_t responseStreamId,
     std::pair<const char *, std::uint32_t> encodedCredentials,
     std::int64_t correlationId)
@@ -86,7 +86,7 @@ util::index_t ArchiveProxy::connectRequest(
     return messageAndHeaderLength(request);
 }
 
-util::index_t ArchiveProxy::closeSession(AtomicBuffer& buffer, std::int64_t controlSessionId)
+util::index_t ArchiveProxy::closeSession(AtomicBuffer &buffer, std::int64_t controlSessionId)
 {
     CloseSessionRequest request;
 
@@ -97,8 +97,8 @@ util::index_t ArchiveProxy::closeSession(AtomicBuffer& buffer, std::int64_t cont
 }
 
 util::index_t ArchiveProxy::startRecording(
-    AtomicBuffer& buffer,
-    const std::string& channel,
+    AtomicBuffer &buffer,
+    const std::string &channel,
     std::int32_t streamId,
     bool localSource,
     std::int64_t correlationId,
@@ -117,8 +117,8 @@ util::index_t ArchiveProxy::startRecording(
 }
 
 util::index_t ArchiveProxy::startRecording(
-    AtomicBuffer& buffer,
-    const std::string& channel,
+    AtomicBuffer &buffer,
+    const std::string &channel,
     std::int32_t streamId,
     bool localSource,
     bool autoStop,
@@ -139,8 +139,8 @@ util::index_t ArchiveProxy::startRecording(
 }
 
 util::index_t ArchiveProxy::extendRecording(
-    AtomicBuffer& buffer,
-    const std::string& channel,
+    AtomicBuffer &buffer,
+    const std::string &channel,
     std::int32_t streamId,
     bool localSource,
     std::int64_t recordingId,
@@ -161,8 +161,8 @@ util::index_t ArchiveProxy::extendRecording(
 }
 
 util::index_t ArchiveProxy::extendRecording(
-    AtomicBuffer& buffer,
-    const std::string& channel,
+    AtomicBuffer &buffer,
+    const std::string &channel,
     std::int32_t streamId,
     bool localSource,
     bool autoStop,
@@ -185,8 +185,8 @@ util::index_t ArchiveProxy::extendRecording(
 }
 
 util::index_t ArchiveProxy::stopRecording(
-    AtomicBuffer& buffer,
-    const std::string& channel,
+    AtomicBuffer &buffer,
+    const std::string &channel,
     std::int32_t streamId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -203,7 +203,7 @@ util::index_t ArchiveProxy::stopRecording(
 }
 
 util::index_t ArchiveProxy::stopRecording(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t subscriptionId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -219,7 +219,7 @@ util::index_t ArchiveProxy::stopRecording(
 }
 
 util::index_t ArchiveProxy::stopRecordingByIdentity(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -235,11 +235,11 @@ util::index_t ArchiveProxy::stopRecordingByIdentity(
 }
 
 util::index_t ArchiveProxy::replay(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t position,
     std::int64_t length,
-    const std::string& replayChannel,
+    const std::string &replayChannel,
     std::int32_t replayStreamId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -259,12 +259,12 @@ util::index_t ArchiveProxy::replay(
 }
 
 util::index_t ArchiveProxy::boundedReplay(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t position,
     std::int64_t length,
     std::int32_t limitCounterId,
-    const std::string& replayChannel,
+    const std::string &replayChannel,
     std::int32_t replayStreamId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -286,7 +286,7 @@ util::index_t ArchiveProxy::boundedReplay(
 
 
 util::index_t ArchiveProxy::stopReplay(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t replaySessionId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -302,7 +302,7 @@ util::index_t ArchiveProxy::stopReplay(
 }
 
 util::index_t ArchiveProxy::stopAllReplays(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -318,7 +318,7 @@ util::index_t ArchiveProxy::stopAllReplays(
 }
 
 util::index_t ArchiveProxy::listRecordings(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t fromRecordingId,
     std::int32_t recordCount,
     std::int64_t correlationId,
@@ -336,10 +336,10 @@ util::index_t ArchiveProxy::listRecordings(
 }
 
 util::index_t ArchiveProxy::listRecordingsForUri(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t fromRecordingId,
     std::int32_t recordCount,
-    const std::string& channelFragment,
+    const std::string &channelFragment,
     std::int32_t streamId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -358,7 +358,7 @@ util::index_t ArchiveProxy::listRecordingsForUri(
 }
 
 util::index_t ArchiveProxy::listRecording(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -374,7 +374,7 @@ util::index_t ArchiveProxy::listRecording(
 }
 
 util::index_t ArchiveProxy::getStartPosition(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -390,7 +390,7 @@ util::index_t ArchiveProxy::getStartPosition(
 }
 
 util::index_t ArchiveProxy::getRecordingPosition(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -406,7 +406,7 @@ util::index_t ArchiveProxy::getRecordingPosition(
 }
 
 util::index_t ArchiveProxy::getStopPosition(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -422,9 +422,9 @@ util::index_t ArchiveProxy::getStopPosition(
 }
 
 util::index_t ArchiveProxy::findLastMatchingRecording(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t minRecordingId,
-    const std::string& channelFragment,
+    const std::string &channelFragment,
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int64_t correlationId,
@@ -444,7 +444,7 @@ util::index_t ArchiveProxy::findLastMatchingRecording(
 }
 
 util::index_t ArchiveProxy::truncateRecording(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t position,
     std::int64_t correlationId,
@@ -462,10 +462,10 @@ util::index_t ArchiveProxy::truncateRecording(
 }
 
 util::index_t ArchiveProxy::listRecordingSubscriptions(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int32_t pseudoIndex,
     std::int32_t subscriptionCount,
-    const std::string& channelFragment,
+    const std::string &channelFragment,
     std::int32_t streamId,
     bool applyStreamId,
     std::int64_t correlationId,
@@ -486,12 +486,12 @@ util::index_t ArchiveProxy::listRecordingSubscriptions(
 }
 
 util::index_t ArchiveProxy::replicate(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t srcRecordingId,
     std::int64_t dstRecordingId,
     std::int32_t srcControlStreamId,
-    const std::string& srcControlChannel,
-    const std::string& liveDestination,
+    const std::string &srcControlChannel,
+    const std::string &liveDestination,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -510,14 +510,14 @@ util::index_t ArchiveProxy::replicate(
 }
 
 util::index_t ArchiveProxy::taggedReplicate(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t srcRecordingId,
     std::int64_t dstRecordingId,
     std::int64_t channelTagId,
     std::int64_t subscriptionTagId,
     std::int32_t srcControlStreamId,
-    const std::string& srcControlChannel,
-    const std::string& liveDestination,
+    const std::string &srcControlChannel,
+    const std::string &liveDestination,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -538,7 +538,7 @@ util::index_t ArchiveProxy::taggedReplicate(
 }
 
 util::index_t ArchiveProxy::stopReplication(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t replicationId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -554,7 +554,7 @@ util::index_t ArchiveProxy::stopReplication(
 }
 
 util::index_t ArchiveProxy::detachSegments(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t newStartPosition,
     std::int64_t correlationId,
@@ -572,7 +572,7 @@ util::index_t ArchiveProxy::detachSegments(
 }
 
 util::index_t ArchiveProxy::deleteDetachedSegments(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -588,7 +588,7 @@ util::index_t ArchiveProxy::deleteDetachedSegments(
 }
 
 util::index_t ArchiveProxy::purgeSegments(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t newStartPosition,
     std::int64_t correlationId,
@@ -606,7 +606,7 @@ util::index_t ArchiveProxy::purgeSegments(
 }
 
 util::index_t ArchiveProxy::attachSegments(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
@@ -622,7 +622,7 @@ util::index_t ArchiveProxy::attachSegments(
 }
 
 util::index_t ArchiveProxy::migrateSegments(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t srcRecordingId,
     std::int64_t dstRecordingId,
     std::int64_t correlationId,
@@ -640,7 +640,7 @@ util::index_t ArchiveProxy::migrateSegments(
 }
 
 util::index_t ArchiveProxy::keepAlive(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -654,7 +654,7 @@ util::index_t ArchiveProxy::keepAlive(
 }
 
 util::index_t ArchiveProxy::challengeResponse(
-    AtomicBuffer& buffer,
+    AtomicBuffer &buffer,
     std::pair<const char *, std::uint32_t> encodedCredentials,
     std::int64_t correlationId,
     std::int64_t controlSessionId)

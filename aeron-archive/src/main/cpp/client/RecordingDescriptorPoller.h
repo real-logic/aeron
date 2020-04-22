@@ -56,16 +56,16 @@ typedef std::function<void(
     std::int32_t mtuLength,
     std::int32_t sessionId,
     std::int32_t streamId,
-    const std::string& strippedChannel,
-    const std::string& originalChannel,
-    const std::string& sourceIdentity)> recording_descriptor_consumer_t;
+    const std::string &strippedChannel,
+    const std::string &originalChannel,
+    const std::string &sourceIdentity)> recording_descriptor_consumer_t;
 
 class RecordingDescriptorPoller
 {
 public:
     RecordingDescriptorPoller(
         std::shared_ptr<Subscription> subscription,
-        const exception_handler_t& errorHandler,
+        const exception_handler_t &errorHandler,
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
 
@@ -131,7 +131,7 @@ public:
     inline void reset(
         std::int64_t correlationId,
         std::int32_t recordCount,
-        const recording_descriptor_consumer_t& consumer)
+        const recording_descriptor_consumer_t &consumer)
     {
         m_correlationId = correlationId;
         m_remainingRecordCount = recordCount;
@@ -139,7 +139,7 @@ public:
         m_isDispatchComplete = false;
     }
 
-    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     ControlledFragmentAssembler m_fragmentAssembler;
@@ -157,4 +157,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_RECORDING_DESCRIPTOR_POLLER_H

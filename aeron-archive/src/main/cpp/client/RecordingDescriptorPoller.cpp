@@ -23,17 +23,18 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingDescriptorPoller& poller)
+static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingDescriptorPoller &poller)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        return poller.onFragment(buffer, offset, length, header);
-    };
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            return poller.onFragment(buffer, offset, length, header);
+        };
 }
 
 RecordingDescriptorPoller::RecordingDescriptorPoller(
     std::shared_ptr<Subscription> subscription,
-    const exception_handler_t& errorHandler,
+    const exception_handler_t &errorHandler,
     std::int64_t controlSessionId,
     int fragmentLimit) :
     m_fragmentAssembler(controlHandler(*this)),
@@ -46,7 +47,7 @@ RecordingDescriptorPoller::RecordingDescriptorPoller(
 }
 
 ControlledPollAction RecordingDescriptorPoller::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     if (m_isDispatchComplete)
     {

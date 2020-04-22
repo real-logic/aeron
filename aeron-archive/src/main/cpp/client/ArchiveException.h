@@ -18,7 +18,8 @@
 
 #include "Aeron.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_GENERIC = 0;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_ACTIVE_LISTING = 1;
@@ -42,9 +43,9 @@ private:
 
 public:
     ArchiveException(
-        const std::string& what,
-        const std::string& function,
-        const std::string& file,
+        const std::string &what,
+        const std::string &function,
+        const std::string &file,
         const int line) :
         SourcedException(what, function, file, line)
     {
@@ -52,9 +53,9 @@ public:
 
     ArchiveException(
         std::int32_t errorCode,
-        const std::string& what,
-        const std::string& function,
-        const std::string& file,
+        const std::string &what,
+        const std::string &function,
+        const std::string &file,
         const int line) :
         SourcedException(what, function, file, line),
         m_errorCode(errorCode)
@@ -64,9 +65,9 @@ public:
     ArchiveException(
         std::int32_t errorCode,
         std::int64_t correlationId,
-        const std::string& what,
-        const std::string& function,
-        const std::string& file,
+        const std::string &what,
+        const std::string &function,
+        const std::string &file,
         const int line) :
         SourcedException(what, function, file, line),
         m_errorCode(errorCode),
@@ -96,4 +97,5 @@ public:
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_ARCHIVE_EXCEPTION_H

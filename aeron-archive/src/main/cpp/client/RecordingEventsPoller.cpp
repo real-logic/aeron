@@ -24,12 +24,13 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::fragment_handler_t fragmentHandler(RecordingEventsPoller& poller)
+static aeron::fragment_handler_t fragmentHandler(RecordingEventsPoller &poller)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        poller.onFragment(buffer, offset, length, header);
-    };
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            poller.onFragment(buffer, offset, length, header);
+        };
 }
 
 RecordingEventsPoller::RecordingEventsPoller(std::shared_ptr<aeron::Subscription> subscription) :
@@ -39,7 +40,7 @@ RecordingEventsPoller::RecordingEventsPoller(std::shared_ptr<aeron::Subscription
 }
 
 void RecordingEventsPoller::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     MessageHeader msgHeader(
         buffer.sbeData() + offset,
@@ -72,8 +73,8 @@ void RecordingEventsPoller::onFragment(
             m_recordingPosition = m_recordingStartPosition;
             m_recordingStopPosition = aeron::NULL_VALUE;
             m_pollComplete = true;
+            break;
         }
-        break;
 
         case RecordingProgress::sbeTemplateId():
         {
@@ -89,8 +90,8 @@ void RecordingEventsPoller::onFragment(
             m_recordingPosition = event.position();
             m_recordingStopPosition = aeron::NULL_VALUE;
             m_pollComplete = true;
+            break;
         }
-        break;
 
         case RecordingStopped::sbeTemplateId():
         {
@@ -106,11 +107,10 @@ void RecordingEventsPoller::onFragment(
             m_recordingPosition = event.stopPosition();
             m_recordingStopPosition = m_recordingPosition;
             m_pollComplete = true;
+            break;
         }
-        break;
 
         default:
             break;
     }
 }
-

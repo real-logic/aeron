@@ -22,7 +22,8 @@
 #include "ChannelUri.h"
 #include "util/MacroUtil.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /**
  * Represents a timestamp that has not been set. Can be used when the time is not known.
@@ -48,7 +49,7 @@ typedef std::function<std::pair<const char *, std::uint32_t>()> credentials_enco
 
 inline std::pair<const char *, std::uint32_t> defaultCredentialsEncodedCredentials()
 {
-    return {nullptr, 0};
+    return { nullptr, 0 };
 }
 
 /**
@@ -63,7 +64,7 @@ typedef std::function<std::pair<const char *, std::uint32_t>(
 inline std::pair<const char *, std::uint32_t> defaultCredentialsOnChallenge(
     std::pair<const char *, std::uint32_t> encodedChallenge)
 {
-    return {nullptr, 0};
+    return { nullptr, 0 };
 }
 
 /**
@@ -75,7 +76,7 @@ typedef std::function<void(std::pair<const char *, std::uint32_t> encodedCredent
 
 inline void defaultCredentialsOnFree(std::pair<const char *, std::uint32_t> credentials)
 {
-    delete [] credentials.first;
+    delete[] credentials.first;
 }
 
 /**
@@ -201,7 +202,7 @@ public:
      * @return this for a fluent API.
      * @see Aeron#connect()
      */
-    inline this_t& aeron(std::shared_ptr<Aeron> aeron)
+    inline this_t &aeron(std::shared_ptr<Aeron> aeron)
     {
         m_aeron = std::move(aeron);
         return *this;
@@ -225,7 +226,7 @@ public:
      * @return this for a fluent API.
      * @see MESSAGE_TIMEOUT_NS_DEFAULT
      */
-    inline this_t& messageTimeoutNs(long long timeoutNs)
+    inline this_t &messageTimeoutNs(long long timeoutNs)
     {
         m_messageTimeoutNs = timeoutNs;
         return *this;
@@ -251,7 +252,7 @@ public:
      * @return this for a fluent API.
      * @see RECORDING_EVENTS_CHANNEL_DEFAULT
      */
-    inline this_t& recordingEventsChannel(const std::string& recordingEventsChannel)
+    inline this_t &recordingEventsChannel(const std::string &recordingEventsChannel)
     {
         m_recordingEventsChannel = recordingEventsChannel;
         return *this;
@@ -273,7 +274,7 @@ public:
      * @param recordingEventsStreamId stream id on which the recording events publication will publish.
      * @return this for a fluent API.
      */
-    inline this_t& recordingEventsStreamId(std::int32_t recordingEventsStreamId)
+    inline this_t &recordingEventsStreamId(std::int32_t recordingEventsStreamId)
     {
         m_recordingEventsStreamId = recordingEventsStreamId;
         return *this;
@@ -295,7 +296,7 @@ public:
      * @param channel parameter for the control response channel.
      * @return this for a fluent API.
      */
-    inline this_t& controlResponseChannel(const std::string& channel)
+    inline this_t &controlResponseChannel(const std::string &channel)
     {
         m_controlResponseChannel = channel;
         return *this;
@@ -317,7 +318,7 @@ public:
      * @param streamId for the control response channel.
      * @return this for a fluent API
      */
-    inline this_t& controlResponseStreamId(std::int32_t streamId)
+    inline this_t &controlResponseStreamId(std::int32_t streamId)
     {
         m_controlResponseStreamId = streamId;
         return *this;
@@ -339,7 +340,7 @@ public:
      * @param channel parameter for the control request channel.
      * @return this for a fluent API.
      */
-    inline this_t& controlRequestChannel(const std::string& channel)
+    inline this_t &controlRequestChannel(const std::string &channel)
     {
         m_controlRequestChannel = channel;
         return *this;
@@ -361,7 +362,7 @@ public:
      * @param streamId for the control request channel.
      * @return this for a fluent API
      */
-    inline this_t& controlRequestStreamId(std::int32_t streamId)
+    inline this_t &controlRequestStreamId(std::int32_t streamId)
     {
         m_controlRequestStreamId = streamId;
         return *this;
@@ -383,7 +384,7 @@ public:
      * @param controlTermBufferSparse for the control stream.
      * @return this for a fluent API.
      */
-    inline this_t& controlTermBufferSparse(bool controlTermBufferSparse)
+    inline this_t &controlTermBufferSparse(bool controlTermBufferSparse)
     {
         m_controlTermBufferSparse = controlTermBufferSparse;
         return *this;
@@ -405,7 +406,7 @@ public:
      * @param controlTermBufferLength for the control streams.
      * @return this for a fluent API.
      */
-    inline this_t& controlTermBufferLength(std::int32_t controlTermBufferLength)
+    inline this_t &controlTermBufferLength(std::int32_t controlTermBufferLength)
     {
         m_controlTermBufferLength = controlTermBufferLength;
         return *this;
@@ -427,7 +428,7 @@ public:
      * @param controlMtuLength for the control streams.
      * @return this for a fluent API.
      */
-    inline this_t& controlMtuLength(std::int32_t controlMtuLength)
+    inline this_t &controlMtuLength(std::int32_t controlMtuLength)
     {
         m_controlMtuLength = controlMtuLength;
         return *this;
@@ -449,7 +450,7 @@ public:
      * @param aeronDirectoryName the top level Aeron directory.
      * @return this for a fluent API.
      */
-    inline this_t& aeronDirectoryName(const std::string& aeronDirectoryName)
+    inline this_t &aeronDirectoryName(const std::string &aeronDirectoryName)
     {
         m_aeronDirectoryName = aeronDirectoryName;
         return *this;
@@ -471,7 +472,7 @@ public:
      * @param ownsAeronClient does this context own the Aeron client?
      * @return this for a fluent API.
      */
-    inline this_t& ownsAeronClient(bool ownsAeronClient)
+    inline this_t &ownsAeronClient(bool ownsAeronClient)
     {
         m_ownsAeronClient = ownsAeronClient;
         return *this;
@@ -493,7 +494,7 @@ public:
      * @param errorHandler method to handle objects of type std::exception.
      * @return this for a fluent API.
      */
-    inline this_t& errorHandler(const exception_handler_t& errorHandler)
+    inline this_t &errorHandler(const exception_handler_t &errorHandler)
     {
         m_errorHandler = errorHandler;
         return *this;
@@ -504,7 +505,7 @@ public:
      *
      * @return the credential supplier that will be called for generating encoded credentials.
      */
-    inline CredentialsSupplier& credentialsSupplier()
+    inline CredentialsSupplier &credentialsSupplier()
     {
         return m_credentialsSupplier;
     }
@@ -515,7 +516,7 @@ public:
      * @param supplier that holds functions to be called.
      * @return this for a fluent API.
      */
-    inline this_t& credentialsSupplier(const CredentialsSupplier& supplier)
+    inline this_t &credentialsSupplier(const CredentialsSupplier &supplier)
     {
         m_credentialsSupplier.m_encodedCredentials = supplier.m_encodedCredentials;
         m_credentialsSupplier.m_onChallenge = supplier.m_onChallenge;
@@ -549,4 +550,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_ARCHIVE_CONFIGURATION_H

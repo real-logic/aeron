@@ -23,17 +23,18 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingSubscriptionDescriptorPoller& poller)
+static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingSubscriptionDescriptorPoller &poller)
 {
-    return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        return poller.onFragment(buffer, offset, length, header);
-    };
+    return
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            return poller.onFragment(buffer, offset, length, header);
+        };
 }
 
 RecordingSubscriptionDescriptorPoller::RecordingSubscriptionDescriptorPoller(
     std::shared_ptr<Subscription> subscription,
-    const exception_handler_t& errorHandler,
+    const exception_handler_t &errorHandler,
     std::int64_t controlSessionId,
     int fragmentLimit) :
     m_fragmentAssembler(controlHandler(*this)),
@@ -46,7 +47,7 @@ RecordingSubscriptionDescriptorPoller::RecordingSubscriptionDescriptorPoller(
 }
 
 ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
-    AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     if (m_isDispatchComplete)
     {
@@ -95,7 +96,7 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
                         static_cast<std::int32_t>(response.relevantId()),
                         correlationId,
                         "response for correlationId=" + std::to_string(m_correlationId) +
-                        ", error: " + response.errorMessage(),
+                            ", error: " + response.errorMessage(),
                         SOURCEINFO);
 
                     if (correlationId == m_correlationId)

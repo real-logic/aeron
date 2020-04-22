@@ -18,7 +18,8 @@
 
 #include "Aeron.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /**
  * Encapsulate the polling and decoding of recording events.
@@ -27,7 +28,7 @@ class RecordingEventsPoller
 {
 public:
     /// Type of recording event.
-    enum EventType: std::uint8_t
+    enum EventType : std::uint8_t
     {
         RECORDING_STARTED = 1,
         RECORDING_PROGRESS = 2,
@@ -120,7 +121,7 @@ public:
         return m_recordingStopPosition;
     }
 
-    void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
     fragment_handler_t m_fragmentHandler;
@@ -135,4 +136,5 @@ private:
 };
 
 }}}
+
 #endif //AERON_RECORDING_EVENTS_POLLER_H

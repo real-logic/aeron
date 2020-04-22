@@ -18,7 +18,8 @@
 
 #include "Aeron.h"
 
-namespace aeron { namespace archive { namespace client {
+namespace aeron { namespace archive { namespace client
+{
 
 /**
  * The position a recording has reached when being archived.
@@ -39,7 +40,8 @@ namespace aeron { namespace archive { namespace client {
  *  +---------------------------------------------------------------+
  * </pre>
  */
-namespace RecordingPos {
+namespace RecordingPos
+{
 
 /// Type id of a recording position counter.
 constexpr const std::int32_t RECORDING_POSITION_TYPE_ID = 100;
@@ -63,7 +65,7 @@ struct RecordingPosKeyDefn
  * @param recordingId    for the active recording.
  * @return the counter id if found otherwise #NULL_COUNTER_ID.
  */
-inline static std::int32_t findCounterIdByRecordingId(CountersReader& countersReader, std::int64_t recordingId)
+inline static std::int32_t findCounterIdByRecordingId(CountersReader &countersReader, std::int64_t recordingId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 
@@ -93,7 +95,7 @@ inline static std::int32_t findCounterIdByRecordingId(CountersReader& countersRe
  * @param sessionId      for the active recording.
  * @return the counter id if found otherwise #NULL_COUNTER_ID.
  */
-inline static std::int32_t findCounterIdBySessionId(CountersReader& countersReader, std::int32_t sessionId)
+inline static std::int32_t findCounterIdBySessionId(CountersReader &countersReader, std::int32_t sessionId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 
@@ -123,7 +125,7 @@ inline static std::int32_t findCounterIdBySessionId(CountersReader& countersRead
  * @param counterId      for the active recording.
  * @return the counter id if found otherwise {#NULL_RECORDING_ID.
  */
-inline static std::int64_t getRecordingId(CountersReader& countersReader, std::int32_t counterId)
+inline static std::int64_t getRecordingId(CountersReader &countersReader, std::int32_t counterId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 
@@ -148,7 +150,7 @@ inline static std::int64_t getRecordingId(CountersReader& countersReader, std::i
  * @param counterId      for the active recording.
  * @return Image#sourceIdentity for the recording or null if not found.
  */
-inline static std::string getSourceIdentity(CountersReader& countersReader, std::int32_t counterId)
+inline static std::string getSourceIdentity(CountersReader &countersReader, std::int32_t counterId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 
@@ -176,7 +178,7 @@ inline static std::string getSourceIdentity(CountersReader& countersReader, std:
  * @param recordingId    to confirm it is still the same value.
  * @return true if the counter is still active otherwise false.
  */
-inline static bool isActive(CountersReader& countersReader, std::int32_t counterId, std::int64_t recordingId)
+inline static bool isActive(CountersReader &countersReader, std::int32_t counterId, std::int64_t recordingId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
     const util::index_t recordOffset = CountersReader::metadataOffset(counterId);
@@ -184,10 +186,12 @@ inline static bool isActive(CountersReader& countersReader, std::int32_t counter
 
     return
         buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-        recordingId == key.recordingId &&
-        countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
+            recordingId == key.recordingId &&
+            countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
 }
 
 }
+
 }}}
+
 #endif //AERON_ARCHIVE_RECORDING_POS_H

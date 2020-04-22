@@ -27,6 +27,7 @@
 #include "aeron_archive_client/ExtendRecordingRequest2.h"
 #include "aeron_archive_client/StopRecordingRequest.h"
 #include "aeron_archive_client/StopRecordingSubscriptionRequest.h"
+#include "aeron_archive_client/StopRecordingByIdentityRequest.h"
 #include "aeron_archive_client/ReplayRequest.h"
 #include "aeron_archive_client/StopReplayRequest.h"
 #include "aeron_archive_client/StopAllReplaysRequest.h"
@@ -213,6 +214,22 @@ util::index_t ArchiveProxy::stopRecording(
         .controlSessionId(controlSessionId)
         .correlationId(correlationId)
         .subscriptionId(subscriptionId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::stopRecordingByIdentity(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    StopRecordingByIdentityRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
 
     return messageAndHeaderLength(request);
 }

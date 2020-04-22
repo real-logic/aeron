@@ -286,6 +286,23 @@ public:
     }
 
     /**
+     * Stop an active recording by the recording id.
+     *
+     * @param recordingId      that identifies an existing recording.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool stopRecordingByIdentity(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = stopRecordingByIdentity(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
      * Replay a recording from a given position.
      *
      * @param recordingId      to be replayed.
@@ -926,6 +943,12 @@ private:
     static util::index_t stopRecording(
         AtomicBuffer& buffer,
         std::int64_t subscriptionId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t stopRecordingByIdentity(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

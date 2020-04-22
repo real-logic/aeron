@@ -36,6 +36,7 @@ public:
     virtual ~UdpChannelTestBase()
     {
         aeron_udp_channel_delete(m_channel);
+        m_resolver.close_func(&m_resolver);
     }
 
     static struct sockaddr_in *ipv4_addr(struct sockaddr_storage *addr)
@@ -426,6 +427,9 @@ TEST_P(UdpChannelEqualityParameterisedTest, shouldMatch)
         << uri_1 << "(" << (NULL != channel_1 ? channel_1->canonical_form : "null") << ")"
         << " vs "
         << uri_2 << "(" << (NULL != channel_2 ? channel_2->canonical_form : "null") << ")";
+
+    aeron_udp_channel_delete(channel_1);
+    aeron_udp_channel_delete(channel_2);
 }
 
 INSTANTIATE_TEST_SUITE_P(

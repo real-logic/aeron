@@ -32,6 +32,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
+import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -45,8 +46,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.AsciiEncoding.parseLongAscii;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.align;
+import static org.agrona.BitUtil.*;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
@@ -127,7 +128,6 @@ class Catalog implements AutoCloseable
     private boolean isClosed;
     private final File archiveDir;
     private final EpochClock epochClock;
-    private final Checksum checksum;
     private final FileChannel catalogChannel;
     private long nextRecordingId = 0;
 
@@ -137,13 +137,13 @@ class Catalog implements AutoCloseable
         final int fileSyncLevel,
         final long maxNumEntries,
         final EpochClock epochClock,
-        final Checksum checksum)
+        final Checksum checksum,
+        final UnsafeBuffer buffer)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = fileSyncLevel > 0;
         this.forceMetadata = fileSyncLevel > 1;
         this.epochClock = epochClock;
-        this.checksum = checksum;
 
         validateMaxEntries(maxNumEntries);
 
@@ -211,7 +211,7 @@ class Catalog implements AutoCloseable
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
             maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
-            refreshCatalog(true);
+            refreshCatalog(true, checksum, buffer);
         }
         catch (final Throwable ex)
         {
@@ -231,7 +231,6 @@ class Catalog implements AutoCloseable
         this.forceWrites = false;
         this.forceMetadata = false;
         this.epochClock = epochClock;
-        this.checksum = null;
         this.catalogChannel = null;
 
         try
@@ -280,7 +279,7 @@ class Catalog implements AutoCloseable
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
             maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
-            refreshCatalog(false);
+            refreshCatalog(false, null, null);
         }
         catch (final Throwable ex)
         {
@@ -695,12 +694,23 @@ class Catalog implements AutoCloseable
      * expensive for large catalogs.
      *
      * @param fixOnRefresh set if the catalog should have its entries fixed.
+     * @param checksum     to validate the last fragment upon the page straddle.
+     * @param buffer       to recover the stop position.
      */
-    private void refreshCatalog(final boolean fixOnRefresh)
+    private void refreshCatalog(final boolean fixOnRefresh, final Checksum checksum, final UnsafeBuffer buffer)
     {
         if (fixOnRefresh)
         {
-            forEach(this::refreshAndFixDescriptor);
+            final UnsafeBuffer segmentFileBuffer =
+                null != buffer ? buffer : new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+            forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                refreshAndFixDescriptor(
+                headerEncoder,
+                headerDecoder,
+                descriptorEncoder,
+                descriptorDecoder,
+                checksum,
+                segmentFileBuffer));
         }
         else
         {
@@ -713,7 +723,9 @@ class Catalog implements AutoCloseable
         @SuppressWarnings("unused") final RecordingDescriptorHeaderEncoder unused,
         final RecordingDescriptorHeaderDecoder headerDecoder,
         final RecordingDescriptorEncoder encoder,
-        final RecordingDescriptorDecoder decoder)
+        final RecordingDescriptorDecoder decoder,
+        final Checksum checksum,
+        final UnsafeBuffer buffer)
     {
         final long recordingId = decoder.recordingId();
         if (VALID == headerDecoder.valid() && NULL_POSITION == decoder.stopPosition())
@@ -728,6 +740,7 @@ class Catalog implements AutoCloseable
                 decoder.termBufferLength(),
                 decoder.segmentFileLength(),
                 checksum,
+                buffer,
                 (segmentFile) ->
                 {
                     throw new ArchiveException(
@@ -817,6 +830,7 @@ class Catalog implements AutoCloseable
         final int termLength,
         final int segmentLength,
         final Checksum checksum,
+        final UnsafeBuffer buffer,
         final Predicate<File> truncateFileOnPageStraddle)
     {
         if (null == maxSegmentFile)
@@ -825,15 +839,20 @@ class Catalog implements AutoCloseable
         }
         else
         {
-            final long startTermOffset = startPosition & (termLength - 1);
+            final int startTermOffset = (int)(startPosition & (termLength - 1));
             final long startTermBasePosition = startPosition - startTermOffset;
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
-            final long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
+            final int fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
             final int segmentStopOffset = recoverStopOffset(
-                archiveDir, maxSegmentFile, (int)fileOffset, segmentLength, truncateFileOnPageStraddle, checksum);
+                archiveDir, maxSegmentFile, fileOffset, segmentLength, truncateFileOnPageStraddle, checksum, buffer);
 
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
+    }
+
+    static boolean fragmentStraddlesPageBoundary(final int fragmentOffset, final int fragmentLength)
+    {
+        return fragmentOffset / PAGE_SIZE != (fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE;
     }
 
     private static int recoverStopOffset(
@@ -842,45 +861,46 @@ class Catalog implements AutoCloseable
         final int offset,
         final int segmentFileLength,
         final Predicate<File> truncateFileOnPageStraddle,
-        final Checksum checksum)
+        final Checksum checksum,
+        final UnsafeBuffer buffer)
     {
         final File file = new File(archiveDir, segmentFile);
-        MappedByteBuffer mappedByteBuffer = null;
         try (FileChannel segment = FileChannel.open(file.toPath(), READ, WRITE))
         {
-            mappedByteBuffer = segment.map(READ_WRITE, 0, segment.size());
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+            final int offsetLimit = (int)min(segmentFileLength, segment.size());
+            final ByteBuffer byteBuffer = buffer.byteBuffer();
 
-            int lastFragmentOffset = offset;
             int nextFragmentOffset = offset;
-            int lastFrameLength = 0;
-            final long offsetLimit = min(segmentFileLength, segment.size());
+            int lastFragmentLength = 0;
+            int bufferOffset = 0;
 
-            do
+            out:
+            while (nextFragmentOffset < offsetLimit)
             {
-                final int frameLength = frameLength(buffer, nextFragmentOffset);
-                if (frameLength <= 0)
+                final int bytesRead = readNextChunk(segment, byteBuffer, nextFragmentOffset, offsetLimit);
+
+                bufferOffset = 0;
+                while (bufferOffset < bytesRead)
                 {
-                    break;
+                    final int frameLength = frameLength(buffer, bufferOffset);
+                    if (frameLength <= 0)
+                    {
+                        break out;
+                    }
+                    lastFragmentLength = align(frameLength, FRAME_ALIGNMENT);
+                    nextFragmentOffset += lastFragmentLength;
+                    bufferOffset += lastFragmentLength;
                 }
-
-                lastFrameLength = frameLength;
-                lastFragmentOffset = nextFragmentOffset;
-                nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
             }
-            while (nextFragmentOffset < offsetLimit);
 
-            if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength) &&
-                !isValidFragment(buffer, lastFragmentOffset, lastFrameLength, checksum) &&
+            final int lastFragmentOffset = nextFragmentOffset - lastFragmentLength;
+            if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFragmentLength) &&
+                !isValidFragment(buffer, bufferOffset - lastFragmentLength, lastFragmentLength, checksum) &&
                 truncateFileOnPageStraddle.test(file))
             {
-                IoUtil.unmap(mappedByteBuffer); // unmap buffer before the truncate for Windows interop
-                mappedByteBuffer = null;
-
                 segment.truncate(lastFragmentOffset);
-                final ByteBuffer tmp = ByteBuffer.allocate(1);
-                tmp.put((byte)0).position(0);
-                segment.write(tmp, segmentFileLength - 1);
+                byteBuffer.put(0, (byte)0).limit(1).position(0);
+                segment.write(byteBuffer, segmentFileLength - 1);
 
                 return lastFragmentOffset;
             }
@@ -894,22 +914,30 @@ class Catalog implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
             return Aeron.NULL_VALUE;
         }
-        finally
-        {
-            IoUtil.unmap(mappedByteBuffer);
-        }
     }
 
-    static boolean fragmentStraddlesPageBoundary(final int fragmentOffset, final int fragmentLength)
+    private static int readNextChunk(
+        final FileChannel segment, final ByteBuffer byteBuffer, final int offset, final int limit) throws IOException
     {
-        return fragmentOffset / PAGE_SIZE != (fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE;
+        int position = offset;
+        byteBuffer.clear().limit(min(MAX_BLOCK_LENGTH, limit - position));
+        do
+        {
+            final int bytesRead = segment.read(byteBuffer, position);
+            if (bytesRead < 0)
+            {
+                break;
+            }
+            position += bytesRead;
+        }
+        while (byteBuffer.remaining() > 0);
+
+        return position - offset;
     }
 
     private static boolean isValidFragment(
-        final UnsafeBuffer buffer, final int fragmentOffset, final int fragmentLength, final Checksum checksum)
+        final UnsafeBuffer buffer, final int fragmentOffset, final int alignedFragmentLength, final Checksum checksum)
     {
-        final int alignedFragmentLength = align(fragmentLength, FRAME_ALIGNMENT);
-
         return null != checksum && hasValidChecksum(buffer, fragmentOffset, alignedFragmentLength, checksum) ||
             hasDataInAllPagesAfterStraddle(buffer, fragmentOffset, alignedFragmentLength);
     }

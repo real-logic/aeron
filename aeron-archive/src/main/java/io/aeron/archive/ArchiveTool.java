@@ -27,10 +27,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.PrintBufferUtil;
-import org.agrona.Strings;
+import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
 
 import java.io.File;
@@ -44,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
@@ -291,7 +289,7 @@ public class ArchiveTool
      */
     public static int maxEntries(final File archiveDir, final long newMaxEntries)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, INSTANCE, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, INSTANCE, null, null))
         {
             return catalog.maxEntries();
         }
@@ -636,8 +634,7 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final ByteBuffer buffer = ByteBuffer.allocateDirect(
-            align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
+        final ByteBuffer buffer = BufferUtil.allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH);
         buffer.order(LITTLE_ENDIAN);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 
@@ -835,6 +832,7 @@ public class ArchiveTool
                 termLength,
                 segmentLength,
                 checksum,
+                headerFlyweight,
                 truncateFileOnPageStraddle::confirm);
         }
         catch (final Exception ex)

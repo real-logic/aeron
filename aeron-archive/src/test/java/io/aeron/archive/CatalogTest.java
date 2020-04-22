@@ -72,7 +72,7 @@ class CatalogTest
     @BeforeEach
     void before()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 6, 1, "channelG", "channelG?tag=f", "sourceA");
@@ -128,7 +128,7 @@ class CatalogTest
     void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, () -> 3L, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, () -> 3L, null, null))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
@@ -156,7 +156,7 @@ class CatalogTest
     {
         final long newMaxEntries = MAX_ENTRIES * 2;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock, null, null))
         {
             assertEquals(newMaxEntries, catalog.maxEntries());
         }
@@ -167,7 +167,7 @@ class CatalogTest
     {
         final long newMaxEntries = 1;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock, null, null))
         {
             assertEquals(MAX_ENTRIES, catalog.maxEntries());
         }
@@ -189,7 +189,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             final Catalog.CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -239,7 +239,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -276,7 +276,7 @@ class CatalogTest
             ArchiveException.class,
             () ->
             {
-                final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null);
+                final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null);
                 catalog.close();
             });
         assertThat(exception.getMessage(), containsString(segmentFile.getAbsolutePath()));
@@ -306,7 +306,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, crc32()))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, crc32(), null))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -321,7 +321,7 @@ class CatalogTest
     private long newRecording()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             newRecordingId = catalog.addNewRecording(
                 0L,
@@ -372,7 +372,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -391,7 +391,7 @@ class CatalogTest
         final File archiveDir = ArchiveTests.makeTestDirectory();
         final long maxEntries = 2;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null, null))
         {
             for (int i = 0; i < maxEntries; i++)
             {
@@ -410,7 +410,7 @@ class CatalogTest
             }
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null, null))
         {
             assertEquals(maxEntries, catalog.countEntries());
         }
@@ -428,14 +428,14 @@ class CatalogTest
             log.write(bb);
         }
 
-        final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null);
+        final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null);
         catalog.close();
     }
 
     @Test
     void shouldContainChannelFragment()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             final String originalChannel = "aeron:udp?endpoint=localhost:7777|tags=777|alias=TestString";
             final String strippedChannel = "strippedChannelUri";

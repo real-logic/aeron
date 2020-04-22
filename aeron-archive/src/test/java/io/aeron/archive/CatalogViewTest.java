@@ -49,7 +49,7 @@ public class CatalogViewTest
     {
         clock.update(1);
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
         {
             recordingOneId = catalog.addNewRecording(
                 10L, 4L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 7, 1, "channelG", "channelG?tag=f", "sourceA");

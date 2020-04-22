@@ -898,7 +898,13 @@ public class Archive implements AutoCloseable
             if (null == catalog)
             {
                 catalog = new Catalog(
-                    archiveDir, archiveDirChannel, catalogFileSyncLevel, maxCatalogEntries, epochClock, recordChecksum);
+                    archiveDir,
+                    archiveDirChannel,
+                    catalogFileSyncLevel,
+                    maxCatalogEntries,
+                    epochClock,
+                    recordChecksum,
+                    null != recordChecksum ? recordChecksumBuffer() : dataBuffer());
             }
 
             if (null == archiveClientContext)

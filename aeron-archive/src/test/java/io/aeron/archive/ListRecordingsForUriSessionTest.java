@@ -37,7 +37,7 @@ public class ListRecordingsForUriSessionTest
     @BeforeEach
     public void before()
     {
-        catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null);
+        catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null);
         matchingRecordingIds[0] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "localhost", "localhost?tag=f", "sourceA");
         catalog.addNewRecording(

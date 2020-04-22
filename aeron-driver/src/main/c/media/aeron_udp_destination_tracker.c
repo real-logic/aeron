@@ -293,6 +293,9 @@ int aeron_udp_destination_tracker_remove_destination(
 
         if (aeron_udp_destination_tracker_address_compare(&entry->addr, addr) == 0)
         {
+            aeron_uri_close(entry->uri);
+            aeron_free(entry->uri);
+
             aeron_array_fast_unordered_remove(
                 (uint8_t *) tracker->destinations.array,
                 sizeof(aeron_udp_destination_entry_t),

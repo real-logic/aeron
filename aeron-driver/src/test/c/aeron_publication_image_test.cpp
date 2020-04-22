@@ -62,53 +62,54 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     int32_t session_id = 1000001;
     aeron_receive_destination_t *destination = NULL;
 
-    aeron_udp_channel_t *channel_1;
+    aeron_udp_channel_t *channel_1 = createChannel(uri_1);
     aeron_receive_destination_t *dest_1;
-
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
 
     ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
 
-    aeron_udp_channel_t *channel_2;
+    aeron_udp_channel_t *channel_2 = createChannel(uri_2);
     aeron_receive_destination_t *dest_2;
-
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
 
     ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
 
-    aeron_udp_channel_t *remove_channel_1;
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &remove_channel_1);
+    aeron_udp_channel_t *remove_channel_1 = createChannel(uri_1, &m_channels_for_tear_down);
 
     ASSERT_EQ(1, aeron_receive_channel_endpoint_remove_destination(endpoint, remove_channel_1, &destination));
+    endpoint->transport_bindings->poller_remove_func(&m_receiver.poller, &dest_1->transport);
+    endpoint->transport_bindings->close_func(&dest_1->transport);
+
     ASSERT_EQ(1u, endpoint->destinations.length);
     ASSERT_EQ(1, aeron_publication_image_remove_destination(image, remove_channel_1));
     ASSERT_EQ(1u, image->connections.length);
     ASSERT_EQ(dest_1, destination);
+    aeron_receive_destination_delete(dest_1);
 
-    aeron_udp_channel_t *channel_not_added;
-    aeron_udp_channel_parse(strlen(uri_3), uri_3, &m_resolver, &channel_not_added);
+    aeron_udp_channel_t *channel_not_added = createChannel(uri_3, &m_channels_for_tear_down);
 
     destination = NULL;
     ASSERT_EQ(0, aeron_receive_channel_endpoint_remove_destination(endpoint, channel_not_added, &destination));
     ASSERT_EQ(1u, endpoint->destinations.length);
     ASSERT_EQ(0, aeron_publication_image_remove_destination(image, channel_not_added));
     ASSERT_EQ(1u, image->connections.length);
-    ASSERT_EQ(nullptr, destination);
+    ASSERT_EQ((aeron_receive_destination_t *)NULL, destination);
 
-    aeron_udp_channel_t *remove_channel_2;
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &remove_channel_2);
+    aeron_udp_channel_t *remove_channel_2 = createChannel(uri_2, &m_channels_for_tear_down);
 
     ASSERT_EQ(1, aeron_receive_channel_endpoint_remove_destination(endpoint, remove_channel_2, &destination));
+    endpoint->transport_bindings->poller_remove_func(&m_receiver.poller, &dest_2->transport);
+    endpoint->transport_bindings->close_func(&dest_2->transport);
+
     ASSERT_EQ(0u, endpoint->destinations.length);
     ASSERT_EQ(1, aeron_publication_image_remove_destination(image, remove_channel_2));
     ASSERT_EQ(0u, image->connections.length);
     ASSERT_EQ(dest_2, destination);
+    aeron_receive_destination_delete(dest_2);
 }
 
 TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)

@@ -93,6 +93,18 @@ protected:
         {
             aeron_receive_channel_endpoint_delete(&m_counters_manager, endpoint);
         }
+
+        for (auto channel : m_channels_for_tear_down)
+        {
+            aeron_udp_channel_delete(channel);
+        }
+
+        aeron_driver_receiver_on_close(&m_receiver);
+        aeron_mpsc_concurrent_array_queue_close(&m_conductor_command_queue);
+        aeron_distinct_error_log_close(&m_error_log);
+        aeron_system_counters_close(&m_system_counters);
+        aeron_counters_manager_close(&m_counters_manager);
+        aeron_driver_context_close(m_context);
     }
 
     aeron_receive_channel_endpoint_t *createEndpoint(aeron_udp_channel_t *channel, aeron_receive_destination_t *destination)
@@ -115,14 +127,25 @@ protected:
         aeron_udp_channel_t *channel = NULL;
         aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
 
-        m_channels.push_back(channel);
-
         return createEndpoint(channel, destination);
     }
 
     aeron_receive_channel_endpoint_t *createMdsEndpoint()
     {
         return createEndpoint("aeron:udp?control-mode=manual", NULL);
+    }
+
+    aeron_udp_channel_t *createChannel(const char* uri, std::vector<aeron_udp_channel_t *> *tracker = nullptr)
+    {
+        aeron_udp_channel_t *channel = NULL;
+        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
+
+        if (nullptr != tracker)
+        {
+            tracker->push_back(channel);
+        }
+
+        return channel;
     }
 
     aeron_receive_channel_endpoint_t *createDirectEndpoint(const char *uri)
@@ -132,7 +155,7 @@ protected:
 
         aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
 
-        m_channels.push_back(channel);
+        m_channels_for_tear_down.push_back(channel);
 
         aeron_receive_destination_create(&destination, channel, m_context);
 
@@ -196,7 +219,7 @@ protected:
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16);
     AERON_DECL_ALIGNED(buffer_2x_t m_counter_meta_buffer, 16);
     std::vector<aeron_receive_channel_endpoint_t *> m_endpoints;
-    std::vector<aeron_udp_channel_t *> m_channels;
+    std::vector<aeron_udp_channel_t *> m_channels_for_tear_down;
     std::vector<aeron_publication_image_t *> m_images;
 };
 

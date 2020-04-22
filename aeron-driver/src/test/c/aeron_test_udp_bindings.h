@@ -44,6 +44,8 @@ int aeron_test_udp_channel_transport_init(
 
 int aeron_test_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
 {
+    aeron_free(transport->bindings_clientd);
+
     return 0;
 }
 

@@ -46,6 +46,8 @@ void verify_conductor_cmd_function(void *clientd, volatile void *item)
 {
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;
     ASSERT_EQ(clientd, (void *)cmd->func);
+
+    aeron_command_on_delete_cmd(clientd, cmd);
 }
 
 class DataPacketDispatcherTest : public testing::Test
@@ -120,6 +122,10 @@ protected:
         aeron_receive_channel_endpoint_delete(&m_counters_manager, m_receive_endpoint);
         aeron_driver_receiver_on_close(&m_receiver);
         aeron_distinct_error_log_close(&m_error_log);
+        aeron_system_counters_close(&m_system_counters);
+        aeron_counters_manager_close(&m_counters_manager);
+        aeron_mpsc_concurrent_array_queue_close(&m_conductor_command_queue);
+        aeron_driver_context_close(m_context);
     }
 
     aeron_publication_image_t *createImage(int32_t stream_id, int32_t session_id, int64_t correlation_id = 0)
@@ -314,11 +320,11 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetup)
         m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
         &m_channel->local_data);
 
-    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+    ASSERT_EQ(UINT64_C(3), aeron_mpsc_concurrent_array_queue_drain(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
         (void *)aeron_driver_conductor_on_create_publication_image,
-        1));
+        3));
 }
 
 TEST_F(DataPacketDispatcherTest, DISABLED_shouldSetImageInactiveOnRemoveSubscription)

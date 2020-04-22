@@ -32,6 +32,8 @@ struct mmsghdr
 #endif
 }
 
+#define TEMP_URL_LEN (128)
+
 class UdpChannelTransportLossTest : public testing::Test
 {
 public:
@@ -196,10 +198,10 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
 
 TEST_F(UdpChannelTransportLossTest, shouldParseAllParams)
 {
+    char uri[TEMP_URL_LEN];
     aeron_udp_channel_interceptor_loss_params_t params;
-    memset(&params, 0, sizeof(params));
+    strncpy(uri, "rate=0.20|seed=10|recv-msg-mask=0xF", TEMP_URL_LEN);
 
-    char *uri = strdup("rate=0.20|seed=10|recv-msg-mask=0xF");
     int i = aeron_udp_channel_interceptor_loss_parse_params(uri, &params);
 
     EXPECT_EQ(i, 0);
@@ -210,10 +212,10 @@ TEST_F(UdpChannelTransportLossTest, shouldParseAllParams)
 
 TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidRate)
 {
+    char uri[TEMP_URL_LEN];
     aeron_udp_channel_interceptor_loss_params_t params;
-    memset(&params, 0, sizeof(params));
+    strncpy(uri, "rate=abc", TEMP_URL_LEN);
 
-    char *uri = strdup("rate=abc");
     int i = aeron_udp_channel_interceptor_loss_parse_params(uri, &params);
 
     EXPECT_EQ(i, -1);
@@ -221,10 +223,10 @@ TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidRate)
 
 TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidSeed)
 {
+    char uri[TEMP_URL_LEN];
     aeron_udp_channel_interceptor_loss_params_t params;
-    memset(&params, 0, sizeof(params));
+    strncpy(uri, "seed=abc", TEMP_URL_LEN);
 
-    char *uri = strdup("seed=abc");
     int i = aeron_udp_channel_interceptor_loss_parse_params(uri, &params);
 
     EXPECT_EQ(i, -1);
@@ -232,10 +234,10 @@ TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidSeed)
 
 TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidRecvMsgMask)
 {
+    char uri[TEMP_URL_LEN];
     aeron_udp_channel_interceptor_loss_params_t params;
-    memset(&params, 0, sizeof(params));
+    strncpy(uri, "recv-msg-mask=zzz", TEMP_URL_LEN);
 
-    char *uri = strdup("recv-msg-mask=zzz");
     int i = aeron_udp_channel_interceptor_loss_parse_params(uri, &params);
 
     EXPECT_EQ(i, -1);

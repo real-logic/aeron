@@ -838,7 +838,7 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Try stop a recording by its recording id.
+     * Try stop an active recording by its recording id.
      *
      * @param recordingId for which active recording should be stopped.
      * @return true if the recording was stopped or false if the recording is not currently active.

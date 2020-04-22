@@ -781,11 +781,12 @@ public class TestCluster implements AutoCloseable
 
     void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
+        final TestNode.TestService service = node.service();
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
         long count;
 
-        while ((count = node.service().messageCount()) < messageCount)
+        while ((count = service.messageCount()) < messageCount)
         {
             Thread.yield();
             if (Thread.interrupted())
@@ -795,7 +796,7 @@ public class TestCluster implements AutoCloseable
                 fail(message);
             }
 
-            if (node.service().hasReceivedUnexpectedMessage())
+            if (service.hasReceivedUnexpectedMessage())
             {
                 fail("service received unexpected message");
             }

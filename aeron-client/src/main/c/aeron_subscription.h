@@ -95,7 +95,7 @@ inline int aeron_subscription_find_image_index(volatile aeron_image_list_t *imag
     {
         if (image == image_list->array[i])
         {
-            return i;
+            return (int)i;
         }
     }
 

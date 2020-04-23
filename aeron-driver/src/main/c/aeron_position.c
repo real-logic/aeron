@@ -20,32 +20,6 @@
 #include "aeron_position.h"
 #include "aeron_driver_context.h"
 
-#pragma pack(push)
-#pragma pack(4)
-typedef struct aeron_stream_position_counter_key_layout_stct
-{
-    int64_t registration_id;
-    int32_t session_id;
-    int32_t stream_id;
-    int32_t channel_length;
-    char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key)];
-}
-aeron_stream_position_counter_key_layout_t;
-
-typedef struct aeron_channel_endpoint_status_key_layout_stct
-{
-    int32_t channel_length;
-    char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key)];
-}
-aeron_channel_endpoint_status_key_layout_t;
-
-typedef struct aeron_heartbeat_timestamp_key_layout_stct
-{
-    int64_t registration_id;
-}
-aeron_heartbeat_timestamp_key_layout_t;
-#pragma pack(pop)
-
 int32_t aeron_stream_counter_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,

@@ -27,6 +27,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.Tests;
+import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
@@ -58,10 +59,13 @@ public class ClusterLoggingAgentTest
     private static CountDownLatch latch;
 
     private File testDir;
+    private ClusteredMediaDriver clusteredMediaDriver;
+    private ClusteredServiceContainer container;
 
     @AfterEach
     public void after()
     {
+        CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), clusteredMediaDriver, container);
         AgentTests.afterAgent();
 
         if (testDir != null && testDir.exists())
@@ -146,27 +150,24 @@ public class ClusterLoggingAgentTest
             .clusterDir(new File(testDir, "service"))
             .clusteredService(mock(ClusteredService.class));
 
-        try (ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
-            mediaDriverCtx, archiveCtx, consensusModuleCtx))
+        clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
+        container = ClusteredServiceContainer.launch(clusteredServiceCtx);
+
+        latch.await();
+
+        final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+        while (counter.get() != Election.State.CLOSED.code())
         {
-            try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
-            {
-                latch.await();
-
-                final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
-                while (counter.get() != Election.State.CLOSED.code())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final Set<Integer> expected = expectedEvents
-                    .stream()
-                    .map(ClusterEventLogger::toEventCodeId)
-                    .collect(toSet());
-                assertEquals(expected, LOGGED_EVENTS);
-            }
+            Thread.yield();
+            Tests.checkInterruptStatus();
         }
+
+        final Set<Integer> expected = expectedEvents
+            .stream()
+            .map(ClusterEventLogger::toEventCodeId)
+            .collect(toSet());
+
+        assertEquals(expected, LOGGED_EVENTS);
     }
 
     private void before(final String enabledEvents, final int expectedEvents)

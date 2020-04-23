@@ -1945,8 +1945,6 @@ class ConsensusModuleAgent implements Agent
         else if (Cluster.Role.FOLLOWER == role &&
             (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
         {
-            workCount += ingressAdapter.poll();
-
             final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
             if (0 == count && logAdapter.isImageClosed())
             {
@@ -1957,15 +1955,18 @@ class ConsensusModuleAgent implements Agent
                     " leaderId=" + leaderMember.id(),
                     AeronException.Category.WARN));
                 enterElection(nowNs);
+
                 return 1;
             }
 
+            commitPosition.proposeMaxOrdered(logAdapter.position());
+            workCount += ingressAdapter.poll();
             workCount += count;
         }
 
         workCount += memberStatusAdapter.poll();
-        workCount += updateMemberPosition(nowNs);
         workCount += consensusModuleAdapter.poll();
+        workCount += updateMemberPosition(nowNs);
 
         return workCount;
     }
@@ -2531,8 +2532,6 @@ class ConsensusModuleAgent implements Agent
                 timeOfLastAppendPositionNs = nowNs;
                 workCount += 1;
             }
-
-            commitPosition.proposeMaxOrdered(logAdapter.position());
         }
 
         return workCount;

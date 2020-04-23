@@ -15,18 +15,16 @@
  */
 package io.aeron.agent;
 
-import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ClusteredMediaDriver;
 import io.aeron.cluster.ConsensusModule;
-import io.aeron.cluster.Election;
-import io.aeron.cluster.service.ClusteredService;
-import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.cluster.service.*;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.Tests;
+import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
@@ -50,7 +48,8 @@ import static java.util.Collections.synchronizedSet;
 import static java.util.stream.Collectors.toSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class ClusterLoggingAgentTest
 {
@@ -58,10 +57,13 @@ public class ClusterLoggingAgentTest
     private static CountDownLatch latch;
 
     private File testDir;
+    private ClusteredMediaDriver clusteredMediaDriver;
+    private ClusteredServiceContainer container;
 
     @AfterEach
     public void after()
     {
+        CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
         AgentTests.afterAgent();
 
         if (testDir != null && testDir.exists())
@@ -139,34 +141,26 @@ public class ClusterLoggingAgentTest
             .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
             .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
 
+        final ClusteredService clusteredService = mock(ClusteredService.class);
         final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirectoryName)
             .errorHandler(Tests::onError)
             .archiveContext(aeronArchiveContext.clone())
             .clusterDir(new File(testDir, "service"))
-            .clusteredService(mock(ClusteredService.class));
+            .clusteredService(clusteredService);
 
-        try (ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
-            mediaDriverCtx, archiveCtx, consensusModuleCtx))
-        {
-            try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
-            {
-                latch.await();
+        clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
+        container = ClusteredServiceContainer.launch(clusteredServiceCtx);
 
-                final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
-                while (counter.get() != Election.State.CLOSED.code())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
+        latch.await();
+        verify(clusteredService, timeout(5000)).onRoleChange(eq(Cluster.Role.LEADER));
 
-                final Set<Integer> expected = expectedEvents
-                    .stream()
-                    .map(ClusterEventLogger::toEventCodeId)
-                    .collect(toSet());
-                assertEquals(expected, LOGGED_EVENTS);
-            }
-        }
+        final Set<Integer> expected = expectedEvents
+            .stream()
+            .map(ClusterEventLogger::toEventCodeId)
+            .collect(toSet());
+
+        assertEquals(expected, LOGGED_EVENTS);
     }
 
     private void before(final String enabledEvents, final int expectedEvents)

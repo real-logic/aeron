@@ -221,7 +221,7 @@ int aeron_subscription_poll(
         fragments_read += aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
     }
 
-    for (size_t i = 0; i < starting_index &&fragments_read < fragment_limit; i++)
+    for (size_t i = 0; i < starting_index && fragments_read < fragment_limit; i++)
     {
         fragments_read += aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
     }

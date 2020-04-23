@@ -42,26 +42,42 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
+@SuppressWarnings("unused")
+abstract class EmbeddedReplayThroughputLhsPadding
+{
+    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
+    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
+    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
+    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+}
+
+abstract class EmbeddedReplayThroughputValue extends EmbeddedReplayThroughputLhsPadding
+{
+    protected long messageCount;
+}
+
 /**
  * Tests the throughput when replaying a recorded stream of messages.
  */
-public class EmbeddedReplayThroughput implements AutoCloseable
+public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputValue implements AutoCloseable
 {
     private static final int REPLAY_STREAM_ID = 101;
     private static final String REPLAY_URI = "aeron:ipc";
-
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
+    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
+    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
+    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
+    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
+
     private final ArchivingMediaDriver archivingMediaDriver;
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onMessage);
-    private long messageCount;
     private int publicationSessionId;
 
     public static void main(final String[] args) throws Exception
@@ -220,26 +236,23 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         try (Subscription subscription = aeronArchive.replay(
             recordingId, 0L, recordingLength, REPLAY_URI, REPLAY_STREAM_ID))
         {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 10, 1000, 1000);
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
             while (!subscription.isConnected())
             {
                 idleStrategy.idle();
             }
 
             messageCount = 0;
-            final FragmentAssembler fragmentAssembler = this.fragmentAssembler;
-            fragmentAssembler.clear();
+            final Image image = subscription.imageAtIndex(0);
+            final ImageFragmentAssembler fragmentAssembler = new ImageFragmentAssembler(this::onMessage);
 
             while (messageCount < NUMBER_OF_MESSAGES)
             {
-                final int fragments = subscription.poll(fragmentAssembler, FRAGMENT_COUNT_LIMIT);
-                if (0 == fragments)
+                final int fragments = image.poll(fragmentAssembler, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments && image.isClosed())
                 {
-                    if (!subscription.isConnected())
-                    {
-                        System.out.println("unexpected end of stream at message count: " + messageCount);
-                        break;
-                    }
+                    System.out.println("\n*** unexpected end of stream at message count: " + messageCount);
+                    break;
                 }
 
                 idleStrategy.idle(fragments);
@@ -274,7 +287,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
         if (1 != recordingsFound)
         {
-            throw new IllegalStateException("should have been one recording");
+            throw new IllegalStateException("should have been only one recording");
         }
 
         return foundRecordingId.get();

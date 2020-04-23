@@ -2488,13 +2488,13 @@ class ConsensusModuleAgent implements Agent
     {
         int workCount = 0;
 
-        final long appendPosition = this.appendPosition.get();
         if (Cluster.Role.LEADER == role)
         {
+            final long appendPosition = this.appendPosition.get();
             thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
             final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
 
-            if (this.commitPosition.proposeMaxOrdered(commitPosition) ||
+            if (commitPosition > this.commitPosition.getWeak() ||
                 nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
             {
                 for (final ClusterMember member : clusterMembers)
@@ -2506,14 +2506,14 @@ class ConsensusModuleAgent implements Agent
                     }
                 }
 
+                this.commitPosition.setOrdered(commitPosition);
                 timeOfLastLogUpdateNs = nowNs;
 
+                clearUncommittedEntriesTo(commitPosition);
                 if (pendingMemberRemovals > 0)
                 {
                     handleMemberRemovals(commitPosition);
                 }
-
-                clearUncommittedEntriesTo(commitPosition);
 
                 workCount += 1;
             }
@@ -2521,6 +2521,7 @@ class ConsensusModuleAgent implements Agent
         else
         {
             final ExclusivePublication publication = leaderMember.publication();
+            final long appendPosition = this.appendPosition.get();
 
             if ((appendPosition != lastAppendPosition ||
                 nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&

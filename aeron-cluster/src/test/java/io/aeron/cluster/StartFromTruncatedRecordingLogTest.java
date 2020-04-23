@@ -61,7 +61,6 @@ public class StartFromTruncatedRecordingLogTest
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
     private static final int MESSAGE_COUNT = 10;
-    private static final String MSG = "Hello World!";
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL =
@@ -157,16 +156,12 @@ public class StartFromTruncatedRecordingLogTest
         ClusterTests.awaitElectionState(electionStateFollowerB, Election.State.CLOSED);
 
         takeSnapshot(leaderMemberId);
-        awaitSnapshotCount(leaderMemberId, 1);
-        awaitSnapshotCount(followerMemberIdA, 1);
-        awaitSnapshotCount(followerMemberIdB, 1);
+        awaitSnapshotCount(1);
 
         awaitNeutralCounter(leaderMemberId);
 
         shutdown(leaderMemberId);
-        awaitSnapshotCount(leaderMemberId, 2);
-        awaitSnapshotCount(followerMemberIdA, 2);
-        awaitSnapshotCount(followerMemberIdB, 2);
+        awaitSnapshotCount(2);
 
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
@@ -186,7 +181,7 @@ public class StartFromTruncatedRecordingLogTest
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
-            Tests.sleep(200);
+            Tests.sleep(100);
         }
 
         return leaderMemberId;
@@ -195,15 +190,16 @@ public class StartFromTruncatedRecordingLogTest
     private void assertClusterIsFunctioningCorrectly()
     {
         awaitLeaderMemberId();
-
         connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+        msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.HELLO_WORLD_MSG);
 
         final int initialCount = responseCount.get();
         sendMessages(msgBuffer);
         awaitResponses(MESSAGE_COUNT + initialCount);
+
+        closeClient();
     }
 
     private void truncateRecordingLogAndDeleteMarkFiles(final int index) throws IOException
@@ -287,13 +283,13 @@ public class StartFromTruncatedRecordingLogTest
             }
             catch (final IOException e)
             {
-                fail("Failed to delete file: " + file);
+                fail("failed to delete file: " + file);
             }
         }
 
         if (file.exists())
         {
-            fail("Failed to delete file: " + file);
+            fail("failed to delete file: " + file);
         }
     }
 
@@ -339,7 +335,6 @@ public class StartFromTruncatedRecordingLogTest
                 .controlStreamId(archiveCtx.controlRequestStreamId())
                 .localControlChannel("aeron:ipc?term-length=64k")
                 .localControlStreamId(archiveCtx.controlRequestStreamId())
-                .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:803" + index)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
@@ -398,7 +393,7 @@ public class StartFromTruncatedRecordingLogTest
     {
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
-            while (client.offer(msgBuffer, 0, MSG.length()) < 0)
+            while (client.offer(msgBuffer, 0, ClusterTests.HELLO_WORLD_MSG.length()) < 0)
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
@@ -476,6 +471,7 @@ public class StartFromTruncatedRecordingLogTest
                 idleStrategy.idle();
             }
 
+            //noinspection NonAtomicOperationOnVolatileField
             ++messageCount;
         }
     }
@@ -484,13 +480,11 @@ public class StartFromTruncatedRecordingLogTest
     {
         int leaderMemberId = NULL_VALUE;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < MEMBER_COUNT; i++)
         {
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
-
+            final Cluster.Role role = Cluster.Role.get(driver.consensusModule().context().clusterNodeRoleCounter());
             final Counter electionStateCounter = driver.consensusModule().context().electionStateCounter();
-            final Cluster.Role role = Cluster.Role.get(
-                (int)driver.consensusModule().context().clusterNodeRoleCounter().get());
 
             if (Cluster.Role.LEADER == role && Election.State.CLOSED.code() == electionStateCounter.get())
             {
@@ -540,14 +534,17 @@ public class StartFromTruncatedRecordingLogTest
         }
     }
 
-    private void awaitSnapshotCount(final int index, final long value)
+    private void awaitSnapshotCount(final long count)
     {
-        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-        final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
-
-        while (snapshotCounter.get() != value)
+        for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            Tests.sleep(1);
+            final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
+            final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
+
+            while (snapshotCounter.get() != count)
+            {
+                Tests.sleep(1);
+            }
         }
     }
 }

@@ -47,7 +47,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.AsciiEncoding.parseLongAscii;
 import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
@@ -701,8 +700,8 @@ class Catalog implements AutoCloseable
     {
         if (fixOnRefresh)
         {
-            final UnsafeBuffer segmentFileBuffer =
-                null != buffer ? buffer : new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+            final UnsafeBuffer segmentFileBuffer = null != buffer ?
+                buffer : new UnsafeBuffer(ByteBuffer.allocateDirect(MAX_BLOCK_LENGTH));
             forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 refreshAndFixDescriptor(
                 headerEncoder,
@@ -887,6 +886,7 @@ class Catalog implements AutoCloseable
                     {
                         break out;
                     }
+
                     lastFragmentLength = align(frameLength, FRAME_ALIGNMENT);
                     nextFragmentOffset += lastFragmentLength;
                     bufferOffset += lastFragmentLength;

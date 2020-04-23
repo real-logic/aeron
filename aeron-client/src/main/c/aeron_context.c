@@ -356,7 +356,7 @@ int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool
     return 0;
 }
 
-bool aeron_contest_get_use_conductor_agent_invoker(aeron_context_t *context)
+bool aeron_context_get_use_conductor_agent_invoker(aeron_context_t *context)
 {
     return NULL != context ? context->use_conductor_agent_invoker : AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT;
 }

@@ -120,7 +120,7 @@ typedef void (*aeron_on_close_client_t)(void *clientd);
  * Whether to use an invoker to control the conductor agent or spawn a thread.
  */
 int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool value);
-bool aeron_contest_get_use_conductor_agent_invoker(aeron_context_t *context);
+bool aeron_context_get_use_conductor_agent_invoker(aeron_context_t *context);
 
 /**
  * Function name to call on start of each agent.

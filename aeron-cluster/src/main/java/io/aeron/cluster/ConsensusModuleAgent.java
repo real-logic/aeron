@@ -1965,8 +1965,8 @@ class ConsensusModuleAgent implements Agent
         }
 
         workCount += memberStatusAdapter.poll();
-        workCount += updateMemberPosition(nowNs);
         workCount += consensusModuleAdapter.poll();
+        workCount += updateMemberPosition(nowNs);
 
         return workCount;
     }

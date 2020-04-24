@@ -1933,40 +1933,47 @@ class ConsensusModuleAgent implements Agent
 
     private int consensusWork(final long timestamp, final long nowNs)
     {
-        int workCount = 0;
+        int workCount = memberStatusAdapter.poll();
 
-        if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
+        if (Cluster.Role.LEADER == role)
         {
-            workCount += timerService.poll(timestamp);
-            workCount += pendingServiceMessages.forEach(
-                pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
-            workCount += ingressAdapter.poll();
-        }
-        else if (Cluster.Role.FOLLOWER == role &&
-            (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
-        {
-            final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
-            if (0 == count && logAdapter.isImageClosed())
+            if (ConsensusModule.State.ACTIVE == state)
             {
-                ctx.countedErrorHandler().onError(new ClusterException(
-                    "log disconnected from leader: logPosition=" + logAdapter.position() +
-                    " commitPosition=" + commitPosition.getWeak() +
-                    " leadershipTermId=" + leadershipTermId +
-                    " leaderId=" + leaderMember.id(),
-                    AeronException.Category.WARN));
-                enterElection(nowNs);
-
-                return 1;
+                workCount += timerService.poll(timestamp);
+                workCount += pendingServiceMessages.forEach(
+                    pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
+                workCount += ingressAdapter.poll();
             }
 
-            commitPosition.proposeMaxOrdered(logAdapter.position());
-            workCount += ingressAdapter.poll();
-            workCount += count;
+            workCount += updateLeaderPosition(nowNs);
+        }
+        else
+        {
+            if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+            {
+                final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
+                if (0 == count && logAdapter.isImageClosed())
+                {
+                    ctx.countedErrorHandler().onError(new ClusterException(
+                        "log disconnected from leader: logPosition=" + logAdapter.position() +
+                        " commitPosition=" + commitPosition.getWeak() +
+                        " leadershipTermId=" + leadershipTermId +
+                        " leaderId=" + leaderMember.id(),
+                        AeronException.Category.WARN));
+
+                    enterElection(nowNs);
+                    return 1;
+                }
+
+                commitPosition.proposeMaxOrdered(logAdapter.position());
+                workCount += ingressAdapter.poll();
+                workCount += count;
+            }
+
+            workCount += updateFollowerPosition(nowNs);
         }
 
-        workCount += memberStatusAdapter.poll();
         workCount += consensusModuleAdapter.poll();
-        workCount += updateMemberPosition(nowNs);
 
         return workCount;
     }
@@ -2485,56 +2492,54 @@ class ConsensusModuleAgent implements Agent
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
     }
 
-    private int updateMemberPosition(final long nowNs)
+    private int updateLeaderPosition(final long nowNs)
     {
-        int workCount = 0;
+        final long appendPosition = this.appendPosition.get();
+        thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
+        final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
 
-        if (Cluster.Role.LEADER == role)
+        if (commitPosition > this.commitPosition.getWeak() ||
+            nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
         {
-            final long appendPosition = this.appendPosition.get();
-            thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
-            final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
-
-            if (commitPosition > this.commitPosition.getWeak() ||
-                nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
+            for (final ClusterMember member : clusterMembers)
             {
-                for (final ClusterMember member : clusterMembers)
+                if (member != thisMember)
                 {
-                    if (member != thisMember)
-                    {
-                        final ExclusivePublication publication = member.publication();
-                        memberStatusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
-                    }
+                    final ExclusivePublication publication = member.publication();
+                    memberStatusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
                 }
-
-                this.commitPosition.setOrdered(commitPosition);
-                timeOfLastLogUpdateNs = nowNs;
-
-                clearUncommittedEntriesTo(commitPosition);
-                if (pendingMemberRemovals > 0)
-                {
-                    handleMemberRemovals(commitPosition);
-                }
-
-                workCount += 1;
             }
-        }
-        else
-        {
-            final ExclusivePublication publication = leaderMember.publication();
-            final long appendPosition = this.appendPosition.get();
 
-            if ((appendPosition != lastAppendPosition ||
-                nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
-                memberStatusPublisher.appendPosition(publication, leadershipTermId, appendPosition, memberId))
+            this.commitPosition.setOrdered(commitPosition);
+            timeOfLastLogUpdateNs = nowNs;
+
+            clearUncommittedEntriesTo(commitPosition);
+            if (pendingMemberRemovals > 0)
             {
-                lastAppendPosition = appendPosition;
-                timeOfLastAppendPositionNs = nowNs;
-                workCount += 1;
+                handleMemberRemovals(commitPosition);
             }
+
+            return 1;
         }
 
-        return workCount;
+        return 0;
+    }
+
+    private int updateFollowerPosition(final long nowNs)
+    {
+        final ExclusivePublication publication = leaderMember.publication();
+        final long appendPosition = this.appendPosition.get();
+
+        if ((appendPosition != lastAppendPosition ||
+            nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
+            memberStatusPublisher.appendPosition(publication, leadershipTermId, appendPosition, memberId))
+        {
+            lastAppendPosition = appendPosition;
+            timeOfLastAppendPositionNs = nowNs;
+            return 1;
+        }
+
+        return 0;
     }
 
     private void clearUncommittedEntriesTo(final long commitPosition)

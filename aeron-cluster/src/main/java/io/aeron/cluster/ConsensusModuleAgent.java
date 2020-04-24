@@ -2695,7 +2695,7 @@ class ConsensusModuleAgent implements Agent
         final long recordingId, final long position, final CountersReader counters, final int counterId)
     {
         idleStrategy.reset();
-        do
+        while (counters.getCounterValue(counterId) < position)
         {
             idle();
 
@@ -2704,7 +2704,6 @@ class ConsensusModuleAgent implements Agent
                 throw new ClusterException("recording has stopped unexpectedly: " + recordingId);
             }
         }
-        while (counters.getCounterValue(counterId) < position);
     }
 
     private int awaitRecordingCounter(final CountersReader counters, final int sessionId)

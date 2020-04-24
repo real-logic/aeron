@@ -250,7 +250,7 @@ class ConsensusModuleAgent implements Agent
             {
                 if (!recoveryPlan.snapshots.isEmpty())
                 {
-                    recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
+                    loadSnapshot(recoveryPlan.snapshots.get(0), archive);
                 }
 
                 while (!ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAckQueues))
@@ -1781,20 +1781,20 @@ class ConsensusModuleAgent implements Agent
             leaderSnapshot.serviceId));
     }
 
-    Counter loadSnapshotsFromDynamicJoin()
+    Counter loadSnapshotsForDynamicJoin()
     {
         recoveryPlan = RecordingLog.createRecoveryPlan(dynamicJoinSnapshots);
 
         final Counter recoveryStateCounter = addRecoveryStateCounter(recoveryPlan);
         if (!recoveryPlan.snapshots.isEmpty())
         {
-            recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
+            loadSnapshot(recoveryPlan.snapshots.get(0), archive);
         }
 
         return recoveryStateCounter;
     }
 
-    boolean pollForEndOfSnapshotLoad(final Counter recoveryStateCounter, final long nowNs)
+    boolean pollForSnapshotLoadAck(final Counter recoveryStateCounter, final long nowNs)
     {
         consensusModuleAdapter.poll();
 
@@ -2326,7 +2326,7 @@ class ConsensusModuleAgent implements Agent
         this.replayLeadershipTermId = leadershipTermId;
     }
 
-    private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
+    private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();

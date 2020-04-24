@@ -444,10 +444,10 @@ class DynamicJoin implements AutoCloseable
 
         if (null == recoveryStateCounter)
         {
-            recoveryStateCounter = consensusModuleAgent.loadSnapshotsFromDynamicJoin();
+            recoveryStateCounter = consensusModuleAgent.loadSnapshotsForDynamicJoin();
             workCount++;
         }
-        else if (consensusModuleAgent.pollForEndOfSnapshotLoad(recoveryStateCounter, nowNs))
+        else if (consensusModuleAgent.pollForSnapshotLoadAck(recoveryStateCounter, nowNs))
         {
             CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
             recoveryStateCounter = null;

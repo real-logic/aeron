@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.SlowTest;
 
 import org.junit.jupiter.api.Test;
@@ -365,14 +366,14 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(40)
+    @Timeout(60)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.connectClient();
+            final AeronCluster aeronCluster = cluster.connectClient();
             final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
@@ -382,6 +383,7 @@ public class ClusterBackupTest
 
             cluster.startClusterBackupNode(true);
 
+            aeronCluster.sendKeepAlive();
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
             cluster.awaitBackupLiveLogPosition(logPosition);
 

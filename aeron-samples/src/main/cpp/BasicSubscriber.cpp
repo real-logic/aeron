@@ -25,16 +25,16 @@
 using namespace aeron::util;
 using namespace aeron;
 
-std::atomic<bool> running (true);
+std::atomic<bool> running(true);
 
 void sigIntHandler(int param)
 {
     running = false;
 }
 
-static const char optHelp     = 'h';
-static const char optPrefix   = 'p';
-static const char optChannel  = 'c';
+static const char optHelp = 'h';
+static const char optPrefix = 'p';
+static const char optChannel = 'c';
 static const char optStreamId = 's';
 
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(1);
@@ -47,7 +47,7 @@ struct Settings
     std::int32_t streamId = samples::configuration::DEFAULT_STREAM_ID;
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -68,7 +68,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 fragment_handler_t printStringMessage()
 {
     return
-        [&](const AtomicBuffer& buffer, util::index_t offset, util::index_t length, const Header& header)
+        [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
         {
             std::cout << "Message to stream " << header.streamId() << " from session " << header.sessionId();
             std::cout << "(" << length << "@" << offset << ") <<";
@@ -76,7 +76,7 @@ fragment_handler_t printStringMessage()
         };
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption(optHelp,     0, 0, "            Displays help information."));
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
         }
 
         context.newSubscriptionHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int64_t correlationId)
             {
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
@@ -135,8 +135,8 @@ int main(int argc, char** argv)
         const std::int64_t channelStatus = subscription->channelStatus();
 
         std::cout << "Subscription channel status (id=" << subscription->channelStatusId() << ") "
-            << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
-            << std::endl;
+                  << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
+                  << std::endl;
 
         fragment_handler_t handler = printStringMessage();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
@@ -148,18 +148,18 @@ int main(int argc, char** argv)
         }
 
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

@@ -36,11 +36,11 @@ void sigIntHandler(int param)
     running = false;
 }
 
-static const char optHelp     = 'h';
-static const char optPrefix   = 'p';
-static const char optChannel  = 'c';
+static const char optHelp = 'h';
+static const char optPrefix = 'p';
+static const char optChannel = 'c';
 static const char optStreamId = 's';
-static const char optFrags    = 'f';
+static const char optFrags = 'f';
 
 struct Settings
 {
@@ -50,7 +50,7 @@ struct Settings
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -76,10 +76,10 @@ void printRate(double messagesPerSec, double bytesPerSec, long totalFragments, l
         messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
 }
 
-fragment_handler_t rateReporterHandler(RateReporter& rateReporter)
+fragment_handler_t rateReporterHandler(RateReporter &rateReporter)
 {
     return
-        [&](AtomicBuffer&, util::index_t, util::index_t length, Header&)
+        [&](AtomicBuffer &, util::index_t, util::index_t length, Header &)
         {
             rateReporter.onMessage(1, length);
         };
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
         }
 
         context.newSubscriptionHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int64_t correlationId)
             {
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
@@ -163,18 +163,18 @@ int main(int argc, char **argv)
         rateReporter.halt();
         rateReporterThread.join();
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

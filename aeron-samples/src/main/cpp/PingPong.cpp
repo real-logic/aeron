@@ -67,7 +67,7 @@ struct Settings
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -92,10 +92,10 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 }
 
 void sendPingAndReceivePong(
-    const fragment_handler_t& fragmentHandler,
-    Publication& publication,
-    Subscription& subscription,
-    const Settings& settings)
+    const fragment_handler_t &fragmentHandler,
+    Publication &publication,
+    Subscription &subscription,
+    const Settings &settings)
 {
     std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
     concurrent::AtomicBuffer srcBuffer(buffer.get(), static_cast<size_t>(settings.messageLength));
@@ -107,7 +107,7 @@ void sendPingAndReceivePong(
     }
 
     std::shared_ptr<Image> imageSharedPtr = subscription.imageByIndex(0);
-    Image& image = *imageSharedPtr;
+    Image &image = *imageSharedPtr;
 
     for (long i = 0; i < settings.numberOfMessages; i++)
     {
@@ -118,7 +118,7 @@ void sendPingAndReceivePong(
             // timestamps in the message are relative to this app, so just send the timestamp directly.
             steady_clock::time_point start = steady_clock::now();
 
-            srcBuffer.putBytes(0, (std::uint8_t*)&start, sizeof(steady_clock::time_point));
+            srcBuffer.putBytes(0, (std::uint8_t *)&start, sizeof(steady_clock::time_point));
         }
         while ((position = publication.offer(srcBuffer, 0, settings.messageLength)) < 0L);
 
@@ -192,13 +192,13 @@ int main(int argc, char **argv)
         }
 
         context.newSubscriptionHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int64_t correlationId)
             {
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
 
         context.newPublicationHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
             {
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
@@ -243,12 +243,12 @@ int main(int argc, char **argv)
             std::this_thread::yield();
         }
 
-        Publication& pongPublicationRef = *pongPublication;
-        Subscription& pingSubscriptionRef = *pingSubscription;
+        Publication &pongPublicationRef = *pongPublication;
+        Subscription &pingSubscriptionRef = *pingSubscription;
         BusySpinIdleStrategy idleStrategy;
         BusySpinIdleStrategy pingHandlerIdleStrategy;
         FragmentAssembler pingFragmentAssembler(
-            [&](AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
+            [&](AtomicBuffer &buffer, index_t offset, index_t length, const Header &header)
             {
                 if (pongPublicationRef.offer(buffer, offset, length) > 0L)
                 {
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
                 }
 
                 std::shared_ptr<Image> imageSharedPtr = pingSubscriptionRef.imageByIndex(0);
-                Image& image = *imageSharedPtr;
+                Image &image = *imageSharedPtr;
 
                 while (running)
                 {
@@ -288,18 +288,19 @@ int main(int argc, char **argv)
             const steady_clock::time_point start = steady_clock::now();
 
             std::cout << "Warming up the media driver with "
-                << toStringWithCommas(warmupSettings.numberOfWarmupMessages) << " messages of length "
-                << toStringWithCommas(warmupSettings.messageLength) << std::endl;
+                      << toStringWithCommas(warmupSettings.numberOfWarmupMessages) << " messages of length "
+                      << toStringWithCommas(warmupSettings.messageLength) << std::endl;
 
             sendPingAndReceivePong(
-                [](AtomicBuffer&, index_t, index_t, Header&){}, *pingPublication, *pongSubscription, warmupSettings);
+                [](AtomicBuffer &, index_t, index_t, Header &)
+                {}, *pingPublication, *pongSubscription, warmupSettings);
 
             std::int64_t nanoDuration = duration<std::int64_t, std::nano>(steady_clock::now() - start).count();
 
             std::cout << "Warmed up the media driver in " << nanoDuration << " [ns]" << std::endl;
         }
 
-        hdr_histogram* histogram;
+        hdr_histogram *histogram;
         hdr_init(1, 10 * 1000 * 1000 * 1000LL, 3, &histogram);
 
         do
@@ -307,20 +308,20 @@ int main(int argc, char **argv)
             hdr_reset(histogram);
 
             FragmentAssembler fragmentAssembler(
-                [&](const AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
+                [&](const AtomicBuffer &buffer, index_t offset, index_t length, const Header &header)
                 {
                     steady_clock::time_point end = steady_clock::now();
                     steady_clock::time_point start;
 
-                    buffer.getBytes(offset, (std::uint8_t*)&start, sizeof(steady_clock::time_point));
+                    buffer.getBytes(offset, (std::uint8_t *)&start, sizeof(steady_clock::time_point));
                     std::int64_t nanoRtt = duration<std::int64_t, std::nano>(end - start).count();
 
                     hdr_record_value(histogram, nanoRtt);
                 });
 
             std::cout << "Pinging "
-                << toStringWithCommas(settings.numberOfMessages) << " messages of length "
-                << toStringWithCommas(settings.messageLength) << " bytes" << std::endl;
+                      << toStringWithCommas(settings.numberOfMessages) << " messages of length "
+                      << toStringWithCommas(settings.messageLength) << " bytes" << std::endl;
 
             steady_clock::time_point startRun = steady_clock::now();
             sendPingAndReceivePong(fragmentAssembler.handler(), *pingPublication, *pongSubscription, settings);
@@ -331,8 +332,8 @@ int main(int argc, char **argv)
 
             double runDuration = duration<double>(endRun - startRun).count();
             std::cout << "Throughput of "
-                << toStringWithCommas(settings.numberOfMessages / runDuration)
-                << " RTTs/sec" << std::endl;
+                      << toStringWithCommas(settings.numberOfMessages / runDuration)
+                      << " RTTs/sec" << std::endl;
         }
         while (running && continuationBarrier("Execute again?"));
 
@@ -340,18 +341,18 @@ int main(int argc, char **argv)
 
         pongThread.join();
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

@@ -25,6 +25,7 @@
 #include <csignal>
 
 #define __STDC_FORMAT_MACROS
+
 #include <cinttypes>
 
 #include "Context.h"
@@ -34,8 +35,7 @@ using namespace aeron::util;
 using namespace aeron::concurrent;
 using namespace std::chrono;
 
-
-std::atomic<bool> running (true);
+std::atomic<bool> running(true);
 
 void sigIntHandler(int param)
 {
@@ -52,7 +52,7 @@ struct Settings
     int updateIntervalMs = 1000;
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -61,12 +61,12 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
         exit(0);
     }
 
-    Settings s;
+    Settings settings;
 
-    s.basePath = cp.getOption(optPath).getParam(0, s.basePath);
-    s.updateIntervalMs = cp.getOption(optPeriod).getParamAsInt(0, 1, 1000000, s.updateIntervalMs);
+    settings.basePath = cp.getOption(optPath).getParam(0, settings.basePath);
+    settings.updateIntervalMs = cp.getOption(optPeriod).getParamAsInt(0, 1, 1000000, settings.updateIntervalMs);
 
-    return s;
+    return settings;
 }
 
 int main (int argc, char** argv)
@@ -104,7 +104,7 @@ int main (int argc, char** argv)
 
         CountersReader counters(metadataBuffer, valuesBuffer);
 
-        while(running)
+        while (running)
         {
             time_t rawtime;
             char currentTime[80];
@@ -129,30 +129,31 @@ int main (int argc, char** argv)
                 toStringWithCommas(clientLivenessTimeoutNs).c_str());
             std::printf("===========================\n");
 
-            counters.forEach([&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string& l)
-            {
-                std::int64_t value = counters.getCounterValue(counterId);
+            counters.forEach(
+                [&](std::int32_t counterId, std::int32_t, const AtomicBuffer &, const std::string &l)
+                {
+                    std::int64_t value = counters.getCounterValue(counterId);
 
-                std::printf("%3d: %20s - %s\n", counterId, toStringWithCommas(value).c_str(), l.c_str());
-            });
+                    std::printf("%3d: %20s - %s\n", counterId, toStringWithCommas(value).c_str(), l.c_str());
+                });
 
             std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalMs));
         }
 
         std::cout << "Exiting..." << std::endl;
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

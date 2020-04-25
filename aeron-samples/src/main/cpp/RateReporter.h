@@ -24,7 +24,8 @@
 
 #include "util/BitUtil.h"
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace std::chrono;
 
@@ -33,7 +34,7 @@ class RateReporter
 public:
     typedef std::function<void(double, double, long, long)> on_rate_report_t;
 
-    RateReporter(nanoseconds reportInterval, const on_rate_report_t& onReport) :
+    RateReporter(nanoseconds reportInterval, const on_rate_report_t &onReport) :
         m_reportInterval(reportInterval),
         m_onReport(onReport),
         m_lastTimestamp(steady_clock::now())

@@ -20,6 +20,7 @@
 #include <cstdlib>
 
 #define __STDC_FORMAT_MACROS
+
 #include <inttypes.h>
 
 #include "util/MemoryMappedFile.h"
@@ -43,7 +44,7 @@ struct Settings
     bool terminateDriver = false;
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -84,7 +85,7 @@ std::string formatDate(const char *format, std::int64_t millisecondsSinceEpoch)
     return std::string(timeBuffer);
 }
 
-int main (int argc, char** argv)
+int main(int argc, char **argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption(optHelp,            0, 0, "           Displays help information."));
@@ -134,18 +135,18 @@ int main (int argc, char** argv)
             std::cout << ")" << std::endl;
         }
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

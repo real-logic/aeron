@@ -19,6 +19,7 @@
 #include <cstdio>
 
 #define __STDC_FORMAT_MACROS
+
 #include <cinttypes>
 
 #include "util/MemoryMappedFile.h"
@@ -40,7 +41,7 @@ struct Settings
     std::string basePath = Context::defaultAeronPath();
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -83,7 +84,7 @@ std::string formatDate(std::int64_t millisecondsSinceEpoch)
     return std::string(timeBuffer) + std::string(msecBuffer) + std::string(tzBuffer);
 }
 
-int main (int argc, char** argv)
+int main(int argc, char **argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption(optHelp,   0, 0, "              Displays help information."));
@@ -112,34 +113,34 @@ int main (int argc, char** argv)
         const int distinctErrorCount = ErrorLogReader::read(
             errorBuffer,
             [](
-                    std::int32_t observationCount,
-                    std::int64_t firstObservationTimestamp,
-                    std::int64_t lastObservationTimestamp,
-                    const std::string &encodedException)
-                {
-                    std::printf(
-                        "***\n%d observations from %s to %s for:\n %s\n",
-                        observationCount,
-                        formatDate(firstObservationTimestamp).c_str(),
-                        formatDate(lastObservationTimestamp).c_str(),
-                        encodedException.c_str());
-                },
+                std::int32_t observationCount,
+                std::int64_t firstObservationTimestamp,
+                std::int64_t lastObservationTimestamp,
+                const std::string &encodedException)
+            {
+                std::printf(
+                    "***\n%d observations from %s to %s for:\n %s\n",
+                    observationCount,
+                    formatDate(firstObservationTimestamp).c_str(),
+                    formatDate(lastObservationTimestamp).c_str(),
+                    encodedException.c_str());
+            },
             0);
 
         std::printf("\n%d distinct errors observed.\n", distinctErrorCount);
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

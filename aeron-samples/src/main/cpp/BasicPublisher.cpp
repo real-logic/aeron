@@ -26,19 +26,19 @@
 using namespace aeron::util;
 using namespace aeron;
 
-std::atomic<bool> running (true);
+std::atomic<bool> running(true);
 
 void sigIntHandler(int param)
 {
     running = false;
 }
 
-static const char optHelp     = 'h';
-static const char optPrefix   = 'p';
-static const char optChannel  = 'c';
+static const char optHelp = 'h';
+static const char optPrefix = 'p';
+static const char optChannel = 'c';
 static const char optStreamId = 's';
 static const char optMessages = 'm';
-static const char optLinger   = 'l';
+static const char optLinger = 'l';
 
 struct Settings
 {
@@ -51,7 +51,7 @@ struct Settings
 
 typedef std::array<std::uint8_t, 256> buffer_t;
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -71,7 +71,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     return s;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption(optHelp,     0, 0, "                Displays help information."));
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
         }
 
         context.newPublicationHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
             {
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
@@ -118,9 +118,9 @@ int main(int argc, char** argv)
         const std::int64_t channelStatus = publication->channelStatus();
 
         std::cout << "Publication channel status (id=" << publication->channelStatusId() << ") "
-            << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ?
-                "ACTIVE" : std::to_string(channelStatus))
-            << std::endl;
+                  << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ?
+                      "ACTIVE" : std::to_string(channelStatus))
+                  << std::endl;
 
         AERON_DECL_ALIGNED(buffer_t buffer, 16);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
@@ -185,18 +185,18 @@ int main(int argc, char** argv)
             std::this_thread::sleep_for(std::chrono::milliseconds(settings.lingerTimeoutMs));
         }
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

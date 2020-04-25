@@ -19,7 +19,7 @@
 
 using namespace std;
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     cout << "system_clock resolution              ";
     cout << chrono::system_clock::period::num << "/";
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 
     cout << "nano_clock sample:                   " << count << "\n";
 
-    cout << "duration ratio:                      " << chrono::duration<double, std::ratio<1,1>>(diff).count() << "\n";
+    cout << "duration ratio:                      " << chrono::duration<double, std::ratio<1, 1>>(diff).count() << "\n";
 
     return 0;
 }

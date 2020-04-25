@@ -52,7 +52,7 @@ struct Settings
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
 };
 
-Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
+Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 {
     cp.parse(argc, argv);
     if (cp.getOption(optHelp).isPresent())
@@ -101,13 +101,13 @@ int main(int argc, char **argv)
         }
 
         context.newSubscriptionHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int64_t correlationId)
             {
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
 
         context.newPublicationHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
+            [](const std::string &channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
             {
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
         BusySpinIdleStrategy idleStrategy;
         BusySpinIdleStrategy pingHandlerIdleStrategy;
         FragmentAssembler fragmentAssembler(
-            [&](AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
+            [&](AtomicBuffer &buffer, index_t offset, index_t length, const Header &header)
             {
                 if (pongPublicationRef.offer(buffer, offset, length) > 0L)
                 {
@@ -176,18 +176,18 @@ int main(int argc, char **argv)
 
         std::cout << "Shutting down...\n";
     }
-    catch (const CommandOptionException& e)
+    catch (const CommandOptionException &e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (const SourcedException& e)
+    catch (const SourcedException &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

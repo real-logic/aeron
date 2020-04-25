@@ -78,7 +78,6 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddAndRemoveSingleSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionsWithSameChannelSameStreamId)
 {
     int64_t client_id = nextCorrelationId();

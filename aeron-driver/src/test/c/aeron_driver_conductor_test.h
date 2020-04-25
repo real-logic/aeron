@@ -479,7 +479,7 @@ public:
         return writeCommand(AERON_COMMAND_REMOVE_COUNTER, command.length());
     }
 
-    int32_t expectNextCounterFromConductor(std::int32_t correlationId)
+    int32_t expectNextCounterFromConductor(std::int64_t correlationId)
     {
         int32_t counter_id = -1;
         auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)

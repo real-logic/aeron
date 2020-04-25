@@ -41,15 +41,13 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
 {
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
-    int32_t client_counter_id;
-    int32_t counter_id;
 
     m_keyBuffer.putInt64(0, reg_id);
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
-    client_counter_id = expectNextCounterFromConductor(client_id);
-    counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
+    int32_t counter_id = expectNextCounterFromConductor(reg_id);
 
     auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
     {
@@ -74,13 +72,12 @@ TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
 {
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
-    int32_t counter_id = -1;
 
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     expectNextCounterFromConductor(client_id);
-    counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t counter_id = expectNextCounterFromConductor(reg_id);
 
     int64_t remove_correlation_id = nextCorrelationId();
     ASSERT_EQ(removeCounter(client_id, remove_correlation_id, reg_id), 0);
@@ -122,13 +119,12 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
 {
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
-    int32_t counter_id = -1;
 
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     expectNextCounterFromConductor(client_id);
-    counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t counter_id = expectNextCounterFromConductor(reg_id);
 
     doWorkForNs((m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
@@ -183,13 +179,12 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
 {
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
-    int32_t counter_id = -1;
 
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     expectNextCounterFromConductor(client_id);
-    counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t counter_id = expectNextCounterFromConductor(reg_id);
 
     int64_t timeout = m_context.m_context->client_liveness_timeout_ns * 2;
 
@@ -207,4 +202,3 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
 
     EXPECT_TRUE(findCounter(counter_id, counter_func));
 }
-

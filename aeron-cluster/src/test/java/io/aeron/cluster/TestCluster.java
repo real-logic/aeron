@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,7 +87,7 @@ public class TestCluster implements AutoCloseable
         {
             if (EventCode.ERROR == code)
             {
-                ClusterTests.addError(new ClusterException(detail));
+                throw new ClusterException(detail);
             }
         }
 
@@ -724,6 +725,11 @@ public class TestCluster implements AutoCloseable
             if (livePosition >= position)
             {
                 return;
+            }
+
+            if (NULL_POSITION == livePosition)
+            {
+                throw new ClusterException("backup live log position is closed");
             }
 
             Tests.sleep(10, "awaiting position=%d livePosition=%d", position, livePosition);

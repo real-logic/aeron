@@ -879,8 +879,6 @@ class ConsensusModuleAgent implements Agent
 
     void prepareForNewLeadership(final long logPosition)
     {
-        role(Cluster.Role.FOLLOWER);
-
         final long recordingId = logRecordingId();
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
@@ -2613,6 +2611,7 @@ class ConsensusModuleAgent implements Agent
     {
         ClusterControl.ToggleState.deactivate(controlToggle);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
+        role(Cluster.Role.FOLLOWER);
 
         final long commitPosition = this.commitPosition.getWeak();
         election = new Election(

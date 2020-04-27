@@ -744,11 +744,7 @@ public class Election
     {
         if (null == logSubscription)
         {
-            final String logChannel = followerLogChannel(
-                ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
-
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
-            consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
+            createFollowerSubscription();
 
             final String replayDestination = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -809,11 +805,7 @@ public class Election
     {
         if (null == logSubscription)
         {
-            final String logChannel = followerLogChannel(
-                ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
-
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
-            consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
+            createFollowerSubscription();
         }
 
         if (null == liveLogDestination)
@@ -921,17 +913,21 @@ public class Election
         return liveLogDestination;
     }
 
-    private static String followerLogChannel(final String logChannel, final int sessionId, final String tags)
+    private void createFollowerSubscription()
     {
-        final ChannelUri channelUri = ChannelUri.parse(logChannel);
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
+
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.GROUP_PARAM_NAME, "true");
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
-        channelUri.put(CommonContext.TAGS_PARAM_NAME, tags);
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        channelUri.put(CommonContext.TAGS_PARAM_NAME, consensusModuleAgent.logSubscriptionTags());
         channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
 
-        return channelUri.toString();
+        final String logChannel = channelUri.toString();
+
+        logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
+        consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
     }
 
     private static ChannelUri followerLogDestination(final String logChannel, final String logEndpoint)

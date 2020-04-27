@@ -1718,12 +1718,12 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)
+    boolean hasCatchupReachedPosition(final Subscription subscription, final int logSessionId, final long position)
     {
         return findLogImage(subscription, logSessionId) && commitPosition.getWeak() >= position;
     }
 
-    boolean hasAppendReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
+    boolean hasCatchupReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
     {
         boolean result = false;
 

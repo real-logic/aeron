@@ -770,12 +770,12 @@ public class Election
         int workCount = consensusModuleAgent.catchupPoll(logSubscription, logSessionId, catchupPosition, nowNs);
 
         if (null == liveLogDestination &&
-            consensusModuleAgent.hasAppendReachedLivePosition(logSubscription, logSessionId, catchupPosition))
+            consensusModuleAgent.hasCatchupReachedLivePosition(logSubscription, logSessionId, catchupPosition))
         {
             liveLogDestination = addLiveLogDestination();
         }
 
-        if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupPosition))
+        if (consensusModuleAgent.hasCatchupReachedPosition(logSubscription, logSessionId, catchupPosition))
         {
             logPosition = catchupPosition;
             timeOfLastUpdateNs = 0;

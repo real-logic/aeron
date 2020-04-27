@@ -449,7 +449,7 @@ public class Aeron implements AutoCloseable
      */
     public boolean removeCloseHandler(final Runnable handler)
     {
-        return conductor.removeCloserHandler(handler);
+        return conductor.removeCloseHandler(handler);
     }
 
     /**

@@ -857,7 +857,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    boolean removeCloserHandler(final Runnable handler)
+    boolean removeCloseHandler(final Runnable handler)
     {
         clientLock.lock();
         try

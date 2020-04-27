@@ -31,6 +31,7 @@
 #include "util/aeron_arrayutil.h"
 #include "aeron_cnc_file_descriptor.h"
 #include "aeron_image.h"
+#include "aeron_counter.h"
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context)
 {
@@ -217,6 +218,19 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             }
 
             result = aeron_client_conductor_on_unavailable_image(conductor, response);
+            break;
+        }
+
+        case AERON_RESPONSE_ON_COUNTER_READY:
+        {
+            aeron_counter_update_t *response = (aeron_counter_update_t *)buffer;
+
+            if (length < sizeof(aeron_counter_update_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_client_conductor_on_counter_ready(conductor, response);
             break;
         }
 
@@ -630,6 +644,79 @@ void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
     aeron_subscription_delete(subscription);
 }
 
+void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_counter_t *async = (aeron_async_add_counter_t *)item;
+
+    char buffer[sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH)];
+    aeron_counter_command_t *command = (aeron_counter_command_t *)buffer;
+    int ensure_capacity_result = 0, rb_offer_fail_count = 0;
+    char *cursor = buffer + sizeof(aeron_counter_command_t);
+
+    command->correlated.correlation_id = async->registration_id;
+    command->correlated.client_id = conductor->client_id;
+    command->type_id = async->counter.type_id;
+
+    memcpy(cursor, &async->counter.key_buffer_length, sizeof(int32_t));
+    cursor += sizeof(int32_t);
+    memcpy(cursor, async->counter.key_buffer, async->counter.key_buffer_length);
+    cursor += AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t));
+    memcpy(cursor, &async->counter.label_buffer_length, sizeof(int32_t));
+    cursor += sizeof(int32_t);
+    memcpy(cursor, async->counter.label_buffer, async->counter.label_buffer_length);
+
+    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+        &conductor->to_driver_buffer,
+        AERON_COMMAND_ADD_COUNTER,
+        buffer,
+        sizeof(aeron_counter_command_t) +
+        sizeof(int32_t) + AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t)) +
+        sizeof(int32_t) + async->counter.label_buffer_length))
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)",
+                __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, err_buffer);
+            return;
+        }
+
+        sched_yield();
+    }
+
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+    if (ensure_capacity_result < 0)
+    {
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "counter registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
+        return;
+    }
+
+    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
+    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
+}
+
+void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_counter_t *counter = (aeron_counter_t *)item;
+
+    if (counter->is_closed)
+    {
+        return;
+    }
+
+    aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, counter->registration_id);
+
+    aeron_counter_delete(counter);
+}
+
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
 {
     int fail_count = 0;
@@ -870,6 +957,89 @@ int aeron_client_conductor_async_close_subscription(
     else
     {
         if (aeron_client_conductor_command_offer(conductor->command_queue, subscription) < 0)
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_add_counter(
+    aeron_async_add_counter_t **async,
+    aeron_client_conductor_t *conductor,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length)
+{
+    aeron_async_add_counter_t *cmd = NULL;
+    uint8_t *key_buffer_copy = NULL;
+    char *label_buffer_copy = NULL;
+
+    *async = NULL;
+
+    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_counter_t)) < 0 ||
+        aeron_alloc((void **)&key_buffer_copy, key_buffer_length) < 0 ||
+        aeron_alloc((void **)&label_buffer_copy, label_buffer_length + 1) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "aeron_async_add_counter (%d): %s", errcode, strerror(errcode));
+        return -1;
+    }
+
+    memcpy(key_buffer_copy, key_buffer, key_buffer_length);
+    memcpy(label_buffer_copy, label_buffer, label_buffer_length);
+    label_buffer_copy[label_buffer_length] = '\0';
+
+    cmd->command_base.func = aeron_client_conductor_on_cmd_add_counter;
+    cmd->command_base.item = NULL;
+    cmd->resource.counter = NULL;
+    cmd->error_message = NULL;
+    cmd->counter.key_buffer = key_buffer_copy;
+    cmd->counter.label_buffer = label_buffer_copy;
+    cmd->counter.key_buffer_length = key_buffer_length;
+    cmd->counter.label_buffer_length = label_buffer_length;
+    cmd->counter.type_id = type_id;
+    cmd->registration_id = -1;
+    cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
+    cmd->type = AERON_CLIENT_TYPE_COUNTER;
+
+    if (conductor->invoker_mode)
+    {
+        *async = cmd;
+        aeron_client_conductor_on_cmd_add_counter(conductor, cmd);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
+        {
+            aeron_free(cmd->uri);
+            aeron_free(cmd);
+            return -1;
+        }
+
+        *async = cmd;
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_close_counter(
+    aeron_client_conductor_t *conductor, aeron_counter_t *counter)
+{
+    counter->command_base.func = aeron_client_conductor_on_cmd_close_counter;
+    counter->command_base.item = NULL;
+
+    if (conductor->invoker_mode)
+    {
+        aeron_client_conductor_on_cmd_close_counter(conductor, counter);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, counter) < 0)
         {
             return -1;
         }
@@ -1228,6 +1398,56 @@ int aeron_client_conductor_on_unavailable_image(
             {
                 subscription->on_unavailable_image(subscription->on_unavailable_image_clientd, image);
             }
+        }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_on_counter_ready(
+    aeron_client_conductor_t *conductor,
+    aeron_counter_update_t *response)
+{
+    for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
+
+        if (response->correlation_id == resource->registration_id)
+        {
+            aeron_counter_t *counter;
+            int64_t *counter_addr = aeron_counters_reader_addr(&conductor->counters_reader, response->counter_id);
+
+            if (aeron_counter_create(
+                &counter,
+                conductor,
+                response->correlation_id,
+                response->counter_id,
+                counter_addr) < 0)
+            {
+                return -1;
+            }
+
+            resource->resource.counter = counter;
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->registering_resources.array,
+                sizeof(aeron_client_registering_resource_entry_t),
+                i,
+                last_index);
+            conductor->registering_resources.length--;
+
+            if (aeron_int64_to_ptr_hash_map_put(
+                &conductor->resource_by_id_map, resource->registration_id, counter) < 0)
+            {
+                int errcode = errno;
+
+                aeron_set_err(errcode, "on_counter_ready - resource_by_id_map put (%d): %s",
+                    errcode, strerror(errcode));
+                return -1;
+            }
+
+            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            break;
         }
     }
 

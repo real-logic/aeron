@@ -45,7 +45,8 @@ typedef enum aeron_client_managed_resource_type_en
     AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION,
     AERON_CLIENT_TYPE_SUBSCRIPTION,
     AERON_CLIENT_TYPE_IMAGE,
-    AERON_CLIENT_TYPE_LOGBUFFER
+    AERON_CLIENT_TYPE_LOGBUFFER,
+    AERON_CLIENT_TYPE_COUNTER
 }
 aeron_client_managed_resource_type_t;
 
@@ -82,6 +83,15 @@ typedef struct aeron_client_registering_resource_stct
     int32_t error_message_length;
     int32_t uri_length;
     int32_t stream_id;
+    struct aeron_client_registering_counter_stct
+    {
+        const uint8_t *key_buffer;
+        const char *label_buffer;
+        uint64_t key_buffer_length;
+        uint64_t label_buffer_length;
+        int32_t type_id;
+    }
+    counter;
     aeron_client_registration_status_t registration_status;
     aeron_client_managed_resource_type_t type;
 }
@@ -198,6 +208,17 @@ int aeron_client_conductor_async_add_subscription(
 int aeron_client_conductor_async_close_subscription(
     aeron_client_conductor_t *conductor, aeron_subscription_t *subscription);
 
+int aeron_client_conductor_async_add_counter(
+    aeron_async_add_counter_t **async,
+    aeron_client_conductor_t *conductor,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length);
+int aeron_client_conductor_async_close_counter(
+    aeron_client_conductor_t *conductor, aeron_counter_t *counter);
+
 int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
 int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);
@@ -213,6 +234,9 @@ int aeron_client_conductor_on_available_image(
 int aeron_client_conductor_on_unavailable_image(
     aeron_client_conductor_t *conductor,
     aeron_image_message_t *response);
+int aeron_client_conductor_on_counter_ready(
+    aeron_client_conductor_t *conductor,
+    aeron_counter_update_t *response);
 
 int aeron_client_conductor_get_or_create_log_buffer(
     aeron_client_conductor_t *conductor,

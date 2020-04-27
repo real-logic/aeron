@@ -476,3 +476,81 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
         }
     }
 }
+
+int aeron_async_add_counter(
+    aeron_async_add_counter_t **async,
+    aeron_t *client,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length)
+{
+    if (NULL == async || NULL == client)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_async_add_counter: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_async_add_counter(
+        async,
+        &client->conductor,
+        type_id,
+        key_buffer,
+        key_buffer_length,
+        label_buffer,
+        label_buffer_length);
+}
+
+int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async)
+{
+    if (NULL == counter || NULL == async || AERON_CLIENT_TYPE_COUNTER == async->type)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_async_add_counter_poll: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    *counter = NULL;
+
+    aeron_client_registration_status_t registration_status;
+    AERON_GET_VOLATILE(registration_status, async->registration_status);
+
+    switch (registration_status)
+    {
+        case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
+        {
+            return 0;
+        }
+
+        case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
+        {
+            aeron_set_err(EINVAL, "async_add_counter registration (error code %" PRId32 "): %*s",
+                async->error_code, async->error_message_length, async->error_message);
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+
+        case AERON_CLIENT_REGISTERED_MEDIA_DRIVER:
+        {
+            *counter = async->resource.counter;
+            aeron_async_cmd_free(async);
+            return 1;
+        }
+
+        case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
+        {
+            aeron_set_err(ETIMEDOUT, "%s", "async_add_counter no response from media driver");
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+
+        default:
+        {
+            aeron_set_err(EINVAL, "async_add_counter async status %s", "unknown");
+            aeron_async_cmd_free(async);
+            return -1;
+        }
+    }
+}

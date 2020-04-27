@@ -899,15 +899,14 @@ class ConsensusModuleAgent implements Agent
                 archive.truncateRecording(recordingId, logPosition);
             }
 
-            lastAppendPosition = logPosition;
-            commitPosition.setOrdered(logPosition);
-            restoreUncommittedEntries(logPosition);
-
             clearSessionsAfter(logPosition);
             for (final ClusterSession session : sessionByIdMap.values())
             {
                 session.disconnect(ctx.countedErrorHandler());
             }
+
+            commitPosition.setOrdered(logPosition);
+            restoreUncommittedEntries(logPosition);
         }
     }
 
@@ -934,7 +933,7 @@ class ConsensusModuleAgent implements Agent
 
     void appendPositionCounter(final ReadableCounter appendPositionCounter)
     {
-        this.appendPosition = appendPositionCounter;
+        appendPosition = appendPositionCounter;
     }
 
     void clearSessionsAfter(final long logPosition)
@@ -2386,6 +2385,7 @@ class ConsensusModuleAgent implements Agent
 
         timerService.currentTickTime(clusterClock.time());
         leadershipTermId(snapshot.leadershipTermId);
+        commitPosition.setOrdered(snapshot.logPosition);
         expectedAckPosition = snapshot.logPosition;
     }
 

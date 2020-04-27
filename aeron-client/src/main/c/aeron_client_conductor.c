@@ -998,6 +998,7 @@ int aeron_client_conductor_async_add_counter(
     cmd->command_base.item = NULL;
     cmd->resource.counter = NULL;
     cmd->error_message = NULL;
+    cmd->uri = NULL;
     cmd->counter.key_buffer = key_buffer_copy;
     cmd->counter.label_buffer = label_buffer_copy;
     cmd->counter.key_buffer_length = key_buffer_length;
@@ -1450,6 +1451,8 @@ int aeron_client_conductor_on_counter_ready(
             break;
         }
     }
+
+    // TODO: notify counter_available
 
     return 0;
 }

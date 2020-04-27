@@ -110,7 +110,6 @@ public class Election
     private final boolean isNodeStartup;
     private boolean isLeaderStartup;
     private boolean isExtendedCanvass;
-    private boolean hasReplay;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private long timeOfLastStateChangeNs;
     private long timeOfLastUpdateNs;
@@ -147,7 +146,6 @@ public class Election
         final ConsensusModuleAgent consensusModuleAgent)
     {
         this.isNodeStartup = isNodeStartup;
-        this.hasReplay = isNodeStartup;
         this.isExtendedCanvass = isNodeStartup;
         this.logPosition = logPosition;
         this.logLeadershipTermId = leadershipTermId;
@@ -624,9 +622,8 @@ public class Election
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             thisMember.logPosition(logPosition).leadershipTermId(leadershipTermId);
 
-            if (!hasReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
+            if (null == (logReplay = consensusModuleAgent.newLogReplay(logPosition)))
             {
-                hasReplay = false;
                 state(State.LEADER_TRANSITION, nowNs);
                 workCount = 1;
             }
@@ -724,9 +721,8 @@ public class Election
 
         if (null == logReplay)
         {
-            if (!hasReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
+            if (null == (logReplay = consensusModuleAgent.newLogReplay(logPosition)))
             {
-                hasReplay = false;
                 state(nextState, nowNs);
                 workCount = 1;
             }
@@ -1005,7 +1001,6 @@ public class Election
         {
             logReplay.close();
             logReplay = null;
-            hasReplay = false;
         }
     }
 

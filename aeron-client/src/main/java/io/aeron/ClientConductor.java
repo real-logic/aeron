@@ -389,7 +389,7 @@ class ClientConductor implements Agent, DriverEventsListener
         for (int i = 0, size = availableCounterHandlers.size(); i < size; i++)
         {
             final AvailableCounterHandler handler = availableCounterHandlers.get(i);
-            notifyImageAvailable(registrationId, counterId, handler);
+            notifyCounterAvailable(registrationId, counterId, handler);
         }
     }
 
@@ -1244,7 +1244,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    private void notifyImageAvailable(
+    private void notifyCounterAvailable(
         final long registrationId, final int counterId, final AvailableCounterHandler handler)
     {
         isInCallback = true;

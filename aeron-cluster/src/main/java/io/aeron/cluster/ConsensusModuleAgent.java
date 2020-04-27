@@ -1521,26 +1521,32 @@ class ConsensusModuleAgent implements Agent
         awaitServicesAt(logPosition);
     }
 
-    void replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
+    int replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
     {
+        int workCount = 0;
+
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            final int workCount = logAdapter.poll(stopPosition);
+            final int fragments = logAdapter.poll(stopPosition);
             final long logPosition = logAdapter.position();
-            if (0 == workCount)
+            if (0 == fragments)
             {
                 if (logAdapter.isImageClosed() && logPosition != stopPosition)
                 {
-                    throw new ClusterException("unexpected image close when replaying log: position=");
+                    throw new ClusterException("unexpected image close when replaying log: position=" + logPosition);
                 }
             }
             else
             {
                 commitPosition.setOrdered(logPosition);
             }
+
+            workCount += fragments;
         }
 
-        consensusModuleAdapter.poll();
+        workCount += consensusModuleAdapter.poll();
+
+        return workCount;
     }
 
     long logRecordingId()

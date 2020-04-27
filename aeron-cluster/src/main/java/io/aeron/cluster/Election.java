@@ -763,7 +763,7 @@ public class Election
             consensusModuleAgent.replayLogDestination(replayDestination);
         }
 
-        if (sendCatchupPosition(leadershipTermId, logPosition))
+        if (sendCatchupPosition())
         {
             timeOfLastUpdateNs = nowNs;
             consensusModuleAgent.catchupInitiated(nowNs);
@@ -799,7 +799,7 @@ public class Election
                 state(State.INIT, nowNs);
                 workCount += 1;
             }
-            else if (consensusModuleAgent.hasReplayDestination() && sendCatchupPosition(leadershipTermId, logPosition))
+            else if (consensusModuleAgent.hasReplayDestination() && sendCatchupPosition())
             {
                 timeOfLastUpdateNs = nowNs;
                 workCount += 1;
@@ -908,7 +908,7 @@ public class Election
             isLeaderStartup);
     }
 
-    private boolean sendCatchupPosition(final long leadershipTermId, final long logPosition)
+    private boolean sendCatchupPosition()
     {
         return memberStatusPublisher.catchupPosition(
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());

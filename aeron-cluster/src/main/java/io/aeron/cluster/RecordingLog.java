@@ -323,7 +323,7 @@ public class RecordingLog implements AutoCloseable
                 ", appendedLogPosition=" + appendedLogPosition +
                 ", committedLogPosition=" + committedLogPosition +
                 ", snapshots=" + snapshots +
-                ", logs=" + log +
+                ", log=" + log +
                 '}';
         }
     }

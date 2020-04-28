@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <thread>
 #include <exception>
+#include <functional>
 
 #include <gtest/gtest.h>
 
@@ -28,7 +29,7 @@ extern "C"
 #include "aeron_context.h"
 #include "aeron_cnc_file_descriptor.h"
 #include "concurrent/aeron_mpsc_rb.h"
-#include "concurrent/aeron_broadcast_receiver.h"
+#include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_counters_manager.h"
 }
 
@@ -73,6 +74,18 @@ public:
         metadata->start_timestamp = m_context->epoch_clock();
         metadata->pid = 101;
         AERON_PUT_VOLATILE(metadata->cnc_version, AERON_CNC_VERSION);
+
+        if (aeron_mpsc_rb_init(
+            &m_to_driver, aeron_cnc_to_driver_buffer(metadata), TO_DRIVER_RING_BUFFER_LENGTH) < 0)
+        {
+            throw std::runtime_error("could not init to_driver: " + std::string(aeron_errmsg()));
+        }
+
+        if (aeron_broadcast_transmitter_init(
+            &m_to_clients, aeron_cnc_to_clients_buffer(metadata), TO_CLIENTS_BUFFER_LENGTH) < 0)
+        {
+            throw std::runtime_error("could not init to_clients: " + std::string(aeron_errmsg()));
+        }
     }
 
     virtual ~ClientConductorTest()
@@ -81,9 +94,26 @@ public:
         aeron_context_close(m_context);
     }
 
+    static void ToDriverHandler(int32_t type_id, const void *buffer, size_t length, void *clientd)
+    {
+        auto conductorTest = reinterpret_cast<ClientConductorTest *>(clientd);
+
+        conductorTest->m_to_driver_handler(type_id, buffer, length);
+    }
+
+    size_t readToDriver(std::function<void(int32_t, const void *, size_t)>& handler)
+    {
+        m_to_driver_handler = handler;
+        return aeron_mpsc_rb_read(&m_to_driver, ToDriverHandler, this, 1);
+    }
+
 protected:
     aeron_context_t *m_context = NULL;
     std::unique_ptr<uint8_t[]> m_cnc;
+    aeron_mpsc_rb_t m_to_driver;
+    aeron_broadcast_transmitter_t m_to_clients;
+
+    std::function<void(int32_t, const void *, size_t)> m_to_driver_handler;
 };
 
 TEST_F(ClientConductorTest, shouldInitAndClose)

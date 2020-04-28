@@ -1242,7 +1242,6 @@ extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t a
 
 extern size_t aeron_producer_window_length(size_t producer_window_length, size_t term_length);
 
-
 #define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(r, a) \
 do \
 { \

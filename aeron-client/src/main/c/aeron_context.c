@@ -161,6 +161,9 @@ int aeron_context_init(aeron_context_t **context)
     _context->keepalive_interval_ns = AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT;
     _context->resource_linger_duration_ns = AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT;
 
+    _context->epoch_clock = aeron_epoch_clock;
+    _context->nano_clock = aeron_nano_clock;
+
     char *value = NULL;
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))

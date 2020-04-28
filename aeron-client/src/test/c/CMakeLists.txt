@@ -29,4 +29,6 @@ function(aeron_c_client_test name file)
 endfunction()
 
 aeron_c_client_test(broadcast_receiver_test concurrent/aeron_broadcast_receiver_test.cpp)
+aeron_c_client_test(broadcast_transmitter_test concurrent/aeron_broadcast_transmitter_test.cpp)
 aeron_c_client_test(term_appender_test concurrent/aeron_term_appender_test.cpp)
+aeron_c_client_test(client_conductor_test aeron_client_conductor_test.cpp)

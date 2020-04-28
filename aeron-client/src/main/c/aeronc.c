@@ -205,6 +205,7 @@ extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
+extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment);
 
 extern int aeron_number_of_trailing_zeroes(int32_t value);
 extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);

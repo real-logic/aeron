@@ -74,6 +74,13 @@ inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
         metadata->counter_values_buffer_length;
 }
 
+inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment)
+{
+    return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);
+}
+
+int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch);
+
 #define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 0, 16))
 
 #endif //AERON_C_CNC_FILE_DESCRIPTOR_H

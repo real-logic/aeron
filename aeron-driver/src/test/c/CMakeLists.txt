@@ -38,7 +38,6 @@ endfunction()
 
 aeron_driver_test(spsc_rb_test aeron_spsc_rb_test.cpp)
 aeron_driver_test(mpsc_rb_test aeron_mpsc_rb_test.cpp)
-aeron_driver_test(broadcast_transmitter_test aeron_broadcast_transmitter_test.cpp)
 aeron_driver_test(counters_manager_test aeron_counters_manager_test.cpp)
 aeron_driver_test(distinct_error_log_test aeron_distinct_error_log_test.cpp)
 aeron_driver_test(driver_conductor_ipc_test aeron_driver_conductor_ipc_test.cpp)

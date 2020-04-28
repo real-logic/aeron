@@ -226,11 +226,6 @@ inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, i
     AERON_PUT_VOLATILE(metadata->cnc_version, cnc_version);
 }
 
-inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment)
-{
-    return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);
-}
-
 inline size_t aeron_producer_window_length(size_t producer_window_length, size_t term_length)
 {
     size_t window_length = term_length / 2;

@@ -234,4 +234,13 @@ public class NetworkUtil
 
         return buffer.slice();
     }
+
+    public static String formatAddressAndPort(InetAddress address, int port)
+    {
+        final String formattedAddress = address instanceof Inet6Address ?
+            "[" + address.getHostAddress() + "]" :
+            address.getHostAddress();
+
+        return formattedAddress + ":" + port;
+    }
 }

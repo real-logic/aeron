@@ -225,7 +225,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 return "";
             }
 
-            return localAddress.getAddress().getHostAddress() + ":" + localAddress.getPort();
+            return NetworkUtil.formatAddressAndPort(localAddress.getAddress(), localAddress.getPort());
         }
         catch (final IOException ex)
         {

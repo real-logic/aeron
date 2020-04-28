@@ -416,6 +416,25 @@ public class UdpChannelTest
             is("UDP-" + udpChannelLocal.localData().getHostString() + ":54321-224.0.1.1:40456"));
     }
 
+    @Test
+    void shouldUseTagsInCanonicalFormForMdsUris()
+    {
+        assertEquals(
+            "UDP-0.0.0.0:0-0.0.0.0:0#1001",
+            UdpChannel.parse("aeron:udp?control-mode=manual|tags=1001").canonicalForm());
+    }
+
+    @Test
+    void shouldUseTagsInCanonicalFormForWildcardPorts()
+    {
+        assertEquals(
+            "UDP-127.0.0.1:0-127.0.0.1:9999#1001",
+            UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999|control=127.0.0.1:0|tags=1001").canonicalForm());
+        assertEquals(
+            "UDP-0.0.0.0:0-127.0.0.1:0#1001",
+            UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:0|tags=1001").canonicalForm());
+    }
+
     @ParameterizedTest
     @CsvSource({
         "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",

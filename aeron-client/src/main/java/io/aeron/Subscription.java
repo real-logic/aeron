@@ -414,6 +414,33 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
+     * EXPERIMENTAL! (currently uses label which is not yet reliable).
+     *
+     * Fetches the ip address and port that this subscription is bound to.  If the channel is not ACTIVE, then this
+     * will return null.  The formatting is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI
+     *
+     * @return The formatted ip address and port that this subscription is bound to.
+     */
+    public List<String> bindAddressAndPort()
+    {
+        if (channelStatus() != ChannelEndpointStatus.ACTIVE)
+        {
+            return Collections.emptyList();
+        }
+
+        final String[] parts = conductor.countersReader().getCounterLabel(channelStatusId).split(" ");
+        return parts.length > 2 ? Collections.singletonList(parts[2]) : Collections.emptyList();
+    }
+
+    /**
      * Add a destination manually to a multi-destination Subscription.
      *
      * @param endpointChannel for the destination to add.

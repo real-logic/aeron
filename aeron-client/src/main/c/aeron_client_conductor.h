@@ -121,6 +121,20 @@ typedef struct aeron_client_managed_resource_stct
 }
 aeron_client_managed_resource_t;
 
+typedef struct aeron_client_handler_stct
+{
+    aeron_client_command_base_t command_base;
+    union aeron_client_handler_un
+    {
+        aeron_on_available_counter_t available_counter;
+        aeron_on_unavailable_counter_t unavailable_counter;
+    }
+    handler;
+    void *clientd;
+    //type
+}
+aeron_client_handler_t;
+
 typedef struct aeron_client_conductor_stct
 {
     aeron_broadcast_receiver_t to_client_buffer;

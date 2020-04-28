@@ -447,7 +447,6 @@ void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 {
     aeron_int64_to_ptr_hash_map_for_each(
         &conductor->log_buffer_by_id_map, aeron_client_conductor_delete_log_buffer, NULL);
-    aeron_mpsc_concurrent_array_queue_close(conductor->command_queue);
 }
 
 void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)

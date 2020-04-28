@@ -31,6 +31,7 @@ extern "C"
 #include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "aeron_client_conductor.h"
 }
 
 #define CAPACITY (1024)
@@ -64,6 +65,8 @@ public:
         m_cnc = std::unique_ptr<uint8_t[]>(new uint8_t[m_context->cnc_map.length]);
         m_context->cnc_map.addr = m_cnc.get();
 
+        m_context->use_conductor_agent_invoker = true;
+
         aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)m_context->cnc_map.addr;
         metadata->to_driver_buffer_length = (int32_t)TO_DRIVER_RING_BUFFER_LENGTH;
         metadata->to_clients_buffer_length = (int32_t)TO_CLIENTS_BUFFER_LENGTH;
@@ -86,10 +89,16 @@ public:
         {
             throw std::runtime_error("could not init to_clients: " + std::string(aeron_errmsg()));
         }
+
+        if (aeron_client_conductor_init(&m_conductor, m_context) < 0)
+        {
+            throw std::runtime_error("could not init conductor: " + std::string(aeron_errmsg()));
+        }
     }
 
     virtual ~ClientConductorTest()
     {
+        aeron_client_conductor_on_close(&m_conductor);
         m_context->cnc_map.addr = NULL;
         aeron_context_close(m_context);
     }
@@ -107,8 +116,21 @@ public:
         return aeron_mpsc_rb_read(&m_to_driver, ToDriverHandler, this, 1);
     }
 
+    int doWork()
+    {
+        int work_count;
+
+        if ((work_count = aeron_client_conductor_do_work(&m_conductor)) < 0)
+        {
+            throw std::runtime_error("error from do_work: " + std::string(aeron_errmsg()));
+        }
+
+        return work_count;
+    }
+
 protected:
     aeron_context_t *m_context = NULL;
+    aeron_client_conductor_t m_conductor;
     std::unique_ptr<uint8_t[]> m_cnc;
     aeron_mpsc_rb_t m_to_driver;
     aeron_broadcast_transmitter_t m_to_clients;

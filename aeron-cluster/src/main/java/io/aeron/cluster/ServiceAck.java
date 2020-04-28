@@ -50,11 +50,10 @@ class ServiceAck
         return relevantId;
     }
 
-    static boolean hasReachedPosition(final long logPosition, final long ackId, final ArrayDeque<ServiceAck>[] queues)
+    static boolean hasReached(final long logPosition, final long ackId, final ArrayDeque<ServiceAck>[] queues)
     {
-        for (int serviceId = 0, length = queues.length; serviceId < length; serviceId++)
+        for (final ArrayDeque<ServiceAck> serviceAckQueue : queues)
         {
-            final ArrayDeque<ServiceAck> serviceAckQueue = queues[serviceId];
             final ServiceAck serviceAck = serviceAckQueue.peek();
 
             if (null == serviceAck)

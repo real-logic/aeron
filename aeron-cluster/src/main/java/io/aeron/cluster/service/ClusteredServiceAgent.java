@@ -48,33 +48,33 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 {
     static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
-    private boolean isServiceActive;
     private volatile boolean isAbort;
+    private boolean isServiceActive;
     private final int serviceId;
     private int memberId = NULL_VALUE;
     private long ackId = 0;
+    private long terminationPosition = NULL_POSITION;
     private long timeOfLastMarkFileUpdateMs;
     private long cachedTimeMs;
     private long clusterTime;
     private long logPosition = NULL_POSITION;
-    private long terminationPosition = NULL_POSITION;
 
+    private final Runnable abortHandler = this::abort;
+    private final IdleStrategy idleStrategy;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
-    private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
-    private final Collection<ClientSession> unmodifiableClientSessions =
-        new UnmodifiableClientSessionCollection(sessionByIdMap.values());
     private final ClusteredService service;
     private final ConsensusModuleProxy consensusModuleProxy;
     private final ServiceAdapter serviceAdapter;
-    private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(
         new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
-    private final Runnable abortHandler = this::abort;
+    private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final Collection<ClientSession> unmodifiableClientSessions =
+        new UnmodifiableClientSessionCollection(sessionByIdMap.values());
 
     private final BoundedLogAdapter logAdapter;
     private ReadableCounter roleCounter;
@@ -164,15 +164,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         if (null != logAdapter.image())
         {
             final int polled = logAdapter.poll(commitPosition.get());
-            if (0 == polled)
+            if (0 == polled && logAdapter.isDone())
             {
-                if (logAdapter.isDone())
-                {
-                    logPosition = Math.max(logAdapter.image().position(), logPosition);
-                    CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
-                    role(Role.get((int)roleCounter.get()));
-                }
+                closeLog();
             }
+
             workCount += polled;
         }
 
@@ -576,7 +572,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         clusterTime = RecoveryState.getTimestamp(counters, recoveryCounterId);
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
-        final boolean hasReplay = RecoveryState.hasReplay(counters, recoveryCounterId);
         sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         isServiceActive = true;
 
@@ -595,70 +590,6 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             idle();
         }
-
-        if (hasReplay)
-        {
-            prepareForReplay();
-        }
-    }
-
-    private void prepareForReplay()
-    {
-        ActiveLogEvent activeLog;
-        idleStrategy.reset();
-        while (null == (activeLog = activeLogEvent))
-        {
-            idle();
-            serviceAdapter.poll();
-        }
-
-        activeLogEvent = null;
-
-        try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
-        {
-            final long id = ackId++;
-            idleStrategy.reset();
-            while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
-            {
-                idle();
-            }
-
-            logAdapter.image(awaitImage(activeLog.sessionId, subscription));
-            logAdapter.maxLogPosition(activeLog.maxLogPosition);
-            consumeLog(logAdapter);
-        }
-        finally
-        {
-            logAdapter.image(null);
-        }
-    }
-
-    private void consumeLog(final BoundedLogAdapter adapter)
-    {
-        while (true)
-        {
-            final int workCount = adapter.poll(commitPosition.get());
-            if (0 == workCount)
-            {
-                if (logPosition >= adapter.maxLogPosition())
-                {
-                    final long id = ackId++;
-                    while (!consensusModuleProxy.ack(logPosition, clusterTime, id, NULL_VALUE, serviceId))
-                    {
-                        idle();
-                    }
-
-                    break;
-                }
-
-                if (adapter.image().isClosed())
-                {
-                    throw new ClusterException("unexpected close of replay");
-                }
-            }
-
-            idle(workCount);
-        }
     }
 
     private int awaitRecoveryCounter(final CountersReader counters)
@@ -672,6 +603,13 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         return counterId;
+    }
+
+    private void closeLog()
+    {
+        logPosition = Math.max(logAdapter.image().position(), logPosition);
+        CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
+        role(Role.get((int)roleCounter.get()));
     }
 
     private void joinActiveLog(final ActiveLogEvent activeLog)
@@ -689,8 +627,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
         memberId = activeLog.memberId;
         ctx.clusterMarkFile().memberId(memberId);
-        logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
         logAdapter.maxLogPosition(activeLog.maxLogPosition);
+        logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
 
         for (final ClientSession session : sessionByIdMap.values())
         {

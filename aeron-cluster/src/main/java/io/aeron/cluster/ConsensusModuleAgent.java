@@ -253,7 +253,7 @@ class ConsensusModuleAgent implements Agent
                     loadSnapshot(recoveryPlan.snapshots.get(0), archive);
                 }
 
-                while (!ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAckQueues))
+                while (!ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
                 {
                     idle(consensusModuleAdapter.poll());
                 }
@@ -882,7 +882,6 @@ class ConsensusModuleAgent implements Agent
         final long recordingId = logRecordingId();
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
-            logPublisher.disconnect(ctx.countedErrorHandler());
             stopLogRecording();
 
             long stopPosition;
@@ -1008,7 +1007,7 @@ class ConsensusModuleAgent implements Agent
     {
         captureServiceAck(logPosition, ackId, relevantId, serviceId);
 
-        if (ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
+        if (ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
         {
             if (ConsensusModule.State.SNAPSHOT == state)
             {
@@ -1800,7 +1799,7 @@ class ConsensusModuleAgent implements Agent
     {
         consensusModuleAdapter.poll();
 
-        if (ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAckQueues))
+        if (ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
         {
             captureServiceClientIds();
             ++serviceAckId;
@@ -2449,7 +2448,7 @@ class ConsensusModuleAgent implements Agent
     {
         expectedAckPosition = logPosition;
 
-        while (!ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
+        while (!ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
         {
             idle(consensusModuleAdapter.poll());
         }

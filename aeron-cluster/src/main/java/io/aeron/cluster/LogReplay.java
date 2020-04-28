@@ -33,7 +33,7 @@ class LogReplay
     private final LogAdapter logAdapter;
     private final Subscription logSubscription;
 
-    private int replaySessionId = Aeron.NULL_VALUE;
+    private long replaySessionId = Aeron.NULL_VALUE;
     private boolean isDone = false;
 
     LogReplay(
@@ -79,14 +79,14 @@ class LogReplay
                 channel, replayStreamId, logSessionId, leadershipTermId, startPosition, stopPosition);
 
             final long length = stopPosition - startPosition;
-            replaySessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
+            replaySessionId = archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
             workCount += 1;
         }
         else if (!isDone)
         {
             if (null == logAdapter.image())
             {
-                final Image image = logSubscription.imageBySessionId(replaySessionId);
+                final Image image = logSubscription.imageBySessionId((int)replaySessionId);
                 if (null != image)
                 {
                     logAdapter.image(image);
@@ -98,7 +98,6 @@ class LogReplay
                 workCount += consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
                 if (logAdapter.position() >= stopPosition)
                 {
-                    consensusModuleAgent.awaitServicesReplayPosition(stopPosition);
                     isDone = true;
                     workCount += 1;
                 }

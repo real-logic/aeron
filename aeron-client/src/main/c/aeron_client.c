@@ -288,7 +288,7 @@ int aeron_async_add_publication(
 
 int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_async_add_publication_t *async)
 {
-    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_PUBLICATION == async->type)
+    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_PUBLICATION != async->type)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_async_add_publication_poll: %s", strerror(EINVAL));
@@ -354,7 +354,7 @@ int aeron_async_add_exclusive_publication(
 int aeron_async_add_exclusive_publication_poll(
     aeron_exclusive_publication_t **publication, aeron_async_add_exclusive_publication_t *async)
 {
-    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == async->type)
+    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION != async->type)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_async_add_exclusive_publication_poll: %s", strerror(EINVAL));
@@ -434,7 +434,7 @@ int aeron_async_add_subscription(
 
 int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron_async_add_subscription_t *async)
 {
-    if (NULL == subscription || NULL == async || AERON_CLIENT_TYPE_SUBSCRIPTION == async->type)
+    if (NULL == subscription || NULL == async || AERON_CLIENT_TYPE_SUBSCRIPTION != async->type)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_async_add_subscription_poll: %s", strerror(EINVAL));
@@ -512,7 +512,7 @@ int aeron_async_add_counter(
 
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async)
 {
-    if (NULL == counter || NULL == async || AERON_CLIENT_TYPE_COUNTER == async->type)
+    if (NULL == counter || NULL == async || AERON_CLIENT_TYPE_COUNTER != async->type)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_async_add_counter_poll: %s", strerror(EINVAL));

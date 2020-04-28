@@ -23,6 +23,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #include "aeron_platform.h"
 #include "aeron_error.h"
@@ -360,6 +362,34 @@ int aeron_publication_image_location(
         dst, length,
         "%s/" AERON_IMAGES_DIR "/%" PRId64 ".logbuffer",
         aeron_dir, correlation_id);
+}
+
+size_t aeron_temp_filename(char *filename, size_t length)
+{
+#if !defined(_MSC_VER)
+    char rawname[] = "/tmp/aeron-c.XXXXXXX";
+    int fd = mkstemp(rawname);
+    close(fd);
+    unlink(rawname);
+
+    strncpy(filename, rawname, length);
+
+    return strlen(filename);
+#else
+    char tmpdir[MAX_PATH+1];
+    char tmpfile[MAX_PATH];
+
+    if (GetTempPath(MAX_PATH, &tmpdir[0]) > 0)
+    {
+        if (GetTempFileName(tmpdir, TEXT("aeron-c"), 0, &tmpfile[0]) != 0)
+        {
+            strncpy(filename, tmpfile, length);
+            return strlen(filename);
+        }
+    }
+
+    return 0;
+#endif
 }
 
 int aeron_map_raw_log(

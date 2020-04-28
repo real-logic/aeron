@@ -100,6 +100,8 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->heartbeat_timestamp.counter_id = AERON_NULL_COUNTER_ID;
 
     conductor->command_queue = &context->command_queue;
+    conductor->epoch_clock = context->epoch_clock;
+    conductor->nano_clock = context->nano_clock;
 
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
@@ -109,6 +111,11 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
     conductor->keepalive_interval_ns = context->keepalive_interval_ns;
     conductor->resource_linger_duration_ns = context->resource_linger_duration_ns;
+
+    long long now_ns = context->nano_clock();
+
+    conductor->time_of_last_keepalive_ns = now_ns;
+    conductor->time_of_last_service_ns = now_ns;
 
     conductor->invoker_mode = context->use_conductor_agent_invoker;
     conductor->pre_touch = context->pre_touch_mapped_memory;
@@ -1218,6 +1225,7 @@ int aeron_client_conductor_on_publication_ready(
                     return -1;
                 }
 
+                resource->uri = NULL;
                 resource->resource.publication = publication;
 
                 if (aeron_int64_to_ptr_hash_map_put(

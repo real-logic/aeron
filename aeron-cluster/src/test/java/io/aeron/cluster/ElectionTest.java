@@ -60,9 +60,7 @@ public class ElectionTest
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
-        final Publication mockPublication = mock(Publication.class);
-        when(mockPublication.sessionId()).thenReturn(LOG_SESSION_ID);
-        when(consensusModuleAgent.addNewLogPublication()).thenReturn(mockPublication);
+        when(consensusModuleAgent.addNewLogPublication()).thenReturn(LOG_SESSION_ID);
         when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
     }
 

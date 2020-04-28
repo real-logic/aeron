@@ -617,7 +617,7 @@ public class Election
 
         if (null == logReplay)
         {
-            logSessionId = consensusModuleAgent.addNewLogPublication().sessionId();
+            logSessionId = consensusModuleAgent.addNewLogPublication();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             thisMember.logPosition(logPosition).leadershipTermId(leadershipTermId);
@@ -772,7 +772,7 @@ public class Election
         if (null == liveLogDestination &&
             consensusModuleAgent.hasCatchupReachedLivePosition(logSubscription, logSessionId, catchupPosition))
         {
-            liveLogDestination = addLiveLogDestination();
+            addLiveLogDestination();
         }
 
         if (consensusModuleAgent.hasCatchupReachedPosition(logSubscription, logSessionId, catchupPosition))
@@ -810,7 +810,7 @@ public class Election
 
         if (null == liveLogDestination)
         {
-            liveLogDestination = addLiveLogDestination();
+            addLiveLogDestination();
         }
 
         consensusModuleAgent.awaitFollowerLogImage(logSubscription, logSessionId);
@@ -902,21 +902,20 @@ public class Election
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());
     }
 
-    private String addLiveLogDestination()
+    private void addLiveLogDestination()
     {
-        final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-        final String liveLogDestination = channelUri.toString();
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
+        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
+        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
 
+        liveLogDestination = channelUri.toString();
         logSubscription.asyncAddDestination(liveLogDestination);
         consensusModuleAgent.liveLogDestination(liveLogDestination);
-
-        return liveLogDestination;
     }
 
     private void createFollowerSubscription()
     {
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.GROUP_PARAM_NAME, "true");
@@ -928,15 +927,6 @@ public class Election
 
         logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
         consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
-    }
-
-    private static ChannelUri followerLogDestination(final String logChannel, final String logEndpoint)
-    {
-        final ChannelUri channelUri = ChannelUri.parse(logChannel);
-        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
-        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, logEndpoint);
-
-        return channelUri;
     }
 
     private void state(final State newState, final long nowNs)

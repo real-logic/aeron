@@ -1296,14 +1296,14 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    Publication addNewLogPublication()
+    int addNewLogPublication()
     {
         closeExistingLog();
 
         final ExclusivePublication publication = createLogPublication(recoveryPlan, election.logPosition());
         logPublisher.publication(publication);
 
-        return publication;
+        return publication.sessionId();
     }
 
     void becomeLeader(

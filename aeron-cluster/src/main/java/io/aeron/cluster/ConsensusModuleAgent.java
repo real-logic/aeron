@@ -1511,11 +1511,6 @@ class ConsensusModuleAgent implements Agent
         awaitServicesAt(logPosition);
     }
 
-    void awaitServicesReplayPosition(final long logPosition)
-    {
-        awaitServicesAt(logPosition);
-    }
-
     int replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
     {
         int workCount = 0;
@@ -1523,17 +1518,15 @@ class ConsensusModuleAgent implements Agent
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
             final int fragments = logAdapter.poll(stopPosition);
-            final long logPosition = logAdapter.position();
-            if (0 == fragments)
+            final long position = logAdapter.position();
+
+            if (fragments > 0)
             {
-                if (logAdapter.isImageClosed() && logPosition != stopPosition)
-                {
-                    throw new ClusterException("unexpected image close when replaying log: position=" + logPosition);
-                }
+                commitPosition.setOrdered(position);
             }
-            else
+            else if (logAdapter.isImageClosed() && position < stopPosition)
             {
-                commitPosition.setOrdered(logPosition);
+                throw new ClusterException("unexpected image close when replaying log: position=" + position);
             }
 
             workCount += fragments;

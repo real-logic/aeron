@@ -117,7 +117,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(100000)
     public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
     {
         launch();
@@ -227,6 +227,135 @@ public class MultiDestinationSubscriptionTest
         }
 
         verifyFragments(fragmentHandler, numMessagesToSend);
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldAllowMultipleMdsSubscriptions()
+    {
+        final String unicastUri2 = "aeron:udp?endpoint=localhost:24326";
+
+        launch();
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(PUB_UNICAST_URI);
+
+        try (Subscription subscriptionB = clientA.addSubscription(SUB_URI, STREAM_ID))
+        {
+            subscriptionB.addDestination(unicastUri2);
+
+            publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+            publicationB = clientA.addPublication(unicastUri2, STREAM_ID);
+
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
+            {
+                Tests.yieldingWait("Failed to publication to A");
+            }
+
+            while (subscription.poll(fragmentHandler, 1) <= 0)
+            {
+                Tests.yieldingWait("Failed to receive message");
+            }
+
+            // Wait a bit to ensure a message doesn't arrive.
+            Tests.sleep(1000);
+
+            assertEquals(0, subscriptionB.poll(fragmentHandler, 1));
+
+            while (publicationB.offer(buffer, 0, buffer.capacity()) < 0)
+            {
+                Tests.yieldingWait("Failed to publication to A");
+            }
+
+            while (subscriptionB.poll(fragmentHandler, 1) <= 0)
+            {
+                Tests.yieldingWait("Failed to receive message");
+            }
+
+            // Wait a bit to ensure a message doesn't arrive.
+            Tests.sleep(1000);
+
+            assertEquals(0, subscription.poll(fragmentHandler, 1));
+        }
+    }
+
+    @Test
+    @Timeout(100000)
+    public void shouldFindMdsSubscriptionWithTags()
+    {
+        launch();
+
+        subscription = clientA.addSubscription(SUB_URI + "|tags=1001", STREAM_ID);
+        subscription.addDestination(PUB_UNICAST_URI);
+
+        try (Subscription subscriptionB = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
+            Subscription subscriptionA1 = clientA.addSubscription("aeron:udp?tags=1001", STREAM_ID))
+        {
+            publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
+            {
+                Tests.yieldingWait("Failed to publication to A");
+            }
+
+            while (subscriptionA1.poll(fragmentHandler, 1) <= 0)
+            {
+                Tests.yieldingWait("Failed to receive message");
+            }
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldAllowMultipleMdsSubscriptionsWithTags()
+    {
+        final String unicastUri2 = "aeron:udp?endpoint=localhost:24326";
+
+        launch();
+
+        subscription = clientA.addSubscription(SUB_URI + "|tags=1001", STREAM_ID);
+        subscription.addDestination(PUB_UNICAST_URI);
+
+        try (Subscription subscriptionB = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
+            Subscription subscriptionA1 = clientA.addSubscription("aeron:udp?tags=1001", STREAM_ID);
+            Subscription subscriptionB1 = clientA.addSubscription("aeron:udp?tags=1002", STREAM_ID)
+        )
+        {
+            subscriptionB.addDestination(unicastUri2);
+
+            publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+            publicationB = clientA.addPublication(unicastUri2, STREAM_ID);
+
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
+            {
+                Tests.yieldingWait("Failed to publication to A");
+            }
+
+            while (subscriptionA1.poll(fragmentHandler, 1) <= 0)
+            {
+                Tests.yieldingWait("Failed to receive message from A");
+            }
+
+            // Wait a bit to ensure a message doesn't arrive.
+            Tests.sleep(1000);
+
+            assertEquals(0, subscriptionB1.poll(fragmentHandler, 1));
+
+            while (publicationB.offer(buffer, 0, buffer.capacity()) < 0)
+            {
+                Tests.yieldingWait("Failed to publication to A");
+            }
+
+            while (subscriptionB1.poll(fragmentHandler, 1) <= 0)
+            {
+                Tests.yieldingWait("Failed to receive message");
+            }
+
+            // Wait a bit to ensure a message doesn't arrive.
+            Tests.sleep(1000);
+
+            assertEquals(0, subscriptionA1.poll(fragmentHandler, 1));
+        }
     }
 
     @Test

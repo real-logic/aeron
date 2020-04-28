@@ -69,7 +69,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &conductor->log_buffer_by_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &conductor->log_buffer_by_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         int errcode = errno;
 
@@ -78,7 +78,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &conductor->resource_by_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &conductor->resource_by_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         int errcode = errno;
 

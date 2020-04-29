@@ -1657,11 +1657,6 @@ class ConsensusModuleAgent implements Agent
 
     int catchupPoll(final Subscription subscription, final int logSessionId, final long limitPosition, final long nowNs)
     {
-        if (nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs))
-        {
-            throw new ClusterException("no catchup progress", WARN);
-        }
-
         int workCount = 0;
 
         if (findLogImage(subscription, logSessionId))
@@ -1690,6 +1685,11 @@ class ConsensusModuleAgent implements Agent
             }
 
             workCount += consensusModuleAdapter.poll();
+        }
+
+        if ((nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs)) && ConsensusModule.State.ACTIVE == state)
+        {
+            throw new ClusterException("no catchup progress", WARN);
         }
 
         return workCount;

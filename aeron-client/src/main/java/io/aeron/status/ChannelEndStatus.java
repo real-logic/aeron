@@ -5,6 +5,11 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ChannelEndStatus
 {
@@ -76,5 +81,35 @@ public class ChannelEndStatus
         final int bindingLength = keyBuffer.getInt(offset + BIND_ADDRESS_AND_PORT_OFFSET);
         return 0 != bindingLength ?
             keyBuffer.getStringWithoutLengthAscii(BIND_ADDRESS_AND_PORT_STRING_OFFSET, bindingLength) : null;
+    }
+
+    public static List<String> findChannelEnds(
+        final CountersReader countersReader,
+        final long channelStatus,
+        final int candidateTypeId,
+        final int channelStatusId)
+    {
+        if (channelStatus != ChannelEndpointStatus.ACTIVE)
+        {
+            return Collections.emptyList();
+        }
+
+        final List<String> bindings = new ArrayList<>(2);
+
+        countersReader.forEach((counterId, typeId, keyBuffer, label) ->
+        {
+            if (candidateTypeId == typeId &&
+                channelStatusId == channelStatusId(keyBuffer, 0) &&
+                ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
+            {
+                final String bindAddressAndPort = bindAddressAndPort(keyBuffer, 0);
+                if (null != bindAddressAndPort)
+                {
+                    bindings.add(bindAddressAndPort);
+                }
+            }
+        });
+
+        return bindings;
     }
 }

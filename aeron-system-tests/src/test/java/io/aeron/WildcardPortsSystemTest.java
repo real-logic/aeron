@@ -60,12 +60,12 @@ public class WildcardPortsSystemTest
             Subscription sub3 = client.addSubscription(tagged1, STREAM_ID + 1))
         {
             List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = sub1.bindAddressAndPort()).isEmpty())
+            while ((bindAddressAndPort1 = sub1.bindAddressAndPorts()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub2");
             }
             List<String> bindAddressAndPort2;
-            while ((bindAddressAndPort2 = sub2.bindAddressAndPort()).isEmpty())
+            while ((bindAddressAndPort2 = sub2.bindAddressAndPorts()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub3");
             }
@@ -73,7 +73,7 @@ public class WildcardPortsSystemTest
             assertNotEquals(bindAddressAndPort1, bindAddressAndPort2);
 
             List<String> bindAddressAndPort3;
-            while ((bindAddressAndPort3 = sub3.bindAddressAndPort()).isEmpty())
+            while ((bindAddressAndPort3 = sub3.bindAddressAndPorts()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub4");
             }
@@ -113,13 +113,13 @@ public class WildcardPortsSystemTest
             Subscription sub4 = client.addSubscription(tagged2, STREAM_ID + 1))
         {
             List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = sub1.bindAddressAndPort()).isEmpty())
+            while ((bindAddressAndPort1 = sub1.bindAddressAndPorts()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub1");
             }
 
             List<String> bindAddressAndPort4;
-            while ((bindAddressAndPort4 = sub4.bindAddressAndPort()).isEmpty())
+            while ((bindAddressAndPort4 = sub4.bindAddressAndPorts()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub4");
             }
@@ -160,7 +160,7 @@ public class WildcardPortsSystemTest
             mdsSub.addDestination(wildCardUri3);
 
             List<String> bindAddressAndPorts;
-            while (2 > (bindAddressAndPorts = mdsSub.bindAddressAndPort()).size())
+            while (2 > (bindAddressAndPorts = mdsSub.bindAddressAndPorts()).size())
             {
                 Tests.yieldingWait("Unable to get bind address/ports for mds subscription");
             }
@@ -190,6 +190,41 @@ public class WildcardPortsSystemTest
                 while ((totalReceived += mdsSub.poll(fragmentHandler, 10)) < 2)
                 {
                     Tests.yieldingWait("Failed to receive from both publications");
+                }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    void shouldAllowWildcardOnDynamicMultiDestinationPublication()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Wildcard ports not supported yet");
+
+        final String mdcUri = "aeron:udp?control=localhost:0";
+
+        try (final Publication mdcPub = client.addPublication(mdcUri, STREAM_ID))
+        {
+            List<String> bindAddressAndPort1;
+            while ((bindAddressAndPort1 = mdcPub.bindAddressAndPorts()).isEmpty())
+            {
+                Tests.yieldingWait("No bind address/port for mdcPub");
+            }
+
+            final String mdcSubUri1 = new ChannelUriStringBuilder()
+                .media("udp").controlEndpoint(bindAddressAndPort1.get(0)).group(true)
+                .build();
+
+            try (Subscription sub = client.addSubscription(mdcSubUri1, STREAM_ID))
+            {
+                while (mdcPub.offer(buffer, 0, buffer.capacity()) < 0)
+                {
+                    Tests.yieldingWait("Failed to publish to pub2");
+                }
+
+                while (sub.poll(fragmentHandler, 1) < 0)
+                {
+                    Tests.yieldingWait("Failed to receive from sub2");
                 }
             }
         }

@@ -45,9 +45,24 @@ extern "C"
 
 #define CLIENT_LIVENESS_TIMEOUT (5 * 1000 * 1000 * 1000LL)
 
+#define TIME_ADVANCE_INTERVAL_NS (1000 * 1000LL)
+
 #define PUB_URI "aeron:udp?endpoint=localhost:24567"
 #define STREAM_ID (101)
 #define SESSION_ID (110)
+
+static int64_t now_ms = 0;
+static int64_t now_ns = 0;
+
+static int64_t test_epoch_clock()
+{
+    return now_ms;
+}
+
+static int64_t test_nano_clock()
+{
+    return now_ns;
+}
 
 class ClientConductorTest : public testing::Test
 {
@@ -56,6 +71,9 @@ public:
     ClientConductorTest() :
         m_logFileName(tempFileName())
     {
+        now_ns = 0;
+        now_ms = 0;
+
         if (aeron_context_init(&m_context) < 0)
         {
             throw std::runtime_error("could not init context: " + std::string(aeron_errmsg()));
@@ -72,6 +90,8 @@ public:
         m_context->cnc_map.addr = m_cnc.get();
         memset(m_context->cnc_map.addr, 0, m_context->cnc_map.length);
 
+        m_context->epoch_clock = test_epoch_clock;
+        m_context->nano_clock = test_nano_clock;
         m_context->use_conductor_agent_invoker = true;
 
         aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)m_context->cnc_map.addr;
@@ -81,7 +101,7 @@ public:
         metadata->counter_values_buffer_length = (int32_t)COUNTER_VALUES_BUFFER_LENGTH;
         metadata->error_log_buffer_length = (int32_t)ERROR_BUFFER_LENGTH;
         metadata->client_liveness_timeout = (int64_t)CLIENT_LIVENESS_TIMEOUT;
-        metadata->start_timestamp = m_context->epoch_clock();
+        metadata->start_timestamp = test_epoch_clock();
         metadata->pid = 101;
         AERON_PUT_VOLATILE(metadata->cnc_version, AERON_CNC_VERSION);
 
@@ -153,14 +173,36 @@ public:
         return aeron_mpsc_rb_read(&m_to_driver, ToDriverHandler, this, 1);
     }
 
-    int doWork()
+    int doWork(bool updateDriverHeartbeat = true)
     {
         int work_count;
+
+        if (updateDriverHeartbeat)
+        {
+            aeron_mpsc_rb_consumer_heartbeat_time(&m_to_driver, test_epoch_clock());
+        }
 
         if ((work_count = aeron_client_conductor_do_work(&m_conductor)) < 0)
         {
             throw std::runtime_error("error from do_work: " + std::string(aeron_errmsg()));
         }
+
+        return work_count;
+    }
+
+    int doWorkForNs(
+        int64_t interval_ns, bool updateDriverHeatbeat= true, int64_t advance_interval_ns = TIME_ADVANCE_INTERVAL_NS)
+    {
+        int work_count = 0;
+        int64_t target_ns = now_ns + interval_ns;
+
+        do
+        {
+            now_ns += advance_interval_ns;
+            now_ms = now_ns / 1000000LL;
+            work_count += doWork(updateDriverHeatbeat);
+        }
+        while (now_ns < target_ns);
 
         return work_count;
     }
@@ -252,7 +294,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     doWork();
 }
 
-TEST_F(ClientConductorTest, shouldErrorOnAddPublicationWithErrorFromDriver)
+TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverError)
 {
     aeron_async_add_publication_t *async = NULL;
     aeron_publication_t *publication = NULL;
@@ -271,4 +313,19 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationWithErrorFromDriver)
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
 }
 
-// TODO: test timeout from driver
+TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)
+{
+    aeron_async_add_publication_t *async = NULL;
+    aeron_publication_t *publication = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == publication);
+
+    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
+
+    ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
+}

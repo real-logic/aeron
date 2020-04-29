@@ -190,6 +190,26 @@ public:
         }
     }
 
+    void transmitOnError(aeron_async_add_publication_t *async, int32_t errorCode, const std::string &errorMessage)
+    {
+        char response_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
+        auto response = reinterpret_cast<aeron_error_response_t *>(response_buffer);
+
+        response->offending_command_correlation_id = async->registration_id;
+        response->error_code = errorCode;
+        response->error_message_length = static_cast<int32_t>(errorMessage.length());
+        memcpy(response_buffer + sizeof(aeron_error_response_t), errorMessage.c_str(), errorMessage.length());
+
+        if (aeron_broadcast_transmitter_transmit(
+            &m_to_clients,
+            AERON_RESPONSE_ON_ERROR,
+            response_buffer,
+            sizeof(aeron_error_response_t) + errorMessage.length()) < 0)
+        {
+            throw std::runtime_error("error transmitting ON_ERROR: " + std::string(aeron_errmsg()));
+        }
+    }
+
 protected:
     aeron_context_t *m_context = NULL;
     aeron_client_conductor_t m_conductor;
@@ -218,7 +238,6 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(NULL == publication);
 
-
     // send buffers ready
     transmitOnPublicationReady(async, m_logFileName);
     createLogFile(m_logFileName);
@@ -233,6 +252,23 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     doWork();
 }
 
-// TODO: test error from driver
+TEST_F(ClientConductorTest, shouldErrorOnAddPublicationWithErrorFromDriver)
+{
+    aeron_async_add_publication_t *async = NULL;
+    aeron_publication_t *publication = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == publication);
+
+    // error from driver.
+    transmitOnError(async, AERON_ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
+}
 
 // TODO: test timeout from driver

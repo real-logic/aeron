@@ -50,6 +50,7 @@ import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
+import static io.aeron.exceptions.AeronException.Category.WARN;
 import static java.lang.Math.min;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
@@ -1676,6 +1677,11 @@ class ConsensusModuleAgent implements Agent
 
     int catchupPoll(final Subscription subscription, final int logSessionId, final long limitPosition, final long nowNs)
     {
+        if (nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs))
+        {
+            throw new ClusterException("no catchup progress", WARN);
+        }
+
         int workCount = 0;
         if (!findLogImage(subscription, logSessionId))
         {
@@ -1710,16 +1716,11 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    boolean hasCatchupReachedPosition(final Subscription subscription, final int logSessionId, final long position)
-    {
-        return findLogImage(subscription, logSessionId) && commitPosition.getWeak() >= position;
-    }
-
-    boolean hasCatchupReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
+    boolean hasCatchupReachedLivePosition(final long position)
     {
         boolean result = false;
 
-        if (findLogImage(subscription, logSessionId))
+        if (null != logAdapter.image())
         {
             final long localPosition = commitPosition.getWeak();
             final long window = logAdapter.image().termBufferLength() * 2L;
@@ -1733,11 +1734,6 @@ class ConsensusModuleAgent implements Agent
     void catchupInitiated(final long nowNs)
     {
         timeOfLastAppendPositionNs = nowNs;
-    }
-
-    boolean hasCatchupStalled(final long nowNs, final long catchupTimeoutNs)
-    {
-        return nowNs > (timeOfLastAppendPositionNs + catchupTimeoutNs);
     }
 
     void stopAllCatchups()

@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
-import static io.aeron.exceptions.AeronException.Category.WARN;
 
 /**
  * Election process to determine a new cluster leader and catch up followers.
@@ -765,13 +764,13 @@ public class Election
     {
         int workCount = consensusModuleAgent.catchupPoll(logSubscription, logSessionId, catchupPosition, nowNs);
 
-        if (null == liveLogDestination &&
-            consensusModuleAgent.hasCatchupReachedLivePosition(logSubscription, logSessionId, catchupPosition))
+        if (null == liveLogDestination && consensusModuleAgent.hasCatchupReachedLivePosition(catchupPosition))
         {
             addLiveLogDestination();
+            workCount += 1;
         }
 
-        if (consensusModuleAgent.hasCatchupReachedPosition(logSubscription, logSessionId, catchupPosition))
+        if (ctx.commitPositionCounter().getWeak() >= catchupPosition)
         {
             logPosition = catchupPosition;
             timeOfLastUpdateNs = 0;
@@ -780,14 +779,7 @@ public class Election
         }
         else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
         {
-            if (consensusModuleAgent.hasCatchupStalled(nowNs, ctx.leaderHeartbeatTimeoutNs()))
-            {
-                ctx.countedErrorHandler().onError(new ClusterException("no catchup progress", WARN));
-                logPosition = ctx.commitPositionCounter().get();
-                state(State.INIT, nowNs);
-                workCount += 1;
-            }
-            else if (consensusModuleAgent.hasReplayDestination() && sendCatchupPosition())
+            if (consensusModuleAgent.hasReplayDestination() && sendCatchupPosition())
             {
                 timeOfLastUpdateNs = nowNs;
                 workCount += 1;

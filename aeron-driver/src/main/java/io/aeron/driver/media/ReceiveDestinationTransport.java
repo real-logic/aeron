@@ -17,6 +17,9 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
+import io.aeron.status.ChannelEndStatus;
+import io.aeron.status.ChannelEndpointStatus;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -29,13 +32,18 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
 {
     private long timeOfLastActivityNs;
     private InetSocketAddress currentControlAddress;
+    private final AtomicCounter bindingStatus;
 
-    public ReceiveDestinationTransport(final UdpChannel udpChannel, final MediaDriver.Context context)
+    public ReceiveDestinationTransport(
+        final UdpChannel udpChannel,
+        final MediaDriver.Context context,
+        final AtomicCounter bindingStatus)
     {
         super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
 
         this.timeOfLastActivityNs = context.cachedNanoClock().nanoTime();
         this.currentControlAddress = udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
+        this.bindingStatus = bindingStatus;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy, final AtomicCounter statusIndicator)
@@ -56,6 +64,9 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
                 throw ex;
             }
         }
+
+        ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort());
+        bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public boolean hasExplicitControl()
@@ -96,5 +107,13 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
     public void currentControlAddress(final InetSocketAddress newAddress)
     {
         this.currentControlAddress = newAddress;
+    }
+
+    public void close()
+    {
+        bindingStatus.setOrdered(ChannelEndpointStatus.CLOSING);
+        CloseHelper.close(bindingStatus);
+
+        super.close();
     }
 }

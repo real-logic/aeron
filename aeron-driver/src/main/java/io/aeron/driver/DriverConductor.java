@@ -22,7 +22,10 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.driver.media.*;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationTransport;
+import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -953,7 +956,9 @@ public class DriverConductor implements Agent
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
-        final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(udpChannel, ctx);
+        final AtomicCounter bindingStatus = ReceiveEnd.allocate(
+            tempBuffer, countersManager, receiveChannelEndpoint.statusIndicatorCounterId());
+        final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(udpChannel, ctx, bindingStatus);
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);
@@ -1426,6 +1431,7 @@ public class DriverConductor implements Agent
                 new DataPacketDispatcher(ctx.driverConductorProxy(), receiverProxy.receiver()),
                 ReceiveChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 ctx);
+            channelEndpoint.allocateChannelBindingStatus(tempBuffer, countersManager);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);

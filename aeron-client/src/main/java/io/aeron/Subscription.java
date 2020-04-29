@@ -16,11 +16,18 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.BlockHandler;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.status.ChannelEndStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 
 class SubscriptionLhsPadding
@@ -431,8 +438,23 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             return Collections.emptyList();
         }
 
-        final String[] parts = conductor.countersReader().getCounterLabel(channelStatusId).split(" ");
-        return parts.length > 2 ? Collections.singletonList(parts[2]) : Collections.emptyList();
+        final List<String> bindings = new ArrayList<>(2);
+
+        conductor.countersReader().forEach((counterId, typeId, keyBuffer, label) ->
+        {
+            if (ChannelEndStatus.RECEIVE_END_STATUS_TYPE_ID == typeId &&
+                channelStatusId == ChannelEndStatus.channelStatusId(keyBuffer, 0) &&
+                ChannelEndpointStatus.ACTIVE == conductor.countersReader().getCounterValue(counterId))
+            {
+                final String bindAddressAndPort = ChannelEndStatus.bindAddressAndPort(keyBuffer, 0);
+                if (null != bindAddressAndPort)
+                {
+                    bindings.add(bindAddressAndPort);
+                }
+            }
+        });
+
+        return bindings;
     }
 
     /**

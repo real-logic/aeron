@@ -146,7 +146,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         if (NULL_VALUE != liveLogReplaySubscriptionId)
         {
-            backupArchive.stopRecording(liveLogReplaySubscriptionId);
+            backupArchive.tryStopRecording(liveLogReplaySubscriptionId);
         }
 
         CloseHelper.close(backupArchive);
@@ -264,8 +264,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         liveLogReplayId = NULL_VALUE;
         liveLogReplaySubscriptionId = NULL_VALUE;
 
-        CloseHelper.closeAll(
-            memberStatusPublication, clusterArchive, clusterArchiveAsyncConnect);
+        CloseHelper.closeAll(memberStatusPublication, clusterArchive, clusterArchiveAsyncConnect);
     }
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -689,12 +688,12 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 if (null == logEntry)
                 {
                     liveLogReplaySubscriptionId = backupArchive.startRecording(
-                        replayChannel, ctx.logStreamId(), SourceLocation.REMOTE);
+                        replayChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
                 }
                 else
                 {
                     liveLogReplaySubscriptionId = backupArchive.extendRecording(
-                        logEntry.recordingId, replayChannel, ctx.logStreamId(), SourceLocation.REMOTE);
+                        logEntry.recordingId, replayChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
                 }
             }
         }

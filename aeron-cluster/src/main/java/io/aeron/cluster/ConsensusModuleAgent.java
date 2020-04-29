@@ -1413,31 +1413,6 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    boolean findLogImage(final Subscription subscription, final int logSessionId)
-    {
-        boolean result = false;
-
-        if (null == logAdapter.image())
-        {
-            final Image image = subscription.imageBySessionId(logSessionId);
-            if (null != image)
-            {
-                logAdapter.image(image);
-                lastAppendPosition = 0;
-                createAppendPosition(logSessionId);
-                appendDynamicJoinTermAndSnapshots();
-
-                result = true;
-            }
-        }
-        else
-        {
-            result = true;
-        }
-
-        return result;
-    }
-
     void awaitFollowerLogImage(final Subscription subscription, final int logSessionId)
     {
         leadershipTermId(election.leadershipTermId());
@@ -1675,6 +1650,11 @@ class ConsensusModuleAgent implements Agent
         return true;
     }
 
+    void catchupInitiated(final long nowNs)
+    {
+        timeOfLastAppendPositionNs = nowNs;
+    }
+
     int catchupPoll(final Subscription subscription, final int logSessionId, final long limitPosition, final long nowNs)
     {
         if (nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs))
@@ -1683,35 +1663,34 @@ class ConsensusModuleAgent implements Agent
         }
 
         int workCount = 0;
-        if (!findLogImage(subscription, logSessionId))
-        {
-            return workCount;
-        }
 
-        if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+        if (findLogImage(subscription, logSessionId))
         {
-            final Image image = logAdapter.image();
-            final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
-            if (fragmentsPolled == 0 && image.isClosed())
+            if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
             {
-                throw new ClusterException("unexpected image close replaying log at position " + image.position());
+                final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
+                workCount += fragmentsPolled;
+                final Image image = logAdapter.image();
+                if (fragmentsPolled == 0 && image.isClosed())
+                {
+                    throw new ClusterException("unexpected image close replaying log at position " + image.position());
+                }
             }
-            workCount += fragmentsPolled;
-        }
 
-        final long appendPosition = logAdapter.position();
-        if (appendPosition != lastAppendPosition)
-        {
-            commitPosition.setOrdered(appendPosition);
-            final ExclusivePublication publication = election.leader().publication();
-            if (memberStatusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+            final long appendPosition = logAdapter.position();
+            if (appendPosition != lastAppendPosition)
             {
-                lastAppendPosition = appendPosition;
-                timeOfLastAppendPositionNs = nowNs;
+                commitPosition.setOrdered(appendPosition);
+                final ExclusivePublication publication = election.leader().publication();
+                if (memberStatusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+                {
+                    lastAppendPosition = appendPosition;
+                    timeOfLastAppendPositionNs = nowNs;
+                }
             }
-        }
 
-        workCount += consensusModuleAdapter.poll();
+            workCount += consensusModuleAdapter.poll();
+        }
 
         return workCount;
     }
@@ -1723,17 +1702,12 @@ class ConsensusModuleAgent implements Agent
         if (null != logAdapter.image())
         {
             final long localPosition = commitPosition.getWeak();
-            final long window = logAdapter.image().termBufferLength() * 2L;
+            final long window = logAdapter.image().termBufferLength();
 
             result = localPosition >= (position - window);
         }
 
         return result;
-    }
-
-    void catchupInitiated(final long nowNs)
-    {
-        timeOfLastAppendPositionNs = nowNs;
     }
 
     void stopAllCatchups()
@@ -2027,6 +2001,31 @@ class ConsensusModuleAgent implements Agent
     private boolean appendAction(final ClusterAction action)
     {
         return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
+    }
+
+    private boolean findLogImage(final Subscription subscription, final int logSessionId)
+    {
+        boolean result = false;
+
+        if (null == logAdapter.image())
+        {
+            final Image image = subscription.imageBySessionId(logSessionId);
+            if (null != image)
+            {
+                logAdapter.image(image);
+                lastAppendPosition = 0;
+                createAppendPosition(logSessionId);
+                appendDynamicJoinTermAndSnapshots();
+
+                result = true;
+            }
+        }
+        else
+        {
+            result = true;
+        }
+
+        return result;
     }
 
     private int processPendingSessions(

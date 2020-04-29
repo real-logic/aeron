@@ -16,12 +16,14 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.HeaderWriter;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.status.ChannelEndStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.List;

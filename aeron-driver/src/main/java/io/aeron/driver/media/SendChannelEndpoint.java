@@ -21,14 +21,15 @@ import io.aeron.ErrorCode;
 import io.aeron.driver.*;
 import io.aeron.driver.status.SendEnd;
 import io.aeron.exceptions.ControlProtocolException;
-import io.aeron.status.ChannelEndStatus;
-import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.status.ChannelEndStatus;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.BiInt2ObjectMap;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
@@ -36,12 +37,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.status.ChannelEndpointStatus.status;
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
+import static io.aeron.status.ChannelEndpointStatus.status;
 import static java.util.Objects.requireNonNull;
 
 /**

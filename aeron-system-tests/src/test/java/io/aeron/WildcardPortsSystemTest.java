@@ -203,7 +203,7 @@ public class WildcardPortsSystemTest
 
         final String mdcUri = "aeron:udp?control=localhost:0";
 
-        try (final Publication mdcPub = client.addPublication(mdcUri, STREAM_ID))
+        try (Publication mdcPub = client.addPublication(mdcUri, STREAM_ID))
         {
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = mdcPub.bindAddressAndPorts()).isEmpty())

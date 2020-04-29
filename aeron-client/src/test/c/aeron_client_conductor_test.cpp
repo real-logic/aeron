@@ -70,6 +70,7 @@ public:
             FILE_PAGE_SIZE);
         m_cnc = std::unique_ptr<uint8_t[]>(new uint8_t[m_context->cnc_map.length]);
         m_context->cnc_map.addr = m_cnc.get();
+        memset(m_context->cnc_map.addr, 0, m_context->cnc_map.length);
 
         m_context->use_conductor_agent_invoker = true;
 
@@ -119,7 +120,7 @@ public:
         return std::string(filename);
     }
 
-    static void createLogFile(std::string filename)
+    static void createLogFile(std::string &filename)
     {
         aeron_mapped_file_t mappedFile = {
             NULL,
@@ -205,7 +206,7 @@ TEST_F(ClientConductorTest, shouldInitAndClose)
     // nothing to do
 }
 
-TEST_F(ClientConductorTest, DISABLED_shouldAddPublicationSuccessfully)
+TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
 {
     aeron_async_add_publication_t *async = NULL;
     aeron_publication_t *publication = NULL;

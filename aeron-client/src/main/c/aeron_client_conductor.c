@@ -450,10 +450,60 @@ void aeron_client_conductor_delete_log_buffer(void *clientd, int64_t key, void *
     aeron_log_buffer_delete((aeron_log_buffer_t *)value);
 }
 
+void aeron_client_conductor_delete_resource(void *clientd, int64_t key, void *value)
+{
+    aeron_client_command_base_t *base = (aeron_client_command_base_t *)value;
+
+    switch (base->type)
+    {
+        case AERON_CLIENT_TYPE_PUBLICATION:
+        {
+            aeron_publication_delete((aeron_publication_t *)value);
+            break;
+        }
+
+        case AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION:
+        {
+            aeron_exclusive_publication_delete((aeron_exclusive_publication_t *)value);
+            break;
+        }
+
+        case AERON_CLIENT_TYPE_SUBSCRIPTION:
+        {
+            aeron_subscription_delete((aeron_subscription_t *)value);
+            break;
+        }
+
+        case AERON_CLIENT_TYPE_COUNTER:
+        {
+            aeron_counter_delete((aeron_counter_t *)value);
+            break;
+        }
+
+        case AERON_CLIENT_TYPE_IMAGE:
+        {
+            //TODO: aeron_image_release
+            break;
+        }
+
+        case AERON_CLIENT_TYPE_LOGBUFFER:
+        {
+            break;
+        }
+    }
+}
+
 void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 {
     aeron_int64_to_ptr_hash_map_for_each(
         &conductor->log_buffer_by_id_map, aeron_client_conductor_delete_log_buffer, NULL);
+    aeron_int64_to_ptr_hash_map_for_each(
+        &conductor->resource_by_id_map, aeron_client_conductor_delete_resource, NULL);
+
+    aeron_int64_to_ptr_hash_map_delete(&conductor->log_buffer_by_id_map);
+    aeron_int64_to_ptr_hash_map_delete(&conductor->resource_by_id_map);
+    aeron_free(conductor->registering_resources.array);
+    aeron_free(conductor->lingering_resources.array);
 }
 
 void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)

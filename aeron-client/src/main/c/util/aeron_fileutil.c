@@ -380,7 +380,7 @@ size_t aeron_temp_filename(char *filename, size_t length)
 
     if (GetTempPath(MAX_PATH, &tmpdir[0]) > 0)
     {
-        if (GetTempFileName(tmpdir, TEXT("aeron-c"), 0, &tmpfile[0]) != 0)
+        if (GetTempFileName(tmpdir, TEXT("aeron-c"), 101, &tmpfile[0]) != 0)
         {
             strncpy(filename, tmpfile, length);
             return strlen(filename);

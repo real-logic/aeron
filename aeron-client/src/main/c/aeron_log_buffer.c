@@ -53,6 +53,7 @@ int aeron_log_buffer_delete(aeron_log_buffer_t *log_buffer)
     if (NULL != log_buffer)
     {
         aeron_map_raw_log_close(&log_buffer->mapped_raw_log, NULL);
+        aeron_free(log_buffer);
     }
 
     return 0;

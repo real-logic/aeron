@@ -570,7 +570,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10000000)
+    @Timeout(10)
     public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
         final int numMessagesToSend = 30;

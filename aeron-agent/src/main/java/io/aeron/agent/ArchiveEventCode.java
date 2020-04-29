@@ -65,7 +65,9 @@ public enum ArchiveEventCode implements EventCode
         (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder)),
 
     CMD_IN_START_RECORDING2(31, StartRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
-    CMD_IN_EXTEND_RECORDING2(32, ExtendRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest);
+    CMD_IN_EXTEND_RECORDING2(32, ExtendRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_RECORDING_BY_IDENTITY(33, StopRecordingByIdentityRequestDecoder.TEMPLATE_ID,
+        ArchiveEventDissector::controlRequest);
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

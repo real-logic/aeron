@@ -387,6 +387,25 @@ class ArchiveEventDissectorTest
     }
 
     @Test
+    void controlRequestStopRecordingByIdentity()
+    {
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
+        final StopRecordingByIdentityRequestEncoder requestEncoder = new StopRecordingByIdentityRequestEncoder();
+        requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
+            .controlSessionId(22)
+            .correlationId(33)
+            .recordingId(777);
+
+        controlRequest(CMD_IN_STOP_RECORDING_BY_IDENTITY, buffer, 0, builder);
+
+        assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING_BY_IDENTITY.name() + " [12/32]:" +
+            " controlSessionId=22" +
+            ", correlationId=33" +
+            ", recordingId=777",
+            builder.toString());
+    }
+
+    @Test
     void controlRequestStopPosition()
     {
         internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);

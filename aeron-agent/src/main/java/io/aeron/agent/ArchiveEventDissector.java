@@ -75,6 +75,8 @@ final class ArchiveEventDissector
     private static final KeepAliveRequestDecoder KEEP_ALIVE_REQUEST_DECODER = new KeepAliveRequestDecoder();
     private static final TaggedReplicateRequestDecoder TAGGED_REPLICATE_REQUEST_DECODER =
         new TaggedReplicateRequestDecoder();
+    private static final StopRecordingByIdentityRequestDecoder STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER =
+        new StopRecordingByIdentityRequestDecoder();
     private static final ControlResponseDecoder CONTROL_RESPONSE_DECODER = new ControlResponseDecoder();
 
     private ArchiveEventDissector()
@@ -374,6 +376,15 @@ final class ArchiveEventDissector
                 appendExtendRecording2(builder);
                 break;
 
+            case CMD_IN_STOP_RECORDING_BY_IDENTITY:
+                STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + relativeOffset,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendStopRecordingByIdentity(builder);
+                break;
+
             default:
                 builder.append(": unknown command");
         }
@@ -554,6 +565,13 @@ final class ArchiveEventDissector
         builder.append(": controlSessionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.controlSessionId())
             .append(", correlationId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.correlationId())
             .append(", subscriptionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.subscriptionId());
+    }
+
+    private static void appendStopRecordingByIdentity(final StringBuilder builder)
+    {
+        builder.append(": controlSessionId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.recordingId());
     }
 
     private static void appendStopPosition(final StringBuilder builder)

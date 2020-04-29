@@ -140,8 +140,8 @@ class DriverEventDissectorTest
     void dissectAsFrameTypeStatusMessage()
     {
         internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
-        final int socketAddressOffset =
-            encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
+        final int socketAddressOffset = encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final StatusMessageFlyweight flyweight = new StatusMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH + socketAddressOffset, 300);
         flyweight.headerType(HDR_TYPE_SM);
@@ -165,8 +165,8 @@ class DriverEventDissectorTest
     void dissectAsFrameTypeNak()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
-        final int socketAddressOffset =
-            encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
+        final int socketAddressOffset = encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final NakFlyweight flyweight = new NakFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH + socketAddressOffset, 300);
         flyweight.headerType(HDR_TYPE_NAK);
@@ -189,8 +189,8 @@ class DriverEventDissectorTest
     void dissectAsFrameTypeSetup()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
-        final int socketAddressOffset =
-            encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
+        final int socketAddressOffset = encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final SetupFlyweight flyweight = new SetupFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH + socketAddressOffset, 300);
         flyweight.headerType(HDR_TYPE_SETUP);
@@ -217,8 +217,8 @@ class DriverEventDissectorTest
     void dissectAsFrameTypeRtt()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
-        final int socketAddressOffset =
-            encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
+        final int socketAddressOffset = encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final RttMeasurementFlyweight flyweight = new RttMeasurementFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH + socketAddressOffset, 300);
         flyweight.headerType(HDR_TYPE_RTTM);
@@ -241,8 +241,8 @@ class DriverEventDissectorTest
     void dissectAsFrameTypeUnknown()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
-        final int socketAddressOffset =
-            encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
+        final int socketAddressOffset = encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH + socketAddressOffset, 300);
         flyweight.headerType(Integer.MAX_VALUE);

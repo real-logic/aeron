@@ -120,6 +120,7 @@ class ClusterEventEncoderTest
         final ChronoUnit from = ChronoUnit.CENTURIES;
         final ChronoUnit to = ChronoUnit.HALF_DAYS;
         final String payload = from.name() + SEPARATOR + to.name();
+
         assertEquals(payload.length() + (SIZE_OF_INT * 2), stateChangeLength(from, to));
     }
 }

@@ -87,8 +87,8 @@ public class ArchiveLoggingAgentTest
         testArchiveLogging(CMD_OUT_RESPONSE.name(), EnumSet.of(CMD_OUT_RESPONSE));
     }
 
-    private void testArchiveLogging(
-        final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents) throws InterruptedException
+    private void testArchiveLogging(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
+        throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 

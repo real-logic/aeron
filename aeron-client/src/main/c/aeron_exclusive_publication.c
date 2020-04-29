@@ -75,7 +75,7 @@ int aeron_exclusive_publication_create(
     _publication->initial_term_id = _publication->log_meta_data->initial_term_id;
 
     *publication = _publication;
-    return -1;
+    return 0;
 }
 
 int aeron_exclusive_publication_delete(aeron_exclusive_publication_t *publication)

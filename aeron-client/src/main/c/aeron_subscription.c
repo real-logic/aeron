@@ -70,7 +70,7 @@ int aeron_subscription_create(
     _subscription->is_closed = false;
 
     *subscription = _subscription;
-    return -1;
+    return 0;
 }
 
 int aeron_subscription_delete(aeron_subscription_t *subscription)

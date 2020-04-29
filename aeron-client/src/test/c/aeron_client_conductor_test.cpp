@@ -48,8 +48,10 @@ extern "C"
 #define TIME_ADVANCE_INTERVAL_NS (1000 * 1000LL)
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24567"
+#define SUB_URI "aeron:udp?endpoint=localhost:24567"
 #define STREAM_ID (101)
 #define SESSION_ID (110)
+#define COUNTER_TYPE_ID (102)
 
 static int64_t now_ms = 0;
 static int64_t now_ns = 0;
@@ -207,7 +209,7 @@ public:
         return work_count;
     }
 
-    void transmitOnPublicationReady(aeron_async_add_publication_t *async, const std::string &logFile)
+    void transmitOnPublicationReady(aeron_async_add_publication_t *async, const std::string &logFile, bool isExclusive)
     {
         char response_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
         auto response = reinterpret_cast<aeron_publication_buffers_ready_t *>(response_buffer);
@@ -224,7 +226,7 @@ public:
 
         if (aeron_broadcast_transmitter_transmit(
             &m_to_clients,
-            AERON_RESPONSE_ON_PUBLICATION_READY,
+            isExclusive ? AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY : AERON_RESPONSE_ON_PUBLICATION_READY,
             response_buffer,
             sizeof(aeron_publication_buffers_ready_t) + logFile.length()) < 0)
         {
@@ -249,6 +251,44 @@ public:
             sizeof(aeron_error_response_t) + errorMessage.length()) < 0)
         {
             throw std::runtime_error("error transmitting ON_ERROR: " + std::string(aeron_errmsg()));
+        }
+    }
+
+    void transmitOnSubscriptionReady(aeron_async_add_subscription_t *async)
+    {
+        char response_buffer[sizeof(aeron_subscription_ready_t)];
+        auto response = reinterpret_cast<aeron_subscription_ready_t *>(response_buffer);
+        int32_t channel_status_indicator_id = 11;
+
+        response->correlation_id = async->registration_id;
+        response->channel_status_indicator_id = channel_status_indicator_id;
+
+        if (aeron_broadcast_transmitter_transmit(
+            &m_to_clients,
+            AERON_RESPONSE_ON_SUBSCRIPTION_READY,
+            response_buffer,
+            sizeof(aeron_subscription_ready_t)) < 0)
+        {
+            throw std::runtime_error("error transmitting ON_SUBSCRIPTION_READY: " + std::string(aeron_errmsg()));
+        }
+    }
+
+    void transmitOnCounterReady(aeron_async_add_counter_t *async)
+    {
+        char response_buffer[sizeof(aeron_counter_update_t)];
+        auto response = reinterpret_cast<aeron_counter_update_t *>(response_buffer);
+        int32_t counter_id = 11;
+
+        response->correlation_id = async->registration_id;
+        response->counter_id = counter_id;
+
+        if (aeron_broadcast_transmitter_transmit(
+            &m_to_clients,
+            AERON_RESPONSE_ON_COUNTER_READY,
+            response_buffer,
+            sizeof(aeron_counter_update_t)) < 0)
+        {
+            throw std::runtime_error("error transmitting ON_COUNTER_READY: " + std::string(aeron_errmsg()));
         }
     }
 
@@ -281,7 +321,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     ASSERT_TRUE(NULL == publication);
 
     // send buffers ready
-    transmitOnPublicationReady(async, m_logFileName);
+    transmitOnPublicationReady(async, m_logFileName, false);
     createLogFile(m_logFileName);
     doWork();
 
@@ -328,4 +368,194 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)
     doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
+}
+
+TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfully)
+{
+    aeron_async_add_exclusive_publication_t *async = NULL;
+    aeron_exclusive_publication_t *publication = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == publication);
+
+    // send buffers ready
+    transmitOnPublicationReady(async, m_logFileName, true);
+    createLogFile(m_logFileName);
+    doWork();
+
+    // poll successfully
+    ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL != publication);
+
+    // close
+    ASSERT_EQ(aeron_exclusive_publication_close(publication), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldErrorOnAddExclusivePublicationFromDriverError)
+{
+    aeron_async_add_exclusive_publication_t *async = NULL;
+    aeron_exclusive_publication_t *publication = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == publication);
+
+    // error from driver.
+    transmitOnError(async, AERON_ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), -1);
+}
+
+TEST_F(ClientConductorTest, shouldErrorOnAddExclusivePublicationFromDriverTimeout)
+{
+    aeron_async_add_exclusive_publication_t *async = NULL;
+    aeron_exclusive_publication_t *publication = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == publication);
+
+    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
+
+    ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), -1);
+}
+
+TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfully)
+{
+    aeron_async_add_subscription_t *async = NULL;
+    aeron_subscription_t *subscription = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_subscription(
+        &async, &m_conductor, SUB_URI, STREAM_ID, NULL, NULL, NULL, NULL), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == subscription);
+
+    // send subscription ready
+    transmitOnSubscriptionReady(async);
+    doWork();
+
+    // poll successfully
+    ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL != subscription);
+
+    // close
+    ASSERT_EQ(aeron_subscription_close(subscription), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldErrorOnAddSubscriptionFromDriverError)
+{
+    aeron_async_add_subscription_t *async = NULL;
+    aeron_subscription_t *subscription = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_subscription(
+        &async, &m_conductor, SUB_URI, STREAM_ID, NULL, NULL, NULL, NULL), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == subscription);
+
+    // error from driver.
+    transmitOnError(async, AERON_ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), -1);
+}
+
+TEST_F(ClientConductorTest, shouldErrorOnAddSubscriptionFromDriverTimeout)
+{
+    aeron_async_add_subscription_t *async = NULL;
+    aeron_subscription_t *subscription = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_subscription(
+        &async, &m_conductor, SUB_URI, STREAM_ID, NULL, NULL, NULL, NULL), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == subscription);
+
+    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
+
+    ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), -1);
+}
+
+TEST_F(ClientConductorTest, shouldAddCounterSuccessfully)
+{
+    aeron_async_add_counter_t *async = NULL;
+    aeron_counter_t *counter = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_counter(
+        &async, &m_conductor, COUNTER_TYPE_ID, NULL, 0, NULL, 0), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == counter);
+
+    // send counter ready
+    transmitOnCounterReady(async);
+    doWork();
+
+    // poll successfully
+    ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL != counter);
+
+    // close
+    ASSERT_EQ(aeron_counter_close(counter), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldErrorOnAddCounterFromDriverError)
+{
+    aeron_async_add_counter_t *async = NULL;
+    aeron_counter_t *counter = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_counter(
+        &async, &m_conductor, COUNTER_TYPE_ID, NULL, 0, NULL, 0), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == counter);
+
+    // error from driver.
+    transmitOnError(async, AERON_ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), -1);
+}
+
+TEST_F(ClientConductorTest, shouldErrorOnAddCounterFromDriverTimeout)
+{
+    aeron_async_add_counter_t *async = NULL;
+    aeron_counter_t *counter = NULL;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_counter(
+        &async, &m_conductor, COUNTER_TYPE_ID, NULL, 0, NULL, 0), 0);
+    doWork();
+
+    // poll unsuccessfully
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(NULL == counter);
+
+    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
+
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), -1);
 }

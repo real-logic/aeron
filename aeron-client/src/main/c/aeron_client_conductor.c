@@ -1240,6 +1240,7 @@ int aeron_client_conductor_on_publication_ready(
                     return -1;
                 }
 
+                resource->uri = NULL;
                 resource->resource.exclusive_publication = publication;
 
                 if (aeron_int64_to_ptr_hash_map_put(
@@ -1332,6 +1333,7 @@ int aeron_client_conductor_on_subscription_ready(
                 return -1;
             }
 
+            resource->uri = NULL;
             resource->resource.subscription = subscription;
 
             aeron_array_fast_unordered_remove(

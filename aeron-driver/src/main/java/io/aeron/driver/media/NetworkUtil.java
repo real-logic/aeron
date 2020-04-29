@@ -235,7 +235,7 @@ public class NetworkUtil
         return buffer.slice();
     }
 
-    public static String formatAddressAndPort(InetAddress address, int port)
+    public static String formatAddressAndPort(final InetAddress address, final int port)
     {
         final String formattedAddress = address instanceof Inet6Address ?
             "[" + address.getHostAddress() + "]" :

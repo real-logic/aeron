@@ -117,7 +117,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(100000)
+    @Timeout(10)
     public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
     {
         launch();
@@ -280,7 +280,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(100000)
+    @Timeout(10)
     public void shouldFindMdsSubscriptionWithTags()
     {
         launch();
@@ -570,7 +570,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(10000000)
     public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
         final int numMessagesToSend = 30;

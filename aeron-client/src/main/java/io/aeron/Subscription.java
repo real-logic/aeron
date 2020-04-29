@@ -421,10 +421,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * EXPERIMENTAL! (currently uses label which is not yet reliable).
-     *
-     * Fetches the ip address and port that this subscription is bound to.  If the channel is not ACTIVE, then this
-     * will return null.  The formatting is as follows:
+     * Fetches the ip addresses and ports that this subscription is bound to.  If the channel is not ACTIVE, then this
+     * will return an empty list.  The formatting is as follows:
      * <br>
      * <br>
      * IPv4: <code>ip address:port</code>
@@ -434,32 +432,12 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * <br>
      * This is to match the formatting used in the Aeron URI
      *
-     * @return The formatted ip address and port that this subscription is bound to.
+     * @return List of the formatted ip addresses and ports that this subscription is bound to.
      */
-    public List<String> bindAddressAndPort()
+    public List<String> bindAddressAndPorts()
     {
-        if (channelStatus() != ChannelEndpointStatus.ACTIVE)
-        {
-            return Collections.emptyList();
-        }
-
-        final List<String> bindings = new ArrayList<>(2);
-
-        conductor.countersReader().forEach((counterId, typeId, keyBuffer, label) ->
-        {
-            if (ChannelEndStatus.RECEIVE_END_STATUS_TYPE_ID == typeId &&
-                channelStatusId == ChannelEndStatus.channelStatusId(keyBuffer, 0) &&
-                ChannelEndpointStatus.ACTIVE == conductor.countersReader().getCounterValue(counterId))
-            {
-                final String bindAddressAndPort = ChannelEndStatus.bindAddressAndPort(keyBuffer, 0);
-                if (null != bindAddressAndPort)
-                {
-                    bindings.add(bindAddressAndPort);
-                }
-            }
-        });
-
-        return bindings;
+        return ChannelEndStatus.findChannelEnds(
+            conductor.countersReader(), channelStatus(), ChannelEndStatus.RECEIVE_END_STATUS_TYPE_ID, channelStatusId);
     }
 
     /**

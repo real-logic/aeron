@@ -186,14 +186,19 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             final String bindAddressAndPort = bindAddressAndPort();
             statusIndicator.appendToLabel(bindAddressAndPort);
 
-            if (null != bindingStatus)
-            {
-                ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort);
-                bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
-            }
+            updateChannelEndStatus(bindAddressAndPort);
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+    }
+
+    private void updateChannelEndStatus(final String bindAddressAndPort)
+    {
+        if (null != bindingStatus)
+        {
+            ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort);
+            bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
+        }
     }
 
     public void closeStatusIndicator()

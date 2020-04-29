@@ -1274,6 +1274,7 @@ public class DriverConductor implements Agent
                 udpChannel,
                 SendChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 ctx);
+            channelEndpoint.allocateChannelEndStatus(tempBuffer, countersManager);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);

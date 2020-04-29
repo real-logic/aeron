@@ -19,24 +19,30 @@ import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
+import io.aeron.driver.status.SendEnd;
 import io.aeron.exceptions.ControlProtocolException;
+import io.aeron.status.ChannelEndStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
@@ -54,6 +60,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
     private final CachedNanoClock cachedNanoClock;
+    private AtomicCounter channelEndStatus;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -84,6 +91,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.multiSndDestination = multiSndDestination;
     }
 
+    public void allocateChannelEndStatus(final MutableDirectBuffer tempBuffer, final CountersManager countersManager)
+    {
+        channelEndStatus = SendEnd.allocate(tempBuffer, countersManager, statusIndicator.id());
+    }
+
     public void decRef()
     {
         --refCount;
@@ -112,6 +124,15 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 throw ex;
             }
         }
+
+        updateChannelEndStatus();
+    }
+
+    private void updateChannelEndStatus()
+    {
+        ChannelEndStatus.updateWithBindAddress(
+            requireNonNull(channelEndStatus, "end status not allocated"), bindAddressAndPort());
+        channelEndStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public String originalUriString()
@@ -141,6 +162,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         if (!statusIndicator.isClosed())
         {
+            channelEndStatus.setOrdered(ChannelEndpointStatus.CLOSING);
+            channelEndStatus.close();
+
             statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             statusIndicator.close();
         }

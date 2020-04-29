@@ -746,11 +746,7 @@ public class Election
         {
             createFollowerSubscription();
 
-            final String replayDestination = new ChannelUriStringBuilder()
-                .media(CommonContext.UDP_MEDIA)
-                .endpoint(thisMember.transferEndpoint())
-                .build();
-
+            final String replayDestination = "aeron:udp?endpoint=" + thisMember.transferEndpoint();
             logSubscription.asyncAddDestination(replayDestination);
             consensusModuleAgent.replayLogDestination(replayDestination);
         }

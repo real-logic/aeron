@@ -536,7 +536,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddCounterFromDriverError)
     ASSERT_TRUE(NULL == counter);
 
     // error from driver.
-    transmitOnError(async, AERON_ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+    transmitOnError(async, AERON_ERROR_CODE_GENERIC_ERROR, "can not add counter");
     doWork();
 
     ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), -1);

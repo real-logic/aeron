@@ -65,7 +65,7 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
             }
         }
 
-        ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort());
+        ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort(), context.countersMetaDataBuffer());
         bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 

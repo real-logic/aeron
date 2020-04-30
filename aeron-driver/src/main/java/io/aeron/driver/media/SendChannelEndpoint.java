@@ -132,7 +132,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private void updateChannelEndStatus()
     {
         ChannelEndStatus.updateWithBindAddress(
-            requireNonNull(channelEndStatus, "end status not allocated"), bindAddressAndPort());
+            requireNonNull(channelEndStatus, "end status not allocated"), bindAddressAndPort(),
+            context.countersMetaDataBuffer());
         channelEndStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 

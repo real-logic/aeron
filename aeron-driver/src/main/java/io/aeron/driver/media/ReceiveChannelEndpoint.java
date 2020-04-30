@@ -196,7 +196,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (null != bindingStatus)
         {
-            ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort);
+            ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort, context.countersMetaDataBuffer());
             bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
         }
     }

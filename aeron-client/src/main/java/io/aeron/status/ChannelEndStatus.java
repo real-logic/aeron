@@ -3,6 +3,7 @@ package io.aeron.status;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
@@ -53,7 +54,10 @@ public class ChannelEndStatus
         return countersManager.newCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
     }
 
-    public static void updateWithBindAddress(final AtomicCounter counter, final String bindAddressAndPort)
+    public static void updateWithBindAddress(
+        final AtomicCounter counter,
+        final String bindAddressAndPort,
+        final UnsafeBuffer countersMetadataBuffer)
     {
         if (bindAddressAndPort.length() > MAX_IPV6_LENGTH)
         {
@@ -61,12 +65,21 @@ public class ChannelEndStatus
                 "bindAddressAndPort value too long: " + bindAddressAndPort.length() + " max: " + MAX_IPV6_LENGTH);
         }
 
-        counter.updateKey((keyBuffer) ->
-        {
-            final int bindingLength = keyBuffer.putStringWithoutLengthAscii(
-                BIND_ADDRESS_AND_PORT_STRING_OFFSET, bindAddressAndPort);
-            keyBuffer.putInt(BIND_ADDRESS_AND_PORT_OFFSET, bindingLength);
-        });
+        // TODO: Use this once Agrona is updated to 1.5
+//        counter.updateKey((keyBuffer) ->
+//        {
+//            final int bindingLength = keyBuffer.putStringWithoutLengthAscii(
+//                BIND_ADDRESS_AND_PORT_STRING_OFFSET, bindAddressAndPort);
+//            keyBuffer.putInt(BIND_ADDRESS_AND_PORT_OFFSET, bindingLength);
+//        });
+
+        // TODO: Remove this bit when Agrona is updated to 1.5
+        final int addrKeyIndex = CountersReader.metaDataOffset(counter.id()) + CountersReader.KEY_OFFSET;
+        final int bindAddressStringIndex = addrKeyIndex + BIND_ADDRESS_AND_PORT_STRING_OFFSET;
+        final int length = countersMetadataBuffer.putStringWithoutLengthAscii(
+            bindAddressStringIndex, bindAddressAndPort);
+        final int bindAddressLengthIndex = addrKeyIndex + BIND_ADDRESS_AND_PORT_OFFSET;
+        countersMetadataBuffer.putInt(bindAddressLengthIndex, length);
 
         counter.appendToLabel(bindAddressAndPort);
     }

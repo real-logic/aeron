@@ -20,4 +20,10 @@ yum install -y zulu-8
 # Run the build
 export JAVA_HOME=/usr/lib/jvm/zulu-8
 export GRADLE_OPTS="-Dorg.gradle.daemon=false"
+
+git checkout https://github.com/real-logic/agrona.git agrona
+pushd agrona
+./gradlew publishToMavenLocal
+popd
+
 scl enable devtoolset-${GCC_VERSION} -- ${SOURCE_DIR}/cppbuild/cppbuild --build-archive-api

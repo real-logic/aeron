@@ -21,7 +21,6 @@ yum install -y zulu-8
 export JAVA_HOME=/usr/lib/jvm/zulu-8
 export GRADLE_OPTS="-Dorg.gradle.daemon=false"
 
-ls -a .
-pushd agrona && echo "building agrona" ; ./gradlew publishToMavenLocal ; popd
+pushd agrona && echo "Building Agrona" ; ./gradlew publishToMavenLocal ; popd
 
 scl enable devtoolset-${GCC_VERSION} -- ${SOURCE_DIR}/cppbuild/cppbuild --build-archive-api

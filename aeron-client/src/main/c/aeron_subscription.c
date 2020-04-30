@@ -75,6 +75,7 @@ int aeron_subscription_create(
 
 int aeron_subscription_delete(aeron_subscription_t *subscription)
 {
+    aeron_free((void *)subscription->conductor_fields.image_lists_head.next_list);
     aeron_free((void *)subscription->channel);
     aeron_free(subscription);
     return 0;

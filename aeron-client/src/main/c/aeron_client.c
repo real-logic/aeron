@@ -263,7 +263,7 @@ inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *asy
         aeron_free(async->error_message);
         aeron_free(async->uri);
 
-        if (AERON_CLIENT_TYPE_COUNTER == async->command_base.type)
+        if (AERON_CLIENT_TYPE_COUNTER == async->type)
         {
             aeron_free((void *)async->counter.key_buffer);
             aeron_free((void *)async->counter.label_buffer);

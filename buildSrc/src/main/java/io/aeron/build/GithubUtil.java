@@ -28,7 +28,7 @@ public class GithubUtil
 
         if (uriPath.endsWith("/"))
         {
-            throw new IllegalArgumentException("Unable to handle URI path ending in '/': " + remoteUri);
+            throw new IllegalArgumentException("unable to handle URI path ending in '/': " + remoteUri);
         }
 
         final int lastSlashIndex = urIish.getPath().lastIndexOf('/');

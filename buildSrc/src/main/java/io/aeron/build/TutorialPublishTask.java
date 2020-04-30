@@ -83,7 +83,7 @@ public class TutorialPublishTask extends DefaultTask
         final File baseGitDir = new File(getProject().getRootDir(), ".git");
         if (!baseGitDir.exists() || !baseGitDir.isDirectory())
         {
-            throw new IllegalStateException("Unable to find valid git repository at: " + baseGitDir);
+            throw new IllegalStateException("unable to find valid git repository at: " + baseGitDir);
         }
 
         final Repository baseGitRepo = new FileRepositoryBuilder()
@@ -94,7 +94,7 @@ public class TutorialPublishTask extends DefaultTask
 
         if (null == origin)
         {
-            throw new IllegalStateException("Unable to find origin URI");
+            throw new IllegalStateException("unable to find origin URI");
         }
 
         return GithubUtil.getWikiUriFromOriginUri(origin);

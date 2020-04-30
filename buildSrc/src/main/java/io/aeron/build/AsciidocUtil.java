@@ -24,7 +24,7 @@ public class AsciidocUtil
 {
     private static final List<String> EXTENSIONS = asList(".adoc", ".asciidoc");
 
-    public static File[] filterAsciidocFiles(File directory)
+    public static File[] filterAsciidocFiles(final File directory)
     {
         final File[] asciidocFiles = directory.listFiles(
             (dir, name) ->

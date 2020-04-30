@@ -58,7 +58,7 @@ public class AsciidoctorPreprocessTask extends DefaultTask
     {
         if (!target.exists() && !target.mkdirs())
         {
-            throw new IOException("Unable to create build directory");
+            throw new IOException("unable to create build directory");
         }
 
         final File[] asciidocFiles = AsciidocUtil.filterAsciidocFiles(source);
@@ -128,7 +128,7 @@ public class AsciidoctorPreprocessTask extends DefaultTask
 
         if (0 < errors.size())
         {
-            throw new Exception("Failed due to errors in parsing");
+            throw new Exception("failed due to errors in parsing");
         }
     }
 }

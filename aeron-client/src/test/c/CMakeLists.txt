@@ -20,6 +20,9 @@ endif ()
 
 include_directories(${AERON_C_CLIENT_SOURCE_PATH})
 
+set(TEST_HEADERS
+    aeron_client_test_utils.h)
+
 function(aeron_c_client_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     target_link_libraries(${name} aeron ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
@@ -32,3 +35,4 @@ aeron_c_client_test(broadcast_receiver_test concurrent/aeron_broadcast_receiver_
 aeron_c_client_test(broadcast_transmitter_test concurrent/aeron_broadcast_transmitter_test.cpp)
 aeron_c_client_test(term_appender_test concurrent/aeron_term_appender_test.cpp)
 aeron_c_client_test(client_conductor_test aeron_client_conductor_test.cpp)
+aeron_c_client_test(subscription_test aeron_subscription_test.cpp)

@@ -23,6 +23,8 @@
 
 #include <gtest/gtest.h>
 
+#include "aeron_client_test_utils.h"
+
 extern "C"
 {
 #include "aeronc.h"
@@ -65,6 +67,8 @@ static int64_t test_nano_clock()
 {
     return now_ns;
 }
+
+using namespace aeron::test;
 
 class ClientConductorTest : public testing::Test
 {
@@ -132,34 +136,6 @@ public:
         aeron_context_close(m_context);
 
         ::unlink(m_logFileName.c_str());
-    }
-
-    static std::string tempFileName()
-    {
-        char filename[AERON_MAX_PATH];
-
-        aeron_temp_filename(filename, sizeof(filename));
-        return std::string(filename);
-    }
-
-    static void createLogFile(std::string &filename)
-    {
-        aeron_mapped_file_t mappedFile = {
-            NULL,
-            AERON_LOGBUFFER_TERM_MIN_LENGTH * 3 + AERON_LOGBUFFER_META_DATA_LENGTH };
-
-        if (aeron_map_new_file(&mappedFile, filename.c_str(), false) < 0)
-        {
-            throw std::runtime_error("could not create log file: " + std::string(aeron_errmsg()));
-        }
-
-        auto metadata = reinterpret_cast<aeron_logbuffer_metadata_t *>((uint8_t *)mappedFile.addr +
-            (mappedFile.length - AERON_LOGBUFFER_META_DATA_LENGTH));
-
-        metadata->term_length = AERON_LOGBUFFER_TERM_MIN_LENGTH;
-        metadata->page_size = FILE_PAGE_SIZE;
-
-        aeron_unmap(&mappedFile);
     }
 
     static void ToDriverHandler(int32_t type_id, const void *buffer, size_t length, void *clientd)
@@ -559,3 +535,8 @@ TEST_F(ClientConductorTest, shouldErrorOnAddCounterFromDriverTimeout)
 
     ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), -1);
 }
+
+// TODO: check onNew handlers
+
+// TODO: subscription add/remove image (in separate SubscriptionTest)
+// TODO: delay poll for a list removal to make sure single threaded works.

@@ -116,6 +116,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Checkout Agrona
+        uses: actions/checkout@v2
+        with:
+          repository: real-logic/agrona
+          path: ./agrona
+      - name: Build Agrona
+        run: ./gradlew publishToMavenLocal
+        working-directory: ./agrona
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:
@@ -144,6 +152,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Checkout Agrona
+        uses: actions/checkout@v2
+        with:
+          repository: real-logic/agrona
+          path: ./agrona
+      - name: Build Agrona
+        run: ./gradlew publishToMavenLocal
+        working-directory: ./agrona
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:
@@ -179,6 +195,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Checkout Agrona
+        uses: actions/checkout@v2
+        with:
+          repository: real-logic/agrona
+          path: ./agrona
+      - name: Build Agrona
+        run: ./gradlew publishToMavenLocal
+        working-directory: ./agrona
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:

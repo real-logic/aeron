@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import io.aeron.build.AsciidoctorPreprocessTask
+import io.aeron.build.TutorialPublishTask
+
 buildscript {
     repositories {
         mavenCentral()
@@ -664,6 +668,7 @@ project(':aeron-samples') {
 
     dependencies {
         api project(':aeron-archive')
+        api project(':aeron-cluster')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
@@ -693,6 +698,20 @@ project(':aeron-samples') {
 
     signing {
         sign publishing.publications.aeronSamples
+    }
+
+    task asciidoctorGithub(type: AsciidoctorPreprocessTask) {
+        versionText = aeronVersion
+    }
+
+    task removeWikiDirectory(type: Delete) {
+        delete "$buildDir/tmp/tutorialPublish"
+    }
+
+    task tutorialPublish(type: TutorialPublishTask) {
+        dependsOn(removeWikiDirectory, asciidoctorGithub)
+        apiKey = project.hasProperty('aeron.ci.apiKey') ? project.property('aeron.ci.apiKey') : ''
+        source = asciidoctorGithub.target
     }
 }
 

@@ -1535,31 +1535,6 @@ class ConsensusModuleAgent implements Agent
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
     }
 
-    public void trackCatchupCompletion(final ClusterMember follower, final long leadershipTermId)
-    {
-        if (NULL_VALUE != follower.catchupReplaySessionId())
-        {
-            if (follower.logPosition() >= logPublisher.position())
-            {
-                if (NULL_VALUE != follower.catchupReplayCorrelationId())
-                {
-                    if (archive.archiveProxy().stopReplay(
-                        follower.catchupReplaySessionId(),
-                        aeron.nextCorrelationId(),
-                        archive.controlSessionId()))
-                    {
-                        follower.catchupReplayCorrelationId(NULL_VALUE);
-                    }
-                }
-
-                if (memberStatusPublisher.stopCatchup(follower.publication(), leadershipTermId, follower.id()))
-                {
-                    follower.catchupReplaySessionId(NULL_VALUE);
-                }
-            }
-        }
-    }
-
     boolean electionComplete()
     {
         final long termBaseLogPosition = election.logPosition();
@@ -1650,6 +1625,31 @@ class ConsensusModuleAgent implements Agent
         return true;
     }
 
+    void trackCatchupCompletion(final ClusterMember follower, final long leadershipTermId)
+    {
+        if (NULL_VALUE != follower.catchupReplaySessionId())
+        {
+            if (follower.logPosition() >= logPublisher.position())
+            {
+                if (NULL_VALUE != follower.catchupReplayCorrelationId())
+                {
+                    if (archive.archiveProxy().stopReplay(
+                        follower.catchupReplaySessionId(),
+                        aeron.nextCorrelationId(),
+                        archive.controlSessionId()))
+                    {
+                        follower.catchupReplayCorrelationId(NULL_VALUE);
+                    }
+                }
+
+                if (memberStatusPublisher.stopCatchup(follower.publication(), leadershipTermId, follower.id()))
+                {
+                    follower.catchupReplaySessionId(NULL_VALUE);
+                }
+            }
+        }
+    }
+
     void catchupInitiated(final long nowNs)
     {
         timeOfLastAppendPositionNs = nowNs;
@@ -1695,14 +1695,15 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    boolean hasCatchupReachedLivePosition(final long position)
+    boolean isCatchupNearLivePosition(final long position)
     {
         boolean result = false;
 
-        if (null != logAdapter.image())
+        final Image image = logAdapter.image();
+        if (null != image)
         {
-            final long localPosition = commitPosition.getWeak();
-            final long window = logAdapter.image().termBufferLength();
+            final long localPosition = image.position();
+            final long window = image.termBufferLength() >> 2;
 
             result = localPosition >= (position - window);
         }

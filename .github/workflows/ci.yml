@@ -31,7 +31,7 @@ jobs:
           repository: real-logic/agrona
           path: ./agrona
       - name: Build Agrona
-        run: ./gradle publishToMavenLocal
+        run: ./gradlew publishToMavenLocal
         working-directory: ./agrona
       - name: Cache Gradle dependencies
         uses: actions/cache@v1

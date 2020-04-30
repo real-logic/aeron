@@ -696,15 +696,15 @@ project(':aeron-samples') {
         sign publishing.publications.aeronSamples
     }
 
-    task asciidoctorGithub(type: AsciidoctorPreprocessTask) {
+    task asciidoctorGithub(type: io.aeron.build.AsciidoctorPreprocessTask) {
         versionText = aeronVersion
     }
 
     task removeWikiDirectory(type: Delete) {
-        delete "$buildDir/tmp/tutorialPublish"
+        delete "${buildDir}/tmp/tutorialPublish"
     }
 
-    task tutorialPublish(type: TutorialPublishTask) {
+    task tutorialPublish(type: io.aeron.build.TutorialPublishTask) {
         dependsOn(removeWikiDirectory, asciidoctorGithub)
         apiKey = project.hasProperty('aeron.ci.apiKey') ? project.property('aeron.ci.apiKey') : ''
         source = asciidoctorGithub.target

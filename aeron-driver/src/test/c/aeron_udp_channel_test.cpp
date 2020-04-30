@@ -492,7 +492,10 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090"),
         std::make_tuple(true, "aeron:udp?endpoint=localhost:9090|session-id=12", "aeron:udp?endpoint=localhost:9090"),
-        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090|session-id=12", "aeron:udp?endpoint=localhost:9090|session-id=13"),
+        std::make_tuple(
+            true,
+            "aeron:udp?endpoint=localhost:9090|session-id=12",
+            "aeron:udp?endpoint=localhost:9090|session-id=13"),
         std::make_tuple(
             true,
             "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090",
@@ -504,5 +507,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(false, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=127.0.0.1:9090"),
         std::make_tuple(false, (const char *)NULL, "aeron:udp?endpoint=localhost:9091"),
         std::make_tuple(true, (const char *)NULL, (const char *)NULL),
-        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090")
-        ));
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090")));

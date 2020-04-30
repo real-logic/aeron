@@ -51,9 +51,6 @@ public class IpcPublicationTest
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
 
-    private long currentTime = 0;
-    private final NanoClock nanoClock = () -> currentTime;
-
     @SuppressWarnings("unchecked")
     @BeforeEach
     public void setUp()
@@ -79,7 +76,7 @@ public class IpcPublicationTest
             .countersManager(countersManager)
             .systemCounters(systemCounters)
             .nameResolver(DefaultNameResolver.INSTANCE)
-            .nanoClock(nanoClock);
+            .nanoClock(new CachedNanoClock());
 
         ctx.countersValuesBuffer(counterBuffer);
 

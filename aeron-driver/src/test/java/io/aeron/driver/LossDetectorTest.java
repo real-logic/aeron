@@ -65,13 +65,12 @@ public class LossDetectorTest
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
+    private final LossHandler lossHandler = mock(LossHandler.class);
     private LossDetector lossDetector;
-    private LossHandler lossHandler;
     private long currentTime = 0;
 
     public LossDetectorTest()
     {
-        lossHandler = mock(LossHandler.class);
         lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);
         dataHeader.wrap(rcvBuffer);
     }

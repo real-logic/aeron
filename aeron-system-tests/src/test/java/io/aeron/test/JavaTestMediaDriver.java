@@ -22,7 +22,7 @@ import io.aeron.driver.ext.LossGenerator;
 
 public final class JavaTestMediaDriver implements TestMediaDriver
 {
-    private MediaDriver mediaDriver;
+    private final MediaDriver mediaDriver;
 
     private JavaTestMediaDriver(final MediaDriver mediaDriver)
     {

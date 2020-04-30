@@ -42,7 +42,7 @@ public class CatalogViewTest
     private long recordingOneId;
     private long recordingTwoId;
     private long recordingThreeId;
-    private RecordingDescriptorConsumer mockRecordingDescriptorConsumer = mock(RecordingDescriptorConsumer.class);
+    private final RecordingDescriptorConsumer mockRecordingDescriptorConsumer = mock(RecordingDescriptorConsumer.class);
 
     @BeforeEach
     public void before()

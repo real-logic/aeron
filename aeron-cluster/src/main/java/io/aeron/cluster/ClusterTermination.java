@@ -66,10 +66,8 @@ class ClusterTermination
     {
         boolean result = true;
 
-        for (int i = 0, length = members.length; i < length; i++)
+        for (final ClusterMember member : members)
         {
-            final ClusterMember member = members[i];
-
             if (!member.hasTerminated() && member.logPosition() < terminationPosition)
             {
                 result = false;

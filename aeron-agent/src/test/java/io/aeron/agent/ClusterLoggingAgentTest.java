@@ -48,7 +48,6 @@ import static java.util.Collections.synchronizedSet;
 import static java.util.stream.Collectors.toSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class ClusterLoggingAgentTest

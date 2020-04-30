@@ -52,8 +52,8 @@ class RecordingReader implements AutoCloseable
     private final UnsafeBuffer termBuffer;
     private MappedByteBuffer mappedSegmentBuffer;
 
+    private final long replayLimit;
     private long replayPosition;
-    private long replayLimit;
     private long segmentFilePosition;
     private int termOffset;
     private int termBaseSegmentOffset;

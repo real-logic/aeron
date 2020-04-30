@@ -24,7 +24,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.*;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 
 final class LogAdapter implements ControlledFragmentHandler
 {

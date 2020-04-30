@@ -32,18 +32,18 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
 {
     private long timeOfLastActivityNs;
     private InetSocketAddress currentControlAddress;
-    private final AtomicCounter bindingStatus;
+    private final AtomicCounter localSocketAddressIndicator;
 
     public ReceiveDestinationTransport(
         final UdpChannel udpChannel,
         final MediaDriver.Context context,
-        final AtomicCounter bindingStatus)
+        final AtomicCounter localSocketAddressIndicator)
     {
         super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
 
         this.timeOfLastActivityNs = context.cachedNanoClock().nanoTime();
         this.currentControlAddress = udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
-        this.bindingStatus = bindingStatus;
+        this.localSocketAddressIndicator = localSocketAddressIndicator;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy, final AtomicCounter statusIndicator)
@@ -65,8 +65,9 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
             }
         }
 
-        LocalSocketAddressStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort(), context.countersMetaDataBuffer());
-        bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
+        LocalSocketAddressStatus.updateWithBindAddress(
+            localSocketAddressIndicator, bindAddressAndPort(), context.countersMetaDataBuffer());
+        localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public boolean hasExplicitControl()
@@ -111,8 +112,8 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
 
     public void close()
     {
-        bindingStatus.setOrdered(ChannelEndpointStatus.CLOSING);
-        CloseHelper.close(bindingStatus);
+        localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
+        CloseHelper.close(localSocketAddressIndicator);
 
         super.close();
     }

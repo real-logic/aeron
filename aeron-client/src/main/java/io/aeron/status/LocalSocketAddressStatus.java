@@ -16,7 +16,8 @@ public class LocalSocketAddressStatus
 {
     private static final int CHANNEL_STATUS_ID_OFFSET = 0;
     private static final int LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET = CHANNEL_STATUS_ID_OFFSET + BitUtil.SIZE_OF_INT;
-    private static final int LOCAL_SOCKET_ADDRESS_STRING_OFFSET = LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET + BitUtil.SIZE_OF_INT;
+    private static final int LOCAL_SOCKET_ADDRESS_STRING_OFFSET =
+        LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET + BitUtil.SIZE_OF_INT;
 
     private static final int MAX_IPV6_LENGTH = "[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]:65536".length();
 

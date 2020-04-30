@@ -94,7 +94,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void allocateChannelEndStatus(final MutableDirectBuffer tempBuffer, final CountersManager countersManager)
     {
-        localSocketAddressIndicator = SendLocalSocketAddress.allocate(tempBuffer, countersManager, statusIndicator.id());
+        localSocketAddressIndicator = SendLocalSocketAddress.allocate(
+            tempBuffer, countersManager, statusIndicator.id());
     }
 
     public void decRef()

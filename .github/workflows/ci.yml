@@ -25,10 +25,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Checkout & Build Agrona
+      - name: Checkout Agrona
         uses: actions/checkout@v2
         with:
           repository: real-logic/agrona
+          path: agrona
+      - name: Build Agrona
+        with:
           path: agrona
         run: ./gradle publishToMavenLocal
       - name: Cache Gradle dependencies

@@ -326,6 +326,60 @@ TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
     EXPECT_STREQ(m_channel->uri.params.udp.control, "NAME_1");
 }
 
+TEST_F(UdpChannelTest, shouldFormatIPv4Address)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in *addr_in = reinterpret_cast<sockaddr_in *>(&addr);
+    inet_pton(AF_INET, "192.168.10.1", &addr_in->sin_addr);
+    addr_in->sin_family = AF_INET;
+    addr_in->sin_port = htons(UINT16_C(65535));
+
+    aeron_format_source_identity(buffer, sizeof(buffer), &addr);
+
+    ASSERT_STREQ("192.168.10.1:65535", buffer);
+}
+
+TEST_F(UdpChannelTest, shouldFormatIPv6Address)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in6 *addr_in = reinterpret_cast<sockaddr_in6 *>(&addr);
+    inet_pton(AF_INET6, "::1", &addr_in->sin6_addr);
+    addr_in->sin6_family = AF_INET6;
+    addr_in->sin6_port = htons(UINT16_C(65535));
+
+    aeron_format_source_identity(buffer, sizeof(buffer), &addr);
+
+    ASSERT_STREQ("[::1]:65535", buffer);
+}
+
+TEST_F(UdpChannelTest, shouldHandleMaxLengthIPv6)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in6 *addr_in = reinterpret_cast<sockaddr_in6 *>(&addr);
+    inet_pton(AF_INET6, "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255", &addr_in->sin6_addr);
+    addr_in->sin6_family = AF_INET6;
+    addr_in->sin6_port = htons(UINT16_C(65535));
+
+    aeron_format_source_identity(buffer, sizeof(buffer), &addr);
+
+    ASSERT_STREQ("[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535", buffer);
+}
+
+TEST_F(UdpChannelTest, shouldHandleTooSmallBuffer)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in6 *addr_in = reinterpret_cast<sockaddr_in6 *>(&addr);
+    inet_pton(AF_INET6, "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255", &addr_in->sin6_addr);
+    addr_in->sin6_family = AF_INET6;
+    addr_in->sin6_port = UINT16_C(65535);
+
+    ASSERT_LE(aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH - 1, &addr), 0);
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());

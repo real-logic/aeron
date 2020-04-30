@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Checkout Agrona
+      - name: Checkout & Build Agrona
         uses: actions/checkout@v2
         with:
           repository: real-logic/agrona

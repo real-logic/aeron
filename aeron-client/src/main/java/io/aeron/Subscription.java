@@ -20,7 +20,7 @@ import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
-import io.aeron.status.ChannelEndStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
 
@@ -420,7 +420,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Fetches the ip addresses and ports that this subscription is bound to.  If the channel is not ACTIVE, then this
+     * Fetches the local socket addresses for this subscription.  If the channel is not ACTIVE, then this
      * will return an empty list.  The formatting is as follows:
      * <br>
      * <br>
@@ -431,12 +431,11 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * <br>
      * This is to match the formatting used in the Aeron URI
      *
-     * @return List of the formatted ip addresses and ports that this subscription is bound to.
+     * @return local socket address for this subscription.
      */
-    public List<String> bindAddressAndPorts()
+    public List<String> localSocketAddresses()
     {
-        return ChannelEndStatus.findChannelEnds(
-            conductor.countersReader(), channelStatus(), ChannelEndStatus.RECEIVE_END_STATUS_TYPE_ID, channelStatusId);
+        return LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus(), channelStatusId);
     }
 
     /**

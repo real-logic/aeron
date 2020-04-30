@@ -20,7 +20,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.status.ChannelEndStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -588,7 +588,7 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
-     * Fetches the ip addresses and ports that this publication is bound to.  If the channel is not ACTIVE, then this
+     * Fetches the local socket address for this publication.  If the channel is not ACTIVE, then this
      * will return an empty list.  The formatting is as follows:
      * <br>
      * <br>
@@ -600,12 +600,11 @@ public abstract class Publication implements AutoCloseable
      * This is to match the formatting used in the Aeron URI.  For publications this will be the control address and
      * is likely to only contain a single entry.
      *
-     * @return List of the formatted ip addresses and ports that this publication is bound to.
+     * @return local socket addresses for this publication.
      */
-    public List<String> bindAddressAndPorts()
+    public List<String> localSocketAddresses()
     {
-        return ChannelEndStatus.findChannelEnds(
-            conductor.countersReader(), channelStatus(), ChannelEndStatus.SEND_END_STATUS_TYPE_ID, channelStatusId);
+        return LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus(), channelStatusId);
     }
 
     void internalClose()

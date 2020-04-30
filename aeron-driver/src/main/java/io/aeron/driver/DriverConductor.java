@@ -956,7 +956,7 @@ public class DriverConductor implements Agent
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
-        final AtomicCounter bindingStatus = ReceiveEnd.allocate(
+        final AtomicCounter bindingStatus = ReceiveLocalSocketAddress.allocate(
             tempBuffer, countersManager, receiveChannelEndpoint.statusIndicatorCounterId());
         final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(udpChannel, ctx, bindingStatus);
 
@@ -1432,7 +1432,7 @@ public class DriverConductor implements Agent
                 new DataPacketDispatcher(ctx.driverConductorProxy(), receiverProxy.receiver()),
                 ReceiveChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 ctx);
-            channelEndpoint.allocateChannelBindingStatus(tempBuffer, countersManager);
+            channelEndpoint.allocateLocalSocketAddressIndicator(tempBuffer, countersManager);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);

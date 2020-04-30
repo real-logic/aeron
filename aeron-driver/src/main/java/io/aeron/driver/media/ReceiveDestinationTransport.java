@@ -17,7 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
-import io.aeron.status.ChannelEndStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -65,7 +65,7 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
             }
         }
 
-        ChannelEndStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort(), context.countersMetaDataBuffer());
+        LocalSocketAddressStatus.updateWithBindAddress(bindingStatus, bindAddressAndPort(), context.countersMetaDataBuffer());
         bindingStatus.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 

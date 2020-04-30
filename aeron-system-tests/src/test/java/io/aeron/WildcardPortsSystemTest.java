@@ -60,12 +60,12 @@ public class WildcardPortsSystemTest
             Subscription sub3 = client.addSubscription(tagged1, STREAM_ID + 1))
         {
             List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = sub1.bindAddressAndPorts()).isEmpty())
+            while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub2");
             }
             List<String> bindAddressAndPort2;
-            while ((bindAddressAndPort2 = sub2.bindAddressAndPorts()).isEmpty())
+            while ((bindAddressAndPort2 = sub2.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub3");
             }
@@ -73,7 +73,7 @@ public class WildcardPortsSystemTest
             assertNotEquals(bindAddressAndPort1, bindAddressAndPort2);
 
             List<String> bindAddressAndPort3;
-            while ((bindAddressAndPort3 = sub3.bindAddressAndPorts()).isEmpty())
+            while ((bindAddressAndPort3 = sub3.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub4");
             }
@@ -113,13 +113,13 @@ public class WildcardPortsSystemTest
             Subscription sub4 = client.addSubscription(tagged2, STREAM_ID + 1))
         {
             List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = sub1.bindAddressAndPorts()).isEmpty())
+            while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub1");
             }
 
             List<String> bindAddressAndPort4;
-            while ((bindAddressAndPort4 = sub4.bindAddressAndPorts()).isEmpty())
+            while ((bindAddressAndPort4 = sub4.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub4");
             }
@@ -160,7 +160,7 @@ public class WildcardPortsSystemTest
             mdsSub.addDestination(wildCardUri3);
 
             List<String> bindAddressAndPorts;
-            while (2 > (bindAddressAndPorts = mdsSub.bindAddressAndPorts()).size())
+            while (2 > (bindAddressAndPorts = mdsSub.localSocketAddresses()).size())
             {
                 Tests.yieldingWait("Unable to get bind address/ports for mds subscription");
             }
@@ -206,7 +206,7 @@ public class WildcardPortsSystemTest
         try (Publication mdcPub = client.addPublication(mdcUri, STREAM_ID))
         {
             List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = mdcPub.bindAddressAndPorts()).isEmpty())
+            while ((bindAddressAndPort1 = mdcPub.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for mdcPub");
             }

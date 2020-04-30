@@ -667,7 +667,6 @@ project(':aeron-samples') {
     apply plugin: 'signing'
 
     dependencies {
-        api project(':aeron-archive')
         api project(':aeron-cluster')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }

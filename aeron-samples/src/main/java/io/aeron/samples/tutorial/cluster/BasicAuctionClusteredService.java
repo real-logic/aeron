@@ -78,22 +78,22 @@ public class BasicAuctionClusteredService implements ClusteredService
         final int length,
         final Header header)
     {
-        final long correlationId = buffer.getLong(offset + CORRELATION_ID_OFFSET);     // <1>
+        final long correlationId = buffer.getLong(offset + CORRELATION_ID_OFFSET);            // <1>
         final long customerId = buffer.getLong(offset + CUSTOMER_ID_OFFSET);
         final long price = buffer.getLong(offset + PRICE_OFFSET);
 
-        final boolean bidSucceeded = auction.attemptBid(price, customerId);            // <2>
+        final boolean bidSucceeded = auction.attemptBid(price, customerId);                          // <2>
 
-        if (null != session)                                                           // <3>
+        if (null != session)                                                                         // <3>
         {
-            egressMessageBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);         // <4>
+            egressMessageBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);                       // <4>
             egressMessageBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());
             egressMessageBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
             egressMessageBuffer.putByte(BID_SUCCEEDED_OFFSET, bidSucceeded ? (byte)1 : (byte)0);
 
-            while (session.offer(egressMessageBuffer, 0, EGRESS_MESSAGE_LENGTH) < 0)   // <5>
+            while (session.offer(egressMessageBuffer, 0, EGRESS_MESSAGE_LENGTH) < 0)          // <5>
             {
-                idleStrategy.idle();                                                   // <6>
+                idleStrategy.idle();                                                                 // <6>
             }
         }
     }
@@ -102,10 +102,10 @@ public class BasicAuctionClusteredService implements ClusteredService
     // tag::takeSnapshot[]
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
     {
-        snapshotBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId()); // <1>
+        snapshotBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());           // <1>
         snapshotBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
 
-        while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)  // <2>
+        while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)     // <2>
         {
             idleStrategy.idle();
         }
@@ -117,41 +117,41 @@ public class BasicAuctionClusteredService implements ClusteredService
     {
         final MutableBoolean allDataLoaded = new MutableBoolean(false);
 
-        while (!snapshotImage.isEndOfStream())                                                 // <1>
+        while (!snapshotImage.isEndOfStream())                                                       // <1>
         {
-            final int fragmentsPolled = snapshotImage.poll((buffer, offset, length, header) -> // <2>
-            {
-                assert length >= SNAPSHOT_MESSAGE_LENGTH;                                      // <3>
+            final int fragmentsPolled = snapshotImage.poll(
+                (buffer, offset, length, header) -> // <2>
+                {
+                    assert length >= SNAPSHOT_MESSAGE_LENGTH;                                        // <3>
 
-                final long customerId = buffer.getLong(offset + SNAPSHOT_CUSTOMER_ID_OFFSET);
-                final long price = buffer.getLong(offset + SNAPSHOT_PRICE_OFFSET);
+                    final long customerId = buffer.getLong(offset + SNAPSHOT_CUSTOMER_ID_OFFSET);
+                    final long price = buffer.getLong(offset + SNAPSHOT_PRICE_OFFSET);
 
-                auction.loadInitialState(price, customerId);                                   // <4>
+                    auction.loadInitialState(price, customerId);                                     // <4>
 
-                allDataLoaded.set(true);
-            }, 1);
+                    allDataLoaded.set(true);
+                },
+                1);
 
-            if (allDataLoaded.value)                                                           // <5>
+            if (allDataLoaded.value)                                                                 // <5>
             {
                 break;
             }
 
-            idleStrategy.idle(fragmentsPolled);                                                // <6>
+            idleStrategy.idle(fragmentsPolled);                                                      // <6>
         }
 
-        assert snapshotImage.isEndOfStream();                                                  // <7>
+        assert snapshotImage.isEndOfStream();                                                        // <7>
         assert allDataLoaded.value;
     }
     // end::loadSnapshot[]
 
     public void onRoleChange(final Cluster.Role newRole)
     {
-
     }
 
     public void onTerminate(final Cluster cluster)
     {
-
     }
 
     public void onSessionOpen(final ClientSession session, final long timestamp)
@@ -166,7 +166,6 @@ public class BasicAuctionClusteredService implements ClusteredService
 
     public void onTimerEvent(final long correlationId, final long timestamp)
     {
-
     }
 
     private static class Auction
@@ -191,6 +190,7 @@ public class BasicAuctionClusteredService implements ClusteredService
 
             bestPrice = price;
             currentWinningCustomerId = customerId;
+
             return true;
         }
 
@@ -210,11 +210,14 @@ public class BasicAuctionClusteredService implements ClusteredService
             {
                 return true;
             }
+
             if (o == null || getClass() != o.getClass())
             {
                 return false;
             }
+
             final Auction auction = (Auction)o;
+
             return bestPrice == auction.bestPrice &&
                 currentWinningCustomerId == auction.currentWinningCustomerId;
         }
@@ -239,11 +242,14 @@ public class BasicAuctionClusteredService implements ClusteredService
         {
             return true;
         }
+
         if (o == null || getClass() != o.getClass())
         {
             return false;
         }
+
         final BasicAuctionClusteredService that = (BasicAuctionClusteredService)o;
+
         return auction.equals(that.auction);
     }
 

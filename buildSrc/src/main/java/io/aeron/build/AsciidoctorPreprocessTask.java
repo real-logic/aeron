@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.build;
 
 import org.asciidoctor.Asciidoctor;
@@ -61,12 +76,14 @@ public class AsciidoctorPreprocessTask extends DefaultTask
 
             final int[] errorCount = { 0 };
 
-            asciidoctor.registerLogHandler(logRecord -> {
-                if (logRecord.getSeverity() == Severity.ERROR || logRecord.getSeverity() == Severity.FATAL)
+            asciidoctor.registerLogHandler(
+                (logRecord) ->
                 {
-                    errorCount[0]++;
-                }
-            });
+                    if (logRecord.getSeverity() == Severity.ERROR || logRecord.getSeverity() == Severity.FATAL)
+                    {
+                        errorCount[0]++;
+                    }
+                });
 
             final HashMap<String, Object> attributes = new HashMap<>();
             attributes.put("sampleBaseDir", requireNonNull(sampleBaseDir, "Must specify sampleBaseDir"));
@@ -78,24 +95,25 @@ public class AsciidoctorPreprocessTask extends DefaultTask
 
             try (final PrintStream output = new PrintStream(outputFile))
             {
-                asciidoctor.javaExtensionRegistry().preprocessor(new org.asciidoctor.extension.Preprocessor()
-                {
-                    public void process(Document document, PreprocessorReader reader)
+                asciidoctor.javaExtensionRegistry().preprocessor(
+                    new org.asciidoctor.extension.Preprocessor()
                     {
-                        String line;
-                        while (null != (line = reader.readLine()))
+                        public void process(Document document, PreprocessorReader reader)
                         {
-                            if (line.startsWith(":aeronVersion:"))
+                            String line;
+                            while (null != (line = reader.readLine()))
                             {
-                                output.println(":aeronVersion: " + versionText);
-                            }
-                            else
-                            {
-                                output.println(line);
+                                if (line.startsWith(":aeronVersion:"))
+                                {
+                                    output.println(":aeronVersion: " + versionText);
+                                }
+                                else
+                                {
+                                    output.println(line);
+                                }
                             }
                         }
-                    }
-                });
+                    });
 
                 asciidoctor.loadFile(asciidocFile, options);
 

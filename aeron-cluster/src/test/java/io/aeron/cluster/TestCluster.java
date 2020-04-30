@@ -558,10 +558,12 @@ public class TestCluster implements AutoCloseable
     {
         while (true)
         {
+            client.pollEgress();
+
             final long result = client.offer(msgBuffer, 0, messageLength);
             if (result > 0)
             {
-                break;
+                return;
             }
 
             if (Publication.CLOSED == result)
@@ -576,10 +578,7 @@ public class TestCluster implements AutoCloseable
 
             Thread.yield();
             Tests.checkInterruptStatus();
-            client.pollEgress();
         }
-
-        client.pollEgress();
     }
 
     void awaitResponseMessageCount(final int messageCount)

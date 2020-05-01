@@ -943,7 +943,6 @@ public class ClusterTest
     {
         try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
         {
-            // Leadership Term 0
             final TestNode leader0 = cluster.awaitLeader();
             cluster.connectClient();
 
@@ -951,18 +950,15 @@ public class ClusterTest
             cluster.sendMessages(numMessages);
             cluster.awaitServicesMessageCount(numMessages);
 
-            // Snapshot
             cluster.takeSnapshot(leader0);
             cluster.awaitSnapshotCount(leader0, 1);
 
             cluster.sendMessages(numMessages);
             cluster.awaitServicesMessageCount(numMessages * 2);
 
-            // Snapshot
             cluster.takeSnapshot(leader0);
             cluster.awaitSnapshotCount(leader0, 2);
 
-            // Leadership Term 1
             cluster.stopNode(leader0);
             cluster.awaitLeader(leader0.index());
             cluster.startStaticNode(leader0.index(), false);
@@ -970,19 +966,15 @@ public class ClusterTest
             cluster.sendMessages(numMessages);
             cluster.awaitServicesMessageCount(numMessages * 3);
 
-            // Stop without snapshot
             cluster.node(0).terminationExpected(true);
             cluster.node(1).terminationExpected(true);
             cluster.node(2).terminationExpected(true);
 
             cluster.stopAllNodes();
 
-            // Invalidate snapshot from leadershipTermId = 1
             cluster.invalidateLatestSnapshots();
 
-            // Start, should replay from snapshot in leadershipTerm = 0.
             cluster.restartAllNodes(false);
-
             cluster.awaitLeader();
 
             cluster.awaitServicesMessageCount(numMessages * 2);
@@ -1029,7 +1021,6 @@ public class ClusterTest
     {
         try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
         {
-            // Leadership Term 0
             final TestNode leader0 = cluster.awaitLeader();
             cluster.connectClient();
 
@@ -1037,7 +1028,6 @@ public class ClusterTest
             cluster.sendMessages(numMessages);
             cluster.awaitServicesMessageCount(numMessages);
 
-            // Leadership Term 1
             cluster.stopNode(leader0);
             final TestNode leader1 = cluster.awaitLeader(leader0.index());
             cluster.startStaticNode(leader0.index(), false);
@@ -1045,11 +1035,9 @@ public class ClusterTest
             cluster.sendMessages(numMessages);
             cluster.awaitServicesMessageCount(numMessages * 2);
 
-            // Snapshot
             cluster.takeSnapshot(leader1);
             cluster.awaitSnapshotCount(leader1, 1);
 
-            // Leadership Term 2
             cluster.stopNode(leader1);
             cluster.awaitLeader(leader1.index());
             cluster.startStaticNode(leader1.index(), false);
@@ -1059,20 +1047,17 @@ public class ClusterTest
 
             // No snapshot for Term 2
 
-            // Stop without snapshot
             cluster.node(0).terminationExpected(true);
             cluster.node(1).terminationExpected(true);
             cluster.node(2).terminationExpected(true);
 
             cluster.stopAllNodes();
 
-            // Invalidate snapshot from leadershipTermId = 1
             cluster.invalidateLatestSnapshots();
 
-            // Start, should replay from snapshot in leadershipTerm = 0.
             cluster.restartAllNodes(false);
-
             cluster.awaitLeader();
+
             cluster.awaitServicesMessageCount(numMessages * 2);
         }
     }

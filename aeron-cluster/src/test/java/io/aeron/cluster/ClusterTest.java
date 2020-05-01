@@ -825,8 +825,9 @@ public class ClusterTest
             final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
 
             cluster.awaitLeader();
-            awaitElectionClosed(oldFollower1);
-            awaitElectionClosed(oldFollower2);
+
+            cluster.awaitServiceMessageCount(oldFollower1, messageCount);
+            cluster.awaitServiceMessageCount(oldFollower2, messageCount);
 
             assertEquals(0L, oldLeader.errors());
             assertEquals(0L, oldFollower1.errors());

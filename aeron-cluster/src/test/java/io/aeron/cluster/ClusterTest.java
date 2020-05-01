@@ -22,13 +22,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.cluster.ClusterTests.*;
 import static io.aeron.cluster.TestCluster.awaitElectionClosed;
 import static io.aeron.cluster.TestCluster.startThreeNodeStaticCluster;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -317,7 +320,7 @@ public class ClusterTest
             awaitElectionClosed(follower);
             cluster.stopNode(follower);
 
-            Tests.sleep(10_000);
+            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
             follower = cluster.startStaticNode(follower.index(), true);
 
@@ -346,7 +349,7 @@ public class ClusterTest
             awaitElectionClosed(followerB);
             cluster.stopNode(followerB);
 
-            Tests.sleep(10_000);
+            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
             cluster.takeSnapshot(leader);
             cluster.awaitSnapshotCount(leader, 1);
@@ -658,10 +661,11 @@ public class ClusterTest
             final TestNode leader = cluster.awaitLeader();
 
             final AeronCluster client = cluster.connectClient();
-            assertEquals(0, leader.consensusModule().context().timedOutClientCounter().get());
+            final ConsensusModule.Context context = leader.consensusModule().context();
+            assertEquals(0, context.timedOutClientCounter().get());
             assertFalse(client.isClosed());
 
-            Tests.sleep(TimeUnit.NANOSECONDS.toMillis(leader.consensusModule().context().sessionTimeoutNs()));
+            Tests.sleep(NANOSECONDS.toMillis(context.sessionTimeoutNs()));
 
             while (!client.isClosed())
             {
@@ -669,7 +673,7 @@ public class ClusterTest
                 client.pollEgress();
             }
 
-            assertEquals(1, leader.consensusModule().context().timedOutClientCounter().get());
+            assertEquals(1, context.timedOutClientCounter().get());
         }
     }
 
@@ -685,11 +689,14 @@ public class ClusterTest
             TestNode followerB = followers.get(1);
 
             cluster.connectClient();
-            final Thread messageThread = ClusterTests.startMessageThread(cluster, TimeUnit.MICROSECONDS.toNanos(500));
+            final CountDownLatch latch = new CountDownLatch(1);
+            final Thread messageThread = startMessageThread(cluster, MICROSECONDS.toNanos(500), latch);
+
+            latch.await(); // wait for at thread to start.
             try
             {
                 cluster.stopNode(followerB);
-                Tests.sleep(10_000);
+                Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
@@ -700,7 +707,6 @@ public class ClusterTest
                 messageThread.join();
             }
 
-            awaitElectionClosed(followerB);
             assertEquals(0L, leader.errors());
             assertEquals(0L, followerA.errors());
             assertEquals(0L, followerB.errors());
@@ -792,10 +798,10 @@ public class ClusterTest
 
             cluster.connectClient();
             final int messageCount = 50_000;
-            cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.NO_OP_MSG);
+            cluster.msgBuffer().putStringWithoutLengthAscii(0, NO_OP_MSG);
             for (int i = 0; i < messageCount; i++)
             {
-                cluster.sendMessage(ClusterTests.NO_OP_MSG.length());
+                cluster.sendMessage(NO_OP_MSG.length());
             }
             cluster.awaitResponseMessageCount(messageCount);
 
@@ -1075,14 +1081,14 @@ public class ClusterTest
     @Timeout(30)
     public void shouldCatchUpAfterFollowerMissesOneMessage()
     {
-        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.NO_OP_MSG);
+        shouldCatchUpAfterFollowerMissesMessage(NO_OP_MSG);
     }
 
     @Test
     @Timeout(30)
     public void shouldCatchUpAfterFollowerMissesTimerRegistration()
     {
-        shouldCatchUpAfterFollowerMissesMessage(ClusterTests.REGISTER_TIMER_MSG);
+        shouldCatchUpAfterFollowerMissesMessage(REGISTER_TIMER_MSG);
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

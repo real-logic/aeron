@@ -41,6 +41,11 @@ typedef struct aeron_log_buffer_stct aeron_log_buffer_t;
 
 typedef struct aeron_counters_reader_stct aeron_counters_reader_t;
 
+typedef struct aeron_client_registering_resource_stct aeron_async_add_publication_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_publication_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
+
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
  */
@@ -92,7 +97,12 @@ void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
  * @param correlation_id used by the Publication for adding. Aka the registrationId returned by aeron_add_publication
  */
 typedef void (*aeron_on_new_publication_t)(
-    void *clientd, const char *channel, int32_t stream_id, int32_t session_id, int64_t correlation_id);
+    void *clientd,
+    aeron_async_add_publication_t *async,
+    const char *channel,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t correlation_id);
 
 int aeron_context_set_on_new_publication(aeron_context_t *context, aeron_on_new_publication_t handler, void *clientd);
 aeron_on_new_publication_t aeron_context_get_on_new_publication(aeron_context_t *context);
@@ -203,11 +213,6 @@ void aeron_print_counters(aeron_t *client, void (*stream_out)(const char *));
 aeron_context_t *aeron_context(aeron_t *client);
 int64_t aeron_client_id(aeron_t *client);
 int64_t aeron_next_correlation_id(aeron_t *client);
-
-typedef struct aeron_client_registering_resource_stct aeron_async_add_publication_t;
-typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_publication_t;
-typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
-typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
 
 int aeron_async_add_publication(
     aeron_async_add_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id);
@@ -363,6 +368,8 @@ int aeron_subscription_controlled_poll(
     aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, int fragment_limit);
 int aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
+
+int aeron_subscription_image_count(aeron_subscription_t *subscription);
 
 aeron_image_t *aeron_subscription_image_by_session_id(
     aeron_subscription_t *subscription, int32_t session_id, bool require_release);

@@ -105,7 +105,12 @@ void aeron_default_error_handler(void *clientd, int errcode, const char *message
 }
 
 void aeron_default_on_new_publication(
-    void *clientd, const char *channel, int32_t stream_id, int32_t session_id, int64_t correlation_id)
+    void *clientd,
+    aeron_async_add_publication_t *async,
+    const char *channel,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t correlation_id)
 {
 }
 

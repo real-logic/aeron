@@ -92,19 +92,24 @@ public:
 
         if (aeron_log_buffer_create(&log_buffer, filename.c_str(), m_correlationId, false) < 0)
         {
-            throw std::runtime_error("could not create log_buffer: %s" + std::string(aeron_errmsg()));
+            throw std::runtime_error("could not create log_buffer: " + std::string(aeron_errmsg()));
         }
 
         if (aeron_image_create(
             &image, m_conductor, log_buffer, subscriber_position, m_correlationId, (int32_t)m_correlationId) < 0)
         {
-            throw std::runtime_error("could not create image: %s" + std::string(aeron_errmsg()));
+            throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
         }
 
         m_imageMap.insert(std::pair<int64_t, aeron_image_t *>(m_correlationId, image));
         m_filenames.emplace_back(filename);
 
         return m_correlationId++;
+    }
+
+    static void null_fragment_handler(
+        void *clientd, uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    {
     }
 
 protected:
@@ -121,3 +126,37 @@ protected:
 TEST_F(SubscriptionTest, shouldInitAndDelete)
 {
 }
+
+TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithoutPoll)
+{
+    int64_t image_id = createImage(&m_channel_status);
+    aeron_image_t *image = m_imageMap.find(image_id)->second;
+
+    ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
+
+    ASSERT_EQ(aeron_client_conductor_subscription_remove_image(m_subscription, image), 0);
+
+    EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
+
+    aeron_log_buffer_delete(image->log_buffer);
+    aeron_image_delete(image);
+}
+
+TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollAfter)
+{
+    int64_t image_id = createImage(&m_channel_status);
+    aeron_image_t *image = m_imageMap.find(image_id)->second;
+
+    ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
+
+    ASSERT_EQ(aeron_client_conductor_subscription_remove_image(m_subscription, image), 0);
+
+    ASSERT_EQ(aeron_subscription_poll(m_subscription, null_fragment_handler, this, 1), 0);
+
+    EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
+
+    aeron_log_buffer_delete(image->log_buffer);
+    aeron_image_delete(image);
+}
+
+// TODO: delay poll for a list removal to make sure single threaded works.

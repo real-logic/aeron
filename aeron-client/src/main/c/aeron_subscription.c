@@ -137,7 +137,7 @@ int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subsc
     size_t old_length = current_image_list->length;
     int image_index = aeron_subscription_find_image_index(current_image_list, image);
 
-    if (-1 != image_index || 0 == old_length)
+    if (-1 == image_index || 0 == old_length)
     {
         return 0;
     }
@@ -200,6 +200,15 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
     }
 
     return 0;
+}
+
+int aeron_subscription_image_count(aeron_subscription_t *subscription)
+{
+    volatile aeron_image_list_t *image_list;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    return image_list->length;
 }
 
 int aeron_subscription_poll(

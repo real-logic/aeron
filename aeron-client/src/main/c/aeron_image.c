@@ -52,7 +52,14 @@ int aeron_image_create(
     _image->is_closed = false;
 
     *image = _image;
-    return -1;
+    return 0;
+}
+
+int aeron_image_delete(aeron_image_t *image)
+{
+    aeron_free(image);
+
+    return 0;
 }
 
 int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int fragment_limit)

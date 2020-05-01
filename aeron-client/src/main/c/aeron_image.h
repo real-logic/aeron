@@ -47,4 +47,6 @@ int aeron_image_create(
     int64_t correlation_id,
     int32_t session_id);
 
+int aeron_image_delete(aeron_image_t *image);
+
 #endif //AERON_C_IMAGE_H

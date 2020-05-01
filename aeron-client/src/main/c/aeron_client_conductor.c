@@ -106,6 +106,12 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
 
+    conductor->on_new_publication = context->on_new_publication;
+    conductor->on_new_publication_clientd = context->on_new_publication_clientd;
+
+    conductor->on_new_exclusive_publication = context->on_new_exclusive_publication;
+    conductor->on_new_exclusive_publication_clientd = context->on_new_exclusive_publication_clientd;
+
     conductor->driver_timeout_ms = context->driver_timeout_ms;
     conductor->driver_timeout_ns = context->driver_timeout_ms * 1000000;
     conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
@@ -1197,10 +1203,11 @@ int aeron_client_conductor_on_publication_ready(
     for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
     {
         aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
-        char log_file[AERON_MAX_PATH];
 
         if (response->correlation_id == resource->registration_id)
         {
+            char log_file[AERON_MAX_PATH];
+            const char *channel = resource->uri;
             bool is_exclusive = (AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == resource->type) ? true : false;
 
             memcpy(
@@ -1298,6 +1305,28 @@ int aeron_client_conductor_on_publication_ready(
             conductor->registering_resources.length--;
 
             AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+
+            if (is_exclusive && NULL != conductor->on_new_exclusive_publication)
+            {
+                conductor->on_new_exclusive_publication(
+                    conductor->on_new_exclusive_publication_clientd,
+                    resource,
+                    channel,
+                    resource->stream_id,
+                    response->session_id,
+                    response->correlation_id);
+            }
+            else if (NULL != conductor->on_new_publication)
+            {
+                conductor->on_new_publication(
+                    conductor->on_new_publication_clientd,
+                    resource,
+                    channel,
+                    resource->stream_id,
+                    response->session_id,
+                    response->correlation_id);
+            }
+
             break;
         }
     }

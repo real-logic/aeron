@@ -19,7 +19,9 @@ import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.*;
+import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -133,11 +135,24 @@ public class TestCluster implements AutoCloseable
         this.appointedLeaderId = appointedLeaderId;
     }
 
-    public static void awaitElectionClosed(final TestNode follower)
+    static void awaitElectionClosed(final TestNode follower)
     {
         while (follower.electionState() != Election.State.CLOSED)
         {
             Tests.sleep(10);
+        }
+    }
+
+    static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
+    {
+        while (true)
+        {
+            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
+            if (clusterMembership.activeMembers.size() == size)
+            {
+                return clusterMembership;
+            }
+            Tests.sleep(100);
         }
     }
 

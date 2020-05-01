@@ -545,9 +545,9 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void sendPoisonMessages(final int messageCount)
+    void sendUnexpectedMessages(final int messageCount)
     {
-        final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.POISON_MSG);
+        final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
         for (int i = 0; i < messageCount; i++)
         {
             sendMessage(length);

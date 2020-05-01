@@ -277,6 +277,7 @@ class ConsensusModuleAgent implements Agent
             election = new Election(
                 true,
                 recoveryPlan.lastLeadershipTermId,
+                recoveryPlan.committedLogPosition,
                 recoveryPlan.appendedLogPosition,
                 clusterMembers,
                 clusterMemberByIdMap,
@@ -879,27 +880,24 @@ class ConsensusModuleAgent implements Agent
         return logSubscriptionChannelTag + "," + logSubscriptionTag;
     }
 
-    void prepareForNewLeadership(final long logPosition)
+    long prepareForNewLeadership(final long logPosition)
     {
         final long recordingId = logRecordingId();
+        long appendPosition = 0;
+
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
             logPublisher.disconnect(ctx.countedErrorHandler());
             stopLogRecording();
 
-            long stopPosition;
             idleStrategy.reset();
-            while (AeronArchive.NULL_POSITION == (stopPosition = archive.getStopPosition(recordingId)))
+            while (AeronArchive.NULL_POSITION == (appendPosition = archive.getStopPosition(recordingId)))
             {
                 idle();
             }
 
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
             archive.stopAllReplays(recordingId);
-
-            if (stopPosition > logPosition)
-            {
-                archive.truncateRecording(recordingId, logPosition);
-            }
 
             clearSessionsAfter(logPosition);
             for (final ClusterSession session : sessionByIdMap.values())
@@ -910,6 +908,8 @@ class ConsensusModuleAgent implements Agent
             commitPosition.setOrdered(logPosition);
             restoreUncommittedEntries(logPosition);
         }
+
+        return appendPosition;
     }
 
     void stopLogRecording()
@@ -1302,7 +1302,7 @@ class ConsensusModuleAgent implements Agent
     {
         closeExistingLog();
 
-        final ExclusivePublication publication = createLogPublication(recoveryPlan, election.logPosition());
+        final ExclusivePublication publication = createLogPublication(recoveryPlan);
         logPublisher.publication(publication);
 
         return publication.sessionId();
@@ -1452,25 +1452,19 @@ class ConsensusModuleAgent implements Agent
         awaitServicesAt(logPosition);
     }
 
-    LogReplay newLogReplay(final long electionPosition)
+    LogReplay newLogReplay(final long logPosition, final long appendPosition)
     {
-        if (null != recoveryPlan.log)
+        if (null != recoveryPlan.log && logPosition < appendPosition)
         {
-            final RecordingLog.Log log = recoveryPlan.log;
-            final long stopPosition = min(log.stopPosition, electionPosition);
-
-            if (recoveryPlan.hasReplay() && stopPosition > log.startPosition)
-            {
-                return new LogReplay(
-                    archive,
-                    log.recordingId,
-                    log.startPosition,
-                    stopPosition,
-                    log.leadershipTermId,
-                    log.sessionId,
-                    logAdapter,
-                    ctx);
-            }
+            return new LogReplay(
+                archive,
+                recoveryPlan.log.recordingId,
+                logPosition,
+                appendPosition,
+                recoveryPlan.log.leadershipTermId,
+                recoveryPlan.log.sessionId,
+                logAdapter,
+                ctx);
         }
 
         return null;
@@ -1534,7 +1528,6 @@ class ConsensusModuleAgent implements Agent
     {
         archive.truncateRecording(logRecordingId(), logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
     }
 
     boolean electionComplete()
@@ -1615,6 +1608,7 @@ class ConsensusModuleAgent implements Agent
         election = new Election(
             false,
             leadershipTermId,
+            recoveryPlan.committedLogPosition,
             recoveryPlan.appendedLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
@@ -2608,6 +2602,7 @@ class ConsensusModuleAgent implements Agent
             false,
             leadershipTermId,
             commitPosition,
+            appendPosition.get(),
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -2745,7 +2740,7 @@ class ConsensusModuleAgent implements Agent
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
     }
 
-    private ExclusivePublication createLogPublication(final RecordingLog.RecoveryPlan plan, final long position)
+    private ExclusivePublication createLogPublication(final RecordingLog.RecoveryPlan plan)
     {
         logPublicationTag = (int)aeron.nextCorrelationId();
         logPublicationChannelTag = (int)aeron.nextCorrelationId();
@@ -2770,7 +2765,7 @@ class ConsensusModuleAgent implements Agent
 
         if (null != plan.log)
         {
-            channelUri.initialPosition(position, plan.log.initialTermId, plan.log.termBufferLength);
+            channelUri.initialPosition(plan.appendedLogPosition, plan.log.initialTermId, plan.log.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(plan.log.mtuLength));
         }
 

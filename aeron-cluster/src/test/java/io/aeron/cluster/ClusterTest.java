@@ -487,7 +487,7 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            cluster.sendPoisonMessages(10);
+            cluster.sendUnexpectedMessages(10);
 
             while (leader.appendPosition() <= leader.commitPosition())
             {
@@ -537,7 +537,8 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            cluster.sendPoisonMessages(10);
+            final int messageCount = 10;
+            cluster.sendUnexpectedMessages(messageCount);
 
             while (leader.appendPosition() <= leader.commitPosition())
             {
@@ -559,7 +560,6 @@ public class ClusterTest
 
             cluster.connectClient();
 
-            final int messageCount = 10;
             cluster.sendMessages(messageCount);
 
             cluster.awaitResponseMessageCount(messageCount);
@@ -1012,7 +1012,7 @@ public class ClusterTest
 
     @Test
     @Timeout(50)
-    void shouldRecoverWhenLastSnapshotIsInvalidAndWasBetweenTwoElections()
+    void shouldRecoverWhenLastSnapshotIsInvalidBetweenTwoElections()
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

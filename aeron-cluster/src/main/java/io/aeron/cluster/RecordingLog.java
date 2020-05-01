@@ -689,7 +689,7 @@ public class RecordingLog implements AutoCloseable
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
-        long committedLogPosition = -1;
+        long committedLogPosition = 0;
         long appendedLogPosition = 0;
 
         final int snapshotStepsSize = snapshots.size();
@@ -710,7 +710,7 @@ public class RecordingLog implements AutoCloseable
             lastLeadershipTermId = log.leadershipTermId;
             lastTermBaseLogPosition = log.termBaseLogPosition;
             appendedLogPosition = log.stopPosition;
-            committedLogPosition = log.logPosition;
+            committedLogPosition = NULL_VALUE != log.logPosition ? log.logPosition : committedLogPosition;
         }
 
         return new RecoveryPlan(
@@ -732,7 +732,7 @@ public class RecordingLog implements AutoCloseable
     {
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
-        long committedLogPosition = -1;
+        long committedLogPosition = 0;
         long appendedLogPosition = 0;
 
         final int snapshotStepsSize = snapshots.size();

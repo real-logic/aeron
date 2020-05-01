@@ -611,6 +611,7 @@ public class ElectionTest
             isStartup,
             logLeadershipTermId,
             logPosition,
+            logPosition,
             clusterMembers,
             idToClusterMemberMap,
             thisMember,
@@ -633,6 +634,7 @@ public class ElectionTest
         return new Election(
             true,
             logLeadershipTermId,
+            logPosition,
             logPosition,
             clusterMembers,
             clusterMemberByIdMap,

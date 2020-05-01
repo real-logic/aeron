@@ -378,7 +378,7 @@ class TestNode implements AutoCloseable
                 if (snapshotFragmentCount.get() != SNAPSHOT_FRAGMENT_COUNT)
                 {
                     throw new AgentTerminationException(
-                        "Unexpected snapshot length: expected=" + SNAPSHOT_FRAGMENT_COUNT +
+                        "unexpected snapshot length: expected=" + SNAPSHOT_FRAGMENT_COUNT +
                         " actual=" + snapshotFragmentCount);
                 }
 
@@ -403,10 +403,10 @@ class TestNode implements AutoCloseable
                 }
             }
 
-            if (message.equals(ClusterTests.POISON_MSG))
+            if (message.equals(ClusterTests.UNEXPECTED_MSG))
             {
                 hasReceivedUnexpectedMessage = true;
-                throw new IllegalStateException("Poison message received.");
+                throw new IllegalStateException("unexpected message received");
             }
 
             if (message.equals(ClusterTests.ECHO_IPC_INGRESS_MSG))

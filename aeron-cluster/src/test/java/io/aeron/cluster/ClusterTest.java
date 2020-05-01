@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.ClusterTests.*;
@@ -678,7 +677,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(70)
+    @Timeout(30)
     public void shouldRecoverWhileMessagesContinue() throws InterruptedException
     {
         try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
@@ -689,10 +688,8 @@ public class ClusterTest
             TestNode followerB = followers.get(1);
 
             cluster.connectClient();
-            final CountDownLatch latch = new CountDownLatch(1);
-            final Thread messageThread = startMessageThread(cluster, MICROSECONDS.toNanos(500), latch);
+            final Thread messageThread = startMessageThread(cluster, MICROSECONDS.toNanos(500));
 
-            latch.await(); // wait for at thread to start.
             try
             {
                 cluster.stopNode(followerB);
@@ -700,11 +697,18 @@ public class ClusterTest
 
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
+
+                Tests.sleep(3000); // keep ingress going so started node has to catchup.
             }
             finally
             {
                 messageThread.interrupt();
                 messageThread.join();
+            }
+
+            while (leader.commitPosition() > followerB.commitPosition())
+            {
+                Tests.sleep(10);
             }
 
             assertEquals(0L, leader.errors());

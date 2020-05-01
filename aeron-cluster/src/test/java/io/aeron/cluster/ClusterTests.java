@@ -27,7 +27,6 @@ import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -127,8 +126,7 @@ class ClusterTests
         }
     }
 
-    public static Thread startMessageThread(
-        final TestCluster cluster, final long backoffIntervalNs, final CountDownLatch latch)
+    public static Thread startMessageThread(final TestCluster cluster, final long backoffIntervalNs)
     {
         final Thread thread = new Thread(
             () ->
@@ -137,8 +135,6 @@ class ClusterTests
                 final AeronCluster client = cluster.client();
                 final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
                 msgBuffer.putStringWithoutLengthAscii(0, HELLO_WORLD_MSG);
-
-                latch.countDown();
 
                 while (!Thread.interrupted())
                 {

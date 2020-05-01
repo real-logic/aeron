@@ -708,7 +708,8 @@ public class ClusterTest
 
             while (leader.commitPosition() > followerB.commitPosition())
             {
-                Tests.sleep(10);
+                cluster.client().pollEgress();
+                Tests.sleep(1);
             }
 
             assertEquals(0L, leader.errors());

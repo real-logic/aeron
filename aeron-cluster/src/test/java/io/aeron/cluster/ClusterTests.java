@@ -19,9 +19,15 @@ import io.aeron.Counter;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.exceptions.AeronException;
 import io.aeron.test.Tests;
-import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.ErrorHandler;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.LangUtil;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -121,7 +127,8 @@ class ClusterTests
         }
     }
 
-    public static Thread startMessageThread(final TestCluster cluster, final long intervalNs)
+    public static Thread startMessageThread(
+        final TestCluster cluster, final long backoffIntervalNs, final CountDownLatch latch)
     {
         final Thread thread = new Thread(
             () ->
@@ -131,11 +138,13 @@ class ClusterTests
                 final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
                 msgBuffer.putStringWithoutLengthAscii(0, HELLO_WORLD_MSG);
 
+                latch.countDown();
+
                 while (!Thread.interrupted())
                 {
-                    if (client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length()) > 0)
+                    if (client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length()) < 0)
                     {
-                        LockSupport.parkNanos(intervalNs);
+                        LockSupport.parkNanos(backoffIntervalNs);
                     }
 
                     idleStrategy.idle(client.pollEgress());

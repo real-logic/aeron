@@ -15,14 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.cluster.TestCluster.awaitElectionClosed;
+import static io.aeron.cluster.TestCluster.*;
+import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -33,7 +32,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldQueryClusterMembers()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
@@ -48,13 +47,13 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshots()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             awaitElectionClosed(dynamicMember);
-            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
+            assertEquals(FOLLOWER, dynamicMember.role());
 
             final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
 
@@ -67,13 +66,13 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             awaitElectionClosed(dynamicMember);
-            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
+            assertEquals(FOLLOWER, dynamicMember.role());
 
             cluster.connectClient();
             final int messageCount = 10;
@@ -88,7 +87,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -108,7 +107,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -120,7 +119,7 @@ public class DynamicMembershipTest
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             awaitElectionClosed(dynamicMember);
-            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
+            assertEquals(FOLLOWER, dynamicMember.role());
 
             cluster.awaitSnapshotLoadedForService(dynamicMember);
         }
@@ -130,7 +129,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshot()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -147,7 +146,7 @@ public class DynamicMembershipTest
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             awaitElectionClosed(dynamicMember);
-            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
+            assertEquals(FOLLOWER, dynamicMember.role());
 
             cluster.awaitSnapshotLoadedForService(dynamicMember);
             assertEquals(messageCount, dynamicMember.service().messageCount());
@@ -158,7 +157,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -177,7 +176,7 @@ public class DynamicMembershipTest
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             awaitElectionClosed(dynamicMember);
-            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
+            assertEquals(FOLLOWER, dynamicMember.role());
 
             cluster.awaitSnapshotLoadedForService(dynamicMember);
             assertEquals(preSnapshotMessageCount, dynamicMember.service().messageCount());
@@ -192,7 +191,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldRemoveFollower()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
             final TestNode follower = cluster.followers().get(0);
@@ -212,7 +211,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldRemoveLeader()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode initialLeader = cluster.awaitLeader();
 
@@ -234,7 +233,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldRemoveLeaderAfterDynamicNodeJoined()
     {
-        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        try (TestCluster cluster = startCluster(3, 1))
         {
             final TestNode initialLeader = cluster.awaitLeader();
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
@@ -260,7 +259,7 @@ public class DynamicMembershipTest
     @Timeout(30)
     public void shouldJoinDynamicNodeToSingleStaticLeader()
     {
-        try (TestCluster cluster = TestCluster.startCluster(1, 1))
+        try (TestCluster cluster = startCluster(1, 1))
         {
             final TestNode initialLeader = cluster.awaitLeader();
             final TestNode dynamicMember = cluster.startDynamicNode(1, true);
@@ -270,17 +269,4 @@ public class DynamicMembershipTest
         }
     }
 
-    static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
-    {
-        while (true)
-        {
-            Tests.sleep(100);
-
-            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
-            if (clusterMembership.activeMembers.size() == size)
-            {
-                return clusterMembership;
-            }
-        }
-    }
 }

@@ -883,6 +883,7 @@ class ConsensusModuleAgent implements Agent
         final long recordingId = logRecordingId();
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
+            logPublisher.disconnect(ctx.countedErrorHandler());
             stopLogRecording();
 
             long stopPosition;

@@ -133,7 +133,7 @@ class ClusterTests
 
                 while (!Thread.interrupted())
                 {
-                    if (client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length()) < 0)
+                    if (client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length()) > 0)
                     {
                         LockSupport.parkNanos(intervalNs);
                     }
@@ -144,6 +144,7 @@ class ClusterTests
 
         thread.setDaemon(true);
         thread.setName("message-thread");
+        thread.start();
 
         return thread;
     }

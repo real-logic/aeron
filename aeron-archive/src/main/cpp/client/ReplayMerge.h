@@ -21,7 +21,7 @@
 namespace aeron { namespace archive { namespace client
 {
 
-constexpr const std::int64_t REPLAY_MERGE_LIVE_ADD_THRESHOLD = LogBufferDescriptor::TERM_MIN_LENGTH / 4;
+constexpr const std::int32_t REPLAY_MERGE_LIVE_ADD_MAX_WINDOW = 32 * 1024 * 1024;
 constexpr const std::int64_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
 constexpr const std::int64_t REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = 10 * 1000;
 
@@ -202,20 +202,22 @@ private:
 
     inline void state(State state)
     {
-        //std::cout << m_state << "->" << state << std::endl;
+        //std::cout << m_state << " -> " << state << std::endl;
         m_state = state;
     }
 
     inline bool shouldAddLiveDestination(std::int64_t position)
     {
-        return !m_isLiveAdded && (m_nextTargetPosition - position) <= REPLAY_MERGE_LIVE_ADD_THRESHOLD;
+        return !m_isLiveAdded &&
+            (m_nextTargetPosition - position) <=
+                std::min(m_image->termBufferLength() / 4, REPLAY_MERGE_LIVE_ADD_MAX_WINDOW);
     }
 
     inline bool shouldStopAndRemoveReplay(std::int64_t position)
     {
         return m_isLiveAdded &&
             (m_nextTargetPosition - position) <= REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD &&
-            m_image->activeTransportCount() >= 2;
+                m_image->activeTransportCount() >= 2;
     }
 
     int getRecordingPosition(long long nowMs);

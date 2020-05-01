@@ -275,7 +275,10 @@ inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
 
         if (AERON_COUNTER_RECORD_ALLOCATED == record_state)
         {
-            if (type_id == metadata->type_id && registration_id == *(int64_t *)(metadata->key))
+            int64_t counter_registration_id;
+
+            memcpy(&counter_registration_id, metadata->key, sizeof(int64_t));
+            if (type_id == metadata->type_id && registration_id == counter_registration_id)
             {
                 return (int)i;
             }
@@ -290,14 +293,17 @@ inline bool aeron_counter_heartbeat_timestamp_is_active(
 {
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)(
         counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id));
+    int64_t counter_registration_id;
     int32_t record_state;
 
     AERON_GET_VOLATILE(record_state, metadata->state);
 
+    memcpy(&counter_registration_id, metadata->key, sizeof(int64_t));
+
     return
         AERON_COUNTER_RECORD_ALLOCATED == record_state &&
         type_id == metadata->type_id &&
-        registration_id == *(int64_t *)(metadata->key);
+        registration_id == counter_registration_id;
 }
 
 #endif //AERON_C_CLIENT_CONDUCTOR_H

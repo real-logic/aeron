@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2018 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.status;
 
 import org.agrona.BitUtil;
@@ -12,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+// TODO: add javadoc with layout.
 public class LocalSocketAddressStatus
 {
     private static final int CHANNEL_STATUS_ID_OFFSET = 0;
@@ -27,9 +43,10 @@ public class LocalSocketAddressStatus
      */
     public static final int KEY_RESERVED_LENGTH = BitUtil.SIZE_OF_INT * 2 + MAX_IPV6_LENGTH;
 
+    /**
+     * Type of the counter used to track a local socket address and port.
+     */
     public static final int LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID = 14;
-
-    private static final byte[] RESERVED_KEY_BYTES = new byte[KEY_RESERVED_LENGTH];
 
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
@@ -40,7 +57,6 @@ public class LocalSocketAddressStatus
     {
         tempBuffer.putInt(0, channelStatusId);
         tempBuffer.putInt(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET, 0); // Zero-length address initially.
-        tempBuffer.putBytes(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, RESERVED_KEY_BYTES); // Maybe don't need this.
 
         final int keyLength = KEY_RESERVED_LENGTH;
 
@@ -95,30 +111,29 @@ public class LocalSocketAddressStatus
     }
 
     public static List<String> findAddresses(
-        final CountersReader countersReader,
-        final long channelStatus,
-        final int channelStatusId)
+        final CountersReader countersReader, final long channelStatus, final int channelStatusId)
     {
         if (channelStatus != ChannelEndpointStatus.ACTIVE)
         {
             return Collections.emptyList();
         }
 
-        final List<String> bindings = new ArrayList<>(2);
+        final ArrayList<String> bindings = new ArrayList<>(2);
 
-        countersReader.forEach((counterId, typeId, keyBuffer, label) ->
-        {
-            if (LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == typeId &&
-                channelStatusId == channelStatusId(keyBuffer, 0) &&
-                ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
+        countersReader.forEach(
+            (counterId, typeId, keyBuffer, label) ->
             {
-                final String bindAddressAndPort = localSocketAddress(keyBuffer, 0);
-                if (null != bindAddressAndPort)
+                if (LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == typeId &&
+                    channelStatusId == channelStatusId(keyBuffer, 0) &&
+                    ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
                 {
-                    bindings.add(bindAddressAndPort);
+                    final String bindAddressAndPort = localSocketAddress(keyBuffer, 0);
+                    if (null != bindAddressAndPort)
+                    {
+                        bindings.add(bindAddressAndPort);
+                    }
                 }
-            }
-        });
+            });
 
         return bindings;
     }

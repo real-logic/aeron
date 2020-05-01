@@ -420,8 +420,10 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Fetches the local socket addresses for this subscription.  If the channel is not ACTIVE, then this
-     * will return an empty list.  The formatting is as follows:
+     * Fetches the local socket addresses for this subscription. If the channel is not
+     * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then this will return an empty list.
+     *
+     * The format is as follows:
      * <br>
      * <br>
      * IPv4: <code>ip address:port</code>
@@ -432,6 +434,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * This is to match the formatting used in the Aeron URI
      *
      * @return local socket address for this subscription.
+     * @see #channelStatus()
      */
     public List<String> localSocketAddresses()
     {

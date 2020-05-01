@@ -288,7 +288,7 @@ public class MultiDestinationSubscriptionTest
         subscription = clientA.addSubscription(SUB_URI + "|tags=1001", STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
-        try (Subscription subscriptionB = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
+        try (Subscription ignore = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
             Subscription subscriptionA1 = clientA.addSubscription("aeron:udp?tags=1001", STREAM_ID))
         {
             publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
@@ -318,8 +318,7 @@ public class MultiDestinationSubscriptionTest
 
         try (Subscription subscriptionB = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
             Subscription subscriptionA1 = clientA.addSubscription("aeron:udp?tags=1001", STREAM_ID);
-            Subscription subscriptionB1 = clientA.addSubscription("aeron:udp?tags=1002", STREAM_ID)
-        )
+            Subscription subscriptionB1 = clientA.addSubscription("aeron:udp?tags=1002", STREAM_ID))
         {
             subscriptionB.addDestination(unicastUri2);
 

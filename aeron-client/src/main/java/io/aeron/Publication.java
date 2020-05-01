@@ -323,6 +323,29 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
+     * Fetches the local socket address for this publication. If the channel is not
+     * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then this will return an empty list.
+     *
+     * The format is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI. For publications this will be the control address and
+     * is likely to only contain a single entry.
+     *
+     * @return local socket addresses for this publication.
+     * @see #channelStatus()
+     */
+    public List<String> localSocketAddresses()
+    {
+        return LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus(), channelStatusId);
+    }
+
+    /**
      * Get the current position to which the publication has advanced for this stream.
      *
      * @return the current position to which the publication has advanced for this stream or {@link #CLOSED}.
@@ -585,26 +608,6 @@ public abstract class Publication implements AutoCloseable
         }
 
         return conductor.asyncRemoveDestination(registrationId, endpointChannel);
-    }
-
-    /**
-     * Fetches the local socket address for this publication.  If the channel is not ACTIVE, then this
-     * will return an empty list.  The formatting is as follows:
-     * <br>
-     * <br>
-     * IPv4: <code>ip address:port</code>
-     * <br>
-     * IPv6: <code>[ip6 address]:port</code>
-     * <br>
-     * <br>
-     * This is to match the formatting used in the Aeron URI.  For publications this will be the control address and
-     * is likely to only contain a single entry.
-     *
-     * @return local socket addresses for this publication.
-     */
-    public List<String> localSocketAddresses()
-    {
-        return LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus(), channelStatusId);
     }
 
     void internalClose()

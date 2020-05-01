@@ -112,14 +112,13 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Allocate a channel binding status counter, if required (no used by control-mode=manual
+     * Allocate a channel binding status counter, if required (no used by control-mode=manual).
      *
      * @param tempBuffer      to hold transient counter key/label information.
      * @param countersManager to use to create the counter.
      */
     public void allocateLocalSocketAddressIndicator(
-        final MutableDirectBuffer tempBuffer,
-        final CountersManager countersManager)
+        final MutableDirectBuffer tempBuffer, final CountersManager countersManager)
     {
         if (null == multiRcvDestination)
         {

@@ -70,16 +70,6 @@ static int64_t test_nano_clock()
 
 using namespace aeron::test;
 
-void on_new_publication(
-    void *clientd,
-    aeron_async_add_publication_t *async,
-    const char *channel,
-    int32_t stream_id,
-    int32_t session_id,
-    int64_t correlation_id)
-{
-}
-
 class ClientConductorTest : public testing::Test
 {
 public:
@@ -116,6 +106,21 @@ public:
         }
     }
 
+    static void on_new_subscription(
+        void *clientd,
+        aeron_async_add_subscription_t *async,
+        const char *channel,
+        int32_t stream_id,
+        int64_t correlation_id)
+    {
+        auto conductorTest = reinterpret_cast<ClientConductorTest *>(clientd);
+
+        if (conductorTest->m_on_new_subscription)
+        {
+            conductorTest->m_on_new_subscription(async, channel, stream_id, correlation_id);
+        }
+    }
+
     ClientConductorTest() :
         m_logFileName(tempFileName()),
         m_on_new_publication(nullptr),
@@ -147,6 +152,7 @@ public:
 
         aeron_context_set_on_new_publication(m_context, on_new_publication, this);
         aeron_context_set_on_new_exclusive_publication(m_context, on_new_exclusive_publication, this);
+        aeron_context_set_on_new_subscription(m_context, on_new_subscription, this);
 
         aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)m_context->cnc_map.addr;
         metadata->to_driver_buffer_length = (int32_t)TO_DRIVER_RING_BUFFER_LENGTH;
@@ -329,6 +335,7 @@ protected:
     std::function<void(aeron_async_add_publication_t *, const char *, int32_t, int32_t, int64_t)> m_on_new_publication;
     std::function<void(aeron_async_add_exclusive_publication_t *, const char *, int32_t, int32_t, int64_t)>
         m_on_new_exclusive_publication;
+    std::function<void(aeron_async_add_subscription_t *, const char *, int32_t, int64_t)> m_on_new_subscription;
 };
 
 TEST_F(ClientConductorTest, shouldInitAndClose)
@@ -634,4 +641,41 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationAndHandleOnNewPublicati
     doWork();
 }
 
-// TODO: check other onNew handlers
+TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
+{
+    aeron_async_add_subscription_t *async = NULL;
+    aeron_subscription_t *subscription = NULL;
+    bool was_on_new_subscription_called = false;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_subscription(
+        &async, &m_conductor, SUB_URI, STREAM_ID, NULL, NULL, NULL, NULL), 0);
+    doWork();
+
+    m_on_new_subscription = [&](
+        aeron_async_add_subscription_t *async,
+        const char *channel,
+        int32_t stream_id,
+        int64_t correlation_id)
+    {
+        EXPECT_EQ(strcmp(channel, SUB_URI), 0);
+        EXPECT_EQ(stream_id, STREAM_ID);
+        EXPECT_EQ(correlation_id, async->registration_id);
+
+        ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+        ASSERT_TRUE(NULL != subscription);
+
+        was_on_new_subscription_called = true;
+    };
+
+    transmitOnSubscriptionReady(async);
+    doWork();
+
+    EXPECT_TRUE(was_on_new_subscription_called);
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_subscription_close(subscription), 0);
+    doWork();
+}
+
+// TODO: check image available/unavailable handlers
+// TODO: check counter handlers

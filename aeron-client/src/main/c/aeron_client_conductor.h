@@ -189,6 +189,9 @@ typedef struct aeron_client_conductor_stct
     aeron_on_new_publication_t on_new_exclusive_publication;
     void *on_new_exclusive_publication_clientd;
 
+    aeron_on_new_subscription_t on_new_subscription;
+    void *on_new_subscription_clientd;
+
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
     bool invoker_mode;

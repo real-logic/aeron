@@ -112,6 +112,9 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->on_new_exclusive_publication = context->on_new_exclusive_publication;
     conductor->on_new_exclusive_publication_clientd = context->on_new_exclusive_publication_clientd;
 
+    conductor->on_new_subscription = context->on_new_subscription;
+    conductor->on_new_subscription_clientd = context->on_new_subscription_clientd;
+
     conductor->driver_timeout_ms = context->driver_timeout_ms;
     conductor->driver_timeout_ns = context->driver_timeout_ms * 1000000;
     conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
@@ -1326,7 +1329,6 @@ int aeron_client_conductor_on_publication_ready(
                     response->session_id,
                     response->correlation_id);
             }
-
             break;
         }
     }
@@ -1343,6 +1345,7 @@ int aeron_client_conductor_on_subscription_ready(
 
         if (response->correlation_id == resource->registration_id)
         {
+            const char *channel = resource->uri;
             aeron_subscription_t *subscription;
             int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
                 &conductor->counters_reader, response->channel_status_indicator_id);
@@ -1383,6 +1386,16 @@ int aeron_client_conductor_on_subscription_ready(
             }
 
             AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+
+            if (NULL != conductor->on_new_subscription)
+            {
+                conductor->on_new_subscription(
+                    conductor->on_new_subscription_clientd,
+                    resource,
+                    channel,
+                    resource->stream_id,
+                    response->correlation_id);
+            }
             break;
         }
     }

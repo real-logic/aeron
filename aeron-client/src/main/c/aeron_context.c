@@ -114,6 +114,15 @@ void aeron_default_on_new_publication(
 {
 }
 
+void aeron_default_on_new_subscription(
+    void *clientd,
+    aeron_async_add_subscription_t *async,
+    const char *channel,
+    int32_t stream_id,
+    int64_t correlation_id)
+{
+}
+
 int aeron_context_init(aeron_context_t **context)
 {
     aeron_context_t *_context = NULL;
@@ -157,6 +166,8 @@ int aeron_context_init(aeron_context_t **context)
     _context->on_new_publication_clientd = NULL;
     _context->on_new_exclusive_publication = aeron_default_on_new_publication;
     _context->on_new_exclusive_publication_clientd = NULL;
+    _context->on_new_subscription = aeron_default_on_new_subscription;
+    _context->on_new_subscription_clientd = NULL;
 
     _context->use_conductor_agent_invoker = AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT;
     _context->agent_on_start_func = NULL;
@@ -354,6 +365,26 @@ aeron_on_new_publication_t aeron_context_get_on_new_exclusive_publication(aeron_
 void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *context)
 {
     return NULL != context ? context->on_new_exclusive_publication_clientd : NULL;
+}
+
+int aeron_context_set_on_new_subscription(
+    aeron_context_t *context, aeron_on_new_subscription_t handler, void *clientd)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->on_new_subscription = handler;
+    context->on_new_subscription_clientd = clientd;
+    return 0;
+}
+
+aeron_on_new_subscription_t aeron_context_get_on_new_subscription(aeron_context_t *context)
+{
+    return NULL != context ? context->on_new_subscription : aeron_default_on_new_subscription;
+}
+
+void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context)
+{
+    return NULL != context ? context->on_new_subscription_clientd : NULL;
 }
 
 int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool value)

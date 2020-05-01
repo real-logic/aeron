@@ -80,9 +80,8 @@ int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handle
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
 
-#define AERON_ERRCODE_UNKNOWN_RESPONSE()
+#define AERON_ERRCODE_UNKNOWN_RESPONSE ()
 #define AERON_ERRCODE_MALFORMED_RESPONSE ()
-#define AERON_ERRCODE_
 
 /**
  * Function called by Aeron to deliver notification that the media driver has added a Publication successfully.
@@ -91,10 +90,11 @@ void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
  * and should not make a reentrant call back into the Aeron instance.
  *
  * @param clientd to be returned in the call
+ * @param async associated with the original add publication call
  * @param channel of the Publication
  * @param stream_id within the channel of the Publication
  * @param session_id of the Publication
- * @param correlation_id used by the Publication for adding. Aka the registrationId returned by aeron_add_publication
+ * @param correlation_id used by the Publication for adding
  */
 typedef void (*aeron_on_new_publication_t)(
     void *clientd,
@@ -114,7 +114,16 @@ aeron_on_new_publication_t aeron_context_get_on_new_exclusive_publication(aeron_
 void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *context);
 
 typedef void (*aeron_on_new_subscription_t)(
-    void *clientd, const char *channel, int32_t stream_id, int64_t correlation_id);
+    void *clientd,
+    aeron_async_add_subscription_t *async,
+    const char *channel,
+    int32_t stream_id,
+    int64_t correlation_id);
+
+int aeron_context_set_on_new_subscription(
+    aeron_context_t *context, aeron_on_new_subscription_t handler, void *clientd);
+aeron_on_new_subscription_t aeron_context_get_on_new_subscription(aeron_context_t *context);
+void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context);
 
 typedef void (*aeron_on_available_image_t)(void *clientd, aeron_image_t *image);
 typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_image_t *image);

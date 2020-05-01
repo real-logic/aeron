@@ -35,7 +35,7 @@ public class ServiceIpcIngressTest
             for (int i = 0; i < messageCount; i++)
             {
                 cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.ECHO_IPC_INGRESS_MSG);
-                cluster.sendMessage(ClusterTests.ECHO_IPC_INGRESS_MSG.length());
+                cluster.pollUntilSendMessage(ClusterTests.ECHO_IPC_INGRESS_MSG.length());
             }
 
             cluster.awaitResponseMessageCount(messageCount);

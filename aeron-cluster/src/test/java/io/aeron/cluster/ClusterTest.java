@@ -514,7 +514,7 @@ public class ClusterTest
             int messageCount = 0;
             while (followerA.commitPosition() < targetPosition)
             {
-                cluster.sendMessage(messageLength);
+                cluster.pollUntilSendMessage(messageLength);
                 messageCount++;
             }
 
@@ -806,7 +806,7 @@ public class ClusterTest
             cluster.msgBuffer().putStringWithoutLengthAscii(0, NO_OP_MSG);
             for (int i = 0; i < messageCount; i++)
             {
-                cluster.sendMessage(NO_OP_MSG.length());
+                cluster.pollUntilSendMessage(NO_OP_MSG.length());
             }
             cluster.awaitResponseMessageCount(messageCount);
 
@@ -1093,7 +1093,7 @@ public class ClusterTest
 
             cluster.connectClient();
             cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
-            cluster.sendMessage(message.length());
+            cluster.pollUntilSendMessage(message.length());
             cluster.awaitResponseMessageCount(1);
 
             Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.

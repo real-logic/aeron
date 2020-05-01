@@ -556,7 +556,7 @@ public class TestCluster implements AutoCloseable
         for (int i = 0; i < messageCount; i++)
         {
             msgBuffer.putInt(0, i);
-            sendMessage(BitUtil.SIZE_OF_INT);
+            pollUntilSendMessage(BitUtil.SIZE_OF_INT);
         }
     }
 
@@ -565,11 +565,11 @@ public class TestCluster implements AutoCloseable
         final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
         for (int i = 0; i < messageCount; i++)
         {
-            sendMessage(length);
+            pollUntilSendMessage(length);
         }
     }
 
-    void sendMessage(final int messageLength)
+    void pollUntilSendMessage(final int messageLength)
     {
         while (true)
         {

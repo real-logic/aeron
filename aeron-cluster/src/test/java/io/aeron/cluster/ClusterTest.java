@@ -604,11 +604,13 @@ public class ClusterTest
         try (TestCluster cluster = startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
+            final TestNode.TestService service = leader.service();
             final List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
-            assertEquals(Cluster.Role.LEADER, leader.service().roleChangedTo());
+            assertEquals(LEADER, leader.role());
+            assertEquals(LEADER, service.roleChangedTo());
 
             awaitElectionClosed(followerA);
             awaitElectionClosed(followerB);
@@ -616,10 +618,11 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            while (leader.service().roleChangedTo() != Cluster.Role.LEADER)
+            while (service.roleChangedTo() != FOLLOWER)
             {
                 Tests.sleep(1);
             }
+            assertEquals(FOLLOWER, leader.role());
         }
     }
 

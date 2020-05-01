@@ -21,7 +21,6 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
@@ -30,11 +29,11 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.RecordingSignal.*;
 
 class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
-    private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final int RETRY_ATTEMPTS = 3;
 
@@ -671,7 +670,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private boolean shouldAddLiveDestination(final long position)
     {
-        return !isLiveAdded && (srcRecordingPosition - position) <= LIVE_ADD_THRESHOLD;
+        return !isLiveAdded &&
+            (srcRecordingPosition - position) <= Math.min(image.termBufferLength() >> 2, LIVE_ADD_MAX_WINDOW);
     }
 
     private boolean shouldStopReplay(final long position)

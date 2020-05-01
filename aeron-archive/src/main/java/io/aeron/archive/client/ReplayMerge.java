@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.concurrent.EpochClock;
 
 import java.util.concurrent.TimeUnit;
@@ -39,8 +38,12 @@ import static io.aeron.CommonContext.*;
  */
 public class ReplayMerge implements AutoCloseable
 {
+    /**
+     * The maximum window at which a live destination should be added when trying to merge.
+     */
+    public static final int LIVE_ADD_MAX_WINDOW = 32 * 1024 * 1024;
+
     private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(10);
-    private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
 
     enum State
@@ -490,7 +493,8 @@ public class ReplayMerge implements AutoCloseable
 
     private boolean shouldAddLiveDestination(final long position)
     {
-        return !isLiveAdded && (nextTargetPosition - position) <= LIVE_ADD_THRESHOLD;
+        return !isLiveAdded &&
+            (nextTargetPosition - position) <= Math.min(image.termBufferLength() >> 2, LIVE_ADD_MAX_WINDOW);
     }
 
     private boolean shouldStopAndRemoveReplay(final long position)

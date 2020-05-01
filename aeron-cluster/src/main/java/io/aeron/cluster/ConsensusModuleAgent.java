@@ -44,6 +44,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterMember.quorumPosition;
 import static io.aeron.cluster.ClusterSession.State.*;
@@ -1704,7 +1705,7 @@ class ConsensusModuleAgent implements Agent
         if (null != image)
         {
             final long localPosition = image.position();
-            final long window = image.termBufferLength() >> 2;
+            final long window = Math.min(image.termBufferLength() >> 2, LIVE_ADD_MAX_WINDOW);
 
             result = localPosition >= (position - window);
         }

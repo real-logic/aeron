@@ -22,7 +22,10 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.driver.media.*;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationTransport;
+import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -953,7 +956,12 @@ public class DriverConductor implements Agent
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
-        final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(udpChannel, ctx);
+
+        final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
+            tempBuffer, countersManager, receiveChannelEndpoint.statusIndicatorCounterId());
+
+        final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(
+            udpChannel, ctx, localSocketAddressIndicator);
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);
@@ -1269,6 +1277,7 @@ public class DriverConductor implements Agent
                 udpChannel,
                 SendChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 ctx);
+            channelEndpoint.allocateChannelEndStatus(tempBuffer, countersManager);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);
@@ -1426,6 +1435,7 @@ public class DriverConductor implements Agent
                 new DataPacketDispatcher(ctx.driverConductorProxy(), receiverProxy.receiver()),
                 ReceiveChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 ctx);
+            channelEndpoint.allocateLocalSocketAddressIndicator(tempBuffer, countersManager);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);

@@ -16,11 +16,17 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.BlockHandler;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
@@ -411,6 +417,25 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
 
         return conductor.channelStatus(channelStatusId);
+    }
+
+    /**
+     * Fetches the local socket addresses for this subscription.  If the channel is not ACTIVE, then this
+     * will return an empty list.  The formatting is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI
+     *
+     * @return local socket address for this subscription.
+     */
+    public List<String> localSocketAddresses()
+    {
+        return LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus(), channelStatusId);
     }
 
     /**

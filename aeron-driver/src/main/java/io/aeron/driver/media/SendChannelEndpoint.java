@@ -19,14 +19,19 @@ import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
+import io.aeron.driver.status.SendLocalSocketAddress;
 import io.aeron.exceptions.ControlProtocolException;
-import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.status.LocalSocketAddressStatus;
+import io.aeron.status.ChannelEndpointStatus;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.BiInt2ObjectMap;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,9 +39,11 @@ import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.status.ChannelEndpointStatus.status;
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
+import static io.aeron.status.ChannelEndpointStatus.status;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
@@ -54,6 +61,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
     private final CachedNanoClock cachedNanoClock;
+    private AtomicCounter localSocketAddressIndicator;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -84,6 +92,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.multiSndDestination = multiSndDestination;
     }
 
+    public void allocateChannelEndStatus(final MutableDirectBuffer tempBuffer, final CountersManager countersManager)
+    {
+        localSocketAddressIndicator = SendLocalSocketAddress.allocate(
+            tempBuffer, countersManager, statusIndicator.id());
+    }
+
     public void decRef()
     {
         --refCount;
@@ -112,6 +126,16 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 throw ex;
             }
         }
+
+        updateLocalSocketAddress();
+    }
+
+    private void updateLocalSocketAddress()
+    {
+        LocalSocketAddressStatus.updateWithBindAddress(
+            requireNonNull(localSocketAddressIndicator, "end status not allocated"), bindAddressAndPort(),
+            context.countersMetaDataBuffer());
+        localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public String originalUriString()
@@ -141,8 +165,19 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         if (!statusIndicator.isClosed())
         {
+            closeLocalSocketAddressIndicator();
+
             statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             statusIndicator.close();
+        }
+    }
+
+    private void closeLocalSocketAddressIndicator()
+    {
+        if (!localSocketAddressIndicator.isClosed())
+        {
+            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
+            localSocketAddressIndicator.close();
         }
     }
 

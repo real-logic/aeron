@@ -21,16 +21,21 @@ import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
+import io.aeron.driver.status.ReceiveLocalSocketAddress;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.*;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.AsciiEncoding;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -69,6 +74,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final long receiverId;
     private InetSocketAddress currentControlAddress;
     private long timeOfLastActivityNs;
+    private AtomicCounter localSocketAddressIndicator;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -103,6 +109,23 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
         currentControlAddress = udpChannel.localControl();
+    }
+
+    /**
+     * Allocate a channel binding status counter, if required (no used by control-mode=manual
+     *
+     * @param tempBuffer      to hold transient counter key/label information.
+     * @param countersManager to use to create the counter.
+     */
+    public void allocateLocalSocketAddressIndicator(
+        final MutableDirectBuffer tempBuffer,
+        final CountersManager countersManager)
+    {
+        if (null == multiRcvDestination)
+        {
+            localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
+                tempBuffer, countersManager, statusIndicator.id());
+        }
     }
 
     /**
@@ -161,18 +184,41 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         if (null == multiRcvDestination)
         {
-            statusIndicator.appendToLabel(bindAddressAndPort());
+            final String bindAddressAndPort = bindAddressAndPort();
+            statusIndicator.appendToLabel(bindAddressAndPort);
+
+            updateLocalSocketAddress(bindAddressAndPort);
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+    }
+
+    private void updateLocalSocketAddress(final String bindAddressAndPort)
+    {
+        if (null != localSocketAddressIndicator)
+        {
+            LocalSocketAddressStatus.updateWithBindAddress(
+                localSocketAddressIndicator, bindAddressAndPort, context.countersMetaDataBuffer());
+            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+        }
     }
 
     public void closeStatusIndicator()
     {
         if (!statusIndicator.isClosed())
         {
+            closeLocalSocketAddressIndicator();
             statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             statusIndicator.close();
+        }
+    }
+
+    private void closeLocalSocketAddressIndicator()
+    {
+        if (null != localSocketAddressIndicator && !localSocketAddressIndicator.isClosed())
+        {
+            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
+            localSocketAddressIndicator.close();
         }
     }
 

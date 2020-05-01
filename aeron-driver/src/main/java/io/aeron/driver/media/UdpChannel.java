@@ -116,6 +116,11 @@ public final class UdpChannel
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
 
+            final boolean requiresAdditionalSuffix =
+                null == endpointAddress && null == explicitControlAddress ||
+                (null != endpointAddress && endpointAddress.getPort() == 0) ||
+                (null != explicitControlAddress && explicitControlAddress.getPort() == 0);
+
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
 
@@ -187,6 +192,15 @@ public final class UdpChannel
                 final String controlVal = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
                 final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
 
+                String suffix = "";
+                if (requiresAdditionalSuffix)
+                {
+                    suffix = (null != tagIdStr) ? "#" + tagIdStr : ("-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1));
+                }
+
+                final String canonicalForm = canonicalise(
+                    controlVal, explicitControlAddress, endpointVal, endpointAddress) + suffix;
+
                 context
                     .hasExplicitControl(true)
                     .remoteControlAddress(endpointAddress)
@@ -194,7 +208,7 @@ public final class UdpChannel
                     .localControlAddress(explicitControlAddress)
                     .localDataAddress(explicitControlAddress)
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
-                    .canonicalForm(canonicalise(controlVal, explicitControlAddress, endpointVal, endpointAddress));
+                    .canonicalForm(canonicalForm);
             }
             else
             {
@@ -205,8 +219,11 @@ public final class UdpChannel
                     resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
 
                 final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-                final String suffix = hasNoDistinguishingCharacteristic ?
-                    ("-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1)) : "";
+                String suffix = "";
+                if (requiresAdditionalSuffix)
+                {
+                    suffix = (null != tagIdStr) ? "#" + tagIdStr : ("-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1));
+                }
 
                 context
                     .remoteControlAddress(endpointAddress)

@@ -16,11 +16,17 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.HeaderWriter;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
+
+import java.util.List;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -579,6 +585,26 @@ public abstract class Publication implements AutoCloseable
         }
 
         return conductor.asyncRemoveDestination(registrationId, endpointChannel);
+    }
+
+    /**
+     * Fetches the local socket address for this publication.  If the channel is not ACTIVE, then this
+     * will return an empty list.  The formatting is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI.  For publications this will be the control address and
+     * is likely to only contain a single entry.
+     *
+     * @return local socket addresses for this publication.
+     */
+    public List<String> localSocketAddresses()
+    {
+        return LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus(), channelStatusId);
     }
 
     void internalClose()

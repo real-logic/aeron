@@ -102,4 +102,13 @@ inline int aeron_subscription_find_image_index(volatile aeron_image_list_t *imag
     return -1;
 }
 
+inline int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription)
+{
+    int64_t last_image_list_change_number;
+
+    AERON_GET_VOLATILE(last_image_list_change_number, subscription->last_image_list_change_number);
+
+    return last_image_list_change_number;
+}
+
 #endif //AERON_C_SUBSCRIPTION_H

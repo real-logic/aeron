@@ -48,7 +48,7 @@ int aeron_image_create(
     _image->conductor = conductor;
     _image->correlation_id = correlation_id;
     _image->session_id = session_id;
-    _image->removal_change_number = INT32_MAX;
+    _image->removal_change_number = INT64_MAX;
     _image->is_closed = false;
 
     *image = _image;
@@ -66,3 +66,6 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
 {
     return 0;
 }
+
+extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
+extern bool aeron_image_is_in_use(aeron_image_t *image, int64_t last_change_number);

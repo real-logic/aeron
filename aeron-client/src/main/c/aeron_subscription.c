@@ -190,6 +190,7 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
      */
     volatile aeron_image_list_t *prune_lists_head = &subscription->conductor_fields.image_lists_head;
     int64_t last_change_number;
+    int pruned_lists_count = 0;
 
     AERON_GET_VOLATILE(last_change_number, subscription->last_image_list_change_number);
 
@@ -205,10 +206,11 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
 
             prune_lists_head->next_list = prune_list->next_list;
             aeron_free((void *)prune_list);
+            pruned_lists_count++;
         }
     }
 
-    return 0;
+    return pruned_lists_count;
 }
 
 int aeron_subscription_image_count(aeron_subscription_t *subscription)
@@ -254,3 +256,4 @@ int aeron_subscription_poll(
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
+extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);

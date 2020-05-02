@@ -50,4 +50,14 @@ int aeron_image_create(
 
 int aeron_image_delete(aeron_image_t *image);
 
+inline int64_t aeron_image_removal_change_number(aeron_image_t *image)
+{
+    return image->removal_change_number;
+}
+
+inline bool aeron_image_is_in_use(aeron_image_t *image, int64_t last_change_number)
+{
+    return image->removal_change_number > last_change_number;
+}
+
 #endif //AERON_C_IMAGE_H

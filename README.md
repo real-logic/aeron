@@ -32,6 +32,10 @@ StrangeLoop 2014. Things have advanced quite a bit with performance and features
 For the latest version information and changes see the [Change Log](https://github.com/real-logic/aeron/wiki/Change-Log)
 with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
 
+Commercial support, training, development on Aeron is available from
+[sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Commercial support is required to access Aeron premium
+features such as Solarflare ef_vi transport binding for a further 40-60% reduction in latency over the UDP sockets binding.
+
 ### How do I use Aeron?
 
 1. [Java Programming Guide](https://github.com/real-logic/aeron/wiki/Java-Programming-Guide)

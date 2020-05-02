@@ -294,7 +294,7 @@ public class Election
                     logSessionId,
                     isLeaderStartup);
             }
-            else if (logLeadershipTermId > leadershipTermId && (State.CANVASS != state && State.INIT != state))
+            else if (logLeadershipTermId > leadershipTermId)
             {
                 state(State.CANVASS, ctx.clusterClock().timeNanos());
             }
@@ -500,8 +500,6 @@ public class Election
         {
             state(State.CANVASS, nowNs);
         }
-
-        resetMembers();
 
         return 1;
     }
@@ -927,6 +925,11 @@ public class Election
 
     private void state(final State newState, final long nowNs)
     {
+        if (newState == state)
+        {
+            return;
+        }
+
         stateChange(state, newState, thisMember.id());
 
         if (State.CANVASS == newState)

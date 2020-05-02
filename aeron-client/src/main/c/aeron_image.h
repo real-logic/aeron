@@ -32,8 +32,9 @@ typedef struct aeron_image_stct
     int64_t *subscriber_position;
 
     int64_t correlation_id;
+    int64_t removal_change_number;
+
     int32_t session_id;
-    int32_t removal_change_number;
 
     bool is_closed;
 }

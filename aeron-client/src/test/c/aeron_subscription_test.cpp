@@ -155,6 +155,8 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollAfter)
 
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
 
+    aeron_client_conductor_subscription_prune_image_lists(m_subscription);
+
     aeron_log_buffer_delete(image->log_buffer);
     aeron_image_delete(image);
 }

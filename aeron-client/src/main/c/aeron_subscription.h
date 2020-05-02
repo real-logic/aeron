@@ -24,8 +24,8 @@
 
 typedef struct aeron_image_list_stct
 {
+    int64_t change_number;
     uint32_t length;
-    int32_t change_number;
     volatile struct aeron_image_list_stct *next_list;
     aeron_image_t **array;
 }
@@ -42,16 +42,16 @@ typedef struct aeron_subscription_stct
     struct subscription_conductor_fields_stct
     {
         aeron_image_list_t image_lists_head;
-        int32_t next_change_number;
+        int64_t next_change_number;
     }
     conductor_fields;
 
     int64_t *channel_status_indicator;
 
+    int64_t last_image_list_change_number;
+
     int64_t registration_id;
     int32_t stream_id;
-
-    int32_t last_image_list_change_number;
 
     aeron_on_available_image_t on_available_image;
     void *on_available_image_clientd;

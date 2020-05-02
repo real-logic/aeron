@@ -75,7 +75,16 @@ int aeron_subscription_create(
 
 int aeron_subscription_delete(aeron_subscription_t *subscription)
 {
-    aeron_free((void *)subscription->conductor_fields.image_lists_head.next_list);
+    volatile aeron_image_list_t *prune_lists_head = &subscription->conductor_fields.image_lists_head;
+
+    while (NULL != prune_lists_head->next_list)
+    {
+        volatile aeron_image_list_t *prune_list = prune_lists_head->next_list;
+
+        prune_lists_head->next_list = prune_list->next_list;
+        aeron_free((void *)prune_list);
+    }
+
     aeron_free((void *)subscription->channel);
     aeron_free(subscription);
     return 0;
@@ -180,7 +189,7 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
      * Called from the client conductor to prune old image lists and free them up. Does not free Images.
      */
     volatile aeron_image_list_t *prune_lists_head = &subscription->conductor_fields.image_lists_head;
-    int32_t last_change_number;
+    int64_t last_change_number;
 
     AERON_GET_VOLATILE(last_change_number, subscription->last_image_list_change_number);
 

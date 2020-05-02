@@ -897,7 +897,6 @@ class ConsensusModuleAgent implements Agent
             }
 
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-            archive.stopAllReplays(recordingId);
 
             clearSessionsAfter(logPosition);
             for (final ClusterSession session : sessionByIdMap.values())
@@ -1526,7 +1525,9 @@ class ConsensusModuleAgent implements Agent
 
     void truncateLogEntry(final long leadershipTermId, final long logPosition)
     {
-        archive.truncateRecording(logRecordingId(), logPosition);
+        final long recordingId = logRecordingId();
+        archive.stopAllReplays(recordingId);
+        archive.truncateRecording(recordingId, logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
     }
 

@@ -15,7 +15,8 @@
  */
 
 /**
- * <b>Note:</b> Aeron Cluster is currently an experimental feature.
+ * <b>Note:</b> Aeron Cluster is currently a preview feature, commercial support and training is available from
+ * <a href="mailto:sales@real-logic.co.uk?subject=Aeron%20Cluster">sales@real-logic.co.uk</a>.
  * <p>
  * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log which is
  * replicated and archived on a number of nodes to achieve resilience. Cluster services process this log and respond
@@ -25,10 +26,10 @@
  * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> protocol. The leader sequences the log and is
  * responsible for replicating it to other cluster members known as followers.
  * <p>
- * Aeron Cluster is composes of a number of components. Central is the Consensus Module which sequences the log and
- * coordinates consensus on the archiving of the sequenced log, and the services consuming the log across cluster
- * members. Recording of the log to persistent storage is performed by the Aeron Archive module. Services are allowed
- * to consume the log once a majority of the cluster members have safely recorded the log to persistent storage.
+ * Aeron Cluster is composed of a number of components. Central is the Consensus Module which sequences the log and
+ * coordinates consensus on the recording of the sequenced log to persistent storage, and the services consuming the log
+ * across cluster members. Recording of the log to persistent storage is performed by the Aeron Archive module. Services
+ * consume the log once a majority of the cluster members have safely recorded the log to persistent storage.
  * <p>
  * To enable fast recovery the services and consensus module can take a snapshot of their state as of a given log
  * position thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward.
@@ -47,12 +48,12 @@
  *     </li>
  *     <li>
  *         <b>Automatic Elections:</b> Automatic elections can be enabled to have a leader elected at random from the
- *         members with with the most up to date log.
+ *         members with the most up to date log.
  *     </li>
  * </ul>
  * <p>
- * Based on the membership size, consensus is determined by the majority of the cluster members. It is recommended that
- * clusters be 3 or 5 in population size. However 2 node clusters are supported whereby both members must agree the log
+ * Based on the membership size, consensus is determined by the majority of the cluster members. Clusters should be
+ * 3 or 5 in population size. However, 2 node clusters are supported whereby both members must agree the log
  * and in the event of failure the remaining member must be manually reconfigured as a single node cluster.
  * <h2>Protocol</h2>
  * Messages are specified using SBE in

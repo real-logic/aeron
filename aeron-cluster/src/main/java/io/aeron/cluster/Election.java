@@ -482,6 +482,7 @@ public class Election
     {
         if (!isNodeStartup)
         {
+            resetCatchup();
             cleanupReplay();
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
         }
@@ -928,15 +929,14 @@ public class Election
     {
         stateChange(state, newState, thisMember.id());
 
+        if (State.CANVASS == newState)
+        {
+            resetMembers();
+        }
+
         if (State.CANVASS == state)
         {
             isExtendedCanvass = false;
-        }
-
-        if (State.CANVASS == newState)
-        {
-            resetCatchup();
-            resetMembers();
         }
 
         switch (newState)

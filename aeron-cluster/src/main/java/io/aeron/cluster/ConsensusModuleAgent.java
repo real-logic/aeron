@@ -219,7 +219,8 @@ class ConsensusModuleAgent implements Agent
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandler);
 
-            closeExistingLog();
+            logPublisher.disconnect(ctx.countedErrorHandler());
+            logAdapter.disconnect(ctx.countedErrorHandler());
             asyncStopLogRecording();
 
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
@@ -1299,7 +1300,8 @@ class ConsensusModuleAgent implements Agent
 
     int addNewLogPublication()
     {
-        closeExistingLog();
+        logPublisher.disconnect(ctx.countedErrorHandler());
+        logAdapter.disconnect(ctx.countedErrorHandler());
 
         final ExclusivePublication publication = createLogPublication(recoveryPlan);
         logPublisher.publication(publication);
@@ -1376,7 +1378,8 @@ class ConsensusModuleAgent implements Agent
 
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)
     {
-        closeExistingLog();
+        logPublisher.disconnect(ctx.countedErrorHandler());
+        logAdapter.disconnect(ctx.countedErrorHandler());
 
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
         startLogRecording(logChannel, SourceLocation.REMOTE);
@@ -1453,7 +1456,7 @@ class ConsensusModuleAgent implements Agent
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
     {
-        if (null != recoveryPlan.log && logPosition < appendPosition)
+        if (logPosition < appendPosition)
         {
             return new LogReplay(
                 archive,
@@ -2831,12 +2834,6 @@ class ConsensusModuleAgent implements Agent
         clusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
         clusterMemberByIdMap.remove(memberId);
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
-    }
-
-    private void closeExistingLog()
-    {
-        logPublisher.disconnect(ctx.countedErrorHandler());
-        logAdapter.disconnect(ctx.countedErrorHandler());
     }
 
     private void onUnavailableIngressImage(final Image image)

@@ -698,7 +698,7 @@ public class ClusterTest
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
 
-                Tests.sleep(3000); // keep ingress going so started node has to catchup.
+                Tests.sleep(3_000); // keep ingress going so started node has to catchup.
             }
             finally
             {

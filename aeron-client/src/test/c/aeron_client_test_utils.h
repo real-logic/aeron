@@ -44,7 +44,7 @@ std::string tempFileName()
 void createLogFile(std::string &filename)
 {
     aeron_mapped_file_t mappedFile = {
-        NULL,
+        nullptr,
         AERON_LOGBUFFER_TERM_MIN_LENGTH * 3 + AERON_LOGBUFFER_META_DATA_LENGTH };
 
     if (aeron_map_new_file(&mappedFile, filename.c_str(), false) < 0)

@@ -41,14 +41,14 @@ class SubscriptionTest : public testing::Test
 {
 public:
     SubscriptionTest() :
-        m_conductor(NULL),
+        m_conductor(nullptr),
         m_subscription(createSubscription(m_conductor, &m_channel_status))
     {
     }
 
     virtual ~SubscriptionTest()
     {
-        if (NULL != m_subscription)
+        if (nullptr != m_subscription)
         {
             aeron_subscription_delete(m_subscription);
         }
@@ -62,7 +62,7 @@ public:
 
     static aeron_subscription_t *createSubscription(aeron_client_conductor_t *conductor, int64_t *channel_status)
     {
-        aeron_subscription_t *subscription = NULL;
+        aeron_subscription_t *subscription = nullptr;
 
         if (aeron_subscription_create(
             &subscription,
@@ -71,10 +71,10 @@ public:
             STREAM_ID,
             REGISTRATION_ID,
             channel_status,
-            NULL,
-            NULL,
-            NULL,
-            NULL) < 0)
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr) < 0)
         {
             throw std::runtime_error("could not create subscription: %s" + std::string(aeron_errmsg()));
         }
@@ -84,8 +84,8 @@ public:
 
     int64_t createImage(int64_t *subscriber_position)
     {
-        aeron_image_t *image = NULL;
-        aeron_log_buffer_t *log_buffer = NULL;
+        aeron_image_t *image = nullptr;
+        aeron_log_buffer_t *log_buffer = nullptr;
         std::string filename = tempFileName();
 
         createLogFile(filename);
@@ -113,8 +113,8 @@ public:
     }
 
 protected:
-    aeron_client_conductor_t *m_conductor = NULL;
-    aeron_subscription_t *m_subscription = NULL;
+    aeron_client_conductor_t *m_conductor = nullptr;
+    aeron_subscription_t *m_subscription = nullptr;
     int64_t m_channel_status = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
 
     int64_t m_correlationId = 0;

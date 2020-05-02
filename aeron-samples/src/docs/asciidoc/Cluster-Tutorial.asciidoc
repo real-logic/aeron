@@ -58,8 +58,8 @@ Within Aeron Cluster, replication (ensuring that a follower node has the same st
 down] are the same problem or at least at similar enough that they use the same mechanism.  They rely on three
 functions, firstly some known initial state, this could either be the state when first provisioned (a 'null' or empty
 state) or some snapshot of state at a point in time.  Secondly an ordered log of all input messages, this is handled by
-Cluster's Raft implementation.  Thirdly the application logic needs to be deterministic, i.e. it much derive all of it
-resulting state and output events from the initial state and the input messages such that for the same inputs it will
+Cluster's Raft implementation.  Thirdly the application logic needs to be deterministic, i.e. it must derive all of its
+resulting state and output events from the initial state and the input messages, such that for the same inputs it will
 always get the same result.  This can be a trickier than it first seems as it excludes some functionality that we may
 normally take for granted.
 
@@ -87,19 +87,19 @@ may be more appropriate.
 === Components of Aeron Cluster
 
 One of the key design goals of Aeron is to build a system that is highly composable.  E.g. Aeron Archive which provides
-a means to persist an Aeron stream is used by Aeron Cluster to persist the Raft log and messages are communicated around
-the cluster using Aeron's Media Driver.  Therefore Aeron Cluster is an aggregation of a number of existing Aeron
-components and a few new ones.  To successfully run a cluster node it is necessary to have one (or at least one in the
-case of ClusteredServiceContainer) of each of the Aeron components running.  Because all communication between these
-components within a single node uses IPC they can be run all in the same process, in separate processes or any arbitrary
+a means to persist an Aeron stream is used by Aeron Cluster to persist the Raft log.  Messages are sent around the
+cluster using Aeron's Media Driver.  Therefore, Aeron Cluster is an aggregation of a number of existing Aeron components
+and a few new ones.  To successfully run a cluster node it is necessary to have one (or at least one in the case of
+ClusteredServiceContainer) of each of the Aeron components running.  Because all communication between these components
+within a single node uses IPC they can be run all in the same process, in separate processes or any arbitrary
 combination.
 
 ==== MediaDriver
 
-The MediaDriver is the means by which data is moved to, from, and around the cluster.  Aeron Cluster reuses the
-Publication and Subscription functionality already provides to handle all distributed and inter-process communications.
+The MediaDriver is the means by which data is moved into, out of, and around the cluster.  Aeron Cluster reuses the
+Publication and Subscription functionality in Aeron to handle all distributed and inter-process communication.
 
-NOTE: Currently  only the Java implementation of the MediaDriver is supported for use in Aeron Cluster.
+NOTE: Currently, only the Java implementation of the MediaDriver is supported for use in Aeron Cluster.
 
 ==== Archive
 
@@ -178,7 +178,7 @@ include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionCluster
 === Start Up
 
 The clustered service container will notify the service that it has started using the `onStart` callback.  This will
-occur before any input messages are received, either from log replay or live from a client.  It is during this phase
+occur before input messages are received, either from log replay or live from a client.  It is during this phase
 that we need to load the initial state of the service.  Aeron Cluster passes in a `Image` that will contain the most
 recent valid snapshot of the service.  The service should take care of deserializing the data from the image and
 initialize its state.  We will come back to the details of how the snapshot is loaded after we've looked how messages

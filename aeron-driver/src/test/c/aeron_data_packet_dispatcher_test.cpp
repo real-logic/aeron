@@ -50,6 +50,16 @@ void verify_conductor_cmd_function(void *clientd, volatile void *item)
     aeron_command_on_delete_cmd(clientd, cmd);
 }
 
+void *get_on_publication_image_fptr()
+{
+#if defined(AERON_COMPILER_MSVC)
+    HMODULE module = GetModuleHandleA("aeron_driver");
+    return (void *) GetProcAddress(module, "aeron_driver_conductor_on_create_publication_image");
+#else
+    return (void *) aeron_driver_conductor_on_create_publication_image
+#endif
+}
+
 class DataPacketDispatcherTest : public testing::Test
 {
 public:
@@ -323,7 +333,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetup)
     ASSERT_EQ(UINT64_C(3), aeron_mpsc_concurrent_array_queue_drain(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
-        (void *)aeron_driver_conductor_on_create_publication_image,
+        get_on_publication_image_fptr(),
         3));
 }
 
@@ -416,7 +426,7 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
     ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
-        (void *)aeron_driver_conductor_on_create_publication_image,
+        get_on_publication_image_fptr(),
         1));
 }
 
@@ -466,7 +476,7 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
     ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
-        (void *)aeron_driver_conductor_on_create_publication_image,
+        get_on_publication_image_fptr(),
         1));
 
     ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));

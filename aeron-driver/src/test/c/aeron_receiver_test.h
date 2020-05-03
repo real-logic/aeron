@@ -6,6 +6,7 @@
 #define AERON_AERON_RECEIVER_TEST_H
 
 #include <gtest/gtest.h>
+#include <array>
 
 extern "C"
 {

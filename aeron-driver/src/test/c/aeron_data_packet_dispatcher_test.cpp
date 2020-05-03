@@ -56,7 +56,7 @@ void *get_on_publication_image_fptr()
     HMODULE module = GetModuleHandleA("aeron_driver");
     return (void *) GetProcAddress(module, "aeron_driver_conductor_on_create_publication_image");
 #else
-    return (void *) aeron_driver_conductor_on_create_publication_image
+    return (void *) aeron_driver_conductor_on_create_publication_image;
 #endif
 }
 

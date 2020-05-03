@@ -5,6 +5,7 @@ GPATH
 prop
 out
 classes
+bin
 
 # OS X
 .DS_Store
@@ -57,6 +58,9 @@ cppbuild/*.cache
 cppbuild/Debug
 cppbuild/Release
 cppbuild/Win32
+cppbuild/zlib
+cppbuild/HdrHistogram_c
+cppbuild/googletest
 
 # JVM crash reports
 hs_err_pid*

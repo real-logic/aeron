@@ -1,0 +1,9 @@
+[submodule "cppbuild/zlib"]
+	path = cppbuild/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "cppbuild/googletest"]
+	path = cppbuild/googletest
+	url = https://github.com/google/googletest.git
+[submodule "cppbuild/HdrHistogram_c"]
+	path = cppbuild/HdrHistogram_c
+	url = https://github.com/HdrHistogram/HdrHistogram_c.git

@@ -68,7 +68,7 @@ target_link_libraries(Ping
     ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
 
-add_dependencies(Ping hdr_histogram)
+add_dependencies(Ping hdr_histogram_static)
 
 target_link_libraries(Throughput
     ${CLIENT_LINK_LIB})
@@ -89,7 +89,7 @@ target_link_libraries(PingPong
     ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
 
-add_dependencies(PingPong hdr_histogram)
+add_dependencies(PingPong hdr_histogram_static)
 
 if (AERON_INSTALL_TARGETS)
     install(

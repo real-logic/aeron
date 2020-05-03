@@ -65,6 +65,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:

@@ -70,6 +70,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:
@@ -100,6 +102,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:
@@ -128,6 +132,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:
@@ -163,6 +169,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Cache Gradle dependencies
         uses: actions/cache@v1
         with:
@@ -198,6 +206,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Install compiler
         run: |
           sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
@@ -215,5 +225,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Build
         run: cppbuild/cppbuild-vs.cmd

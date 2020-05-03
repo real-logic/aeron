@@ -482,7 +482,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(1000000)
+    @Timeout(10)
     public void shouldSendToMultipleDestinationSubscriptionWithSameStream()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -574,7 +574,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(50000000)
+    @Timeout(10)
     public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
         final int numMessagesToSend = 30;

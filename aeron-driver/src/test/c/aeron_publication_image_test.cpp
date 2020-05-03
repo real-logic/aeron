@@ -16,7 +16,6 @@
 
 
 #include <vector>
-#include <protocol/aeron_udp_protocol.h>
 #include "aeron_receiver_test.h"
 
 extern "C"
@@ -31,6 +30,8 @@ extern "C"
 #include <aeron_publication_image.h>
 #include <media/aeron_receive_channel_endpoint.h>
 #include <media/aeron_receive_destination.h>
+#include <protocol/aeron_udp_protocol.h>
+
 #include "aeron_test_udp_bindings.h"
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);

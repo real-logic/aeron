@@ -22,7 +22,7 @@ namespace aeron { namespace archive { namespace client
 {
 
 constexpr const std::int32_t REPLAY_MERGE_LIVE_ADD_MAX_WINDOW = 32 * 1024 * 1024;
-constexpr const std::int64_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
+constexpr const std::int32_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
 constexpr const std::int64_t REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = 10 * 1000;
 
 /**

@@ -43,8 +43,8 @@ public class ReplayMerge implements AutoCloseable
      */
     public static final int LIVE_ADD_MAX_WINDOW = 32 * 1024 * 1024;
 
-    private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
+    private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(10);
 
     enum State
     {

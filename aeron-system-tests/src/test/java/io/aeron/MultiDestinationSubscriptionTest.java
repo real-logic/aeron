@@ -29,6 +29,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -480,7 +482,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(1000000)
     public void shouldSendToMultipleDestinationSubscriptionWithSameStream()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -572,7 +574,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(50000000)
     public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
         final int numMessagesToSend = 30;
@@ -615,6 +617,8 @@ public class MultiDestinationSubscriptionTest
         final MutableInteger fragmentsRead = new MutableInteger();
 
         publicationB = clientB.addExclusivePublication(publicationChannelB, STREAM_ID);
+        final MutableLong position = new MutableLong(Long.MIN_VALUE);
+        final Supplier<String> offerFailure = () -> "Failed to offer: " + position;
 
         for (int i = 0; i < numMessagesToSendForA; i++)
         {
@@ -627,10 +631,9 @@ public class MultiDestinationSubscriptionTest
             fragmentsRead.set(0);
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
 
-            while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
+            while ((position.value = publicationB.offer(buffer, 0, buffer.capacity())) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yieldingWait(offerFailure);
             }
 
             assertEquals(0, subscription.poll(fragmentHandler, 10));

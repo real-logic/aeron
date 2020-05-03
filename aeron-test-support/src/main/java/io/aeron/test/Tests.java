@@ -371,22 +371,17 @@ public class Tests
         }
     }
 
-    /**
-     * In cases where a subscription is added immediately after closing one it is possible that
-     * @param aeron
-     * @param channel
-     * @param streamId
-     * @return
-     */
-    public static Subscription reAddSubscription(Aeron aeron, final String channel, final int streamId)
+    public static Subscription reAddSubscription(final Aeron aeron, final String channel, final int streamId)
     {
+        // In cases where a subscription is added immediately after closing one it is possible that
+        // the second one can fail, so retry in that case.
         while (true)
         {
             try
             {
                 return aeron.addSubscription(channel, streamId);
             }
-            catch (RegistrationException e)
+            catch (final RegistrationException e)
             {
                 if (e.category() != AeronException.Category.WARN)
                 {

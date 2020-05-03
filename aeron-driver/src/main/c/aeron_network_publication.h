@@ -74,6 +74,7 @@ typedef struct aeron_network_publication_stct
     aeron_clock_cache_t *cached_clock;
 
     char *log_file_name;
+    int64_t term_buffer_length;
     int64_t term_window_length;
     int64_t trip_gain;
     int64_t linger_timeout_ns;

@@ -498,7 +498,7 @@ int aeron_uri_publication_session_id_param(
             params->has_session_id = true;
             params->session_id = publication->session_id;
             params->mtu_length = publication->mtu_length;
-            params->term_length = publication->term_window_length;
+            params->term_length = publication->term_buffer_length;
         }
         else
         {

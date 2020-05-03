@@ -717,7 +717,7 @@ int aeron_publication_image_add_destination(aeron_publication_image_t *image, ae
     new_connection->time_of_last_frame_ns = 0;
     image->connections.length++;
 
-    return image->connections.length;
+    return (int)image->connections.length;
 }
 
 int aeron_publication_image_remove_destination(aeron_publication_image_t *image, aeron_udp_channel_t *channel)

@@ -630,7 +630,7 @@ int aeron_receive_channel_endpoint_add_destination(
 
     endpoint->destinations.length++;
 
-    return endpoint->destinations.length;
+    return (int)endpoint->destinations.length;
 }
 
 int aeron_receive_channel_endpoint_remove_destination(

@@ -57,7 +57,7 @@ inline int aeron_int64_counter_map_init(
     size_t initial_capacity,
     float load_factor)
 {
-    size_t capacity = (size_t)aeron_find_next_power_of_two((int64_t)initial_capacity);
+    size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
     map->load_factor = load_factor;
     map->resize_threshold = (size_t)(load_factor * capacity);

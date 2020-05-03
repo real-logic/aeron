@@ -24,7 +24,7 @@
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_term_gap_filler.h"
 
-static inline void aeron_publication_image_connection_set_control_address(
+static void aeron_publication_image_connection_set_control_address(
     aeron_publication_image_connection_t *connection,
     const struct sockaddr_storage *control_address)
 {
@@ -389,22 +389,33 @@ static inline void aeron_publication_image_track_connection(
     struct sockaddr_storage *source_addr,
     int64_t now_ns)
 {
+    aeron_publication_image_connection_t *connection = NULL;
     for (size_t i = 0, len = image->connections.length; i < len; i++)
     {
-        aeron_publication_image_connection_t *connection = &image->connections.array[i];
-        if (connection->destination == destination)
+        if (image->connections.array[i].destination == destination)
         {
-            connection->time_of_last_activity_ns = now_ns;
-            connection->time_of_last_frame_ns = now_ns;
-
-            if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection->control_addr, 0))
-            {
-                aeron_publication_image_connection_set_control_address(connection, source_addr);
-            }
-
+            connection = &image->connections.array[i];
             break;
         }
     }
+
+    if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection, 0))
+    {
+        if (aeron_publication_image_add_destination(image, destination) < 0)
+        {
+            return;
+        }
+
+        connection = &image->connections.array[image->connections.length - 1];
+    }
+
+    if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection->control_addr, 0))
+    {
+        aeron_publication_image_connection_set_control_address(connection, source_addr);
+    }
+
+    connection->time_of_last_activity_ns = now_ns;
+    connection->time_of_last_frame_ns = now_ns;
 }
 
 static inline bool aeron_publication_image_all_eos(
@@ -699,11 +710,11 @@ int aeron_publication_image_add_destination(aeron_publication_image_t *image, ae
         return -1;
     }
 
-    aeron_publication_image_connection_t *new_image = &image->connections.array[image->connections.length];
-    new_image->destination = destination;
-    new_image->control_addr = destination->has_control_addr ? &destination->current_control_addr : NULL;
-    new_image->time_of_last_activity_ns = aeron_clock_cached_nano_time(image->cached_clock);
-    new_image->time_of_last_frame_ns = 0;
+    aeron_publication_image_connection_t *new_connection = &image->connections.array[image->connections.length];
+    new_connection->destination = destination;
+    new_connection->control_addr = destination->has_control_addr ? &destination->current_control_addr : NULL;
+    new_connection->time_of_last_activity_ns = aeron_clock_cached_nano_time(image->cached_clock);
+    new_connection->time_of_last_frame_ns = 0;
     image->connections.length++;
 
     return image->connections.length;

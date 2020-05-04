@@ -108,6 +108,7 @@ SET(HEADERS
     concurrent/ringbuffer/RecordDescriptor.h
     concurrent/ringbuffer/RingBufferDescriptor.h
     concurrent/ringbuffer/OneToOneRingBuffer.h
+    concurrent/status/LocalSocketAddressStatus.h
     concurrent/status/ReadablePosition.h
     concurrent/status/Position.h
     concurrent/status/UnsafeBufferPosition.h

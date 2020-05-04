@@ -362,7 +362,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(200000)
+    @Timeout(20)
     public void shouldReportErrorOnReResolveFailure() throws IOException
     {
         buffer.putInt(0, 1);

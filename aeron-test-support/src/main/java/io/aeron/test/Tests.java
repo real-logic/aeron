@@ -381,13 +381,14 @@ public class Tests
             {
                 return aeron.addSubscription(channel, streamId);
             }
-            catch (final RegistrationException e)
+            catch (final RegistrationException ex)
             {
-                if (e.category() != AeronException.Category.WARN)
+                if (ex.category() != AeronException.Category.WARN)
                 {
-                    throw e;
+                    throw ex;
                 }
-                yieldingWait(e.getMessage());
+
+                yieldingWait(ex.getMessage());
             }
         }
     }

@@ -311,7 +311,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(1000000)
+    @Timeout(10)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));

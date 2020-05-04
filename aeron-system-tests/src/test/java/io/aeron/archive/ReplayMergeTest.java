@@ -149,7 +149,7 @@ public class ReplayMergeTest
 
     @SuppressWarnings("methodlength")
     @Test
-    @Timeout(500000)
+    @Timeout(10)
     public void shouldMergeFromReplayToLive()
     {
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;

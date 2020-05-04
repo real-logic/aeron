@@ -80,9 +80,6 @@ public class ChannelEndpointStatusTest
     @BeforeEach
     public void before()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet(
-            "Need an alternative way of getting the error counters for the C media driver");
-
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
 
@@ -166,6 +163,8 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Need to avoid using callback handlers in system tests");
+
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
@@ -196,6 +195,8 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Need to avoid using callback handlers in system tests");
+
         final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
         while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
@@ -227,6 +228,8 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Need to avoid using callback handlers in system tests");
+
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)

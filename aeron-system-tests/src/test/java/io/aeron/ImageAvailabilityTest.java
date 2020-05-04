@@ -39,8 +39,8 @@ public class ImageAvailabilityTest
     private static List<String> channels()
     {
         return asList(
-//            "aeron:ipc?term-length=64k",
-//            "aeron:udp?endpoint=localhost:24325|term-length=64k",
+            "aeron:ipc?term-length=64k",
+            "aeron:udp?endpoint=localhost:24325|term-length=64k",
             "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost");
     }
 

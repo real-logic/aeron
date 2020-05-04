@@ -2272,32 +2272,47 @@ int aeron_driver_conductor_on_add_network_publication(
     int64_t correlation_id = command->correlated.correlation_id;
     aeron_client_t *client = NULL;
     aeron_udp_channel_t *udp_channel = NULL;
+    const aeron_udp_channel_t *endpoint_udp_channel = NULL;
     aeron_send_channel_endpoint_t *endpoint = NULL;
     aeron_network_publication_t *publication = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
     size_t uri_length = command->channel_length;
     aeron_uri_publication_params_t params;
+    int64_t tag_id;
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
-        goto error;
+        aeron_udp_channel_delete(udp_channel);
+        return -1;
     }
 
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL)
     {
-        goto error;
+        aeron_udp_channel_delete(udp_channel);
+        return -1;
     }
 
+    // From here on the udp_channel is owned by the endpoint.
     if ((endpoint = aeron_driver_conductor_get_or_add_send_channel_endpoint(conductor, udp_channel)) == NULL)
     {
-        goto error;
+        return -1;
     }
+
+    // If we've found an existing endpoint, capture the supplied
+    // tag and free the supplied channel and use the channel from the existing endpoint.
+    tag_id = udp_channel->tag_id;
+    if (endpoint->conductor_fields.udp_channel != udp_channel)
+    {
+        aeron_udp_channel_delete(udp_channel);
+    }
+    endpoint_udp_channel = endpoint->conductor_fields.udp_channel;
+    udp_channel = NULL;
 
     if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
     {
         aeron_set_err(EINVAL, "%s", "send_channel_endpoint found in CLOSING state");
-        goto error;
+        return -1;
     }
 
     publication = aeron_driver_conductor_get_or_add_network_publication(
@@ -2313,7 +2328,7 @@ int aeron_driver_conductor_on_add_network_publication(
 
     if (publication == NULL)
     {
-        goto error;
+        return -1;
     }
 
     aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
@@ -2337,13 +2352,13 @@ int aeron_driver_conductor_on_add_network_publication(
         aeron_subscription_link_t *subscription_link = &conductor->spy_subscriptions.array[i];
         bool is_same_channel_tag =
             subscription_link->spy_channel->tag_id != AERON_URI_INVALID_TAG ?
-            subscription_link->spy_channel->tag_id == udp_channel->tag_id :
+            subscription_link->spy_channel->tag_id == tag_id :
             false;
 
         if (command->stream_id == subscription_link->stream_id &&
             (0 == strncmp(
                 subscription_link->spy_channel->canonical_form,
-                udp_channel->canonical_form,
+                endpoint_udp_channel->canonical_form,
                 subscription_link->spy_channel->canonical_length) || is_same_channel_tag) &&
             !aeron_driver_conductor_is_subscribable_linked(subscription_link, subscribable))
         {
@@ -2366,16 +2381,7 @@ int aeron_driver_conductor_on_add_network_publication(
         }
     }
 
-    if (endpoint->conductor_fields.udp_channel != udp_channel)
-    {
-        aeron_udp_channel_delete(udp_channel);
-    }
-
     return 0;
-
-error:
-    aeron_udp_channel_delete(udp_channel);
-    return -1;
 }
 
 int aeron_driver_conductor_on_remove_publication(aeron_driver_conductor_t *conductor, aeron_remove_command_t *command)
@@ -2592,22 +2598,32 @@ int aeron_driver_conductor_on_add_network_subscription(
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
-        goto error;
+        aeron_udp_channel_delete(udp_channel);
+        return -1;
     }
 
     if (aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id) == NULL)
     {
-        goto error;
+        aeron_udp_channel_delete(udp_channel);
+        return -1;
     }
 
+    // From here on the udp_channel is owned by the endpoint.
     if ((endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(conductor, udp_channel)) == NULL)
     {
-        goto error;
+        return -1;
     }
+
+    // If we found an existing endpoint free the channel.  Channel is no longer required beyond this point.
+    if (endpoint->conductor_fields.udp_channel != udp_channel)
+    {
+        aeron_udp_channel_delete(udp_channel);
+    }
+    udp_channel = NULL;
 
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {
-        goto error;
+        return -1;
     }
 
     if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
@@ -2615,7 +2631,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         aeron_set_err(
             -AERON_ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE,
             "receive_channel_endpoint found in CLOSING state, please retry");
-        goto error;
+        return -1;
     }
 
     if (params.has_session_id)
@@ -2623,14 +2639,14 @@ int aeron_driver_conductor_on_add_network_subscription(
         if (aeron_receive_channel_endpoint_incref_to_stream_and_session(
             endpoint, command->stream_id, params.session_id) < 0)
         {
-            goto error;
+            return -1;
         }
     }
     else
     {
         if (aeron_receive_channel_endpoint_incref_to_stream(endpoint, command->stream_id) < 0)
         {
-            goto error;
+            return -1;
         }
     }
 
@@ -2689,21 +2705,14 @@ int aeron_driver_conductor_on_add_network_subscription(
                     image->log_file_name_length,
                     image->log_file_name) < 0)
                 {
-                    goto error;
+                    return -1;
                 }
             }
-        }
-
-        if (endpoint->conductor_fields.udp_channel != udp_channel)
-        {
-            aeron_udp_channel_delete(udp_channel);
         }
 
         return 0;
     }
 
-error:
-    aeron_udp_channel_delete(udp_channel);
     return -1;
 }
 

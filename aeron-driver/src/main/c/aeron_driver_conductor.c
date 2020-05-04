@@ -501,15 +501,6 @@ void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *condu
     {
         aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
     }
-//    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
-//    {
-//        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
-//
-//        aeron_str_to_ptr_hash_map_remove(
-//            &conductor->receive_channel_endpoint_by_channel_map,
-//            udp_channel->canonical_form,
-//            udp_channel->canonical_length);
-//    }
 
     aeron_driver_conductor_unlink_all_subscribable(conductor, link);
 }

@@ -401,6 +401,7 @@ static inline void aeron_publication_image_track_connection(
 
     if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection, 0))
     {
+        // TODO: Might be useful to prevent inlining
         if (aeron_publication_image_add_destination(image, destination) < 0)
         {
             return;
@@ -411,6 +412,7 @@ static inline void aeron_publication_image_track_connection(
 
     if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection->control_addr, 0))
     {
+        // TODO: Might be useful to prevent inlining
         aeron_publication_image_connection_set_control_address(connection, source_addr);
     }
 

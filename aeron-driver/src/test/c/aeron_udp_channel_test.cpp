@@ -311,6 +311,42 @@ TEST_F(UdpChannelTest, shouldCanonicalizeForIpv6Multicast)
     EXPECT_STREQ(m_channel->canonical_form, "UDP-[::1]:54321-[ff01::fd]:40456");
 }
 
+TEST_F(UdpChannelTest, shouldUseTagInCanonicalFormIfWildcardsInUseIPv6)
+{
+    ASSERT_EQ(parse_udp_channel("aeron:udp?tags=1001|endpoint=[::1]:0"), 0) << aeron_errmsg();
+    EXPECT_STREQ(m_channel->canonical_form, "UDP-[::]:0-[::1]:0#1001");
+
+    ASSERT_EQ(parse_udp_channel("aeron:udp?tags=1001|endpoint=[::1]:9999|control=[::1]:0"), 0) << aeron_errmsg();
+    EXPECT_STREQ(m_channel->canonical_form, "UDP-[::1]:0-[::1]:9999#1001");
+}
+
+TEST_F(UdpChannelTest, shouldUseTagInCanonicalFormIfWildcardsInUseIPv4)
+{
+    ASSERT_EQ(parse_udp_channel("aeron:udp?tags=1001|endpoint=127.0.0.1:0"), 0) << aeron_errmsg();
+    EXPECT_STREQ(m_channel->canonical_form, "UDP-0.0.0.0:0-127.0.0.1:0-1001");
+
+    ASSERT_EQ(parse_udp_channel("aeron:udp?tags=1001|endpoint=127.0.0.1:9999|control=127.0.0.1:0"), 0) << aeron_errmsg();
+    EXPECT_STREQ(m_channel->canonical_form, "UDP-127.0.0.1:0-127.0.0.1:9999-1001");
+}
+
+TEST_F(UdpChannelTest, shouldUseUniqueIdInCanonicalFormIfWildcardsInUseIPv6)
+{
+    ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=[::1]:0"), 0) << aeron_errmsg();
+    EXPECT_EQ(0u, std::string(m_channel->canonical_form).rfind("UDP-[::]:0-[::1]:0-"));
+
+    ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=[::1]:9999|control=[::1]:0"), 0) << aeron_errmsg();
+    EXPECT_EQ(0u, std::string(m_channel->canonical_form).rfind("UDP-[::1]:0-[::1]:9999-"));
+}
+
+TEST_F(UdpChannelTest, shouldUseUniqueIdInCanonicalFormIfWildcardsInUseIPv4)
+{
+    ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=127.0.0.1:0"), 0) << aeron_errmsg();
+    EXPECT_EQ(0u, std::string(m_channel->canonical_form).rfind("UDP-0.0.0.0:0-127.0.0.1:0-"));
+
+    ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=127.0.0.1:9999|control=127.0.0.1:0"), 0) << aeron_errmsg();
+    EXPECT_EQ(0u, std::string(m_channel->canonical_form).rfind("UDP-127.0.0.1:0-127.0.0.1:9999-"));
+}
+
 TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
 {
     const char *config_param =

@@ -473,6 +473,26 @@ public:
      */
     std::int64_t channelStatus() const;
 
+    /**
+     * Fetches the local socket addresses for this subscription. If the channel is not
+     * {@link aeron::concurrent::status::ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE}, then this will return an
+     * empty list.
+     *
+     * The format is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI
+     *
+     * @return local socket address for this subscription.
+     * @see #channelStatus()
+     */
+    std::vector<std::string> localSocketAddresses() const;
+
 private:
     ClientConductor& m_conductor;
     const std::string m_channel;

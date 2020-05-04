@@ -18,6 +18,7 @@
 
 #include "Publication.h"
 #include "ClientConductor.h"
+#include "concurrent/status/LocalSocketAddressStatus.h"
 
 namespace aeron {
 
@@ -92,7 +93,7 @@ bool Publication::findDestinationResponse(std::int64_t correlationId)
     return m_conductor.findDestinationResponse(correlationId);
 }
 
-std::int64_t Publication::channelStatus()
+std::int64_t Publication::channelStatus() const
 {
     if (isClosed())
     {
@@ -100,6 +101,11 @@ std::int64_t Publication::channelStatus()
     }
 
     return m_conductor.channelStatus(m_channelStatusId);
+}
+
+std::vector<std::string> Publication::localSocketAddresses() const
+{
+    return LocalSocketAddressStatus::findAddresses(m_conductor.countersReader(), channelStatus(), channelStatusId());
 }
 
 }

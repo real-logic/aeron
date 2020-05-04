@@ -16,6 +16,7 @@
 
 #include "Subscription.h"
 #include "ClientConductor.h"
+#include "concurrent/status/LocalSocketAddressStatus.h"
 
 namespace aeron {
 
@@ -77,6 +78,12 @@ std::int64_t Subscription::channelStatus() const
     }
 
     return m_conductor.channelStatus(m_channelStatusId);
+}
+
+std::vector<std::string> Subscription::localSocketAddresses() const
+{
+    return aeron::concurrent::status::LocalSocketAddressStatus::findAddresses(
+        m_conductor.countersReader(), channelStatus(), channelStatusId());
 }
 
 }

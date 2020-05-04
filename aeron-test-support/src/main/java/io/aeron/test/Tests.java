@@ -15,8 +15,10 @@
  */
 package io.aeron.test;
 
+import io.aeron.Aeron;
 import io.aeron.Subscription;
 import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
@@ -366,6 +368,27 @@ public class Tests
         while (reader.getCounterValue(counterId) < expectedValue)
         {
             wait(SLEEP_1_MS, counterMessage);
+        }
+    }
+
+    public static Subscription reAddSubscription(final Aeron aeron, final String channel, final int streamId)
+    {
+        // In cases where a subscription is added immediately after closing one it is possible that
+        // the second one can fail, so retry in that case.
+        while (true)
+        {
+            try
+            {
+                return aeron.addSubscription(channel, streamId);
+            }
+            catch (final RegistrationException e)
+            {
+                if (e.category() != AeronException.Category.WARN)
+                {
+                    throw e;
+                }
+                yieldingWait(e.getMessage());
+            }
         }
     }
 }

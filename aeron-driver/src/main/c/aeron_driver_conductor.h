@@ -91,8 +91,10 @@ typedef struct aeron_subscription_link_stct
     bool is_sparse;
     bool is_reliable;
     bool is_rejoin;
+    bool has_session_id;
     aeron_inferable_boolean_t group;
     int32_t stream_id;
+    int32_t session_id;
     int32_t channel_length;
     int64_t registration_id;
     int64_t client_id;
@@ -439,6 +441,18 @@ int aeron_driver_conductor_on_add_destination(
 int aeron_driver_conductor_on_remove_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command);
 
+int aeron_driver_conductor_on_add_receive_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+int aeron_driver_conductor_on_remove_receive_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+void aeron_driver_conductor_on_delete_receive_destination(void *clientd, void *cmd);
+
+void aeron_driver_conductor_on_delete_send_destination(void *clientd, void *cmd);
+
 int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, aeron_counter_command_t *command);
 
 int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor, aeron_remove_command_t *command);
@@ -456,11 +470,14 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item);
 
 void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item);
 
+void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *item);
+
 aeron_send_channel_endpoint_t *aeron_driver_conductor_find_send_channel_endpoint_by_tag(
     aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
 
 aeron_receive_channel_endpoint_t *aeron_driver_conductor_find_receive_channel_endpoint_by_tag(
     aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
+
 
 inline bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)
@@ -479,45 +496,6 @@ inline bool aeron_driver_conductor_is_subscribable_linked(
     }
 
     return result;
-}
-
-inline bool aeron_driver_conductor_has_network_subscription_interest(
-    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
-{
-    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
-    {
-        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
-
-        if (endpoint == link->endpoint && stream_id == link->stream_id)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-inline bool aeron_driver_conductor_is_oldest_subscription_sparse(
-    aeron_driver_conductor_t *conductor,
-    const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int64_t highest_id)
-{
-    int64_t registration_id = highest_id;
-    bool is_sparse = conductor->context->term_buffer_sparse_file;
-
-    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
-    {
-        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
-
-        if (endpoint == link->endpoint && stream_id == link->stream_id && link->registration_id < registration_id)
-        {
-            registration_id = link->registration_id;
-            is_sparse = link->is_sparse;
-        }
-    }
-
-    return is_sparse;
 }
 
 inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)
@@ -681,6 +659,22 @@ inline aeron_network_publication_t * aeron_driver_conductor_find_network_publica
         aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
 
         if (id == publication->conductor_fields.managed_resource.registration_id)
+        {
+            return publication;
+        }
+    }
+
+    return NULL;
+}
+
+inline aeron_network_publication_t *aeron_driver_conductor_find_network_publication_by_tag(
+    aeron_driver_conductor_t *conductor, int64_t tag_id)
+{
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
+
+        if (tag_id == publication->tag && AERON_URI_INVALID_TAG != publication->tag)
         {
             return publication;
         }

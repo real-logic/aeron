@@ -638,15 +638,22 @@ bool aeron_is_wildcard_port(struct sockaddr_storage *addr)
 
 int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr)
 {
-    char addr_str[AERON_MAX_PATH] = "";
+    char addr_str[INET6_ADDRSTRLEN] = "";
     unsigned short port = 0;
 
+    if (length < AERON_NETUTIL_FORMATTED_MAX_LENGTH)
+    {
+        return -ENOSPC;
+    }
+
+    int total = 0;
     if (AF_INET6 == addr->ss_family)
     {
         struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)addr;
 
         inet_ntop(addr->ss_family, &in6->sin6_addr, addr_str, sizeof(addr_str));
         port = ntohs(in6->sin6_port);
+        total = snprintf(buffer, length, "[%s]:%d", addr_str, port);
     }
     else if (AF_INET == addr->ss_family)
     {
@@ -654,13 +661,13 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
 
         inet_ntop(addr->ss_family, &in4->sin_addr, addr_str, sizeof(addr_str));
         port = ntohs(in4->sin_port);
+        total = snprintf(buffer, length, "%s:%d", addr_str, port);
     }
 
-    int total = snprintf(buffer, length, "%s:%d", addr_str, port);
     if (total < 0)
     {
         return 0;
     }
 
-    return total > AERON_MAX_PATH - 1 ? AERON_MAX_PATH - 1 : total;
+    return total;
 }

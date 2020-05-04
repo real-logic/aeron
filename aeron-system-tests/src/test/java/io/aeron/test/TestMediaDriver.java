@@ -16,6 +16,7 @@
 package io.aeron.test;
 
 import io.aeron.driver.MediaDriver;
+import org.agrona.concurrent.AgentInvoker;
 
 import static org.agrona.Strings.isEmpty;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -82,4 +83,6 @@ public interface TestMediaDriver extends AutoCloseable
     String aeronDirectoryName();
 
     void close();
+
+    AgentInvoker sharedAgentInvoker();
 }

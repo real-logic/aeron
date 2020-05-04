@@ -56,7 +56,8 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     int32_t mtu_length,
     struct sockaddr_storage *control_address,
     struct sockaddr_storage *src_address,
-    void *endpoint)
+    void *endpoint,
+    void *destination)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
@@ -70,7 +71,8 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
                 .term_offset = term_offset,
                 .term_length = term_length,
                 .mtu_length = mtu_length,
-                .endpoint = endpoint
+                .endpoint = endpoint,
+                .destination = destination
             };
 
         memcpy(&cmd.control_address, control_address, sizeof(struct sockaddr_storage));
@@ -99,6 +101,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
         cmd->term_length = term_length;
         cmd->mtu_length = mtu_length;
         cmd->endpoint = endpoint;
+        cmd->destination = destination;
         memcpy(&cmd->control_address, control_address, sizeof(struct sockaddr_storage));
         memcpy(&cmd->src_address, src_address, sizeof(struct sockaddr_storage));
 
@@ -132,9 +135,10 @@ void aeron_driver_conductor_proxy_on_linger_buffer(
 
 void aeron_driver_conductor_proxy_on_re_resolve(
     aeron_driver_conductor_proxy_t *conductor_proxy,
-    void (*resolve_func)(void *clientd, void *command),
+    void (*resolve_func)(void *, void *),
     const char *endpoint_name,
     void *endpoint,
+    void *destination,
     struct sockaddr_storage *existing_addr)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
@@ -142,6 +146,7 @@ void aeron_driver_conductor_proxy_on_re_resolve(
         aeron_command_re_resolve_t cmd;
         cmd.endpoint_name = endpoint_name;
         cmd.endpoint = endpoint;
+        cmd.destination = destination;
         memcpy(&cmd.existing_addr, existing_addr, sizeof(cmd.existing_addr));
 
         resolve_func(conductor_proxy->conductor, &cmd);
@@ -158,6 +163,7 @@ void aeron_driver_conductor_proxy_on_re_resolve(
         cmd->base.func = resolve_func;
         cmd->endpoint_name = endpoint_name;
         cmd->endpoint = endpoint;
+        cmd->destination = destination;
         memcpy(&cmd->existing_addr, existing_addr, sizeof(cmd->existing_addr));
 
         aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
@@ -171,17 +177,103 @@ void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
     struct sockaddr_storage *existing_addr)
 {
     aeron_driver_conductor_proxy_on_re_resolve(
-        conductor_proxy, aeron_driver_conductor_on_re_resolve_endpoint, endpoint_name, endpoint, existing_addr);
+        conductor_proxy, aeron_driver_conductor_on_re_resolve_endpoint, endpoint_name, endpoint, NULL, existing_addr);
 }
 
 void aeron_driver_conductor_proxy_on_re_resolve_control(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
     void *endpoint,
+    void *destination,
     struct sockaddr_storage *existing_addr)
 {
     aeron_driver_conductor_proxy_on_re_resolve(
-        conductor_proxy, aeron_driver_conductor_on_re_resolve_control, endpoint_name, endpoint, existing_addr);
+        conductor_proxy, aeron_driver_conductor_on_re_resolve_control, endpoint_name, endpoint, NULL, existing_addr);
+}
+
+void aeron_driver_conductor_proxy_on_delete_receive_destination(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *destination,
+    void *channel)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_command_delete_destination_t cmd;
+        cmd.destination = destination;
+        cmd.channel = channel;
+
+        aeron_driver_conductor_on_delete_receive_destination(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_command_delete_destination_t *cmd;
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_delete_destination_t)) < 0)
+        {
+            aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_conductor_on_delete_receive_destination;
+        cmd->destination = destination;
+        cmd->channel = channel;
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
+}
+
+void aeron_conductor_proxy_on_delete_send_destination(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *removed_uri)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_command_base_t cmd;
+        cmd.func = aeron_driver_conductor_on_delete_send_destination;
+        cmd.item = removed_uri;
+
+        aeron_driver_conductor_on_delete_send_destination(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_conductor_on_delete_send_destination;
+        cmd->item = removed_uri;
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
+}
+
+void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *endpoint)
+{
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_command_base_t cmd;
+        cmd.item = endpoint;
+
+        aeron_driver_conductor_on_receive_endpoint_removed(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_conductor_on_receive_endpoint_removed;
+        cmd->item = endpoint;
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
 }
 
 void aeron_command_on_delete_cmd(void *clientd, void *cmd)

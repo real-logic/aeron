@@ -97,7 +97,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscription)
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
 
     doWork();
 
@@ -133,7 +133,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
     int64_t sub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
@@ -151,6 +151,54 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
 
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscriptionBySession)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
+    doWork();
+    auto add_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+
+        const command::SubscriptionReadyFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), sub_id);
+    };
+
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(add_handler), 1u);
+
+    aeron_receive_channel_endpoint_t *receive_endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1_WITH_SESSION_ID_1);
+
+    ASSERT_EQ(1, aeron_int64_counter_map_get(
+        &receive_endpoint->stream_and_session_id_to_refcnt_map,
+        aeron_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
+
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+    doWork();
+    auto remove_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::OperationSucceededFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), remove_correlation_id);
+    };
+
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 1u);
+
+    ASSERT_EQ(0, aeron_int64_counter_map_get(
+        &receive_endpoint->stream_and_session_id_to_refcnt_map,
+        aeron_map_compound_key(STREAM_ID_1, SESSION_ID_1)));
+
+    ASSERT_EQ(AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSED, receive_endpoint->conductor_fields.status);
 }
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublications)
@@ -627,10 +675,10 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptions
     int64_t sub_id_3 = nextCorrelationId();
     int64_t sub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_1, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_1, STREAM_ID_1), 0);
 
     doWork();
 
@@ -652,10 +700,10 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptions
     int64_t sub_id_3 = nextCorrelationId();
     int64_t sub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_2, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_3, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_4, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_2, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_3, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_4, STREAM_ID_1), 0);
 
     doWork();
 
@@ -686,10 +734,10 @@ TEST_F(DriverConductorNetworkTest, shouldKeepSubscriptionMediaEndpointUponRemova
     int64_t sub_id_3 = nextCorrelationId();
     int64_t sub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_2, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_1, STREAM_ID_3, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_1, STREAM_ID_4, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_2), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_1, STREAM_ID_3), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_1, STREAM_ID_4), 0);
 
     doWork();
 
@@ -777,7 +825,7 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnAddSubscriptionWithInvalidUri)
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, INVALID_URI, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, INVALID_URI, STREAM_ID_1), 0);
     doWork();
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
@@ -850,7 +898,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkSubscription)
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
@@ -879,7 +927,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOn
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
@@ -934,7 +982,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutReceiveChannelEndpointWi
     int64_t sub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
@@ -961,7 +1009,7 @@ TEST_F(DriverConductorNetworkTest, shouldCreatePublicationImageForActiveNetworkS
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
@@ -1001,7 +1049,7 @@ TEST_F(DriverConductorNetworkTest, shouldNotCreatePublicationImageForNonActiveNe
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
@@ -1020,7 +1068,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
@@ -1051,7 +1099,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
@@ -1105,7 +1153,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
     int64_t sub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
 
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
@@ -1139,8 +1187,8 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
     int64_t sub_id_1 = nextCorrelationId();
     int64_t sub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 
@@ -1178,7 +1226,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
     int64_t sub_id_1 = nextCorrelationId();
     int64_t sub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
 
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
@@ -1191,7 +1239,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
 
     size_t response_number = 0;
@@ -1252,7 +1300,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     int64_t sub_id_1 = nextCorrelationId();
     int64_t sub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
 
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
@@ -1265,7 +1313,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
 
     int64_t image_correlation_id = aeron_publication_image_registration_id(image);
@@ -1390,8 +1438,8 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddSubscrip
     int64_t sub_id_1 = nextCorrelationId();
     int64_t sub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1 "|tags=1001", STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, "aeron:udp?tags=1001", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1 "|tags=1001", STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, "aeron:udp?tags=1001", STREAM_ID_1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 2u);
@@ -1402,6 +1450,69 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddSubscrip
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldUseExistingPublicationOnAddPublicationWithSameSessionTagIdAndSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 2u);
+    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
+
+    aeron_network_publication_t *pub_1 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *pub_2 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_2);
+
+    EXPECT_EQ(pub_1->session_id, pub_2->session_id);
+
+    doWorkForNs(
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 0u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorWithUnknownSessionIdTag)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorWithInvalidSessionIdTag)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002a", STREAM_ID_1, false), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
 }
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveDestinationToManualMdcPublication)
@@ -1557,3 +1668,212 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
+
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscriptionWithSpecifiedSessionId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
+
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1_WITH_SESSION_ID_1);
+
+    ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+
+        const command::SubscriptionReadyFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), sub_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddSubscriptionWithDifferentReliabilityParameter)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_UNRELIABLE, STREAM_ID_1), 0);
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldAllowDifferentReliabilityParameterWithSpecificSession)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_UNRELIABLE, STREAM_ID_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldAddMdsWithSingleUnicastSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
+    doWork();
+
+    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1), 0);
+    doWork();
+
+    auto dest_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(dest_ready_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscriptionWithInvalidRegistrationId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t invalid_sub_id = sub_id + 1000000;
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
+    doWork();
+
+    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, invalid_sub_id, CHANNEL_1), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscriptionWithInvalidNonManualControlEndpoint)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_2, STREAM_ID_1), 0);
+    doWork();
+
+    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldAddAndRemoveMdsWithSingleUnicastSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(removeReceiveDestination(client_id, remove_correlation_id, sub_id, CHANNEL_1), 0);
+    doWork();
+
+    auto dest_removed_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(dest_removed_handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToRemoveMdsWithSingleUnicastSubscriptionWithInvalidSusbcriptionId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t invalid_sub_id = sub_id + 1000000;
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t dest_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(removeReceiveDestination(client_id, remove_correlation_id, invalid_sub_id, CHANNEL_1), 0);
+    doWork();
+
+    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
+}
+

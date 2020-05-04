@@ -59,6 +59,8 @@ using namespace aeron;
 #define STR(x) STR_HELPER(x)
 
 #define CHANNEL_1 "aeron:udp?endpoint=localhost:40001"
+#define CHANNEL_1_UNRELIABLE "aeron:udp?endpoint=localhost:40001|reliable=false"
+#define CHANNEL_1_NOREJOIN "aeron:udp?endpoint=localhost:40001|rejoin=false"
 #define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
 #define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
 #define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
@@ -246,6 +248,7 @@ struct TestDriverConductor
         }
 
         context.m_context->receiver_proxy = &m_receiver.receiver_proxy;
+        m_destination.has_control_addr = false;
     }
 
     virtual ~TestDriverConductor()
@@ -263,6 +266,7 @@ struct TestDriverConductor
     aeron_driver_conductor_t m_conductor;
     aeron_driver_sender_t m_sender;
     aeron_driver_receiver_t m_receiver;
+    aeron_receive_destination_t m_destination;
 };
 
 class DriverConductorTest : public testing::Test
@@ -400,15 +404,14 @@ public:
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
     }
 
-    int addNetworkSubscription(
-        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, int64_t registration_id)
+    int addNetworkSubscription(int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id)
     {
         command::SubscriptionMessageFlyweight command(m_command, 0);
 
         command.clientId(client_id);
         command.correlationId(correlation_id);
         command.streamId(stream_id);
-        command.registrationCorrelationId(registration_id);
+        command.registrationCorrelationId(-1);
         command.channel(channel);
 
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
@@ -537,6 +540,30 @@ public:
         return writeCommand(AERON_COMMAND_ADD_DESTINATION, command.length());
     }
 
+    int addReceiveDestination(int64_t client_id, int64_t correlation_id, int64_t subscription_id, const char *channel)
+    {
+        command::DestinationMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.registrationId(subscription_id);
+        command.channel(channel);
+
+        return writeCommand(AERON_COMMAND_ADD_RCV_DESTINATION, command.length());
+    }
+
+    int removeReceiveDestination(int64_t client_id, int64_t correlation_id, int64_t subscription_id, const char *channel)
+    {
+        command::DestinationMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.registrationId(subscription_id);
+        command.channel(channel);
+
+        return writeCommand(AERON_COMMAND_REMOVE_RCV_DESTINATION, command.length());
+    }
+
     int removeDestination(
         int64_t client_id, int64_t correlation_id, int64_t publication_registration_id, const char *channel)
     {
@@ -594,6 +621,7 @@ public:
         cmd.base.func = aeron_driver_conductor_on_create_publication_image;
         cmd.base.item = NULL;
         cmd.endpoint = endpoint;
+        cmd.destination = &m_conductor.m_destination;
         cmd.session_id = SESSION_ID;
         cmd.stream_id = stream_id;
         cmd.term_offset = 0;

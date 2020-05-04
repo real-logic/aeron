@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -52,7 +53,8 @@ public class BasicArchiveTest
         .endpoint("localhost:6666")
         .build();
 
-    private ArchivingMediaDriver archivingMediaDriver;
+    private TestMediaDriver mediaDriver;
+    private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
@@ -61,14 +63,16 @@ public class BasicArchiveTest
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        archivingMediaDriver = ArchivingMediaDriver.launch(
+        mediaDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
+                .dirDeleteOnStart(true));
+
+        archive = Archive.launch(
             new Archive.Context()
                 .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
@@ -89,10 +93,10 @@ public class BasicArchiveTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
 
-        archivingMediaDriver.archive().context().deleteDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteDirectory();
+        archive.context().deleteDirectory();
+        mediaDriver.context().deleteDirectory();
     }
 
     @Test

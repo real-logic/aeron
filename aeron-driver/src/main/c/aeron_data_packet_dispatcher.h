@@ -19,10 +19,19 @@
 
 #include "aeron_socket.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
+#include "collections/aeron_int64_to_tagged_ptr_hash_map.h"
 #include "aeron_driver_conductor_proxy.h"
+#include "media/aeron_receive_destination.h"
+
+#define AERON_DATA_PACKET_DISPATCHER_IMAGE_ACTIVE UINT32_C(1)
+#define AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME UINT32_C(2)
+#define AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS UINT32_C(3)
+#define AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN UINT32_C(4)
+#define AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST UINT32_C(4)
 
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 typedef struct aeron_receive_channel_endpoint_stct aeron_receive_channel_endpoint_t;
+typedef struct aeron_receive_destination_stct aeron_receive_destination_t;
 typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
 
 typedef struct aeron_data_packet_dispatcher_stct
@@ -33,9 +42,7 @@ typedef struct aeron_data_packet_dispatcher_stct
     /* tombstones for PENDING_SETUP_FRAME, INIT_IN_PROGRESS, and ON_COOL_DOWN */
     struct aeron_data_packet_dispatcher_tokens_stct
     {
-        int pending_setup_frame;
-        int init_in_progress;
-        int on_cool_down;
+        int subscribed;
     }
     tokens;
 
@@ -50,8 +57,20 @@ int aeron_data_packet_dispatcher_init(
     aeron_driver_receiver_t *receiver);
 int aeron_data_packet_dispatcher_close(aeron_data_packet_dispatcher_t *dispatcher);
 
+typedef struct aeron_data_packet_dispatcher_stream_interest_stct
+{
+    bool is_all_sessions;
+    aeron_int64_to_tagged_ptr_hash_map_t image_by_session_id_map;
+    aeron_int64_to_ptr_hash_map_t subscribed_sessions;
+}
+aeron_data_packet_dispatcher_stream_interest_t;
+
 int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id);
+int aeron_data_packet_dispatcher_add_subscription_by_session(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);
 int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id);
+int aeron_data_packet_dispatcher_remove_subscription_by_session(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);
 
 int aeron_data_packet_dispatcher_add_publication_image(
     aeron_data_packet_dispatcher_t *dispatcher, aeron_publication_image_t *image);
@@ -61,6 +80,7 @@ int aeron_data_packet_dispatcher_remove_publication_image(
 int aeron_data_packet_dispatcher_on_data(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_data_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -69,6 +89,7 @@ int aeron_data_packet_dispatcher_on_data(
 int aeron_data_packet_dispatcher_on_setup(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_setup_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -77,6 +98,7 @@ int aeron_data_packet_dispatcher_on_setup(
 int aeron_data_packet_dispatcher_on_rttm(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_rttm_header_t *header,
     uint8_t *buffer,
     size_t length,
@@ -84,48 +106,48 @@ int aeron_data_packet_dispatcher_on_rttm(
 
 int aeron_data_packet_dispatcher_elicit_setup_from_source(
     aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id);
 
-inline bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cool_down(
-    aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id)
+inline int aeron_data_packet_dispatcher_remove_with_state(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    int32_t session_id,
+    int32_t stream_id,
+    uint32_t image_state)
 {
-    void *status = aeron_int64_to_ptr_hash_map_get(&dispatcher->ignored_sessions_map,
-        aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest =
+        (aeron_data_packet_dispatcher_stream_interest_t *)aeron_int64_to_ptr_hash_map_get(
+            &dispatcher->session_by_stream_id_map, stream_id);
 
-    return (&dispatcher->tokens.init_in_progress != status && &dispatcher->tokens.on_cool_down != status);
+    if (NULL != stream_interest)
+    {
+        uint32_t tag = 0;
+        aeron_int64_to_tagged_ptr_hash_map_get(&stream_interest->image_by_session_id_map, session_id, &tag, NULL);
+        if (image_state == tag)
+        {
+            aeron_int64_to_tagged_ptr_hash_map_remove(&stream_interest->image_by_session_id_map, session_id, NULL, NULL);
+        }
+    }
+
+    return 0;
 }
 
 inline int aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
 {
-    const void *status = aeron_int64_to_ptr_hash_map_get(&dispatcher->ignored_sessions_map,
-        aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
-
-    if (status == &dispatcher->tokens.pending_setup_frame)
-    {
-        aeron_int64_to_ptr_hash_map_remove(&dispatcher->ignored_sessions_map,
-            aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
-    }
-
-    return 0;
+    return aeron_data_packet_dispatcher_remove_with_state(
+        dispatcher, session_id, stream_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME);
 }
 
 inline int aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
 {
-    const void *status = aeron_int64_to_ptr_hash_map_get(&dispatcher->ignored_sessions_map,
-        aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
-
-    if (status == &dispatcher->tokens.on_cool_down)
-    {
-        aeron_int64_to_ptr_hash_map_remove(&dispatcher->ignored_sessions_map,
-            aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
-    }
-
-    return 0;
+    return aeron_data_packet_dispatcher_remove_with_state(
+        dispatcher, session_id, stream_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN);
 }
 
 inline bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_packet_dispatcher_t *dispatcher)

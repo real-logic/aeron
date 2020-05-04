@@ -46,6 +46,7 @@ typedef struct aeron_command_create_publication_image_stct
     struct sockaddr_storage control_address;
     struct sockaddr_storage src_address;
     void *endpoint;
+    void *destination;
 }
 aeron_command_create_publication_image_t;
 
@@ -54,9 +55,18 @@ typedef struct aeron_command_re_resolve_stct
     aeron_command_base_t base;
     const char *endpoint_name;
     void *endpoint;
+    void *destination;
     struct sockaddr_storage existing_addr;
 }
 aeron_command_re_resolve_t;
+
+typedef struct aeron_command_delete_destination_stct
+{
+    aeron_command_base_t base;
+    void *destination;
+    void *channel;
+}
+aeron_command_delete_destination_t;
 
 void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy,
@@ -69,7 +79,8 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     int32_t mtu_length,
     struct sockaddr_storage *control_address,
     struct sockaddr_storage *src_address,
-    void *endpoint);
+    void *endpoint,
+    void *destination);
 
 void aeron_driver_conductor_proxy_on_linger_buffer(aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer);
 
@@ -83,6 +94,20 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
     void *endpoint,
+    void *destination,
     struct sockaddr_storage *existing_addr);
+
+void aeron_driver_conductor_proxy_on_delete_receive_destination(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *destination,
+    void *channel);
+
+void aeron_conductor_proxy_on_delete_send_destination(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *removed_uri);
+
+void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *endpoint);
 
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

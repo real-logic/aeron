@@ -74,7 +74,9 @@ int aeron_udp_destination_tracker_manual_add_destination(
     struct sockaddr_storage *addr);
 
 int aeron_udp_destination_tracker_remove_destination(
-    aeron_udp_destination_tracker_t *tracker, struct sockaddr_storage *addr);
+    aeron_udp_destination_tracker_t *tracker,
+    struct sockaddr_storage *addr,
+    aeron_uri_t **removed_uri);
 
 void aeron_udp_destination_tracker_check_for_re_resolution(
     aeron_udp_destination_tracker_t *tracker,

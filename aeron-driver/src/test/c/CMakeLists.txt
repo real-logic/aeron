@@ -19,11 +19,28 @@ endif ()
 
 include_directories(${AERON_DRIVER_SOURCE_PATH})
 
-set(TEST_HEADERS aeron_driver_conductor_test.h EmbeddedMediaDriver.h)
+set(TEST_HEADERS
+    aeron_driver_conductor_test.h
+    aeron_receiver_test.h
+    EmbeddedMediaDriver.h
+    aeron_test_udp_bindings.h)
 
 set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
+
+if (POLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_POLL)
+endif ()
+
+if (EPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_EPOLL)
+endif ()
+
+if (WSAPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_WSAPOLL)
+endif ()
+
 
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
@@ -49,7 +66,9 @@ aeron_driver_test(spsc_queue_test aeron_spsc_concurrent_array_queue_test.cpp)
 aeron_driver_test(mpsc_queue_test aeron_mpsc_concurrent_array_queue_test.cpp)
 aeron_driver_test(uri_test aeron_uri_test.cpp)
 aeron_driver_test(udp_channel_test aeron_udp_channel_test.cpp)
-aeron_driver_test(int64_to_ptr_hash_map_test collections/aeron_int64_to_ptr_hash_masp_test.cpp)
+aeron_driver_test(int64_to_ptr_hash_map_test collections/aeron_int64_to_ptr_hash_map_test.cpp)
+aeron_driver_test(int64_counter_map_test collections/aeron_int64_counter_map_test.cpp)
+aeron_driver_test(int64_to_tagged_ptr_hash_map_test collections/aeron_int64_to_tagged_ptr_hash_map_test.cpp)
 aeron_driver_test(str_to_ptr_hash_map_test collections/aeron_str_to_ptr_hash_map_test.cpp)
 aeron_driver_test(bit_set_test collections/aeron_bit_set_test.cpp)
 aeron_driver_test(bitutil_test util/aeron_bitutil_test.cpp)
@@ -72,3 +91,5 @@ aeron_driver_test(strutil_test aeron_strutil_test.cpp)
 aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)
 aeron_driver_test(name_resolver_test aeron_name_resolver_test.cpp)
 aeron_driver_test(name_resolver_cache_test aeron_name_resolver_cache_test.cpp)
+aeron_driver_test(data_packet_dispatcher_test aeron_data_packet_dispatcher_test.cpp)
+aeron_driver_test(publication_image_test aeron_publication_image_test.cpp)

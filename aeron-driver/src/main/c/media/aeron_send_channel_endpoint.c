@@ -97,7 +97,7 @@ int aeron_send_channel_endpoint_create(
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &_endpoint->publication_dispatch_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &_endpoint->publication_dispatch_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         aeron_send_channel_endpoint_delete(NULL, _endpoint);
         return -1;
@@ -205,7 +205,7 @@ int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct m
 int aeron_send_channel_endpoint_add_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication)
 {
-    int64_t key_value = aeron_int64_to_ptr_hash_map_compound_key(publication->stream_id, publication->session_id);
+    int64_t key_value = aeron_map_compound_key(publication->stream_id, publication->session_id);
 
     int result = aeron_int64_to_ptr_hash_map_put(&endpoint->publication_dispatch_map, key_value, publication);
     if (result < 0)
@@ -219,7 +219,7 @@ int aeron_send_channel_endpoint_add_publication(
 int aeron_send_channel_endpoint_remove_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication)
 {
-    int64_t key_value = aeron_int64_to_ptr_hash_map_compound_key(publication->stream_id, publication->session_id);
+    int64_t key_value = aeron_map_compound_key(publication->stream_id, publication->session_id);
 
     aeron_int64_to_ptr_hash_map_remove(&endpoint->publication_dispatch_map, key_value);
     return 0;
@@ -229,6 +229,7 @@ void aeron_send_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,
     void *sender_clientd,
     void *endpoint_clientd,
+    void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr)
@@ -290,7 +291,7 @@ void aeron_send_channel_endpoint_on_nak(
 {
     aeron_nak_header_t *nak_header = (aeron_nak_header_t *)buffer;
     int64_t key_value =
-        aeron_int64_to_ptr_hash_map_compound_key(nak_header->stream_id, nak_header->session_id);
+        aeron_map_compound_key(nak_header->stream_id, nak_header->session_id);
     aeron_network_publication_t *publication =
         aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
 
@@ -313,7 +314,7 @@ void aeron_send_channel_endpoint_on_status_message(
 {
     aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *)buffer;
     int64_t key_value =
-        aeron_int64_to_ptr_hash_map_compound_key(sm_header->stream_id, sm_header->session_id);
+        aeron_map_compound_key(sm_header->stream_id, sm_header->session_id);
     aeron_network_publication_t *publication =
         aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
 
@@ -352,7 +353,7 @@ void aeron_send_channel_endpoint_on_rttm(
 {
     aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *)buffer;
     int64_t key_value =
-        aeron_int64_to_ptr_hash_map_compound_key(rttm_header->stream_id, rttm_header->session_id);
+        aeron_map_compound_key(rttm_header->stream_id, rttm_header->session_id);
     aeron_network_publication_t *publication =
         aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
 
@@ -410,7 +411,9 @@ extern int aeron_send_channel_endpoint_add_destination(
     struct sockaddr_storage *addr);
 
 extern int aeron_send_channel_endpoint_remove_destination(
-    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    aeron_uri_t **removed_uri);
 
 extern bool aeron_send_channel_endpoint_tags_match(
     aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel);

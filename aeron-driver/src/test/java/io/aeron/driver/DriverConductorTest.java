@@ -348,6 +348,20 @@ public class DriverConductorTest
         verify(senderProxy, times(4)).removeNetworkPublication(any());
     }
 
+
+    @Test
+    public void shouldBeAbleToAddWithStreamIdTag()
+    {
+        final long id1 = driverProxy.addPublication(CHANNEL_4001 + "|tags=1,2", STREAM_ID_1);
+        final long id2 = driverProxy.addPublication(CHANNEL_4002 + "|session-id=tag:2", STREAM_ID_1);
+
+        doWorkUntil(
+            () -> (CLIENT_LIVENESS_TIMEOUT_NS * 2 + PUBLICATION_LINGER_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
+
+//        verify(senderProxy, times(4)).removeNetworkPublication(any());
+    }
+
+
     @Test
     public void shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber()
     {

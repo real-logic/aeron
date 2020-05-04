@@ -28,6 +28,7 @@ typedef struct aeron_udp_channel_transport_stct
     aeron_udp_channel_data_paths_t *data_paths;
     void *dispatch_clientd;
     void *bindings_clientd;
+    void *destination_clientd;
 }
 aeron_udp_channel_transport_t;
 

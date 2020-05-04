@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include "aeron_common.h"
 
+#define AERON_NETUTIL_FORMATTED_MAX_LENGTH (INET6_ADDRSTRLEN + 8)
+
 struct ifaddrs;
 struct addrinfo;
 

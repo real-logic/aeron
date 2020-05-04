@@ -36,6 +36,7 @@ public:
     virtual ~UdpChannelTestBase()
     {
         aeron_udp_channel_delete(m_channel);
+        m_resolver.close_func(&m_resolver);
     }
 
     static struct sockaddr_in *ipv4_addr(struct sockaddr_storage *addr)
@@ -107,6 +108,13 @@ class UdpChannelNamesParameterisedTest :
     public UdpChannelTestBase
 {
 };
+
+class UdpChannelEqualityParameterisedTest :
+    public testing::TestWithParam<std::tuple<bool, const char *, const char *>>,
+    public UdpChannelTestBase
+{
+};
+
 
 TEST_F(UdpChannelTest, shouldParseExplicitLocalAddressAndPortFormat)
 {
@@ -318,6 +326,60 @@ TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
     EXPECT_STREQ(m_channel->uri.params.udp.control, "NAME_1");
 }
 
+TEST_F(UdpChannelTest, shouldFormatIPv4Address)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in *addr_in = reinterpret_cast<sockaddr_in *>(&addr);
+    inet_pton(AF_INET, "192.168.10.1", &addr_in->sin_addr);
+    addr_in->sin_family = AF_INET;
+    addr_in->sin_port = htons(UINT16_C(65535));
+
+    aeron_format_source_identity(buffer, sizeof(buffer), &addr);
+
+    ASSERT_STREQ("192.168.10.1:65535", buffer);
+}
+
+TEST_F(UdpChannelTest, shouldFormatIPv6Address)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in6 *addr_in = reinterpret_cast<sockaddr_in6 *>(&addr);
+    inet_pton(AF_INET6, "::1", &addr_in->sin6_addr);
+    addr_in->sin6_family = AF_INET6;
+    addr_in->sin6_port = htons(UINT16_C(65535));
+
+    aeron_format_source_identity(buffer, sizeof(buffer), &addr);
+
+    ASSERT_STREQ("[::1]:65535", buffer);
+}
+
+TEST_F(UdpChannelTest, shouldHandleMaxLengthIPv6)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in6 *addr_in = reinterpret_cast<sockaddr_in6 *>(&addr);
+    inet_pton(AF_INET6, "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255", &addr_in->sin6_addr);
+    addr_in->sin6_family = AF_INET6;
+    addr_in->sin6_port = htons(UINT16_C(65535));
+
+    aeron_format_source_identity(buffer, sizeof(buffer), &addr);
+
+    ASSERT_STREQ("[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535", buffer);
+}
+
+TEST_F(UdpChannelTest, shouldHandleTooSmallBuffer)
+{
+    char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in6 *addr_in = reinterpret_cast<sockaddr_in6 *>(&addr);
+    inet_pton(AF_INET6, "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255", &addr_in->sin6_addr);
+    addr_in->sin6_family = AF_INET6;
+    addr_in->sin6_port = UINT16_C(65535);
+
+    ASSERT_LE(aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH - 1, &addr), 0);
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());
@@ -392,3 +454,57 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(
             "[fe80::5246:5dff:fe73:df06]:40456", "[fe80::5246:5dff:fe73:df06]", (const char *)NULL, (const char *)NULL,
             "UDP-127.0.0.1:0-[fe80::5246:5dff:fe73:df06]:40456")));
+
+TEST_P(UdpChannelEqualityParameterisedTest, shouldMatch)
+{
+    const bool should_match = std::get<0>(GetParam());
+    const char *uri_1 = std::get<1>(GetParam());
+    const char *uri_2 = std::get<2>(GetParam());
+
+    aeron_udp_channel_t *channel_1 = NULL;
+    aeron_udp_channel_t *channel_2 = NULL;
+
+    aeron_name_resolver_t resolver;
+    aeron_default_name_resolver_supplier(&resolver, NULL, NULL);
+
+    if (NULL != uri_1)
+    {
+        ASSERT_LE(0, aeron_udp_channel_parse(strlen(uri_1), uri_1, &resolver, &channel_1)) << uri_1;
+    }
+
+    if (NULL != uri_2)
+    {
+        ASSERT_LE(0, aeron_udp_channel_parse(strlen(uri_2), uri_2, &resolver, &channel_2)) << uri_2;
+    }
+
+    EXPECT_EQ(should_match, aeron_udp_channel_equals(channel_1, channel_2))
+        << uri_1 << "(" << (NULL != channel_1 ? channel_1->canonical_form : "null") << ")"
+        << " vs "
+        << uri_2 << "(" << (NULL != channel_2 ? channel_2->canonical_form : "null") << ")";
+
+    aeron_udp_channel_delete(channel_1);
+    aeron_udp_channel_delete(channel_2);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    UdpChannelEqualityTest,
+    UdpChannelEqualityParameterisedTest,
+    testing::Values(
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090"),
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090|session-id=12", "aeron:udp?endpoint=localhost:9090"),
+        std::make_tuple(
+            true,
+            "aeron:udp?endpoint=localhost:9090|session-id=12",
+            "aeron:udp?endpoint=localhost:9090|session-id=13"),
+        std::make_tuple(
+            true,
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090",
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090"),
+        std::make_tuple(
+            false,
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9090",
+            "aeron:udp?endpoint=localhost:9090|interface=127.0.0.1:9091"),
+        std::make_tuple(false, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=127.0.0.1:9090"),
+        std::make_tuple(false, (const char *)NULL, "aeron:udp?endpoint=localhost:9091"),
+        std::make_tuple(true, (const char *)NULL, (const char *)NULL),
+        std::make_tuple(true, "aeron:udp?endpoint=localhost:9090", "aeron:udp?endpoint=localhost:9090")));

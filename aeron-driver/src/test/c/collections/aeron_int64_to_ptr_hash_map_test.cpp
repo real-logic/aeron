@@ -39,20 +39,34 @@ protected:
         t->m_for_each(key, value);
     }
 
+    static bool remove_if(void *clientd, int64_t key, void *value)
+    {
+        Int64ToPtrHashMapTest *t = (Int64ToPtrHashMapTest *)clientd;
+
+        return t->m_remove_if(key, value);
+    }
+
     void for_each(const std::function<void(int64_t,void*)>& func)
     {
         m_for_each = func;
         aeron_int64_to_ptr_hash_map_for_each(&m_map, Int64ToPtrHashMapTest::for_each, this);
     }
 
+    void remove_if(const std::function<bool(int64_t,void*)>& func)
+    {
+        m_remove_if = func;
+        aeron_int64_to_ptr_hash_map_remove_if(&m_map, Int64ToPtrHashMapTest::remove_if, this);
+    }
+
     aeron_int64_to_ptr_hash_map_t m_map;
     std::function<void(int64_t,void*)> m_for_each;
+    std::function<bool(int64_t,void*)> m_remove_if;
 };
 
 TEST_F(Int64ToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
 {
     int value = 42;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_get(&m_map, 7), &value);
@@ -62,7 +76,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
 TEST_F(Int64ToPtrHashMapTest, shouldReplaceExistingValueForTheSameKey)
 {
     int value = 42, new_value = 43;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&new_value), 0);
@@ -135,7 +149,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
 
 TEST_F(Int64ToPtrHashMapTest, shouldNotForEachEmptyMap)
 {
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     size_t called = 0;
     for_each([&](int64_t key, void *value_ptr)
@@ -149,7 +163,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldNotForEachEmptyMap)
 TEST_F(Int64ToPtrHashMapTest, shouldForEachNonEmptyMap)
 {
     int value = 42;
-    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
 
@@ -162,4 +176,49 @@ TEST_F(Int64ToPtrHashMapTest, shouldForEachNonEmptyMap)
          });
 
     ASSERT_EQ(called, 1u);
+}
+
+TEST_F(Int64ToPtrHashMapTest, shouldNotRemoveIfEmptyMap)
+{
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    size_t called = 0;
+    remove_if([&](int64_t key, void *value_ptr)
+    {
+        called++;
+        return false;
+    });
+
+    ASSERT_EQ(called, 0u);
+}
+
+TEST_F(Int64ToPtrHashMapTest, shouldRemoveIfNonEmptyMap)
+{
+    int value0 = 42;
+    int value1 = 43;
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    for (int i = 0; i < 100; i++)
+    {
+        void *value = ((i & 1) == 0) ? &value0 : &value1;
+        EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, i, value), 0);
+    }
+
+    size_t called = 0;
+    remove_if([&](int64_t key, void *value_ptr)
+    {
+        called++;
+        int val = *((int *)value_ptr);
+        return (val & 1) == 1;
+    });
+
+    ASSERT_EQ(called, 100u);
+    ASSERT_EQ(m_map.size, 50u);
+
+    for_each([&](int64_t key, void *value_ptr)
+    {
+        int val = *((int *)value_ptr);
+        EXPECT_EQ(0, val & 1);
+        called++;
+    });
 }

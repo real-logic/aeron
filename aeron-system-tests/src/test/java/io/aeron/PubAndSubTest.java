@@ -311,7 +311,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @Timeout(1000000)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));
@@ -567,9 +567,6 @@ public class PubAndSubTest
     @Timeout(10)
     public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
-        // Immediate re-subscription currently doesn't work in the C media driver
-        assumeFalse(TestMediaDriver.shouldRunCMediaDriver());
-
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
@@ -600,7 +597,7 @@ public class PubAndSubTest
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         subscription.close();
-        subscription = subscribingClient.addSubscription(channel, STREAM_ID);
+        subscription = Tests.reAddSubscription(subscribingClient, channel, STREAM_ID);
 
         while (!subscription.isConnected())
         {

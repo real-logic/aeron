@@ -21,6 +21,7 @@
 
 typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
 typedef struct aeron_receive_channel_endpoint_stct aeron_receive_channel_endpoint_t;
+typedef struct aeron_receive_destination_stct aeron_receive_destination_t;
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 
 typedef struct aeron_driver_receiver_proxy_stct
@@ -45,13 +46,57 @@ typedef struct aeron_command_subscription_stct
     aeron_command_base_t base;
     void *endpoint;
     int32_t stream_id;
+    int32_t session_id;
 }
 aeron_command_subscription_t;
 
 void aeron_driver_receiver_proxy_on_add_subscription(
-    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id);
+
 void aeron_driver_receiver_proxy_on_remove_subscription(
-    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id);
+
+void aeron_driver_receiver_proxy_on_add_subscription_by_session(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
+
+void aeron_driver_receiver_proxy_on_remove_subscription_by_session(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
+
+typedef struct aeron_command_add_rcv_destination_stct
+{
+    aeron_command_base_t base;
+    void *endpoint;
+    void *destination;
+}
+aeron_command_add_rcv_destination_t;
+
+void aeron_driver_receiver_proxy_on_add_destination(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination);
+
+typedef struct aeron_command_remove_rcv_destination_stct
+{
+    aeron_command_base_t base;
+    void *endpoint;
+    void *channel;
+}
+aeron_command_remove_rcv_destination_t;
+
+void aeron_driver_receiver_proxy_on_remove_destination(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel);
 
 typedef struct aeron_command_publication_image_stct
 {
@@ -89,6 +134,7 @@ typedef struct aeron_command_receiver_resolution_change_stct
     aeron_command_base_t base;
     const char *endpoint_name;
     void *endpoint;
+    void *destination;
     struct sockaddr_storage new_addr;
 }
 aeron_command_receiver_resolution_change_t;
@@ -96,7 +142,8 @@ aeron_command_receiver_resolution_change_t;
 void aeron_driver_receiver_proxy_on_resolution_change(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     const char *endpoint_name,
-    aeron_receive_channel_endpoint_t *endpoint,
+    void *endpoint,
+    void *destination,
     struct sockaddr_storage *new_addr);
 
 

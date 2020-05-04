@@ -285,7 +285,9 @@ int aeron_udp_destination_tracker_address_compare(struct sockaddr_storage *lhs, 
 }
 
 int aeron_udp_destination_tracker_remove_destination(
-    aeron_udp_destination_tracker_t *tracker, struct sockaddr_storage *addr)
+    aeron_udp_destination_tracker_t *tracker,
+    struct sockaddr_storage *addr,
+    aeron_uri_t **removed_uri)
 {
     for (int last_index = (int) tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
@@ -293,6 +295,8 @@ int aeron_udp_destination_tracker_remove_destination(
 
         if (aeron_udp_destination_tracker_address_compare(&entry->addr, addr) == 0)
         {
+            *removed_uri = entry->uri;
+
             aeron_array_fast_unordered_remove(
                 (uint8_t *) tracker->destinations.array,
                 sizeof(aeron_udp_destination_entry_t),

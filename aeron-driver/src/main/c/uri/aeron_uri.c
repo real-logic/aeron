@@ -463,12 +463,53 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     return 1;
 }
 
-int aeron_uri_publication_session_id_param(aeron_uri_params_t *uri_params, aeron_uri_publication_params_t *params)
+int aeron_uri_publication_session_id_param(
+    aeron_uri_params_t *uri_params,
+    aeron_driver_conductor_t *conductor,
+    aeron_uri_publication_params_t *params)
 {
-    int result = aeron_uri_get_int32(uri_params, AERON_URI_SESSION_ID_KEY, &params->session_id);
-    params->has_session_id = 1 == result;
+    const char *session_id_str = aeron_uri_find_param_value(uri_params, AERON_URI_SESSION_ID_KEY);
+    if (NULL != session_id_str)
+    {
+        if (0 == strncmp("tag:", session_id_str, 4))
+        {
+            char *end_ptr;
+            errno = 0;
 
-    return result < 0 ? -1 : 0;
+            long long tag = strtoll(&session_id_str[4], &end_ptr, 0);
+            if (0 != errno || '\0' != *end_ptr)
+            {
+                aeron_set_err(
+                    EINVAL,
+                    "could not parse %s as int64_t, for key %s in URI: ",
+                    session_id_str, "session-id", strerror(errno));
+                return -1;
+            }
+
+            aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication_by_tag(
+                conductor, (int64_t)tag);
+
+            if (NULL == publication)
+            {
+                aeron_set_err(EINVAL, "%s=%s must reference a network publication", "session-id", session_id_str);
+                return -1;
+            }
+
+            params->has_session_id = true;
+            params->session_id = publication->session_id;
+            params->mtu_length = publication->mtu_length;
+            params->term_length = publication->term_buffer_length;
+        }
+        else
+        {
+            int result = aeron_uri_get_int32(uri_params, AERON_URI_SESSION_ID_KEY, &params->session_id);
+            params->has_session_id = 1 == result;
+
+            return result < 0 ? -1 : 0;
+        }
+    }
+
+    return 0;
 }
 
 int aeron_uri_subscription_session_id_param(aeron_uri_params_t *uri_params, aeron_uri_subscription_params_t *params)
@@ -498,8 +539,30 @@ int aeron_uri_publication_params(
     params->signal_eos = true;
     params->has_session_id = false;
     params->session_id = 0;
+    params->entity_tag = AERON_URI_INVALID_TAG;
+
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
+
+    if (aeron_uri_publication_session_id_param(uri_params, conductor, params) < 0)
+    {
+        return -1;
+    }
+
+    const char *entity_tag_str = AERON_URI_IPC == uri->type ? uri->params.ipc.entity_tag : uri->params.udp.entity_tag;
+    if (NULL != entity_tag_str)
+    {
+        errno = 0;
+        char *end_ptr;
+        long long entity_tag = strtoll(entity_tag_str, &end_ptr, 10);
+        if (0 != errno || *end_ptr != '\0')
+        {
+            aeron_set_err(EINVAL, "Entity tag invalid");
+            return -1;
+        }
+
+        params->entity_tag = (int64_t)entity_tag;
+    }
 
     if (aeron_uri_linger_timeout_param(uri_params, params) < 0)
     {
@@ -512,11 +575,6 @@ int aeron_uri_publication_params(
     }
 
     if (aeron_uri_get_mtu_length_param(uri_params, params) < 0)
-    {
-        return -1;
-    }
-
-    if (aeron_uri_publication_session_id_param(uri_params, params) < 0)
     {
         return -1;
     }

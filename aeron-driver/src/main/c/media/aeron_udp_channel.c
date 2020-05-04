@@ -102,47 +102,6 @@ int aeron_find_multicast_interface(
     return aeron_find_interface(NULL == interface_str ? wildcard_str : interface_str, interface_addr, interface_index);
 }
 
-#define AERON_URI_ADDRESS_HOST_LEN (INET6_ADDRSTRLEN + 2)
-#define AERON_URI_ADDRESS_PORT_LEN (NI_MAXSERV + 1)
-
-/**
- * Internal (assumes sizes of buffers)...  Will prefix the port_buffer with a ':' and wrap IPv6 addresses with '[' and
- * ']'
- *
- * @param addr
- * @param host_buffer assumes at least AERON_URI_ADDRESS_HOST_LEN of space.
- * @param port_buffer assumes at least AERON_URI_ADDRESS_PORT_LEN of space.
- * @return
- */
-static int aeron_uri_format_address(struct sockaddr_storage *addr, char *host_buffer, char *port_buffer)
-{
-    int host_index = addr->ss_family == AF_INET6 ? 1 : 0;
-
-    int result = getnameinfo(
-        (const struct sockaddr *)addr, sizeof(struct sockaddr_storage),
-        &host_buffer[host_index], INET6_ADDRSTRLEN,
-        &port_buffer[1], NI_MAXSERV,
-        NI_NUMERICHOST | NI_NUMERICSERV);
-
-    if (0 != result)
-    {
-        aeron_set_err(EINVAL, "Failed to format ip address: %s", gai_strerror(result));
-        return -1;
-    }
-
-    port_buffer[0] = ':';
-
-    if (addr->ss_family == AF_INET6)
-    {
-        host_buffer[0] = '[';
-        size_t len = strlen(host_buffer);
-        host_buffer[len] = ']';
-        host_buffer[len + 1] = '\0';
-    }
-
-    return 0;
-}
-
 static int32_t unique_canonical_form_value = 0;
 
 int aeron_uri_udp_canonicalise(
@@ -155,22 +114,20 @@ int aeron_uri_udp_canonicalise(
     bool make_unique)
 {
     char unique_suffix[4 * sizeof(unique_canonical_form_value)] = "";
-    char local_data_formatted_addr[AERON_URI_ADDRESS_HOST_LEN];
-    char remote_data_formatted_addr[AERON_URI_ADDRESS_HOST_LEN];
-    char local_port_str[AERON_URI_ADDRESS_PORT_LEN] = "";
-    char remote_port_str[AERON_URI_ADDRESS_PORT_LEN] = "";
+    char local_data_buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    char remote_data_buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
 
     const char *local_data_str;
     const char *remote_data_str;
 
     if (NULL == local_param_value)
     {
-        if (aeron_uri_format_address(local_data, local_data_formatted_addr, local_port_str) < 0)
+        if (aeron_format_source_identity(local_data_buffer, sizeof(local_data_buffer), local_data) < 0)
         {
             return -1;
         }
 
-        local_data_str = local_data_formatted_addr;
+        local_data_str = local_data_buffer;
     }
     else
     {
@@ -179,12 +136,12 @@ int aeron_uri_udp_canonicalise(
 
     if (NULL == remote_param_value)
     {
-        if (aeron_uri_format_address(remote_data, remote_data_formatted_addr, remote_port_str) < 0)
+        if (aeron_format_source_identity(remote_data_buffer, sizeof(remote_data_buffer), remote_data) < 0)
         {
             return -1;
         }
 
-        remote_data_str = remote_data_formatted_addr;
+        remote_data_str = remote_data_buffer;
     }
     else
     {
@@ -199,9 +156,7 @@ int aeron_uri_udp_canonicalise(
         snprintf(unique_suffix, sizeof(unique_suffix) - 1, "-%" PRId32, result);
     }
 
-    return snprintf(
-        canonical_form, length, "UDP-%s%s-%s%s%s",
-        local_data_str, local_port_str, remote_data_str, remote_port_str, unique_suffix);
+    return snprintf(canonical_form, length, "UDP-%s-%s%s", local_data_str, remote_data_str, unique_suffix);
 }
 
 int aeron_udp_channel_parse(
@@ -398,3 +353,4 @@ void aeron_udp_channel_delete(const aeron_udp_channel_t *channel)
 }
 
 extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);
+extern bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b);

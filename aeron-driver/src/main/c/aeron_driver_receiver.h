@@ -22,6 +22,7 @@
 #include "aeron_driver_context.h"
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_system_counters.h"
+#include "media/aeron_udp_channel.h"
 
 #define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
 #define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
@@ -40,6 +41,7 @@ typedef struct aeron_driver_receiver_pending_setup_entry_stct
     int32_t session_id;
     int32_t stream_id;
     aeron_receive_channel_endpoint_t *endpoint;
+    aeron_receive_destination_t *destination;
     int64_t time_of_status_message_ns;
     struct sockaddr_storage control_addr;
 }
@@ -115,6 +117,11 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *item);
 
 void aeron_driver_receiver_on_add_subscription(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item);
+void aeron_driver_receiver_on_add_subscription_by_session(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_subscription_by_session(void *clientd, void *item);
+
+void aeron_driver_receiver_on_add_destination(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_destination(void *clientd, void *item);
 
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item);
@@ -126,6 +133,7 @@ void aeron_driver_receiver_on_resolution_change(void *clientd, void *item);
 int aeron_driver_receiver_add_pending_setup(
     aeron_driver_receiver_t *receiver,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     int32_t session_id,
     int32_t stream_id,
     struct sockaddr_storage *control_addr);

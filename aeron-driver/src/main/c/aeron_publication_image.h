@@ -32,6 +32,17 @@ typedef enum aeron_publication_image_state_enum
 }
 aeron_publication_image_state_t;
 
+typedef struct aeron_publication_image_connection_stct
+{
+    struct sockaddr_storage resolved_control_address_for_implicit_unicast_channels;
+    aeron_receive_destination_t *destination;  // Not owned.
+    struct sockaddr_storage *control_addr;     // Not owned.
+    int64_t time_of_last_activity_ns;
+    int64_t time_of_last_frame_ns;
+    bool is_eos;
+}
+aeron_publication_image_connection_t;
+
 typedef struct aeron_publication_image_stct
 {
     uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
@@ -50,7 +61,14 @@ typedef struct aeron_publication_image_stct
 
     uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 
-    struct sockaddr_storage control_address;
+    struct image_connection_entries
+    {
+        size_t length;
+        size_t capacity;
+        aeron_publication_image_connection_t *array;
+    }
+    connections;
+
     struct sockaddr_storage source_address;
     aeron_loss_detector_t loss_detector;
 
@@ -113,6 +131,7 @@ aeron_publication_image_t;
 int aeron_publication_image_create(
     aeron_publication_image_t **image,
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     aeron_driver_context_t *context,
     int64_t correlation_id,
     int32_t session_id,
@@ -143,7 +162,13 @@ void aeron_publication_image_track_rebuild(
     aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout);
 
 int aeron_publication_image_insert_packet(
-    aeron_publication_image_t *image, int32_t term_id, int32_t term_offset, const uint8_t *buffer, size_t length);
+    aeron_publication_image_t *image,
+    aeron_receive_destination_t *destination,
+    int32_t term_id,
+    int32_t term_offset,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_publication_image_on_rttm(
     aeron_publication_image_t *image, aeron_rttm_header_t *header, struct sockaddr_storage *addr);
@@ -153,6 +178,15 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image);
 
 int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int64_t now_ns);
+
+int aeron_publication_image_add_destination(aeron_publication_image_t *image, aeron_receive_destination_t *destination);
+
+int aeron_publication_image_remove_destination(aeron_publication_image_t *image, aeron_udp_channel_t *channel);
+
+void aeron_publication_image_add_connection_if_unknown(
+    aeron_publication_image_t *image,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *src_addr);
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);

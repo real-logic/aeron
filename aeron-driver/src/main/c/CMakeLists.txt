@@ -177,11 +177,15 @@ SET(SOURCE
     media/aeron_udp_destination_tracker.c
     media/aeron_udp_channel_transport_bindings.c
     media/aeron_udp_channel_transport_loss.c
+    media/aeron_receive_destination.c
     ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.c
     uri/aeron_uri.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_tagged_ptr_hash_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.c
     reports/aeron_loss_reporter.c
     agent/aeron_driver_agent.c)
 
@@ -259,10 +263,13 @@ SET(HEADERS
     media/aeron_udp_destination_tracker.h
     media/aeron_udp_channel_transport_bindings.h
     media/aeron_udp_channel_transport_loss.h
+    media/aeron_receive_destination.h
     uri/aeron_uri.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.h
     reports/aeron_loss_reporter.h
     agent/aeron_driver_agent.h)
 

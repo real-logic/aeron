@@ -56,7 +56,7 @@ void *get_on_publication_image_fptr()
     HMODULE module = GetModuleHandleA("aeron_driver");
     return (void *) GetProcAddress(module, "aeron_driver_conductor_on_create_publication_image");
 #else
-    return (void *) aeron_driver_conductor_on_create_publication_image;
+    return (void *)aeron_driver_conductor_on_create_publication_image;
 #endif
 }
 
@@ -64,7 +64,8 @@ class DataPacketDispatcherTest : public testing::Test
 {
 public:
     DataPacketDispatcherTest() : m_receive_endpoint(NULL), m_conductor_fail_counter(0)
-    {}
+    {
+    }
 
 protected:
     virtual void SetUp()
@@ -489,7 +490,6 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
 
     ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
 }
-
 
 TEST_F(DataPacketDispatcherTest, shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage)
 {

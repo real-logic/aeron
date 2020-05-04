@@ -88,7 +88,13 @@ public:
 };
 
 void func_should_never_be_called(
-    int32_t id, int32_t type_id, const uint8_t *key, size_t key_length, const uint8_t *label, size_t label_length, void *clientd)
+    int32_t id,
+    int32_t type_id,
+    const uint8_t *key,
+    size_t key_length,
+    const uint8_t *label,
+    size_t label_length,
+    void *clientd)
 {
     FAIL();
 }
@@ -112,9 +118,15 @@ TEST_F(CountersManagerTest, shouldErrorOnAllocatingWhenFull)
 }
 
 void func_check_and_remove_from_map(
-    int32_t id, int32_t type_id, const uint8_t *key, size_t key_length, const uint8_t *label, size_t label_length, void *clientd)
+    int32_t id,
+    int32_t type_id,
+    const uint8_t *key,
+    size_t key_length,
+    const uint8_t *label,
+    size_t label_length,
+    void *clientd)
 {
-    std::map<int32_t, std::string> *allocated = reinterpret_cast<std::map<int32_t, std::string > *>(clientd);
+    auto allocated = reinterpret_cast<std::map<int32_t, std::string> *>(clientd);
 
     ASSERT_EQ(allocated->at(id), std::string((const char *)label, label_length));
     allocated->erase(allocated->find(id));
@@ -135,8 +147,8 @@ TEST_F(CountersManagerTest, shouldAllocateIntoEmptyCounters)
         allocated[id] = label;
     }
 
-    aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_check_and_remove_from_map,
-                                           &allocated);
+    aeron_counters_reader_foreach_metadata(
+        m_metadata.data(), m_metadata.size(), func_check_and_remove_from_map, &allocated);
 
     ASSERT_TRUE(allocated.empty());
 }

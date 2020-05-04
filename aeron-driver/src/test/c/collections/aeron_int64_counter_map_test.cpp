@@ -39,14 +39,14 @@ protected:
         t->m_for_each(key, value);
     }
 
-    void for_each(const std::function<void(int64_t,int64_t)>& func)
+    void for_each(const std::function<void(int64_t, int64_t)> &func)
     {
         m_for_each = func;
         aeron_int64_counter_map_for_each(&m_map, Int64CounterMapTest::for_each, this);
     }
 
     aeron_int64_counter_map_t m_map;
-    std::function<void(int64_t,int64_t)> m_for_each;
+    std::function<void(int64_t, int64_t)> m_for_each;
 };
 
 TEST_F(Int64CounterMapTest, shouldDoPutAndThenGetOnEmptyMap)
@@ -172,10 +172,11 @@ TEST_F(Int64CounterMapTest, shouldNotForEachEmptyMap)
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     size_t called = 0;
-    for_each([&](int64_t key, int64_t value)
-         {
-             called++;
-         });
+    for_each(
+        [&](int64_t key, int64_t value)
+        {
+            called++;
+        });
 
     ASSERT_EQ(called, 0u);
 }
@@ -188,12 +189,13 @@ TEST_F(Int64CounterMapTest, shouldForEachNonEmptyMap)
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 7, value, NULL), 0);
 
     size_t called = 0;
-    for_each([&](int64_t key, int64_t for_each_value)
-         {
-             EXPECT_EQ(key, 7);
-             EXPECT_EQ(for_each_value, value);
-             called++;
-         });
+    for_each(
+        [&](int64_t key, int64_t for_each_value)
+        {
+            EXPECT_EQ(key, 7);
+            EXPECT_EQ(for_each_value, value);
+            called++;
+        });
 
     ASSERT_EQ(called, 1u);
 }

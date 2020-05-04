@@ -35,12 +35,13 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublication)
     doWork();
 
     int32_t client_counter_id = expectNextCounterFromConductor(client_id);
-    auto client_counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
-    {
-        EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-        EXPECT_EQ(label, "client-heartbeat: 0");
-        EXPECT_EQ(key.getInt64(0), client_id);
-    };
+    auto client_counter_func =
+        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
+        {
+            EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
+            EXPECT_EQ(label, "client-heartbeat: 0");
+            EXPECT_EQ(key.getInt64(0), client_id);
+        };
     EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
 
     aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_find_send_channel_endpoint(
@@ -53,16 +54,17 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublication)
 
     ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_EQ(response.correlationId(), pub_id);
-        EXPECT_GT(response.logFileName().length(), 0u);
-    };
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), pub_id);
+            EXPECT_GT(response.logFileName().length(), 0u);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -80,14 +82,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkPublic
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.correlationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -102,12 +105,13 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscription)
     doWork();
 
     int32_t client_counter_id = expectNextCounterFromConductor(client_id);
-    auto client_counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
-    {
-        EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-        EXPECT_EQ(label, "client-heartbeat: 0");
-        EXPECT_EQ(key.getInt64(0), client_id);
-    };
+    auto client_counter_func =
+        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
+        {
+            EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
+            EXPECT_EQ(label, "client-heartbeat: 0");
+            EXPECT_EQ(key.getInt64(0), client_id);
+        };
     EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
 
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
@@ -115,14 +119,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscription)
 
     ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-        const command::SubscriptionReadyFlyweight response(buffer, offset);
+            const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), sub_id);
-    };
+            EXPECT_EQ(response.correlationId(), sub_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -140,14 +145,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.correlationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
@@ -161,14 +167,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
     doWork();
-    auto add_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    auto add_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-        const command::SubscriptionReadyFlyweight response(buffer, offset);
+            const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), sub_id);
-    };
+            EXPECT_EQ(response.correlationId(), sub_id);
+        };
 
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(add_handler), 1u);
@@ -182,14 +189,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
-    auto remove_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto remove_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.correlationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 1u);
@@ -313,14 +321,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveMultipleNetworkPubl
     ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
     ASSERT_EQ(publication->conductor_fields.refcnt, 3);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id_1);
-    };
+            EXPECT_EQ(response.correlationId(), remove_correlation_id_1);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -381,17 +390,18 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublicationWith
 
     ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_EQ(response.sessionId(), SESSION_ID_1);
-        EXPECT_EQ(response.correlationId(), pub_id);
-        EXPECT_GT(response.logFileName().length(), 0u);
-    };
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.sessionId(), SESSION_ID_1);
+            EXPECT_EQ(response.correlationId(), pub_id);
+            EXPECT_GT(response.logFileName().length(), 0u);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -412,10 +422,11 @@ TEST_F(DriverConductorNetworkTest, shouldAddSecondNetworkPublicationWithSpecifie
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-    };
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -437,14 +448,15 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddSecondNetworkPublicationWithSp
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -457,7 +469,7 @@ TEST_F(DriverConductorNetworkTest, shouldAddSecondNetworkPublicationWithSpecifie
     int64_t pub_id2 = nextCorrelationId();
 
     const char *channelUri = CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_1;
-    
+
     ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channelUri, STREAM_ID_1, false), 0);
     doWork();
 
@@ -467,10 +479,11 @@ TEST_F(DriverConductorNetworkTest, shouldAddSecondNetworkPublicationWithSpecifie
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-    };
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -493,14 +506,15 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddSecondNetworkPublicationWithSp
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -518,14 +532,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkPublic
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.correlationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -548,17 +563,18 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublicationThat
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
 
-        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_NE(response.sessionId(), next_session_id);
-        EXPECT_EQ(response.correlationId(), pub_id);
-        EXPECT_GT(response.logFileName().length(), 0u);
-    };
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_NE(response.sessionId(), next_session_id);
+            EXPECT_EQ(response.correlationId(), pub_id);
+            EXPECT_GT(response.logFileName().length(), 0u);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -577,14 +593,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnDuplicateExclusivePublicationWit
 
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1, true), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -603,14 +620,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnDuplicateSharedPublicationWithDi
 
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1_WITH_SESSION_ID_2, STREAM_ID_1, false), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -629,14 +647,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnDuplicateSharedPublicationWithEx
 
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1, false), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -655,14 +674,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnDuplicateExclusivePublicationWit
 
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1, true), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id_2);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -769,14 +789,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnRemovePublicationOnUnknownRegist
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -789,14 +810,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnRemoveSubscriptionOnUnknownRegis
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -808,14 +830,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnAddPublicationWithInvalidUri)
 
     ASSERT_EQ(addNetworkPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, false), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -827,14 +850,15 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnAddSubscriptionWithInvalidUri)
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, INVALID_URI, STREAM_ID_1), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
 
-        const command::ErrorResponseFlyweight response(buffer, offset);
+            const command::ErrorResponseFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.offendingCommandCorrelationId(), sub_id);
-    };
+            EXPECT_EQ(response.offendingCommandCorrelationId(), sub_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -856,14 +880,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkPublication)
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 0u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
 
-        const command::ClientTimeoutFlyweight response(buffer, offset);
+            const command::ClientTimeoutFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.clientId(), client_id);
-    };
+            EXPECT_EQ(response.clientId(), client_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -910,14 +935,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
 
-        const command::ClientTimeoutFlyweight response(buffer, offset);
+            const command::ClientTimeoutFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.clientId(), client_id);
-    };
+            EXPECT_EQ(response.clientId(), client_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1026,20 +1052,21 @@ TEST_F(DriverConductorNetworkTest, shouldCreatePublicationImageForActiveNetworkS
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
     EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-        const command::ImageBuffersReadyFlyweight response(buffer, offset);
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.sessionId(), SESSION_ID);
-        EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
-        EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+            EXPECT_EQ(response.sessionId(), SESSION_ID);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
-        EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
-        EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
-    };
+            EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+            EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1132,17 +1159,18 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
 
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE);
 
-        const command::ImageMessageFlyweight response(buffer, offset);
+            const command::ImageMessageFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_EQ(response.correlationId(), image_correlation_id);
-        EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-        EXPECT_EQ(response.channel(), CHANNEL_1);
-    };
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), image_correlation_id);
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+            EXPECT_EQ(response.channel(), CHANNEL_1);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1203,19 +1231,22 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
     EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 2u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-        const command::ImageBuffersReadyFlyweight response(buffer, offset);
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.sessionId(), SESSION_ID);
-        EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
-        EXPECT_TRUE(response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
-        EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
-        EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
-    };
+            EXPECT_EQ(response.sessionId(), SESSION_ID);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+            EXPECT_TRUE(
+                response.subscriptionRegistrationId() == sub_id_1 ||
+                response.subscriptionRegistrationId() == sub_id_2);
+            EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+            EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 2u);
 }
@@ -1243,53 +1274,54 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
     doWork();
 
     size_t response_number = 0;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id_1);
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                EXPECT_EQ(response.correlationId(), sub_id_1);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.sessionId(), SESSION_ID);
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id_1);
-            EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
-            EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+                EXPECT_EQ(response.sessionId(), SESSION_ID);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id_1);
+                EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+                EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id_2);
-        }
-        else if (3 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                EXPECT_EQ(response.correlationId(), sub_id_2);
+            }
+            else if (3 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.sessionId(), SESSION_ID);
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id_2);
-            EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
-            EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
-        }
+                EXPECT_EQ(response.sessionId(), SESSION_ID);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id_2);
+                EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+                EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 4u);
 }
@@ -1317,7 +1349,8 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     doWork();
 
     int64_t image_correlation_id = aeron_publication_image_registration_id(image);
-    int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->image_liveness_timeout_ns +
+        (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkForNs(
         timeout,
@@ -1329,7 +1362,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
 
     size_t response_number = 0;
     auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             if (0 == response_number)
             {
@@ -1487,10 +1520,11 @@ TEST_F(DriverConductorNetworkTest, shouldErrorWithUnknownSessionIdTag)
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
     doWork();
 
-    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
-    };
+    auto error_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
 }
@@ -1507,10 +1541,11 @@ TEST_F(DriverConductorNetworkTest, shouldErrorWithInvalidSessionIdTag)
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002a", STREAM_ID_1, false), 0);
     doWork();
 
-    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
-    };
+    auto error_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
 }
@@ -1529,27 +1564,29 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveDestinationToManual
 
     ASSERT_EQ(addDestination(client_id, add_destination_id, pub_id, CHANNEL_1), 0);
     doWork();
-    auto add_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto add_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), add_destination_id);
-    };
+            EXPECT_EQ(response.correlationId(), add_destination_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(add_handler), 1u);
 
     ASSERT_EQ(removeDestination(client_id, remove_destination_id, pub_id, CHANNEL_1), 0);
     doWork();
-    auto remove_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto remove_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_destination_id);
-    };
+            EXPECT_EQ(response.correlationId(), remove_destination_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 1u);
 }
@@ -1565,20 +1602,21 @@ TEST_F(DriverConductorNetworkTest, shouldNotAddDynamicSessionIdInReservedRange)
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_TRUE(
-            response.sessionId() < m_conductor.m_conductor.publication_reserved_session_id_low ||
-            m_conductor.m_conductor.publication_reserved_session_id_high < response.sessionId())
-                << "Session Id [" << response.sessionId() << "] should not be in the range: "
-                << m_conductor.m_conductor.publication_reserved_session_id_low
-                << " to "
-                << m_conductor.m_conductor.publication_reserved_session_id_high;
+            EXPECT_TRUE(
+                response.sessionId() < m_conductor.m_conductor.publication_reserved_session_id_low ||
+                    m_conductor.m_conductor.publication_reserved_session_id_high < response.sessionId())
+                        << "Session Id [" << response.sessionId() << "] should not be in the range: "
+                        << m_conductor.m_conductor.publication_reserved_session_id_low
+                        << " to "
+                        << m_conductor.m_conductor.publication_reserved_session_id_high;
 
-    };
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1606,16 +1644,17 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
-        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), pub_id_4);
-        EXPECT_NE(response.sessionId(), SESSION_ID_3);
-        EXPECT_NE(response.sessionId(), SESSION_ID_4);
-        EXPECT_NE(response.sessionId(), SESSION_ID_5);
-    };
+            EXPECT_EQ(response.correlationId(), pub_id_4);
+            EXPECT_NE(response.sessionId(), SESSION_ID_3);
+            EXPECT_NE(response.sessionId(), SESSION_ID_4);
+            EXPECT_NE(response.sessionId(), SESSION_ID_5);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1654,17 +1693,18 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
 
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
-        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), pub_id_5);
-        EXPECT_NE(response.sessionId(), session_id_1);
-        EXPECT_NE(response.sessionId(), session_id_2);
-        EXPECT_NE(response.sessionId(), session_id_3);
-        EXPECT_NE(response.sessionId(), session_id_4);
-    };
+            EXPECT_EQ(response.correlationId(), pub_id_5);
+            EXPECT_NE(response.sessionId(), session_id_1);
+            EXPECT_NE(response.sessionId(), session_id_2);
+            EXPECT_NE(response.sessionId(), session_id_3);
+            EXPECT_NE(response.sessionId(), session_id_4);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1683,14 +1723,15 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscriptionWit
 
     ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-        const command::SubscriptionReadyFlyweight response(buffer, offset);
+            const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), sub_id);
-    };
+            EXPECT_EQ(response.correlationId(), sub_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1707,10 +1748,11 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddSubscriptionWithDifferentRelia
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_UNRELIABLE, STREAM_ID_1), 0);
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
-    };
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1727,10 +1769,11 @@ TEST_F(DriverConductorNetworkTest, shouldAllowDifferentReliabilityParameterWithS
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1), 0);
     doWork();
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-    };
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -1743,10 +1786,11 @@ TEST_F(DriverConductorNetworkTest, shouldAddMdsWithSingleUnicastSubscription)
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
     doWork();
 
-    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-    };
+    auto sub_ready_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
 
@@ -1755,10 +1799,11 @@ TEST_F(DriverConductorNetworkTest, shouldAddMdsWithSingleUnicastSubscription)
     ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1), 0);
     doWork();
 
-    auto dest_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
-    };
+    auto dest_ready_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(dest_ready_handler), 1u);
 }
@@ -1772,10 +1817,11 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscripti
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1), 0);
     doWork();
 
-    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-    };
+    auto sub_ready_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
 
@@ -1784,10 +1830,11 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscripti
     ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, invalid_sub_id, CHANNEL_1), 0);
     doWork();
 
-    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
-    };
+    auto error_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
 }
@@ -1800,10 +1847,11 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscripti
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_2, STREAM_ID_1), 0);
     doWork();
 
-    auto sub_ready_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-    };
+    auto sub_ready_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(sub_ready_handler), 1u);
 
@@ -1812,10 +1860,11 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddMdsWithSingleUnicastSubscripti
     ASSERT_EQ(addReceiveDestination(client_id, dest_correlation_id, sub_id, CHANNEL_1), 0);
     doWork();
 
-    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
-    };
+    auto error_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
 }
@@ -1840,10 +1889,11 @@ TEST_F(DriverConductorNetworkTest, shouldAddAndRemoveMdsWithSingleUnicastSubscri
     ASSERT_EQ(removeReceiveDestination(client_id, remove_correlation_id, sub_id, CHANNEL_1), 0);
     doWork();
 
-    auto dest_removed_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
-    };
+    auto dest_removed_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(dest_removed_handler), 1u);
 }
@@ -1869,11 +1919,11 @@ TEST_F(DriverConductorNetworkTest, shouldFailToRemoveMdsWithSingleUnicastSubscri
     ASSERT_EQ(removeReceiveDestination(client_id, remove_correlation_id, invalid_sub_id, CHANNEL_1), 0);
     doWork();
 
-    auto error_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
-    };
+    auto error_handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(error_handler), 1u);
 }
-

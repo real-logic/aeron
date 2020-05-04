@@ -297,17 +297,18 @@ public:
     {
         size_t num_received = 0;
 
-        auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-        {
-            const bool msgTypeIgnored = std::end(ignored_msg_types) != std::find(
-                std::begin(ignored_msg_types), std::end(ignored_msg_types), msgTypeId);
-
-            if (!msgTypeIgnored)
+        auto handler =
+            [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
             {
-                func(msgTypeId, buffer, offset, length);
-                num_received++;
-            }
-        };
+                const bool msgTypeIgnored = std::end(ignored_msg_types) != std::find(
+                    std::begin(ignored_msg_types), std::end(ignored_msg_types), msgTypeId);
+
+                if (!msgTypeIgnored)
+                {
+                    func(msgTypeId, buffer, offset, length);
+                    num_received++;
+                }
+            };
 
         while (m_to_clients_copy_receiver.receive(handler) > 0)
         {
@@ -657,8 +658,9 @@ protected:
     const std::vector<std::int32_t> m_showAllResponses { };
 };
 
-static auto null_handler = [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-{
-};
+static auto null_handler =
+    [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+    };
 
 #endif //AERON_DRIVER_CONDUCTOR_TEST_H

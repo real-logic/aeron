@@ -1,6 +1,18 @@
-//
-// Created by mike on 8/04/20.
-//
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef AERON_AERON_RECEIVER_TEST_H
 #define AERON_AERON_RECEIVER_TEST_H
@@ -30,7 +42,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
 typedef std::array<std::uint8_t, 2 * CAPACITY> buffer_2x_t;
 
-void stub_linger(void *clientd, uint8_t* resource)
+void stub_linger(void *clientd, uint8_t *resource)
 {
 }
 
@@ -89,7 +101,7 @@ protected:
         {
             aeron_publication_image_close(&m_counters_manager, image);
         }
-        
+
         for (auto endpoint : m_endpoints)
         {
             aeron_receive_channel_endpoint_delete(&m_counters_manager, endpoint);
@@ -136,7 +148,7 @@ protected:
         return createEndpoint("aeron:udp?control-mode=manual", NULL);
     }
 
-    aeron_udp_channel_t *createChannel(const char* uri, std::vector<aeron_udp_channel_t *> *tracker = nullptr)
+    aeron_udp_channel_t *createChannel(const char *uri, std::vector<aeron_udp_channel_t *> *tracker = nullptr)
     {
         aeron_udp_channel_t *channel = NULL;
         aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
@@ -188,7 +200,7 @@ protected:
             &congestion_control_strategy, 0, 0, 0, 0, 0, TERM_BUFFER_SIZE, MTU,
             &channel->remote_control,
             &channel->remote_data,
-            m_context, 
+            m_context,
             &m_counters_manager);
 
         if (aeron_publication_image_create(

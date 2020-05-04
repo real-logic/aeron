@@ -30,24 +30,26 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscription)
     doWork();
 
     int32_t client_counter_id = expectNextCounterFromConductor(client_id);
-    auto client_counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
-    {
-        EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-        EXPECT_EQ(label, "client-heartbeat: 0");
-        EXPECT_EQ(key.getInt64(0), client_id);
-    };
+    auto client_counter_func =
+        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
+        {
+            EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
+            EXPECT_EQ(label, "client-heartbeat: 0");
+            EXPECT_EQ(key.getInt64(0), client_id);
+        };
     EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
 
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-        const command::SubscriptionReadyFlyweight response(buffer, offset);
+            const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), sub_id);
-    };
+            EXPECT_EQ(response.correlationId(), sub_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
@@ -65,14 +67,15 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddAndRemoveSingleSubscription)
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id);
-    };
+            EXPECT_EQ(response.correlationId(), remove_correlation_id);
+        };
 
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
@@ -136,44 +139,45 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id);
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+                EXPECT_EQ(response.correlationId(), sub_id);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id);
-            session_id = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id);
+                session_id = response.sessionId();
 
-            log_file_name = response.logFileName();
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                log_file_name = response.logFileName();
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.sessionId(), session_id);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.sessionId(), session_id);
 
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
-            EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
+                EXPECT_EQ(log_file_name, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
@@ -197,44 +201,45 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionWithTagThenAdd
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id);
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+                EXPECT_EQ(response.correlationId(), sub_id);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id);
-            session_id = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id);
+                session_id = response.sessionId();
 
-            log_file_name = response.logFileName();
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                log_file_name = response.logFileName();
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.sessionId(), session_id);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.sessionId(), session_id);
 
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
-            EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
+                EXPECT_EQ(log_file_name, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
@@ -257,43 +262,44 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id);
-            session_id = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id);
+                session_id = response.sessionId();
 
-            log_file_name = response.logFileName();
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+                log_file_name = response.logFileName();
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id);
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                EXPECT_EQ(response.correlationId(), sub_id);
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            command::ImageBuffersReadyFlyweight response(buffer, offset);
+                command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.sessionId(), session_id);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
-            EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
+                EXPECT_EQ(log_file_name, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
@@ -317,43 +323,44 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id);
-            session_id = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id);
+                session_id = response.sessionId();
 
-            log_file_name = response.logFileName();
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+                log_file_name = response.logFileName();
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id);
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                EXPECT_EQ(response.correlationId(), sub_id);
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            command::ImageBuffersReadyFlyweight response(buffer, offset);
+                command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.sessionId(), session_id);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
-            EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
+                EXPECT_EQ(log_file_name, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
@@ -378,51 +385,52 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id_1);
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+                EXPECT_EQ(response.correlationId(), sub_id_1);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id_2);
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+                EXPECT_EQ(response.correlationId(), sub_id_2);
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id);
-            session_id = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id);
+                session_id = response.sessionId();
 
-            log_file_name = response.logFileName();
-        }
-        else if (3 == response_number || 4 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                log_file_name = response.logFileName();
+            }
+            else if (3 == response_number || 4 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_TRUE(response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.sessionId(), session_id);
+                EXPECT_TRUE(response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
 
-            EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
+                EXPECT_EQ(log_file_name, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
 }
@@ -452,67 +460,68 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
     int32_t session_id_2 = 0;
     std::string log_file_name_1;
     std::string log_file_name_2;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id);
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+                EXPECT_EQ(response.correlationId(), sub_id);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id_1);
-            session_id_1 = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id_1);
+                session_id_1 = response.sessionId();
 
-            log_file_name_1 = response.logFileName();
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                log_file_name_1 = response.logFileName();
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-            EXPECT_EQ(response.sessionId(), session_id_1);
-            EXPECT_EQ(response.correlationId(), pub_id_1);
-            EXPECT_EQ(log_file_name_1, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
-        else if (3 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.sessionId(), session_id_1);
+                EXPECT_EQ(response.correlationId(), pub_id_1);
+                EXPECT_EQ(log_file_name_1, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
+            else if (3 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id_2);
-            session_id_2 = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id_2);
+                session_id_2 = response.sessionId();
 
-            log_file_name_2 = response.logFileName();
-        }
-        else if (4 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                log_file_name_2 = response.logFileName();
+            }
+            else if (4 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-            EXPECT_EQ(response.sessionId(), session_id_2);
-            EXPECT_EQ(response.correlationId(), pub_id_2);
-            EXPECT_EQ(log_file_name_2, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.sessionId(), session_id_2);
+                EXPECT_EQ(response.correlationId(), pub_id_2);
+                EXPECT_EQ(log_file_name_2, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
 }
@@ -537,53 +546,54 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        if (0 == response_number)
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
+                const command::SubscriptionReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), sub_id);
-        }
-        else if (1 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+                EXPECT_EQ(response.correlationId(), sub_id);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id_1);
-            session_id = response.sessionId();
+                EXPECT_EQ(response.correlationId(), pub_id_1);
+                session_id = response.sessionId();
 
-            log_file_name = response.logFileName();
-        }
-        else if (2 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+                log_file_name = response.logFileName();
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-            EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.correlationId(), pub_id_1);
-            EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-        }
-        else if (3 == response_number)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
+                EXPECT_EQ(response.sessionId(), session_id);
+                EXPECT_EQ(response.correlationId(), pub_id_1);
+                EXPECT_EQ(log_file_name, response.logFileName());
+                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+            }
+            else if (3 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.correlationId(), pub_id_2);
-            EXPECT_EQ(response.registrationId(), pub_id_1);
-            EXPECT_EQ(response.logFileName(), log_file_name);
-        }
+                EXPECT_EQ(response.correlationId(), pub_id_2);
+                EXPECT_EQ(response.registrationId(), pub_id_1);
+                EXPECT_EQ(response.logFileName(), log_file_name);
+            }
 
-        response_number++;
-    };
+            response_number++;
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 4u);
 }
@@ -603,14 +613,15 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToTimeoutSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 0u);
 
-    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
 
-        const command::ClientTimeoutFlyweight response(buffer, offset);
+            const command::ClientTimeoutFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.clientId(), client_id);
-    };
+            EXPECT_EQ(response.clientId(), client_id);
+        };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }

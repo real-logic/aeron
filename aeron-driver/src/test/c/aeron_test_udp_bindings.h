@@ -1,6 +1,18 @@
-//
-// Created by mike on 27/03/20.
-//
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef AERON_AERON_TEST_UDP_BINDINGS_H
 #define AERON_AERON_TEST_UDP_BINDINGS_H
@@ -17,7 +29,7 @@ typedef struct aeron_test_udp_bindings_state_stct
     int setup_count;
     int rttm_count;
 }
-aeron_test_udp_bindings_state_t;
+    aeron_test_udp_bindings_state_t;
 
 int aeron_test_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
@@ -103,8 +115,7 @@ int aeron_test_udp_channel_transport_sendmsg(
     return 0;
 }
 
-int aeron_test_udp_channel_transport_get_so_rcvbuf(
-    aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf)
+int aeron_test_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf)
 {
     return 0;
 }

@@ -45,7 +45,7 @@ typedef struct delegate_recv_state_stct
     int messages_received;
     int bytes_received;
 }
-delegate_recv_state_t;
+    delegate_recv_state_t;
 
 void aeron_udp_channel_interceptor_loss_incoming_delegate(
     void *interceptor_state,

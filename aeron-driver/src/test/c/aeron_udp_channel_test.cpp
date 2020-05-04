@@ -320,7 +320,7 @@ TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
     aeron_name_resolver_supplier_func_t csv_supplier_func = aeron_name_resolver_supplier_load(
         AERON_NAME_RESOLVER_CSV_TABLE);
     csv_supplier_func(&m_resolver, config_param, NULL);
-    
+
     ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=NAME_0|control=NAME_1"), 0) << aeron_errmsg();
     EXPECT_STREQ(m_channel->uri.params.udp.endpoint, "NAME_0");
     EXPECT_STREQ(m_channel->uri.params.udp.control, "NAME_1");
@@ -393,17 +393,17 @@ TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
     if (NULL != endpoint_name)
     {
         params_ss << endpoint_name << ',' <<
-                  AERON_UDP_CHANNEL_ENDPOINT_KEY << ',' <<
-                  endpoint_address << ":40124" << ',' <<
-                  endpoint_address << ":40124" << '|';
+            AERON_UDP_CHANNEL_ENDPOINT_KEY << ',' <<
+            endpoint_address << ":40124" << ',' <<
+            endpoint_address << ":40124" << '|';
     }
 
     if (NULL != control_name)
     {
         params_ss << control_name << ',' <<
-                  AERON_UDP_CHANNEL_CONTROL_KEY << ',' <<
-                  control_address << ":40124" << ',' <<
-                  control_address << ":40124" << '|';
+            AERON_UDP_CHANNEL_CONTROL_KEY << ',' <<
+            control_address << ":40124" << ',' <<
+            control_address << ":40124" << '|';
     }
 
     const std::string params_string = params_ss.str();
@@ -449,7 +449,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(
             "192.168.1.1:40124", "192.168.1.1", "NAME_CONTROL", "192.168.1.2", "UDP-NAME_CONTROL-192.168.1.1:40124"),
         std::make_tuple(
-            "192.168.1.1:40124", "192.168.1.1" , "192.168.1.2:40192", "192.168.1.2",
+            "192.168.1.1:40124", "192.168.1.1", "192.168.1.2:40192", "192.168.1.2",
             "UDP-192.168.1.2:40192-192.168.1.1:40124"),
         std::make_tuple(
             "[fe80::5246:5dff:fe73:df06]:40456", "[fe80::5246:5dff:fe73:df06]", (const char *)NULL, (const char *)NULL,
@@ -478,9 +478,9 @@ TEST_P(UdpChannelEqualityParameterisedTest, shouldMatch)
     }
 
     EXPECT_EQ(should_match, aeron_udp_channel_equals(channel_1, channel_2))
-        << uri_1 << "(" << (NULL != channel_1 ? channel_1->canonical_form : "null") << ")"
-        << " vs "
-        << uri_2 << "(" << (NULL != channel_2 ? channel_2->canonical_form : "null") << ")";
+                << uri_1 << "(" << (NULL != channel_1 ? channel_1->canonical_form : "null") << ")"
+                << " vs "
+                << uri_2 << "(" << (NULL != channel_2 ? channel_2->canonical_form : "null") << ")";
 
     aeron_udp_channel_delete(channel_1);
     aeron_udp_channel_delete(channel_2);

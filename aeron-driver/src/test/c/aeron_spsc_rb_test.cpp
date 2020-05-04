@@ -434,28 +434,29 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
     size_t msgCount = 0;
     size_t counts = 0;
 
-    threads.push_back(std::thread([&]()
-    {
-        AERON_DECL_ALIGNED(buffer_t buffer, 16);
-        buffer.fill(0);
-
-        countDown--;
-        while (countDown > 0)
+    threads.push_back(std::thread(
+        [&]()
         {
-            std::this_thread::yield();
-        }
+            AERON_DECL_ALIGNED(buffer_t buffer, 16);
+            buffer.fill(0);
 
-        for (int m = 0; m < NUM_MESSAGES; m++)
-        {
-            int32_t *payload = (int32_t *)(buffer.data());
-            *payload = m;
-
-            while (AERON_RB_SUCCESS != aeron_spsc_rb_write(&rb, MSG_TYPE_ID, buffer.data(), 4))
+            countDown--;
+            while (countDown > 0)
             {
                 std::this_thread::yield();
             }
-        }
-    }));
+
+            for (int m = 0; m < NUM_MESSAGES; m++)
+            {
+                int32_t *payload = (int32_t *)(buffer.data());
+                *payload = m;
+
+                while (AERON_RB_SUCCESS != aeron_spsc_rb_write(&rb, MSG_TYPE_ID, buffer.data(), 4))
+                {
+                    std::this_thread::yield();
+                }
+            }
+        }));
 
     while (msgCount < NUM_MESSAGES)
     {
@@ -490,34 +491,35 @@ TEST(SpscRbConcurrentTest, shouldExchangeVectorMessages)
     size_t msgCount = 0;
     size_t counts = 0;
 
-    threads.push_back(std::thread([&]()
-    {
-        struct iovec vec[2];
-        AERON_DECL_ALIGNED(buffer_t buffer, 16);
-        buffer.fill(0);
-
-        countDown--;
-        while (countDown > 0)
+    threads.push_back(std::thread(
+        [&]()
         {
-            std::this_thread::yield();
-        }
+            struct iovec vec[2];
+            AERON_DECL_ALIGNED(buffer_t buffer, 16);
+            buffer.fill(0);
 
-        for (int m = 0; m < NUM_MESSAGES; m++)
-        {
-            int32_t *payload = (int32_t *)(buffer.data());
-            *payload = m;
-
-            vec[0].iov_len = 2;
-            vec[0].iov_base = payload;
-            vec[1].iov_len = 2;
-            vec[1].iov_base = ((uint8_t*) payload) + 2;
-
-            while (AERON_RB_SUCCESS != aeron_spsc_rb_writev(&rb, MSG_TYPE_ID, vec, 2))
+            countDown--;
+            while (countDown > 0)
             {
                 std::this_thread::yield();
             }
-        }
-    }));
+
+            for (int m = 0; m < NUM_MESSAGES; m++)
+            {
+                int32_t *payload = (int32_t *)(buffer.data());
+                *payload = m;
+
+                vec[0].iov_len = 2;
+                vec[0].iov_base = payload;
+                vec[1].iov_len = 2;
+                vec[1].iov_base = ((uint8_t *)payload) + 2;
+
+                while (AERON_RB_SUCCESS != aeron_spsc_rb_writev(&rb, MSG_TYPE_ID, vec, 2))
+                {
+                    std::this_thread::yield();
+                }
+            }
+        }));
 
     while (msgCount < NUM_MESSAGES)
     {

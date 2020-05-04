@@ -85,8 +85,7 @@ public:
     {
         uint8_t msg[1024];
         aeron_status_message_header_t *sm = (aeron_status_message_header_t *)msg;
-        int32_t *asf =
-            (int32_t *) (msg + sizeof(aeron_status_message_header_t));
+        int32_t *asf = (int32_t *)(msg + sizeof(aeron_status_message_header_t));
 
         sm->frame_header.frame_length = sizeof(aeron_status_message_header_t) + sizeof(int32_t);
         sm->consumption_term_id = 0;

@@ -36,7 +36,7 @@ public:
 
     static int propertyHandler(void *clientd, const char *name, const char *value)
     {
-        auto test = reinterpret_cast<DriverConfigurationTest*>(clientd);
+        auto test = reinterpret_cast<DriverConfigurationTest *>(clientd);
 
         test->m_name = std::string(name);
         test->m_value = std::string(value);

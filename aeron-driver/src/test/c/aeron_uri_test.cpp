@@ -703,10 +703,10 @@ TEST_F(UriLookupTest, shouldFindIpv4Loopback)
 {
     char buffer[AERON_MAX_PATH];
     struct sockaddr_storage addr;
-    struct sockaddr_in *addr_in = (struct sockaddr_in *) &addr;
+    struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
     unsigned int if_index;
 
-    ASSERT_EQ(aeron_find_interface("127.0.0.0/16", (struct sockaddr_storage *) &addr, &if_index), 0);
+    ASSERT_EQ(aeron_find_interface("127.0.0.0/16", (struct sockaddr_storage *)&addr, &if_index), 0);
     EXPECT_EQ(addr_in->sin_family, AF_INET);
     EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "127.0.0.1");
 }
@@ -715,7 +715,7 @@ TEST_F(UriLookupTest, shouldFindIpv4LoopbackAsLocalhost)
 {
     char buffer[AERON_MAX_PATH];
     struct sockaddr_storage addr;
-    struct sockaddr_in *addr_in = (struct sockaddr_in *) &addr;
+    struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
     unsigned int if_index;
 
     ASSERT_EQ(aeron_find_interface("localhost:40123", (struct sockaddr_storage *)&addr, &if_index), 0);

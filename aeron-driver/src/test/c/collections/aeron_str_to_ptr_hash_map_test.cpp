@@ -43,14 +43,14 @@ protected:
         t->m_for_each(key, key_len, value);
     }
 
-    void for_each(const std::function<void(const char *, size_t, void *)>& func)
+    void for_each(const std::function<void(const char *, size_t, void *)> &func)
     {
         m_for_each = func;
         aeron_str_to_ptr_hash_map_for_each(&m_map, StrToPtrHashMapTest::for_each, this);
     }
 
     aeron_str_to_ptr_hash_map_t m_map;
-    std::function<void(const char *, size_t, void*)> m_for_each;
+    std::function<void(const char *, size_t, void *)> m_for_each;
 };
 
 TEST_F(StrToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
@@ -124,10 +124,11 @@ TEST_F(StrToPtrHashMapTest, shouldNotForEachEmptyMap)
     ASSERT_EQ(aeron_str_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     size_t called = 0;
-    for_each([&](const char *key, size_t key_len, void *value_ptr)
-         {
-             called++;
-         });
+    for_each(
+        [&](const char *key, size_t key_len, void *value_ptr)
+        {
+            called++;
+        });
 
     ASSERT_EQ(called, 0u);
 }
@@ -140,12 +141,13 @@ TEST_F(StrToPtrHashMapTest, shouldForEachNonEmptyMap)
     EXPECT_EQ(aeron_str_to_ptr_hash_map_put(&m_map, "key", 3, (void *)&value), 0);
 
     size_t called = 0;
-    for_each([&](const char *key, size_t key_len, void *value_ptr)
-         {
-             EXPECT_EQ(std::string(key, key_len), std::string("key"));
-             EXPECT_EQ(value_ptr, &value);
-             called++;
-         });
+    for_each(
+        [&](const char *key, size_t key_len, void *value_ptr)
+        {
+            EXPECT_EQ(std::string(key, key_len), std::string("key"));
+            EXPECT_EQ(value_ptr, &value);
+            called++;
+        });
 
     ASSERT_EQ(called, 1u);
 }

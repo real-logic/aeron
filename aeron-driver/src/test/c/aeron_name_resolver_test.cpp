@@ -141,8 +141,8 @@ protected:
         clientd.type_id = type_id;
         clientd.value = -1;
 
-        aeron_counters_reader_foreach_metadata(counters->metadata, counters->metadata_length, foreachFilterByTypeId,
-                                               &clientd);
+        aeron_counters_reader_foreach_metadata(
+            counters->metadata, counters->metadata_length, foreachFilterByTypeId, &clientd);
 
         return clientd.value;
     }

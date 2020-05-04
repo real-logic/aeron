@@ -438,7 +438,7 @@ typedef struct mpsc_concurrent_test_data_stct
     uint32_t id;
     uint32_t num;
 }
-mpsc_concurrent_test_data_t;
+    mpsc_concurrent_test_data_t;
 
 static void mpsc_rb_concurrent_handler(int32_t msg_type_id, const void *buffer, size_t length, void *clientd)
 {
@@ -467,7 +467,7 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
     size_t msgCount = 0;
     uint32_t counts[NUM_PUBLISHERS];
 
-    for (unsigned int & count : counts)
+    for (unsigned int &count : counts)
     {
         count = 0;
     }

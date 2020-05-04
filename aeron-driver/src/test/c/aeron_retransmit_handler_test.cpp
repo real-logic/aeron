@@ -61,7 +61,7 @@ protected:
     int64_t m_time;
     int64_t m_invalid_packet_counter;
     aeron_retransmit_handler_t m_handler;
-    std::function<int(int32_t,int32_t,size_t)> m_resend;
+    std::function<int(int32_t, int32_t, size_t)> m_resend;
 };
 
 TEST_F(RetransmitHandlerTest, shouldImmediateRetransmitOnNak)
@@ -72,14 +72,15 @@ TEST_F(RetransmitHandlerTest, shouldImmediateRetransmitOnNak)
     const size_t nak_length = ALIGNED_FRAME_LENGTH;
 
     size_t called = 0;
-    m_resend = [&](int32_t term_id, int32_t term_offset, size_t length)
-    {
-        EXPECT_EQ(term_id, TERM_ID);
-        EXPECT_EQ(term_offset, nak_offset);
-        EXPECT_EQ(length, nak_length);
-        called++;
-        return 0;
-    };
+    m_resend =
+        [&](int32_t term_id, int32_t term_offset, size_t length)
+        {
+            EXPECT_EQ(term_id, TERM_ID);
+            EXPECT_EQ(term_offset, nak_offset);
+            EXPECT_EQ(length, nak_length);
+            called++;
+            return 0;
+        };
 
     EXPECT_EQ(aeron_retransmit_handler_on_nak(
         &m_handler, TERM_ID, nak_offset, nak_length, TERM_LENGTH, m_time, RetransmitHandlerTest::on_resend, this), 0);
@@ -94,14 +95,15 @@ TEST_F(RetransmitHandlerTest, shouldNotRetransmitOnNakWhileInLinger)
     const size_t nak_length = ALIGNED_FRAME_LENGTH;
 
     size_t called = 0;
-    m_resend = [&](int32_t term_id, int32_t term_offset, size_t length)
-    {
-        EXPECT_EQ(term_id, TERM_ID);
-        EXPECT_EQ(term_offset, nak_offset);
-        EXPECT_EQ(length, nak_length);
-        called++;
-        return 0;
-    };
+    m_resend =
+        [&](int32_t term_id, int32_t term_offset, size_t length)
+        {
+            EXPECT_EQ(term_id, TERM_ID);
+            EXPECT_EQ(term_offset, nak_offset);
+            EXPECT_EQ(length, nak_length);
+            called++;
+            return 0;
+        };
 
     EXPECT_EQ(aeron_retransmit_handler_on_nak(
         &m_handler, TERM_ID, nak_offset, nak_length, TERM_LENGTH, m_time, RetransmitHandlerTest::on_resend, this), 0);
@@ -122,14 +124,15 @@ TEST_F(RetransmitHandlerTest, shouldRetransmitOnNakAfterLinger)
     const size_t nak_length = ALIGNED_FRAME_LENGTH;
 
     size_t called = 0;
-    m_resend = [&](int32_t term_id, int32_t term_offset, size_t length)
-    {
-        EXPECT_EQ(term_id, TERM_ID);
-        EXPECT_EQ(term_offset, nak_offset);
-        EXPECT_EQ(length, nak_length);
-        called++;
-        return 0;
-    };
+    m_resend =
+        [&](int32_t term_id, int32_t term_offset, size_t length)
+        {
+            EXPECT_EQ(term_id, TERM_ID);
+            EXPECT_EQ(term_offset, nak_offset);
+            EXPECT_EQ(length, nak_length);
+            called++;
+            return 0;
+        };
 
     EXPECT_EQ(aeron_retransmit_handler_on_nak(
         &m_handler, TERM_ID, nak_offset, nak_length, TERM_LENGTH, m_time, RetransmitHandlerTest::on_resend, this), 0);
@@ -152,23 +155,24 @@ TEST_F(RetransmitHandlerTest, shouldRetransmitOnMultipleNaks)
     const size_t nak_length_2 = ALIGNED_FRAME_LENGTH * 2;
 
     size_t called = 0;
-    m_resend = [&](int32_t term_id, int32_t term_offset, size_t length)
-    {
-        called++;
+    m_resend =
+        [&](int32_t term_id, int32_t term_offset, size_t length)
+        {
+            called++;
 
-        EXPECT_EQ(term_id, TERM_ID);
-        if (1 == called)
-        {
-            EXPECT_EQ(term_offset, nak_offset_1);
-            EXPECT_EQ(length, nak_length_1);
-        }
-        else if (2 == called)
-        {
-            EXPECT_EQ(term_offset, nak_offset_2);
-            EXPECT_EQ(length, nak_length_2);
-        }
-        return 0;
-    };
+            EXPECT_EQ(term_id, TERM_ID);
+            if (1 == called)
+            {
+                EXPECT_EQ(term_offset, nak_offset_1);
+                EXPECT_EQ(length, nak_length_1);
+            }
+            else if (2 == called)
+            {
+                EXPECT_EQ(term_offset, nak_offset_2);
+                EXPECT_EQ(length, nak_length_2);
+            }
+            return 0;
+        };
 
     EXPECT_EQ(aeron_retransmit_handler_on_nak(
         &m_handler, TERM_ID, nak_offset_1, nak_length_1, TERM_LENGTH, m_time, RetransmitHandlerTest::on_resend, this), 0);

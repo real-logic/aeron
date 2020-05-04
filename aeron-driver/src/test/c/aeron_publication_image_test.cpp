@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 #include <vector>
 #include "aeron_receiver_test.h"
 
@@ -134,9 +133,9 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
 
     ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
-    
+
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
-    
+
     ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
@@ -283,7 +282,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
 
     message->stream_id = stream_id;
     message->session_id = session_id;
-    message->frame_header.frame_length = (int32_t) message_length;
+    message->frame_header.frame_length = (int32_t)message_length;
     message->term_id = 0;
     message->term_offset = 0;
 

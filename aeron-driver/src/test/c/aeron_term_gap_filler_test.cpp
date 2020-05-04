@@ -36,7 +36,7 @@ class TermGapFillerTest : public testing::Test
 public:
     TermGapFillerTest() :
         m_buffer(m_term_buffer.data()),
-        m_log_meta_data(reinterpret_cast<aeron_logbuffer_metadata_t*>(m_log_meta_data_buffer.data()))
+        m_log_meta_data(reinterpret_cast<aeron_logbuffer_metadata_t *>(m_log_meta_data_buffer.data()))
     {
         m_term_buffer.fill(0);
         m_log_meta_data_buffer.fill(0);

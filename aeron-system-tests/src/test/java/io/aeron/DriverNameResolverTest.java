@@ -49,12 +49,6 @@ public class DriverNameResolverTest
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
-    @BeforeEach
-    public void before()
-    {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Name Resolver");
-    }
-
     @AfterEach
     public void after()
     {

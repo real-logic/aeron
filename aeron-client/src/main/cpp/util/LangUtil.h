@@ -22,7 +22,8 @@
  * @file
  * Utilities related to C++ and C++ standard libraries
  */
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 /**
  * Bjarne Stroustrup - Make Simple Tasks Simple - https://www.youtube.com/watch?v=nesCaocNjtQ
@@ -41,7 +42,7 @@ class InvokeOnScopeExit
 public:
     using func_t = std::function<void()>;
 
-    inline explicit InvokeOnScopeExit(const func_t& func) :
+    inline explicit InvokeOnScopeExit(const func_t &func) :
         m_func(func)
     {
     }

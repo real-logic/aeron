@@ -20,7 +20,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Message to denote that a client has timed out wrt the driver.
@@ -47,7 +48,7 @@ class ClientTimeoutFlyweight : public Flyweight<ClientTimeoutDefn>
 public:
     typedef ClientTimeoutFlyweight this_t;
 
-    inline ClientTimeoutFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline ClientTimeoutFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<ClientTimeoutDefn>(buffer, offset)
     {
     }
@@ -57,7 +58,7 @@ public:
         return m_struct.clientId;
     }
 
-    inline this_t& clientId(std::int64_t value)
+    inline this_t &clientId(std::int64_t value)
     {
         m_struct.clientId = value;
         return *this;

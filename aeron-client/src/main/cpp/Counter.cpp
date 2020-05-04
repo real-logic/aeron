@@ -21,8 +21,8 @@ namespace aeron
 {
 
 Counter::Counter(
-    ClientConductor* clientConductor,
-    AtomicBuffer& buffer,
+    ClientConductor *clientConductor,
+    AtomicBuffer &buffer,
     std::int64_t registrationId,
     std::int32_t counterId) :
     AtomicCounter(buffer, counterId),

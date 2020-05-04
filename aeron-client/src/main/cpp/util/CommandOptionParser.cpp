@@ -16,21 +16,22 @@
 
 #include "CommandOptionParser.h"
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 CommandOptionParser::CommandOptionParser()
 {
     addOption(CommandOption(CommandOption::UNNAMED, 0, 0, "Unnamed Options"));
 }
 
-void CommandOptionParser::parse(int argc, char** argv)
+void CommandOptionParser::parse(int argc, char **argv)
 {
     char currentOption = CommandOption::UNNAMED;
     getOption(currentOption).setPresent();
 
     for (int n = 1; n < argc; n++)
     {
-        std::string argStr (argv[n]);
+        std::string argStr(argv[n]);
 
         if ((argStr.size() >= 2) && (argStr[0] == '-'))
         {
@@ -52,23 +53,23 @@ void CommandOptionParser::parse(int argc, char** argv)
         }
         else
         {
-            CommandOption& opt = getOption(currentOption);
+            CommandOption &opt = getOption(currentOption);
             opt.addParam(argStr);
         }
     }
 
-    for (auto & option : m_options)
+    for (auto &option : m_options)
     {
         option.second.validate();
     }
 }
 
-void CommandOptionParser::addOption(const CommandOption& option)
+void CommandOptionParser::addOption(const CommandOption &option)
 {
     m_options[option.getOptionChar()] = option;
 }
 
-CommandOption& CommandOptionParser::getOption(char optionChar)
+CommandOption &CommandOptionParser::getOption(char optionChar)
 {
     auto opt = m_options.find(optionChar);
 
@@ -81,9 +82,9 @@ CommandOption& CommandOptionParser::getOption(char optionChar)
     return opt->second;
 }
 
-void CommandOptionParser::displayOptionsHelp(std::ostream& out) const
+void CommandOptionParser::displayOptionsHelp(std::ostream &out) const
 {
-    for (const auto & opt : m_options)
+    for (const auto &opt : m_options)
     {
         if (opt.first != CommandOption::UNNAMED)
         {

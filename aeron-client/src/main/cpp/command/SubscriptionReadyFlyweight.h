@@ -20,7 +20,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Message to denote that a Subscription has been successfully set up.
@@ -50,7 +51,7 @@ class SubscriptionReadyFlyweight : public Flyweight<SubscriptionReadyDefn>
 public:
     typedef SubscriptionReadyFlyweight this_t;
 
-    inline SubscriptionReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline SubscriptionReadyFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<SubscriptionReadyDefn>(buffer, offset)
     {
     }
@@ -60,7 +61,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -71,7 +72,7 @@ public:
         return m_struct.channelStatusIndicatorId;
     }
 
-    inline this_t& channelStatusIndicatorId(std::int32_t value)
+    inline this_t &channelStatusIndicatorId(std::int32_t value)
     {
         m_struct.channelStatusIndicatorId = value;
         return *this;

@@ -20,7 +20,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * Message to denote that new buffers have been added for a publication.
@@ -62,7 +63,7 @@ struct PublicationBuffersReadyDefn
     std::int32_t positionLimitCounterId;
     std::int32_t channelStatusIndicatorId;
     std::int32_t logFileLength;
-    std::int8_t  logFileData[1];
+    std::int8_t logFileData[1];
 };
 #pragma pack(pop)
 
@@ -71,7 +72,7 @@ class PublicationBuffersReadyFlyweight : public Flyweight<PublicationBuffersRead
 public:
     typedef PublicationBuffersReadyFlyweight this_t;
 
-    inline PublicationBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline PublicationBuffersReadyFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<PublicationBuffersReadyDefn>(buffer, offset)
     {
     }
@@ -81,7 +82,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -92,7 +93,7 @@ public:
         return m_struct.registrationId;
     }
 
-    inline this_t& registrationId(std::int64_t value)
+    inline this_t &registrationId(std::int64_t value)
     {
         m_struct.registrationId = value;
         return *this;
@@ -103,7 +104,7 @@ public:
         return m_struct.sessionId;
     }
 
-    inline this_t& sessionId(std::int32_t value)
+    inline this_t &sessionId(std::int32_t value)
     {
         m_struct.sessionId = value;
         return *this;
@@ -114,7 +115,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -125,7 +126,7 @@ public:
         return m_struct.positionLimitCounterId;
     }
 
-    inline this_t& positionLimitCounterId(std::int32_t value)
+    inline this_t &positionLimitCounterId(std::int32_t value)
     {
         m_struct.positionLimitCounterId = value;
         return *this;
@@ -136,7 +137,7 @@ public:
         return m_struct.channelStatusIndicatorId;
     }
 
-    inline this_t& channelStatusIndicatorId(std::int32_t value)
+    inline this_t &channelStatusIndicatorId(std::int32_t value)
     {
         m_struct.channelStatusIndicatorId = value;
         return *this;
@@ -147,7 +148,7 @@ public:
         return stringGet(offsetof(PublicationBuffersReadyDefn, logFileLength));
     }
 
-    inline this_t& logFileName(const std::string& value)
+    inline this_t &logFileName(const std::string &value)
     {
         stringPut(offsetof(PublicationBuffersReadyDefn, logFileLength), value);
         return *this;

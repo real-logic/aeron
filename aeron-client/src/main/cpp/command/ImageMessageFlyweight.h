@@ -20,7 +20,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * Control message flyweight for any message that needs to represent an image
@@ -52,7 +53,7 @@ struct ImageMessageDefn
     std::int64_t subscriptionRegistrationId;
     std::int32_t streamId;
     std::int32_t channelLength;
-    std::int8_t  channelData[1];
+    std::int8_t channelData[1];
 };
 #pragma pack(pop)
 
@@ -62,7 +63,7 @@ class ImageMessageFlyweight : public Flyweight<ImageMessageDefn>
 public:
     typedef ImageMessageFlyweight this_t;
 
-    inline ImageMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline ImageMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<ImageMessageDefn>(buffer, offset)
     {
     }
@@ -72,7 +73,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -83,7 +84,7 @@ public:
         return m_struct.subscriptionRegistrationId;
     }
 
-    inline this_t& subscriptionRegistrationId(std::int64_t value)
+    inline this_t &subscriptionRegistrationId(std::int64_t value)
     {
         m_struct.subscriptionRegistrationId = value;
         return *this;
@@ -94,7 +95,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -105,7 +106,7 @@ public:
         return stringGet(offsetof(ImageMessageDefn, channelLength));
     }
 
-    inline this_t& channel(const std::string& value)
+    inline this_t &channel(const std::string &value)
     {
         stringPut(offsetof(ImageMessageDefn, channelLength), value);
         return *this;

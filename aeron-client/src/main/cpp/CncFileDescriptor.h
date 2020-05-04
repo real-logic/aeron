@@ -22,7 +22,8 @@
 #include <util/MacroUtil.h>
 #include <concurrent/AtomicBuffer.h>
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::util;
 using namespace aeron::concurrent;
@@ -75,7 +76,8 @@ using namespace aeron::concurrent;
 *  +---------------------------------------------------------------+
 * </pre>
 */
-namespace CncFileDescriptor {
+namespace CncFileDescriptor
+{
 
 static const std::string CNC_FILE = "cnc.dat";
 static const std::int32_t CNC_VERSION = semanticVersionCompose(0, 0, 16);
@@ -109,7 +111,7 @@ inline static AtomicBuffer createToDriverBuffer(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
 
     return AtomicBuffer(cncFile->getMemoryPtr() + META_DATA_LENGTH, metaData.toDriverBufferLength);
 }
@@ -118,8 +120,8 @@ inline static AtomicBuffer createToClientsBuffer(MemoryMappedFile::ptr_t cncFile
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
-    std::uint8_t* basePtr = cncFile->getMemoryPtr() + META_DATA_LENGTH + metaData.toDriverBufferLength;
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    std::uint8_t *basePtr = cncFile->getMemoryPtr() + META_DATA_LENGTH + metaData.toDriverBufferLength;
 
     return AtomicBuffer(basePtr, metaData.toClientsBufferLength);
 }
@@ -128,8 +130,8 @@ inline static AtomicBuffer createCounterMetadataBuffer(MemoryMappedFile::ptr_t c
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
-    std::uint8_t* basePtr =
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    std::uint8_t *basePtr =
         cncFile->getMemoryPtr() +
         META_DATA_LENGTH +
         metaData.toDriverBufferLength +
@@ -142,8 +144,8 @@ inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cnc
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
-    std::uint8_t* basePtr =
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    std::uint8_t *basePtr =
         cncFile->getMemoryPtr() +
         META_DATA_LENGTH +
         metaData.toDriverBufferLength +
@@ -157,14 +159,14 @@ inline static AtomicBuffer createErrorLogBuffer(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
-    std::uint8_t* basePtr =
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    std::uint8_t *basePtr =
         cncFile->getMemoryPtr() +
-            META_DATA_LENGTH +
-            metaData.toDriverBufferLength +
-            metaData.toClientsBufferLength +
-            metaData.counterMetadataBufferLength +
-            metaData.counterValuesBufferLength;
+        META_DATA_LENGTH +
+        metaData.toDriverBufferLength +
+        metaData.toClientsBufferLength +
+        metaData.counterMetadataBufferLength +
+        metaData.counterValuesBufferLength;
 
     return AtomicBuffer(basePtr, metaData.errorLogBufferLength);
 }
@@ -173,7 +175,7 @@ inline static std::int64_t clientLivenessTimeout(MemoryMappedFile::ptr_t cncFile
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
 
     return metaData.clientLivenessTimeout;
 }
@@ -182,7 +184,7 @@ inline static std::int64_t startTimestamp(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
 
     return metaData.startTimestamp;
 }
@@ -191,7 +193,7 @@ inline static std::int64_t pid(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
 
     return metaData.pid;
 }

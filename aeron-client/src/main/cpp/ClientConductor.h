@@ -35,7 +35,8 @@
 #include "HeartbeatTimestamp.h"
 #include "util/Export.h"
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
@@ -54,17 +55,17 @@ public:
 
     ClientConductor(
         epoch_clock_t epochClock,
-        DriverProxy& driverProxy,
-        CopyBroadcastReceiver& broadcastReceiver,
-        AtomicBuffer& counterMetadataBuffer,
-        AtomicBuffer& counterValuesBuffer,
-        const on_new_publication_t& newPublicationHandler,
-        const on_new_publication_t& newExclusivePublicationHandler,
-        const on_new_subscription_t& newSubscriptionHandler,
-        const exception_handler_t& errorHandler,
-        const on_available_counter_t& availableCounterHandler,
-        const on_unavailable_counter_t& unavailableCounterHandler,
-        const on_close_client_t& onCloseClientHandler,
+        DriverProxy &driverProxy,
+        CopyBroadcastReceiver &broadcastReceiver,
+        AtomicBuffer &counterMetadataBuffer,
+        AtomicBuffer &counterValuesBuffer,
+        const on_new_publication_t &newPublicationHandler,
+        const on_new_publication_t &newExclusivePublicationHandler,
+        const on_new_subscription_t &newSubscriptionHandler,
+        const exception_handler_t &errorHandler,
+        const on_available_counter_t &availableCounterHandler,
+        const on_unavailable_counter_t &unavailableCounterHandler,
+        const on_close_client_t &onCloseClientHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
         long long interServiceTimeoutNs,
@@ -99,31 +100,41 @@ public:
     ~ClientConductor();
 
     void onStart();
+
     int doWork();
+
     void onClose();
 
-    std::int64_t addPublication(const std::string& channel, std::int32_t streamId);
+    std::int64_t addPublication(const std::string &channel, std::int32_t streamId);
+
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
+
     void releasePublication(std::int64_t registrationId);
 
-    std::int64_t addExclusivePublication(const std::string& channel, std::int32_t streamId);
+    std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId);
+
     std::shared_ptr<ExclusivePublication> findExclusivePublication(std::int64_t registrationId);
+
     void releaseExclusivePublication(std::int64_t registrationId);
 
     std::int64_t addSubscription(
-        const std::string& channel,
+        const std::string &channel,
         std::int32_t streamId,
         const on_available_image_t &onAvailableImageHandler,
         const on_unavailable_image_t &onUnavailableImageHandler);
+
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
+
     void releaseSubscription(std::int64_t registrationId, Image::array_t imageArray, std::size_t length);
 
     std::int64_t addCounter(
         std::int32_t typeId,
         const std::uint8_t *keyBuffer,
         std::size_t keyLength,
-        const std::string& label);
+        const std::string &label);
+
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
+
     void releaseCounter(std::int64_t registrationId);
 
     bool findDestinationResponse(std::int64_t correlationId);
@@ -151,6 +162,7 @@ public:
     void onOperationSuccess(std::int64_t correlationId);
 
     void onChannelEndpointErrorResponse(std::int32_t channelStatusId, const std::string &errorMessage);
+
     void onErrorResponse(
         std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string &errorMessage);
 
@@ -173,21 +185,26 @@ public:
     void closeAllResources(long long nowMs);
 
     std::int64_t addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
+
     std::int64_t removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
 
     std::int64_t addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
+
     std::int64_t removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
 
     void addAvailableCounterHandler(const on_available_counter_t &handler);
+
     void removeAvailableCounterHandler(const on_available_counter_t &handler);
 
     void addUnavailableCounterHandler(const on_unavailable_counter_t &handler);
+
     void removeUnavailableCounterHandler(const on_unavailable_counter_t &handler);
 
     void addCloseClientHandler(const on_close_client_t &handler);
+
     void removeCloseClientHandler(const on_close_client_t &handler);
 
-    inline CountersReader& countersReader()
+    inline CountersReader &countersReader()
     {
         ensureOpen();
         return m_countersReader;
@@ -244,7 +261,7 @@ private:
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
         inline PublicationStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
+            const std::string &channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
             m_channel(channel),
             m_registrationId(registrationId),
             m_timeOfRegistrationMs(nowMs),
@@ -269,7 +286,7 @@ private:
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
         inline ExclusivePublicationStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
+            const std::string &channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
             m_channel(channel),
             m_registrationId(registrationId),
             m_timeOfRegistrationMs(nowMs),
@@ -293,7 +310,7 @@ private:
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
         inline SubscriptionStateDefn(
-            const std::string& channel,
+            const std::string &channel,
             std::int64_t registrationId,
             std::int32_t streamId,
             long long nowMs,
@@ -377,11 +394,11 @@ private:
     std::unordered_map<std::int64_t, LogBuffersDefn> m_logBuffersByRegistrationId;
     std::vector<ImageListLingerDefn> m_lingeringImageLists;
 
-    DriverProxy& m_driverProxy;
+    DriverProxy &m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
 
     CountersReader m_countersReader;
-    AtomicBuffer& m_counterValuesBuffer;
+    AtomicBuffer &m_counterValuesBuffer;
 
     on_new_publication_t m_onNewPublicationHandler;
     on_new_publication_t m_onNewExclusivePublicationHandler;
@@ -507,7 +524,7 @@ private:
     }
 
     inline std::shared_ptr<LogBuffers> getLogBuffers(
-        std::int64_t registrationId, const std::string& logFilename, const std::string& channel)
+        std::int64_t registrationId, const std::string &logFilename, const std::string &channel)
     {
         auto it = m_logBuffersByRegistrationId.find(registrationId);
         if (it == m_logBuffersByRegistrationId.end())

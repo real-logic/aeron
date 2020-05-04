@@ -25,7 +25,8 @@
 #include <util/Index.h>
 #include "HeaderFlyweight.h"
 
-namespace aeron { namespace protocol {
+namespace aeron { namespace protocol
+{
 
 
 /**
@@ -75,8 +76,8 @@ class StatusMessageFlyweight : public HeaderFlyweight
 public:
     typedef StatusMessageFlyweight this_t;
 
-    inline StatusMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : HeaderFlyweight(buffer, offset), m_struct(overlayStruct<StatusMessageDefn>(0))
+    inline StatusMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
+        HeaderFlyweight(buffer, offset), m_struct(overlayStruct<StatusMessageDefn>(0))
     {
     }
 
@@ -85,7 +86,7 @@ public:
         return m_struct.sessionId;
     }
 
-    inline this_t& sessionId(std::int32_t value)
+    inline this_t &sessionId(std::int32_t value)
     {
         m_struct.sessionId = value;
         return *this;
@@ -96,7 +97,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -107,7 +108,7 @@ public:
         return m_struct.consumptionTermId;
     }
 
-    inline this_t& consumptionTermId(std::int32_t value)
+    inline this_t &consumptionTermId(std::int32_t value)
     {
         m_struct.consumptionTermId = value;
         return *this;
@@ -118,7 +119,7 @@ public:
         return m_struct.consumptionTermOffset;
     }
 
-    inline this_t& consumptionTermOffset(std::int32_t value)
+    inline this_t &consumptionTermOffset(std::int32_t value)
     {
         m_struct.consumptionTermOffset = value;
         return *this;
@@ -129,7 +130,7 @@ public:
         return m_struct.receiverWindow;
     }
 
-    inline this_t& receiverWindow(std::int32_t value)
+    inline this_t &receiverWindow(std::int32_t value)
     {
         m_struct.receiverWindow = value;
         return *this;
@@ -141,7 +142,7 @@ public:
     }
 
 private:
-    StatusMessageDefn& m_struct;
+    StatusMessageDefn &m_struct;
 };
 
 }}

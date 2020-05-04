@@ -15,16 +15,18 @@
  */
 
 #define _DISABLE_EXTENDED_ALIGNED_STORAGE
+
 #include "Aeron.h"
 
-namespace aeron {
+namespace aeron
+{
 
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(4);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_16(16);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 
-static const char* AGENT_NAME = "client-conductor";
+static const char *AGENT_NAME = "client-conductor";
 
 Aeron::Aeron(Context &context) :
     m_randomEngine(m_randomDevice()),
@@ -118,10 +120,10 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 
         if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
         {
-            throw AeronException("Aeron CnC version does not match:"
-               " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
-               " file=" + semanticVersionToString(cncVersion),
-               SOURCEINFO);
+            throw AeronException(
+                "Aeron CnC version does not match: app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
+                " file=" + semanticVersionToString(cncVersion),
+                SOURCEINFO);
         }
 
         AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncBuffer));

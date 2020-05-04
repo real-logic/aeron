@@ -20,7 +20,8 @@
 #include "Aeron.h"
 #include "BufferBuilder.h"
 
-namespace aeron {
+namespace aeron
+{
 
 static const std::size_t DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
 
@@ -48,7 +49,7 @@ public:
      * @param initialBufferLength to be used for each session.
      */
     explicit ControlledFragmentAssembler(
-        const controlled_poll_fragment_handler_t& delegate,
+        const controlled_poll_fragment_handler_t &delegate,
         size_t initialBufferLength = DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_initialBufferLength(initialBufferLength),
         m_delegate(delegate)
@@ -63,7 +64,7 @@ public:
      */
     controlled_poll_fragment_handler_t handler()
     {
-        return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+        return [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             return this->onFragment(buffer, offset, length, header);
         };
@@ -85,7 +86,7 @@ private:
     controlled_poll_fragment_handler_t m_delegate;
     std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
 
-    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
         const std::uint8_t flags = header.flags();
         ControlledPollAction action = ControlledPollAction::CONTINUE;
@@ -100,7 +101,7 @@ private:
             {
                 auto result = m_builderBySessionIdMap.emplace(
                     header.sessionId(), static_cast<std::uint32_t>(m_initialBufferLength));
-                BufferBuilder& builder = result.first->second;
+                BufferBuilder &builder = result.first->second;
 
                 builder
                     .reset()
@@ -112,7 +113,7 @@ private:
 
                 if (result != m_builderBySessionIdMap.end())
                 {
-                    BufferBuilder& builder = result->second;
+                    BufferBuilder &builder = result->second;
                     const std::uint32_t limit = builder.limit();
 
                     if (builder.limit() != DataFrameHeader::LENGTH)

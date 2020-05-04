@@ -23,7 +23,8 @@
 #include <util/BitUtil.h>
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Command message flyweight to ask the driver process to terminate
@@ -57,8 +58,8 @@ class TerminateDriverFlyweight : public CorrelatedMessageFlyweight
 public:
     typedef TerminateDriverFlyweight this_t;
 
-    inline TerminateDriverFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
-    CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<TerminateDriverDefn>(0))
+    inline TerminateDriverFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
+        CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<TerminateDriverDefn>(0))
     {
     }
 
@@ -72,7 +73,7 @@ public:
         return m_struct.tokenLength;
     }
 
-    inline this_t& tokenBuffer(const uint8_t *tokenBuffer, size_t tokenLength)
+    inline this_t &tokenBuffer(const uint8_t *tokenBuffer, size_t tokenLength)
     {
         m_struct.tokenLength = static_cast<std::int32_t>(tokenLength);
 
@@ -90,7 +91,7 @@ public:
     }
 
 private:
-    TerminateDriverDefn& m_struct;
+    TerminateDriverDefn &m_struct;
 };
 
 }}

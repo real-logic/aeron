@@ -19,7 +19,8 @@
 #include <limits>
 #include "Aeron.h"
 
-namespace aeron {
+namespace aeron
+{
 
 static const std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::uint32_t>::max() - 8;
 
@@ -35,7 +36,7 @@ public:
     {
     }
 
-    BufferBuilder(BufferBuilder &&builder) noexcept :
+    BufferBuilder(BufferBuilder &&builder) noexcept:
         m_capacity(builder.m_capacity),
         m_limit(builder.m_limit),
         m_buffer(std::move(builder.m_buffer))

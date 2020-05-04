@@ -30,7 +30,8 @@
 #include "Publication.h"
 #include "LogBuffers.h"
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::concurrent::status;
 
@@ -57,12 +58,12 @@ public:
 
     /// @cond HIDDEN_SYMBOLS
     ExclusivePublication(
-        ClientConductor& conductor,
-        const std::string& channel,
+        ClientConductor &conductor,
+        const std::string &channel,
         std::int64_t registrationId,
         std::int32_t streamId,
         std::int32_t sessionId,
-        UnsafeBufferPosition& publicationLimit,
+        UnsafeBufferPosition &publicationLimit,
         std::int32_t channelStatusId,
         std::shared_ptr<LogBuffers> logBuffers);
     /// @endcond
@@ -74,7 +75,7 @@ public:
      *
      * @return Media address for delivery to the channel.
      */
-    inline const std::string& channel() const
+    inline const std::string &channel() const
     {
         return m_channel;
     }
@@ -297,6 +298,33 @@ public:
     }
 
     /**
+     * Get the status for the channel of this {@link Publication}
+     *
+     * @return status code for this channel
+     */
+    std::int64_t channelStatus() const;
+
+    /**
+     * Fetches the local socket addresses for this publication. If the channel is not
+     * {@link aeron::concurrent::status::ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE}, then this will return an
+     * empty list.
+     *
+     * The format is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI
+     *
+     * @return local socket address for this subscription.
+     * @see #channelStatus()
+     */
+    std::vector<std::string> localSocketAddresses() const;
+
+    /**
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
@@ -307,10 +335,10 @@ public:
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
     inline std::int64_t offer(
-        const concurrent::AtomicBuffer& buffer,
+        const concurrent::AtomicBuffer &buffer,
         util::index_t offset,
         util::index_t length,
-        const on_reserved_value_supplier_t& reservedValueSupplier)
+        const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
@@ -368,7 +396,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    inline std::int64_t offer(const concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    inline std::int64_t offer(const concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
         return offer(buffer, offset, length, DEFAULT_RESERVED_VALUE_SUPPLIER);
     }
@@ -379,7 +407,7 @@ public:
      * @param buffer containing message.
      * @return The new stream position on success, otherwise {@link BACK_PRESSURED} or {@link NOT_CONNECTED}.
      */
-    inline std::int64_t offer(const concurrent::AtomicBuffer& buffer)
+    inline std::int64_t offer(const concurrent::AtomicBuffer &buffer)
     {
         return offer(buffer, 0, buffer.capacity());
     }
@@ -393,10 +421,11 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template <class BufferIterator> std::int64_t offer(
+    template<class BufferIterator>
+    std::int64_t offer(
         BufferIterator startBuffer,
         BufferIterator lastBuffer,
-        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+        const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
         util::index_t length = 0;
         for (BufferIterator it = startBuffer; it != lastBuffer; ++it)
@@ -405,7 +434,7 @@ public:
             {
                 throw aeron::util::IllegalStateException(
                     "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
-                    " > " + std::to_string(length + it->capacity()),
+                        " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 
@@ -469,7 +498,7 @@ public:
     std::int64_t offer(
         const concurrent::AtomicBuffer buffers[],
         size_t length,
-        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+        const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
         return offer(buffers, buffers + length, reservedValueSupplier);
     }
@@ -482,9 +511,10 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template <size_t N> std::int64_t offer(
-        const std::array<concurrent::AtomicBuffer, N>& buffers,
-        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    template<size_t N>
+    std::int64_t offer(
+        const std::array<concurrent::AtomicBuffer, N> &buffers,
+        const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
         return offer(buffers.begin(), buffers.end(), reservedValueSupplier);
     }
@@ -522,7 +552,7 @@ public:
      * @see BufferClaim::commit
      * @see BufferClaim::abort
      */
-    inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
+    inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim &bufferClaim)
     {
         checkPayloadLength(length);
         std::int64_t newPosition = PUBLICATION_CLOSED;
@@ -553,14 +583,14 @@ public:
      *
      * @param endpointChannel for the destination to add
      */
-    void addDestination(const std::string& endpointChannel);
+    void addDestination(const std::string &endpointChannel);
 
     /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to remove
      */
-    void removeDestination(const std::string& endpointChannel);
+    void removeDestination(const std::string &endpointChannel);
 
     /**
      * Get the status for the channel of this {@link ExclusivePublication}
@@ -577,8 +607,8 @@ public:
     /// @endcond
 
 private:
-    ClientConductor& m_conductor;
-    AtomicBuffer& m_logMetaDataBuffer;
+    ClientConductor &m_conductor;
+    AtomicBuffer &m_logMetaDataBuffer;
 
     const std::string m_channel;
     std::int64_t m_registrationId;

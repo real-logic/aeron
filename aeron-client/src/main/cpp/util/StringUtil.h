@@ -25,26 +25,27 @@
 #include <cstdarg>
 #include "Exceptions.h"
 
-namespace aeron { namespace util {
-
-inline std::string trimWSLeft(std::string str, const char* wschars = " \t")
+namespace aeron { namespace util
 {
-    str.erase(0,str.find_first_not_of(wschars));
+
+inline std::string trimWSLeft(std::string str, const char *wschars = " \t")
+{
+    str.erase(0, str.find_first_not_of(wschars));
     return str;
 }
 
-inline std::string trimWSRight(std::string str, const char* wschars = " \t")
+inline std::string trimWSRight(std::string str, const char *wschars = " \t")
 {
     str.erase(str.find_last_not_of(wschars) + 1);
     return str;
 }
 
-inline std::string trimWSBoth(std::string str, const char* wschars = " \t")
+inline std::string trimWSBoth(std::string str, const char *wschars = " \t")
 {
     return trimWSLeft(trimWSRight(std::move(str), wschars), wschars);
 }
 
-inline bool startsWith(const std::string& input, std::size_t position, const std::string& prefix)
+inline bool startsWith(const std::string &input, std::size_t position, const std::string &prefix)
 {
     if ((input.length() - position) < prefix.length())
     {
@@ -63,11 +64,11 @@ inline bool startsWith(const std::string& input, std::size_t position, const std
 }
 
 template<class valueType>
-valueType parse(const std::string& input)
+valueType parse(const std::string &input)
 {
     std::string str = trimWSBoth(input);
 
-    std::istringstream stream (str);
+    std::istringstream stream(str);
     valueType value;
 
     if (std::is_integral<valueType>::value && input.length() > 2 &&
@@ -89,16 +90,16 @@ valueType parse(const std::string& input)
     return value;
 }
 
-template <typename value_t>
-inline std::string toString(const value_t& value)
+template<typename value_t>
+inline std::string toString(const value_t &value)
 {
     std::stringstream stream;
     stream << value;
     return stream.str();
 }
 
-template <typename value_t>
-inline std::string toStringWithCommas(const value_t& value)
+template<typename value_t>
+inline std::string toStringWithCommas(const value_t &value)
 {
     std::stringstream stream;
 
@@ -107,7 +108,7 @@ inline std::string toStringWithCommas(const value_t& value)
     return stream.str();
 }
 
-inline std::string strPrintf(const char* format, ...)
+inline std::string strPrintf(const char *format, ...)
 {
     const int BUFFER_SIZE = 128;
     char buffer[BUFFER_SIZE];
@@ -137,22 +138,22 @@ inline std::string strPrintf(const char* format, ...)
 
 namespace private_impl
 {
-    template <typename T>
-    void concat(std::stringstream& s, T v)
-    {
-        s << v;
-    }
-
-    template <typename T, typename... Ts>
-    void concat(std::stringstream& s, T v, Ts... vs)
-    {
-        s << v;
-        concat(s, vs...);
-    }
+template<typename T>
+void concat(std::stringstream &s, T v)
+{
+    s << v;
 }
 
-template <typename... Ts>
-std::string strconcat (Ts... vs)
+template<typename T, typename... Ts>
+void concat(std::stringstream &s, T v, Ts... vs)
+{
+    s << v;
+    concat(s, vs...);
+}
+}
+
+template<typename... Ts>
+std::string strconcat(Ts... vs)
 {
     std::stringstream s;
     private_impl::concat(s, vs...);
@@ -160,7 +161,7 @@ std::string strconcat (Ts... vs)
     return s.str();
 }
 
-inline bool continuationBarrier(const std::string& label)
+inline bool continuationBarrier(const std::string &label)
 {
     bool result = false;
     char response = '\0';
@@ -175,7 +176,7 @@ inline bool continuationBarrier(const std::string& label)
     return result;
 }
 
-template <typename T>
+template<typename T>
 static T fromString(const std::string &str)
 {
     std::istringstream is(str);

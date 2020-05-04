@@ -19,7 +19,8 @@
 #include <cstdint>
 #include <string>
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * List of event types used in the control protocol between the media driver and the core.

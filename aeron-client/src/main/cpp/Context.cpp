@@ -15,6 +15,7 @@
  */
 
 #define _DISABLE_EXTENDED_ALIGNED_STORAGE
+
 #include "Aeron.h"
 #include "CncFileDescriptor.h"
 
@@ -22,7 +23,7 @@ using namespace aeron;
 using namespace aeron::util;
 
 void Context::requestDriverTermination(
-    const std::string& directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
+    const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
 {
     const std::string cncFilename = directory + AERON_PATH_SEP + CncFileDescriptor::CNC_FILE;
 
@@ -34,7 +35,8 @@ void Context::requestDriverTermination(
 
         if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
         {
-            throw AeronException("Aeron CnC version does not match:"
+            throw AeronException(
+                "Aeron CnC version does not match:"
                 " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
                 " file=" + semanticVersionToString(cncVersion),
                 SOURCEINFO);

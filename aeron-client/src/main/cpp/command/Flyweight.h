@@ -19,13 +19,14 @@
 #include <string>
 #include <concurrent/AtomicBuffer.h>
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 template<typename struct_t>
 class Flyweight
 {
 public:
-    Flyweight (concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    Flyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         m_struct(buffer.overlayStruct<struct_t>(offset)),
         m_buffer(buffer),
         m_baseOffset(offset)
@@ -33,7 +34,7 @@ public:
     }
 
 protected:
-    struct_t& m_struct;
+    struct_t &m_struct;
 
     inline std::string stringGet(util::index_t offset) const
     {
@@ -45,12 +46,12 @@ protected:
         return m_buffer.getStringLength(m_baseOffset + offset);
     }
 
-    inline util::index_t stringPut(util::index_t offset, const std::string& s)
+    inline util::index_t stringPut(util::index_t offset, const std::string &s)
     {
         return m_buffer.putString(m_baseOffset + offset, s);
     }
 
-    inline util::index_t stringPutWithoutLength(util::index_t offset, const std::string& s)
+    inline util::index_t stringPutWithoutLength(util::index_t offset, const std::string &s)
     {
         return m_buffer.putStringWithoutLength(m_baseOffset + offset, s);
     }
@@ -85,14 +86,14 @@ protected:
         m_buffer.getBytes(m_baseOffset + offset, dest, length);
     }
 
-    template <typename struct_t2>
-    inline struct_t2& overlayStruct (util::index_t offset)
+    template<typename struct_t2>
+    inline struct_t2 &overlayStruct(util::index_t offset)
     {
         return m_buffer.overlayStruct<struct_t2>(m_baseOffset + offset);
     }
 
-    template <typename struct_t2>
-    inline const struct_t2& overlayStruct (util::index_t offset) const
+    template<typename struct_t2>
+    inline const struct_t2 &overlayStruct(util::index_t offset) const
     {
         return m_buffer.overlayStruct<struct_t2>(m_baseOffset + offset);
     }

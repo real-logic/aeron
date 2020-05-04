@@ -18,6 +18,7 @@
 
 #include "ExclusivePublication.h"
 #include "ClientConductor.h"
+#include "concurrent/status/LocalSocketAddressStatus.h"
 
 namespace aeron {
 
@@ -92,7 +93,7 @@ void ExclusivePublication::removeDestination(const std::string& endpointChannel)
     m_conductor.removeDestination(m_registrationId, endpointChannel);
 }
 
-std::int64_t ExclusivePublication::channelStatus()
+std::int64_t ExclusivePublication::channelStatus() const
 {
     if (isClosed())
     {
@@ -100,6 +101,11 @@ std::int64_t ExclusivePublication::channelStatus()
     }
 
     return m_conductor.channelStatus(m_channelStatusId);
+}
+
+std::vector<std::string> ExclusivePublication::localSocketAddresses() const
+{
+    return LocalSocketAddressStatus::findAddresses(m_conductor.countersReader(), channelStatus(), channelStatusId());
 }
 
 }

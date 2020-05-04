@@ -28,7 +28,8 @@
 #include "Image.h"
 #include "util/Export.h"
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::concurrent::logbuffer;
 
@@ -54,11 +55,12 @@ class CLIENT_EXPORT Subscription
 public:
     /// @cond HIDDEN_SYMBOLS
     Subscription(
-        ClientConductor& conductor,
+        ClientConductor &conductor,
         std::int64_t registrationId,
-        const std::string& channel,
+        const std::string &channel,
         std::int32_t streamId,
         std::int32_t channelStatusId);
+
     /// @endcond
     ~Subscription();
 
@@ -67,7 +69,7 @@ public:
      *
      * @return Media address for delivery to the channel.
      */
-    inline const std::string& channel() const
+    inline const std::string &channel() const
     {
         return m_channel;
     }
@@ -103,12 +105,39 @@ public:
     }
 
     /**
+     * Get the status for the channel of this {@link Subscription}
+     *
+     * @return status code for this channel
+     */
+    std::int64_t channelStatus() const;
+
+    /**
+     * Fetches the local socket addresses for this subscription. If the channel is not
+     * {@link aeron::concurrent::status::ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE}, then this will return an
+     * empty list.
+     *
+     * The format is as follows:
+     * <br>
+     * <br>
+     * IPv4: <code>ip address:port</code>
+     * <br>
+     * IPv6: <code>[ip6 address]:port</code>
+     * <br>
+     * <br>
+     * This is to match the formatting used in the Aeron URI
+     *
+     * @return local socket address for this subscription.
+     * @see #channelStatus()
+     */
+    std::vector<std::string> localSocketAddresses() const;
+
+    /**
      * Add a destination manually to a multi-destination Subscription.
      *
      * @param endpointChannel for the destination to add.
      * @return correlation id for the add command
      */
-    std::int64_t addDestination(const std::string& endpointChannel);
+    std::int64_t addDestination(const std::string &endpointChannel);
 
     /**
      * Remove a previously added destination from a multi-destination Subscription.
@@ -116,7 +145,7 @@ public:
      * @param endpointChannel for the destination to remove.
      * @return correlation id for the remove command
      */
-    std::int64_t removeDestination(const std::string& endpointChannel);
+    std::int64_t removeDestination(const std::string &endpointChannel);
 
     /**
      * Retrieve the status of the associated add or remove destination operation with the given correlationId.
@@ -151,8 +180,8 @@ public:
      *
      * @see fragment_handler_t
      */
-    template <typename F>
-    inline int poll(F&& fragmentHandler, int fragmentLimit)
+    template<typename F>
+    inline int poll(F &&fragmentHandler, int fragmentLimit)
     {
         auto imageArrayPair = m_imageArray.load();
         auto imageArray = imageArrayPair.first;
@@ -193,8 +222,8 @@ public:
      * @return the number of fragments received
      * @see controlled_poll_fragment_handler_t
      */
-    template <typename F>
-    inline int controlledPoll(F&& fragmentHandler, int fragmentLimit)
+    template<typename F>
+    inline int controlledPoll(F &&fragmentHandler, int fragmentLimit)
     {
         auto imageArrayPair = m_imageArray.load();
         auto imageArray = imageArrayPair.first;
@@ -227,8 +256,8 @@ public:
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      */
-    template <typename F>
-    inline long blockPoll(F&& blockHandler, int blockLengthLimit)
+    template<typename F>
+    inline long blockPoll(F &&blockHandler, int blockLengthLimit)
     {
         auto imageArrayPair = m_imageArray.load();
         auto imageArray = imageArrayPair.first;
@@ -327,7 +356,7 @@ public:
      * @return image at given index or exception if out of range.
      * @deprecated use Subscription::imageByIndex instead.
      */
-    inline Image& imageAtIndex(size_t index) const
+    inline Image &imageAtIndex(size_t index) const
     {
         return *m_imageArray.load().first[index];
     }
@@ -347,7 +376,7 @@ public:
         std::shared_ptr<std::vector<Image>> result(new std::vector<Image>());
 
         forEachImage(
-            [&](Image& image)
+            [&](Image &image)
             {
                 result->push_back(Image(image));
             });
@@ -384,8 +413,8 @@ public:
      *
      * @return length of Image list
      */
-    template <typename F>
-    inline int forEachImage(F&& func) const
+    template<typename F>
+    inline int forEachImage(F &&func) const
     {
         auto imageArrayPair = m_imageArray.load();
         auto imageArray = imageArrayPair.first;
@@ -436,16 +465,17 @@ public:
 
     std::pair<Image::array_t, std::size_t> removeImage(std::int64_t correlationId)
     {
-        auto result = m_imageArray.removeElement([&](const std::shared_ptr<Image>& image)
-        {
-            if (image->correlationId() == correlationId)
+        auto result = m_imageArray.removeElement(
+            [&](const std::shared_ptr<Image> &image)
             {
-                image->close();
-                return true;
-            }
+                if (image->correlationId() == correlationId)
+                {
+                    image->close();
+                    return true;
+                }
 
-            return false;
-        });
+                return false;
+            });
 
         return result;
     }
@@ -461,40 +491,13 @@ public:
         }
         else
         {
-            return {nullptr, 0};
+            return { nullptr, 0 };
         }
     }
     /// @endcond
 
-    /**
-     * Get the status for the channel of this {@link Subscription}
-     *
-     * @return status code for this channel
-     */
-    std::int64_t channelStatus() const;
-
-    /**
-     * Fetches the local socket addresses for this subscription. If the channel is not
-     * {@link aeron::concurrent::status::ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE}, then this will return an
-     * empty list.
-     *
-     * The format is as follows:
-     * <br>
-     * <br>
-     * IPv4: <code>ip address:port</code>
-     * <br>
-     * IPv6: <code>[ip6 address]:port</code>
-     * <br>
-     * <br>
-     * This is to match the formatting used in the Aeron URI
-     *
-     * @return local socket address for this subscription.
-     * @see #channelStatus()
-     */
-    std::vector<std::string> localSocketAddresses() const;
-
 private:
-    ClientConductor& m_conductor;
+    ClientConductor &m_conductor;
     const std::string m_channel;
     std::int32_t m_channelStatusId;
     char m_paddingBefore[util::BitUtil::CACHE_LINE_LENGTH]{};

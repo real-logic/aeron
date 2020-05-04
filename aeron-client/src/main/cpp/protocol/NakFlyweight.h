@@ -25,7 +25,8 @@
 #include <util/Index.h>
 #include "HeaderFlyweight.h"
 
-namespace aeron { namespace protocol {
+namespace aeron { namespace protocol
+{
 
 /**
  * Data recovery retransmit message:
@@ -51,8 +52,8 @@ class NakFlyweight : public HeaderFlyweight
 public:
     typedef NakFlyweight this_t;
 
-    NakFlyweight(concurrent::AtomicBuffer& buffer, std::int32_t offset)
-        : HeaderFlyweight(buffer, offset), m_struct(overlayStruct<NakDefn>(0))
+    NakFlyweight(concurrent::AtomicBuffer &buffer, std::int32_t offset) :
+        HeaderFlyweight(buffer, offset), m_struct(overlayStruct<NakDefn>(0))
     {
     }
 
@@ -61,7 +62,7 @@ public:
         return m_struct.sessionId;
     }
 
-    inline this_t& sessionId(std::int32_t value)
+    inline this_t &sessionId(std::int32_t value)
     {
         m_struct.sessionId = value;
         return *this;
@@ -72,7 +73,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -83,7 +84,7 @@ public:
         return m_struct.termId;
     }
 
-    inline this_t& termId(std::int32_t value)
+    inline this_t &termId(std::int32_t value)
     {
         m_struct.termId = value;
         return *this;
@@ -94,7 +95,7 @@ public:
         return m_struct.termOffset;
     }
 
-    inline this_t& termOffset(std::int32_t value)
+    inline this_t &termOffset(std::int32_t value)
     {
         m_struct.termOffset = value;
         return *this;
@@ -105,7 +106,7 @@ public:
         return m_struct.length;
     }
 
-    inline this_t& length(std::int32_t value)
+    inline this_t &length(std::int32_t value)
     {
         m_struct.length = value;
         return *this;
@@ -117,9 +118,10 @@ public:
     }
 
 private:
-    NakDefn& m_struct;
+    NakDefn &m_struct;
 };
 
-}}
+}
+}
 
 #endif

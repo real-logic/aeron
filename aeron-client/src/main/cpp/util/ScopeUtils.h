@@ -18,7 +18,8 @@
 
 #include <memory>
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 class OnScopeExit
 {
@@ -55,7 +56,7 @@ private:
 class CallbackGuard
 {
 public:
-    explicit CallbackGuard(bool& isInCallback) : m_isInCallback(isInCallback)
+    explicit CallbackGuard(bool &isInCallback) : m_isInCallback(isInCallback)
     {
         m_isInCallback = true;
     }
@@ -65,12 +66,12 @@ public:
         m_isInCallback = false;
     }
 
-    CallbackGuard(const CallbackGuard&) = delete;
+    CallbackGuard(const CallbackGuard &) = delete;
 
-    CallbackGuard& operator = (const CallbackGuard&) = delete;
+    CallbackGuard &operator=(const CallbackGuard &) = delete;
 
 private:
-    bool& m_isInCallback;
+    bool &m_isInCallback;
 };
 
 }}

@@ -18,13 +18,14 @@
 
 #include <cassert>
 
-namespace aeron {
+namespace aeron
+{
 
 template<typename T, typename... U>
-static size_t getAddress(const std::function<T(U...)>& f)
+static size_t getAddress(const std::function<T(U...)> &f)
 {
     typedef T(fnType)(U...);
-    auto fnPointer = f.template target<fnType*>();
+    auto fnPointer = f.template target<fnType *>();
 
     return (size_t)*fnPointer;
 }
@@ -34,7 +35,7 @@ ClientConductor::~ClientConductor()
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [](ImageListLingerDefn &entry)
         {
-            delete [] entry.m_imageArray;
+            delete[] entry.m_imageArray;
             entry.m_imageArray = nullptr;
         });
 
@@ -329,7 +330,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::ar
     }
     else
     {
-        delete [] imageArray;
+        delete[] imageArray;
     }
 }
 
@@ -529,7 +530,7 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
     return result;
 }
 
-void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& handler)
+void ClientConductor::addAvailableCounterHandler(const on_available_counter_t &handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
@@ -538,7 +539,7 @@ void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& h
     m_onAvailableCounterHandlers.emplace_back(handler);
 }
 
-void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t& handler)
+void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t &handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
@@ -554,7 +555,7 @@ void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
 }
 
-void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
@@ -563,7 +564,7 @@ void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_
     m_onUnavailableCounterHandlers.emplace_back(handler);
 }
 
-void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t &handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
@@ -695,7 +696,7 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
     }
 
-    for (auto const& handler: m_onAvailableCounterHandlers)
+    for (auto const &handler: m_onAvailableCounterHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
         handler(m_countersReader, registrationId, counterId);
@@ -706,7 +707,7 @@ void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
-    for (auto const& handler: m_onUnavailableCounterHandlers)
+    for (auto const &handler: m_onUnavailableCounterHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
         handler(m_countersReader, registrationId, counterId);
@@ -940,7 +941,7 @@ void ClientConductor::closeAllResources(long long nowMs)
 {
     std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 
-    for (auto& kv : m_publicationByRegistrationId)
+    for (auto &kv : m_publicationByRegistrationId)
     {
         std::shared_ptr<Publication> pub = kv.second.m_publication.lock();
 
@@ -951,7 +952,7 @@ void ClientConductor::closeAllResources(long long nowMs)
     }
     m_publicationByRegistrationId.clear();
 
-    for (auto& kv : m_exclusivePublicationByRegistrationId)
+    for (auto &kv : m_exclusivePublicationByRegistrationId)
     {
         std::shared_ptr<ExclusivePublication> pub = kv.second.m_publication.lock();
 
@@ -964,7 +965,7 @@ void ClientConductor::closeAllResources(long long nowMs)
 
     std::vector<std::shared_ptr<Subscription>> subscriptionsToHoldUntilCleared;
 
-    for (auto& kv : m_subscriptionByRegistrationId)
+    for (auto &kv : m_subscriptionByRegistrationId)
     {
         std::shared_ptr<Subscription> sub = kv.second.m_subscription.lock();
 
@@ -996,7 +997,7 @@ void ClientConductor::closeAllResources(long long nowMs)
 
     std::vector<std::shared_ptr<Counter>> countersToHoldUntilCleared;
 
-    for (auto& kv : m_counterByRegistrationId)
+    for (auto &kv : m_counterByRegistrationId)
     {
         std::shared_ptr<Counter> counter = kv.second.m_counter.lock();
 
@@ -1006,7 +1007,7 @@ void ClientConductor::closeAllResources(long long nowMs)
             std::int64_t registrationId = counter->registrationId();
             std::int32_t counterId = counter->id();
 
-            for (auto const& handler: m_onUnavailableCounterHandlers)
+            for (auto const &handler: m_onUnavailableCounterHandlers)
             {
                 CallbackGuard callbackGuard(m_isInCallback);
                 handler(m_countersReader, registrationId, counterId);
@@ -1021,7 +1022,7 @@ void ClientConductor::closeAllResources(long long nowMs)
     }
     m_counterByRegistrationId.clear();
 
-    for (auto const& handler: m_onCloseClientHandlers)
+    for (auto const &handler: m_onCloseClientHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
         handler();
@@ -1032,7 +1033,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
-    for (auto it = m_logBuffersByRegistrationId.begin(); it != m_logBuffersByRegistrationId.end(); )
+    for (auto it = m_logBuffersByRegistrationId.begin(); it != m_logBuffersByRegistrationId.end();)
     {
         LogBuffersDefn &entry = it->second;
 
@@ -1057,7 +1058,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
         {
             if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStateChangeMs)
             {
-                delete [] entry.m_imageArray;
+                delete[] entry.m_imageArray;
                 entry.m_imageArray = nullptr;
 
                 return true;

@@ -21,7 +21,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Control message flyweight for any errors sent from driver to clients
@@ -49,7 +50,7 @@ struct ErrorResponseDefn
     std::int64_t offendingCommandCorrelationId;
     std::int32_t errorCode;
     std::int32_t errorMessageLength;
-    std::int8_t  errorMessageData[1];
+    std::int8_t errorMessageData[1];
 };
 #pragma pack(pop)
 
@@ -70,7 +71,7 @@ class ErrorResponseFlyweight : public Flyweight<ErrorResponseDefn>
 public:
     typedef ErrorResponseFlyweight this_t;
 
-    inline ErrorResponseFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline ErrorResponseFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<ErrorResponseDefn>(buffer, offset)
     {
     }

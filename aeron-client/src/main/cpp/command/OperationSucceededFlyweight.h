@@ -16,12 +16,12 @@
 #ifndef AERON_OPERATION_SUCCEEDED_FLYWEIGHT_H
 #define AERON_OPERATION_SUCCEEDED_FLYWEIGHT_H
 
-
 #include <cstdint>
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Indicate a given operation is done and has succeeded.
@@ -48,7 +48,7 @@ class OperationSucceededFlyweight : public Flyweight<OperationSucceededDefn>
 public:
     typedef OperationSucceededFlyweight this_t;
 
-    inline OperationSucceededFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline OperationSucceededFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<OperationSucceededDefn>(buffer, offset)
     {
     }
@@ -58,7 +58,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;

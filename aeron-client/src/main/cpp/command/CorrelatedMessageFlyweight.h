@@ -20,7 +20,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * 0                   1                   2                   3
@@ -50,7 +51,7 @@ class CorrelatedMessageFlyweight : public Flyweight<CorrelatedMessageDefn>
 public:
     typedef CorrelatedMessageFlyweight this_t;
 
-    inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline CorrelatedMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<CorrelatedMessageDefn>(buffer, offset)
     {
     }
@@ -60,7 +61,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -71,7 +72,7 @@ public:
         return m_struct.clientId;
     }
 
-    inline this_t& clientId(std::int64_t value)
+    inline this_t &clientId(std::int64_t value)
     {
         m_struct.clientId = value;
         return *this;

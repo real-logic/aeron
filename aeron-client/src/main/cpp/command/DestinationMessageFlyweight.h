@@ -21,7 +21,8 @@
 #include <cstddef>
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 #pragma pack(push)
 #pragma pack(4)
@@ -30,7 +31,7 @@ struct DestinationMessageDefn
     CorrelatedMessageDefn correlatedMessage;
     std::int64_t registrationId;
     std::int32_t channelLength;
-    std::int8_t  channelData[1];
+    std::int8_t channelData[1];
 };
 #pragma pack(pop)
 
@@ -39,9 +40,9 @@ class DestinationMessageFlyweight : public CorrelatedMessageFlyweight
 public:
     typedef DestinationMessageFlyweight this_t;
 
-    inline DestinationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
-         CorrelatedMessageFlyweight(buffer, offset),
-         m_struct(overlayStruct<DestinationMessageDefn>(0))
+    inline DestinationMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
+        CorrelatedMessageFlyweight(buffer, offset),
+        m_struct(overlayStruct<DestinationMessageDefn>(0))
     {
     }
 
@@ -50,7 +51,7 @@ public:
         return m_struct.registrationId;
     }
 
-    inline DestinationMessageFlyweight& registrationId(std::int64_t value)
+    inline DestinationMessageFlyweight &registrationId(std::int64_t value)
     {
         m_struct.registrationId = value;
         return *this;
@@ -61,7 +62,7 @@ public:
         return stringGet(offsetof(DestinationMessageDefn, channelLength));
     }
 
-    inline this_t& channel(const std::string& value)
+    inline this_t &channel(const std::string &value)
     {
         stringPut(offsetof(DestinationMessageDefn, channelLength), value);
         return *this;
@@ -73,7 +74,7 @@ public:
     }
 
 private:
-    DestinationMessageDefn& m_struct;
+    DestinationMessageDefn &m_struct;
 };
 
 }}

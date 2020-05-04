@@ -29,16 +29,16 @@ public:
     {
         std::vector<std::string> localAddresses;
 
-        countersReader.forEach([&](
-            std::int32_t counterId, std::int32_t typeId, const AtomicBuffer& keyBuffer, const std::string& label)
-        {
-            if (typeId == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID &&
-                channelStatusId == channelStatusIdFromKeyBuffer(keyBuffer) &&
-                ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == countersReader.getCounterValue(counterId))
+        countersReader.forEach(
+            [&](std::int32_t counterId, std::int32_t typeId, const AtomicBuffer &keyBuffer, const std::string &label)
             {
-                localAddresses.push_back(localSocketAddressFromKeyBuffer(keyBuffer));
-            }
-        });
+                if (typeId == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID &&
+                    channelStatusId == channelStatusIdFromKeyBuffer(keyBuffer) &&
+                    ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == countersReader.getCounterValue(counterId))
+                {
+                    localAddresses.push_back(localSocketAddressFromKeyBuffer(keyBuffer));
+                }
+            });
 
         return localAddresses;
     }
@@ -51,12 +51,12 @@ private:
     static const std::int32_t LOCAL_SOCKET_ADDRESS_STRING_OFFSET =
         LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET + (std::int32_t)sizeof(std::int32_t);
 
-    static std::int32_t channelStatusIdFromKeyBuffer(const AtomicBuffer& keyBuffer)
+    static std::int32_t channelStatusIdFromKeyBuffer(const AtomicBuffer &keyBuffer)
     {
         return keyBuffer.getInt32(CHANNEL_STATUS_ID_OFFSET);
     }
 
-    static std::string localSocketAddressFromKeyBuffer(const AtomicBuffer& keyBuffer)
+    static std::string localSocketAddressFromKeyBuffer(const AtomicBuffer &keyBuffer)
     {
         const int32_t length = keyBuffer.getStringLength(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
         return keyBuffer.getStringWithoutLength(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, length);

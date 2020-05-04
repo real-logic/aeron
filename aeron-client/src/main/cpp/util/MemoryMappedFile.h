@@ -30,7 +30,8 @@
 #endif
 
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 class CLIENT_EXPORT MemoryMappedFile
 {
@@ -57,8 +58,8 @@ public:
     uint8_t* getMemoryPtr() const;
     size_t getMemorySize() const;
 
-    MemoryMappedFile(MemoryMappedFile const&) = delete;
-    MemoryMappedFile& operator=(MemoryMappedFile const&) = delete;
+    MemoryMappedFile(MemoryMappedFile const &) = delete;
+    MemoryMappedFile& operator=(MemoryMappedFile const &) = delete;
 
     static size_t getPageSize() noexcept;
     static std::int64_t getFileSize(const char *filename);

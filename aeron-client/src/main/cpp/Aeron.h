@@ -34,7 +34,8 @@
 #include "util/Export.h"
 
 /// Top namespace for Aeron C++ API
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::util;
 using namespace aeron::concurrent;
@@ -64,7 +65,7 @@ public:
      *
      * @param context for configuration of the client.
      */
-    explicit Aeron(Context& context);
+    explicit Aeron(Context &context);
 
     ~Aeron();
 
@@ -86,7 +87,7 @@ public:
      * @param context for configuration of the client.
      * @return the new Aeron instance connected to the Media Driver.
      */
-    inline static std::shared_ptr<Aeron> connect(Context& context)
+    inline static std::shared_ptr<Aeron> connect(Context &context)
     {
         return std::make_shared<Aeron>(context);
     }
@@ -115,7 +116,7 @@ public:
      * @param streamId within the channel scope.
      * @return registration id for the publication
      */
-    inline std::int64_t addPublication(const std::string& channel, std::int32_t streamId)
+    inline std::int64_t addPublication(const std::string &channel, std::int32_t streamId)
     {
         return m_conductor.addPublication(channel, streamId);
     }
@@ -149,7 +150,7 @@ public:
      * @param streamId within the channel scope.
      * @return registration id for the publication
      */
-    inline std::int64_t addExclusivePublication(const std::string& channel, std::int32_t streamId)
+    inline std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId)
     {
         return m_conductor.addExclusivePublication(channel, streamId);
     }
@@ -186,7 +187,7 @@ public:
      * @param streamId within the channel scope.
      * @return registration id for the subscription
      */
-    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId)
+    inline std::int64_t addSubscription(const std::string &channel, std::int32_t streamId)
     {
         return m_conductor.addSubscription(
             channel, streamId, m_context.m_onAvailableImageHandler, m_context.m_onUnavailableImageHandler);
@@ -204,7 +205,7 @@ public:
      * @return registration id for the subscription
      */
     inline std::int64_t addSubscription(
-        const std::string& channel,
+        const std::string &channel,
         std::int32_t streamId,
         const on_available_image_t &onAvailableImageHandler,
         const on_unavailable_image_t &onUnavailableImageHandler)
@@ -263,7 +264,7 @@ public:
         std::int32_t typeId,
         const std::uint8_t *keyBuffer,
         std::size_t keyLength,
-        const std::string& label)
+        const std::string &label)
     {
         return m_conductor.addCounter(typeId, keyBuffer, keyLength, label);
     }
@@ -295,7 +296,7 @@ public:
      *
      * @param handler to be added to the available counters list.
      */
-    inline void addAvailableCounterHandler(const on_available_counter_t& handler)
+    inline void addAvailableCounterHandler(const on_available_counter_t &handler)
     {
         m_conductor.addAvailableCounterHandler(handler);
     }
@@ -305,7 +306,7 @@ public:
      *
      * @param handler to be removed from the available counters list.
      */
-    inline void removeAvailableCounterHandler(const on_available_counter_t& handler)
+    inline void removeAvailableCounterHandler(const on_available_counter_t &handler)
     {
         m_conductor.removeAvailableCounterHandler(handler);
     }
@@ -315,7 +316,7 @@ public:
      *
      * @param handler to be added to the unavailable counters list.
      */
-    inline void addUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+    inline void addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
         m_conductor.addUnavailableCounterHandler(handler);
     }
@@ -325,7 +326,7 @@ public:
      *
      * @param handler to be removed from the unavailable counters list.
      */
-    inline void removeUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+    inline void removeUnavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
         m_conductor.removeUnavailableCounterHandler(handler);
     }
@@ -335,7 +336,7 @@ public:
      *
      * @param handler to be added to the close client handlers list.
      */
-    inline void addCloseClientHandler(const on_close_client_t & handler)
+    inline void addCloseClientHandler(const on_close_client_t &handler)
     {
         m_conductor.addCloseClientHandler(handler);
     }
@@ -345,7 +346,7 @@ public:
      *
      * @param handler to be removed from the close client handlers list.
      */
-    inline void removeCloseClientHandler(const on_close_client_t & handler)
+    inline void removeCloseClientHandler(const on_close_client_t &handler)
     {
         m_conductor.removeCloseClientHandler(handler);
     }
@@ -355,7 +356,7 @@ public:
      *
      * @return AgentInvoker for the conductor.
      */
-    inline AgentInvoker<ClientConductor>& conductorAgentInvoker()
+    inline AgentInvoker<ClientConductor> &conductorAgentInvoker()
     {
         return m_conductorInvoker;
     }
@@ -375,7 +376,7 @@ public:
      *
      * @return CountersReader for the Aeron media driver in use.
      */
-    inline CountersReader& countersReader()
+    inline CountersReader &countersReader()
     {
         return m_conductor.countersReader();
     }
@@ -395,12 +396,12 @@ public:
      *
      * @return Context instance in use.
      */
-    inline Context& context()
+    inline Context &context()
     {
         return m_context;
     }
 
-    inline const Context& context() const
+    inline const Context &context() const
     {
         return m_context;
     }
@@ -437,7 +438,7 @@ private:
     AgentRunner<ClientConductor, SleepingIdleStrategy> m_conductorRunner;
     AgentInvoker<ClientConductor> m_conductorInvoker;
 
-    MemoryMappedFile::ptr_t mapCncFile(Context& context);
+    MemoryMappedFile::ptr_t mapCncFile(Context &context);
 };
 
 }

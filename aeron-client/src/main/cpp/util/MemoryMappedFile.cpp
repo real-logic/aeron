@@ -30,7 +30,8 @@
 #include "Exceptions.h"
 #include "ScopeUtils.h"
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 #ifdef _WIN32
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)

@@ -25,7 +25,8 @@
 #include "Exceptions.h"
 #include "util/Export.h"
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 AERON_DECLARE_SOURCED_EXCEPTION (CommandOptionException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
@@ -48,6 +49,7 @@ public:
     static const char UNNAMED = -1;
 
     CommandOption();
+
     CommandOption(char optionChar, size_t minParams, size_t maxParams, std::string helpText);
 
     char getOptionChar() const

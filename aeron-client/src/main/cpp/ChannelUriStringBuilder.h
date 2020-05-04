@@ -34,7 +34,7 @@ class ChannelUriStringBuilder
 public:
     using this_t = ChannelUriStringBuilder;
 
-    inline this_t& clear()
+    inline this_t &clear()
     {
         m_prefix.reset(nullptr);
         m_media.reset(nullptr);
@@ -65,7 +65,7 @@ public:
         return *this;
     }
 
-    inline this_t& prefix(const std::string& prefix)
+    inline this_t &prefix(const std::string &prefix)
     {
         if (m_prefix && !m_prefix->empty() && !(m_prefix->compare(SPY_QUALIFIER)))
         {
@@ -76,13 +76,13 @@ public:
         return *this;
     }
 
-    inline this_t& prefix(std::nullptr_t nullp)
+    inline this_t &prefix(std::nullptr_t nullp)
     {
         m_prefix.reset(nullptr);
         return *this;
     }
 
-    inline this_t& media(const std::string& media)
+    inline this_t &media(const std::string &media)
     {
         if (media != UDP_MEDIA && media != IPC_MEDIA)
         {
@@ -93,25 +93,25 @@ public:
         return *this;
     }
 
-    inline this_t& endpoint(const std::string& endpoint)
+    inline this_t &endpoint(const std::string &endpoint)
     {
         m_endpoint.reset(new std::string(endpoint));
         return *this;
     }
 
-    inline this_t& networkInterface(const std::string& networkInterface)
+    inline this_t &networkInterface(const std::string &networkInterface)
     {
         m_networkInterface.reset(new std::string(networkInterface));
         return *this;
     }
 
-    inline this_t& controlEndpoint(const std::string& controlEndpoint)
+    inline this_t &controlEndpoint(const std::string &controlEndpoint)
     {
         m_controlEndpoint.reset(new std::string(controlEndpoint));
         return *this;
     }
 
-    inline this_t& controlMode(const std::string& controlMode)
+    inline this_t &controlMode(const std::string &controlMode)
     {
         if (controlMode != MDC_CONTROL_MODE_MANUAL && controlMode != MDC_CONTROL_MODE_DYNAMIC)
         {
@@ -122,55 +122,55 @@ public:
         return *this;
     }
 
-    inline this_t& tags(const std::string& tags)
+    inline this_t &tags(const std::string &tags)
     {
         m_tags.reset(new std::string(tags));
         return *this;
     }
 
-    inline this_t& alias(const std::string& alias)
+    inline this_t &alias(const std::string &alias)
     {
         m_alias.reset(new std::string(alias));
         return *this;
     }
 
-    inline this_t& congestionControl(const std::string& congestionControl)
+    inline this_t &congestionControl(const std::string &congestionControl)
     {
         m_cc.reset(new std::string(congestionControl));
         return *this;
     }
 
-    inline this_t& flowControl(const std::string& flowControl)
+    inline this_t &flowControl(const std::string &flowControl)
     {
         m_fc.reset(new std::string(flowControl));
         return *this;
     }
 
-    inline this_t& groupTag(std::int64_t gtag)
+    inline this_t &groupTag(std::int64_t gtag)
     {
         m_gtag.reset(new Value(gtag));
         return *this;
     }
 
-    inline this_t& reliable(bool reliable)
+    inline this_t &reliable(bool reliable)
     {
         m_reliable.reset(new Value(reliable ? 1 : 0));
         return *this;
     }
 
-    inline this_t& reliable(std::nullptr_t nullp)
+    inline this_t &reliable(std::nullptr_t nullp)
     {
         m_reliable.reset(nullptr);
         return *this;
     }
 
-    inline this_t& ttl(std::uint8_t ttl)
+    inline this_t &ttl(std::uint8_t ttl)
     {
         m_ttl.reset(new Value(ttl));
         return *this;
     }
 
-    inline this_t& mtu(std::uint32_t mtu)
+    inline this_t &mtu(std::uint32_t mtu)
     {
         if (mtu < 32 || mtu > 65504)
         {
@@ -187,26 +187,26 @@ public:
         return *this;
     }
 
-    inline this_t& termLength(std::int32_t termLength)
+    inline this_t &termLength(std::int32_t termLength)
     {
         concurrent::logbuffer::LogBufferDescriptor::checkTermLength(termLength);
         m_termLength.reset(new Value(termLength));
         return *this;
     }
 
-    inline this_t& initialTermId(std::int32_t initialTermId)
+    inline this_t &initialTermId(std::int32_t initialTermId)
     {
         m_initialTermId.reset(new Value(initialTermId));
         return *this;
     }
 
-    inline this_t& termId(std::int32_t termId)
+    inline this_t &termId(std::int32_t termId)
     {
         m_termId.reset(new Value(termId));
         return *this;
     }
 
-    inline this_t& termOffset(std::uint32_t termOffset)
+    inline this_t &termOffset(std::uint32_t termOffset)
     {
         if (termOffset > concurrent::logbuffer::LogBufferDescriptor::TERM_MAX_LENGTH)
         {
@@ -223,13 +223,13 @@ public:
         return *this;
     }
 
-    inline this_t& sessionId(std::int32_t sessionId)
+    inline this_t &sessionId(std::int32_t sessionId)
     {
         m_sessionId.reset(new Value(sessionId));
         return *this;
     }
 
-    inline this_t& linger(std::int64_t lingerNs)
+    inline this_t &linger(std::int64_t lingerNs)
     {
         if (lingerNs < 0)
         {
@@ -240,43 +240,43 @@ public:
         return *this;
     }
 
-    inline this_t& sparse(bool sparse)
+    inline this_t &sparse(bool sparse)
     {
         m_sparse.reset(new Value(sparse ? 1 : 0));
         return *this;
     }
 
-    inline this_t& eos(bool eos)
+    inline this_t &eos(bool eos)
     {
         m_eos.reset(new Value(eos ? 1 : 0));
         return *this;
     }
 
-    inline this_t& tether(bool tether)
+    inline this_t &tether(bool tether)
     {
         m_tether.reset(new Value(tether ? 1 : 0));
         return *this;
     }
 
-    inline this_t& group(bool group)
+    inline this_t &group(bool group)
     {
         m_group.reset(new Value(group ? 1 : 0));
         return *this;
     }
 
-    inline this_t& rejoin(bool rejoin)
+    inline this_t &rejoin(bool rejoin)
     {
         m_rejoin.reset(new Value(rejoin ? 1 : 0));
         return *this;
     }
 
-    inline this_t& rejoin(std::nullptr_t nullp)
+    inline this_t &rejoin(std::nullptr_t nullp)
     {
         m_reliable.reset(nullptr);
         return *this;
     }
 
-    inline this_t& isSessionIdTagged(bool isSessionIdTagged)
+    inline this_t &isSessionIdTagged(bool isSessionIdTagged)
     {
         m_isSessionIdTagged = isSessionIdTagged;
         return *this;
@@ -423,6 +423,7 @@ private:
     struct Value
     {
         std::int64_t value;
+
         explicit Value(std::int64_t v)
         {
             value = v;
@@ -456,7 +457,7 @@ private:
     std::unique_ptr<Value> m_rejoin;
     bool m_isSessionIdTagged = false;
 
-    inline static std::string prefixTag(bool isTagged, Value& value)
+    inline static std::string prefixTag(bool isTagged, Value &value)
     {
         return isTagged ? (std::string(TAG_PREFIX) + std::to_string(value.value)) : std::to_string(value.value);
     }

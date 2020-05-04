@@ -18,7 +18,8 @@
 #include "ClientConductor.h"
 #include "concurrent/status/LocalSocketAddressStatus.h"
 
-namespace aeron {
+namespace aeron
+{
 
 Subscription::Subscription(
     ClientConductor &conductor,
@@ -45,7 +46,7 @@ Subscription::~Subscription()
     m_conductor.releaseSubscription(m_registrationId, imageArrayPair.first, imageArrayPair.second);
 }
 
-std::int64_t Subscription::addDestination(const std::string& endpointChannel)
+std::int64_t Subscription::addDestination(const std::string &endpointChannel)
 {
     if (isClosed())
     {
@@ -55,7 +56,7 @@ std::int64_t Subscription::addDestination(const std::string& endpointChannel)
     return m_conductor.addRcvDestination(m_registrationId, endpointChannel);
 }
 
-std::int64_t Subscription::removeDestination(const std::string& endpointChannel)
+std::int64_t Subscription::removeDestination(const std::string &endpointChannel)
 {
     if (isClosed())
     {

@@ -21,7 +21,8 @@
 #include <cstddef>
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * Control message for adding a subscription.
@@ -56,7 +57,7 @@ struct SubscriptionMessageDefn
     std::int64_t registrationCorrelationId;
     std::int32_t streamId;
     std::int32_t channelLength;
-    std::int8_t  channelData[1];
+    std::int8_t channelData[1];
 };
 #pragma pack(pop)
 
@@ -65,7 +66,7 @@ class SubscriptionMessageFlyweight : public CorrelatedMessageFlyweight
 public:
     typedef SubscriptionMessageFlyweight this_t;
 
-    inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<SubscriptionMessageDefn>(0))
     {
     }
@@ -75,7 +76,7 @@ public:
         return m_struct.registrationCorrelationId;
     }
 
-    inline this_t& registrationCorrelationId(std::int64_t value)
+    inline this_t &registrationCorrelationId(std::int64_t value)
     {
         m_struct.registrationCorrelationId = value;
         return *this;
@@ -86,7 +87,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -97,7 +98,7 @@ public:
         return stringGet(offsetof(SubscriptionMessageDefn, channelLength));
     }
 
-    inline this_t& channel(const std::string& value)
+    inline this_t &channel(const std::string &value)
     {
         stringPut(offsetof(SubscriptionMessageDefn, channelLength), value);
         return *this;
@@ -109,7 +110,7 @@ public:
     }
 
 private:
-    SubscriptionMessageDefn& m_struct;
+    SubscriptionMessageDefn &m_struct;
 };
 
 }}

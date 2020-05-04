@@ -20,7 +20,8 @@
 #include <cstdint>
 #include <limits>
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 /**
  * a 32-bit signed int that is used for lengths and offsets to be compatible with Java's 32-bit int.

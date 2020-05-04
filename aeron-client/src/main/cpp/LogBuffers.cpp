@@ -16,7 +16,8 @@
 
 #include "LogBuffers.h"
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::util;
 using namespace aeron::concurrent::logbuffer;

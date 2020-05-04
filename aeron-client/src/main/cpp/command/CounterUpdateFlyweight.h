@@ -20,7 +20,8 @@
 #include <cstddef>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Message to denote that a Counter has been successfully set up or removed.
@@ -50,7 +51,7 @@ class CounterUpdateFlyweight : public Flyweight<CounterUpdateDefn>
 public:
     typedef CounterUpdateFlyweight this_t;
 
-    inline CounterUpdateFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline CounterUpdateFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<CounterUpdateDefn>(buffer, offset)
     {
     }
@@ -60,7 +61,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -71,7 +72,7 @@ public:
         return m_struct.counterId;
     }
 
-    inline this_t& counterId(std::int32_t value)
+    inline this_t &counterId(std::int32_t value)
     {
         m_struct.counterId = value;
         return *this;

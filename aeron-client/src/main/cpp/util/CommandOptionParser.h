@@ -24,23 +24,27 @@
 #include "CommandOption.h"
 #include "util/Export.h"
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 class CLIENT_EXPORT CommandOptionParser
 {
-    private:
-        std::map<char, CommandOption> m_options;
+private:
+    std::map<char, CommandOption> m_options;
 
-    public:
-        CommandOptionParser ();
+public:
+    CommandOptionParser();
 
-        void parse(int argc, char** argv);
-        void addOption(const CommandOption& option);
-        CommandOption& getOption(char optionChar);
+    void parse(int argc, char **argv);
 
-        void displayOptionsHelp(std::ostream& out) const;
+    void addOption(const CommandOption &option);
+
+    CommandOption &getOption(char optionChar);
+
+    void displayOptionsHelp(std::ostream &out) const;
 };
 
-}}
+}
+}
 
 #endif

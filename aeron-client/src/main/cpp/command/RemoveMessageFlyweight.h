@@ -21,7 +21,8 @@
 #include <cstddef>
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * Control message for removing a Publication or Subscription.
@@ -53,7 +54,7 @@ struct RemoveMessageDefn
 class RemoveMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-    inline RemoveMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline RemoveMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<RemoveMessageDefn>(0))
     {
     }
@@ -63,7 +64,7 @@ public:
         return m_struct.registrationId;
     }
 
-    inline CorrelatedMessageFlyweight& registrationId(std::int64_t value)
+    inline CorrelatedMessageFlyweight &registrationId(std::int64_t value)
     {
         m_struct.registrationId = value;
         return *this;
@@ -75,7 +76,7 @@ public:
     }
 
 private:
-    RemoveMessageDefn& m_struct;
+    RemoveMessageDefn &m_struct;
 };
 
 }}

@@ -24,7 +24,8 @@
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
 #include "util/Export.h"
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::util;
 using namespace aeron::concurrent;
@@ -34,11 +35,12 @@ class CLIENT_EXPORT LogBuffers
 {
 public:
     explicit LogBuffers(const char *filename, bool preTouch);
+
     LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32_t termLength);
 
     ~LogBuffers();
 
-    inline AtomicBuffer& atomicBuffer(int index)
+    inline AtomicBuffer &atomicBuffer(int index)
     {
         return m_buffers[index];
     }

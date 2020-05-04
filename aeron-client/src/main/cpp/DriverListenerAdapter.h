@@ -28,17 +28,18 @@
 #include <command/CounterUpdateFlyweight.h>
 #include <command/ClientTimeoutFlyweight.h>
 
-namespace aeron {
+namespace aeron
+{
 
 using namespace aeron::command;
 using namespace aeron::concurrent;
 using namespace aeron::concurrent::broadcast;
 
-template <class DriverListener>
+template<class DriverListener>
 class DriverListenerAdapter
 {
 public:
-    DriverListenerAdapter(CopyBroadcastReceiver& broadcastReceiver, DriverListener& driverListener) :
+    DriverListenerAdapter(CopyBroadcastReceiver &broadcastReceiver, DriverListener &driverListener) :
         m_broadcastReceiver(broadcastReceiver),
         m_driverListener(driverListener)
     {
@@ -47,7 +48,7 @@ public:
     int receiveMessages()
     {
         return m_broadcastReceiver.receive(
-            [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+            [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
             {
                 switch (msgTypeId)
                 {
@@ -175,8 +176,8 @@ public:
     }
 
 private:
-    CopyBroadcastReceiver& m_broadcastReceiver;
-    DriverListener& m_driverListener;
+    CopyBroadcastReceiver &m_broadcastReceiver;
+    DriverListener &m_driverListener;
 };
 
 }

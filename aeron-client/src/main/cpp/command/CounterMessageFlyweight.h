@@ -22,7 +22,8 @@
 #include <util/BitUtil.h>
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
  * Message to denote a new counter.
@@ -60,7 +61,7 @@ class CounterMessageFlyweight : public CorrelatedMessageFlyweight
 public:
     typedef CounterMessageFlyweight this_t;
 
-    inline CounterMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline CounterMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<CounterMessageDefn>(0))
     {
     }
@@ -70,7 +71,7 @@ public:
         return m_struct.typeId;
     }
 
-    inline this_t& typeId(std::int32_t value)
+    inline this_t &typeId(std::int32_t value)
     {
         m_struct.typeId = value;
         return *this;
@@ -89,7 +90,7 @@ public:
         return length;
     }
 
-    inline this_t& keyBuffer(const uint8_t *key, size_t keyLength)
+    inline this_t &keyBuffer(const uint8_t *key, size_t keyLength)
     {
         auto length = static_cast<std::int32_t>(keyLength);
 
@@ -113,7 +114,7 @@ public:
         return stringGet(labelLengthOffset());
     }
 
-    inline this_t& label(const std::string& label)
+    inline this_t &label(const std::string &label)
     {
         stringPut(labelLengthOffset(), label);
 
@@ -126,7 +127,7 @@ public:
     }
 
 private:
-    CounterMessageDefn& m_struct;
+    CounterMessageDefn &m_struct;
 
     inline util::index_t keyLengthOffset() const
     {

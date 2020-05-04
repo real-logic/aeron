@@ -23,7 +23,8 @@
 #include <util/StringUtil.h>
 #include "Flyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * Message to denote that new buffers have been added for a subscription.
@@ -76,7 +77,7 @@ class ImageBuffersReadyFlyweight : public Flyweight<ImageBuffersReadyDefn>
 public:
     typedef ImageBuffersReadyFlyweight this_t;
 
-    inline ImageBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline ImageBuffersReadyFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         Flyweight<ImageBuffersReadyDefn>(buffer, offset)
     {
     }
@@ -86,7 +87,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline this_t& correlationId(std::int64_t value)
+    inline this_t &correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -97,7 +98,7 @@ public:
         return m_struct.sessionId;
     }
 
-    inline this_t& sessionId(std::int32_t value)
+    inline this_t &sessionId(std::int32_t value)
     {
         m_struct.sessionId = value;
         return *this;
@@ -108,7 +109,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -119,7 +120,7 @@ public:
         return m_struct.subscriptionRegistrationId;
     }
 
-    inline this_t& subscriberRegistrationId(std::int64_t value)
+    inline this_t &subscriberRegistrationId(std::int64_t value)
     {
         m_struct.subscriptionRegistrationId = value;
         return *this;
@@ -130,7 +131,7 @@ public:
         return m_struct.subscriberPositionId;
     }
 
-    inline this_t& subscriberPositionId(std::int32_t value)
+    inline this_t &subscriberPositionId(std::int32_t value)
     {
         m_struct.subscriberPositionId = value;
         return *this;
@@ -141,7 +142,7 @@ public:
         return stringGet(logFileNameOffset());
     }
 
-    inline this_t& logFileName(const std::string& value)
+    inline this_t &logFileName(const std::string &value)
     {
         stringPut(logFileNameOffset(), value);
         return *this;
@@ -152,7 +153,7 @@ public:
         return stringGet(sourceIdentityOffset());
     }
 
-    inline this_t& sourceIdentity(const std::string &value)
+    inline this_t &sourceIdentity(const std::string &value)
     {
         stringPut(sourceIdentityOffset(), value);
         return *this;

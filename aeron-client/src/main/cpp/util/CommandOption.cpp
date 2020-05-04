@@ -17,7 +17,8 @@
 #include "CommandOptionParser.h"
 #include "StringUtil.h"
 
-namespace aeron { namespace util {
+namespace aeron { namespace util
+{
 
 CommandOption::CommandOption() :
     m_optionChar('-'),
@@ -106,7 +107,7 @@ int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int d
     {
         throw CommandOptionException(
             std::string("value \"") + toString(value) + "\" out of range: [" +
-            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
+                toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
             SOURCEINFO);
     }
 
@@ -125,7 +126,7 @@ long CommandOption::getParamAsLong(size_t index, long minValue, long maxValue, l
     {
         throw CommandOptionException(
             std::string("value \"") + toString(value) + "\" out of range: [" +
-            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
+                toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
             SOURCEINFO);
     }
 
@@ -152,4 +153,5 @@ void CommandOption::validate() const
     }
 }
 
-}}
+}
+}

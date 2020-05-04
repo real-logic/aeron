@@ -52,8 +52,8 @@ class DataHeaderFlyweight : public HeaderFlyweight
 public:
     typedef DataHeaderFlyweight this_t;
 
-    DataHeaderFlyweight(concurrent::AtomicBuffer& buffer, std::int32_t offset)
-        : HeaderFlyweight(buffer, offset), m_struct(overlayStruct<DataHeaderDefn>(0))
+    DataHeaderFlyweight(concurrent::AtomicBuffer &buffer, std::int32_t offset) :
+        HeaderFlyweight(buffer, offset), m_struct(overlayStruct<DataHeaderDefn>(0))
     {
     }
 
@@ -62,7 +62,7 @@ public:
         return m_struct.sessionId;
     }
 
-    inline this_t& sessionId(std::int32_t value)
+    inline this_t &sessionId(std::int32_t value)
     {
         m_struct.sessionId = value;
         return *this;
@@ -73,7 +73,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -84,7 +84,7 @@ public:
         return m_struct.termId;
     }
 
-    inline this_t& termId(std::int32_t value)
+    inline this_t &termId(std::int32_t value)
     {
         m_struct.termId = value;
         return *this;
@@ -95,13 +95,13 @@ public:
         return m_struct.termOffset;
     }
 
-    inline this_t& termOffset(std::int32_t value)
+    inline this_t &termOffset(std::int32_t value)
     {
         m_struct.termOffset = value;
         return *this;
     }
 
-    inline std::uint8_t* data()
+    inline std::uint8_t *data()
     {
         return m_struct.data;
     }
@@ -112,7 +112,7 @@ public:
     }
 
 private:
-    DataHeaderDefn& m_struct;
+    DataHeaderDefn &m_struct;
 };
 
 }}

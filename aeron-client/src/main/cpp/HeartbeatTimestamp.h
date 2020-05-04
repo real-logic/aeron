@@ -17,7 +17,8 @@
 #ifndef AERON_HEARTBEAT_TIMESTAMP_H
 #define AERON_HEARTBEAT_TIMESTAMP_H
 
-namespace aeron {
+namespace aeron
+{
 
 /**
  * The heartbeat as a timestamp for an entity to indicate liveness.
@@ -32,7 +33,8 @@ namespace aeron {
  *  +---------------------------------------------------------------+
  * </pre>
  */
-namespace HeartbeatTimestamp {
+namespace HeartbeatTimestamp
+{
 
 /// Counter type id of a client heartbeat timestamp
 constexpr const std::int32_t CLIENT_HEARTBEAT_TYPE_ID = 11;
@@ -54,7 +56,7 @@ struct HeartbeatTimestampKeyDefn
  * @return the counter id if found otherwise #NULL_COUNTER_ID.
  */
 inline static std::int32_t findCounterIdByRegistrationId(
-    CountersReader& countersReader, std::int32_t counterTypeId, std::int64_t registrationId)
+    CountersReader &countersReader, std::int32_t counterTypeId, std::int64_t registrationId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 
@@ -87,7 +89,7 @@ inline static std::int32_t findCounterIdByRegistrationId(
  * @return true if the counter is still active otherwise false.
  */
 inline static bool isActive(
-    CountersReader& countersReader, std::int32_t counterId, std::int32_t counterTypeId, std::int64_t registrationId)
+    CountersReader &countersReader, std::int32_t counterId, std::int32_t counterTypeId, std::int64_t registrationId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
     const util::index_t recordOffset = CountersReader::metadataOffset(counterId);
@@ -99,5 +101,6 @@ inline static bool isActive(
         countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
 }
 
-}}
+}
+}
 #endif //AERON_HEARTBEAT_TIMESTAMP_H

@@ -23,7 +23,8 @@
 #include "CorrelatedMessageFlyweight.h"
 #include "PublicationBuffersReadyFlyweight.h"
 
-namespace aeron { namespace command {
+namespace aeron { namespace command
+{
 
 /**
 * Control message for adding a publication
@@ -55,7 +56,7 @@ struct PublicationMessageDefn
     CorrelatedMessageDefn correlatedMessage;
     std::int32_t streamId;
     std::int32_t channelLength;
-    std::int8_t  channelData[1];
+    std::int8_t channelData[1];
 };
 #pragma pack(pop)
 
@@ -65,7 +66,7 @@ class PublicationMessageFlyweight : public CorrelatedMessageFlyweight
 public:
     using this_t = PublicationMessageFlyweight;
 
-    inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+    inline PublicationMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
         CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<PublicationMessageDefn>(0))
     {
     }
@@ -75,7 +76,7 @@ public:
         return m_struct.streamId;
     }
 
-    inline this_t& streamId(std::int32_t value)
+    inline this_t &streamId(std::int32_t value)
     {
         m_struct.streamId = value;
         return *this;
@@ -86,7 +87,7 @@ public:
         return stringGet(offsetof(PublicationMessageDefn, channelLength));
     }
 
-    inline this_t& channel(const std::string& value)
+    inline this_t &channel(const std::string &value)
     {
         stringPut(offsetof(PublicationMessageDefn, channelLength), value);
         return *this;
@@ -98,7 +99,7 @@ public:
     }
 
 private:
-    PublicationMessageDefn& m_struct;
+    PublicationMessageDefn &m_struct;
 };
 
 }}

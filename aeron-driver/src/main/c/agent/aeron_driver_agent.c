@@ -740,16 +740,12 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
 
 static char *dissect_flags(uint8_t flags, char *dissected_flags, size_t flags_length)
 {
-    const size_t len = flags_length < 8 ? flags_length : 8;
-    uint8_t flag_mask = (uint8_t)(1 << (flags_length - 1));
+    const size_t len = flags_length < sizeof(uint8_t) ? flags_length : sizeof(uint8_t);
+    uint8_t flag_mask = (uint8_t)(1 << (len - 1));
 
     for (size_t i = 0; i < len; i++)
     {
-        if ((flags & flag_mask) == flag_mask)
-        {
-            dissected_flags[i] = '1';
-        }
-
+        dissected_flags[i] = (flags & flag_mask) == flag_mask ? '1' : '0';
         flag_mask >>= 1;
     }
 
@@ -884,6 +880,7 @@ static const char *dissect_frame(const void *message, size_t length)
         case AERON_HDR_TYPE_RES:
         {
             uint8_t null_buffer[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            char dissected_flags[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
             const uint8_t *message_bytes = (uint8_t *)message;
             const int buffer_available = sizeof(buffer) - 1;
 
@@ -922,8 +919,6 @@ static const char *dissect_frame(const void *message, size_t length)
                         break;
                     }
                 }
-
-                char dissected_flags[8];
 
                 buffer_used += snprintf(
                     &buffer[buffer_used], buffer_available - buffer_used,

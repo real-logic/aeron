@@ -15,8 +15,7 @@
  */
 package io.aeron.status;
 
-import org.agrona.BitUtil;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -25,6 +24,9 @@ import org.agrona.concurrent.status.CountersReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
+import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
 /**
  * Counter used to store the status of a bind address and port for the local end of a channel.
@@ -124,21 +126,28 @@ public class LocalSocketAddressStatus
         }
 
         final ArrayList<String> bindings = new ArrayList<>(2);
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
             {
-                if (LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == typeId &&
-                    channelStatusId == keyBuffer.getInt(CHANNEL_STATUS_ID_OFFSET) &&
-                    ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
+                final int recordOffset = CountersReader.metaDataOffset(i);
+                final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
+
+                if (LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == buffer.getInt(recordOffset + TYPE_ID_OFFSET) &&
+                    channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
+                    ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
                 {
-                    final int length = keyBuffer.getInt(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
+                    final int length = buffer.getInt(keyIndex + LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
                     if (length > 0)
                     {
-                        bindings.add(keyBuffer.getStringWithoutLengthAscii(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, length));
+                        bindings.add(buffer.getStringWithoutLengthAscii(
+                            keyIndex + LOCAL_SOCKET_ADDRESS_STRING_OFFSET, length));
                     }
                 }
-            });
+            }
+        }
 
         return bindings;
     }

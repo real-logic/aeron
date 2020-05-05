@@ -132,7 +132,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private void updateLocalSocketAddress()
     {
-        LocalSocketAddressStatus.updateWithBindAddress(
+        LocalSocketAddressStatus.updateBindAddress(
             requireNonNull(localSocketAddressIndicator, "end status not allocated"),
             bindAddressAndPort(),
             context.countersMetaDataBuffer());

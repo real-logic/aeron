@@ -16,7 +16,6 @@
 package io.aeron.status;
 
 import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -27,7 +26,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-// TODO: add javadoc with layout.
+/**
+ * Counter used to store the status of a bind address and port for the local end of a channel.
+ * <p>
+ * When the value is {@link ChannelEndpointStatus#ACTIVE} then the key value and label will be updated with the
+ * socket address and port which is bound.
+ */
 public class LocalSocketAddressStatus
 {
     private static final int CHANNEL_STATUS_ID_OFFSET = 0;
@@ -38,16 +42,25 @@ public class LocalSocketAddressStatus
     private static final int MAX_IPV6_LENGTH = "[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]:65536".length();
 
     /**
-     * Maximum possible length for a key, reserve this much space in the key buffer on creation to allow
-     * for updating later.
+     * Initial length length for a key, this will be expanded later when bound.
      */
-    public static final int KEY_RESERVED_LENGTH = BitUtil.SIZE_OF_INT * 2 + MAX_IPV6_LENGTH;
+    public static final int INITIAL_LENGTH = BitUtil.SIZE_OF_INT * 2;
 
     /**
      * Type of the counter used to track a local socket address and port.
      */
     public static final int LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID = 14;
 
+    /**
+     * Allocate a counter to represent a local socket address associated with a channel.
+     *
+     * @param tempBuffer      for building up the key and label.
+     * @param countersManager which will allocate the counter.
+     * @param channelStatusId with which the new counter is associated.
+     * @param name            for the counter to put in the label.
+     * @param typeId          to categorise the counter.
+     * @return the allocated counter.
+     */
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
@@ -56,23 +69,28 @@ public class LocalSocketAddressStatus
         final int typeId)
     {
         tempBuffer.putInt(0, channelStatusId);
-        tempBuffer.putInt(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET, 0); // Zero-length address initially.
+        tempBuffer.putInt(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET, 0);
 
-        final int keyLength = KEY_RESERVED_LENGTH;
+        final int keyLength = INITIAL_LENGTH;
 
         int labelLength = 0;
         labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
         labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, String.valueOf(channelStatusId));
+        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, channelStatusId);
         labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
 
         return countersManager.newCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
     }
 
-    public static void updateWithBindAddress(
-        final AtomicCounter counter,
-        final String bindAddressAndPort,
-        final UnsafeBuffer countersMetadataBuffer)
+    /**
+     * Update the key metadata and label to contain the bound socket address once the transport is active.
+     *
+     * @param counter                representing the local socket address of the transport.
+     * @param bindAddressAndPort     in string representation.
+     * @param countersMetadataBuffer to be updated for the bound address.
+     */
+    public static void updateBindAddress(
+        final AtomicCounter counter, final String bindAddressAndPort, final UnsafeBuffer countersMetadataBuffer)
     {
         if (bindAddressAndPort.length() > MAX_IPV6_LENGTH)
         {
@@ -98,18 +116,14 @@ public class LocalSocketAddressStatus
         counter.appendToLabel(bindAddressAndPort);
     }
 
-    public static int channelStatusId(final DirectBuffer keyBuffer, final int offset)
-    {
-        return keyBuffer.getInt(offset + CHANNEL_STATUS_ID_OFFSET);
-    }
-
-    public static String localSocketAddress(final DirectBuffer keyBuffer, final int offset)
-    {
-        final int bindingLength = keyBuffer.getInt(offset + LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
-        return 0 != bindingLength ?
-            keyBuffer.getStringWithoutLengthAscii(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, bindingLength) : null;
-    }
-
+    /**
+     * Find the list of currently bound local sockets.
+     *
+     * @param countersReader  for the connected driver.
+     * @param channelStatus   value for the channel which aggregates the transports.
+     * @param channelStatusId identity of the counter for the channel which aggregates the transports.
+     * @return the list of active bound local socket addresses.
+     */
     public static List<String> findAddresses(
         final CountersReader countersReader, final long channelStatus, final int channelStatusId)
     {
@@ -124,13 +138,13 @@ public class LocalSocketAddressStatus
             (counterId, typeId, keyBuffer, label) ->
             {
                 if (LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == typeId &&
-                    channelStatusId == channelStatusId(keyBuffer, 0) &&
+                    channelStatusId == keyBuffer.getInt(CHANNEL_STATUS_ID_OFFSET) &&
                     ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
                 {
-                    final String bindAddressAndPort = localSocketAddress(keyBuffer, 0);
-                    if (null != bindAddressAndPort)
+                    final int length = keyBuffer.getInt(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
+                    if (length > 0)
                     {
-                        bindings.add(bindAddressAndPort);
+                        bindings.add(keyBuffer.getStringWithoutLengthAscii(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, length));
                     }
                 }
             });

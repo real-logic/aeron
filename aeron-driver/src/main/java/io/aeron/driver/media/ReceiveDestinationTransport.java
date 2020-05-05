@@ -65,7 +65,7 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
             }
         }
 
-        LocalSocketAddressStatus.updateWithBindAddress(
+        LocalSocketAddressStatus.updateBindAddress(
             localSocketAddressIndicator, bindAddressAndPort(), context.countersMetaDataBuffer());
         localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }

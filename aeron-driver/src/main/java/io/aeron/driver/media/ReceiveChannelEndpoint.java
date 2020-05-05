@@ -196,7 +196,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (null != localSocketAddressIndicator)
         {
-            LocalSocketAddressStatus.updateWithBindAddress(
+            LocalSocketAddressStatus.updateBindAddress(
                 localSocketAddressIndicator, bindAddressAndPort, context.countersMetaDataBuffer());
             localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
         }

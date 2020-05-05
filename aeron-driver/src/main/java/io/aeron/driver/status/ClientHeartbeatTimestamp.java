@@ -47,9 +47,7 @@ public class ClientHeartbeatTimestamp
      * @return the allocated counter.
      */
     public static AtomicCounter allocate(
-        final MutableDirectBuffer tempBuffer,
-        final CountersManager countersManager,
-        final long registrationId)
+        final MutableDirectBuffer tempBuffer, final CountersManager countersManager, final long registrationId)
     {
         return HeartbeatTimestamp.allocate(tempBuffer, NAME, CLIENT_HEARTBEAT_TYPE_ID, countersManager, registrationId);
     }

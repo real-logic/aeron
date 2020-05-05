@@ -20,8 +20,14 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
+/**
+ * The receive end of a local socket address, i.e the destination or endpoint for a subscription.
+ */
 public class ReceiveLocalSocketAddress
 {
+    /**
+     * The human readable name for the beginning of a label.
+     */
     public static final String NAME = "rcv-local-sockaddr";
 
     public static AtomicCounter allocate(

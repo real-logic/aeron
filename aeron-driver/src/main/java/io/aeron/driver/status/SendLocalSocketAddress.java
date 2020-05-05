@@ -20,8 +20,14 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
+/**
+ * The send end of a local socket address, i.e. control endpoint of a publication.
+ */
 public class SendLocalSocketAddress
 {
+    /**
+     * The human readable name for the beginning of a label.
+     */
     public static final String NAME = "send-local-sockaddr";
 
     public static AtomicCounter allocate(

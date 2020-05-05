@@ -113,8 +113,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
     public static ClusteredServiceContainer launch(final Context ctx)
     {
         final ClusteredServiceContainer clusteredServiceContainer = new ClusteredServiceContainer(ctx);
-        AgentRunner.startOnThread(
-            clusteredServiceContainer.serviceAgentRunner, clusteredServiceContainer.ctx.threadFactory());
+        AgentRunner.startOnThread(clusteredServiceContainer.serviceAgentRunner, ctx.threadFactory());
 
         return clusteredServiceContainer;
     }

@@ -178,7 +178,7 @@ public final class ClusterBackup implements AutoCloseable
         final ClusterBackup clusterBackup = new ClusterBackup(ctx);
         if (null != clusterBackup.agentRunner)
         {
-            AgentRunner.startOnThread(clusterBackup.agentRunner, clusterBackup.ctx.threadFactory());
+            AgentRunner.startOnThread(clusterBackup.agentRunner, ctx.threadFactory());
         }
         else
         {

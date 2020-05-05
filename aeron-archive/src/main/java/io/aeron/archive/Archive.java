@@ -164,13 +164,13 @@ public class Archive implements AutoCloseable
     public static Archive launch(final Context ctx)
     {
         final Archive archive = new Archive(ctx);
-        if (ArchiveThreadingMode.INVOKER == archive.ctx.threadingMode())
+        if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
         {
             archive.conductorInvoker.start();
         }
         else
         {
-            AgentRunner.startOnThread(archive.conductorRunner, archive.ctx.threadFactory());
+            AgentRunner.startOnThread(archive.conductorRunner, ctx.threadFactory());
         }
 
         return archive;

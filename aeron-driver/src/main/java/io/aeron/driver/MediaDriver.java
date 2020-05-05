@@ -246,7 +246,7 @@ public final class MediaDriver implements AutoCloseable
     {
         final MediaDriver mediaDriver = new MediaDriver(ctx);
 
-        if (mediaDriver.ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
+        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
         {
             mediaDriver.wasHighResTimerEnabled = HighResolutionTimer.isEnabled();
             if (!mediaDriver.wasHighResTimerEnabled)
@@ -257,27 +257,27 @@ public final class MediaDriver implements AutoCloseable
 
         if (null != mediaDriver.conductorRunner)
         {
-            AgentRunner.startOnThread(mediaDriver.conductorRunner, mediaDriver.ctx.conductorThreadFactory());
+            AgentRunner.startOnThread(mediaDriver.conductorRunner, ctx.conductorThreadFactory());
         }
 
         if (null != mediaDriver.senderRunner)
         {
-            AgentRunner.startOnThread(mediaDriver.senderRunner, mediaDriver.ctx.senderThreadFactory());
+            AgentRunner.startOnThread(mediaDriver.senderRunner, ctx.senderThreadFactory());
         }
 
         if (null != mediaDriver.receiverRunner)
         {
-            AgentRunner.startOnThread(mediaDriver.receiverRunner, mediaDriver.ctx.receiverThreadFactory());
+            AgentRunner.startOnThread(mediaDriver.receiverRunner, ctx.receiverThreadFactory());
         }
 
         if (null != mediaDriver.sharedNetworkRunner)
         {
-            AgentRunner.startOnThread(mediaDriver.sharedNetworkRunner, mediaDriver.ctx.sharedNetworkThreadFactory());
+            AgentRunner.startOnThread(mediaDriver.sharedNetworkRunner, ctx.sharedNetworkThreadFactory());
         }
 
         if (null != mediaDriver.sharedRunner)
         {
-            AgentRunner.startOnThread(mediaDriver.sharedRunner, mediaDriver.ctx.sharedThreadFactory());
+            AgentRunner.startOnThread(mediaDriver.sharedRunner, ctx.sharedThreadFactory());
         }
 
         if (null != mediaDriver.sharedInvoker)

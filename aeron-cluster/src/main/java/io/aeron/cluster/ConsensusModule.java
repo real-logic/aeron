@@ -249,7 +249,7 @@ public class ConsensusModule implements AutoCloseable
     public static ConsensusModule launch(final Context ctx)
     {
         final ConsensusModule consensusModule = new ConsensusModule(ctx);
-        AgentRunner.startOnThread(consensusModule.conductorRunner, consensusModule.ctx.threadFactory());
+        AgentRunner.startOnThread(consensusModule.conductorRunner, ctx.threadFactory());
 
         return consensusModule;
     }

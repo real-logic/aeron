@@ -1423,7 +1423,11 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         // TODO: ensure the logic for determining that this is truly MDS is correct...
         if (!channel->is_manual_control_mode)
         {
-            if (aeron_receive_destination_create(&destination, channel, conductor->context) < 0)
+            if (aeron_receive_destination_create(
+                &destination, channel,
+                conductor->context,
+                &conductor->counters_manager,
+                status_indicator.counter_id) < 0)
             {
                 return NULL;
             }
@@ -1437,7 +1441,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             &conductor->system_counters,
             conductor->context) < 0)
         {
-            aeron_receive_destination_delete(destination);
+            aeron_receive_destination_delete(destination, &conductor->counters_manager);
             return NULL;
         }
 
@@ -2992,7 +2996,12 @@ int aeron_driver_conductor_on_add_receive_destination(
 
     aeron_receive_destination_t *destination = NULL;
 
-    if (aeron_receive_destination_create(&destination, udp_channel, conductor->context) < 0)
+    if (aeron_receive_destination_create(
+        &destination,
+        udp_channel,
+        conductor->context,
+        &conductor->counters_manager,
+        endpoint->channel_status.counter_id) < 0)
     {
         return -1;
     }
@@ -3052,7 +3061,7 @@ void aeron_driver_conductor_on_delete_receive_destination(void *clientd, void *i
     aeron_command_delete_destination_t *command = (aeron_command_delete_destination_t *)item;
 
     aeron_udp_channel_delete((aeron_udp_channel_t *)command->channel);
-    aeron_receive_destination_delete((aeron_receive_destination_t *)command->destination);
+    aeron_receive_destination_delete((aeron_receive_destination_t *)command->destination, &conductor->counters_manager);
 
     aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, (aeron_command_base_t *)command);
 }

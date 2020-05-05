@@ -65,7 +65,8 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     aeron_udp_channel_t *channel_1 = createChannel(uri_1);
     aeron_receive_destination_t *dest_1;
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
@@ -73,7 +74,8 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     aeron_udp_channel_t *channel_2 = createChannel(uri_2);
     aeron_receive_destination_t *dest_2;
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_2, channel_2, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
@@ -88,7 +90,7 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     ASSERT_EQ(1, aeron_publication_image_remove_destination(image, remove_channel_1));
     ASSERT_EQ(1u, image->connections.length);
     ASSERT_EQ(dest_1, destination);
-    aeron_receive_destination_delete(dest_1);
+    aeron_receive_destination_delete(dest_1, &m_counters_manager);
 
     aeron_udp_channel_t *channel_not_added = createChannel(uri_3, &m_channels_for_tear_down);
 
@@ -109,7 +111,7 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     ASSERT_EQ(1, aeron_publication_image_remove_destination(image, remove_channel_2));
     ASSERT_EQ(0u, image->connections.length);
     ASSERT_EQ(dest_2, destination);
-    aeron_receive_destination_delete(dest_2);
+    aeron_receive_destination_delete(dest_2, &m_counters_manager);
 }
 
 TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
@@ -131,12 +133,14 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
     aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
     aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_2, channel_2, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
@@ -201,12 +205,14 @@ TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
     aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
     aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_2, channel_2, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
@@ -262,12 +268,14 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
 
     aeron_clock_update_cached_time(m_context->cached_clock, t0_ms, t0_ns);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_2, channel_2, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
@@ -332,12 +340,14 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
 
     aeron_clock_update_cached_time(m_context->cached_clock, t0_ms, t0_ns);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_2, channel_2, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));
@@ -399,12 +409,14 @@ TEST_F(PublicationImageTest, shouldTrackUnderruningTransportsWithLastSmAndReceiv
 
     aeron_clock_update_cached_time(m_context->cached_clock, t0_ns / (1000 * 1000), t0_ns);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_1, channel_1, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
 
     aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
 
-    ASSERT_LE(0, aeron_receive_destination_create(&dest_2, channel_2, m_context));
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_2, channel_2, m_context, &m_counters_manager, endpoint->channel_status.counter_id));
     ASSERT_EQ(2, aeron_receive_channel_endpoint_add_destination(endpoint, dest_2));
 
     ASSERT_EQ(2, aeron_publication_image_add_destination(image, dest_2));

@@ -16,6 +16,7 @@
 #ifndef AERON_DRIVER_POSITION_H
 #define AERON_DRIVER_POSITION_H
 
+#include <bits/stdint-intn.h>
 #include "concurrent/aeron_counters_manager.h"
 
 int32_t aeron_stream_counter_allocate(
@@ -109,6 +110,12 @@ int32_t aeron_counter_receive_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
     size_t channel_length,
     const char *channel);
+
+int32_t aeron_counter_local_sockaddr_indicator_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *name,
+    int32_t channel_status_counter_id,
+    const char *local_sockaddr);
 
 int32_t aeron_counter_client_heartbeat_timestamp_allocate(
     aeron_counters_manager_t *counters_manager,

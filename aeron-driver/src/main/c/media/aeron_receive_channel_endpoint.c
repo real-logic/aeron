@@ -160,7 +160,7 @@ int aeron_receive_channel_endpoint_delete(
 
         // The endpoint will be deleted by the destination, for simple endpoints, i.e. non-mds the channel is shared.
         deleted_this_channel |= destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel;
-        aeron_receive_destination_delete(destination);
+        aeron_receive_destination_delete(destination, counters_manager);
     }
 
     if (!deleted_this_channel)

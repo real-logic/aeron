@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
+#include <bits/stdint-intn.h>
 #include "util/aeron_error.h"
 #include "aeron_driver_receiver.h"
 #include "media/aeron_receive_destination.h"
+#include "aeron_position.h"
 
 int aeron_receive_destination_create(
     aeron_receive_destination_t **destination,
     aeron_udp_channel_t *channel,
-    aeron_driver_context_t *context)
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
+    int32_t channel_status_counter_id)
 {
     aeron_receive_destination_t *_destination = NULL;
 
@@ -47,13 +51,33 @@ int aeron_receive_destination_create(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {
-        aeron_receive_destination_delete(_destination);
+        aeron_receive_destination_delete(_destination, counters_manager);
+        return -1;
+    }
+
+    char local_sockaddr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    if (context->udp_channel_transport_bindings->bind_addr_and_port_func(
+        &_destination->transport, local_sockaddr, sizeof(local_sockaddr)) < 0)
+    {
+        aeron_receive_destination_delete(_destination, counters_manager);
+        return -1;
+    }
+
+    _destination->local_sockaddr_indicator.counter_id = -1;
+    _destination->local_sockaddr_indicator.counter_id = aeron_counter_local_sockaddr_indicator_allocate(
+        counters_manager, AERON_COUNTER_RCV_LOCAL_SOCKADDR_NAME, channel_status_counter_id, local_sockaddr);
+    _destination->local_sockaddr_indicator.value_addr = aeron_counters_manager_addr(
+        counters_manager, _destination->local_sockaddr_indicator.counter_id);
+
+    if (_destination->local_sockaddr_indicator.counter_id < 0)
+    {
+        aeron_receive_destination_delete(_destination, counters_manager);
         return -1;
     }
 
     if (context->udp_channel_transport_bindings->get_so_rcvbuf_func(&_destination->transport, &_destination->so_rcvbuf) < 0)
     {
-        aeron_receive_destination_delete(_destination);
+        aeron_receive_destination_delete(_destination, counters_manager);
         return -1;
     }
 
@@ -73,13 +97,25 @@ int aeron_receive_destination_create(
         channel->is_multicast ||
         channel->has_explicit_control;
 
+    aeron_counter_set_ordered(
+        _destination->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
+
     *destination = _destination;
 
     return 0;
 }
 
-void aeron_receive_destination_delete(aeron_receive_destination_t *destination)
+void aeron_receive_destination_delete(
+    aeron_receive_destination_t *destination,
+    aeron_counters_manager_t *counters_manager)
 {
+    if (NULL != counters_manager && -1 != destination->local_sockaddr_indicator.counter_id)
+    {
+        aeron_counter_set_ordered(
+            destination->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING);
+        aeron_counters_manager_free(counters_manager, destination->local_sockaddr_indicator.counter_id);
+    }
+
     aeron_udp_channel_delete(destination->conductor_fields.udp_channel);
     aeron_free(destination);
 }

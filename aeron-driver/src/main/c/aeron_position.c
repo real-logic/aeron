@@ -237,6 +237,32 @@ int32_t aeron_counter_receive_channel_status_allocate(
         channel);
 }
 
+int32_t aeron_counter_local_sockaddr_indicator_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *name,
+    int32_t channel_status_counter_id,
+    const char *local_sockaddr)
+{
+    aeron_local_sockaddr_key_layout_t sockaddr_layout =
+        {
+            .channel_status_id = channel_status_counter_id,
+            .local_sockaddr_len = strlen(local_sockaddr)
+        };
+    strncpy((char *)&sockaddr_layout.local_sockaddr, local_sockaddr, sockaddr_layout.local_sockaddr_len + 1);
+
+    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
+    int label_length = snprintf(
+        label, sizeof(label), "%s: %" PRId32 " %s", name, channel_status_counter_id, local_sockaddr);
+
+    return aeron_counters_manager_allocate(
+        counters_manager,
+        AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID,
+        (const uint8_t *) &sockaddr_layout,
+        sizeof(sockaddr_layout),
+        label,
+        label_length);
+}
+
 int32_t aeron_heartbeat_timestamp_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,

@@ -323,10 +323,10 @@ TEST_F(UdpChannelTest, shouldUseTagInCanonicalFormIfWildcardsInUseIPv6)
 TEST_F(UdpChannelTest, shouldUseTagInCanonicalFormIfWildcardsInUseIPv4)
 {
     ASSERT_EQ(parse_udp_channel("aeron:udp?tags=1001|endpoint=127.0.0.1:0"), 0) << aeron_errmsg();
-    EXPECT_STREQ(m_channel->canonical_form, "UDP-0.0.0.0:0-127.0.0.1:0-1001");
+    EXPECT_STREQ(m_channel->canonical_form, "UDP-0.0.0.0:0-127.0.0.1:0#1001");
 
     ASSERT_EQ(parse_udp_channel("aeron:udp?tags=1001|endpoint=127.0.0.1:9999|control=127.0.0.1:0"), 0) << aeron_errmsg();
-    EXPECT_STREQ(m_channel->canonical_form, "UDP-127.0.0.1:0-127.0.0.1:9999-1001");
+    EXPECT_STREQ(m_channel->canonical_form, "UDP-127.0.0.1:0-127.0.0.1:9999#1001");
 }
 
 TEST_F(UdpChannelTest, shouldUseUniqueIdInCanonicalFormIfWildcardsInUseIPv6)

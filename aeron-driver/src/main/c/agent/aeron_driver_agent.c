@@ -738,23 +738,22 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
     return buffer;
 }
 
-static const char *dissect_flags(uint8_t flags)
+static char *dissect_flags(uint8_t flags, char *dissected_flags, size_t flags_length)
 {
-    static char flag_buffer[8] = { '0', '0', '0', '0', '0', '0', '0', '0' };
-    size_t length = sizeof(flag_buffer);
-    uint8_t flag_mask = (uint8_t)(1 << (length - 1));
+    const size_t len = flags_length < 8 ? flags_length : 8;
+    uint8_t flag_mask = (uint8_t)(1 << (flags_length - 1));
 
-    for (size_t i = 0; i < length; i++)
+    for (size_t i = 0; i < len; i++)
     {
         if ((flags & flag_mask) == flag_mask)
         {
-            flag_buffer[i] = '1';
+            dissected_flags[i] = '1';
         }
 
         flag_mask >>= 1;
     }
 
-    return flag_buffer;
+    return dissected_flags;
 }
 
 static const char *dissect_res_address(int8_t res_type, const uint8_t *address)
@@ -924,11 +923,14 @@ static const char *dissect_frame(const void *message, size_t length)
                     }
                 }
 
+                char dissected_flags[8];
+
                 buffer_used += snprintf(
                     &buffer[buffer_used], buffer_available - buffer_used,
-                    " [%" PRId8 " %s port %" PRIu16 " %" PRId32 " %s %.*s]",
+                    " [%" PRId8 " %.*s port %" PRIu16 " %" PRId32 " %s %.*s]",
                     res->res_type,
-                    dissect_flags(res->res_flags),
+                    (int)sizeof(dissected_flags),
+                    dissect_flags(res->res_flags, dissected_flags, sizeof(dissected_flags)),
                     res->udp_port,
                     res->age_in_ms,
                     dissect_res_address(res->res_type, address),

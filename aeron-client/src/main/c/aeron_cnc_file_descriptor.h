@@ -81,6 +81,6 @@ inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t a
 
 int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch);
 
-#define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 0, 16))
+#define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 2, 0))
 
 #endif //AERON_C_CNC_FILE_DESCRIPTOR_H

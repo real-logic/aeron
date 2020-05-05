@@ -98,15 +98,6 @@ public class LocalSocketAddressStatus
                 "bindAddressAndPort value too long: " + bindAddressAndPort.length() + " max: " + MAX_IPV6_LENGTH);
         }
 
-        // TODO: Use this once Agrona is updated to 1.5
-//        counter.updateKey((keyBuffer) ->
-//        {
-//            final int bindingLength = keyBuffer.putStringWithoutLengthAscii(
-//                BIND_ADDRESS_AND_PORT_STRING_OFFSET, bindAddressAndPort);
-//            keyBuffer.putInt(BIND_ADDRESS_AND_PORT_OFFSET, bindingLength);
-//        });
-
-        // TODO: Remove this bit when Agrona is updated to 1.5
         final int keyIndex = CountersReader.metaDataOffset(counter.id()) + CountersReader.KEY_OFFSET;
         final int addressStringIndex = keyIndex + LOCAL_SOCKET_ADDRESS_STRING_OFFSET;
         final int length = countersMetadataBuffer.putStringWithoutLengthAscii(addressStringIndex, bindAddressAndPort);

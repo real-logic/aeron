@@ -879,7 +879,7 @@ taken at different times). An alternative would be to use a collection that has 
 our data when sending via the `Publication`. In our case we are going to have a very minimal header, consisting of two
 32-bit values, the current offset in to the full buffer of data and the total size. This will allow a consumer to know
 how far through the total set of data this fragment is, and can be used for sanity checking on load.  Secondly, we are
-determining the size of the individual Aeron message been sent. Given that we will be handling fragmentation ourselves,
+determining the size of the individual Aeron message being sent. Given that we will be handling fragmentation ourselves,
 there is no point in having Aeron fragment and reconstruct messages for us, so we should limit the size of the messages
 such that we do not exceed the `MTU`, so this calculation tells us the maximum amount of the encoded
 `snapshotMessageBuffer` we can send with each message.

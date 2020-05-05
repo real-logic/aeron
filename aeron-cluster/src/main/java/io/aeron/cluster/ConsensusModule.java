@@ -230,12 +230,6 @@ public class ConsensusModule implements AutoCloseable
         }
     }
 
-    private ConsensusModule start()
-    {
-        AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
-        return this;
-    }
-
     /**
      * Launch an {@link ConsensusModule} using a default configuration.
      *
@@ -254,7 +248,10 @@ public class ConsensusModule implements AutoCloseable
      */
     public static ConsensusModule launch(final Context ctx)
     {
-        return new ConsensusModule(ctx).start();
+        final ConsensusModule consensusModule = new ConsensusModule(ctx);
+        AgentRunner.startOnThread(consensusModule.conductorRunner, consensusModule.ctx.threadFactory());
+
+        return consensusModule;
     }
 
     /**
@@ -267,6 +264,9 @@ public class ConsensusModule implements AutoCloseable
         return ctx;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(conductorRunner);
@@ -278,6 +278,11 @@ public class ConsensusModule implements AutoCloseable
     public static class Configuration
     {
         /**
+         * Type of snapshot for this component.
+         */
+        public static final long SNAPSHOT_TYPE_ID = 1;
+
+        /**
          * Property name for the limit for fragments to be consumed on each poll of ingress.
          */
         public static final String CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME = "aeron.cluster.ingress.fragment.limit";
@@ -286,11 +291,6 @@ public class ConsensusModule implements AutoCloseable
          * Default for the limit for fragments to be consumed on each poll of ingress.
          */
         public static final int CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT = 50;
-
-        /**
-         * Type of snapshot for this component.
-         */
-        public static final long SNAPSHOT_TYPE_ID = 1;
 
         /**
          * Service ID to identify a snapshot in the {@link RecordingLog}.

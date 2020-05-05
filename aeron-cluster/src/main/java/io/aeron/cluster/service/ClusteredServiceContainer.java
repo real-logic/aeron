@@ -52,14 +52,6 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 public final class ClusteredServiceContainer implements AutoCloseable
 {
     /**
-     * Type of snapshot for this service.
-     */
-    public static final long SNAPSHOT_TYPE_ID = 2;
-
-    private final Context ctx;
-    private final AgentRunner serviceAgentRunner;
-
-    /**
      * Launch the clustered service container and await a shutdown signal.
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
@@ -75,6 +67,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
             System.out.println("Shutdown ClusteredServiceContainer...");
         }
     }
+
+    private final Context ctx;
+    private final AgentRunner serviceAgentRunner;
 
     private ClusteredServiceContainer(final Context ctx)
     {
@@ -99,12 +94,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         serviceAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), agent);
     }
 
-    private ClusteredServiceContainer start()
-    {
-        AgentRunner.startOnThread(serviceAgentRunner, ctx.threadFactory());
-        return this;
-    }
-
     /**
      * Launch an ClusteredServiceContainer using a default configuration.
      *
@@ -123,7 +112,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
      */
     public static ClusteredServiceContainer launch(final Context ctx)
     {
-        return new ClusteredServiceContainer(ctx).start();
+        final ClusteredServiceContainer clusteredServiceContainer = new ClusteredServiceContainer(ctx);
+        AgentRunner.startOnThread(
+            clusteredServiceContainer.serviceAgentRunner, clusteredServiceContainer.ctx.threadFactory());
+
+        return clusteredServiceContainer;
     }
 
     /**
@@ -136,6 +129,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         return ctx;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(serviceAgentRunner);
@@ -146,6 +142,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
      */
     public static class Configuration
     {
+        /**
+         * Type of snapshot for this service.
+         */
+        public static final long SNAPSHOT_TYPE_ID = 2;
+
         /**
          * Update interval for cluster mark file.
          */

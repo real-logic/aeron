@@ -41,7 +41,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
-import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_ID;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_TYPE_ID;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy

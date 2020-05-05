@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_ID;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_TYPE_ID;
 
 class ServiceSnapshotLoader implements ControlledFragmentHandler
 {

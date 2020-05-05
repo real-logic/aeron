@@ -575,7 +575,7 @@ class DynamicJoin implements AutoCloseable
 
                     final long typeId = snapshotMarkerDecoder.typeId();
                     if (typeId != ConsensusModule.Configuration.SNAPSHOT_TYPE_ID &&
-                        typeId != ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
+                        typeId != ClusteredServiceContainer.Configuration.SNAPSHOT_TYPE_ID)
                     {
                         throw new ClusterException("unexpected snapshot type: " + typeId);
                     }

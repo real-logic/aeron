@@ -244,7 +244,48 @@ public final class MediaDriver implements AutoCloseable
      */
     public static MediaDriver launch(final Context ctx)
     {
-        return new MediaDriver(ctx).start();
+        final MediaDriver mediaDriver = new MediaDriver(ctx);
+
+        if (mediaDriver.ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
+        {
+            mediaDriver.wasHighResTimerEnabled = HighResolutionTimer.isEnabled();
+            if (!mediaDriver.wasHighResTimerEnabled)
+            {
+                HighResolutionTimer.enable();
+            }
+        }
+
+        if (null != mediaDriver.conductorRunner)
+        {
+            AgentRunner.startOnThread(mediaDriver.conductorRunner, mediaDriver.ctx.conductorThreadFactory());
+        }
+
+        if (null != mediaDriver.senderRunner)
+        {
+            AgentRunner.startOnThread(mediaDriver.senderRunner, mediaDriver.ctx.senderThreadFactory());
+        }
+
+        if (null != mediaDriver.receiverRunner)
+        {
+            AgentRunner.startOnThread(mediaDriver.receiverRunner, mediaDriver.ctx.receiverThreadFactory());
+        }
+
+        if (null != mediaDriver.sharedNetworkRunner)
+        {
+            AgentRunner.startOnThread(mediaDriver.sharedNetworkRunner, mediaDriver.ctx.sharedNetworkThreadFactory());
+        }
+
+        if (null != mediaDriver.sharedRunner)
+        {
+            AgentRunner.startOnThread(mediaDriver.sharedRunner, mediaDriver.ctx.sharedThreadFactory());
+        }
+
+        if (null != mediaDriver.sharedInvoker)
+        {
+            mediaDriver.sharedInvoker.start();
+        }
+
+        return mediaDriver;
     }
 
     /**
@@ -293,50 +334,6 @@ public final class MediaDriver implements AutoCloseable
     public String aeronDirectoryName()
     {
         return ctx.aeronDirectoryName();
-    }
-
-    private MediaDriver start()
-    {
-        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
-        {
-            wasHighResTimerEnabled = HighResolutionTimer.isEnabled();
-            if (!wasHighResTimerEnabled)
-            {
-                HighResolutionTimer.enable();
-            }
-        }
-
-        if (null != conductorRunner)
-        {
-            AgentRunner.startOnThread(conductorRunner, ctx.conductorThreadFactory());
-        }
-
-        if (null != senderRunner)
-        {
-            AgentRunner.startOnThread(senderRunner, ctx.senderThreadFactory());
-        }
-
-        if (null != receiverRunner)
-        {
-            AgentRunner.startOnThread(receiverRunner, ctx.receiverThreadFactory());
-        }
-
-        if (null != sharedNetworkRunner)
-        {
-            AgentRunner.startOnThread(sharedNetworkRunner, ctx.sharedNetworkThreadFactory());
-        }
-
-        if (null != sharedRunner)
-        {
-            AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory());
-        }
-
-        if (null != sharedInvoker)
-        {
-            sharedInvoker.start();
-        }
-
-        return this;
     }
 
     private static void ensureDirectoryIsRecreated(final Context ctx)

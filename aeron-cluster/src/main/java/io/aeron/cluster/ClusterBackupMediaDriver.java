@@ -142,6 +142,9 @@ public class ClusterBackupMediaDriver implements AutoCloseable
         return clusterBackup;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.closeAll(clusterBackup, archive, driver);

@@ -125,24 +125,13 @@ public class Archive implements AutoCloseable
         return ctx;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(conductorInvoker);
         CloseHelper.close(conductorRunner);
-    }
-
-    private Archive start()
-    {
-        if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
-        {
-            conductorInvoker.start();
-        }
-        else
-        {
-            AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
-        }
-
-        return this;
     }
 
     /**
@@ -174,7 +163,17 @@ public class Archive implements AutoCloseable
      */
     public static Archive launch(final Context ctx)
     {
-        return new Archive(ctx).start();
+        final Archive archive = new Archive(ctx);
+        if (ArchiveThreadingMode.INVOKER == archive.ctx.threadingMode())
+        {
+            archive.conductorInvoker.start();
+        }
+        else
+        {
+            AgentRunner.startOnThread(archive.conductorRunner, archive.ctx.threadFactory());
+        }
+
+        return archive;
     }
 
     /**

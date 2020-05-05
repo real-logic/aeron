@@ -157,20 +157,6 @@ public final class ClusterBackup implements AutoCloseable
         }
     }
 
-    private ClusterBackup start()
-    {
-        if (null != agentRunner)
-        {
-            AgentRunner.startOnThread(agentRunner, ctx.threadFactory());
-        }
-        else
-        {
-            agentInvoker.start();
-        }
-
-        return this;
-    }
-
     /**
      * Launch an {@link ClusterBackup} using a default configuration.
      *
@@ -189,7 +175,17 @@ public final class ClusterBackup implements AutoCloseable
      */
     public static ClusterBackup launch(final ClusterBackup.Context ctx)
     {
-        return new ClusterBackup(ctx).start();
+        final ClusterBackup clusterBackup = new ClusterBackup(ctx);
+        if (null != clusterBackup.agentRunner)
+        {
+            AgentRunner.startOnThread(clusterBackup.agentRunner, clusterBackup.ctx.threadFactory());
+        }
+        else
+        {
+            clusterBackup.agentInvoker.start();
+        }
+
+        return clusterBackup;
     }
 
     /**
@@ -212,6 +208,9 @@ public final class ClusterBackup implements AutoCloseable
         return agentInvoker;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();

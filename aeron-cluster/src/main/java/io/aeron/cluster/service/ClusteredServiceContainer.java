@@ -152,6 +152,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final long MARK_FILE_UPDATE_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
+         * Property name for the identity of the cluster instance.
+         */
+        public static final String CLUSTER_ID_PROP_NAME = "aeron.cluster.id";
+
+        /**
+         * Default identity for a clustered instance.
+         */
+        public static final int CLUSTER_ID_DEFAULT = 0;
+
+        /**
          * Identity for a clustered service. Services should be numbered from 0 and be contiguous.
          */
         public static final String SERVICE_ID_PROP_NAME = "aeron.cluster.service.id";
@@ -288,6 +298,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Counter type id for the clustered service error count.
          */
         public static final int CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;
+
+        /**
+         * The value {@link #CLUSTER_ID_DEFAULT} or system property {@link #CLUSTER_ID_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_ID_DEFAULT} or system property {@link #CLUSTER_ID_PROP_NAME} if set.
+         */
+        public static int clusterId()
+        {
+            return Integer.getInteger(CLUSTER_ID_PROP_NAME, CLUSTER_ID_DEFAULT);
+        }
 
         /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -513,6 +533,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private volatile int isConcluded;
 
         private int appVersion = SemanticVersion.compose(0, 0, 1);
+        private int clusterId = Configuration.clusterId();
         private int serviceId = Configuration.serviceId();
         private String serviceName = Configuration.serviceName();
         private String replayChannel = Configuration.replayChannel();
@@ -648,8 +669,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorCounter)
             {
-                errorCounter = aeron.addCounter(
-                    CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, "Cluster errors - service " + serviceId);
+                final String label = "Cluster Container errors - clusterId=" + clusterId + " serviceId=" + serviceId;
+                errorCounter = aeron.addCounter(CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, label);
             }
 
             if (null == countedErrorHandler)
@@ -720,6 +741,30 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public int appVersion()
         {
             return appVersion;
+        }
+
+        /**
+         * Set the id for this cluster instance. This must match with the Consensus Module.
+         *
+         * @param clusterId for this clustered instance.
+         * @return this for a fluent API
+         * @see Configuration#CLUSTER_ID_PROP_NAME
+         */
+        public Context clusterId(final int clusterId)
+        {
+            this.clusterId = clusterId;
+            return this;
+        }
+
+        /**
+         * Get the id for this cluster instance. This must match with the Consensus Module.
+         *
+         * @return the id for this cluster instance.
+         * @see Configuration#CLUSTER_ID_PROP_NAME
+         */
+        public int clusterId()
+        {
+            return clusterId;
         }
 
         /**

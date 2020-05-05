@@ -595,11 +595,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private int awaitRecoveryCounter(final CountersReader counters)
     {
         idleStrategy.reset();
-        int counterId = RecoveryState.findCounterId(counters);
+        int counterId = RecoveryState.findCounterId(counters, ctx.clusterId());
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
-            counterId = RecoveryState.findCounterId(counters);
+            counterId = RecoveryState.findCounterId(counters, ctx.clusterId());
         }
 
         return counterId;

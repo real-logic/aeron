@@ -1030,6 +1030,7 @@ public class ConsensusModule implements AutoCloseable
         private int fileSyncLevel = Archive.Configuration.fileSyncLevel();
 
         private int appVersion = SemanticVersion.compose(0, 0, 1);
+        private int clusterId = ClusteredServiceContainer.Configuration.clusterId();
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
@@ -1187,7 +1188,8 @@ public class ConsensusModule implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = aeron.addCounter(CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, "Cluster errors");
+                    final String label = "Cluster errors - clusterId=" + clusterId;
+                    errorCounter = aeron.addCounter(CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, label);
                 }
             }
 
@@ -1507,6 +1509,30 @@ public class ConsensusModule implements AutoCloseable
         {
             this.fileSyncLevel = syncLevel;
             return this;
+        }
+
+        /**
+         * Set the id for this cluster instance. This must match with the service containers.
+         *
+         * @param clusterId for this clustered instance.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_ID_PROP_NAME
+         */
+        public Context clusterId(final int clusterId)
+        {
+            this.clusterId = clusterId;
+            return this;
+        }
+
+        /**
+         * Get the id for this cluster instance. This must match with the service containers.
+         *
+         * @return the id for this cluster instance.
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_ID_PROP_NAME
+         */
+        public int clusterId()
+        {
+            return clusterId;
         }
 
         /**

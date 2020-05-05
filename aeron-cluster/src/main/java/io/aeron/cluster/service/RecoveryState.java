@@ -45,7 +45,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  |              Timestamp at beginning of Recovery               |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                    Replay required flag                       |
+ *  |                         Cluster ID                            |
  *  +---------------------------------------------------------------+
  *  |                     Count of Services                         |
  *  +---------------------------------------------------------------+
@@ -72,8 +72,8 @@ public class RecoveryState
     public static final int LEADERSHIP_TERM_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
     public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
-    public static final int REPLAY_FLAG_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
-    public static final int SERVICE_COUNT_OFFSET = REPLAY_FLAG_OFFSET + SIZE_OF_INT;
+    public static final int CLUSTER_ID_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int SERVICE_COUNT_OFFSET = CLUSTER_ID_OFFSET + SIZE_OF_INT;
     public static final int SNAPSHOT_RECORDING_IDS_OFFSET = SERVICE_COUNT_OFFSET + SIZE_OF_INT;
 
     /**
@@ -84,7 +84,7 @@ public class RecoveryState
      * @param leadershipTermId     at which the snapshot was taken.
      * @param logPosition          at which the snapshot was taken.
      * @param timestamp            the snapshot was taken.
-     * @param hasReplay            flag is true if all or part of the log must be replayed.
+     * @param clusterId            which identifies the cluster instance.
      * @param snapshotRecordingIds for the services to use during recovery indexed by service id.
      * @return the {@link Counter} for the recovery state.
      */
@@ -94,13 +94,13 @@ public class RecoveryState
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        final boolean hasReplay,
+        final int clusterId,
         final long... snapshotRecordingIds)
     {
         tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
         tempBuffer.putLong(TIMESTAMP_OFFSET, timestamp);
-        tempBuffer.putInt(REPLAY_FLAG_OFFSET, hasReplay ? 1 : 0);
+        tempBuffer.putInt(CLUSTER_ID_OFFSET, clusterId);
 
         final int serviceCount = snapshotRecordingIds.length;
         tempBuffer.putInt(SERVICE_COUNT_OFFSET, serviceCount);
@@ -122,7 +122,8 @@ public class RecoveryState
         labelLength += tempBuffer.putLongAscii(keyLength + labelLength, leadershipTermId);
         labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " logPosition=");
         labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, logPosition);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " hasReplay=" + hasReplay);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " clusterId=");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, clusterId);
 
         return aeron.addCounter(RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
     }
@@ -130,10 +131,11 @@ public class RecoveryState
     /**
      * Find the active counter id for recovery state.
      *
-     * @param counters to search within.
+     * @param counters  to search within.
+     * @param clusterId to constrain the search.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
-    public static int findCounterId(final CountersReader counters)
+    public static int findCounterId(final CountersReader counters, final int clusterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -143,7 +145,8 @@ public class RecoveryState
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID &&
+                    buffer.getInt(recordOffset + KEY_OFFSET + CLUSTER_ID_OFFSET) == clusterId)
                 {
                     return i;
                 }
@@ -226,30 +229,6 @@ public class RecoveryState
     }
 
     /**
-     * Has the recovery process got a log to replay?
-     *
-     * @param counters  to search within.
-     * @param counterId for the active recovery counter.
-     * @return true if a replay is required.
-     */
-    public static boolean hasReplay(final CountersReader counters, final int counterId)
-    {
-        final DirectBuffer buffer = counters.metaDataBuffer();
-
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
-        {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
-            {
-                return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_FLAG_OFFSET) == 1;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Get the recording id of the snapshot for a service.
      *
      * @param counters  to search within.
@@ -278,6 +257,6 @@ public class RecoveryState
             }
         }
 
-        throw new ClusterException("Active counter not found " + counterId);
+        throw new ClusterException("active counter not found " + counterId);
     }
 }

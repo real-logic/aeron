@@ -2410,11 +2410,11 @@ class ConsensusModuleAgent implements Agent
                 snapshot.leadershipTermId,
                 snapshot.logPosition,
                 snapshot.timestamp,
-                plan.hasReplay(),
+                ctx.clusterId(),
                 serviceSnapshotRecordingIds);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, plan.hasReplay());
+        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, ctx.clusterId());
     }
 
     private DynamicJoin requiresDynamicJoin()

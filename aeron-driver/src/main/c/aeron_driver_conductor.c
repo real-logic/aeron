@@ -1412,8 +1412,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
             &conductor->counters_manager, channel->uri_length, channel->original_uri);
 
-        status_indicator.value_addr = aeron_counters_manager_addr(&conductor->counters_manager,
-                                                                  status_indicator.counter_id);
+        status_indicator.value_addr = aeron_counters_manager_addr(
+            &conductor->counters_manager, status_indicator.counter_id);
 
         if (status_indicator.counter_id < 0)
         {

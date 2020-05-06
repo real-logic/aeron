@@ -375,7 +375,7 @@ int aeron_subscription_poll(
     aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, int fragment_limit);
 int aeron_subscription_controlled_poll(
     aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, int fragment_limit);
-int aeron_subscription_block_poll(
+long aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
 int aeron_subscription_image_count(aeron_subscription_t *subscription);

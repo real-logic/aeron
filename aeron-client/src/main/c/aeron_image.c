@@ -67,5 +67,36 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
     return 0;
 }
 
+int aeron_image_controlled_poll(
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, int fragment_limit)
+{
+    return -1;
+}
+
+int aeron_image_bounded_poll(
+    aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int64_t limit_position, int fragment_limit)
+{
+    return -1;
+}
+
+int aeron_image_bounded_controlled_poll(
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handler,
+    void *clientd, int64_t limit_position, int fragment_limit)
+{
+    return -1;
+}
+
+int64_t aeron_image_controlled_peek(
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handker, void *clientd, int64_t limit_position)
+{
+    return -1;
+}
+
+int aeron_image_block_poll(
+    aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit)
+{
+    return -1;
+}
+
 extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
 extern bool aeron_image_is_in_use(aeron_image_t *image, int64_t last_change_number);

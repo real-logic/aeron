@@ -255,5 +255,64 @@ int aeron_subscription_poll(
     return fragments_read;
 }
 
+int aeron_subscription_controlled_poll(
+    aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, int fragment_limit)
+{
+    volatile aeron_image_list_t *image_list;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    size_t length = image_list->length;
+    int fragments_read = 0;
+    size_t starting_index = subscription->round_robin_index++;
+    if (starting_index >= length)
+    {
+        subscription->round_robin_index = starting_index = 0;
+    }
+
+    for (size_t i = starting_index; i < length && fragments_read < fragment_limit; i++)
+    {
+        fragments_read += aeron_image_controlled_poll(
+            image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+    }
+
+    for (size_t i = 0; i < starting_index && fragments_read < fragment_limit; i++)
+    {
+        fragments_read += aeron_image_controlled_poll(
+            image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+    }
+
+    if (image_list->change_number > subscription->last_image_list_change_number)
+    {
+        AERON_PUT_ORDERED(subscription->last_image_list_change_number, image_list->change_number);
+    }
+
+    return fragments_read;
+}
+
+long aeron_subscription_block_poll(
+    aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit)
+{
+    volatile aeron_image_list_t *image_list;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    size_t length = image_list->length;
+    long bytes_consumed = 0;
+
+    for (size_t i = 0; i < length; i++)
+    {
+        bytes_consumed += aeron_image_block_poll(
+            image_list->array[i], handler, clientd, block_length_limit);
+    }
+
+    if (image_list->change_number > subscription->last_image_list_change_number)
+    {
+        AERON_PUT_ORDERED(subscription->last_image_list_change_number, image_list->change_number);
+    }
+
+    return bytes_consumed;
+}
+
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);

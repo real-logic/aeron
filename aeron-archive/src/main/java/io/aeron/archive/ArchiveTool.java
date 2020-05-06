@@ -1244,27 +1244,28 @@ public class ArchiveTool
 
     private static void printHelp()
     {
-        System.out.println(
-            "Usage: <archive-dir> <command> (items in square brackets are optional)" +
-            "  describe [recordingId]: prints out descriptor(s) in the catalog." +
-            "  dump [data fragment limit per recording]: prints descriptor(s)" +
-            "     in the catalog and associated recorded data." +
-            "  errors: prints errors for the archive and media driver." +
-            "  pid: prints just PID of archive." +
-            "  verify [recordingId] [-a] [-checksum className]: verifies descriptor(s) in the catalog" +
-            "     checking recording files availability and contents. Only the last segment file is" +
-            "     verified unless flag '-a' is specified, i.e. meaning verify all segment files." +
-            "     To perform checksum for each data frame specify the '-checksum' flag together with" +
-            "     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32)." +
-            "     Faulty entries are marked as unusable." +
-            "  checksum className [recordingId] [-a]: computes and persists checksums." +
-            "     checksums are computed using the specified Checksum implementation " +
-            "     (e.g. io.aeron.archive.checksum.Crc32)." +
-            "     Only the last segment file of each recording is processed by default," +
-            "     unless flag '-a' is specified in which case all of the segment files are processed." +
-            "  count-entries: queries the number of recording entries in the catalog." +
-            "  max-entries [number of entries]: gets or increases the maximum number of" +
-            "     recording entries the catalog can store." +
-            "  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.");
+        System.out.format(
+            "Usage: <archive-dir> <command> (items in square brackets are optional)%n" +
+            "  describe [recordingId]: prints out descriptor(s) in the catalog.%n" +
+            "  dump [data fragment limit per recording]: prints descriptor(s)%n" +
+            "     in the catalog and associated recorded data.%n" +
+            "  errors: prints errors for the archive and media driver.%n" +
+            "  pid: prints just PID of archive.%n" +
+            "  verify [recordingId] [-a] [-checksum className]: verifies descriptor(s) in the catalog%n" +
+            "     checking recording files availability and contents. Only the last segment file is%n" +
+            "     verified unless flag '-a' is specified, i.e. meaning verify all segment files.%n" +
+            "     To perform checksum for each data frame specify the '-checksum' flag together with%n" +
+            "     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32).%n" +
+            "     Faulty entries are marked as unusable.%n" +
+            "  checksum className [recordingId] [-a]: computes and persists checksums.%n" +
+            "     checksums are computed using the specified Checksum implementation%n" +
+            "     (e.g. io.aeron.archive.checksum.Crc32).%n" +
+            "     Only the last segment file of each recording is processed by default,%n" +
+            "     unless flag '-a' is specified in which case all of the segment files are processed.%n" +
+            "  count-entries: queries the number of recording entries in the catalog.%n" +
+            "  max-entries [number of entries]: gets or increases the maximum number of%n" +
+            "     recording entries the catalog can store.%n" +
+            "  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.%n");
+        System.out.flush();
     }
 }

@@ -100,10 +100,11 @@ public class DriverTool
         {
             if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
             {
-                System.out.println(
-                    "\"Usage: [-Daeron.dir=<directory containing CnC file>] DriverTool <pid> <terminate>");
-                System.out.println("  pid: prints PID of driver only.");
-                System.out.println("  terminate: request the driver to terminate.");
+                System.out.format(
+                    "Usage: [-Daeron.dir=<directory containing CnC file>] DriverTool <pid> <terminate>%n" +
+                    "    pid: prints PID of driver only%n" +
+                    "    terminate: request the driver to terminate%n");
+                System.out.flush();
                 System.exit(0);
             }
         }

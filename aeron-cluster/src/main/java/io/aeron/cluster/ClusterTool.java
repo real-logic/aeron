@@ -60,7 +60,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                list-members: print leader memberId, active members list, and passive members list.
  *               remove-member: [memberId] requests removal of a member specified in memberId.
  *              remove-passive: [memberId] requests removal of passive member specified in memberId.
- *                backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
+ *                backup-query: [delay] get time of next backup query or set time of next backup query.
  *  invalidate-latest-snapshot: Mark the latest snapshot as invalid so previous is loaded.
  *                    snapshot: Trigger a snapshot on the leader.
  *                     suspend: Suspend reading from the ingress channel.
@@ -847,36 +847,23 @@ public class ClusterTool
 
     private static void printHelp(final PrintStream out)
     {
-        out.println("Usage: <cluster-dir> <command> [options]");
-        out.println(
-            "                   describe: prints out all descriptors in the file.");
-        out.println(
-            "                        pid: prints PID of cluster component.");
-        out.println(
-            "              recovery-plan: [service count] prints recovery plan of cluster component.");
-        out.println(
-            "              recording-log: prints recording log of cluster component.");
-        out.println(
-            "                     errors: prints Aeron and cluster component error logs.");
-        out.println(
-            "               list-members: print leader memberId, active members list, and passive members list.");
-        out.println(
-            "              remove-member: [memberId] requests removal of a member specified in memberId.");
-        out.println(
-            "             remove-passive: [memberId] requests removal of passive member specified in memberId.");
-        out.println(
-            "               backup-query: [delay] display time of next backup query or set time of next backup query.");
-        out.println(
-            " invalidate-latest-snapshot: Mark the latest snapshot as a invalid so previous is loaded.");
-        out.println(
-            "                   snapshot: Trigger a snapshot on the leader.");
-        out.println(
-            "                    suspend: Suspend reading from the ingress channel.");
-        out.println(
-            "                     resume: Resume reading from the ingress channel.");
-        out.println(
-            "                   shutdown: Do an orderly stop of the cluster with a snapshot.");
-        out.println(
-            "                      abort: Stop the cluster without a snapshot.");
+        out.format(
+            "Usage: <cluster-dir> <command> [options]%n" +
+            "                   describe: prints out all descriptors in the file%n" +
+            "                        pid: prints PID of cluster component%n" +
+            "              recovery-plan: [service count] prints recovery plan of cluster component%n" +
+            "              recording-log: prints recording log of cluster component%n" +
+            "                     errors: prints Aeron and cluster component error logs%n" +
+            "               list-members: print leader memberId, active members list, and passive members list%n" +
+            "              remove-member: [memberId] requests removal of a member specified in memberId%n" +
+            "             remove-passive: [memberId] requests removal of passive member specified in memberId%n" +
+            "               backup-query: [delay] get time of next backup query or set time of next backup query%n" +
+            " invalidate-latest-snapshot: Mark the latest snapshot as a invalid so previous is loaded%n" +
+            "                   snapshot: Trigger a snapshot on the leader%n" +
+            "                    suspend: Suspend reading from the ingress channel%n" +
+            "                     resume: Resume reading from the ingress channel%n" +
+            "                   shutdown: Do an orderly stop of the cluster with a snapshot%n" +
+            "                      abort: Stop the cluster without a snapshot.%n");
+        out.flush();
     }
 }

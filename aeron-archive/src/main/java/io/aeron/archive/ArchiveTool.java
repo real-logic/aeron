@@ -272,6 +272,12 @@ public class ArchiveTool
                 migrate(System.out, archiveDir);
             }
         }
+        else
+        {
+            System.err.println("ERR: Invalid command");
+            printHelp();
+            System.exit(-1);
+        }
     }
 
     /**

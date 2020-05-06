@@ -1308,10 +1308,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
     if (NULL == endpoint)
     {
-        aeron_atomic_counter_t status_indicator;
         int ensure_capacity_result = 0;
-        char bind_addr_and_port[AERON_MAX_PATH];
-        int bind_addr_and_port_length;
 
         AERON_ARRAY_ENSURE_CAPACITY(
             ensure_capacity_result, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t);
@@ -1321,33 +1318,11 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             return NULL;
         }
 
-        status_indicator.counter_id = aeron_counter_send_channel_status_allocate(
-            &conductor->counters_manager, channel->uri_length, channel->original_uri);
-
-        status_indicator.value_addr = aeron_counters_manager_addr(
-            &conductor->counters_manager, status_indicator.counter_id);
-
-        if (status_indicator.counter_id < 0 ||
-            aeron_send_channel_endpoint_create(&endpoint, channel, &status_indicator, conductor->context) < 0)
+        if (aeron_send_channel_endpoint_create(
+            &endpoint, channel, conductor->context, &conductor->counters_manager) < 0)
         {
             return NULL;
         }
-
-        if ((bind_addr_and_port_length = aeron_send_channel_endpoint_bind_addr_and_port(
-            endpoint, bind_addr_and_port, sizeof(bind_addr_and_port))) < 0)
-        {
-            aeron_send_channel_endpoint_delete(&conductor->counters_manager, endpoint);
-            return NULL;
-        }
-
-        aeron_channel_endpoint_status_update_label(
-            &conductor->counters_manager,
-            status_indicator.counter_id,
-            AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
-            channel->uri_length,
-            channel->original_uri,
-            bind_addr_and_port_length,
-            bind_addr_and_port);
 
         if (aeron_str_to_ptr_hash_map_put(
             &conductor->send_channel_endpoint_by_channel_map,
@@ -1361,7 +1336,9 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
         aeron_driver_sender_proxy_on_add_endpoint(conductor->context->sender_proxy, endpoint);
         conductor->send_channel_endpoints.array[conductor->send_channel_endpoints.length++].endpoint = endpoint;
-        *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
+
+        aeron_counter_set_ordered(
+            endpoint->channel_status.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
     }
 
     return endpoint;

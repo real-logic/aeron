@@ -51,6 +51,7 @@ typedef struct aeron_send_channel_endpoint_stct
     bool has_sender_released;
     aeron_udp_channel_transport_t transport;
     aeron_atomic_counter_t channel_status;
+    aeron_atomic_counter_t local_sockaddr_indicator;
     aeron_udp_destination_tracker_t *destination_tracker;
     aeron_driver_sender_proxy_t *sender_proxy;
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
@@ -65,8 +66,8 @@ aeron_send_channel_endpoint_t;
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
-    aeron_atomic_counter_t *status_indicator,
-    aeron_driver_context_t *context);
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager);
 
 int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint);
 

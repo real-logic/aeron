@@ -1,4 +1,9 @@
 name: Continuous Integration
+
+javadoc-config:
+  ubuntu-latest: ''
+  windows-latest: '-x javadoc'
+
 on:
   repository_dispatch:
     types: run-commit-tests
@@ -42,7 +47,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
-        run: ./gradlew
+        run: ./gradlew {{ javadoc-config[matrix.os] }}
       - name: Copy crash logs
         id: copy_crash_logs
         if: failure()

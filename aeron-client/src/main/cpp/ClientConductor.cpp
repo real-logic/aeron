@@ -30,6 +30,12 @@ static size_t getAddress(const std::function<T(U...)> &f)
     return (size_t)*fnPointer;
 }
 
+static ExceptionCategory getCategory(std::int32_t errorCode)
+{
+    return errorCode == ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE ?
+        ExceptionCategory::EXCEPTION_CATEGORY_WARN : ExceptionCategory::EXCEPTION_CATEGORY_ERROR;
+}
+
 ClientConductor::~ClientConductor()
 {
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
@@ -134,7 +140,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
                 m_publicationByRegistrationId.erase(it);
 
-                throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+                throw RegistrationException(errorCode, getCategory(errorCode), errorMessage, SOURCEINFO);
             }
         }
     }
@@ -223,7 +229,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
 
                 m_exclusivePublicationByRegistrationId.erase(it);
 
-                throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+                throw RegistrationException(errorCode, getCategory(errorCode), errorMessage, SOURCEINFO);
             }
         }
     }
@@ -300,7 +306,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
 
         m_subscriptionByRegistrationId.erase(it);
 
-        throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+        throw RegistrationException(errorCode, getCategory(errorCode), errorMessage, SOURCEINFO);
     }
 
     return sub;
@@ -395,7 +401,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
 
         m_counterByRegistrationId.erase(it);
 
-        throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+        throw RegistrationException(errorCode, getCategory(errorCode), errorMessage, SOURCEINFO);
     }
 
     return counter;
@@ -523,7 +529,7 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
 
             m_destinationStateByCorrelationId.erase(it);
 
-            throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+            throw RegistrationException(errorCode, getCategory(errorCode), errorMessage, SOURCEINFO);
         }
     }
 

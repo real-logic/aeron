@@ -132,11 +132,12 @@ private:
 public:
     RegistrationException(
         std::int32_t errorCode,
+        ExceptionCategory exceptionCategory,
         const std::string &what,
         const std::string &function,
         const std::string &file,
         const int line) :
-        SourcedException(what, function, file, line),
+        SourcedException(exceptionCategory, what, function, file, line),
         m_errorCode(errorCode)
     {
     }

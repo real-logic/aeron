@@ -65,6 +65,8 @@ static const std::int32_t ERROR_CODE_UNKNOWN_COUNTER = 5;
 static const std::int32_t ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID = 6;
 static const std::int32_t ERROR_CODE_MALFORMED_COMMAND = 7;
 static const std::int32_t ERROR_CODE_NOT_SUPPORTED = 8;
+static const std::int32_t ERROR_CODE_UNKNOWN_HOST = 9;
+static const std::int32_t ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE = 10;
 
 class ErrorResponseFlyweight : public Flyweight<ErrorResponseDefn>
 {

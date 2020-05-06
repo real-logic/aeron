@@ -380,6 +380,24 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
         util::RegistrationException);
 }
 
+TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddSubscriptionAsWarning)
+{
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+
+    m_conductor.onErrorResponse(id, ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE, "resource unavailable");
+
+    try
+    {
+        std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+        FAIL() << "Exception should be thrown";
+    }
+    catch (util::RegistrationException &e)
+    {
+        ASSERT_EQ(ExceptionCategory::EXCEPTION_CATEGORY_WARN, e.category());
+    }
+}
+
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownSubscription)
 {
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(100);

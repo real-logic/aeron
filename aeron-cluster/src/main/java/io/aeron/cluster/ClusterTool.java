@@ -71,7 +71,14 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  */
 public class ClusterTool
 {
+    /**
+     * Timeout in nanoseconds for the tool to wait while trying to perform an operation.
+     */
     public static final String AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME = "aeron.cluster.tool.timeout";
+
+    /**
+     * Delay in nanoseconds to be applied to an operation such as when the new cluster backup query will occur.
+     */
     public static final String AERON_CLUSTER_TOOL_DELAY_PROP_NAME = "aeron.cluster.tool.delay";
 
     private static final long TIMEOUT_MS =

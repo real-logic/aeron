@@ -134,10 +134,11 @@ public class ArchiveTool
         }
         else if (args.length >= 2 && args[1].equals("verify"))
         {
-            final boolean errorsEncountered;
+            final boolean hasErrors;
+
             if (args.length == 2)
             {
-                errorsEncountered = !verify(
+                hasErrors = !verify(
                     System.out,
                     archiveDir,
                     emptySet(),
@@ -148,7 +149,7 @@ public class ArchiveTool
             {
                 if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
-                    errorsEncountered = !verify(
+                    hasErrors = !verify(
                         System.out,
                         archiveDir,
                         EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
@@ -157,7 +158,7 @@ public class ArchiveTool
                 }
                 else
                 {
-                    errorsEncountered = !verifyRecording(
+                    hasErrors = !verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
@@ -170,7 +171,7 @@ public class ArchiveTool
             {
                 if (APPLY_CHECKSUM == VerifyOption.byFlag(args[2]))
                 {
-                    errorsEncountered = !verify(
+                    hasErrors = !verify(
                         System.out,
                         archiveDir,
                         EnumSet.of(APPLY_CHECKSUM),
@@ -179,7 +180,7 @@ public class ArchiveTool
                 }
                 else
                 {
-                    errorsEncountered = !verifyRecording(
+                    hasErrors = !verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
@@ -192,7 +193,7 @@ public class ArchiveTool
             {
                 if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
-                    errorsEncountered = !verify(
+                    hasErrors = !verify(
                         System.out,
                         archiveDir,
                         EnumSet.allOf(VerifyOption.class),
@@ -201,7 +202,7 @@ public class ArchiveTool
                 }
                 else
                 {
-                    errorsEncountered = !verifyRecording(
+                    hasErrors = !verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
@@ -212,7 +213,7 @@ public class ArchiveTool
             }
             else
             {
-                errorsEncountered = !verifyRecording(
+                hasErrors = !verifyRecording(
                     System.out,
                     archiveDir,
                     Long.parseLong(args[2]),
@@ -220,7 +221,8 @@ public class ArchiveTool
                     validateChecksumClass(args[5]),
                     ArchiveTool::truncateFileOnPageStraddle);
             }
-            if (errorsEncountered)
+
+            if (hasErrors)
             {
                 System.exit(-1);
             }
@@ -420,6 +422,7 @@ public class ArchiveTool
          * By default only last segment file is verify.
          */
         VERIFY_ALL_SEGMENT_FILES("-a"),
+
         /**
          * Perform checksum for each data frame within a segment file being verify.
          */
@@ -581,6 +584,7 @@ public class ArchiveTool
             final MutableInteger errorCount = new MutableInteger();
             catalog.forEach(createVerifyEntryProcessor(
                 out, archiveDir, options, checksum, epochClock, errorCount, truncateFileOnPageStraddle));
+
             return errorCount.get() == 0;
         }
     }
@@ -602,6 +606,7 @@ public class ArchiveTool
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
+
             return errorCount.get() == 0;
         }
     }
@@ -623,6 +628,7 @@ public class ArchiveTool
         {
             throw new IllegalArgumentException("Checksum class name must be specified!");
         }
+
         return className;
     }
 
@@ -635,8 +641,10 @@ public class ArchiveTool
                 throw new IllegalArgumentException("Checksum class name is required when " + APPLY_CHECKSUM +
                     " option is specified!");
             }
+
             return null;
         }
+
         return newInstance(checksumClassName);
     }
 
@@ -749,6 +757,7 @@ public class ArchiveTool
         {
             out.println();
             out.print("Frame at position [" + reader.replayPosition() + "] ");
+
             reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
@@ -948,6 +957,7 @@ public class ArchiveTool
                 return true;
             }
         }
+
         return false;
     }
 
@@ -1234,26 +1244,27 @@ public class ArchiveTool
 
     private static void printHelp()
     {
-        System.out.println("Usage: <archive-dir> <command> (items in square brackets are optional)");
-        System.out.println("  describe [recordingId]: prints out descriptor(s) in the catalog.");
-        System.out.println("  dump [data fragment limit per recording]: prints descriptor(s)");
-        System.out.println("     in the catalog and associated recorded data.");
-        System.out.println("  errors: prints errors for the archive and media driver.");
-        System.out.println("  pid: prints just PID of archive.");
-        System.out.println("  verify [recordingId] [-a] [-checksum className]: verifies descriptor(s) in the catalog");
-        System.out.println("     checking recording files availability and contents. Only the last segment file is");
-        System.out.println("     verified unless flag '-a' is specified, i.e. meaning verify all segment files.");
-        System.out.println("     To perform checksum for each data frame specify the '-checksum' flag together with");
-        System.out.println("     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32).");
-        System.out.println("     Faulty entries are marked as unusable.");
-        System.out.println("  checksum className [recordingId] [-a]: computes and persists checksums.");
-        System.out.println("     checksums are computed using the specified Checksum implementation ");
-        System.out.println("     (e.g. io.aeron.archive.checksum.Crc32).");
-        System.out.println("     Only the last segment file of each recording is processed by default,");
-        System.out.println("     unless flag '-a' is specified in which case all of the segment files are processed.");
-        System.out.println("  count-entries: queries the number of recording entries in the catalog.");
-        System.out.println("  max-entries [number of entries]: gets or increases the maximum number of");
-        System.out.println("     recording entries the catalog can store.");
-        System.out.println("  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.");
+        System.out.println(
+            "Usage: <archive-dir> <command> (items in square brackets are optional)" +
+            "  describe [recordingId]: prints out descriptor(s) in the catalog." +
+            "  dump [data fragment limit per recording]: prints descriptor(s)" +
+            "     in the catalog and associated recorded data." +
+            "  errors: prints errors for the archive and media driver." +
+            "  pid: prints just PID of archive." +
+            "  verify [recordingId] [-a] [-checksum className]: verifies descriptor(s) in the catalog" +
+            "     checking recording files availability and contents. Only the last segment file is" +
+            "     verified unless flag '-a' is specified, i.e. meaning verify all segment files." +
+            "     To perform checksum for each data frame specify the '-checksum' flag together with" +
+            "     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32)." +
+            "     Faulty entries are marked as unusable." +
+            "  checksum className [recordingId] [-a]: computes and persists checksums." +
+            "     checksums are computed using the specified Checksum implementation " +
+            "     (e.g. io.aeron.archive.checksum.Crc32)." +
+            "     Only the last segment file of each recording is processed by default," +
+            "     unless flag '-a' is specified in which case all of the segment files are processed." +
+            "  count-entries: queries the number of recording entries in the catalog." +
+            "  max-entries [number of entries]: gets or increases the maximum number of" +
+            "     recording entries the catalog can store." +
+            "  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.");
     }
 }

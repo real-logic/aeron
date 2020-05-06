@@ -1064,6 +1064,15 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     return 0;
 }
 
+static void aeron_driver_context_free_bindings(const aeron_udp_channel_interceptor_bindings_t *bindings)
+{
+    if (NULL != bindings)
+    {
+        aeron_driver_context_free_bindings(bindings->meta_info.next_interceptor_bindings);
+        aeron_free((void *)bindings);
+    }
+}
+
 int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
@@ -1076,6 +1085,9 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_mpsc_concurrent_array_queue_close(&context->conductor_command_queue);
     aeron_spsc_concurrent_array_queue_close(&context->sender_command_queue);
     aeron_spsc_concurrent_array_queue_close(&context->receiver_command_queue);
+
+    aeron_driver_context_free_bindings(context->udp_channel_outgoing_interceptor_bindings);
+    aeron_driver_context_free_bindings(context->udp_channel_incoming_interceptor_bindings);
 
     aeron_unmap(&context->cnc_map);
     aeron_unmap(&context->loss_report);

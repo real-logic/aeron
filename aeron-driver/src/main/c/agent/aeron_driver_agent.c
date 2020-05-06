@@ -572,7 +572,9 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             const uint8_t *key = cursor + sizeof(int32_t);
 
             cursor = key + key_length;
-            int32_t label_length = *((int32_t *)cursor);
+            // key_length may not be multiple of 4, so handle potential mis-alignment.
+            int32_t label_length;
+            memcpy(&label_length, cursor, sizeof(label_length));
 
             snprintf(buffer, sizeof(buffer) - 1, "ADD_COUNTER %d [%d %d][%d %d][%" PRId64 ":%" PRId64 "]",
                 command->type_id,

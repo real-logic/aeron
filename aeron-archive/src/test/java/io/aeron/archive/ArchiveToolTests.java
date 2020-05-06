@@ -493,7 +493,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfStartPositionIsNegative()
     {
-        verifyRecording(out, archiveDir, invalidRecording0, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording0, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -505,7 +506,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfStartPositionIsNotFrameAligned()
     {
-        verifyRecording(out, archiveDir, invalidRecording1, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording1, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -517,7 +519,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfStopPositionIsBeforeStartPosition()
     {
-        verifyRecording(out, archiveDir, invalidRecording2, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording2, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -529,7 +532,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfStopPositionIsNotFrameAligned()
     {
-        verifyRecording(out, archiveDir, invalidRecording3, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording3, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -541,7 +545,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfStartPositionIsOutOfRangeForTheMaxSegmentFile()
     {
-        verifyRecording(out, archiveDir, invalidRecording4, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording4, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -553,7 +558,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfStopPositionIsOutOfRangeForTheMaxSegmentFile()
     {
-        verifyRecording(out, archiveDir, invalidRecording5, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording5, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -565,7 +571,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileNameContainsNoPositionInformation()
     {
-        verifyRecording(out, archiveDir, invalidRecording6, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording6, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -577,7 +584,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileNameContainsNonIntegerPositionInformation()
     {
-        verifyRecording(out, archiveDir, invalidRecording7, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording7, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -589,7 +597,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileNameContainsNegativePositionInformation()
     {
-        verifyRecording(out, archiveDir, invalidRecording8, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording8, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -601,7 +610,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfCannotReadFromSegmentFile()
     {
-        verifyRecording(out, archiveDir, invalidRecording9, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording9, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -613,7 +623,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfCannotReadFrameFromSegmentFileAtGivenOffset()
     {
-        verifyRecording(out, archiveDir, invalidRecording10, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording10, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -625,7 +636,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsAFrameWithWrongTermId()
     {
-        verifyRecording(out, archiveDir, invalidRecording11, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording11, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -637,7 +649,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsAFrameWithWrongTermOffset()
     {
-        verifyRecording(out, archiveDir, invalidRecording12, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording12, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -649,7 +662,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsAFrameWithWrongStreamId()
     {
-        verifyRecording(out, archiveDir, invalidRecording13, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording13, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -661,7 +675,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsIncompleteFrame()
     {
-        verifyRecording(out, archiveDir, invalidRecording14, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, invalidRecording14, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -672,7 +687,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingShouldComputeStopPositionFromZeroStartPosition()
     {
-        verifyRecording(out, archiveDir, validRecording0, emptySet(), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording0, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -683,7 +699,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingShouldUseStartPositionIfNoSegmentFilesExist()
     {
-        verifyRecording(out, archiveDir, validRecording1, emptySet(), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording1, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -694,7 +711,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingShouldUseStartPositionWhenNoDataInTheMaxSegmentFileAtAGivenOffset()
     {
-        verifyRecording(out, archiveDir, validRecording2, emptySet(), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording2, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -706,7 +724,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingShouldComputeStopPositionWhenStartingAtALaterSegment()
     {
-        verifyRecording(out, archiveDir, validRecording3, emptySet(), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording3, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -718,7 +737,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingShouldNotUpdateStopPositionIfAlreadyCorrect()
     {
-        verifyRecording(out, archiveDir, validRecording4, emptySet(), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording4, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -730,8 +750,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(
-            out, archiveDir, validRecording3, of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording3, of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -743,8 +763,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingInvalidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(
-            out, archiveDir, validRecording4, of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, validRecording4, of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -756,7 +776,7 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddleValidChecksum()
     {
-        verifyRecording(out, archiveDir, validRecording51, emptySet(), crc32(), epochClock, (file) -> true);
+        assertTrue(verifyRecording(out, archiveDir, validRecording51, emptySet(), crc32(), epochClock, (file) -> true));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -768,7 +788,7 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddleNonZeroBytesInEveryPageAfterTheStraddle()
     {
-        verifyRecording(out, archiveDir, validRecording52, emptySet(), crc32(), epochClock, (file) -> true);
+        assertTrue(verifyRecording(out, archiveDir, validRecording52, emptySet(), crc32(), epochClock, (file) -> true));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -780,7 +800,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddle()
     {
-        verifyRecording(out, archiveDir, validRecording53, emptySet(), null, epochClock, (file) -> true);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording53, emptySet(), null, epochClock, (file) -> true));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -791,7 +812,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingDoNotTruncateSegmentFileOnPageStraddle()
     {
-        verifyRecording(out, archiveDir, validRecording53, emptySet(), null, epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording53, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -802,8 +824,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingPerformCRC()
     {
-        verifyRecording(
-            out, archiveDir, validRecording6, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording6, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -814,8 +836,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingInvalidRecordingPerformCRC()
     {
-        verifyRecording(
-            out, archiveDir, validRecording3, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
+        assertFalse(verifyRecording(
+            out, archiveDir, validRecording3, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -827,7 +849,7 @@ class ArchiveToolTests
     @Test
     void verifyNoOptionsDoNotTruncateFileOnPageStraddle()
     {
-        verify(out, archiveDir, emptySet(), null, epochClock, (file) -> false);
+        assertFalse(verify(out, archiveDir, emptySet(), null, epochClock, (file) -> false));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -885,7 +907,7 @@ class ArchiveToolTests
     @Test
     void verifyAllOptionsTruncateFileOnPageStraddle()
     {
-        verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> true);
+        assertFalse(verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> true));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -945,8 +967,8 @@ class ArchiveToolTests
     {
         checksumRecording(out, archiveDir, validRecording3, false, crc32(), epochClock);
 
-        verifyRecording(
-            out, archiveDir, validRecording3, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording3, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false));
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
@@ -967,8 +989,8 @@ class ArchiveToolTests
     {
         checksumRecording(out, archiveDir, validRecording3, true, crc32(), epochClock);
 
-        verifyRecording(
-            out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false));
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
@@ -981,7 +1003,7 @@ class ArchiveToolTests
     {
         checksum(out, archiveDir, false, crc32(), epochClock);
 
-        verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+        assertFalse(verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false));
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
@@ -1005,7 +1027,7 @@ class ArchiveToolTests
     {
         checksum(out, archiveDir, true, crc32(), epochClock);
 
-        verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+        assertFalse(verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false));
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
@@ -1041,7 +1063,7 @@ class ArchiveToolTests
     @Test
     void verifyWithoutChecksumClassNameShouldNotVerifyChecksums()
     {
-        verify(out, archiveDir, emptySet(), null, (file) -> true);
+        assertFalse(verify(out, archiveDir, emptySet(), null, (file) -> true));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -1052,7 +1074,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingWithoutChecksumClassNameShouldNotVerifyChecksums()
     {
-        verifyRecording(out, archiveDir, validRecording4, emptySet(), null, (file) -> true);
+        assertTrue(verifyRecording(
+            out, archiveDir, validRecording4, emptySet(), null, (file) -> true));
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {

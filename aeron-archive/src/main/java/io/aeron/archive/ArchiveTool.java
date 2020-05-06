@@ -28,6 +28,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 
 import java.io.File;
@@ -79,7 +80,7 @@ public class ArchiveTool
      * @param <T> type of the context data.
      */
     @FunctionalInterface
-    interface ActionConfirmation<T>
+    public interface ActionConfirmation<T>
     {
         /**
          * Confirm or reject the action.
@@ -133,9 +134,10 @@ public class ArchiveTool
         }
         else if (args.length >= 2 && args[1].equals("verify"))
         {
+            final boolean errorsEncountered;
             if (args.length == 2)
             {
-                verify(
+                errorsEncountered = !verify(
                     System.out,
                     archiveDir,
                     emptySet(),
@@ -146,7 +148,7 @@ public class ArchiveTool
             {
                 if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
-                    verify(
+                    errorsEncountered = !verify(
                         System.out,
                         archiveDir,
                         EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
@@ -155,7 +157,7 @@ public class ArchiveTool
                 }
                 else
                 {
-                    verifyRecording(
+                    errorsEncountered = !verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
@@ -168,7 +170,7 @@ public class ArchiveTool
             {
                 if (APPLY_CHECKSUM == VerifyOption.byFlag(args[2]))
                 {
-                    verify(
+                    errorsEncountered = !verify(
                         System.out,
                         archiveDir,
                         EnumSet.of(APPLY_CHECKSUM),
@@ -177,7 +179,7 @@ public class ArchiveTool
                 }
                 else
                 {
-                    verifyRecording(
+                    errorsEncountered = !verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
@@ -190,7 +192,7 @@ public class ArchiveTool
             {
                 if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
-                    verify(
+                    errorsEncountered = !verify(
                         System.out,
                         archiveDir,
                         EnumSet.allOf(VerifyOption.class),
@@ -199,7 +201,7 @@ public class ArchiveTool
                 }
                 else
                 {
-                    verifyRecording(
+                    errorsEncountered = !verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
@@ -210,13 +212,17 @@ public class ArchiveTool
             }
             else
             {
-                verifyRecording(
+                errorsEncountered = !verifyRecording(
                     System.out,
                     archiveDir,
                     Long.parseLong(args[2]),
                     EnumSet.allOf(VerifyOption.class),
                     validateChecksumClass(args[5]),
                     ArchiveTool::truncateFileOnPageStraddle);
+            }
+            if (errorsEncountered)
+            {
+                System.exit(-1);
             }
         }
         else if (args.length >= 3 && args[1].equals("checksum"))
@@ -445,10 +451,12 @@ public class ArchiveTool
      * @param options                    set of options that control verification behavior.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
-     *                                   will be deleted), if {@code false} the fragment if considered complete.
+     *                                   will be deleted), if {@code false} the fragment is considered complete.
      * @param checksumClassName          (optional) fully qualified class name of the {@link Checksum} implementation.
+     * @return {@code true} if no errors have been encountered, {@code false} otherwise (faulty entries are marked
+     *  as unusable if {@code false} is returned)
      */
-    public static void verify(
+    public static boolean verify(
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
@@ -456,7 +464,7 @@ public class ArchiveTool
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         final Checksum checksum = createChecksum(options, checksumClassName);
-        verify(out, archiveDir, options, checksum, INSTANCE, truncateFileOnPageStraddle);
+        return verify(out, archiveDir, options, checksum, INSTANCE, truncateFileOnPageStraddle);
     }
 
     /**
@@ -473,8 +481,10 @@ public class ArchiveTool
      *                                   will be deleted), if {@code false} the fragment if considered complete.
      * @param checksumClassName          (optional) fully qualified class name of the {@link Checksum} implementation.
      * @throws AeronException if there is no recording with {@code recordingId} in the archive
-     */
-    public static void verifyRecording(
+     * @return {@code true} if no errors have been encountered, {@code false} otherwise (the recording is marked
+     *  as unusable if {@code false} is returned)
+     **/
+    public static boolean verifyRecording(
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
@@ -482,7 +492,7 @@ public class ArchiveTool
         final String checksumClassName,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verifyRecording(
+        return verifyRecording(
             out,
             archiveDir,
             recordingId,
@@ -558,7 +568,7 @@ public class ArchiveTool
         }
     }
 
-    static void verify(
+    static boolean verify(
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
@@ -568,12 +578,14 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
+            final MutableInteger errorCount = new MutableInteger();
             catalog.forEach(createVerifyEntryProcessor(
-                out, archiveDir, options, checksum, epochClock, truncateFileOnPageStraddle));
+                out, archiveDir, options, checksum, epochClock, errorCount, truncateFileOnPageStraddle));
+            return errorCount.get() == 0;
         }
     }
 
-    static void verifyRecording(
+    static boolean verifyRecording(
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
@@ -584,11 +596,13 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            if (!catalog.forEntry(recordingId,
-                createVerifyEntryProcessor(out, archiveDir, options, checksum, epochClock, truncateFileOnPageStraddle)))
+            final MutableInteger errorCount = new MutableInteger();
+            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
+                out, archiveDir, options, checksum, epochClock, errorCount, truncateFileOnPageStraddle)))
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
+            return errorCount.get() == 0;
         }
     }
 
@@ -632,6 +646,7 @@ public class ArchiveTool
         final Set<VerifyOption> options,
         final Checksum checksum,
         final EpochClock epochClock,
+        final MutableInteger errorCount,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         final ByteBuffer buffer = BufferUtil.allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH);
@@ -644,6 +659,7 @@ public class ArchiveTool
             options,
             checksum,
             epochClock,
+            errorCount,
             truncateFileOnPageStraddle,
             headerFlyweight,
             headerEncoder,
@@ -788,6 +804,7 @@ public class ArchiveTool
         final Set<VerifyOption> options,
         final Checksum checksum,
         final EpochClock epochClock,
+        final MutableInteger errorCount,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
         final DataHeaderFlyweight headerFlyweight,
         final RecordingDescriptorHeaderEncoder headerEncoder,
@@ -799,6 +816,7 @@ public class ArchiveTool
         final long stopPosition = decoder.stopPosition();
         if (isPositionInvariantViolated(out, recordingId, startPosition, stopPosition))
         {
+            errorCount.increment();
             headerEncoder.valid(INVALID);
             return;
         }
@@ -820,6 +838,7 @@ public class ArchiveTool
                     out.println("(recordingId=" + recordingId + ") ERR: Invariant violation: startPosition=" +
                         startPosition + " and/or stopPosition=" + stopPosition + " exceed max segment file position=" +
                         maxSegmentPosition);
+                    errorCount.increment();
                     headerEncoder.valid(INVALID);
                     return;
                 }
@@ -839,6 +858,7 @@ public class ArchiveTool
         {
             final String message = ex.getMessage();
             out.println("(recordingId=" + recordingId + ") ERR: " + (null != message ? message : ex.toString()));
+            errorCount.increment();
             headerEncoder.valid(INVALID);
             return;
         }
@@ -865,6 +885,7 @@ public class ArchiveTool
                         checksum,
                         headerFlyweight))
                     {
+                        errorCount.increment();
                         headerEncoder.valid(INVALID);
                         return;
                     }
@@ -884,6 +905,7 @@ public class ArchiveTool
                 checksum,
                 headerFlyweight))
             {
+                errorCount.increment();
                 headerEncoder.valid(INVALID);
                 return;
             }

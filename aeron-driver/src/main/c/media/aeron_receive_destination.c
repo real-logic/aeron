@@ -108,11 +108,12 @@ void aeron_receive_destination_delete(
     aeron_receive_destination_t *destination,
     aeron_counters_manager_t *counters_manager)
 {
-    if (NULL != counters_manager && -1 != destination->local_sockaddr_indicator.counter_id)
+    if (NULL != counters_manager && AERON_NULL_COUNTER_ID != destination->local_sockaddr_indicator.counter_id)
     {
         aeron_counter_set_ordered(
             destination->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING);
         aeron_counters_manager_free(counters_manager, destination->local_sockaddr_indicator.counter_id);
+        destination->local_sockaddr_indicator.counter_id = AERON_NULL_COUNTER_ID;
     }
 
     aeron_udp_channel_delete(destination->conductor_fields.udp_channel);

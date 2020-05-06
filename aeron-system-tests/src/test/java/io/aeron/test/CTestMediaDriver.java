@@ -146,7 +146,6 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put(
             "AERON_FLOW_CONTROL_GROUP_MIN_SIZE", String.valueOf(context.flowControlGroupMinSize()));
         environment.put("AERON_PRINT_CONFIGURATION", "true");
-        environment.put("AERON_EVENT_LOG", "0xFF");
 
         if (null != context.resolverName())
         {
@@ -163,8 +162,8 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
 
         setFlowControlStrategy(environment, context);
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(environment::put);
         setLogging(environment);
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(environment::put);
 
         pb.environment().putAll(environment);
 
@@ -199,6 +198,8 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private static void setLogging(final Map<String, String> environment)
     {
+        environment.put("AERON_EVENT_LOG", "0x3");
+
         final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);
         if (null == driverAgentPath)
         {
@@ -212,7 +213,6 @@ public final class CTestMediaDriver implements TestMediaDriver
                 "Unable to find driver agent file at: " + DRIVER_AGENT_PATH_PROP_NAME + "=" + driverAgentPath);
         }
 
-        environment.put("AERON_EVENT_LOG", "0xFFFF");
         environment.put("LD_PRELOAD", driverAgent.getAbsolutePath());
     }
 

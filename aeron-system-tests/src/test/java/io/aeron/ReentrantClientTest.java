@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -24,6 +25,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -35,9 +37,13 @@ import static org.mockito.Mockito.verify;
 
 public class ReentrantClientTest
 {
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     private final TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
-        .dirDeleteOnStart(true));
+        .dirDeleteOnStart(true),
+        testWatcher);
 
     @AfterEach
     public void after()

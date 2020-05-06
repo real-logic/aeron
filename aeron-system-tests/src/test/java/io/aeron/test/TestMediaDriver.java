@@ -36,12 +36,6 @@ public interface TestMediaDriver extends AutoCloseable
         assumeFalse(shouldRunCMediaDriver(), () -> "Functionality not support by C Media Driver: " + reason);
     }
 
-    static TestMediaDriver launch(final MediaDriver.Context context)
-    {
-        return shouldRunCMediaDriver() ?
-            CTestMediaDriver.launch(context, null) : JavaTestMediaDriver.launch(context);
-    }
-
     static TestMediaDriver launch(final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {
         return shouldRunCMediaDriver() ?

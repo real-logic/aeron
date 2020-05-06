@@ -19,15 +19,20 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class SpecifiedPositionPublicationTest
 {
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     @Test
     public void shouldRejectSpecifiedPositionForConcurrentPublications()
     {
@@ -38,7 +43,7 @@ public class SpecifiedPositionPublicationTest
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(context);
+        try (TestMediaDriver ignore = TestMediaDriver.launch(context, testWatcher);
             Aeron aeron = Aeron.connect())
         {
             final String channel = new ChannelUriStringBuilder()

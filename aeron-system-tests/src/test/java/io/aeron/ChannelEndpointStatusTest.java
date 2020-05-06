@@ -22,6 +22,7 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -77,6 +79,9 @@ public class ChannelEndpointStatusTest
     private final ErrorHandler errorHandlerDriverA = mock(ErrorHandler.class);
     private final ErrorHandler errorHandlerDriverB = mock(ErrorHandler.class);
 
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     @BeforeEach
     public void before()
     {
@@ -97,8 +102,8 @@ public class ChannelEndpointStatusTest
             .errorHandler(errorHandlerDriverB)
             .threadingMode(THREADING_MODE);
 
-        driverA = TestMediaDriver.launch(driverAContext);
-        driverB = TestMediaDriver.launch(driverBContext);
+        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
 
         clientA = Aeron.connect(
             new Aeron.Context()

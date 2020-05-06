@@ -24,6 +24,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -33,6 +34,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 
@@ -65,6 +67,9 @@ public class ArchiveAuthenticationTest
     private AeronArchive aeronArchive;
 
     private final String aeronDirectoryName = CommonContext.generateRandomDirName();
+
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @AfterEach
     public void after()
@@ -348,7 +353,8 @@ public class ArchiveAuthenticationTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true));
+                .dirDeleteOnStart(true),
+            testWatcher);
 
         archive = Archive.launch(
             new Archive.Context()

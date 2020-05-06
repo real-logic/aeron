@@ -17,8 +17,10 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -29,6 +31,9 @@ public class TermBufferLengthTest
     public static final int TEST_TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH * 2;
 
     public static final int STREAM_ID = 1001;
+
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -43,7 +48,7 @@ public class TermBufferLengthTest
             .publicationTermBufferLength(TEST_TERM_LENGTH * 2)
             .ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(ctx);
+        try (TestMediaDriver ignore = TestMediaDriver.launch(ctx, testWatcher);
             Aeron aeron = Aeron.connect();
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {

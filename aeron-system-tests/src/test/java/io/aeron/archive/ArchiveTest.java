@@ -26,6 +26,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.*;
@@ -79,7 +80,10 @@ public class ArchiveTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final TestWatcher testWatcher = ArchiveTests.newWatcher(seed);
+    public final TestWatcher randomSeedWatcher = ArchiveTests.newWatcher(seed);
+
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     private long controlSessionId;
     private String publishUri;
@@ -141,7 +145,8 @@ public class ArchiveTest
                 .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
                 .spiesSimulateConnection(true)
                 .errorHandler(Tests::onError)
-                .dirDeleteOnStart(true));
+                .dirDeleteOnStart(true),
+            testWatcher);
 
         final Archive.Context archiveContext = new Archive.Context()
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)

@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -28,6 +29,7 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -44,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ExclusivePublicationTest
 {
+
     private static List<String> channels()
     {
         return asList(
@@ -58,10 +61,15 @@ public class ExclusivePublicationTest
 
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[65 * 1024]);
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
+    private final MediaDriver.Context driverContext = new MediaDriver.Context()
         .errorHandler(Tests::onError)
         .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
-        .threadingMode(ThreadingMode.SHARED));
+        .threadingMode(ThreadingMode.SHARED);
+
+    private final TestMediaDriver driver = TestMediaDriver.launch(driverContext, testWatcher);
 
     private final Aeron aeron = Aeron.connect();
 

@@ -18,11 +18,13 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
@@ -41,6 +43,9 @@ public class WildcardPortsSystemTest
     private TestMediaDriver driver;
     private Aeron client;
 
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     @BeforeEach
     void launch()
     {
@@ -50,7 +55,7 @@ public class WildcardPortsSystemTest
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
-        driver = TestMediaDriver.launch(context);
+        driver = TestMediaDriver.launch(context, testWatcher);
         client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
     }
 

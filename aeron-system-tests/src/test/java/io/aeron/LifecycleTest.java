@@ -16,16 +16,21 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.mockito.Mockito.*;
 
 @Timeout(10)
 public class LifecycleTest
 {
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     @Test
     public void shouldStartAndStopInstantly()
     {
@@ -33,7 +38,7 @@ public class LifecycleTest
             .dirDeleteOnStart(true)
             .errorHandler(Tests::onError);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx))
+        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher))
         {
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
@@ -56,7 +61,7 @@ public class LifecycleTest
             .dirDeleteOnStart(true)
             .errorHandler(Tests::onError);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx))
+        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher))
         {
             final Aeron.Context clientCtxOne = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());

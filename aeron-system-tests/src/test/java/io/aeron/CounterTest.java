@@ -18,12 +18,14 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.status.ReadableCounter;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 import static org.agrona.concurrent.status.CountersReader.metaDataOffset;
@@ -43,6 +45,9 @@ public class CounterTest
     private Aeron clientB;
     private TestMediaDriver driver;
 
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     private volatile ReadableCounter readableCounter;
 
     @BeforeEach
@@ -53,7 +58,8 @@ public class CounterTest
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .errorHandler(Tests::onError)
-                .threadingMode(ThreadingMode.SHARED));
+                .threadingMode(ThreadingMode.SHARED),
+            testWatcher);
 
         clientA = Aeron.connect();
         clientB = Aeron.connect();

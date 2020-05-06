@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -29,6 +30,7 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.ByteBuffer;
 
@@ -47,11 +49,15 @@ public class MemoryOrderingTest
 
     private static volatile String failedMessage = null;
 
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED)
-        .publicationTermBufferLength(TERM_BUFFER_LENGTH));
+        .publicationTermBufferLength(TERM_BUFFER_LENGTH),
+        testWatcher);
 
     private final Aeron aeron = Aeron.connect();
 

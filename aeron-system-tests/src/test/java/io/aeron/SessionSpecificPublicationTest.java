@@ -19,11 +19,13 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -53,6 +55,9 @@ public class SessionSpecificPublicationTest
             new ChannelUriStringBuilder().media(IPC_MEDIA));
     }
 
+    @RegisterExtension
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
         .errorHandler(mockErrorHandler)
@@ -60,7 +65,7 @@ public class SessionSpecificPublicationTest
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED);
 
-    private final TestMediaDriver mediaDriver = TestMediaDriver.launch(mediaDriverContext);
+    private final TestMediaDriver mediaDriver = TestMediaDriver.launch(mediaDriverContext, testWatcher);
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach

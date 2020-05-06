@@ -145,7 +145,7 @@ public interface Cluster
     Aeron aeron();
 
     /**
-     * Get the  {@link ClusteredServiceContainer.Context} under which the container is running.
+     * Get the {@link ClusteredServiceContainer.Context} under which the container is running.
      *
      * @return the {@link ClusteredServiceContainer.Context} under which the container is running.
      */
@@ -201,10 +201,10 @@ public interface Cluster
 
     /**
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
-     * for cancellation. This action asynchronous and will race with the timer expiring.
+     * for cancellation. This action is asynchronous and will race with the timer expiring.
      * <p>
      * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline. However
-     * it is best do generate correlationIds in a monotonic fashion and be aware of potential clashes with other
+     * it is best to generate correlationIds in a monotonic fashion and be aware of potential clashes with other
      * services in the same cluster. Service isolation can be achieved by using the upper bits for service id.
      * <p>
      * Timers should only be scheduled or cancelled in the context of processing a
@@ -215,14 +215,14 @@ public interface Cluster
      * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
-     * @param deadline      time in after which the timer will fire. {@link Long#MAX_VALUE} not supported.
-     * @return true if the event to schedule a timer request has been sent or false if back pressure is applied.
+     * @param deadline      time after which the timer will fire. {@link Long#MAX_VALUE} not supported.
+     * @return true if the event to schedule a timer request has been sent or false if back-pressure is applied.
      * @see #cancelTimer(long)
      */
     boolean scheduleTimer(long correlationId, long deadline);
 
     /**
-     * Cancel a previous scheduled timer. This action asynchronous and will race with the timer expiring.
+     * Cancel a previously scheduled timer. This action is asynchronous and will race with the timer expiring.
      * <p>
      * Timers should only be scheduled or cancelled in the context of processing a
      * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)},
@@ -232,7 +232,7 @@ public interface Cluster
      * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId for the timer provided when it was scheduled. {@link Long#MAX_VALUE} not supported.
-     * @return true if the event to cancel request has been sent or false if back pressure is applied.
+     * @return true if the event to cancel request has been sent or false if back-pressure is applied.
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);
@@ -300,7 +300,7 @@ public interface Cluster
 
     /**
      * {@link IdleStrategy} which should be used by the service when it experiences back-pressure on egress,
-     * closing sessions, or making timer requests, or any long running actions.
+     * closing sessions, making timer requests, or any long running actions.
      *
      * @return the {@link IdleStrategy} which should be used by the service when it experiences back-pressure.
      */

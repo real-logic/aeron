@@ -140,23 +140,22 @@ public class NetworkUtil
         final byte[] queryAddress,
         final int prefixLength)
     {
-        InterfaceAddress foundInterfaceAddress = null;
-
         for (final InterfaceAddress interfaceAddress : shim.getInterfaceAddresses(networkInterface))
         {
-            final InetAddress address = interfaceAddress.getAddress();
-            if (null != address)
+            if (null != interfaceAddress)
             {
-                final byte[] candidateAddress = address.getAddress();
-                if (isMatchWithPrefix(candidateAddress, queryAddress, prefixLength))
+                final InetAddress address = interfaceAddress.getAddress();
+                if (null != address)
                 {
-                    foundInterfaceAddress = interfaceAddress;
-                    break;
+                    if (isMatchWithPrefix(address.getAddress(), queryAddress, prefixLength))
+                    {
+                        return interfaceAddress;
+                    }
                 }
             }
         }
 
-        return foundInterfaceAddress;
+        return null;
     }
 
     static boolean isMatchWithPrefix(final byte[] candidate, final byte[] expected, final int prefixLength)

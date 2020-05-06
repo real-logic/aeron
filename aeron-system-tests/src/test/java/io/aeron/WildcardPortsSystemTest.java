@@ -64,8 +64,6 @@ public class WildcardPortsSystemTest
     @Timeout(5)
     void shouldSubscribeToWildcardPorts()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Wildcard ports not supported yet");
-
         final String wildCardUri1 = "aeron:udp?endpoint=127.0.0.1:0|tags=1002";
         final String wildCardUri2 = "aeron:udp?endpoint=127.0.0.1:0|tags=1003";
         final String tagged1 = "aeron:udp?tags=1002";
@@ -118,7 +116,6 @@ public class WildcardPortsSystemTest
     @Timeout(5)
     void shouldSubscribeToWildcardPortsUsingIPv6()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Wildcard ports not supported yet");
         assumeFalse(Boolean.getBoolean("java.net.preferIPv4Stack"));
 
         final String wildCardUri1 = "aeron:udp?endpoint=[::1]:0|tags=1001";
@@ -164,8 +161,6 @@ public class WildcardPortsSystemTest
     @Timeout(5)
     void shouldBindMultipleWildcardsToMultiDestinationSubscription()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Wildcard ports not supported yet");
-
         final String wildCardUri2 = "aeron:udp?endpoint=127.0.0.1:0";
         final String wildCardUri3 = "aeron:udp?endpoint=127.0.0.1:0";
 
@@ -214,8 +209,6 @@ public class WildcardPortsSystemTest
     @Timeout(5)
     void shouldAllowWildcardOnDynamicMultiDestinationPublication()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Wildcard ports not supported yet");
-
         final String mdcUri = "aeron:udp?control=localhost:0";
 
         try (Publication mdcPub = client.addPublication(mdcUri, STREAM_ID))

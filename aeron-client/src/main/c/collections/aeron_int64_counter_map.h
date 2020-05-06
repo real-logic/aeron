@@ -46,9 +46,9 @@ aeron_int64_counter_map_t;
 
 inline size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask)
 {
-    uint64_t hash = (key << UINT64_C(1)) - (key << UINT64_C(8));
+    uint64_t hash = ((uint64_t)key << UINT64_C(1)) - ((uint64_t)key << UINT64_C(8));
 
-    return hash & mask;
+    return (size_t)(hash & mask);
 }
 
 inline int aeron_int64_counter_map_init(

@@ -21,7 +21,7 @@
 
 inline int64_t aeron_map_compound_key(int32_t high, int32_t low)
 {
-    return ((int64_t)high << 32) | (low);
+    return (int64_t)((uint64_t)high << 32) | (low);
 }
 
 #endif //AERON_AERON_MAP_H

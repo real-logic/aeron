@@ -46,7 +46,7 @@ aeron_int64_to_ptr_hash_map_t;
 
 inline size_t aeron_int64_to_ptr_hash_map_hash_key(int64_t key, size_t mask)
 {
-    return (key * 31) & mask;
+    return ((uint64_t)key * 31u) & mask;
 }
 
 inline int aeron_int64_to_ptr_hash_map_init(aeron_int64_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor)

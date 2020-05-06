@@ -161,20 +161,6 @@ protected:
         return channel;
     }
 
-    aeron_receive_channel_endpoint_t *createDirectEndpoint(const char *uri)
-    {
-        aeron_udp_channel_t *channel = NULL;
-        aeron_receive_destination_t *destination = NULL;
-
-        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
-
-        m_channels_for_tear_down.push_back(channel);
-
-        aeron_receive_destination_create(&destination, channel, m_context);
-
-        return createEndpoint(channel, destination);
-    }
-
     aeron_publication_image_t *createImage(
         aeron_receive_channel_endpoint_t *endpoint,
         aeron_receive_destination_t *destination,

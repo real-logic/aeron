@@ -106,6 +106,15 @@ TEST_F(CountersManagerTest, shouldNotIterateOverEmptyCounters)
     aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_should_never_be_called, NULL);
 }
 
+TEST_F(CountersManagerTest, shouldEnsureAlignmentOfKeyLayout)
+{
+    ASSERT_EQ(counters_manager_init(), 0);
+
+    size_t counter_key_header_size = (2 * sizeof(int32_t)) + sizeof(int64_t);
+    EXPECT_EQ(2u * AERON_CACHE_LINE_LENGTH, sizeof(aeron_channel_endpoint_status_key_layout_t) + counter_key_header_size);
+    EXPECT_EQ(2u * AERON_CACHE_LINE_LENGTH, sizeof(aeron_local_sockaddr_key_layout_t) + counter_key_header_size);
+}
+
 TEST_F(CountersManagerTest, shouldErrorOnAllocatingWhenFull)
 {
     ASSERT_EQ(counters_manager_init(), 0);

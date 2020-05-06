@@ -114,7 +114,8 @@ protected:
             &m_counters_manager, m_channel->uri_length, m_channel->original_uri);
         status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
-        aeron_receive_destination_create(&m_receive_destination, m_channel, m_context);
+        aeron_receive_destination_create(
+            &m_receive_destination, m_channel, m_context, &m_counters_manager, status_indicator.counter_id);
 
         aeron_receive_channel_endpoint_create(
             &m_receive_endpoint, m_channel, m_receive_destination, &status_indicator, &m_system_counters, m_context);

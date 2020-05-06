@@ -85,8 +85,8 @@ aeron_counter_metadata_descriptor_t;
 
 #define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_INITIALIZING (0)
 #define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ERRORED (-1)
-#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE (1)
-#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING (2)
+#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE INT64_C(1)
+#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING INT64_C(2)
 
 #define AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_NAME "client-heartbeat"
 #define AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID (11)
@@ -96,6 +96,10 @@ aeron_counter_metadata_descriptor_t;
 
 #define AERON_COUNTER_SENDER_BPE_NAME "snd-bpe"
 #define AERON_COUNTER_SENDER_BPE_TYPE_ID  (13)
+
+#define AERON_COUNTER_RCV_LOCAL_SOCKADDR_NAME "rcv-local-sockaddr"
+#define AERON_COUNTER_SND_LOCAL_SOCKADDR_NAME "snd-local-sockaddr"
+#define AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID (14)
 
 #pragma pack(push)
 #pragma pack(4)
@@ -112,7 +116,7 @@ aeron_stream_position_counter_key_layout_t;
 typedef struct aeron_channel_endpoint_status_key_layout_stct
 {
     int32_t channel_length;
-    char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key)];
+    char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key) - sizeof(int32_t)];
 }
 aeron_channel_endpoint_status_key_layout_t;
 
@@ -121,6 +125,15 @@ typedef struct aeron_heartbeat_timestamp_key_layout_stct
     int64_t registration_id;
 }
 aeron_heartbeat_timestamp_key_layout_t;
+
+typedef struct aeron_local_sockaddr_key_layout_stct
+{
+    int32_t channel_status_id;
+    int32_t local_sockaddr_len;
+    char local_sockaddr[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key) - (2 * sizeof(int32_t))];
+}
+aeron_local_sockaddr_key_layout_t;
+
 #pragma pack(pop)
 
 typedef struct aeron_counters_manager_stct

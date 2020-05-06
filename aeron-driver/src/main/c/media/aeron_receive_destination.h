@@ -34,6 +34,7 @@ typedef struct aeron_receive_destination_stct
 
     aeron_udp_channel_transport_t transport;
     aeron_udp_channel_data_paths_t *data_paths;
+    aeron_atomic_counter_t local_sockaddr_indicator;
     struct sockaddr_storage current_control_addr;
     size_t so_rcvbuf;
     int64_t time_of_last_activity_ns;
@@ -44,9 +45,13 @@ aeron_receive_destination_t;
 int aeron_receive_destination_create(
     aeron_receive_destination_t **destination,
     aeron_udp_channel_t *channel,
-    aeron_driver_context_t *context);
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
+    int32_t channel_status_counter_id);
 
-void aeron_receive_destination_delete(aeron_receive_destination_t *destination);
+void aeron_receive_destination_delete(
+    aeron_receive_destination_t *destination,
+    aeron_counters_manager_t *counters_manager);
 
 inline void aeron_receive_destination_update_last_activity_ns(aeron_receive_destination_t *destination, int64_t now_ns)
 {

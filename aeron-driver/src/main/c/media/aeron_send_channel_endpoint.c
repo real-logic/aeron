@@ -29,6 +29,7 @@
 #include "util/aeron_error.h"
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
+#include "aeron_position.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
@@ -41,10 +42,12 @@ struct mmsghdr
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
-    aeron_atomic_counter_t *status_indicator,
-    aeron_driver_context_t *context)
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager)
 {
     aeron_send_channel_endpoint_t *_endpoint = NULL;
+    char bind_addr_and_port[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    int bind_addr_and_port_length;
 
     if (aeron_alloc((void **)&_endpoint, sizeof(aeron_send_channel_endpoint_t)) < 0)
     {
@@ -77,6 +80,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->conductor_fields.status = AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
+    _endpoint->local_sockaddr_indicator.counter_id = -1;
     _endpoint->transport_bindings = context->udp_channel_transport_bindings;
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
     _endpoint->transport.data_paths = _endpoint->data_paths;
@@ -92,22 +96,65 @@ int aeron_send_channel_endpoint_create(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {
-        aeron_send_channel_endpoint_delete(NULL, _endpoint);
+        aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &_endpoint->publication_dispatch_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        aeron_send_channel_endpoint_delete(NULL, _endpoint);
+        aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
         return -1;
     }
+
+    if ((bind_addr_and_port_length = aeron_send_channel_endpoint_bind_addr_and_port(
+        _endpoint, bind_addr_and_port, sizeof(bind_addr_and_port))) < 0)
+    {
+        aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
+        return -1;
+    }
+
+    // TODO: Remove the update and just create in a single shot.
+    aeron_channel_endpoint_status_update_label(
+        counters_manager,
+        _endpoint->channel_status.counter_id,
+        AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
+        channel->uri_length,
+        channel->original_uri,
+        bind_addr_and_port_length,
+        bind_addr_and_port);
 
     _endpoint->transport.dispatch_clientd = _endpoint;
     _endpoint->has_sender_released = false;
 
-    _endpoint->channel_status.counter_id = status_indicator->counter_id;
-    _endpoint->channel_status.value_addr = status_indicator->value_addr;
+    _endpoint->channel_status.counter_id = aeron_counter_send_channel_status_allocate(
+        counters_manager, channel->uri_length, channel->original_uri);
+    _endpoint->channel_status.value_addr = aeron_counters_manager_addr(
+        counters_manager, _endpoint->channel_status.counter_id);
+
+    if (_endpoint->channel_status.counter_id < 0)
+    {
+        aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
+        return -1;
+    }
+
+    _endpoint->local_sockaddr_indicator.counter_id = aeron_counter_local_sockaddr_indicator_allocate(
+        counters_manager,
+        AERON_COUNTER_SND_LOCAL_SOCKADDR_NAME,
+        _endpoint->channel_status.counter_id,
+        bind_addr_and_port);
+
+    _endpoint->local_sockaddr_indicator.value_addr = aeron_counters_manager_addr(
+        counters_manager, _endpoint->local_sockaddr_indicator.counter_id);
+
+    if (_endpoint->local_sockaddr_indicator.counter_id < 0)
+    {
+        aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
+        return -1;
+    }
+
+    aeron_counter_set_ordered(
+        _endpoint->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
 
     _endpoint->sender_proxy = context->sender_proxy;
     _endpoint->cached_clock = context->cached_clock;
@@ -121,9 +168,17 @@ int aeron_send_channel_endpoint_create(
 int aeron_send_channel_endpoint_delete(
     aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint)
 {
-    if (NULL != counters_manager && -1 != endpoint->channel_status.counter_id)
+    if (NULL != counters_manager)
     {
-        aeron_counters_manager_free(counters_manager, endpoint->channel_status.counter_id);
+        if (-1 != endpoint->channel_status.counter_id)
+        {
+            aeron_counters_manager_free(counters_manager, endpoint->channel_status.counter_id);
+        }
+
+        if (-1 != endpoint->local_sockaddr_indicator.counter_id)
+        {
+            aeron_counters_manager_free(counters_manager, endpoint->local_sockaddr_indicator.counter_id);
+        }
     }
 
     aeron_int64_to_ptr_hash_map_delete(&endpoint->publication_dispatch_map);

@@ -25,7 +25,6 @@
 #include "aeron_socket.h"
 #include <stdio.h>
 #include <uri/aeron_uri.h>
-#include <bits/stdint-intn.h>
 #include "aeron_alloc.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_netutil.h"

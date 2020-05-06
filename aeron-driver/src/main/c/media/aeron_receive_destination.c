@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <bits/stdint-intn.h>
 #include "util/aeron_error.h"
 #include "aeron_driver_receiver.h"
 #include "media/aeron_receive_destination.h"

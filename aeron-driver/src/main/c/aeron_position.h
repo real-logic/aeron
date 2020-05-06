@@ -16,7 +16,6 @@
 #ifndef AERON_DRIVER_POSITION_H
 #define AERON_DRIVER_POSITION_H
 
-#include <bits/stdint-intn.h>
 #include "concurrent/aeron_counters_manager.h"
 
 int32_t aeron_stream_counter_allocate(

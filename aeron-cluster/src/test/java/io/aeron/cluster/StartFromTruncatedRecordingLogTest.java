@@ -498,8 +498,9 @@ public class StartFromTruncatedRecordingLogTest
     private void takeSnapshot(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-        final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+        final CountersReader counters = driver.consensusModule().context().aeron().countersReader();
+        final int clusterId = driver.consensusModule().context().clusterId();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters, clusterId);
 
         assertNotNull(controlToggle);
         awaitNeutralCounter(index);
@@ -519,9 +520,10 @@ public class StartFromTruncatedRecordingLogTest
     private AtomicCounter getControlToggle(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-        final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
+        final int clusterId = driver.consensusModule().context().clusterId();
+        final CountersReader counters = driver.consensusModule().context().aeron().countersReader();
 
-        return ClusterControl.findControlToggle(countersReader);
+        return ClusterControl.findControlToggle(counters, clusterId);
     }
 
     private void awaitNeutralCounter(final int index)

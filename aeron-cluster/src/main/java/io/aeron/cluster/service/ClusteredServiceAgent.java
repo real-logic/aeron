@@ -105,8 +105,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     public void onStart()
     {
         final CountersReader counters = aeron.countersReader();
-        roleCounter = awaitClusterRoleCounter(counters);
-        commitPosition = awaitCommitPositionCounter(counters);
+        roleCounter = awaitClusterRoleCounter(counters, ctx.clusterId());
+        commitPosition = awaitCommitPositionCounter(counters, ctx.clusterId());
 
         recoverState(counters);
     }
@@ -660,27 +660,27 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         return image;
     }
 
-    private ReadableCounter awaitClusterRoleCounter(final CountersReader counters)
+    private ReadableCounter awaitClusterRoleCounter(final CountersReader counters, final int clusterId)
     {
         idleStrategy.reset();
-        int counterId = ClusterNodeRole.findCounterId(counters);
+        int counterId = ClusterNodeRole.findCounterId(counters, clusterId);
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
-            counterId = ClusterNodeRole.findCounterId(counters);
+            counterId = ClusterNodeRole.findCounterId(counters, clusterId);
         }
 
         return new ReadableCounter(counters, counterId);
     }
 
-    private ReadableCounter awaitCommitPositionCounter(final CountersReader counters)
+    private ReadableCounter awaitCommitPositionCounter(final CountersReader counters, final int clusterId)
     {
         idleStrategy.reset();
-        int counterId = CommitPos.findCounterId(counters);
+        int counterId = CommitPos.findCounterId(counters, clusterId);
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
-            counterId = CommitPos.findCounterId(counters);
+            counterId = CommitPos.findCounterId(counters, clusterId);
         }
 
         return new ReadableCounter(counters, counterId);

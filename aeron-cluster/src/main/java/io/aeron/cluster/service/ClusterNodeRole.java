@@ -15,12 +15,14 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
+import io.aeron.Counter;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
-import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
-import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * The counter that represent the role a node is playing in a cluster.
@@ -33,12 +35,40 @@ public class ClusterNodeRole
     public static final int CLUSTER_NODE_ROLE_TYPE_ID = 201;
 
     /**
+     * Name used to represent the counter in the label.
+     */
+    public static final String LABEL = "Cluster Node Role - clusterId=";
+
+    /**
+     * Allocate a counter to represent the role played by a node in the cluster.
+     *
+     * @param aeron     to allocate the counter.
+     * @param clusterId to which the allocated counter belongs.
+     * @return the {@link Counter} for the commit position.
+     */
+    public static Counter allocate(final Aeron aeron, final int clusterId)
+    {
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+
+        int index = 0;
+        buffer.putInt(index, clusterId);
+        index += SIZE_OF_INT;
+
+        index += buffer.putStringWithoutLengthAscii(index, LABEL);
+        index += buffer.putIntAscii(index, clusterId);
+
+        return aeron.addCounter(
+            CLUSTER_NODE_ROLE_TYPE_ID, buffer, 0, SIZE_OF_INT, buffer, SIZE_OF_INT, index - SIZE_OF_INT);
+    }
+
+    /**
      * Find the active counter id for a cluster node role.
      *
-     * @param counters to search within.
+     * @param counters  to search within.
+     * @param clusterId to which the allocated counter belongs.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
-    public static int findCounterId(final CountersReader counters)
+    public static int findCounterId(final CountersReader counters, final int clusterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -48,7 +78,8 @@ public class ClusterNodeRole
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CLUSTER_NODE_ROLE_TYPE_ID)
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CLUSTER_NODE_ROLE_TYPE_ID &&
+                    buffer.getInt(recordOffset + KEY_OFFSET) == clusterId)
                 {
                     return i;
                 }

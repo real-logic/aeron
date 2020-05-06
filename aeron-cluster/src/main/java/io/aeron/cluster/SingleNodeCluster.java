@@ -305,7 +305,8 @@ public class SingleNodeCluster implements AutoCloseable
         final long snapshotCount = snapshotCounter.get();
 
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(
-            clusteredMediaDriver.mediaDriver().context().countersManager());
+            clusteredMediaDriver.mediaDriver().context().countersManager(),
+            clusteredMediaDriver.consensusModule().context().clusterId());
         ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle);
 
         idleStrategy.reset();

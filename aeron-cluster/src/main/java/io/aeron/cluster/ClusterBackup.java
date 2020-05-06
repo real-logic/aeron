@@ -1311,6 +1311,7 @@ public final class ClusterBackup implements AutoCloseable
                 .ingressStreamId(AeronCluster.Configuration.ingressStreamId())
                 .memberId(-1)
                 .serviceId(SERVICE_ID)
+                .clusterId(ClusteredServiceContainer.Configuration.clusterId())
                 .aeronDirectory(aeron.context().aeronDirectoryName())
                 .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel("")

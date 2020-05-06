@@ -669,7 +669,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorCounter)
             {
-                final String label = "Cluster Container errors - clusterId=" + clusterId + " serviceId=" + serviceId;
+                final String label = "Cluster Container Errors - clusterId=" + clusterId + " serviceId=" + serviceId;
                 errorCounter = aeron.addCounter(CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, label);
             }
 
@@ -1488,6 +1488,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .ingressStreamId(0)
                 .memberId(Aeron.NULL_VALUE)
                 .serviceId(serviceId)
+                .clusterId(clusterId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
                 .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel(serviceControlChannel)

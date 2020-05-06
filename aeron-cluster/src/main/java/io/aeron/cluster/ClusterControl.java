@@ -15,12 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
+import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -29,8 +30,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import static io.aeron.CncFileDescriptor.*;
-import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
-import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * Toggle control {@link ToggleState}s for a cluster node such as {@link ToggleState#SUSPEND} or
@@ -187,24 +188,30 @@ public class ClusterControl
     public static final int CONTROL_TOGGLE_TYPE_ID = 202;
 
     /**
-     * Map a {@link CountersReader} over the default location CnC file.
-     *
-     * @return a {@link CountersReader} over the default location CnC file.
+     * Name used to represent the counter in the label.
      */
-    public static CountersReader mapCounters()
-    {
-        return mapCounters(CommonContext.newDefaultCncFile());
-    }
+    public static final String LABEL = "Cluster Control Toggle - clusterId=";
 
     /**
-     * Map a {@link CountersReader} over the provided filename for the CnC file.
+     * Allocate a counter to represent the role played by a node in the cluster.
      *
-     * @param filename for the CnC file.
-     * @return a {@link CountersReader} over the provided CnC file.
+     * @param aeron     to allocate the counter.
+     * @param clusterId to which the allocated counter belongs.
+     * @return the {@link Counter} for the commit position.
      */
-    public static CountersReader mapCounters(final String filename)
+    public static Counter allocate(final Aeron aeron, final int clusterId)
     {
-        return mapCounters(new File(filename));
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+
+        int index = 0;
+        buffer.putInt(index, clusterId);
+        index += SIZE_OF_INT;
+
+        index += buffer.putStringWithoutLengthAscii(index, LABEL);
+        index += buffer.putIntAscii(index, clusterId);
+
+        return aeron.addCounter(
+            CONTROL_TOGGLE_TYPE_ID, buffer, 0, SIZE_OF_INT, buffer, SIZE_OF_INT, index - SIZE_OF_INT);
     }
 
     /**
@@ -230,10 +237,11 @@ public class ClusterControl
     /**
      * Find the control toggle counter or return null if not found.
      *
-     * @param counters to search for the control toggle.
+     * @param counters  to search within.
+     * @param clusterId to which the allocated counter belongs.
      * @return the control toggle counter or return null if not found.
      */
-    public static AtomicCounter findControlToggle(final CountersReader counters)
+    public static AtomicCounter findControlToggle(final CountersReader counters, final int clusterId)
     {
         final AtomicBuffer buffer = counters.metaDataBuffer();
 
@@ -242,7 +250,8 @@ public class ClusterControl
             final int recordOffset = CountersReader.metaDataOffset(i);
 
             if (counters.getCounterState(i) == RECORD_ALLOCATED &&
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONTROL_TOGGLE_TYPE_ID)
+                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONTROL_TOGGLE_TYPE_ID &&
+                buffer.getInt(recordOffset + KEY_OFFSET) == clusterId)
             {
                 return new AtomicCounter(counters.valuesBuffer(), i, null);
             }
@@ -261,7 +270,8 @@ public class ClusterControl
         System.out.println("Command `n Control file " + cncFile);
 
         final CountersReader countersReader = mapCounters(cncFile);
-        final AtomicCounter controlToggle = findControlToggle(countersReader);
+        final int clusterId = ClusteredServiceContainer.Configuration.clusterId();
+        final AtomicCounter controlToggle = findControlToggle(countersReader, clusterId);
 
         if (null == controlToggle)
         {
@@ -283,7 +293,7 @@ public class ClusterControl
     {
         if (1 != args.length)
         {
-            System.out.format("Usage: [-Daeron.dir=<directory containing CnC file>] " +
+            System.out.format("Usage: [-Daeron.dir=<directory containing CnC file> -Daeron.cluster.id=<id>] " +
                 ClusterControl.class.getSimpleName() + " <action>%n");
 
             System.exit(0);

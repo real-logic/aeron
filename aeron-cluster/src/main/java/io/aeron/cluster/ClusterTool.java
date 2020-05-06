@@ -676,9 +676,11 @@ public class ClusterTool
             return false;
         }
 
+        final int clusterId;
         final ClusterNodeControlProperties clusterNodeControlProperties;
         try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
         {
+            clusterId = markFile.clusterId();
             clusterNodeControlProperties = markFile.loadControlProperties();
         }
 
@@ -726,7 +728,7 @@ public class ClusterTool
                 return false;
             }
 
-            final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader, clusterId);
             if (null == controlToggle)
             {
                 out.println(prefix + "Failed to find control toggle");

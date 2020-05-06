@@ -1188,8 +1188,8 @@ public class ConsensusModule implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    final String label = "Cluster errors - clusterId=" + clusterId;
-                    errorCounter = aeron.addCounter(CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, label);
+                    errorCounter = aeron.addCounter(
+                        CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, "Cluster Errors - clusterId=" + clusterId);
                 }
             }
 
@@ -1214,44 +1214,47 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == electionStateCounter)
             {
-                electionStateCounter = aeron.addCounter(ELECTION_STATE_TYPE_ID, "Election State");
+                electionStateCounter = aeron.addCounter(
+                    ELECTION_STATE_TYPE_ID, "Election State - clusterId=" + clusterId);
             }
 
             if (null == moduleStateCounter)
             {
-                moduleStateCounter = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
+                moduleStateCounter = aeron.addCounter(
+                    CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus Module State - clusterId=" + clusterId);
             }
 
             if (null == clusterNodeRoleCounter)
             {
-                clusterNodeRoleCounter = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
+                clusterNodeRoleCounter = ClusterNodeRole.allocate(aeron, clusterId);
             }
 
             if (null == commitPosition)
             {
-                commitPosition = CommitPos.allocate(aeron);
+                commitPosition = CommitPos.allocate(aeron, clusterId);
             }
 
             if (null == controlToggle)
             {
-                controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Cluster control toggle");
+                controlToggle = ClusterControl.allocate(aeron, clusterId);
             }
 
             if (null == snapshotCounter)
             {
-                snapshotCounter = aeron.addCounter(SNAPSHOT_COUNTER_TYPE_ID, "Snapshot count");
+                snapshotCounter = aeron.addCounter(
+                    SNAPSHOT_COUNTER_TYPE_ID, "Snapshot count - clusterId=" + clusterId);
             }
 
             if (null == invalidRequestCounter)
             {
                 invalidRequestCounter = aeron.addCounter(
-                    CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, "Invalid cluster request count");
+                    CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, "Invalid request count - clusterId=" + clusterId);
             }
 
             if (null == timedOutClientCounter)
             {
                 timedOutClientCounter = aeron.addCounter(
-                    CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out cluster client count");
+                    CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out client count - clusterId=" + clusterId);
             }
 
             if (null == threadFactory)
@@ -3016,6 +3019,7 @@ public class ConsensusModule implements AutoCloseable
                 .ingressStreamId(ingressStreamId)
                 .memberId(clusterMemberId)
                 .serviceId(SERVICE_ID)
+                .clusterId(clusterId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
                 .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel(serviceControlChannel)

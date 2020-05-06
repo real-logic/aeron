@@ -45,7 +45,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 public class ClusterMarkFile implements AutoCloseable
 {
     public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 1;
+    public static final int MINOR_VERSION = 2;
     public static final int PATCH_VERSION = 0;
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
@@ -198,6 +198,16 @@ public class ClusterMarkFile implements AutoCloseable
     public void memberId(final int memberId)
     {
         buffer.putIntVolatile(MarkFileHeaderEncoder.memberIdEncodingOffset(), memberId);
+    }
+
+    public int clusterId()
+    {
+        return buffer.getInt(MarkFileHeaderDecoder.clusterIdEncodingOffset());
+    }
+
+    public void clusterId(final int clusterId)
+    {
+        buffer.putInt(MarkFileHeaderEncoder.clusterIdEncodingOffset(), clusterId);
     }
 
     public void signalReady()

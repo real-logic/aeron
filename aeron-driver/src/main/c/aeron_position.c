@@ -243,12 +243,14 @@ int32_t aeron_counter_local_sockaddr_indicator_allocate(
     int32_t channel_status_counter_id,
     const char *local_sockaddr)
 {
-    aeron_local_sockaddr_key_layout_t sockaddr_layout =
-        {
-            .channel_status_id = channel_status_counter_id,
-            .local_sockaddr_len = strlen(local_sockaddr)
-        };
-    strncpy((char *)&sockaddr_layout.local_sockaddr, local_sockaddr, sockaddr_layout.local_sockaddr_len + 1);
+    aeron_local_sockaddr_key_layout_t sockaddr_layout;
+    size_t local_sockaddr_srclen = strlen(local_sockaddr);
+    size_t local_sockaddr_dstlen = sizeof(sockaddr_layout.local_sockaddr) - 1;
+
+    sockaddr_layout.channel_status_id = channel_status_counter_id,
+    sockaddr_layout.local_sockaddr_len =
+        (int32_t)(local_sockaddr_srclen < local_sockaddr_dstlen ? local_sockaddr_srclen : local_sockaddr_dstlen);
+    strncpy(sockaddr_layout.local_sockaddr, local_sockaddr, sockaddr_layout.local_sockaddr_len + 1);
 
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     int label_length = snprintf(
@@ -257,7 +259,7 @@ int32_t aeron_counter_local_sockaddr_indicator_allocate(
     return aeron_counters_manager_allocate(
         counters_manager,
         AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID,
-        (const uint8_t *) &sockaddr_layout,
+        (const uint8_t *)&sockaddr_layout,
         sizeof(sockaddr_layout),
         label,
         label_length);

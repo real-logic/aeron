@@ -18,9 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.cluster.client.ClusterException;
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -29,7 +27,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
- * Counter representing the Recovery state for the cluster.
+ * Counter representing the Recovery State for the cluster.
  * <p>
  * Key layout as follows:
  * <pre>
@@ -80,7 +78,6 @@ public class RecoveryState
      * Allocate a counter to represent the snapshot services should load on start.
      *
      * @param aeron                to allocate the counter.
-     * @param tempBuffer           to use for building the key and label without allocation.
      * @param leadershipTermId     at which the snapshot was taken.
      * @param logPosition          at which the snapshot was taken.
      * @param timestamp            the snapshot was taken.
@@ -90,20 +87,21 @@ public class RecoveryState
      */
     public static Counter allocate(
         final Aeron aeron,
-        final MutableDirectBuffer tempBuffer,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
         final int clusterId,
         final long... snapshotRecordingIds)
     {
-        tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
-        tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
-        tempBuffer.putLong(TIMESTAMP_OFFSET, timestamp);
-        tempBuffer.putInt(CLUSTER_ID_OFFSET, clusterId);
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
+
+        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
+        buffer.putLong(LOG_POSITION_OFFSET, logPosition);
+        buffer.putLong(TIMESTAMP_OFFSET, timestamp);
+        buffer.putInt(CLUSTER_ID_OFFSET, clusterId);
 
         final int serviceCount = snapshotRecordingIds.length;
-        tempBuffer.putInt(SERVICE_COUNT_OFFSET, serviceCount);
+        buffer.putInt(SERVICE_COUNT_OFFSET, serviceCount);
 
         final int keyLength = SNAPSHOT_RECORDING_IDS_OFFSET + (serviceCount * SIZE_OF_LONG);
         if (keyLength > MAX_KEY_LENGTH)
@@ -113,19 +111,19 @@ public class RecoveryState
 
         for (int i = 0; i < serviceCount; i++)
         {
-            tempBuffer.putLong(SNAPSHOT_RECORDING_IDS_OFFSET + (i * SIZE_OF_LONG), snapshotRecordingIds[i]);
+            buffer.putLong(SNAPSHOT_RECORDING_IDS_OFFSET + (i * SIZE_OF_LONG), snapshotRecordingIds[i]);
         }
 
         final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
-        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, NAME);
-        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, leadershipTermId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " logPosition=");
-        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, logPosition);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " clusterId=");
-        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, clusterId);
+        labelLength += buffer.putStringWithoutLengthAscii(labelOffset + labelLength, NAME);
+        labelLength += buffer.putLongAscii(keyLength + labelLength, leadershipTermId);
+        labelLength += buffer.putStringWithoutLengthAscii(labelOffset + labelLength, " logPosition=");
+        labelLength += buffer.putLongAscii(labelOffset + labelLength, logPosition);
+        labelLength += buffer.putStringWithoutLengthAscii(labelOffset + labelLength, " clusterId=");
+        labelLength += buffer.putIntAscii(labelOffset + labelLength, clusterId);
 
-        return aeron.addCounter(RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
+        return aeron.addCounter(RECOVERY_STATE_TYPE_ID, buffer, 0, keyLength, buffer, labelOffset, labelLength);
     }
 
     /**

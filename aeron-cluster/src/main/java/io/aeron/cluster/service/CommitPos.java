@@ -18,7 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -49,7 +49,7 @@ public class CommitPos
      */
     public static Counter allocate(final Aeron aeron, final int clusterId)
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         int index = 0;
         buffer.putInt(index, clusterId);

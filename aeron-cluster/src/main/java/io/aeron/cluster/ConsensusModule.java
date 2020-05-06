@@ -1026,7 +1026,6 @@ public class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
-        private MutableDirectBuffer tempBuffer;
         private int fileSyncLevel = Archive.Configuration.fileSyncLevel();
 
         private int appVersion = SemanticVersion.compose(0, 0, 1);
@@ -1131,11 +1130,6 @@ public class ConsensusModule implements AutoCloseable
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
                 throw new ClusterException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
-            }
-
-            if (null == tempBuffer)
-            {
-                tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
             }
 
             if (null == clusterClock)
@@ -1312,28 +1306,6 @@ public class ConsensusModule implements AutoCloseable
             }
 
             concludeMarkFile();
-        }
-
-        /**
-         * The temporary buffer than can be used to build up counter labels to avoid allocation.
-         *
-         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
-         */
-        public MutableDirectBuffer tempBuffer()
-        {
-            return tempBuffer;
-        }
-
-        /**
-         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
-         *
-         * @param tempBuffer to be used to avoid allocation.
-         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
-         */
-        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
-        {
-            this.tempBuffer = tempBuffer;
-            return this;
         }
 
         /**

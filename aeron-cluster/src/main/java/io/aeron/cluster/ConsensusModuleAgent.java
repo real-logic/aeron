@@ -133,7 +133,6 @@ class ConsensusModuleAgent implements Agent
     private final Aeron aeron;
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
-    private final MutableDirectBuffer tempBuffer;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
@@ -174,7 +173,6 @@ class ConsensusModuleAgent implements Agent
         this.clusterRoleCounter = ctx.clusterNodeRoleCounter();
         this.markFile = ctx.clusterMarkFile();
         this.recordingLog = ctx.recordingLog();
-        this.tempBuffer = ctx.tempBuffer();
         this.serviceClientIds = new long[ctx.serviceCount()];
         Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArray(ctx.serviceCount());
@@ -2406,7 +2404,6 @@ class ConsensusModuleAgent implements Agent
 
             return RecoveryState.allocate(
                 aeron,
-                tempBuffer,
                 snapshot.leadershipTermId,
                 snapshot.logPosition,
                 snapshot.timestamp,
@@ -2414,7 +2411,7 @@ class ConsensusModuleAgent implements Agent
                 serviceSnapshotRecordingIds);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, ctx.clusterId());
+        return RecoveryState.allocate(aeron, leadershipTermId, 0, 0, ctx.clusterId());
     }
 
     private DynamicJoin requiresDynamicJoin()

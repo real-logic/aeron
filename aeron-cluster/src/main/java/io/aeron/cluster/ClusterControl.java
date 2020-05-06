@@ -18,10 +18,8 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -201,7 +199,7 @@ public class ClusterControl
      */
     public static Counter allocate(final Aeron aeron, final int clusterId)
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         int index = 0;
         buffer.putInt(index, clusterId);

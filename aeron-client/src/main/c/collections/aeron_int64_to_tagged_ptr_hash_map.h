@@ -302,9 +302,9 @@ inline void aeron_int64_to_tagged_ptr_hash_map_remove_if(
     aeron_int64_to_tagged_ptr_hash_map_t *map, aeron_int64_to_tagged_ptr_hash_map_predicate_func_t func, void *clientd)
 {
     size_t remaining = map->size;
-    size_t index = map->capacity - 1;
+    int64_t index = (int64_t)map->capacity - 1;
 
-    while (0 < remaining)
+    while (0 < remaining && 0 <= index)
     {
         if (AERON_INT64_TO_TAGGED_PTR_VALUE_PRESENT == map->entries[index].internal_flags)
         {

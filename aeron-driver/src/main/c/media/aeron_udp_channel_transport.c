@@ -31,6 +31,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 #include "util/aeron_error.h"
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"

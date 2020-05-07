@@ -29,8 +29,10 @@ public interface ClusterBackupEventsListener
 
     /**
      * Possible failure of cluster leader detected.
+     *
+     * @param ex the underlying exception.
      */
-    void onPossibleClusterFailure();
+    void onPossibleClusterFailure(Exception ex);
 
     /**
      * Backup response was received for a backup query.

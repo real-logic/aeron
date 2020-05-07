@@ -26,6 +26,8 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupResponseDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -44,6 +46,7 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.*;
 import static io.aeron.cluster.ClusterBackup.State.*;
 import static io.aeron.cluster.MemberStatusAdapter.FRAGMENT_POLL_LIMIT;
+import static io.aeron.exceptions.AeronException.Category;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 /**
@@ -207,7 +210,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             {
                 if (null != eventsListener)
                 {
-                    eventsListener.onPossibleClusterFailure();
+                    eventsListener.onPossibleClusterFailure(
+                        new TimeoutException("progress has stalled", Category.WARN)
+                    );
                 }
 
                 state(RESET_BACKUP, nowMs);
@@ -217,7 +222,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         {
             if (null != eventsListener)
             {
-                eventsListener.onPossibleClusterFailure();
+                eventsListener.onPossibleClusterFailure(ex);
             }
 
             state(RESET_BACKUP, nowMs);
@@ -306,7 +311,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         {
             if (null != eventsListener)
             {
-                eventsListener.onPossibleClusterFailure();
+                eventsListener.onPossibleClusterFailure(
+                    new AeronException("log recording counter became unavailable", Category.WARN)
+                );
             }
 
             state(RESET_BACKUP, epochClock.time());

@@ -262,6 +262,10 @@ public class ClusterTool
             {
                 printTypeAndActivityTimestamp(out, markFile);
                 printErrors(out, markFile);
+
+                final String aeronDirectory = markFile.decoder().aeronDirectory();
+                out.println();
+                printDriverErrors(out, aeronDirectory);
             }
         }
         else
@@ -838,9 +842,10 @@ public class ClusterTool
     {
         out.println("Cluster component error log:");
         CommonContext.printErrorLog(markFile.errorBuffer(), out);
+    }
 
-        final String aeronDirectory = markFile.decoder().aeronDirectory();
-        out.println();
+    private static void printDriverErrors(final PrintStream out, final String aeronDirectory)
+    {
         out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 

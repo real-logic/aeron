@@ -228,4 +228,4 @@ jobs:
         with:
           submodules: true
       - name: Build
-        run: cppbuild/cppbuild-vs.cmd
+        run: cppbuild/cppbuild-vs.cmd --no-system-tests

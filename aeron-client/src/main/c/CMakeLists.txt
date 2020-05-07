@@ -13,11 +13,6 @@
 # limitations under the License.
 
 if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    set(BUILD_SHARED_LIBS ON)
-endif ()
-
-if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
     set(WSAPOLL_PROTOTYPE_EXISTS True)
 endif ()
@@ -152,6 +147,8 @@ set(HEADERS
 add_library(aeron SHARED ${SOURCE} ${HEADERS})
 target_include_directories(aeron
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(aeron
+    PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 add_library(aeron_static STATIC ${SOURCE} ${HEADERS})
 target_include_directories(aeron_static

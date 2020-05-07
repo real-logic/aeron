@@ -14,10 +14,6 @@
 # limitations under the License.
 #
 
-if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-    set(BUILD_SHARED_LIBS ON)
-endif ()
-
 SET(SOURCE
     Publication.cpp
     ExclusivePublication.cpp

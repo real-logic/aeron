@@ -17,9 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.service.ClusterCounters;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.*;
-import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -28,8 +28,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import static io.aeron.CncFileDescriptor.*;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * Toggle control {@link ToggleState}s for a cluster node such as {@link ToggleState#SUSPEND} or
@@ -186,33 +184,6 @@ public class ClusterControl
     public static final int CONTROL_TOGGLE_TYPE_ID = 202;
 
     /**
-     * Name used to represent the counter in the label.
-     */
-    public static final String LABEL = "Cluster Control Toggle - clusterId=";
-
-    /**
-     * Allocate a counter to represent the role played by a node in the cluster.
-     *
-     * @param aeron     to allocate the counter.
-     * @param clusterId to which the allocated counter belongs.
-     * @return the {@link Counter} for the commit position.
-     */
-    public static Counter allocate(final Aeron aeron, final int clusterId)
-    {
-        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-        int index = 0;
-        buffer.putInt(index, clusterId);
-        index += SIZE_OF_INT;
-
-        index += buffer.putStringWithoutLengthAscii(index, LABEL);
-        index += buffer.putIntAscii(index, clusterId);
-
-        return aeron.addCounter(
-            CONTROL_TOGGLE_TYPE_ID, buffer, 0, SIZE_OF_INT, buffer, SIZE_OF_INT, index - SIZE_OF_INT);
-    }
-
-    /**
      * Map a {@link CountersReader} over the provided {@link File} for the CnC file.
      *
      * @param cncFile for the counters.
@@ -241,18 +212,10 @@ public class ClusterControl
      */
     public static AtomicCounter findControlToggle(final CountersReader counters, final int clusterId)
     {
-        final AtomicBuffer buffer = counters.metaDataBuffer();
-
-        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
+        final int counterId = ClusterCounters.find(counters, CONTROL_TOGGLE_TYPE_ID, clusterId);
+        if (Aeron.NULL_VALUE != counterId)
         {
-            final int recordOffset = CountersReader.metaDataOffset(i);
-
-            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONTROL_TOGGLE_TYPE_ID &&
-                buffer.getInt(recordOffset + KEY_OFFSET) == clusterId)
-            {
-                return new AtomicCounter(counters.valuesBuffer(), i, null);
-            }
+            return new AtomicCounter(counters.valuesBuffer(), counterId, null);
         }
 
         return null;

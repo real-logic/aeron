@@ -48,7 +48,6 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.*;
-import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * Component which resides on each node and is responsible for coordinating consensus within a cluster in concert
@@ -157,31 +156,24 @@ public class ConsensusModule implements AutoCloseable
 
             return STATES[code];
         }
-    }
 
-    /**
-     * Get the current state of the {@link ConsensusModule}.
-     *
-     * @param counters to search the current state.
-     * @return the state of the ConsensusModule or null if not found.
-     */
-    public static State findState(final CountersReader counters)
-    {
-        final AtomicBuffer buffer = counters.metaDataBuffer();
-
-        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
+        /**
+         * Get the current state of the {@link ConsensusModule}.
+         *
+         * @param counters  to search within.
+         * @param clusterId to which the allocated counter belongs.
+         * @return the state of the ConsensusModule or null if not found.
+         */
+        public static State getState(final CountersReader counters, final int clusterId)
         {
-            final int recordOffset = CountersReader.metaDataOffset(i);
-
-            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_MODULE_STATE_TYPE_ID)
+            final int counterId = ClusterCounters.find(counters, CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
+            if (Aeron.NULL_VALUE != counterId)
             {
-                final AtomicCounter atomicCounter = new AtomicCounter(counters.valuesBuffer(), i, null);
-                return State.get(atomicCounter);
+                return State.get((int)counters.getCounterValue(counterId));
             }
-        }
 
-        return null;
+            return null;
+        }
     }
 
     /**
@@ -451,21 +443,6 @@ public class ConsensusModule implements AutoCloseable
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
 
         /**
-         * Counter type id for the consensus module error count.
-         */
-        public static final int CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID = 212;
-
-        /**
-         * Counter type id for the number of cluster clients which have been timed out.
-         */
-        public static final int CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID = 213;
-
-        /**
-         * Counter type id for the number of invalid requests which the cluster has received.
-         */
-        public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID = 214;
-
-        /**
          * Counter type id for the cluster node role.
          */
         public static final int CLUSTER_NODE_ROLE_TYPE_ID = ClusterNodeRole.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -494,6 +471,21 @@ public class ConsensusModule implements AutoCloseable
          * Type id for election state counter.
          */
         public static final int ELECTION_STATE_TYPE_ID = Election.ELECTION_STATE_TYPE_ID;
+
+        /**
+         * Counter type id for the consensus module error count.
+         */
+        public static final int CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID = 212;
+
+        /**
+         * Counter type id for the number of cluster clients which have been timed out.
+         */
+        public static final int CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID = 213;
+
+        /**
+         * Counter type id for the number of invalid requests which the cluster has received.
+         */
+        public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID = 214;
 
         /**
          * The number of services in this cluster instance.
@@ -1208,47 +1200,50 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == electionStateCounter)
             {
-                electionStateCounter = aeron.addCounter(
-                    ELECTION_STATE_TYPE_ID, "Election State - clusterId=" + clusterId);
+                electionStateCounter = ClusterCounters.allocate(
+                    aeron, "Election State", ELECTION_STATE_TYPE_ID, clusterId);
             }
 
             if (null == moduleStateCounter)
             {
-                moduleStateCounter = aeron.addCounter(
-                    CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus Module State - clusterId=" + clusterId);
+                moduleStateCounter = ClusterCounters.allocate(
+                    aeron, "Consensus Module State", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             }
 
             if (null == clusterNodeRoleCounter)
             {
-                clusterNodeRoleCounter = ClusterNodeRole.allocate(aeron, clusterId);
+                clusterNodeRoleCounter = ClusterCounters.allocate(
+                    aeron, "Cluster Node Role", CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
             }
 
             if (null == commitPosition)
             {
-                commitPosition = CommitPos.allocate(aeron, clusterId);
+                commitPosition = ClusterCounters.allocate(
+                    aeron, "cluster-commit-pos:", COMMIT_POSITION_TYPE_ID, clusterId);
             }
 
             if (null == controlToggle)
             {
-                controlToggle = ClusterControl.allocate(aeron, clusterId);
+                controlToggle = ClusterCounters.allocate(
+                    aeron, "Cluster Control Toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
             }
 
             if (null == snapshotCounter)
             {
-                snapshotCounter = aeron.addCounter(
-                    SNAPSHOT_COUNTER_TYPE_ID, "Snapshot count - clusterId=" + clusterId);
+                snapshotCounter = ClusterCounters.allocate(
+                    aeron, "Snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
             }
 
             if (null == invalidRequestCounter)
             {
-                invalidRequestCounter = aeron.addCounter(
-                    CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, "Invalid request count - clusterId=" + clusterId);
+                invalidRequestCounter = ClusterCounters.allocate(
+                    aeron, "Invalid request count", CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, clusterId);
             }
 
             if (null == timedOutClientCounter)
             {
-                timedOutClientCounter = aeron.addCounter(
-                    CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out client count - clusterId=" + clusterId);
+                timedOutClientCounter = ClusterCounters.allocate(
+                    aeron, "Timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
             }
 
             if (null == threadFactory)

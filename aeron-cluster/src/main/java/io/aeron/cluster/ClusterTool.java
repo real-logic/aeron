@@ -724,18 +724,17 @@ public class ClusterTool
         final CountersReader countersReader = ClusterControl.mapCounters(cncFile);
         try
         {
-            final ConsensusModule.State consensusModuleState = ConsensusModule.findState(countersReader);
-
-            if (null == consensusModuleState)
+            final ConsensusModule.State moduleState = ConsensusModule.State.getState(countersReader, clusterId);
+            if (null == moduleState)
             {
                 out.println(prefix + "Unable to resolve state of consensus module.");
                 return false;
             }
 
-            if (expectedState != consensusModuleState)
+            if (expectedState != moduleState)
             {
                 out.println(prefix + "Unable to " + toggleState + " as the state of the consensus module is " +
-                    consensusModuleState + ", but needs to be " + expectedState);
+                    moduleState + ", but needs to be " + expectedState);
                 return false;
             }
 

@@ -15,14 +15,7 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
-import io.aeron.Counter;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.CountersReader;
-
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * Counter representing the commit position that can consumed by a state machine on a stream, it is the consensus
@@ -36,33 +29,6 @@ public class CommitPos
     public static final int COMMIT_POSITION_TYPE_ID = 203;
 
     /**
-     * Human readable name for the counter.
-     */
-    public static final String LABEL = "cluster-commit-pos: clusterId=";
-
-    /**
-     * Allocate a counter to represent the commit position on stream for the current leadership term.
-     *
-     * @param aeron     to allocate the counter.
-     * @param clusterId to which the allocated counter belongs.
-     * @return the {@link Counter} for the commit position.
-     */
-    public static Counter allocate(final Aeron aeron, final int clusterId)
-    {
-        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-        int index = 0;
-        buffer.putInt(index, clusterId);
-        index += SIZE_OF_INT;
-
-        index += buffer.putStringWithoutLengthAscii(index, LABEL);
-        index += buffer.putIntAscii(index, clusterId);
-
-        return aeron.addCounter(
-            COMMIT_POSITION_TYPE_ID, buffer, 0, SIZE_OF_INT, buffer, SIZE_OF_INT, index - SIZE_OF_INT);
-    }
-
-    /**
      * Find the active counter id for a cluster commit position
      *
      * @param counters  to search within.
@@ -71,22 +37,6 @@ public class CommitPos
      */
     public static int findCounterId(final CountersReader counters, final int clusterId)
     {
-        final DirectBuffer buffer = counters.metaDataBuffer();
-
-        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
-        {
-            if (counters.getCounterState(i) == RECORD_ALLOCATED)
-            {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID &&
-                    buffer.getInt(recordOffset + KEY_OFFSET) == clusterId)
-                {
-                    return i;
-                }
-            }
-        }
-
-        return NULL_COUNTER_ID;
+        return ClusterCounters.find(counters, COMMIT_POSITION_TYPE_ID, clusterId);
     }
 }

@@ -23,6 +23,7 @@
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "util/aeron_math.h"
+#include "util/aeron_uuid.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"

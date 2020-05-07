@@ -21,36 +21,16 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_definitions(-D_DEFAULT_SOURCE)
 endif ()
 
-check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)
-check_include_file("uuid/uuid.h" UUID_H_EXISTS)
 find_library(LIBBSD_EXISTS NAMES bsd libbsd)
-find_library(LIBUUID_EXISTS NAMES uuid libuuid libuuid.dll)
 
 if (LIBBSD_EXISTS)
     set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -lbsd")
-endif ()
-
-if (LIBUUID_EXISTS)
-    set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -luuid")
-endif ()
-
-if (NOT BSDSTDLIB_H_EXISTS)
-    check_symbol_exists(arc4random "stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
-else ()
-    add_definitions(-DHAVE_BSDSTDLIB_H)
-    check_symbol_exists(arc4random "bsd/stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
-endif ()
-
-if (UUID_H_EXISTS)
-    add_definitions(-DHAVE_UUID_H)
 endif ()
 
 if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
     set(WSAPOLL_PROTOTYPE_EXISTS True)
 endif ()
-
-check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
 
 check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)
 check_symbol_exists(epoll_create "sys/epoll.h" EPOLL_PROTOTYPE_EXISTS)
@@ -62,18 +42,6 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(sendmmsg "sys/socket.h" SENDMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
-
-if (ARC4RANDOM_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_ARC4RANDOM)
-else ()
-    message(WARNING "Could not find arc4random. If on Linux, is libbsd installed?")
-endif ()
-
-if (UUID_GENERATE_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_UUID_GENERATE)
-else ()
-    message(WARNING "Could not find uuid_generate. If on Linux, is libuuid installed?")
-endif ()
 
 if (POLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_POLL)
@@ -136,6 +104,8 @@ SET(SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_http_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_uuid.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/randombytes.c
     aeron_driver_context.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.c
     aeron_driver.c
@@ -200,6 +170,8 @@ SET(HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_http_util.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_uuid.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/randombytes.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_gcc_x86_64.h
@@ -292,24 +264,13 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
         set(AERON_LIB_BSD_LIBS bsd)
     endif ()
 
-    if (LIBUUID_EXISTS)
-        set(AERON_LIB_UUID_LIBS uuid)
-    endif ()
-
     set(AERON_LIB_M_LIBS m)
-endif ()
-
-if (CYGWIN)
-    if (LIBUUID_EXISTS)
-        set(AERON_LIB_UUID_LIBS uuid)
-    endif ()
 endif ()
 
 target_link_libraries(
     aeron_driver
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
-    ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
@@ -319,7 +280,6 @@ target_link_libraries(
     aeron_driver
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
-    ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})

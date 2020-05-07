@@ -32,6 +32,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ class DynamicJoin implements AutoCloseable
     private final String memberEndpoints;
     private final String memberStatusEndpoint;
     private final String transferEndpoint;
+    private final String archiveEndpoint;
     private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>();
     private final Long2LongHashMap leaderSnapshotLengthMap = new Long2LongHashMap(NULL_LENGTH);
     private final long intervalNs;
@@ -103,6 +105,7 @@ class DynamicJoin implements AutoCloseable
         this.memberEndpoints = ctx.memberEndpoints();
         this.memberStatusEndpoint = thisMember.memberFacingEndpoint();
         this.transferEndpoint = thisMember.transferEndpoint();
+        this.archiveEndpoint = thisMember.archiveEndpoint();
         this.clusterMemberStatusEndpoints = clusterMemberStatusEndpoints.split(",");
     }
 
@@ -209,7 +212,6 @@ class DynamicJoin implements AutoCloseable
         if (State.PASSIVE_FOLLOWER == state && correlationId == this.correlationId)
         {
             final SnapshotRecordingsDecoder.SnapshotsDecoder snapshotsDecoder = snapshotRecordingsDecoder.snapshots();
-
             if (snapshotsDecoder.count() > 0)
             {
                 for (final SnapshotRecordingsDecoder.SnapshotsDecoder snapshot : snapshotsDecoder)
@@ -237,14 +239,12 @@ class DynamicJoin implements AutoCloseable
             }
             else
             {
-                final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
-                leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
-
                 final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
                     .aeron(ctx.aeron())
-                    .controlRequestChannel(leaderArchiveUri.toString())
+                    .lock(NoOpLock.INSTANCE)
+                    .controlRequestChannel("aeron:udp?endpoint=" + leaderMember.archiveEndpoint())
                     .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
-                    .controlResponseChannel(ctx.archiveContext().controlResponseChannel())
+                    .controlResponseChannel("aeron:udp?endpoint=" + archiveEndpoint)
                     .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
 
                 leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);

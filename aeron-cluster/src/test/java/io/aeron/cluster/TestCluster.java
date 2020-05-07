@@ -33,8 +33,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -234,6 +233,7 @@ public class TestCluster implements AutoCloseable
         final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
 
         context.aeronArchiveContext
+            .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
@@ -271,7 +271,9 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
-            .archiveContext(context.aeronArchiveContext.clone())
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
+                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
             .deleteDirOnStart(cleanStart);
 
         context.serviceContainerContext
@@ -301,6 +303,7 @@ public class TestCluster implements AutoCloseable
         final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
 
         context.aeronArchiveContext
+            .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
@@ -338,7 +341,9 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
-            .archiveContext(context.aeronArchiveContext.clone())
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
+                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
             .deleteDirOnStart(cleanStart);
 
         context.serviceContainerContext
@@ -460,7 +465,9 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, backupNodeIndex))
-            .archiveContext(context.aeronArchiveContext.clone())
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
+                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
             .deleteDirOnStart(false);
 
         context.serviceContainerContext

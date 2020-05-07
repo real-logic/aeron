@@ -378,10 +378,18 @@ int aeron_subscription_controlled_poll(
 long aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
+bool aeron_subscription_is_connected(aeron_subscription_t *subscription);
 int aeron_subscription_image_count(aeron_subscription_t *subscription);
 
 aeron_image_t *aeron_subscription_image_by_session_id(
     aeron_subscription_t *subscription, int32_t session_id, bool require_release);
+
+void aeron_subscription_for_each_image(
+    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image));
+
+bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
+
+int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
 
 int aeron_subscription_close(aeron_subscription_t *subscription);
 
@@ -403,6 +411,8 @@ int64_t aeron_image_controlled_peek(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handker, void *clientd, int64_t limit_position);
 int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
+
+bool aeron_image_is_closed(aeron_image_t *image);
 
 /*
  * Counter functions

@@ -98,5 +98,17 @@ int aeron_image_block_poll(
     return -1;
 }
 
+bool aeron_image_is_closed(aeron_image_t *image)
+{
+    bool is_closed = false;
+
+    if (NULL != image)
+    {
+        AERON_GET_VOLATILE(is_closed, image->is_closed);
+    }
+
+    return is_closed;
+}
+
 extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
 extern bool aeron_image_is_in_use(aeron_image_t *image, int64_t last_change_number);

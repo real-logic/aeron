@@ -92,8 +92,13 @@ int aeron_subscription_delete(aeron_subscription_t *subscription)
 
 int aeron_subscription_close(aeron_subscription_t *subscription)
 {
-    return NULL != subscription ?
-        aeron_client_conductor_async_close_subscription(subscription->conductor, subscription) : 0;
+    if (NULL != subscription)
+    {
+        AERON_PUT_ORDERED(subscription->is_closed, true);
+        return aeron_client_conductor_async_close_subscription(subscription->conductor, subscription);
+    }
+
+    return 0;
 }
 
 int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list, size_t length)
@@ -213,6 +218,27 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
     return pruned_lists_count;
 }
 
+bool aeron_subscription_is_connected(aeron_subscription_t *subscription)
+{
+    volatile aeron_image_list_t *image_list;
+    bool result = false;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    for (size_t i = 0, length = image_list->length; i < length; i++)
+    {
+        if (!aeron_image_is_closed(image_list->array[i]))
+        {
+            result = true;
+            break;
+        }
+    }
+
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
+
+    return result;
+}
+
 int aeron_subscription_image_count(aeron_subscription_t *subscription)
 {
     volatile aeron_image_list_t *image_list;
@@ -220,6 +246,70 @@ int aeron_subscription_image_count(aeron_subscription_t *subscription)
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
     return image_list->length;
+}
+
+aeron_image_t *aeron_subscription_image_by_session_id(
+    aeron_subscription_t *subscription, int32_t session_id, bool require_release)
+{
+    volatile aeron_image_list_t *image_list;
+    aeron_image_t *result = NULL;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    for (size_t i = 0, length = image_list->length; i < length; i++)
+    {
+        if (session_id == image_list->array[i]->session_id)
+        {
+            result = image_list->array[i];
+            break;
+        }
+    }
+
+    // TODO: handle require_release
+
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
+
+    return result;
+}
+
+void aeron_subscription_for_each_image(
+    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image))
+{
+    volatile aeron_image_list_t *image_list;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    for (size_t i = 0, length = image_list->length; i < length; i++)
+    {
+        handler(image_list->array[i]);
+    }
+
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
+}
+
+bool aeron_subscription_is_closed(aeron_subscription_t *subscription)
+{
+    bool is_closed = false;
+
+    if (NULL != subscription)
+    {
+        AERON_GET_VOLATILE(is_closed, subscription->is_closed);
+    }
+
+    return is_closed;
+}
+
+int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription)
+{
+    if (NULL != subscription && !aeron_subscription_is_closed(subscription))
+    {
+        int64_t value;
+        AERON_GET_VOLATILE(value, *subscription->channel_status_indicator);
+
+        return value;
+    }
+
+    return AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_NO_ID_ALLOCATED;
 }
 
 int aeron_subscription_poll(
@@ -247,10 +337,7 @@ int aeron_subscription_poll(
         fragments_read += aeron_image_poll(image_list->array[i], handler, clientd, fragment_limit - fragments_read);
     }
 
-    if (image_list->change_number > subscription->last_image_list_change_number)
-    {
-        AERON_PUT_ORDERED(subscription->last_image_list_change_number, image_list->change_number);
-    }
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return fragments_read;
 }
@@ -282,10 +369,7 @@ int aeron_subscription_controlled_poll(
             image_list->array[i], handler, clientd, fragment_limit - fragments_read);
     }
 
-    if (image_list->change_number > subscription->last_image_list_change_number)
-    {
-        AERON_PUT_ORDERED(subscription->last_image_list_change_number, image_list->change_number);
-    }
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return fragments_read;
 }
@@ -294,25 +378,22 @@ long aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit)
 {
     volatile aeron_image_list_t *image_list;
+    long bytes_consumed = 0;
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
-    size_t length = image_list->length;
-    long bytes_consumed = 0;
-
-    for (size_t i = 0; i < length; i++)
+    for (size_t i = 0, length = image_list->length; i < length; i++)
     {
         bytes_consumed += aeron_image_block_poll(
             image_list->array[i], handler, clientd, block_length_limit);
     }
 
-    if (image_list->change_number > subscription->last_image_list_change_number)
-    {
-        AERON_PUT_ORDERED(subscription->last_image_list_change_number, image_list->change_number);
-    }
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return bytes_consumed;
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
+extern void aeron_subscription_propose_last_image_change_number(
+    aeron_subscription_t *subscription, int64_t change_number);

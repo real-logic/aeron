@@ -164,7 +164,7 @@ public class ConsensusModule implements AutoCloseable
          * @param clusterId to which the allocated counter belongs.
          * @return the state of the ConsensusModule or null if not found.
          */
-        public static State getState(final CountersReader counters, final int clusterId)
+        public static State find(final CountersReader counters, final int clusterId)
         {
             final int counterId = ClusterCounters.find(counters, CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             if (Aeron.NULL_VALUE != counterId)

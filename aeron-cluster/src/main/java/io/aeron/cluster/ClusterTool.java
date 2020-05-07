@@ -724,7 +724,7 @@ public class ClusterTool
         final CountersReader countersReader = ClusterControl.mapCounters(cncFile);
         try
         {
-            final ConsensusModule.State moduleState = ConsensusModule.State.getState(countersReader, clusterId);
+            final ConsensusModule.State moduleState = ConsensusModule.State.find(countersReader, clusterId);
             if (null == moduleState)
             {
                 out.println(prefix + "Unable to resolve state of consensus module.");

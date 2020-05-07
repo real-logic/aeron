@@ -210,9 +210,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             {
                 if (null != eventsListener)
                 {
-                    eventsListener.onPossibleClusterFailure(
-                        new TimeoutException("progress has stalled", Category.WARN)
-                    );
+                    eventsListener.onPossibleFailure(
+                        new TimeoutException("progress has stalled", Category.WARN));
                 }
 
                 state(RESET_BACKUP, nowMs);
@@ -222,7 +221,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         {
             if (null != eventsListener)
             {
-                eventsListener.onPossibleClusterFailure(ex);
+                eventsListener.onPossibleFailure(ex);
             }
 
             state(RESET_BACKUP, nowMs);
@@ -311,9 +310,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         {
             if (null != eventsListener)
             {
-                eventsListener.onPossibleClusterFailure(
-                    new AeronException("log recording counter became unavailable", Category.WARN)
-                );
+                eventsListener.onPossibleFailure(
+                    new AeronException("log recording counter became unavailable", Category.WARN));
             }
 
             state(RESET_BACKUP, epochClock.time());

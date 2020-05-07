@@ -32,7 +32,7 @@ public interface ClusterBackupEventsListener
      *
      * @param ex the underlying exception.
      */
-    void onPossibleClusterFailure(Exception ex);
+    void onPossibleFailure(Exception ex);
 
     /**
      * Backup response was received for a backup query.
@@ -42,9 +42,7 @@ public interface ClusterBackupEventsListener
      * @param snapshotsToRetrieve snapshots to be retrieved.
      */
     void onBackupResponse(
-        ClusterMember[] clusterMembers,
-        ClusterMember leaderMember,
-        List<RecordingLog.Snapshot> snapshotsToRetrieve);
+        ClusterMember[] clusterMembers, ClusterMember leaderMember, List<RecordingLog.Snapshot> snapshotsToRetrieve);
 
     /**
      * Updated recording log.
@@ -52,9 +50,7 @@ public interface ClusterBackupEventsListener
      * @param recordingLog that was updated.
      * @param snapshotsRetrieved the snapshots that were retrieved.
      */
-    void onUpdatedRecordingLog(
-        RecordingLog recordingLog,
-        List<RecordingLog.Snapshot> snapshotsRetrieved);
+    void onUpdatedRecordingLog(RecordingLog recordingLog, List<RecordingLog.Snapshot> snapshotsRetrieved);
 
     /**
      * Update to the live log position as recorded to the local archive

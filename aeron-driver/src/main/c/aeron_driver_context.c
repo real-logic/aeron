@@ -34,11 +34,7 @@
 #include <inttypes.h>
 #include <errno.h>
 
-#ifdef HAVE_UUID_H
-
-#include <uuid/uuid.h>
-
-#endif
+#include "util/aeron_uuid.h"
 
 #include "aeron_windows.h"
 #include "util/aeron_error.h"
@@ -410,6 +406,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if (aeron_alloc((void **)&_context, sizeof(aeron_driver_context_t)) < 0)
     {
+        return -1;
+    }
+
+    if (aeron_random_init() < 0)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_random_init() failed: %s", strerror(EINVAL));
         return -1;
     }
 
@@ -1043,9 +1046,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
-#ifdef HAVE_UUID_GENERATE
-    uuid_t id;
-    uuid_generate(id);
+    aeron_uuid_t id;
+    if (aeron_uuid_generate(id) != 0)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_uuid_generate() failed: %s", strerror(EINVAL));
+        return -1;
+    }
 
     struct uuid_as_uint64
     {
@@ -1055,10 +1062,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     *id_as_uint64 = (struct uuid_as_uint64 *)&id;
     _context->next_receiver_id = id_as_uint64->high ^ id_as_uint64->low;
-#else
-    /* pure random id */
-    _context->next_receiver_id = aeron_randomised_int32();
-#endif
 
     *context = _context;
     return 0;

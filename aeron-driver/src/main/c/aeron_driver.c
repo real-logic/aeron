@@ -107,49 +107,6 @@ extern int aeron_number_of_trailing_zeroes(int32_t value);
 extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);
 extern int32_t aeron_find_next_power_of_two(int32_t value);
 
-#ifndef HAVE_ARC4RANDOM
-static int aeron_dev_random_fd = -1;
-#endif
-
-int32_t aeron_randomised_int32()
-{
-    int32_t result;
-
-#ifdef HAVE_ARC4RANDOM
-    uint32_t value = arc4random();
-
-    memcpy(&result, &value, sizeof(int32_t));
-#elif defined(__linux__) || defined(__CYGWIN__)
-    if (-1 == aeron_dev_random_fd)
-    {
-        if ((aeron_dev_random_fd = open("/dev/urandom", O_RDONLY)) < 0)
-        {
-            fprintf(stderr, "could not open /dev/urandom (%d): %s\n", errno, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if (sizeof(result) != read(aeron_dev_random_fd, &result, sizeof(result)))
-    {
-        fprintf(stderr, "Failed to read from aeron_dev_random (%d): %s\n", errno, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-#elif defined(AERON_COMPILER_MSVC)
-    uint32_t value;
-    if (0 == rand_s(&value))
-    {
-        memcpy(&result, &value, sizeof(int32_t));
-    }
-    else
-    {
-        result = (int32_t)(rand() / (double)RAND_MAX * INT_MAX);
-    }
-#else
-    result = (int32_t)(rand() / (double)RAND_MAX * INT_MAX);
-#endif
-    return result;
-}
-
 static void error_log_reader_save_to_file(
     int32_t observation_count,
     int64_t first_observation_timestamp,

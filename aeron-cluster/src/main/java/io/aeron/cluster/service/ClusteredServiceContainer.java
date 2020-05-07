@@ -1473,7 +1473,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             ClusterMarkFile.checkHeaderLength(
                 aeron.context().aeronDirectoryName(),
-                archiveContext.controlRequestChannel(),
                 serviceControlChannel(),
                 null,
                 serviceName,
@@ -1490,11 +1489,10 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .serviceId(serviceId)
                 .clusterId(clusterId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
-                .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel(serviceControlChannel)
-                .ingressChannel("")
+                .ingressChannel(null)
                 .serviceName(serviceName)
-                .authenticator("");
+                .authenticator(null);
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();

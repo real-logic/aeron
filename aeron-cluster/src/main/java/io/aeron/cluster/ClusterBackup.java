@@ -1298,11 +1298,10 @@ public final class ClusterBackup implements AutoCloseable
         {
             ClusterMarkFile.checkHeaderLength(
                 aeron.context().aeronDirectoryName(),
-                archiveContext.controlRequestChannel(),
                 "",
                 "",
                 null,
-                "");
+                null);
 
             markFile.encoder()
                 .archiveStreamId(archiveContext.controlRequestStreamId())
@@ -1313,11 +1312,10 @@ public final class ClusterBackup implements AutoCloseable
                 .serviceId(SERVICE_ID)
                 .clusterId(ClusteredServiceContainer.Configuration.clusterId())
                 .aeronDirectory(aeron.context().aeronDirectoryName())
-                .archiveChannel(archiveContext.controlRequestChannel())
-                .serviceControlChannel("")
-                .ingressChannel("")
-                .serviceName("")
-                .authenticator("");
+                .serviceControlChannel(null)
+                .ingressChannel(null)
+                .serviceName(null)
+                .authenticator(null);
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();

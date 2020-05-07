@@ -518,7 +518,6 @@ public class ClusterTool
     public static boolean removeMember(final ClusterMarkFile markFile, final int memberId, final boolean isPassive)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
-        markFile.decoder().archiveChannel();
         final String channel = markFile.decoder().serviceControlChannel();
         final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
 

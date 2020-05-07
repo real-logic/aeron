@@ -2973,7 +2973,6 @@ public class ConsensusModule implements AutoCloseable
         {
             ClusterMarkFile.checkHeaderLength(
                 aeron.context().aeronDirectoryName(),
-                archiveContext.controlRequestChannel(),
                 serviceControlChannel(),
                 ingressChannel,
                 null,
@@ -2988,7 +2987,6 @@ public class ConsensusModule implements AutoCloseable
                 .serviceId(SERVICE_ID)
                 .clusterId(clusterId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
-                .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel(serviceControlChannel)
                 .ingressChannel(ingressChannel)
                 .serviceName("")

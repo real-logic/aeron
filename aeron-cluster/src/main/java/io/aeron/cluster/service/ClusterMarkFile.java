@@ -87,7 +87,7 @@ public class ClusterMarkFile implements AutoCloseable
                 }
                 else if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
-                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+                    throw new ClusterException("mark file major version " + SemanticVersion.major(version) +
                         " does not match software:" + MAJOR_VERSION);
                 }
             },
@@ -118,7 +118,7 @@ public class ClusterMarkFile implements AutoCloseable
         {
             if (existingType != ClusterComponentType.BACKUP || ClusterComponentType.CONSENSUS_MODULE != type)
             {
-                throw new IllegalStateException(
+                throw new ClusterException(
                     "existing Mark file type " + existingType + " not same as required type " + type);
             }
         }
@@ -148,7 +148,7 @@ public class ClusterMarkFile implements AutoCloseable
             {
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
-                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+                    throw new ClusterException("mark file major version " + SemanticVersion.major(version) +
                         " does not match software:" + MAJOR_VERSION);
                 }
             },
@@ -281,21 +281,18 @@ public class ClusterMarkFile implements AutoCloseable
 
     public static void checkHeaderLength(
         final String aeronDirectory,
-        final String archiveChannel,
         final String serviceControlChannel,
         final String ingressChannel,
         final String serviceName,
         final String authenticator)
     {
         Objects.requireNonNull(aeronDirectory);
-        Objects.requireNonNull(archiveChannel);
         Objects.requireNonNull(serviceControlChannel);
 
         final int lengthRequired =
             MarkFileHeaderEncoder.BLOCK_LENGTH +
-            (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
+            (5 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
             aeronDirectory.length() +
-            archiveChannel.length() +
             serviceControlChannel.length() +
             (null == ingressChannel ? 0 : ingressChannel.length()) +
             (null == serviceName ? 0 : serviceName.length()) +
@@ -325,10 +322,9 @@ public class ClusterMarkFile implements AutoCloseable
         final int toServiceStreamId = headerDecoder.serviceStreamId();
         final int toConsensusModuleStreamId = headerDecoder.consensusModuleStreamId();
         final String aeronDirectoryName = headerDecoder.aeronDirectory();
-        final String archiveChannel = headerDecoder.archiveChannel();
         final String serviceControlChannel = headerDecoder.serviceControlChannel();
 
         return new ClusterNodeControlProperties(
-            toServiceStreamId, toConsensusModuleStreamId, aeronDirectoryName, archiveChannel, serviceControlChannel);
+            toServiceStreamId, toConsensusModuleStreamId, aeronDirectoryName, serviceControlChannel);
     }
 }

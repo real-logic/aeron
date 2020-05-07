@@ -68,7 +68,6 @@ public final class CTestMediaDriver implements TestMediaDriver
         this.driverOutputConsumer = driverOutputConsumer;
     }
 
-    @Override
     public void close()
     {
         try
@@ -100,8 +99,7 @@ public final class CTestMediaDriver implements TestMediaDriver
     }
 
     public static CTestMediaDriver launch(
-        final MediaDriver.Context context,
-        final DriverOutputConsumer driverOutputConsumer)
+        final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {
         final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
         final File f = new File(aeronDirPath);
@@ -190,9 +188,9 @@ public final class CTestMediaDriver implements TestMediaDriver
 
             return new CTestMediaDriver(pb.start(), context, driverOutputConsumer);
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 

@@ -162,7 +162,7 @@ public class ConsensusModule implements AutoCloseable
     /**
      * Get the current state of the {@link ConsensusModule}.
      *
-     * @param counters to search for the control toggle.
+     * @param counters to search the current state.
      * @return the state of the ConsensusModule or null if not found.
      */
     public static State findState(final CountersReader counters)

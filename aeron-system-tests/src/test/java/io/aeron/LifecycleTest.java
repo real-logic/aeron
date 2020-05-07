@@ -43,10 +43,8 @@ public class LifecycleTest
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
 
-            //noinspection EmptyTryBlock
-            try (Aeron ignore1 = Aeron.connect(clientCtx))
-            {
-            }
+            final Aeron aeron = Aeron.connect(clientCtx);
+            aeron.close();
         }
         finally
         {

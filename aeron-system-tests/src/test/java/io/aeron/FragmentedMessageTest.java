@@ -42,7 +42,6 @@ import static org.mockito.Mockito.*;
 
 public class FragmentedMessageTest
 {
-
     private static List<String> channels()
     {
         return asList(

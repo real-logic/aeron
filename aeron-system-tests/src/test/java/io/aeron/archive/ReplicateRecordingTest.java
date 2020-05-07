@@ -591,8 +591,7 @@ public class ReplicateRecordingTest
     }
 
     private RecordingSignalAdapter newRecordingSignalAdapter(
-        final MutableReference<RecordingSignal> signalRef,
-        final MutableLong recordingIdRef)
+        final MutableReference<RecordingSignal> signalRef, final MutableLong recordingIdRef)
     {
         final ControlEventListener listener =
             (controlSessionId, correlationId, relevantId, code, errorMessage) ->

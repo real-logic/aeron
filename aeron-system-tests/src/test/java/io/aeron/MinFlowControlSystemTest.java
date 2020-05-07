@@ -400,7 +400,6 @@ public class MinFlowControlSystemTest
         subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
 
         awaitConnectionAndStatusMessages(countersReader, subscriptionA);
-
         assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
 
         subscriptionB = clientB.addSubscription(groupSubscriberUri, STREAM_ID);

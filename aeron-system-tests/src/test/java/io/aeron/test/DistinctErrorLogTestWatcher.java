@@ -47,7 +47,7 @@ public class DistinctErrorLogTestWatcher implements TestWatcher
         }
 
         System.out.println("Errors from distinct error log:");
-        for (int i = 0, n = errors.size(); i < n; i++)
+        for (int i = 0, size = errors.size(); i < size; i++)
         {
             final int observationValuesIndex = i * 3;
 

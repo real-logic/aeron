@@ -118,7 +118,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(20)
-    public void shouldReResolveEndpointOnNoConnected()
+    public void shouldReResolveEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -147,7 +147,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
@@ -179,7 +179,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(20)
-    public void shouldReResolveMdcManualEndpointOnNoConnected()
+    public void shouldReResolveMdcManualEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -209,7 +209,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
@@ -241,7 +241,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(20)
-    public void shouldReResolveMdcDynamicControlOnNoConnected()
+    public void shouldReResolveMdcDynamicControlOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
         buffer.putInt(0, 1);
@@ -269,7 +269,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (subscription.isConnected())
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
@@ -301,7 +301,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @Timeout(20)
-    public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNoConnected()
+    public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -331,7 +331,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (subscription.isConnected())
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
@@ -391,7 +391,7 @@ public class NameReResolutionTest
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         Tests.awaitCounterDelta(

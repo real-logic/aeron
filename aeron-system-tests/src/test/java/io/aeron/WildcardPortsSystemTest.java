@@ -82,6 +82,7 @@ public class WildcardPortsSystemTest
             {
                 Tests.yieldingWait("No bind address/port for sub2");
             }
+
             List<String> bindAddressAndPort2;
             while ((bindAddressAndPort2 = sub2.localSocketAddresses()).isEmpty())
             {

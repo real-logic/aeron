@@ -123,7 +123,7 @@ class Common
         }
     }
 
-    public static void pollForSignal(final RecordingSignalAdapter recordingSignalAdapter)
+    static void pollForSignal(final RecordingSignalAdapter recordingSignalAdapter)
     {
         while (0 == recordingSignalAdapter.poll())
         {

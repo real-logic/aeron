@@ -66,15 +66,15 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
         }
     }
 
-    private void printEnvironment(final Map<String, String> environment, final PrintStream ps)
+    private void printEnvironment(final Map<String, String> environment, final PrintStream out)
     {
         environment.forEach(
             (name, value) ->
             {
-                ps.print(name);
-                ps.print('=');
-                ps.print(value);
-                ps.println();
+                out.print(name);
+                out.print('=');
+                out.print(value);
+                out.println();
             });
     }
 

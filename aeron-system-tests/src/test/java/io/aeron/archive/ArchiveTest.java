@@ -164,7 +164,6 @@ public class ArchiveTest
         }
 
         archive = Archive.launch(archiveContext);
-
         client = Aeron.connect();
 
         recorded = 0;
@@ -189,6 +188,7 @@ public class ArchiveTest
         {
             archive.context().deleteDirectory();
         }
+
         if (null != driver)
         {
             driver.context().deleteDirectory();

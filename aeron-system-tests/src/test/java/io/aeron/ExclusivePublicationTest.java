@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ExclusivePublicationTest
 {
-
     private static List<String> channels()
     {
         return asList(

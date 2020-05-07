@@ -135,12 +135,12 @@ public class GapFillLossTest
                 final int fragments = subscription.poll(this, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
                     if (subscription.isClosed())
                     {
                         return;
                     }
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
                 }
             }
         }

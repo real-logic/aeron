@@ -96,7 +96,7 @@ public class SpySimulatedConnectionTest
     @ParameterizedTest
     @MethodSource("channels")
     @Timeout(10)
-    public void shouldNotSimulateConnectionWhenNotConfiguredTo(final String channel)
+    public void shouldNotSimulateConnectionWhenNotConfigured(final String channel)
     {
         launch();
 

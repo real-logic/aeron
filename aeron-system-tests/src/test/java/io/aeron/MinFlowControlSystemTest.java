@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron;
 
 import io.aeron.driver.FlowControlSupplier;
@@ -115,8 +130,7 @@ public class MinFlowControlSystemTest
     @MethodSource("strategyConfigurations")
     @Timeout(10)
     public void shouldSlowToMinMulticastFlowControlStrategy(
-        final FlowControlSupplier flowControlSupplier,
-        final String publisherUriParams)
+        final FlowControlSupplier flowControlSupplier, final String publisherUriParams)
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
@@ -292,9 +306,9 @@ public class MinFlowControlSystemTest
                 new Aeron.Context()
                     .aeronDirectoryName(driverC.aeronDirectoryName()));
 
-            publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
             subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
             subscription1 = clientB.addSubscription(uriPlain, STREAM_ID);
+            publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
 
             awaitConnectionAndStatusMessages(countersReader, subscription0, subscription1);
 
@@ -356,10 +370,9 @@ public class MinFlowControlSystemTest
 
         launch();
 
+        clientA.addSubscription(plainUri, STREAM_ID + 1);
         publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
         final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
-
-        clientA.addSubscription(plainUri, STREAM_ID + 1);
 
         while (!otherPublication.isConnected())
         {
@@ -389,6 +402,7 @@ public class MinFlowControlSystemTest
 
         launch();
 
+        subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
         publication = clientA.addPublication(publisherUri, STREAM_ID);
 
         final CountersReader countersReader = clientA.countersReader();
@@ -396,8 +410,6 @@ public class MinFlowControlSystemTest
         final int senderLimitCounterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
             countersReader, SenderLimit.SENDER_LIMIT_TYPE_ID, publication.registrationId);
         final long currentSenderLimit = countersReader.getCounterValue(senderLimitCounterId);
-
-        subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
 
         awaitConnectionAndStatusMessages(countersReader, subscriptionA);
         assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));

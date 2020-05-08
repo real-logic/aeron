@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 SOURCE_DIR="`pwd`"
-BUILD_DIR="`pwd`/cppbuild/Release"
+export BUILD_DIR="`pwd`/cppbuild/Release"
+export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
 COVERAGE_BUILD=0
 
@@ -33,11 +34,13 @@ do
       shift
       ;;
     --slow-system-tests)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_SLOW_SYSTEM_TESTS=ON -DAERON_SYSTEM_TESTS=OFF"
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_SLOW_SYSTEM_TESTS=ON"
       shift
       ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
+      export BUILD_DIR="`pwd`/cppbuild/Debug"
+      export BUILD_CONFIG=Debug
       shift
       ;;
     -b|--build-aeron-driver)
@@ -92,12 +95,12 @@ mkdir -p ${BUILD_DIR}
 
 if [[ "$COVERAGE_BUILD" -eq 1 ]] ; then
   cd ${BUILD_DIR}
-  cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus"
+  cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C $BUILD_CONFIG -j "$ncpus"
   rm -rf coverage
   mkdir -p coverage
   lcov --directory . --base-directory . --capture -o coverage/cov.info
   lcov -o coverage/cov.stripped.info --remove coverage/cov.info "/usr/include/*" "*/googletest/*" "*/test/cpp/*" "*/googlemock/*"
   genhtml coverage/cov.stripped.info --demangle-cpp -o coverage
 else
-  (cd ${BUILD_DIR} && cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C Release --output-on-failure)
+  (cd ${BUILD_DIR} && cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C $BUILD_CONFIG --output-on-failure)
 fi

@@ -445,7 +445,8 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Counter type id for the cluster node role.
          */
-        public static final int CLUSTER_NODE_ROLE_TYPE_ID = ClusterNodeRole.CLUSTER_NODE_ROLE_TYPE_ID;
+        public static final int CLUSTER_NODE_ROLE_TYPE_ID =
+            ClusteredServiceContainer.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 
         /**
          * Counter type id for the control toggle.
@@ -453,9 +454,10 @@ public class ConsensusModule implements AutoCloseable
         public static final int CONTROL_TOGGLE_TYPE_ID = ClusterControl.CONTROL_TOGGLE_TYPE_ID;
 
         /**
-         * Type id of a commit position counter.
+         * Counter type id of a commit position.
          */
-        public static final int COMMIT_POSITION_TYPE_ID = CommitPos.COMMIT_POSITION_TYPE_ID;
+        public static final int COMMIT_POSITION_TYPE_ID =
+            ClusteredServiceContainer.Configuration.COMMIT_POSITION_TYPE_ID;
 
         /**
          * Type id of a recovery state counter.
@@ -2509,7 +2511,6 @@ public class ConsensusModule implements AutoCloseable
          * Get the counter for the commit position the cluster has reached for consensus.
          *
          * @return the counter for the commit position the cluster has reached for consensus.
-         * @see CommitPos
          */
         public Counter commitPositionCounter()
         {
@@ -2521,7 +2522,6 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param commitPosition counter for the commit position the cluster has reached for consensus.
          * @return this for a fluent API.
-         * @see CommitPos
          */
         public Context commitPositionCounter(final Counter commitPosition)
         {

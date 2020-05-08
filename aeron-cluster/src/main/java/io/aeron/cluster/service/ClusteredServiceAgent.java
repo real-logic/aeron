@@ -40,8 +40,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_TYPE_ID;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
@@ -663,11 +662,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private ReadableCounter awaitClusterRoleCounter(final CountersReader counters, final int clusterId)
     {
         idleStrategy.reset();
-        int counterId = ClusterNodeRole.findCounterId(counters, clusterId);
+        int counterId = ClusterCounters.find(counters, CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
-            counterId = ClusterNodeRole.findCounterId(counters, clusterId);
+            counterId = ClusterCounters.find(counters, CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
         }
 
         return new ReadableCounter(counters, counterId);
@@ -676,11 +675,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private ReadableCounter awaitCommitPositionCounter(final CountersReader counters, final int clusterId)
     {
         idleStrategy.reset();
-        int counterId = CommitPos.findCounterId(counters, clusterId);
+        int counterId = ClusterCounters.find(counters, COMMIT_POSITION_TYPE_ID, clusterId);
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
-            counterId = CommitPos.findCounterId(counters, clusterId);
+            counterId = ClusterCounters.find(counters, COMMIT_POSITION_TYPE_ID, clusterId);
         }
 
         return new ReadableCounter(counters, counterId);

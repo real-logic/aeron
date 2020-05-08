@@ -295,6 +295,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
             "aeron.cluster.service.delegating.error.handler";
 
         /**
+         * Counter type id for the cluster node role.
+         */
+        public static final int CLUSTER_NODE_ROLE_TYPE_ID = 201;
+
+        /**
+         * Counter type id of the commit position.
+         */
+        public static final int COMMIT_POSITION_TYPE_ID = 203;
+
+        /**
          * Counter type id for the clustered service error count.
          */
         public static final int CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;

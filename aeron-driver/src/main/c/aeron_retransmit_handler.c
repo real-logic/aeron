@@ -113,12 +113,12 @@ int aeron_retransmit_handler_on_nak(
             {
                 result = resend(resend_clientd, term_id, term_offset, action->length);
                 action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
-                action->expire_ns = now_ns + handler->linger_timeout_ns;
+                action->expiry_ns = now_ns + handler->linger_timeout_ns;
             }
             else
             {
                 action->state = AERON_RETRANSMIT_ACTION_STATE_DELAYED;
-                action->expire_ns = now_ns + handler->delay_timeout_ns;
+                action->expiry_ns = now_ns + handler->delay_timeout_ns;
             }
 
             if (aeron_int64_to_ptr_hash_map_put(&handler->active_retransmits_map, key, action) < 0)
@@ -149,7 +149,7 @@ int aeron_retransmit_handler_process_timeouts(
 
             if (AERON_RETRANSMIT_ACTION_STATE_LINGERING == action->state)
             {
-                if (now_ns > action->expire_ns)
+                if (now_ns > action->expiry_ns)
                 {
                     const int64_t key = aeron_map_compound_key(action->term_id, action->term_offset);
 
@@ -162,11 +162,11 @@ int aeron_retransmit_handler_process_timeouts(
             }
             else if (AERON_RETRANSMIT_ACTION_STATE_DELAYED == action->state)
             {
-                if (now_ns > action->expire_ns)
+                if (now_ns > action->expiry_ns)
                 {
                     result = resend(resend_clientd, action->term_id, action->term_offset, action->length);
                     action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
-                    action->expire_ns = now_ns + handler->linger_timeout_ns;
+                    action->expiry_ns = now_ns + handler->linger_timeout_ns;
                     result++;
                 }
 

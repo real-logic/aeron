@@ -33,7 +33,7 @@ aeron_retransmit_action_state_t;
 
 typedef struct aeron_retransmit_action_stct
 {
-    int64_t expire_ns;
+    int64_t expiry_ns;
     int32_t term_id;
     int32_t term_offset;
     size_t length;

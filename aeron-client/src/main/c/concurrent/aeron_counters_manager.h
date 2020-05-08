@@ -110,7 +110,7 @@ typedef struct aeron_stream_position_counter_key_layout_stct
     int32_t session_id;
     int32_t stream_id;
     int32_t channel_length;
-    char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key)];
+    char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key) - (sizeof(int64_t) + 3 * sizeof(int32_t))];
 }
 aeron_stream_position_counter_key_layout_t;
 

@@ -568,11 +568,13 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_counter_command_t *command = (aeron_counter_command_t *)message;
 
             const uint8_t *cursor = (const uint8_t *)message + sizeof(aeron_counter_command_t);
-            int32_t key_length = *((int32_t *)cursor);
-            const uint8_t *key = cursor + sizeof(int32_t);
 
-            cursor = key + key_length;
-            // key_length may not be multiple of 4, so handle potential mis-alignment.
+            int32_t key_length;
+            memcpy(&key_length, cursor, sizeof(key_length));
+
+            const uint8_t *key = cursor + sizeof(int32_t);
+            cursor = key + AERON_ALIGN(key_length, sizeof(int32_t));
+
             int32_t label_length;
             memcpy(&label_length, cursor, sizeof(label_length));
 

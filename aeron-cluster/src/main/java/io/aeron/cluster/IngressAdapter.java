@@ -24,7 +24,6 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
@@ -37,17 +36,12 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final AtomicCounter invalidRequests;
     private Subscription subscription;
 
-    IngressAdapter(
-        final int fragmentPollLimit,
-        final ConsensusModuleAgent consensusModuleAgent,
-        final AtomicCounter invalidRequests)
+    IngressAdapter(final int fragmentPollLimit, final ConsensusModuleAgent consensusModuleAgent)
     {
         this.fragmentPollLimit = fragmentPollLimit;
         this.consensusModuleAgent = consensusModuleAgent;
-        this.invalidRequests = invalidRequests;
     }
 
     public void close()
@@ -167,9 +161,6 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     credentials);
                 break;
             }
-
-            default:
-                invalidRequests.incrementOrdered();
         }
 
         return Action.CONTINUE;

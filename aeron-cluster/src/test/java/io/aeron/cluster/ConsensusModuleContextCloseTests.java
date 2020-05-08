@@ -53,8 +53,6 @@ class ConsensusModuleContextCloseTests
     private final IllegalArgumentException controlToggleException = new IllegalArgumentException();
     private final Counter snapshotCounter = mock(Counter.class);
     private final IndexOutOfBoundsException snapshotCounterException = new IndexOutOfBoundsException();
-    private final Counter invalidRequestCounter = mock(Counter.class);
-    private final UnsupportedOperationException invalidRequestCounterException = new UnsupportedOperationException();
     private final Counter timedOutClientCounter = mock(Counter.class);
     private final UnknownError timedOutClientCounterException = new UnknownError();
     private ConsensusModule.Context context;
@@ -70,7 +68,6 @@ class ConsensusModuleContextCloseTests
         throwOnClose(clusterNodeRole, clusterNodeRoleException);
         throwOnClose(controlToggle, controlToggleException);
         throwOnClose(snapshotCounter, snapshotCounterException);
-        throwOnClose(invalidRequestCounter, invalidRequestCounterException);
         throwOnClose(timedOutClientCounter, timedOutClientCounterException);
 
         context = new ConsensusModule.Context()
@@ -84,7 +81,6 @@ class ConsensusModuleContextCloseTests
             .commitPositionCounter(commitPosition)
             .controlToggleCounter(controlToggle)
             .snapshotCounter(snapshotCounter)
-            .invalidRequestCounter(invalidRequestCounter)
             .timedOutClientCounter(timedOutClientCounter);
     }
 
@@ -121,7 +117,6 @@ class ConsensusModuleContextCloseTests
             commitPositionException,
             controlToggleException,
             snapshotCounterException,
-            invalidRequestCounterException,
             timedOutClientCounterException
         };
 

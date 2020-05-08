@@ -1068,13 +1068,12 @@ public class ConsensusModule implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
-        private Counter electionStateCounter;
         private Counter moduleStateCounter;
+        private Counter electionStateCounter;
         private Counter clusterNodeRoleCounter;
         private Counter commitPosition;
         private Counter controlToggle;
         private Counter snapshotCounter;
-        private Counter invalidRequestCounter;
         private Counter timedOutClientCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
@@ -1198,16 +1197,22 @@ public class ConsensusModule implements AutoCloseable
                 }
             }
 
+            if (null == moduleStateCounter)
+            {
+                final CountersReader counters = aeron.countersReader();
+                if (Aeron.NULL_VALUE != ClusterCounters.find(counters, CONSENSUS_MODULE_STATE_TYPE_ID, clusterId))
+                {
+                    throw new ClusterException("existing consensus module detected for clusterId=" + clusterId);
+                }
+
+                moduleStateCounter = ClusterCounters.allocate(
+                    aeron, "Consensus Module State", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
+            }
+
             if (null == electionStateCounter)
             {
                 electionStateCounter = ClusterCounters.allocate(
                     aeron, "Election State", ELECTION_STATE_TYPE_ID, clusterId);
-            }
-
-            if (null == moduleStateCounter)
-            {
-                moduleStateCounter = ClusterCounters.allocate(
-                    aeron, "Consensus Module State", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             }
 
             if (null == clusterNodeRoleCounter)
@@ -1232,12 +1237,6 @@ public class ConsensusModule implements AutoCloseable
             {
                 snapshotCounter = ClusterCounters.allocate(
                     aeron, "Snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
-            }
-
-            if (null == invalidRequestCounter)
-            {
-                invalidRequestCounter = ClusterCounters.allocate(
-                    aeron, "Invalid request count", CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, clusterId);
             }
 
             if (null == timedOutClientCounter)
@@ -2415,29 +2414,7 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the error counter that will record the number of errors observed.
-         *
-         * @return the error counter that will record the number of errors observed.
-         */
-        public AtomicCounter errorCounter()
-        {
-            return errorCounter;
-        }
-
-        /**
-         * Set the error counter that will record the number of errors observed.
-         *
-         * @param errorCounter the error counter that will record the number of errors observed.
-         * @return this for a fluent API.
-         */
-        public Context errorCounter(final AtomicCounter errorCounter)
-        {
-            this.errorCounter = errorCounter;
-            return this;
-        }
-
-        /**
-         * Non-default for context.
+         * The {@link #errorHandler()} that will increment {@link #errorCounter()} by default.
          *
          * @param countedErrorHandler to override the default.
          * @return this for a fluent API.
@@ -2459,26 +2436,24 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the counter for the current state of an election
+         * Get the error counter that will record the number of errors observed.
          *
-         * @return the counter for the current state of an election.
-         * @see Election.State
+         * @return the error counter that will record the number of errors observed.
          */
-        public Counter electionStateCounter()
+        public AtomicCounter errorCounter()
         {
-            return electionStateCounter;
+            return errorCounter;
         }
 
         /**
-         * Set the counter for the current state of an election.
+         * Set the error counter that will record the number of errors observed.
          *
-         * @param electionStateCounter for the current state of an election.
+         * @param errorCounter the error counter that will record the number of errors observed.
          * @return this for a fluent API.
-         * @see Election.State
          */
-        public Context electionStateCounter(final Counter electionStateCounter)
+        public Context errorCounter(final AtomicCounter errorCounter)
         {
-            this.electionStateCounter = electionStateCounter;
+            this.errorCounter = errorCounter;
             return this;
         }
 
@@ -2503,6 +2478,30 @@ public class ConsensusModule implements AutoCloseable
         public Context moduleStateCounter(final Counter moduleState)
         {
             this.moduleStateCounter = moduleState;
+            return this;
+        }
+
+        /**
+         * Get the counter for the current state of an election
+         *
+         * @return the counter for the current state of an election.
+         * @see Election.State
+         */
+        public Counter electionStateCounter()
+        {
+            return electionStateCounter;
+        }
+
+        /**
+         * Set the counter for the current state of an election.
+         *
+         * @param electionStateCounter for the current state of an election.
+         * @return this for a fluent API.
+         * @see Election.State
+         */
+        public Context electionStateCounter(final Counter electionStateCounter)
+        {
+            this.electionStateCounter = electionStateCounter;
             return this;
         }
 
@@ -2601,28 +2600,6 @@ public class ConsensusModule implements AutoCloseable
         public Context snapshotCounter(final Counter snapshotCounter)
         {
             this.snapshotCounter = snapshotCounter;
-            return this;
-        }
-
-        /**
-         * Get the counter for the count of invalid client requests.
-         *
-         * @return the counter for the count of invalid client requests.
-         */
-        public Counter invalidRequestCounter()
-        {
-            return invalidRequestCounter;
-        }
-
-        /**
-         * Set the counter for the count of invalid client requests.
-         *
-         * @param invalidRequestCounter the count of invalid client requests.
-         * @return this for a fluent API.
-         */
-        public Context invalidRequestCounter(final Counter invalidRequestCounter)
-        {
-            this.invalidRequestCounter = invalidRequestCounter;
             return this;
         }
 
@@ -2942,7 +2919,6 @@ public class ConsensusModule implements AutoCloseable
                     commitPosition,
                     controlToggle,
                     snapshotCounter,
-                    invalidRequestCounter,
                     timedOutClientCounter);
             }
         }

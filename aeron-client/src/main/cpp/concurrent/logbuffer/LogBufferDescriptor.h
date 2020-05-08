@@ -340,7 +340,7 @@ inline bool casRawTail(
 inline AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)
 {
     std::uint8_t *header = logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
-    return {header, DataFrameHeader::LENGTH};
+    return {header, static_cast<std::size_t>(DataFrameHeader::LENGTH)};
 }
 
 inline void rotateLog(AtomicBuffer& logMetaDataBuffer, std::int32_t currentTermCount, std::int32_t currentTermId)

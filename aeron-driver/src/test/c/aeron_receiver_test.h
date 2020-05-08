@@ -78,6 +78,9 @@ protected:
 
         aeron_default_name_resolver_supplier(&m_resolver, NULL, NULL);
 
+        m_counter_value_buffer.fill(0);
+        m_counter_meta_buffer.fill(0);
+
         aeron_counters_manager_init(
             &m_counters_manager,
             m_counter_meta_buffer.data(), m_counter_meta_buffer.size(),

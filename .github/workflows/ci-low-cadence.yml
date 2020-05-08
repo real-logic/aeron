@@ -53,7 +53,7 @@ jobs:
           path: ${{ steps.copy_crash_logs.outputs.dir }}
 
   c-driver-slow-system-test-build:
-    name: C++ GCC ${{ matrix.version }}
+    name: C++ Slow System Tests GCC ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -86,7 +86,7 @@ jobs:
         run: cppbuild/cppbuild --slow-system-tests
 
   cpp-gcc-sanitize-build:
-    name: C++ GCC ${{ matrix.version }}
+    name: C++ Sanitise Build GCC ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

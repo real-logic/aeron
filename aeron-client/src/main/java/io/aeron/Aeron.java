@@ -43,8 +43,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.SystemUtil.getSizeAsInt;
 
 /**
  * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
@@ -522,6 +522,16 @@ public class Aeron implements AutoCloseable
         public static final boolean PRE_TOUCH_MAPPED_MEMORY_DEFAULT = false;
 
         /**
+         * Property name for page size to align all files to.
+         */
+        public static final String FILE_PAGE_SIZE_PROP_NAME = "aeron.file.page.size";
+
+        /**
+         * Default page size for alignment of all files.
+         */
+        public static final int FILE_PAGE_SIZE_DEFAULT = 4 * 1024;
+
+        /**
          * The Default handler for Aeron runtime exceptions.
          * When a {@link DriverTimeoutException} is encountered, this handler will exit the program.
          * <p>
@@ -584,6 +594,11 @@ public class Aeron implements AutoCloseable
             }
 
             return PRE_TOUCH_MAPPED_MEMORY_DEFAULT;
+        }
+
+        public static int filePageSize()
+        {
+            return getSizeAsInt(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
         }
     }
 
@@ -1360,6 +1375,30 @@ public class Aeron implements AutoCloseable
 
                 CncFileDescriptor.checkVersion(cncVersion);
 
+                /* make sure the cnc.dat have valid file length before init mpsc */
+                try
+                {
+                    final int computedFileSize = CncFileDescriptor.computeCncFileLengthFromMetaDataBuffer(
+                        cncMetaDataBuffer, Configuration.filePageSize());
+                    final FileChannel fileChannel = waitForFileLength(
+                        cncFile, deadlineMs, epochClock, computedFileSize);
+                    if (this.cncByteBuffer.capacity() != computedFileSize)
+                    {
+                        final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+                        this.cncByteBuffer = null;
+                        this.cncMetaDataBuffer = null;
+                        IoUtil.unmap(cncByteBuffer);
+                        this.cncByteBuffer = fileChannel.map(READ_WRITE, 0, computedFileSize);
+                        this.cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(this.cncByteBuffer);
+                    }
+                    fileChannel.close();
+
+                }
+                catch (final IOException ex)
+                {
+                    throw new AeronException("cannot open CnC file", ex);
+                }
+
                 final ManyToOneRingBuffer ringBuffer = new ManyToOneRingBuffer(
                     CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
 
@@ -1403,7 +1442,7 @@ public class Aeron implements AutoCloseable
             try (FileChannel fileChannel = FileChannel.open(cncFile.toPath(), READ, WRITE))
             {
                 final long fileSize = fileChannel.size();
-                if (fileSize < CncFileDescriptor.CNC_VERSION_FIELD_OFFSET + SIZE_OF_INT)
+                if (fileSize < CncFileDescriptor.END_OF_METADATA_OFFSET)
                 {
                     if (epochClock.time() > deadlineMs)
                     {
@@ -1421,6 +1460,30 @@ public class Aeron implements AutoCloseable
             {
                 throw new AeronException("cannot open CnC file", ex);
             }
+        }
+    }
+
+    private static FileChannel waitForFileLength(
+        final File cncFile, final long deadlineMs, final EpochClock epochClock, final int computedFileSize)
+        throws IOException
+    {
+        while (true)
+        {
+            final FileChannel fileChannel = FileChannel.open(cncFile.toPath(), READ, WRITE);
+            final long fileSize = fileChannel.size();
+            if (fileSize != computedFileSize)
+            {
+                fileChannel.close();
+                if (epochClock.time() > deadlineMs)
+                {
+                    throw new AeronException("CnC file is created but not populated with valid length");
+                }
+
+                sleep(Configuration.IDLE_SLEEP_MS);
+                continue;
+            }
+
+            return fileChannel;
         }
     }
 

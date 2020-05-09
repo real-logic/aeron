@@ -1398,23 +1398,29 @@ public class Aeron implements AutoCloseable
     private static MappedByteBuffer waitForFileMapping(
         final File cncFile, final long deadlineMs, final EpochClock epochClock)
     {
-        try (FileChannel fileChannel = FileChannel.open(cncFile.toPath(), READ, WRITE))
+        while (true)
         {
-            while (fileChannel.size() < CncFileDescriptor.CNC_VERSION_FIELD_OFFSET + SIZE_OF_INT)
+            try (FileChannel fileChannel = FileChannel.open(cncFile.toPath(), READ, WRITE))
             {
-                if (epochClock.time() > deadlineMs)
+                final long fileSize = fileChannel.size();
+                if (fileSize < CncFileDescriptor.CNC_VERSION_FIELD_OFFSET + SIZE_OF_INT)
                 {
-                    throw new AeronException("CnC file is created but not populated");
+                    if (epochClock.time() > deadlineMs)
+                    {
+                        throw new AeronException("CnC file is created but not populated");
+                    }
+
+                    fileChannel.close();
+                    sleep(Configuration.IDLE_SLEEP_MS);
+                    continue;
                 }
 
-                sleep(Configuration.IDLE_SLEEP_MS);
+                return fileChannel.map(READ_WRITE, 0, fileSize);
             }
-
-            return fileChannel.map(READ_WRITE, 0, fileChannel.size());
-        }
-        catch (final IOException ex)
-        {
-            throw new AeronException("cannot open CnC file", ex);
+            catch (final IOException ex)
+            {
+                throw new AeronException("cannot open CnC file", ex);
+            }
         }
     }
 

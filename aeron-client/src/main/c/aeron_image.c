@@ -87,7 +87,7 @@ int aeron_image_bounded_controlled_poll(
 }
 
 int64_t aeron_image_controlled_peek(
-    aeron_image_t *image, aeron_controlled_fragment_handler_t handker, void *clientd, int64_t limit_position)
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, int64_t limit_position)
 {
     return -1;
 }

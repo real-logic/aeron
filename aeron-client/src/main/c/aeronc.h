@@ -408,7 +408,7 @@ int aeron_image_bounded_controlled_poll(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handler,
     void *clientd, int64_t limit_position, int fragment_limit);
 int64_t aeron_image_controlled_peek(
-    aeron_image_t *image, aeron_controlled_fragment_handler_t handker, void *clientd, int64_t limit_position);
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, int64_t limit_position);
 int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
@@ -447,7 +447,6 @@ int aeron_version_minor();
  * @return patch version number.
  */
 int aeron_version_patch();
-
 
 /**
  * Clock function used by aeron.

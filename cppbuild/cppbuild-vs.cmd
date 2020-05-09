@@ -7,7 +7,7 @@ set ZLIB_ZIP=%CD%\cppbuild\zlib1211.zip
 set BUILD_DIR=%CD%\cppbuild\Release
 set ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build
 set ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64
-set EXTRA_CMAKE_ARGS=-DAERON_SYSTEM_TESTS=OFF
+set "EXTRA_CMAKE_ARGS="
 
 for %%o in (%*) do (
 

@@ -30,6 +30,8 @@ typedef struct aeron_context_stct
 {
     char *aeron_dir;
 
+    size_t file_page_size;                                  /* aeron.file.page.size = 4KB */
+
     aeron_error_handler_t error_handler;
     void *error_handler_clientd;
 

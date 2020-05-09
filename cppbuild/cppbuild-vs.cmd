@@ -14,29 +14,29 @@ for %%o in (%*) do (
     set PROCESSED=0
 
     if "%%o"=="--help" (
-	    echo cppbuild-vs.cmd [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]
-		exit /b
-	)
+        echo cppbuild-vs.cmd [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]
+        exit /b
+    )
 
-	if "%%o"=="--c-warnings-as-errors" (
-	    set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON
-		set PROCESSED=1
-	)
+    if "%%o"=="--c-warnings-as-errors" (
+        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON
+        set PROCESSED=1
+    )
 
     if "%%o"=="--cxx-warnings-as-errors" (
-	    set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON
-		set PROCESSED=1
+        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON
+        set PROCESSED=1
     )
 
     if "%%o"=="--build-aeron-driver" (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DBUILD_AERON_DRIVER=ON
-	    set PROCESSED=1
-	)
+        set PROCESSED=1
+    )
 
-	if "%%o"=="--link-samples-client-shared" (
+    if "%%o"=="--link-samples-client-shared" (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DLINK_SAMPLES_CLIENT_SHARED=ON
-	    set PROCESSED=1
-	)
+        set PROCESSED=1
+    )
 )
 
 call cppbuild/vs-helper.cmd

@@ -3,10 +3,7 @@ setlocal
 Setlocal EnableDelayedExpansion
 
 set SOURCE_DIR=%CD%
-set ZLIB_ZIP=%CD%\cppbuild\zlib1211.zip
 set BUILD_DIR=%CD%\cppbuild\Release
-set ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build
-set ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64
 set "EXTRA_CMAKE_ARGS="
 
 for %%o in (%*) do (
@@ -45,20 +42,6 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
 
 md %BUILD_DIR%
-pushd %BUILD_DIR%
-md %ZLIB_BUILD_DIR%
-pushd %ZLIB_BUILD_DIR%
-7z x %ZLIB_ZIP%
-pushd zlib-1.2.11
-md build
-pushd build
-
-cmake -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-cmake --build . --target install
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
 pushd %BUILD_DIR%
 cmake %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

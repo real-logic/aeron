@@ -199,6 +199,30 @@ public class CncFileDescriptor
     }
 
     /**
+     * Compute the length of the cnc file from metaDataBuffer and return it.
+     *
+     * @param metaDataBuffer within the CnC file.
+     * @param alignment for file length to adhere to
+     * @return cnc file length in bytes
+     */
+    public static int computeCncFileLengthFromMetaDataBuffer(final DirectBuffer metaDataBuffer, final int alignment)
+    {
+        final int toDriverBufferLength = metaDataBuffer.getInt(toDriverBufferLengthOffset(0));
+        final int toClientsBufferLength = metaDataBuffer.getInt(toClientsBufferLengthOffset(0));
+        final int counterMetaDataBufferLength = metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0));
+        final int counterValuesBufferLength = metaDataBuffer.getInt(countersValuesBufferLengthOffset(0));
+        final int errorBufferLength = metaDataBuffer.getInt(errorLogBufferLengthOffset(0));
+        return CncFileDescriptor.computeCncFileLength(
+            toDriverBufferLength +
+                toClientsBufferLength +
+                counterMetaDataBufferLength +
+                counterValuesBufferLength +
+                errorBufferLength,
+                alignment
+                );
+    }
+
+    /**
      * Signal the the CnC file is ready for use by client by writing the version into the CnC file.
      *
      * @param cncMetaDataBuffer for the CnC file.

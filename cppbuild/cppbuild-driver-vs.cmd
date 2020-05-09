@@ -1,6 +1,7 @@
 @if "%DEBUG%" == "" @echo off
 setlocal
 
+cd /d "%~dp0.."
 set SOURCE_DIR=%CD%
 set BUILD_DIR=%CD%\cppbuild\Release
 

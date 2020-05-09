@@ -2,6 +2,7 @@
 setlocal
 Setlocal EnableDelayedExpansion
 
+cd /d "%~dp0.."
 set SOURCE_DIR=%CD%
 set BUILD_DIR=%CD%\cppbuild\Release
 set BUILD_CONFIG=Release

@@ -42,7 +42,9 @@ public class BasicPublisher
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
+    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
+    private static final UnsafeBuffer BUFFER =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(MESSAGE_LENGTH + 64, 64));
 
     public static void main(final String[] args) throws Exception
     {
@@ -67,7 +69,11 @@ public class BasicPublisher
         {
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                final String message = "Hello World! " + i;
+                String message = "Hello World! " + i;
+                while (message.length() < MESSAGE_LENGTH)
+                {
+                    message += " Hello More";
+                }
                 final byte[] messageBytes = message.getBytes();
                 BUFFER.putBytes(0, messageBytes);
 

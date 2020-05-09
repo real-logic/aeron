@@ -1,0 +1,16 @@
+{
+    "C_Cpp.autoAddFileAssociations": false,
+    "cmake.configureArgs": [
+       // "-DAERON_SYSTEM_TESTS=OFF"
+    ],
+    "cmake.ctest.parallelJobs": 10,
+    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    },
+    "cmake.buildDirectory": "${workspaceFolder}/build-cmake/${buildType}",
+    "java.configuration.updateBuildConfiguration": "automatic"
+}

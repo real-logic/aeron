@@ -720,8 +720,13 @@ project(':aeron-system-tests') {
     }
 
     test {
+        // debug true
         systemProperties('java.net.preferIPv4Stack': 'true')
         systemProperties('aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'))
+         filter {
+            //specific test method
+            // includeTestsMatching "*.ArchiveAuthenticationTest"
+        }
     }
 }
 

@@ -24,9 +24,9 @@ set /p VERSION=<..\..\version.txt
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:+UseParallelOldGC ^
+    -Daeron.sample.messageLength=%1 ^
+    -Daeron.sample.messages=1000000 ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.pre.touch.mapped.memory=true ^
-    -Daeron.sample.messages=1000000 ^
-    -Daeron.sample.messageLength=32 ^
     -Daeron.sample.exclusive.publications=true ^
     %JVM_OPTS% io.aeron.samples.Ping

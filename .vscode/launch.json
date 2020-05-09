@@ -1,0 +1,69 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(Windows) 启动 PingPong",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-cmake/Debug/binaries/PingPong.exe",
+      "args": ["-p", "R:\\Temp\\aeron"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false
+    },
+    {
+      "name": "(Windows) 启动 Throughput",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-cmake/Debug/binaries/Throughput.exe",
+      "args": [
+        //   "-L", "120000",
+        "-L",
+        "8388608" // 8MB with -Daeron.term.buffer.length=64MB
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false
+    },
+    {
+      "type": "java",
+      "request": "attach",
+      "name": "Java attach",
+      "hostName": "localhost",
+      "projectName": "aeron",
+      "port": 5005
+    },
+    {
+      "name": "(Windows) aeronmd  启动",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-cmake/Debug/binaries/aeronmd.exe",
+      "args": [
+        // "-Daeron.dir=R:\\Temp\\aeron",
+        "-Daeron.print.configuration=true",
+        "-Daeron.socket.so_sndbuf=2m",
+        "-Daeron.socket.so_rcvbuf=2m",
+        "-Daeron.dir.delete.on.start=1",
+        "-Daeron.dir.delete.on.shutdown=true",
+        "-Daeron.term.buffer.length=67108864",
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        { "name": "AERON_TERM_BUFFER_SPARSE_FILE", "value": "0" },
+        { "name": "AERON_MTU_LENGTH", "value": "60000" },
+        { "name": "AERON_RCV_INITIAL_WINDOW_LENGTH", "value": "2m" },
+        { "name": "AERON_THREADING_MODE", "value": "DEDICATED" },
+        { "name": "AERON_CONDUCTOR_IDLE_STRATEGY", "value": "spin" },
+        { "name": "AERON_SENDER_IDLE_STRATEGY", "value": "noop" },
+        { "name": "AERON_RECEIVER_IDLE_STRATEGY", "value": "noop" }
+      ],
+      "externalConsole": true
+    }
+  ]
+}

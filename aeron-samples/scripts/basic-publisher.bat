@@ -19,4 +19,8 @@ set /p VERSION=<..\..\version.txt
 
 "%JAVA_HOME%\bin\java" ^
     -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
+    -Daeron.sample.channel=%1 ^
+    -Daeron.sample.streamId=%2 ^
+    -Daeron.sample.messageLength=%3 ^
+    -Daeron.sample.frameCountLimit=%4 ^
     %JVM_OPTS% io.aeron.samples.BasicPublisher

@@ -18,7 +18,7 @@
 AERON_BUILD_DIR=../../cppbuild/Release
 
 export AERON_TERM_BUFFER_SPARSE_FILE="0"
-export AERON_MTU_LENGTH="16k"
+export AERON_MTU_LENGTH="60000"
 export AERON_SOCKET_SO_RCVBUF="2m"
 export AERON_SOCKET_SO_SNDBUF="2m"
 export AERON_RCV_INITIAL_WINDOW_LENGTH="2m"
@@ -27,4 +27,5 @@ export AERON_CONDUCTOR_IDLE_STRATEGY="spin"
 export AERON_SENDER_IDLE_STRATEGY="noop"
 export AERON_RECEIVER_IDLE_STRATEGY="noop"
 
-${AERON_BUILD_DIR}/binaries/aeronmd
+${AERON_BUILD_DIR}/binaries/aeronmd -Daeron.term.buffer.length=67108864 -Daeron.print.configuration=true -Daeron.dir.delete.on.start=1 -Daeron.dir.delete.on.shutdown=1
+

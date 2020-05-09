@@ -15,22 +15,19 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\version.txt
+set /p VERSION=<..\version.txt
 
 "%JAVA_HOME%\bin\java" ^
-    -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
+    -cp ..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
+    -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UnlockExperimentalVMOptions ^
     -XX:+TrustFinalNonStaticFields ^
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UseParallelOldGC ^
-    -Djava.net.preferIPv4Stack=true ^
-    -Dagrona.disable.bounds.checks=true ^
-    -Daeron.pre.touch.mapped.memory=true ^
-    -Daeron.term.buffer.sparse.file=false ^
-    -Daeron.sample.messageLength=%1 ^
-    -Daeron.sample.frameCountLimit=%2 ^
-    -Daeron.sample.messages=1000000 ^
-    -Daeron.sample.exclusive.publications=true ^
-    %JVM_OPTS% io.aeron.samples.EmbeddedPingPong %*
+    "-Daeron.term.buffer.length=67108864" ^
+    -Daeron.mtu.length=60000 ^
+    -Daeron.print.configuration=true ^
+    %JVM_OPTS% io.aeron.driver.MediaDriver ^
+    low-latency.properties %*
+pause

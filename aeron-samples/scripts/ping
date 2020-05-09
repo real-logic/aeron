@@ -24,8 +24,12 @@ ${JAVA_HOME}/bin/java \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:GuaranteedSafepointInterval=300000 \
     -XX:+UseParallelOldGC \
+    -Daeron.sample.ping.channel=$1 \
+    -Daeron.sample.ping.streamId=$2 \
+    -Daeron.sample.pong.channel=$3 \
+    -Daeron.sample.pong.streamId=$4 \
+    -Daeron.sample.messageLength=$5 \
     -Daeron.sample.messages=1000000 \
-    -Daeron.sample.messageLength=32 \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.pre.touch.mapped.memory=true \
     -Daeron.sample.exclusive.publications=true \

@@ -58,6 +58,14 @@ typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
 int aeron_context_set_dir(aeron_context_t *context, const char *value);
 const char *aeron_context_get_dir(aeron_context_t *context);
 
+/**
+ * Page size for alignment of all files.
+ */
+#define AERON_FILE_PAGE_SIZE_ENV_VAR "AERON_FILE_PAGE_SIZE"
+
+int aeron_context_set_file_page_size(aeron_context_t *context, size_t value);
+size_t aeron_context_get_file_page_size(aeron_context_t *context);
+
 #define AERON_DRIVER_TIMEOUT_ENV_VAR "AERON_DRIVER_TIMEOUT"
 
 int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value);

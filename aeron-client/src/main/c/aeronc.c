@@ -156,6 +156,41 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
             return -1;
         }
 
+        /* make sure the cnc.dat have valid file length before init mpsc */
+        while (true)
+        {
+            size_t total_length_of_buffers = (size_t)(metadata->to_driver_buffer_length +
+                    metadata->to_clients_buffer_length +
+                    metadata->counter_values_buffer_length +
+                    metadata->counter_metadata_buffer_length +
+                    metadata->error_log_buffer_length);
+            int64_t file_size_computed = (int64_t)aeron_cnc_computed_length(
+                total_length_of_buffers,
+                context->file_page_size);
+            if (aeron_file_length(filename) == file_size_computed)
+            {
+                /* Remapping the file */
+                if (file_size_computed != (int64_t)cnc_mmap->length)
+                {
+                    aeron_unmap(cnc_mmap);
+                    if (aeron_map_existing_file(cnc_mmap, filename) < 0)
+                    {
+                        aeron_set_err(aeron_errcode(), "CnC file could not be mmapped: %s", aeron_errmsg());
+                        return -1;
+                    }
+                    metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
+                }
+                break;
+            }
+            if (context->epoch_clock() > deadline_ms)
+            {
+                aeron_set_err(ETIMEDOUT, "CnC file is created but not initialised with enough length");
+                aeron_unmap(cnc_mmap);
+                return -1;
+            }
+            aeron_micro_sleep(1000);
+        }
+
         aeron_mpsc_rb_t rb;
 
         if (aeron_mpsc_rb_init(

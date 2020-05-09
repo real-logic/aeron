@@ -35,6 +35,8 @@
     #pragma clang diagnostic ignored "-Wunused-function"
 #endif
 
+#define AERON_FILE_PAGE_SIZE_DEFAULT (4 * 1024)
+
 inline static const char *tmp_dir()
 {
 #if defined(_MSC_VER)
@@ -159,6 +161,7 @@ int aeron_context_init(aeron_context_t **context)
 #else
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
 #endif
+    _context->file_page_size = AERON_FILE_PAGE_SIZE_DEFAULT;
 
     _context->error_handler = aeron_default_error_handler;
     _context->error_handler_clientd = NULL;
@@ -185,6 +188,21 @@ int aeron_context_init(aeron_context_t **context)
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    }
+
+    if ((value = getenv(AERON_FILE_PAGE_SIZE_ENV_VAR)))
+    {
+        errno = 0;
+        char *end_ptr = NULL;
+        uint64_t result = strtoull(value, &end_ptr, 0);
+
+        if ((0 == result && 0 != errno) || '\0' != *end_ptr)
+        {
+            errno = EINVAL;
+            aeron_set_err(EINVAL, "could not parse file page size: %s=%s", AERON_FILE_PAGE_SIZE_ENV_VAR, value);
+            return -1;
+        }
+        _context->file_page_size = (size_t)result;
     }
 
     if ((value = getenv(AERON_DRIVER_TIMEOUT_ENV_VAR)))
@@ -268,6 +286,19 @@ int aeron_context_set_dir(aeron_context_t *context, const char *value)
 const char *aeron_context_get_dir(aeron_context_t *context)
 {
     return NULL != context ? context->aeron_dir : NULL;
+}
+
+int aeron_context_set_file_page_size(aeron_context_t *context, size_t value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->file_page_size = value;
+    return 0;
+}
+
+size_t aeron_context_get_file_page_size(aeron_context_t *context)
+{
+    return NULL != context ? context->file_page_size : AERON_FILE_PAGE_SIZE_DEFAULT;
 }
 
 int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value)

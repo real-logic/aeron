@@ -48,8 +48,6 @@ endif ()
 
 unset(STANDALONE_BUILD)
 
-include(ExternalProject)
-
 project("aeron" VERSION "${AERON_VERSION_FROM_FILE}")
 
 if (AERON_TESTS)
@@ -62,65 +60,55 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
-set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
+function (aeron_extract)
+    set(TMP_EXTRACTED ${ARGV0})
+    set(TMP_EXTRACTED_VALUE ${${TMP_EXTRACTED}})
+    message(STATUS "Extract ${ARGV1} with ${TMP_EXTRACTED}: ${TMP_EXTRACTED_VALUE}")
+    if (NOT TMP_EXTRACTED_VALUE)
+        file(REMOVE_RECURSE ${ARGV2}/${ARGV3})
+        file(MAKE_DIRECTORY ${ARGV2})
+        execute_process(COMMAND
+            ${CMAKE_COMMAND} -E tar -xf ${ARGV1}
+            WORKING_DIRECTORY ${ARGV2})
+        set(${TMP_EXTRACTED} ON CACHE BOOL "")
+    endif ()
+endfunction()
 
 ##########################################################
 # gmock usage
 
 if (AERON_TESTS)
-    ExternalProject_Add(
-        gmock
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.10.0.zip
-        URL_MD5 82358affdd7ab94854c8ee73a180fc53
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/gmock"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_CXX_FLAGS=-D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX};${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND ""
-    )
+    aeron_extract(GOOGLETEST_EXTRACTED ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.10.0.zip ${CMAKE_CURRENT_BINARY_DIR}/cppbuild googletest-release-1.10.0)
+    set(GMOCK_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cppbuild/googletest-release-1.10.0)
 
-    ExternalProject_Get_Property(gmock source_dir)
-    set(GMOCK_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(gmock binary_dir)
-    set(GMOCK_BINARY_DIR ${binary_dir})
-
-    if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(GMOCK_POSTFIX "d")
-    else ()
-        set(GMOCK_POSTFIX "")
-    endif ()
-
-    set(GMOCK_LIBS
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
+    set(gtest_force_shared_crt ON CACHE BOOL "")
+    add_subdirectory(${GMOCK_SOURCE_DIR} EXCLUDE_FROM_ALL)
+    set(GMOCK_LIBS gmock gtest gtest_main)
 endif ()
 
 ##########################################################
 # HdrHistogram usage - use MD5 as means to identify snapshot
 
 if (AERON_BUILD_SAMPLES)
-    ExternalProject_Add(
-        hdr_histogram
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.9.13.zip
-        URL_MD5 75954aba7caf5d4bbdb70bcbcef15a8a
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_C_STANDARD=99;-DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/zlib64
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND ""
-    )
+    aeron_extract(ZLIB_EXTRACTED ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/zlib1211.zip ${CMAKE_CURRENT_BINARY_DIR}/cppbuild zlib-1.2.11)
+    set(ZLIB_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cppbuild/zlib-1.2.11)
+    aeron_extract(HDRHISTOGRAM_C_EXTRACTED ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.9.13.zip ${CMAKE_CURRENT_BINARY_DIR}/cppbuild HdrHistogram_c-0.9.13)
+    set(HDRHISTOGRAM_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cppbuild/HdrHistogram_c-0.9.13)
 
-    ExternalProject_Get_Property(hdr_histogram source_dir)
-    set(HDRHISTOGRAM_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(hdr_histogram binary_dir)
-    set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/zlib-cmake EXCLUDE_FROM_ALL)
+    set(ZLIB_LIBRARIES zlibstatic)
+    set(ZLIB_INCLUDE_DIRS ${ZLIB_SOURCE_DIR})
 
-    set(HDRHISTOGRAM_LIBS
-        ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
+    set(HDR_SOVERSION_CURRENT   5)
+    set(HDR_SOVERSION_AGE       0)
+    set(HDR_SOVERSION_REVISION  0)
+
+    set(HDR_VERSION ${HDR_SOVERSION_CURRENT}.${HDR_SOVERSION_AGE}.${HDR_SOVERSION_REVISION})
+    set(HDR_SOVERSION ${HDR_SOVERSION_CURRENT})
+    set(HDR_HISTOGRAM_BUILD_SHARED OFF CACHE BOOL "")
+    add_subdirectory(${HDRHISTOGRAM_SOURCE_DIR}/src EXCLUDE_FROM_ALL)
+    set(HDRHISTOGRAM_LIBS hdr_histogram_static)
 endif ()
-
-unset(AERON_THIRDPARTY_BINARY_DIR)
 
 ##########################################################
 # Platform flags, etc.
@@ -204,8 +192,8 @@ elseif (MSVC)
         add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
     endif ()
 
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od /Zi /MP")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
 
     if (C_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:/WX>)

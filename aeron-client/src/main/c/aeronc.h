@@ -351,6 +351,15 @@ int64_t aeron_exclusive_publication_try_claim(
     size_t length,
     aeron_buffer_claim_t *buffer_claim);
 
+int64_t aeron_exclusive_publication_append_padding(
+    aeron_exclusive_publication_t *publication,
+    size_t length);
+
+int64_t aeron_exclusive_publication_offer_block(
+    aeron_exclusive_publication_t *publication,
+    uint8_t *buffer,
+    size_t length);
+
 int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
 
 /*

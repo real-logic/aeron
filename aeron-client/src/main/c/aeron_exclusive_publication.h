@@ -34,6 +34,11 @@ typedef struct aeron_exclusive_publication_stct
     int64_t *position_limit;
     int64_t *channel_status_indicator;
 
+    int32_t term_offset;
+    int32_t term_id;
+    size_t active_partition_index;
+    int64_t term_begin_position;
+
     int64_t registration_id;
     int64_t original_registration_id;
     int32_t stream_id;
@@ -44,6 +49,7 @@ typedef struct aeron_exclusive_publication_stct
     size_t max_message_length;
     size_t position_bits_to_shift;
     int32_t initial_term_id;
+    int32_t term_buffer_length;
 
     bool is_closed;
 }
@@ -62,5 +68,58 @@ int aeron_exclusive_publication_create(
     int64_t registration_id);
 
 int aeron_exclusive_publication_delete(aeron_exclusive_publication_t *publication);
+
+inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication)
+{
+    const int32_t next_term_id = publication->term_id + 1;
+    const int32_t next_term_count = next_term_id - publication->initial_term_id;
+    const size_t next_index = aeron_logbuffer_index_by_term(publication->initial_term_id, next_term_id);
+
+    publication->active_partition_index = next_index;
+    publication->term_offset = 0;
+    publication->term_id = next_term_id;
+    publication->term_begin_position += publication->term_buffer_length;
+
+    publication->log_meta_data->term_tail_counters[next_index] = (int64_t)next_term_id << 32;
+    AERON_PUT_ORDERED(publication->log_meta_data->active_term_count, next_term_count);
+}
+
+inline int64_t aeron_exclusive_publication_new_position(
+    aeron_exclusive_publication_t *publication,
+    int32_t resulting_offset)
+{
+    if (resulting_offset > 0)
+    {
+        publication->term_offset = resulting_offset;
+        return publication->term_begin_position + resulting_offset;
+    }
+
+    if ((publication->term_begin_position + publication->term_buffer_length) > publication->max_possible_position)
+    {
+        return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
+    }
+
+    aeron_exclusive_publication_rotate_term(publication);
+
+    return AERON_PUBLICATION_ADMIN_ACTION;
+}
+
+inline int64_t aeron_exclusive_publication_back_pressure_status(
+    aeron_exclusive_publication_t *publication, int64_t current_position, int32_t message_length)
+{
+    if ((current_position + message_length) >= publication->max_possible_position)
+    {
+        return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
+    }
+
+    int32_t is_connected;
+    AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+    if (1 == is_connected)
+    {
+        return AERON_PUBLICATION_BACK_PRESSURED;
+    }
+
+    return AERON_PUBLICATION_NOT_CONNECTED;
+}
 
 #endif //AERON_C_EXCLUSIVE_PUBLICATION_H

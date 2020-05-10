@@ -178,7 +178,7 @@ target_link_libraries(aeron_client_shared
 
 if (AERON_INSTALL_TARGETS)
     install(TARGETS aeron_client_shared aeron_client
-        RUNTIME DESTINATION lib
+        RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
     install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")

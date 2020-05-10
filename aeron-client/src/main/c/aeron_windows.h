@@ -25,6 +25,9 @@
 #define aeron_srand48 srand48
 #define aeron_drand48 drand48
 #define aeron_strndup strndup
+#define aeron_getopt getopt
+#define aeron_optarg optarg
+#define aeron_optind optind
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
@@ -38,6 +41,13 @@ int aeron_clock_gettime_monotonic(struct timespec *tp);
 int aeron_clock_gettime_realtime(struct timespec *tp);
 char *aeron_strndup(const char *value, size_t length);
 void localtime_r(const time_t* timep, struct tm* result);
+
+int aeron_getopt(int argc, char* const argv[], const char* optstring);
+char *aeron_optarg_get();
+int *aeron_optind_get();
+
+#define aeron_optarg aeron_optarg_get()
+#define aeron_optind (*aeron_optind_get())
 
 #endif
 

@@ -28,6 +28,7 @@
 #include <unistd.h>
 #endif
 
+#include "aeron_windows.h"
 #include "aeronmd.h"
 #include "concurrent/aeron_atomic.h"
 #include "aeron_driver_context.h"
@@ -63,10 +64,9 @@ int main(int argc, char **argv)
     aeron_driver_context_t *context = NULL;
     aeron_driver_t *driver = NULL;
 
-#ifndef _MSC_VER
     int opt;
 
-    while ((opt = getopt(argc, argv, "D:v")) != -1)
+    while ((opt = aeron_getopt(argc, argv, "D:v")) != -1)
     {
         switch (opt)
         {
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
             {
                 aeron_properties_parser_state_t state;
                 aeron_properties_parse_init(&state);
-                if (aeron_properties_parse_line(&state, optarg, strlen(optarg), set_property, NULL) < 0)
+                if (aeron_properties_parse_line(&state, aeron_optarg, strlen(aeron_optarg), set_property, NULL) < 0)
                 {
-                    fprintf(stderr, "malformed define: %s\n", optarg);
+                    fprintf(stderr, "malformed define: %s\n", aeron_optarg);
                     exit(status);
                 }
                 break;
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
         }
     }
 
-    for (int i = optind; i < argc; i++)
+    for (int i = aeron_optind; i < argc; i++)
     {
         if (aeron_properties_load(argv[i]) < 0)
         {
@@ -103,7 +103,6 @@ int main(int argc, char **argv)
             exit(status);
         }
     }
-#endif
 
     signal(SIGINT, sigint_handler);
 

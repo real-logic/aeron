@@ -145,23 +145,89 @@ int aeron_create_file(const char* path)
     return fd;
 }
 
-int aeron_delete_directory(const char* dir)
+BOOL IsDots(const WCHAR *str)
 {
-    SHFILEOPSTRUCT file_op =
-    {
-        NULL,
-        FO_DELETE,
-        dir,
-        "",
-        FOF_NOCONFIRMATION |
-        FOF_NOERRORUI |
-        FOF_SILENT,
-        false,
-        0,
-        ""
-    };
+    if (wcscmp(str, L".") && wcscmp(str, L".."))
+        return FALSE;
+    return TRUE;
+}
 
-    return SHFileOperation(&file_op);
+static BOOL DeleteDirectory(const WCHAR *sPath)
+{
+    HANDLE hFind; // file handle
+    WIN32_FIND_DATAW FindFileData;
+
+    WCHAR DirPath[AERON_MAX_PATH];
+    WCHAR FileName[AERON_MAX_PATH];
+
+    wcscpy(DirPath, sPath);
+    wcscat(DirPath, L"\\*"); // searching all files
+    wcscpy(FileName, sPath);
+    wcscat(FileName, L"\\");
+
+    hFind = FindFirstFileW(DirPath, &FindFileData); // find the first file
+    if (hFind == INVALID_HANDLE_VALUE)
+        return FALSE;
+    wcscpy(DirPath, FileName);
+
+    bool bSearch = true;
+    while (bSearch)
+    { // until we finds an entry
+        if (FindNextFileW(hFind, &FindFileData))
+        {
+            if (IsDots(FindFileData.cFileName))
+                continue;
+            wcscat(FileName, FindFileData.cFileName);
+            if ((FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+            {
+
+                // we have found a directory, recurse
+                if (!DeleteDirectory(FileName))
+                {
+                    FindClose(hFind);
+                    return FALSE; // directory couldn't be deleted
+                }
+                RemoveDirectoryW(FileName); // remove the empty directory
+                wcscpy(FileName, DirPath);
+            }
+            else
+            {
+                if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+                    _wchmod(FileName, _S_IWRITE); // change read-only file mode
+                if (!DeleteFileW(FileName))
+                { // delete the file
+                    FindClose(hFind);
+                    return FALSE;
+                }
+                wcscpy(FileName, DirPath);
+            }
+        }
+        else
+        {
+            if (GetLastError() == ERROR_NO_MORE_FILES) // no more files there
+                bSearch = false;
+            else
+            {
+                // some error occured, close the handle and return FALSE
+                FindClose(hFind);
+                return FALSE;
+            }
+        }
+    }
+    FindClose(hFind); // closing file handle
+
+    return RemoveDirectoryW(sPath); // remove the empty directory
+}
+
+int aeron_delete_directory(const char *dir)
+{
+    wchar_t ws[AERON_MAX_PATH];
+    swprintf(ws, AERON_MAX_PATH, L"%hs", dir);
+    if (DeleteDirectory(ws) == FALSE)
+    {
+        return -1;
+    }
+    return 0;
 }
 
 int aeron_is_directory(const char* path)

@@ -32,7 +32,7 @@ using namespace std::chrono;
 class RateReporter
 {
 public:
-    typedef std::function<void(double, double, long, long)> on_rate_report_t;
+    typedef std::function<void(double, double, int64_t, int64_t)> on_rate_report_t;
 
     RateReporter(nanoseconds reportInterval, const on_rate_report_t &onReport) :
         m_reportInterval(reportInterval),
@@ -54,8 +54,8 @@ public:
 
     void report()
     {
-        long totalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_acquire);
-        long totalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_acquire);
+        int64_t totalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_acquire);
+        int64_t totalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_acquire);
         steady_clock::time_point timestamp = steady_clock::now();
 
         const double timeSpanSec = duration<double, std::ratio<1, 1>>(timestamp - m_lastTimestamp).count();
@@ -71,8 +71,8 @@ public:
 
     void reset()
     {
-        long currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
-        long currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
+        int64_t currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
+        int64_t currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
         steady_clock::time_point currentTimestamp = steady_clock::now();
 
         m_lastTotalBytes = currentTotalBytes;
@@ -87,8 +87,8 @@ public:
 
     inline void onMessage(long messages, long bytes)
     {
-        long totalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
-        long totalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
+        int64_t totalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
+        int64_t totalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
 
         std::atomic_store_explicit(&m_totalBytes, totalBytes + bytes, std::memory_order_release);
         std::atomic_store_explicit(&m_totalMessages, totalMessages + messages, std::memory_order_release);
@@ -100,12 +100,12 @@ private:
 
     char m_paddingBefore[aeron::util::BitUtil::CACHE_LINE_LENGTH]{};
     std::atomic<bool> m_running = { true };
-    std::atomic<long> m_totalBytes = { 0 };
-    std::atomic<long> m_totalMessages = { 0 };
+    std::atomic<int64_t> m_totalBytes = { 0 };
+    std::atomic<int64_t> m_totalMessages = { 0 };
     char m_paddingAfter[aeron::util::BitUtil::CACHE_LINE_LENGTH]{};
 
-    long m_lastTotalBytes = 0;
-    long m_lastTotalMessages = 0;
+    int64_t m_lastTotalBytes = 0;
+    int64_t m_lastTotalMessages = 0;
 
     steady_clock::time_point m_lastTimestamp;
 };

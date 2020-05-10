@@ -330,7 +330,7 @@ target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron_driver aeron_driver_static
-        RUNTIME DESTINATION lib
+        RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
     install(TARGETS aeronmd DESTINATION bin)

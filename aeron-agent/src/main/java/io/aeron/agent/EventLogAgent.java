@@ -70,9 +70,9 @@ public final class EventLogAgent
         if (logTransformer != null)
         {
             logTransformer.reset(instrumentation, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
-            thread = null;
             instrumentation = null;
             logTransformer = null;
+            thread = null;
 
             CloseHelper.close(readerAgentRunner);
             readerAgentRunner = null;
@@ -89,9 +89,7 @@ public final class EventLogAgent
 
         EventConfiguration.init();
 
-        if (DRIVER_EVENT_CODES.isEmpty() &&
-            ARCHIVE_EVENT_CODES.isEmpty() &&
-            CLUSTER_EVENT_CODES.isEmpty())
+        if (DRIVER_EVENT_CODES.isEmpty() && ARCHIVE_EVENT_CODES.isEmpty() && CLUSTER_EVENT_CODES.isEmpty())
         {
             return;
         }

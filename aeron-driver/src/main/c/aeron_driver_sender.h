@@ -46,14 +46,7 @@ typedef struct aeron_driver_sender_stct
     }
     network_publications;
 
-    struct aeron_driver_sender_buffers_stct
-    {
-        uint8_t *buffers[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
-        struct iovec iov[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
-        struct sockaddr_storage addrs[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
-    }
-    recv_buffers;
-
+    aeron_udp_channel_recv_buffers_t recv_buffers;
     aeron_udp_channel_data_paths_t data_paths;
 
     int64_t *total_bytes_sent_counter;

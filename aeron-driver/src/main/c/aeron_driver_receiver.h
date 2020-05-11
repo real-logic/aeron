@@ -25,7 +25,6 @@
 #include "media/aeron_udp_channel.h"
 
 #define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
-#define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
 
 #define AERON_DRIVER_RECEIVER_PENDING_SETUP_TIMEOUT_NS (1000 * 1000 * 1000LL)
 
@@ -52,13 +51,7 @@ typedef struct aeron_driver_receiver_stct
     aeron_driver_receiver_proxy_t receiver_proxy;
     aeron_udp_transport_poller_t poller;
 
-    struct aeron_driver_receiver_buffers_stct
-    {
-        uint8_t *buffers[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
-        struct iovec iov[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
-        struct sockaddr_storage addrs[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
-    }
-    recv_buffers;
+    aeron_udp_channel_recv_buffers_t recv_buffers;
 
     struct aeron_driver_receiver_images_stct
     {

@@ -21,6 +21,20 @@
 #include "aeron_socket.h"
 
 #include "aeron_driver_common.h"
+#include "util/aeron_bitutil.h"
+
+#define AERON_DRIVER_UDP_NUM_RECV_BUFFERS 2
+#define AERON_DRIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
+#define AERON_MAX_UDP_PAYLOAD_BUFFER_LENGTH (AERON_DRIVER_MAX_UDP_PACKET_LENGTH + AERON_CACHE_LINE_LENGTH)
+
+typedef struct aeron_udp_channel_recv_buffers_stct
+{
+    uint8_t buffers[AERON_MAX_UDP_PAYLOAD_BUFFER_LENGTH * AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+    struct iovec iov[AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+    struct sockaddr_storage addrs[AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+    size_t count;
+}
+aeron_udp_channel_recv_buffers_t;
 
 typedef enum aeron_udp_channel_transport_affinity_en
 {
@@ -59,8 +73,7 @@ typedef void (*aeron_udp_transport_recv_func_t)(
 
 typedef int (*aeron_udp_channel_transport_recvmmsg_func_t)(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen,
+    aeron_udp_channel_recv_buffers_t *msgvec,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd);
@@ -95,8 +108,7 @@ typedef int (*aeron_udp_transport_poller_remove_func_t)(
 
 typedef int (*aeron_udp_transport_poller_poll_func_t)(
     aeron_udp_transport_poller_t *poller,
-    struct mmsghdr *msgvec,
-    size_t vlen,
+    aeron_udp_channel_recv_buffers_t *msgvec,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func,
@@ -312,6 +324,8 @@ inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
 
     func(NULL, receiver_clientd, endpoint_clientd, destination_clientd, buffer, length, addr);
 }
+
+void aeron_udp_channel_recv_buffers_init(aeron_udp_channel_recv_buffers_t *buffers, uint32_t iov_len);
 
 int aeron_udp_channel_data_paths_init(
     aeron_udp_channel_data_paths_t *data_paths,

@@ -36,6 +36,10 @@ using namespace aeron;
 
 using namespace std::placeholders;
 
+#ifdef PAGE_SIZE
+#undef PAGE_SIZE
+#endif
+
 #define CAPACITY (1024)
 #define MANY_TO_ONE_RING_BUFFER_LENGTH (CAPACITY + RingBufferDescriptor::TRAILER_LENGTH)
 #define BROADCAST_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)

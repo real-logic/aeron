@@ -33,8 +33,11 @@ import static io.aeron.driver.CongestionControl.packOutcome;
 /**
  * CUBIC congestion control manipulation of the receiver window length.
  * <p>
- * <a target="_blank" href="https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic">
- * https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic</a>
+ * <a target="_blank" href="https://tools.ietf.org/id/draft-rhee-tcpm-cubic-02.txt">
+ * https://tools.ietf.org/id/draft-rhee-tcpm-cubic-02.txt</a> and
+ * <a target="_blank"
+ * href="https://archive.is/o/qBhk/research.csc.ncsu.edu/netsrv/sites/default/files/cubic_a_new_tcp_2008.pdf">
+ * https://archive.is/o/qBhk/research.csc.ncsu.edu/netsrv/sites/default/files/cubic_a_new_tcp_2008.pdf</a>
  * <p>
  * {@code W_cubic = C(T - K)^3 + w_max}
  * <p>
@@ -174,7 +177,7 @@ public class CubicCongestionControl implements CongestionControl
         {
             w_max = cwnd;
             k = StrictMath.cbrt((double)w_max * B / C);
-            cwnd = Math.min(1, (int)(cwnd * (1.0 - B)));
+            cwnd = Math.max(1, (int)(cwnd * (1.0 - B)));
             lastLossTimestampNs = nowNs;
             forceStatusMessage = true;
         }
@@ -194,7 +197,7 @@ public class CubicCongestionControl implements CongestionControl
 
                 final double rttInSeconds = (double)rttInNs / (double)SECOND_IN_NS;
                 final double wTcp =
-                    (double)w_max * (1.0 - B) + ((3.0 * B / (2.0 * B)) * (durationSinceDecr / rttInSeconds));
+                    (double)w_max * (1.0 - B) + ((3.0 * B / (2.0 - B)) * (durationSinceDecr / rttInSeconds));
 
                 cwnd = Math.max(cwnd, (int)wTcp);
             }

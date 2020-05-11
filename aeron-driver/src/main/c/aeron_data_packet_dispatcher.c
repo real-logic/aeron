@@ -165,7 +165,7 @@ int aeron_data_packet_dispatcher_add_subscription_by_session(
         return -1;
     }
 
-    uint32_t tag;
+    uint32_t tag = 0;
     if (aeron_int64_to_tagged_ptr_hash_map_get(&stream_interest->image_by_session_id_map, session_id, &tag, NULL) &&
         AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST == tag)
     {
@@ -334,7 +334,7 @@ int aeron_data_packet_dispatcher_create_publication(
 {
     if (aeron_int64_to_tagged_ptr_hash_map_put(
         &stream_interest->image_by_session_id_map,
-        header->stream_id,
+        header->session_id,
         AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS,
         NULL) < 0)
     {
@@ -381,25 +381,28 @@ int aeron_data_packet_dispatcher_on_setup(
         bool found = aeron_int64_to_tagged_ptr_hash_map_get(
             &stream_interest->image_by_session_id_map, header->session_id, &tag, (void **)&image);
 
-        if (NULL == image && AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME == tag)
+        if (found)
         {
-            if (destination->conductor_fields.udp_channel->is_multicast &&
-                destination->conductor_fields.udp_channel->multicast_ttl < header->ttl)
+            if (NULL == image && AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME == tag)
             {
-                aeron_counter_ordered_increment(endpoint->possible_ttl_asymmetry_counter, 1);
-            }
+                if (destination->conductor_fields.udp_channel->is_multicast &&
+                    destination->conductor_fields.udp_channel->multicast_ttl < header->ttl)
+                {
+                    aeron_counter_ordered_increment(endpoint->possible_ttl_asymmetry_counter, 1);
+                }
 
-            if (aeron_data_packet_dispatcher_create_publication(
-                dispatcher, endpoint, destination, header, addr, stream_interest) < 0)
+                if (aeron_data_packet_dispatcher_create_publication(
+                    dispatcher, endpoint, destination, header, addr, stream_interest) < 0)
+                {
+                    return -1;
+                }
+            }
+            else if (NULL != image)
             {
-                return -1;
+                aeron_publication_image_add_connection_if_unknown(image, destination, addr);
             }
         }
-        else if (NULL != image)
-        {
-            aeron_publication_image_add_connection_if_unknown(image, destination, addr);
-        }
-        else if (!found)
+        else
         {
             if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
             {

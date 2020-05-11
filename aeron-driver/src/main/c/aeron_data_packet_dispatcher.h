@@ -27,7 +27,7 @@
 #define AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME UINT32_C(2)
 #define AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS UINT32_C(3)
 #define AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN UINT32_C(4)
-#define AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST UINT32_C(4)
+#define AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST UINT32_C(5)
 
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 typedef struct aeron_receive_channel_endpoint_stct aeron_receive_channel_endpoint_t;

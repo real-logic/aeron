@@ -311,7 +311,7 @@ TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageForSubscriptionWithoutI
     ASSERT_EQ(2, m_test_bindings_state->sm_count);
 }
 
-TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetup)
+TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupOnceForTheSameStreamSessionId)
 {
     AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
 
@@ -330,6 +330,36 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetup)
         &m_channel->local_data);
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
+        &m_channel->local_data);
+
+    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+        m_conductor_proxy.command_queue,
+        verify_conductor_cmd_function,
+        get_on_publication_image_fptr(),
+        3));
+}
+
+TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupMultipleTimeForDifferentSessionIds)
+{
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+
+    int32_t stream_id = 434523;
+
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
+
+    aeron_setup_header_t *setup_header_1 = setupPacket(data_buffer, stream_id, 1001);
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, NULL, setup_header_1, data_buffer.data(), sizeof(*setup_header_1),
+        &m_channel->local_data);
+
+    aeron_setup_header_t *setup_header_2 = setupPacket(data_buffer, stream_id, 1002);
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, NULL, setup_header_2, data_buffer.data(), sizeof(*setup_header_1),
+        &m_channel->local_data);
+
+    aeron_setup_header_t *setup_header_3 = setupPacket(data_buffer, stream_id, 1003);
+    aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher, m_receive_endpoint, NULL, setup_header_3, data_buffer.data(), sizeof(*setup_header_1),
         &m_channel->local_data);
 
     ASSERT_EQ(UINT64_C(3), aeron_mpsc_concurrent_array_queue_drain(

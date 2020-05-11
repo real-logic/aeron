@@ -43,7 +43,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -951,18 +950,6 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * This method is used for testing and debugging.
-         *
-         * @param toDriverBuffer Injected RingBuffer.
-         * @return this for a fluent API.
-         */
-        Context toDriverBuffer(final RingBuffer toDriverBuffer)
-        {
-            this.toDriverBuffer = toDriverBuffer;
-            return this;
-        }
-
-        /**
          * Get the {@link RingBuffer} used for sending commands to the media driver.
          *
          * @return the {@link RingBuffer} used for sending commands to the media driver.
@@ -1344,7 +1331,7 @@ public class Aeron implements AutoCloseable
                     sleep(Configuration.IDLE_SLEEP_MS);
                 }
 
-                cncByteBuffer = waitForFileMapping(cncFile, deadlineMs, epochClock);
+                cncByteBuffer = waitForFileMapping(cncFile, epochClock, deadlineMs);
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
 
                 int cncVersion;
@@ -1381,10 +1368,9 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("no driver heartbeat detected");
                     }
 
-                    final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
-                    this.cncByteBuffer = null;
-                    cncMetaDataBuffer = null;
                     IoUtil.unmap(cncByteBuffer);
+                    cncByteBuffer = null;
+                    cncMetaDataBuffer = null;
 
                     sleep(100);
                     continue;
@@ -1395,19 +1381,18 @@ public class Aeron implements AutoCloseable
         }
     }
 
-    private static MappedByteBuffer waitForFileMapping(
-        final File cncFile, final long deadlineMs, final EpochClock epochClock)
+    private static MappedByteBuffer waitForFileMapping(final File file, final EpochClock clock, final long deadlineMs)
     {
         while (true)
         {
-            try (FileChannel fileChannel = FileChannel.open(cncFile.toPath(), READ, WRITE))
+            try (FileChannel fileChannel = FileChannel.open(file.toPath(), READ, WRITE))
             {
                 final long fileSize = fileChannel.size();
-                if (fileSize < CncFileDescriptor.CNC_VERSION_FIELD_OFFSET + SIZE_OF_INT)
+                if (fileSize < CncFileDescriptor.META_DATA_LENGTH)
                 {
-                    if (epochClock.time() > deadlineMs)
+                    if (clock.time() > deadlineMs)
                     {
-                        throw new AeronException("CnC file is created but not populated");
+                        throw new DriverTimeoutException("CnC file is created but not populated");
                     }
 
                     fileChannel.close();

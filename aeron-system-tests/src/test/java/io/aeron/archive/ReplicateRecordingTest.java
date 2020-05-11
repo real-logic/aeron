@@ -285,11 +285,23 @@ public class ReplicateRecordingTest
         final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
         final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
-        dstAeronArchive.replicate(
-            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+        dstAeronArchive.archiveProxy().replicate(
+            srcRecordingId,
+            NULL_VALUE,
+            SRC_CONTROL_STREAM_ID,
+            SRC_CONTROL_REQUEST_CHANNEL,
+            null,
+            dstAeronArchive.context().aeron().nextCorrelationId(),
+            dstAeronArchive.controlSessionId());
 
-        dstAeronArchive.replicate(
-            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+        dstAeronArchive.archiveProxy().replicate(
+            srcRecordingId,
+            NULL_VALUE,
+            SRC_CONTROL_STREAM_ID,
+            SRC_CONTROL_REQUEST_CHANNEL,
+            null,
+            dstAeronArchive.context().aeron().nextCorrelationId(),
+            dstAeronArchive.controlSessionId());
 
         int stopCount = 0;
         while (stopCount < 2)

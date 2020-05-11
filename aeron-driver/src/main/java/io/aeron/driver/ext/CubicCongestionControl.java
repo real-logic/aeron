@@ -35,9 +35,8 @@ import static io.aeron.driver.CongestionControl.packOutcome;
  * <p>
  * <a target="_blank" href="https://tools.ietf.org/id/draft-rhee-tcpm-cubic-02.txt">
  * https://tools.ietf.org/id/draft-rhee-tcpm-cubic-02.txt</a> and
- * <a target="_blank"
- * href="https://archive.is/o/qBhk/research.csc.ncsu.edu/netsrv/sites/default/files/cubic_a_new_tcp_2008.pdf">
- * https://archive.is/o/qBhk/research.csc.ncsu.edu/netsrv/sites/default/files/cubic_a_new_tcp_2008.pdf</a>
+ * <a target="_blank" href="https://dl.acm.org/doi/10.1145/1400097.1400105">
+ * https://dl.acm.org/doi/10.1145/1400097.1400105</a>
  * <p>
  * {@code W_cubic = C(T - K)^3 + w_max}
  * <p>

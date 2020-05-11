@@ -104,7 +104,7 @@ public class CubicCongestionControl implements CongestionControl
         maxCwnd = maxWindow / mtu;
         cwnd = 1;
         w_max = maxCwnd; // initially set w_max to max window and act in the TCP and concave region initially
-        k = Math.cbrt((double)w_max * B / C);
+        k = StrictMath.cbrt((double)w_max * B / C);
 
         // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
         rttInNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
@@ -173,7 +173,7 @@ public class CubicCongestionControl implements CongestionControl
         if (lossOccurred)
         {
             w_max = cwnd;
-            k = Math.cbrt((double)w_max * B / C);
+            k = StrictMath.cbrt((double)w_max * B / C);
             cwnd = Math.min(1, (int)(cwnd * (1.0 - B)));
             lastLossTimestampNs = nowNs;
             forceStatusMessage = true;

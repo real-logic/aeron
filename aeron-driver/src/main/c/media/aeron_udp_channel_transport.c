@@ -227,16 +227,29 @@ int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
 
 int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen,
+    aeron_udp_channel_recv_buffers_t *msgvec,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd)
 {
 #if defined(HAVE_RECVMMSG)
+    struct mmsghdr mmsghdr[AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+
+    for (size_t i = 0; i < AERON_DRIVER_UDP_NUM_RECV_BUFFERS; i++)
+    {
+        mmsghdr[i].msg_hdr.msg_name = &msgvec->addrs[i];
+        mmsghdr[i].msg_hdr.msg_namelen = sizeof(msgvec->addrs[i]);
+        mmsghdr[i].msg_hdr.msg_iov = &msgvec->iov[i];
+        mmsghdr[i].msg_hdr.msg_iovlen = 1;
+        mmsghdr[i].msg_hdr.msg_flags = 0;
+        mmsghdr[i].msg_hdr.msg_control = NULL;
+        mmsghdr[i].msg_hdr.msg_controllen = 0;
+        mmsghdr[i].msg_len = 0;
+    }
+
     struct timespec tv = {.tv_nsec = 0, .tv_sec = 0};
 
-    int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
+    int result = recvmmsg(transport->fd, mmsghdr, AERON_DRIVER_UDP_NUM_RECV_BUFFERS, 0, &tv);
     if (result < 0)
     {
         int err = errno;
@@ -273,9 +286,18 @@ int aeron_udp_channel_transport_recvmmsg(
 #else
     int work_count = 0;
 
-    for (size_t i = 0, length = vlen; i < length; i++)
+    for (size_t i = 0, length = AERON_DRIVER_UDP_NUM_RECV_BUFFERS; i < length; i++)
     {
-        ssize_t result = recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+        struct msghdr msg_hdr;
+        msg_hdr.msg_name = &msgvec->addrs[i];
+        msg_hdr.msg_namelen = sizeof(msgvec->addrs[i]);
+        msg_hdr.msg_iov = &msgvec->iov[i];
+        msg_hdr.msg_iovlen = 1;
+        msg_hdr.msg_flags = 0;
+        msg_hdr.msg_control = NULL;
+        msg_hdr.msg_controllen = 0;
+
+        ssize_t result = recvmsg(transport->fd, &msg_hdr, 0);
 
         if (result < 0)
         {
@@ -295,16 +317,15 @@ int aeron_udp_channel_transport_recvmmsg(
             break;
         }
 
-        msgvec[i].msg_len = (unsigned int)result;
         recv_func(
             transport->data_paths,
             clientd,
             transport->dispatch_clientd,
             transport->destination_clientd,
-            msgvec[i].msg_hdr.msg_iov[0].iov_base,
-            msgvec[i].msg_len,
-            msgvec[i].msg_hdr.msg_name);
-        *bytes_rcved += msgvec[i].msg_len;
+            msg_hdr.msg_iov[0].iov_base,
+            result,
+            msg_hdr.msg_name);
+        *bytes_rcved += result;
         work_count++;
     }
 

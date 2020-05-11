@@ -19,6 +19,7 @@
 
 #include <util/aeron_platform.h>
 #include <stdint.h>
+#include "concurrent/aeron_logbuffer_descriptor.h"
 
 #if defined(AERON_COMPILER_GCC)
     #include <netinet/in.h>
@@ -95,6 +96,17 @@
 #else
 #error Unsupported platform!
 #endif
+
+#define AERON_DRIVER_UDP_NUM_RECV_BUFFERS 2
+
+#define AERON_DRIVER_UDP_RECV_BUFFER_SIZE (AERON_MAX_UDP_PAYLOAD_LENGTH + AERON_CACHE_LINE_LENGTH)
+typedef struct aeron_udp_channel_recv_buffers_stct
+{
+    uint8_t buffers[AERON_DRIVER_UDP_RECV_BUFFER_SIZE * AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+    struct iovec iov[AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+    struct sockaddr_storage addrs[AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+}
+aeron_udp_channel_recv_buffers_t;
 
 int set_socket_non_blocking(aeron_socket_t fd);
 aeron_socket_t aeron_socket(int domain, int type, int protocol);

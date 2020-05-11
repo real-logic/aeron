@@ -54,7 +54,6 @@ struct mmsghdr
 // Cater for windows.
 #define AERON_MAX_HOSTNAME_LEN (256)
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
-#define AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS (1)
 
 typedef struct aeron_driver_name_resolver_neighbor_stct
 {
@@ -106,8 +105,9 @@ typedef struct aeron_driver_name_resolver_stct
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
 
-    struct sockaddr_storage received_address;
     uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH + AERON_CACHE_LINE_LENGTH];
+
+    aeron_udp_channel_recv_buffers_t recv_buffers;
 }
 aeron_driver_name_resolver_t;
 
@@ -138,6 +138,13 @@ int aeron_driver_name_resolver_init(
     {
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         goto error_cleanup;
+    }
+
+    for (size_t i = 0; i < AERON_DRIVER_UDP_NUM_RECV_BUFFERS; i++)
+    {
+        uint8_t *buffer_base = _driver_resolver->recv_buffers.buffers + i *AERON_DRIVER_UDP_RECV_BUFFER_SIZE;
+        _driver_resolver->recv_buffers.iov[i].iov_base = (void *)AERON_ALIGN((uintptr_t)(buffer_base), AERON_CACHE_LINE_LENGTH);
+        _driver_resolver->recv_buffers.iov[i].iov_len = (uint32_t)context->mtu_length;
     }
 
     _driver_resolver->name = name;
@@ -588,30 +595,10 @@ void aeron_driver_name_resolver_receive(
 
 static int aeron_driver_name_resolver_poll(aeron_driver_name_resolver_t *resolver)
 {
-    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
-
-    struct mmsghdr mmsghdr[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
-    struct iovec iov[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
-    iov[0].iov_base = aligned_buffer;
-    iov[0].iov_len = AERON_MAX_UDP_PAYLOAD_LENGTH;
-
-    for (size_t i = 0; i < AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS; i++)
-    {
-        mmsghdr[i].msg_hdr.msg_name = &resolver->received_address;
-        mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&resolver->received_address);
-        mmsghdr[i].msg_hdr.msg_iov = &iov[i];
-        mmsghdr[i].msg_hdr.msg_iovlen = 1;
-        mmsghdr[i].msg_hdr.msg_flags = 0;
-        mmsghdr[i].msg_hdr.msg_control = NULL;
-        mmsghdr[i].msg_hdr.msg_controllen = 0;
-        mmsghdr[i].msg_len = 0;
-    }
-
     int64_t bytes_received = 0;
     int poll_result = resolver->transport_bindings->poller_poll_func(
         &resolver->poller,
-        mmsghdr,
-        AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS,
+        &resolver->recv_buffers,
         &bytes_received,
         resolver->data_paths.recv_func,
         resolver->transport_bindings->recvmmsg_func,

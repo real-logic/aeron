@@ -227,16 +227,29 @@ int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
 
 int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen,
+    aeron_udp_channel_recv_buffers_t *recv_buffers,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd)
 {
+    struct mmsghdr msgvec[AERON_DRIVER_UDP_NUM_RECV_BUFFERS];
+
+    for (size_t i = 0; i < recv_buffers->count; i++)
+    {
+        msgvec[i].msg_hdr.msg_name = &(recv_buffers->addrs[i]);
+        msgvec[i].msg_hdr.msg_namelen = sizeof(recv_buffers->addrs[i]);
+        msgvec[i].msg_hdr.msg_iov = &(recv_buffers->iov[i]);
+        msgvec[i].msg_hdr.msg_iovlen = 1;
+        msgvec[i].msg_hdr.msg_flags = 0;
+        msgvec[i].msg_hdr.msg_control = NULL;
+        msgvec[i].msg_hdr.msg_controllen = 0;
+        msgvec[i].msg_len = 0;
+    }
+
 #if defined(HAVE_RECVMMSG)
     struct timespec tv = {.tv_nsec = 0, .tv_sec = 0};
 
-    int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
+    int result = recvmmsg(transport->fd, msgvec, recv_buffers->count, 0, &tv);
     if (result < 0)
     {
         int err = errno;
@@ -273,7 +286,7 @@ int aeron_udp_channel_transport_recvmmsg(
 #else
     int work_count = 0;
 
-    for (size_t i = 0, length = vlen; i < length; i++)
+    for (size_t i = 0, length = recv_buffers->count; i < length; i++)
     {
         ssize_t result = recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
 

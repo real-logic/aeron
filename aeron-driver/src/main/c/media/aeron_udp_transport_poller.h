@@ -69,8 +69,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
 
 int aeron_udp_transport_poller_poll(
     aeron_udp_transport_poller_t *poller,
-    struct mmsghdr *msgvec,
-    size_t vlen,
+    aeron_udp_channel_recv_buffers_t *msgvec,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func,

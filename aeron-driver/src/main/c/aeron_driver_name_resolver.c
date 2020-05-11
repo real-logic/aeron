@@ -106,8 +106,9 @@ typedef struct aeron_driver_name_resolver_stct
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
 
-    struct sockaddr_storage received_address;
-    uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH + AERON_CACHE_LINE_LENGTH];
+    uint8_t buffer[AERON_MAX_UDP_PAYLOAD_BUFFER_LENGTH];
+
+    aeron_udp_channel_recv_buffers_t recv_buffers;
 }
 aeron_driver_name_resolver_t;
 
@@ -139,6 +140,9 @@ int aeron_driver_name_resolver_init(
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         goto error_cleanup;
     }
+
+    aeron_udp_channel_recv_buffers_init(&(_driver_resolver->recv_buffers), AERON_DRIVER_MAX_UDP_PACKET_LENGTH);
+    _driver_resolver->recv_buffers.count = AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS;
 
     _driver_resolver->name = name;
     if (NULL == _driver_resolver->name)
@@ -588,30 +592,10 @@ void aeron_driver_name_resolver_receive(
 
 static int aeron_driver_name_resolver_poll(aeron_driver_name_resolver_t *resolver)
 {
-    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
-
-    struct mmsghdr mmsghdr[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
-    struct iovec iov[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
-    iov[0].iov_base = aligned_buffer;
-    iov[0].iov_len = AERON_MAX_UDP_PAYLOAD_LENGTH;
-
-    for (size_t i = 0; i < AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS; i++)
-    {
-        mmsghdr[i].msg_hdr.msg_name = &resolver->received_address;
-        mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&resolver->received_address);
-        mmsghdr[i].msg_hdr.msg_iov = &iov[i];
-        mmsghdr[i].msg_hdr.msg_iovlen = 1;
-        mmsghdr[i].msg_hdr.msg_flags = 0;
-        mmsghdr[i].msg_hdr.msg_control = NULL;
-        mmsghdr[i].msg_hdr.msg_controllen = 0;
-        mmsghdr[i].msg_len = 0;
-    }
-
     int64_t bytes_received = 0;
     int poll_result = resolver->transport_bindings->poller_poll_func(
         &resolver->poller,
-        mmsghdr,
-        AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS,
+        &resolver->recv_buffers,
         &bytes_received,
         resolver->data_paths.recv_func,
         resolver->transport_bindings->recvmmsg_func,

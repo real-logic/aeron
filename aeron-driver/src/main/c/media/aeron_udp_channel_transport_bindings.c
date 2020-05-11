@@ -180,6 +180,16 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
     return current_bindings;
 }
 
+void aeron_udp_channel_recv_buffers_init(aeron_udp_channel_recv_buffers_t *buffers, uint32_t iov_len)
+{
+    for (size_t i = 0; i < AERON_DRIVER_UDP_NUM_RECV_BUFFERS; i++)
+    {
+        uint8_t *buffer_base = buffers->buffers + i *AERON_MAX_UDP_PAYLOAD_BUFFER_LENGTH;
+        buffers->iov[i].iov_base = (void *)AERON_ALIGN((uintptr_t)(buffer_base), AERON_CACHE_LINE_LENGTH);
+        buffers->iov[i].iov_len = iov_len;
+    }
+}
+
 int aeron_udp_channel_data_paths_init(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_interceptor_bindings_t *outgoing_interceptor_bindings,

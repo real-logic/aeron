@@ -334,7 +334,7 @@ int aeron_data_packet_dispatcher_create_publication(
 {
     if (aeron_int64_to_tagged_ptr_hash_map_put(
         &stream_interest->image_by_session_id_map,
-        header->stream_id,
+        header->session_id,
         AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS,
         NULL) < 0)
     {

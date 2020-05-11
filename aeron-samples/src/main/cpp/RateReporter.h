@@ -94,6 +94,11 @@ public:
         std::atomic_store_explicit(&m_totalMessages, totalMessages + messages, std::memory_order_release);
     }
 
+    int64_t totalMessages()
+    {
+        return m_totalMessages.load();
+    }
+
 private:
     const nanoseconds m_reportInterval;
     const on_rate_report_t m_onReport;

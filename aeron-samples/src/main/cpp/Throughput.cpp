@@ -91,8 +91,8 @@ void printRate(double messagesPerSec, double bytesPerSec, int64_t totalFragments
     if (printingActive)
     {
         std::printf(
-            "%.04g msgs/sec, %.04g bytes/sec, totals %lld messages %lld MB payloads\n",
-            messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
+            "%.04g msgs/sec, %.04g bytes/sec, totals %lld messages %lld Byte payloads\n",
+            messagesPerSec, bytesPerSec, totalFragments, totalBytes);
     }
 }
 
@@ -105,6 +105,8 @@ inline bool isRunning()
 {
     return std::atomic_load_explicit(&running, std::memory_order_relaxed);
 }
+
+std::atomic<bool> imageLoaded;
 
 int main(int argc, char **argv)
 {
@@ -150,12 +152,14 @@ int main(int argc, char **argv)
             {
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
+        imageLoaded.store(false);
 
         context.availableImageHandler(
             [](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
+                imageLoaded.store(true);
             });
 
         context.unavailableImageHandler(
@@ -184,6 +188,12 @@ int main(int argc, char **argv)
             publication = aeron.findPublication(publicationId);
         }
 
+        while (imageLoaded.load() == false)
+        {
+            std::this_thread::yield();
+        }
+        std::cout << "Start throughput testing" << std::endl;
+
         BusySpinIdleStrategy offerIdleStrategy;
         BusySpinIdleStrategy pollIdleStrategy;
 
@@ -208,12 +218,15 @@ int main(int argc, char **argv)
                     pollIdleStrategy.idle(subscription->poll(handler, settings.fragmentCountLimit));
                 }
             });
-
+        int64_t iterationCount = 0;
         do
         {
-            BufferClaim bufferClaim;
+            std::vector<uint8_t> buffer;
+            buffer.resize(settings.messageLength);
+            AtomicBuffer bufferAtomic(buffer.data(), buffer.size());
             long backPressureCount = 0;
 
+            iterationCount += 1;
             printingActive = true;
 
             if (nullptr == rateReporterThread)
@@ -223,15 +236,19 @@ int main(int argc, char **argv)
 
             for (long i = 0; i < settings.numberOfMessages && isRunning(); i++)
             {
+                bufferAtomic.putInt64(0, i);
                 offerIdleStrategy.reset();
-                while (publicationPtr->tryClaim(settings.messageLength, bufferClaim) < 0L)
+                while (publicationPtr->offer(bufferAtomic) < 0L)
                 {
                     backPressureCount++;
                     offerIdleStrategy.idle();
                 }
 
-                bufferClaim.buffer().putInt64(bufferClaim.offset(), i);
-                bufferClaim.commit();
+            }
+
+            while (rateReporter.totalMessages() != settings.numberOfMessages * iterationCount)
+            {
+                std::this_thread::yield();
             }
 
             if (nullptr == rateReporterThread)

@@ -55,7 +55,11 @@ void verify_conductor_cmd_function(void *clientd, volatile void *item)
 class ReceiverTestBase : public testing::Test
 {
 public:
-    ReceiverTestBase() : m_conductor_fail_counter(0)
+    ReceiverTestBase() :
+        m_conductor_fail_counter(0),
+        m_error_log_buffer(),
+        m_counter_value_buffer(),
+        m_counter_meta_buffer()
     {}
 
 protected:

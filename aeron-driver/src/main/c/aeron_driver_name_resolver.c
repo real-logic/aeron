@@ -43,14 +43,6 @@
 #include "aeron_name_resolver_cache.h"
 #include "aeron_driver_name_resolver.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 // Cater for windows.
 #define AERON_MAX_HOSTNAME_LEN (256)
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
@@ -642,33 +634,32 @@ static int aeron_driver_name_resolver_do_send(
     ssize_t length,
     struct sockaddr_storage *neighbor_address)
 {
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    aeron_udp_channel_send_buffers_t send_buffers;
 
-    iov[0].iov_base = frame_header;
-    iov[0].iov_len = (uint32_t)length;
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = neighbor_address;
-    msghdr.msg_namelen = AERON_ADDR_LEN(neighbor_address);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    send_buffers.iov[0].iov_base = frame_header;
+    send_buffers.iov[0].iov_len = (uint32_t)length;
+    send_buffers.addrv[0] = neighbor_address;
+    send_buffers.addr_lenv[0] = AERON_ADDR_LEN(neighbor_address);
 
-    int send_result = resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
-    if (send_result >= 0)
+    send_buffers.count = 1;
+    send_buffers.bytes_sent = send_buffers.iov[0].iov_len;
+
+    int sent_count = resolver->data_paths.sendmmsg_func(&resolver->data_paths, &resolver->transport, &send_buffers);
+    if (sent_count >= 0)
     {
-        if ((size_t)send_result != iov[0].iov_len)
+        if (sent_count != send_buffers.count)
         {
             aeron_counter_increment(resolver->short_sends_counter, 1);
+            return 0;
         }
+        return send_buffers.bytes_sent;
     }
     else
     {
         aeron_set_err(errno, "Failed to send resolution frames: %s", aeron_errmsg());
     }
 
-    return send_result;
+    return sent_count;
 }
 
 static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)

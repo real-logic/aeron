@@ -60,9 +60,9 @@ int aeron_udp_destination_tracker_init(
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);
 
 int aeron_udp_destination_tracker_sendmmsg(
-    aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct mmsghdr *mmsghdr, size_t vlen);
-int aeron_udp_destination_tracker_sendmsg(
-    aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct msghdr *msghdr);
+    aeron_udp_destination_tracker_t *tracker,
+    aeron_udp_channel_transport_t *transport,
+    aeron_udp_channel_send_buffers_t *send_buffers);
 
 int aeron_udp_destination_tracker_on_status_message(
     aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr);

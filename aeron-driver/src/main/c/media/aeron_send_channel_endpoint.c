@@ -30,14 +30,7 @@
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_position.h"
-
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
+#include "aeron_udp_destination_tracker.h"
 
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
@@ -215,43 +208,24 @@ void aeron_send_channel_endpoint_decref(void *clientd)
     }
 }
 
-int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
+int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_send_buffers_t *send_buffers)
 {
     int result = 0;
 
     if (NULL == endpoint->destination_tracker)
     {
-        for (size_t i = 0; i < vlen; i++)
+        for (size_t i = 0; i < send_buffers->count; i++)
         {
-            mmsghdr[i].msg_hdr.msg_name = &endpoint->current_data_addr;
-            mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
+            send_buffers->addrv[i] = &endpoint->current_data_addr;
+            send_buffers->addr_lenv[i] = AERON_ADDR_LEN(&endpoint->current_data_addr);
         }
 
-        result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, mmsghdr, vlen);
+        result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, send_buffers);
     }
     else
     {
         result = aeron_udp_destination_tracker_sendmmsg(
-            endpoint->destination_tracker, &endpoint->transport, mmsghdr, vlen);
-    }
-
-    return result;
-}
-
-int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
-{
-    int result = 0;
-
-    if (NULL == endpoint->destination_tracker)
-    {
-        msghdr->msg_name = &endpoint->current_data_addr;
-        msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
-
-        result = endpoint->data_paths->sendmsg_func(endpoint->data_paths, &endpoint->transport, msghdr);
-    }
-    else
-    {
-        result = aeron_udp_destination_tracker_sendmsg(endpoint->destination_tracker, &endpoint->transport, msghdr);
+            endpoint->destination_tracker, &endpoint->transport, send_buffers);
     }
 
     return result;

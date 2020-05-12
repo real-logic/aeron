@@ -328,11 +328,23 @@ int aeron_udp_channel_transport_recvmmsg(
 int aeron_udp_channel_transport_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    aeron_udp_channel_send_buffers_t *send_buffers)
 {
+    struct mmsghdr msgvec[AERON_DRIVER_UDP_NUM_SEND_BUFFERS];
+    for (size_t i = 0; i < send_buffers->count; i++)
+    {
+        msgvec[i].msg_hdr.msg_iov = send_buffers->iov + i;
+        msgvec[i].msg_hdr.msg_iovlen = 1;
+        msgvec[i].msg_hdr.msg_flags = 0;
+        msgvec[i].msg_hdr.msg_name = send_buffers->addrv[i];
+        msgvec[i].msg_hdr.msg_namelen = send_buffers->addr_lenv[i];
+        msgvec[i].msg_len = 0;
+        msgvec[i].msg_hdr.msg_control = NULL;
+        msgvec[i].msg_hdr.msg_controllen = 0;
+    }
+
 #if defined(HAVE_SENDMMSG)
-    int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
+    int sendmmsg_result = sendmmsg(transport->fd, msgvec, send_buffers->count, 0);
     if (sendmmsg_result < 0)
     {
         aeron_set_err_from_last_err_code("sendmmsg");
@@ -343,7 +355,7 @@ int aeron_udp_channel_transport_sendmmsg(
 #else
     int result = 0;
 
-    for (size_t i = 0, length = vlen; i < length; i++)
+    for (size_t i = 0, length = send_buffers->count; i < length; i++)
     {
         ssize_t sendmsg_result = sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
         if (sendmsg_result < 0)
@@ -364,21 +376,6 @@ int aeron_udp_channel_transport_sendmmsg(
 
     return result;
 #endif
-}
-
-int aeron_udp_channel_transport_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    ssize_t sendmsg_result = sendmsg(transport->fd, message, 0);
-    if (sendmsg_result < 0)
-    {
-        aeron_set_err_from_last_err_code("sendmsg");
-        return -1;
-    }
-
-    return (int)sendmsg_result;
 }
 
 int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf)

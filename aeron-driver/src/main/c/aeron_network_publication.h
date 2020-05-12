@@ -38,8 +38,6 @@ aeron_network_publication_state_t;
 #define AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS (100 * 1000 * 1000LL)
 #define AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS (100 * 1000 * 1000LL)
 
-#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
-
 typedef struct aeron_send_channel_endpoint_stct aeron_send_channel_endpoint_t;
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 

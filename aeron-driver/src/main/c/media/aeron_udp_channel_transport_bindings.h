@@ -36,6 +36,17 @@ typedef struct aeron_udp_channel_recv_buffers_stct
 }
 aeron_udp_channel_recv_buffers_t;
 
+#define AERON_DRIVER_UDP_NUM_SEND_BUFFERS 2
+typedef struct aeron_udp_channel_send_buffers_stct
+{
+    struct iovec iov[AERON_DRIVER_UDP_NUM_SEND_BUFFERS];
+    struct sockaddr_storage* addrv[AERON_DRIVER_UDP_NUM_SEND_BUFFERS];
+    int addr_lenv[AERON_DRIVER_UDP_NUM_SEND_BUFFERS];
+    size_t count;
+    int bytes_sent;
+}
+aeron_udp_channel_send_buffers_t;
+
 typedef enum aeron_udp_channel_transport_affinity_en
 {
     AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER,
@@ -44,7 +55,6 @@ typedef enum aeron_udp_channel_transport_affinity_en
 }
 aeron_udp_channel_transport_affinity_t;
 
-struct mmsghdr;
 typedef struct aeron_udp_channel_transport_stct aeron_udp_channel_transport_t;
 typedef struct aeron_udp_transport_poller_stct aeron_udp_transport_poller_t;
 typedef struct aeron_udp_channel_data_paths_stct aeron_udp_channel_data_paths_t;
@@ -81,13 +91,7 @@ typedef int (*aeron_udp_channel_transport_recvmmsg_func_t)(
 typedef int (*aeron_udp_channel_transport_sendmmsg_func_t)(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen);
-
-typedef int (*aeron_udp_channel_transport_sendmsg_func_t)(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message);
+    aeron_udp_channel_send_buffers_t *send_buffers);
 
 typedef int (*aeron_udp_channel_transport_get_so_rcvbuf_func_t)(
     aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf);
@@ -122,7 +126,6 @@ struct aeron_udp_channel_transport_bindings_stct
     aeron_udp_channel_transport_close_func_t close_func;
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func;
     aeron_udp_channel_transport_sendmmsg_func_t sendmmsg_func;
-    aeron_udp_channel_transport_sendmsg_func_t sendmsg_func;
     aeron_udp_channel_transport_get_so_rcvbuf_func_t get_so_rcvbuf_func;
     aeron_udp_channel_transport_bind_addr_and_port_func_t bind_addr_and_port_func;
     aeron_udp_transport_poller_init_func_t poller_init_func;
@@ -158,14 +161,7 @@ typedef int (*aeron_udp_channel_interceptor_outgoing_mmsg_func_t)(
     void *interceptor_state,
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen);
-
-typedef int (*aeron_udp_channel_interceptor_outgoing_msg_func_t)(
-    void *interceptor_state,
-    aeron_udp_channel_outgoing_interceptor_t *delegate,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message);
+    aeron_udp_channel_send_buffers_t *send_buffers);
 
 typedef void (*aeron_udp_channel_interceptor_incoming_func_t)(
     void *interceptor_state,
@@ -190,7 +186,6 @@ struct aeron_udp_channel_interceptor_bindings_stct
     aeron_udp_channel_interceptor_init_func_t outgoing_init_func;
     aeron_udp_channel_interceptor_init_func_t incoming_init_func;
     aeron_udp_channel_interceptor_outgoing_mmsg_func_t outgoing_mmsg_func;
-    aeron_udp_channel_interceptor_outgoing_msg_func_t outgoing_msg_func;
     aeron_udp_channel_interceptor_incoming_func_t incoming_func;
     aeron_udp_channel_interceptor_close_func_t outgoing_close_func;
     aeron_udp_channel_interceptor_close_func_t incoming_close_func;
@@ -208,7 +203,6 @@ struct aeron_udp_channel_outgoing_interceptor_stct
 {
     void *interceptor_state;
     aeron_udp_channel_interceptor_outgoing_mmsg_func_t outgoing_mmsg_func;
-    aeron_udp_channel_interceptor_outgoing_msg_func_t outgoing_msg_func;
     aeron_udp_channel_interceptor_close_func_t close_func;
     aeron_udp_channel_outgoing_interceptor_t *next_interceptor;
 };
@@ -227,58 +221,31 @@ struct aeron_udp_channel_data_paths_stct
     aeron_udp_channel_outgoing_interceptor_t *outgoing_interceptors;
     aeron_udp_channel_incoming_interceptor_t *incoming_interceptors;
     aeron_udp_channel_transport_sendmmsg_func_t sendmmsg_func;
-    aeron_udp_channel_transport_sendmsg_func_t sendmsg_func;
     aeron_udp_transport_recv_func_t recv_func;
 };
 
 inline int aeron_udp_channel_outgoing_interceptor_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    aeron_udp_channel_send_buffers_t *send_buffers)
 {
     aeron_udp_channel_outgoing_interceptor_t *interceptor = data_paths->outgoing_interceptors;
 
     /* use first interceptor and pass in delegate */
     return interceptor->outgoing_mmsg_func(
-        interceptor->interceptor_state, interceptor->next_interceptor, transport, msgvec, vlen);
-}
-
-inline int aeron_udp_channel_outgoing_interceptor_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    aeron_udp_channel_outgoing_interceptor_t *interceptor = data_paths->outgoing_interceptors;
-
-    /* use first interceptor and pass in delegate */
-    return interceptor->outgoing_msg_func(
-        interceptor->interceptor_state, interceptor->next_interceptor, transport, message);
+        interceptor->interceptor_state, interceptor->next_interceptor, transport, send_buffers);
 }
 
 inline int aeron_udp_channel_outgoing_interceptor_mmsg_to_transport(
     void *interceptor_state,
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    aeron_udp_channel_send_buffers_t *send_buffers)
 {
     aeron_udp_channel_transport_sendmmsg_func_t func =
         ((aeron_udp_channel_transport_bindings_t *)interceptor_state)->sendmmsg_func;
 
-    return func(NULL, transport, msgvec, vlen);
-}
-
-inline int aeron_udp_channel_outgoing_interceptor_msg_to_transport(
-    void *interceptor_state,
-    aeron_udp_channel_outgoing_interceptor_t *delegate,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    aeron_udp_channel_transport_sendmsg_func_t func =
-        ((aeron_udp_channel_transport_bindings_t *)interceptor_state)->sendmsg_func;
-
-    return func(NULL, transport, message);
+    return func(NULL, transport, send_buffers);
 }
 
 inline void aeron_udp_channel_incoming_interceptor_recv_func(

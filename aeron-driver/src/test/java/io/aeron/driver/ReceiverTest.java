@@ -595,7 +595,7 @@ public class ReceiverTest
         receiver.onRemoveSubscription(receiveChannelEndpoint, STREAM_ID);
         receiver.doWork();
 
-        verify(mockImage).ifActiveGoInactive();
+        verify(mockImage).deactivate();
         verify(mockImage, never()).removeFromDispatcher();
     }
 

@@ -431,6 +431,19 @@ public class PublicationImage
     }
 
     /**
+     * Deactivate image by setting state to {@link State#INACTIVE} if currently {@link State#ACTIVE} from the
+     * {@link Receiver}.
+     */
+    void deactivate()
+    {
+        if (State.ACTIVE == state)
+        {
+            isRebuilding = false;
+            state(State.INACTIVE);
+        }
+    }
+
+    /**
      * Add a destination to this image so it can merge streams.
      *
      * @param transportIndex from which packets will arrive.
@@ -520,18 +533,6 @@ public class PublicationImage
         {
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
             scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
-        }
-    }
-
-    /**
-     * Set state to {@link State#INACTIVE} if currently {@link State#ACTIVE}. Set by {@link Receiver}.
-     */
-    void ifActiveGoInactive()
-    {
-        if (State.ACTIVE == state)
-        {
-            isRebuilding = false;
-            state(State.INACTIVE);
         }
     }
 

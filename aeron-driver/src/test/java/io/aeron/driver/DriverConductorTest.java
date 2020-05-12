@@ -702,7 +702,7 @@ public class DriverConductorTest
         final PublicationImage publicationImage = captor2.getValue();
 
         publicationImage.activate();
-        publicationImage.ifActiveGoInactive();
+        publicationImage.deactivate();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() + 1000);
 
@@ -740,7 +740,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        publicationImage.ifActiveGoInactive();
+        publicationImage.deactivate();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() + 1000);
 
@@ -784,7 +784,7 @@ public class DriverConductorTest
         final PublicationImage publicationImage = captor2.getValue();
 
         publicationImage.activate();
-        publicationImage.ifActiveGoInactive();
+        publicationImage.deactivate();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() / 2);
 

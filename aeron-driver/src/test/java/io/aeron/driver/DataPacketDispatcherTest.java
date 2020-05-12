@@ -152,7 +152,7 @@ public class DataPacketDispatcherTest
         dispatcher.addPublicationImage(mockImage);
         dispatcher.removeSubscription(STREAM_ID);
 
-        verify(mockImage).ifActiveGoInactive();
+        verify(mockImage).deactivate();
     }
 
     @Test
@@ -162,7 +162,7 @@ public class DataPacketDispatcherTest
         dispatcher.addPublicationImage(mockImage);
         dispatcher.removePublicationImage(mockImage);
 
-        verify(mockImage).ifActiveGoInactive();
+        verify(mockImage).deactivate();
     }
 
     @Test

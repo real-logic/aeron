@@ -142,7 +142,7 @@ public class DataPacketDispatcher
                 final SessionInterest sessionInterest = iterator.getValue();
                 if (null != sessionInterest.image)
                 {
-                    sessionInterest.image.ifActiveGoInactive();
+                    sessionInterest.image.deactivate();
                 }
 
                 iterator.remove();
@@ -170,7 +170,7 @@ public class DataPacketDispatcher
             final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
             if (null != sessionInterest && null != sessionInterest.image)
             {
-                sessionInterest.image.ifActiveGoInactive();
+                sessionInterest.image.deactivate();
             }
         }
 
@@ -217,7 +217,7 @@ public class DataPacketDispatcher
             }
         }
 
-        image.ifActiveGoInactive();
+        image.deactivate();
     }
 
     public void removePendingSetup(final int sessionId, final int streamId)

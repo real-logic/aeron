@@ -1050,7 +1050,7 @@ TEST_F(DriverConductorNetworkTest, shouldCreatePublicationImageForActiveNetworkS
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
-    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
+    EXPECT_EQ(aeron_publication_image_subscriber_count(image), 1u);
 
     auto handler =
         [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
@@ -1110,13 +1110,13 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
         aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
-    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
+    EXPECT_EQ(aeron_publication_image_subscriber_count(image), 1u);
 
     int64_t remove_correlation_id = nextCorrelationId();
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
 
-    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 0u);
+    EXPECT_EQ(aeron_publication_image_subscriber_count(image), 0u);
 
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 }
@@ -1141,7 +1141,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
-    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
+    EXPECT_EQ(aeron_publication_image_subscriber_count(image), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     int64_t image_correlation_id = image->conductor_fields.managed_resource.registration_id;
@@ -1229,7 +1229,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
-    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 2u);
+    EXPECT_EQ(aeron_publication_image_subscriber_count(image), 2u);
 
     auto handler =
         [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)

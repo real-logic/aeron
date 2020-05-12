@@ -193,7 +193,7 @@ void aeron_publication_image_on_time_event(
 
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {
-    return (length == AERON_DATA_HEADER_LENGTH && 0 == ((aeron_frame_header_t *)buffer)->frame_length);
+    return length == AERON_DATA_HEADER_LENGTH && 0 == ((aeron_frame_header_t *)buffer)->frame_length;
 }
 
 inline bool aeron_publication_image_is_end_of_stream(const uint8_t *buffer, size_t length)
@@ -259,13 +259,13 @@ inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)
 
 inline bool aeron_publication_image_has_no_subscribers(aeron_publication_image_t *image)
 {
-    return (0 == image->conductor_fields.subscribable.length);
+    return 0 == image->conductor_fields.subscribable.length;
 }
 
 inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image)
 {
-    return (image->conductor_fields.subscribable.length > 0 &&
-            image->conductor_fields.state == AERON_PUBLICATION_IMAGE_STATE_ACTIVE);
+    return image->conductor_fields.subscribable.length > 0 &&
+        image->conductor_fields.state == AERON_PUBLICATION_IMAGE_STATE_ACTIVE;
 }
 
 inline void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image)
@@ -283,7 +283,7 @@ inline int64_t aeron_publication_image_registration_id(aeron_publication_image_t
     return image->conductor_fields.managed_resource.registration_id;
 }
 
-inline size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image)
+inline size_t aeron_publication_image_subscriber_count(aeron_publication_image_t *image)
 {
     return image->conductor_fields.subscribable.length;
 }

@@ -315,64 +315,68 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 void aeron_publication_image_track_rebuild(
     aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout)
 {
-    int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
-    int64_t min_sub_pos = hwm_position;
-    int64_t max_sub_pos = 0;
-
-    for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
+    size_t subscriber_count = aeron_publication_image_subscriber_count(image);
+    if (subscriber_count > 0)
     {
-        aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
+        const int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
+        int64_t min_sub_pos = INT64_MAX;
+        int64_t max_sub_pos = 0;
 
-        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+        for (size_t i = 0; i < subscriber_count; i++)
         {
-            int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
+            aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
 
-            min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
-            max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
+            if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+            {
+                const int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+                min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
+                max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
+            }
         }
-    }
 
-    const int64_t rebuild_position = *image->rcv_pos_position.value_addr > max_sub_pos ?
-        *image->rcv_pos_position.value_addr : max_sub_pos;
+        const int64_t rebuild_position = *image->rcv_pos_position.value_addr > max_sub_pos ?
+            *image->rcv_pos_position.value_addr : max_sub_pos;
 
-    bool loss_found = false;
-    const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);
-    const int32_t rebuild_offset = aeron_loss_detector_scan(
-        &image->loss_detector,
-        &loss_found,
-        image->mapped_raw_log.term_buffers[index].addr,
-        rebuild_position,
-        hwm_position,
-        now_ns,
-        (size_t)image->term_length_mask,
-        image->position_bits_to_shift,
-        image->initial_term_id);
+        bool loss_found = false;
+        const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);
+        const int32_t rebuild_offset = aeron_loss_detector_scan(
+            &image->loss_detector,
+            &loss_found,
+            image->mapped_raw_log.term_buffers[index].addr,
+            rebuild_position,
+            hwm_position,
+            now_ns,
+            (size_t)image->term_length_mask,
+            image->position_bits_to_shift,
+            image->initial_term_id);
 
-    const int32_t rebuild_term_offset = (int32_t)(rebuild_position & image->term_length_mask);
-    const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
+        const int32_t rebuild_term_offset = (int32_t)(rebuild_position & image->term_length_mask);
+        const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
 
-    aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
+        aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
 
-    bool should_force_send_sm = false;
-    const int32_t window_length = image->congestion_control->on_track_rebuild(
-        image->congestion_control->state,
-        &should_force_send_sm,
-        now_ns,
-        min_sub_pos,
-        image->next_sm_position,
-        hwm_position,
-        rebuild_position,
-        new_rebuild_position,
-        loss_found);
+        bool should_force_send_sm = false;
+        const int32_t window_length = image->congestion_control->on_track_rebuild(
+            image->congestion_control->state,
+            &should_force_send_sm,
+            now_ns,
+            min_sub_pos,
+            image->next_sm_position,
+            hwm_position,
+            rebuild_position,
+            new_rebuild_position,
+            loss_found);
 
-    const int32_t threshold = window_length / 4;
+        const int32_t threshold = window_length / 4;
 
-    if (should_force_send_sm ||
-        (now_ns > (image->last_status_message_timestamp + status_message_timeout)) ||
-        (min_sub_pos > (image->next_sm_position + threshold)))
-    {
-        aeron_publication_image_clean_buffer_to(image, min_sub_pos - image->term_length);
-        aeron_publication_image_schedule_status_message(image, now_ns, min_sub_pos, window_length);
+        if (should_force_send_sm ||
+            (now_ns > (image->last_status_message_timestamp + status_message_timeout)) ||
+            (min_sub_pos > (image->next_sm_position + threshold)))
+        {
+            aeron_publication_image_clean_buffer_to(image, min_sub_pos - image->term_length);
+            aeron_publication_image_schedule_status_message(image, now_ns, min_sub_pos, window_length);
+        }
     }
 }
 
@@ -444,8 +448,7 @@ static inline bool aeron_publication_image_all_eos(
 }
 
 static inline bool aeron_publication_image_connection_is_alive(
-    const aeron_publication_image_connection_t *connection,
-    const int64_t now_ns)
+    const aeron_publication_image_connection_t *connection, const int64_t now_ns)
 {
     return NULL != connection->control_addr &&
         now_ns < connection->time_of_last_activity_ns + AERON_RECEIVE_DESTINATION_TIMEOUT_NS;
@@ -459,7 +462,6 @@ void aeron_publication_image_add_connection_if_unknown(
     aeron_publication_image_track_connection(
         image, destination, src_addr, aeron_clock_cached_nano_time(image->cached_clock));
 }
-
 
 int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image,
@@ -915,4 +917,4 @@ extern const char *aeron_publication_image_log_file_name(aeron_publication_image
 
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
 
-extern size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image);
+extern size_t aeron_publication_image_subscriber_count(aeron_publication_image_t *image);

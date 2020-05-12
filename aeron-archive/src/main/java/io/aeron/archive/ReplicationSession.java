@@ -650,10 +650,15 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         if (NULL_VALUE != srcReplaySessionId)
         {
-            final long correlationId = aeron.nextCorrelationId();
-            CloseHelper.close(countedErrorHandler,
-                () -> srcArchive.archiveProxy()
-                .stopReplay(srcReplaySessionId, correlationId, srcArchive.controlSessionId()));
+            try
+            {
+                srcArchive.archiveProxy().stopReplay(
+                    srcReplaySessionId, aeron.nextCorrelationId(), srcArchive.controlSessionId());
+            }
+            catch (final Exception ex)
+            {
+                countedErrorHandler.onError(ex);
+            }
             srcReplaySessionId = NULL_VALUE;
         }
     }

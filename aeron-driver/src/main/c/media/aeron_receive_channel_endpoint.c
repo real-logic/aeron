@@ -187,19 +187,31 @@ int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpo
     return 0;
 }
 
-int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr)
+int aeron_receive_channel_endpoint_send_buffers(aeron_receive_channel_endpoint_t *endpoint, aeron_udp_channel_send_buffers_t *send_buffers)
 {
+    int bytes_sent = send_buffers->bytes_sent;
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
-
-        if (destination->data_paths->sendmsg_func(destination->data_paths, &destination->transport, msghdr) < 0)
+        int sent_count = destination->data_paths->sendmmsg_func(destination->data_paths, &destination->transport, send_buffers);
+        if (sent_count < 0)
         {
-            return -1;
+            bytes_sent = -1;
+            break;
+        }
+        if (sent_count != (int)send_buffers->count)
+        {
+            bytes_sent = 0;
+            break;
         }
     }
 
-    return 0;
+    if (bytes_sent >= 0 && bytes_sent < send_buffers->bytes_sent)
+    {
+        aeron_counter_increment(endpoint->short_sends_counter, 1);
+    }
+
+    return bytes_sent;
 }
 
 int aeron_receive_channel_endpoint_send_sm(
@@ -216,9 +228,7 @@ int aeron_receive_channel_endpoint_send_sm(
     aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *) buffer;
     aeron_status_message_optional_header_t *sm_optional_header =
         (aeron_status_message_optional_header_t *)(buffer + sizeof(aeron_status_message_header_t));
-
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    aeron_udp_channel_send_buffers_t send_buffers;
 
     const int32_t frame_length = endpoint->group_tag.is_present ?
         sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
@@ -236,26 +246,14 @@ int aeron_receive_channel_endpoint_send_sm(
     sm_header->receiver_id = endpoint->receiver_id;
     sm_optional_header->group_tag = endpoint->group_tag.value;
 
-    iov[0].iov_base = buffer;
-    iov[0].iov_len = (size_t)frame_length;
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = addr;
-    msghdr.msg_namelen = AERON_ADDR_LEN(addr);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    send_buffers.iov[0].iov_base = buffer;
+    send_buffers.iov[0].iov_len = (size_t)frame_length;
+    send_buffers.addrv[0] = addr;
+    send_buffers.addr_lenv[0] = AERON_ADDR_LEN(addr);
+    send_buffers.count = 1;
+    send_buffers.bytes_sent = send_buffers.iov[0].iov_len;
 
-    int bytes_sent;
-    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
-    {
-        if (bytes_sent >= 0)
-        {
-            aeron_counter_increment(endpoint->short_sends_counter, 1);
-        }
-    }
-
-    return bytes_sent;
+    return aeron_receive_channel_endpoint_send_buffers(endpoint, &send_buffers);
 }
 
 int aeron_receive_channel_endpoint_send_nak(
@@ -269,8 +267,7 @@ int aeron_receive_channel_endpoint_send_nak(
 {
     uint8_t buffer[sizeof(aeron_nak_header_t)];
     aeron_nak_header_t *nak_header = (aeron_nak_header_t *) buffer;
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    aeron_udp_channel_send_buffers_t send_buffers;
 
     nak_header->frame_header.frame_length = sizeof(aeron_nak_header_t);
     nak_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -282,26 +279,14 @@ int aeron_receive_channel_endpoint_send_nak(
     nak_header->term_offset = term_offset;
     nak_header->length = length;
 
-    iov[0].iov_base = buffer;
-    iov[0].iov_len = sizeof(aeron_nak_header_t);
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = addr;
-    msghdr.msg_namelen = AERON_ADDR_LEN(addr);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    send_buffers.iov[0].iov_base = buffer;
+    send_buffers.iov[0].iov_len = sizeof(aeron_nak_header_t);
+    send_buffers.addrv[0] = addr;
+    send_buffers.addr_lenv[0] = AERON_ADDR_LEN(addr);
+    send_buffers.count = 1;
+    send_buffers.bytes_sent = send_buffers.iov[0].iov_len;
 
-    int bytes_sent;
-    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
-    {
-        if (bytes_sent >= 0)
-        {
-            aeron_counter_increment(endpoint->short_sends_counter, 1);
-        }
-    }
-
-    return bytes_sent;
+    return aeron_receive_channel_endpoint_send_buffers(endpoint, &send_buffers);
 }
 
 int aeron_receive_channel_endpoint_send_rttm(
@@ -315,8 +300,7 @@ int aeron_receive_channel_endpoint_send_rttm(
 {
     uint8_t buffer[sizeof(aeron_rttm_header_t)];
     aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *) buffer;
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    aeron_udp_channel_send_buffers_t send_buffers;
 
     rttm_header->frame_header.frame_length = sizeof(aeron_rttm_header_t);
     rttm_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -328,26 +312,14 @@ int aeron_receive_channel_endpoint_send_rttm(
     rttm_header->reception_delta = reception_delta;
     rttm_header->receiver_id = endpoint->receiver_id;
 
-    iov[0].iov_base = buffer;
-    iov[0].iov_len = sizeof(aeron_rttm_header_t);
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = addr;
-    msghdr.msg_namelen = AERON_ADDR_LEN(addr);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    send_buffers.iov[0].iov_base = buffer;
+    send_buffers.iov[0].iov_len = sizeof(aeron_rttm_header_t);
+    send_buffers.addrv[0] = addr;
+    send_buffers.addr_lenv[0] = AERON_ADDR_LEN(addr);
+    send_buffers.count = 1;
+    send_buffers.bytes_sent = send_buffers.iov[0].iov_len;
 
-    int bytes_sent;
-    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
-    {
-        if (bytes_sent >= 0)
-        {
-            aeron_counter_increment(endpoint->short_sends_counter, 1);
-        }
-    }
-
-    return bytes_sent;
+    return aeron_receive_channel_endpoint_send_buffers(endpoint, &send_buffers);
 }
 
 void aeron_receive_channel_endpoint_dispatch(

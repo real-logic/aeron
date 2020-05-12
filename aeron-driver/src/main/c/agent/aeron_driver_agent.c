@@ -37,14 +37,6 @@
 #include "concurrent/aeron_thread.h"
 #include "aeron_windows.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
@@ -215,7 +207,7 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
 }
 
 void aeron_driver_agent_log_frame(
-    int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
+    int32_t msg_type_id, struct iovec *msg_iov, int result, void* msg_name, int32_t msg_namelen, int32_t message_len)
 {
     uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage)];
     aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
@@ -223,21 +215,16 @@ void aeron_driver_agent_log_frame(
 
     hdr->time_ms = aeron_agent_epoch_clock();
     hdr->result = (int32_t)result;
-    hdr->sockaddr_len = msghdr->msg_namelen;
+    hdr->sockaddr_len = msg_namelen;
     hdr->message_len = message_len;
 
-    if (msghdr->msg_iovlen > 1)
-    {
-        fprintf(stderr, "only aware of 1 iov. %d iovs detected.\n", (int)msghdr->msg_iovlen);
-    }
-
     uint8_t *ptr = buffer + sizeof(aeron_driver_agent_frame_log_header_t);
-    memcpy(ptr, msghdr->msg_name, msghdr->msg_namelen);
-    length += msghdr->msg_namelen;
+    memcpy(ptr, msg_name, msg_namelen);
+    length += msg_namelen;
 
-    ptr += msghdr->msg_namelen;
+    ptr += msg_namelen;
     int32_t copy_length = message_len < MAX_FRAME_LENGTH ? message_len : MAX_FRAME_LENGTH;
-    memcpy(ptr, msghdr->msg_iov[0].iov_base, (size_t)copy_length);
+    memcpy(ptr, msg_iov->iov_base, (size_t)copy_length);
     length += copy_length;
 
     aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, (size_t)length);
@@ -247,34 +234,21 @@ int aeron_driver_agent_outgoing_mmsg(
     void *interceptor_state,
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    aeron_udp_channel_send_buffers_t *send_buffers)
 {
     int result = delegate->outgoing_mmsg_func(
-        delegate->interceptor_state, delegate->next_interceptor, transport, msgvec, vlen);
+        delegate->interceptor_state, delegate->next_interceptor, transport, send_buffers);
 
     for (int i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
             AERON_FRAME_OUT,
-            &msgvec[i].msg_hdr,
-            (int32_t)msgvec[i].msg_len,
-            (int32_t)msgvec[i].msg_hdr.msg_iov[0].iov_len);
+            send_buffers->iov + i,
+            (int)send_buffers->iov[i].iov_len,
+            send_buffers->addrv[i],
+            send_buffers->addr_lenv[i],
+            send_buffers->iov[i].iov_len);
     }
-
-    return result;
-}
-
-int aeron_driver_agent_outgoing_msg(
-    void *interceptor_state,
-    aeron_udp_channel_outgoing_interceptor_t *delegate,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    int result = delegate->outgoing_msg_func(
-        delegate->interceptor_state, delegate->next_interceptor, transport, message);
-
-    aeron_driver_agent_log_frame(AERON_FRAME_OUT, message, result, (int32_t)message->msg_iov[0].iov_len);
 
     return result;
 }
@@ -289,19 +263,12 @@ void aeron_driver_agent_incoming_msg(
     size_t length,
     struct sockaddr_storage *addr)
 {
-    struct msghdr message;
     struct iovec iov;
 
     iov.iov_base = buffer;
     iov.iov_len = (uint32_t)length;
-    message.msg_iovlen = 1;
-    message.msg_iov = &iov;
-    message.msg_name = addr;
-    message.msg_control = NULL;
-    message.msg_controllen = 0;
-    message.msg_namelen = sizeof(struct sockaddr_storage);
 
-    aeron_driver_agent_log_frame(AERON_FRAME_IN, &message, (int32_t)length, (int32_t)length);
+    aeron_driver_agent_log_frame(AERON_FRAME_IN, &iov,(int32_t)length, addr, sizeof(struct sockaddr_storage), (int32_t)length);
 
     delegate->incoming_func(
         delegate->interceptor_state,
@@ -338,7 +305,6 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
         incoming_bindings->outgoing_init_func = NULL;
         incoming_bindings->outgoing_close_func = NULL;
         incoming_bindings->outgoing_mmsg_func = NULL;
-        incoming_bindings->outgoing_msg_func = NULL;
         incoming_bindings->incoming_init_func = aeron_driver_agent_interceptor_init;
         incoming_bindings->incoming_close_func = NULL;
         incoming_bindings->incoming_func = aeron_driver_agent_incoming_msg;
@@ -377,7 +343,6 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
         outgoing_bindings->outgoing_init_func = aeron_driver_agent_interceptor_init;
         outgoing_bindings->outgoing_close_func = NULL;
         outgoing_bindings->outgoing_mmsg_func = aeron_driver_agent_outgoing_mmsg;
-        outgoing_bindings->outgoing_msg_func = aeron_driver_agent_outgoing_msg;
         outgoing_bindings->incoming_init_func = NULL;
         outgoing_bindings->incoming_close_func = NULL;
         outgoing_bindings->incoming_func = NULL;

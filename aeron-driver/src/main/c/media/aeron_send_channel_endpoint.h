@@ -74,8 +74,25 @@ int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manage
 void aeron_send_channel_endpoint_incref(void *clientd);
 void aeron_send_channel_endpoint_decref(void *clientd);
 
-int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen);
-int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr);
+int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_send_buffers_t *send_buffers);
+
+static inline int aeron_send_channel_send_buffers(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_udp_channel_send_buffers_t *send_buffers,
+    int64_t *short_sends_counter)
+{
+    int sent_count = aeron_send_channel_sendmmsg(endpoint, send_buffers);
+    if (sent_count == (int)send_buffers->count)
+    {
+        return send_buffers->bytes_sent;
+    }
+    if (sent_count >= 0)
+    {
+        aeron_counter_increment(short_sends_counter, 1);
+        return 0;
+    }
+    return sent_count;
+}
 
 int aeron_send_channel_endpoint_add_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication);

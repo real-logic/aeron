@@ -27,14 +27,6 @@
 #include "aeron_driver_conductor.h"
 #include "media/aeron_udp_destination_tracker.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_data_paths_t *data_paths,
@@ -72,11 +64,11 @@ int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker
 int aeron_udp_destination_tracker_sendmmsg(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *mmsghdr, size_t vlen)
+    aeron_udp_channel_send_buffers_t *send_buffers)
 {
     const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
     const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
-    int min_msgs_sent = (int)vlen;
+    int min_msgs_sent = (int)send_buffers->count;
 
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
@@ -94,56 +86,20 @@ int aeron_udp_destination_tracker_sendmmsg(
         }
         else
         {
-            for (size_t j = 0; j < vlen; j++)
+            for (size_t j = 0; j < send_buffers->count; j++)
             {
-                mmsghdr[j].msg_hdr.msg_name = &entry->addr;
-                mmsghdr[j].msg_hdr.msg_namelen = AERON_ADDR_LEN(&entry->addr);
-                mmsghdr[j].msg_len = 0;
+                send_buffers->addrv[j] = &entry->addr;
+                send_buffers->addr_lenv[j] = AERON_ADDR_LEN(&entry->addr);
             }
 
             const int sendmmsg_result = tracker->data_paths->sendmmsg_func(
-                tracker->data_paths, transport, mmsghdr, vlen);
+                tracker->data_paths, transport, send_buffers);
 
             min_msgs_sent = sendmmsg_result < min_msgs_sent ? sendmmsg_result : min_msgs_sent;
         }
     }
 
     return min_msgs_sent;
-}
-
-int aeron_udp_destination_tracker_sendmsg(
-    aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct msghdr *msghdr)
-{
-    const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
-    const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
-    int min_bytes_sent = (int)msghdr->msg_iov->iov_len;
-
-    for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
-    {
-        aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
-
-        if (is_dynamic_control_mode && now_ns > (entry->time_of_last_activity_ns + tracker->destination_timeout_ns))
-        {
-            aeron_array_fast_unordered_remove(
-                (uint8_t *)tracker->destinations.array,
-                sizeof(aeron_udp_destination_entry_t),
-                (size_t)i,
-                (size_t)last_index);
-            last_index--;
-            tracker->destinations.length--;
-        }
-        else
-        {
-            msghdr->msg_name = &entry->addr;
-            msghdr->msg_namelen = AERON_ADDR_LEN(&entry->addr);
-
-            const int sendmsg_result = tracker->data_paths->sendmsg_func(tracker->data_paths, transport, msghdr);
-
-            min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
-        }
-    }
-
-    return min_bytes_sent;
 }
 
 bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)

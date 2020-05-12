@@ -23,7 +23,6 @@
 typedef struct aeron_test_udp_bindings_state_stct
 {
     int mmsg_count;
-    int msg_count;
     int sm_count;
     int nak_count;
     int setup_count;
@@ -74,41 +73,33 @@ int aeron_test_udp_channel_transport_recvmmsg(
 int aeron_test_udp_channel_transport_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    aeron_udp_channel_send_buffers_t *send_buffers)
 {
     aeron_test_udp_bindings_state_t *state = (aeron_test_udp_bindings_state_t *)transport->bindings_clientd;
     state->mmsg_count++;
-    return 0;
-}
 
-int aeron_test_udp_channel_transport_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    aeron_test_udp_bindings_state_t *state = (aeron_test_udp_bindings_state_t *)transport->bindings_clientd;
-    state->msg_count++;
-
-    aeron_frame_header_t *header = (aeron_frame_header_t *)message->msg_iov->iov_base;
-
-    switch (header->type)
+    for (size_t i = 0; i < send_buffers->count; i += 1)
     {
-        case AERON_HDR_TYPE_SETUP:
-            state->setup_count++;
-            break;
+        aeron_frame_header_t *header = (aeron_frame_header_t *)(send_buffers->iov[i].iov_base);
 
-        case AERON_HDR_TYPE_SM:
-            state->sm_count++;
-            break;
+        switch (header->type)
+        {
+            case AERON_HDR_TYPE_SETUP:
+                state->setup_count++;
+                break;
 
-        case AERON_HDR_TYPE_NAK:
-            state->nak_count++;
-            break;
+            case AERON_HDR_TYPE_SM:
+                state->sm_count++;
+                break;
 
-        case AERON_HDR_TYPE_RTTM:
-            state->rttm_count++;
-            break;
+            case AERON_HDR_TYPE_NAK:
+                state->nak_count++;
+                break;
+
+            case AERON_HDR_TYPE_RTTM:
+                state->rttm_count++;
+                break;
+        }
     }
 
     return 0;
@@ -174,7 +165,6 @@ void aeron_test_udp_bindings_load(aeron_udp_channel_transport_bindings_t *bindin
     bindings->poller_init_func = aeron_test_udp_transport_poller_init;
     bindings->poller_poll_func = aeron_test_udp_transport_poller_poll;
 
-    bindings->sendmsg_func = aeron_test_udp_channel_transport_sendmsg;
     bindings->sendmmsg_func = aeron_test_udp_channel_transport_sendmmsg;
     bindings->recvmmsg_func = aeron_test_udp_channel_transport_recvmmsg;
     bindings->init_func = aeron_test_udp_channel_transport_init;

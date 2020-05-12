@@ -395,7 +395,7 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
         m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
         &m_channel->local_data);
 
-    ASSERT_EQ(0, m_test_bindings_state->msg_count + m_test_bindings_state->mmsg_count);
+    ASSERT_EQ(0, m_test_bindings_state->mmsg_count);
     ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
 }
 

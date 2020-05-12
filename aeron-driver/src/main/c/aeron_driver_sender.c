@@ -22,14 +22,6 @@
 #include <aeron_socket.h>
 #include <stdio.h>
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 #include "util/aeron_arrayutil.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_sender.h"

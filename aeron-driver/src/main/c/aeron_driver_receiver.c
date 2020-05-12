@@ -26,14 +26,6 @@
 #include "aeron_driver_receiver.h"
 #include "aeron_publication_image.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 int aeron_driver_receiver_init(
     aeron_driver_receiver_t *receiver,
     aeron_driver_context_t *context,

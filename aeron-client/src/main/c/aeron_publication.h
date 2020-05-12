@@ -29,7 +29,6 @@ typedef struct aeron_publication_stct
     const char *channel;
 
     aeron_log_buffer_t *log_buffer;
-//    aeron_mapped_raw_log_t mapped_raw_log;
     aeron_logbuffer_metadata_t *log_meta_data;
 
     int64_t *position_limit;

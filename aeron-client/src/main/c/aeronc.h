@@ -367,7 +367,7 @@ int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication
  */
 
 typedef void (*aeron_fragment_handler_t)(
-    void *clientd, uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
 
 typedef enum aeron_controlled_fragment_handler_action_en
 {
@@ -375,10 +375,10 @@ typedef enum aeron_controlled_fragment_handler_action_en
 }
 aeron_controlled_fragment_handler_action_t;
 typedef aeron_controlled_fragment_handler_action_t (*aeron_controlled_fragment_handler_t)(
-    void *clientd, uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
 
 typedef void (*aeron_block_handler_t)(
-    void *clientd, uint8_t *buffer, size_t offset, size_t length, int32_t session_id, int32_t term_id);
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, int32_t session_id, int32_t term_id);
 
 int aeron_subscription_poll(
     aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, int fragment_limit);
@@ -408,16 +408,20 @@ int aeron_subscription_close(aeron_subscription_t *subscription);
 
 int aeron_image_release(aeron_image_t *image);
 
-int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int fragment_limit);
+int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit);
 int aeron_image_controlled_poll(
-    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, int fragment_limit);
+    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, size_t fragment_limit);
 int aeron_image_bounded_poll(
-    aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int64_t limit_position, int fragment_limit);
+    aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int64_t limit_position, size_t fragment_limit);
 int aeron_image_bounded_controlled_poll(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handler,
-    void *clientd, int64_t limit_position, int fragment_limit);
+    void *clientd, int64_t limit_position, size_t fragment_limit);
 int64_t aeron_image_controlled_peek(
-    aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, int64_t limit_position);
+    aeron_image_t *image,
+    int64_t initial_position,
+    aeron_controlled_fragment_handler_t handler,
+    void *clientd,
+    int64_t limit_position);
 int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 

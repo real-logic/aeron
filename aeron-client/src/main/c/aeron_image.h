@@ -17,10 +17,13 @@
 #ifndef AERON_C_IMAGE_H
 #define AERON_C_IMAGE_H
 
+#include <inttypes.h>
+
 #include "aeronc.h"
 #include "aeron_agent.h"
 #include "aeron_context.h"
 #include "aeron_client_conductor.h"
+#include "util/aeron_error.h"
 
 typedef struct aeron_image_stct
 {
@@ -35,10 +38,19 @@ typedef struct aeron_image_stct
     int64_t removal_change_number;
 
     int32_t session_id;
+    int32_t term_length_mask;
+
+    size_t position_bits_to_shift;
 
     bool is_closed;
 }
 aeron_image_t;
+
+typedef struct aeron_header_stct
+{
+    aeron_data_header_t *frame;
+}
+aeron_header_t;
 
 int aeron_image_create(
     aeron_image_t **image,
@@ -58,6 +70,30 @@ inline int64_t aeron_image_removal_change_number(aeron_image_t *image)
 inline bool aeron_image_is_in_use(aeron_image_t *image, int64_t last_change_number)
 {
     return image->removal_change_number > last_change_number;
+}
+
+inline int aeron_image_validate_position(aeron_image_t *image, int64_t position)
+{
+    const int64_t current_position = *image->subscriber_position;
+    const int64_t limit_position =
+        (current_position - (current_position & image->term_length_mask)) + image->term_length_mask + 1;
+
+    if (position < current_position ||  position > limit_position)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s: %" PRId64 " position out of range %" PRId64 "-%" PRId64,
+            strerror(EINVAL), position, current_position, limit_position);
+        return -1;
+    }
+
+    if (0 != (position & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)))
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s: position not aligned to FRAME_ALIGNMENT", strerror(EINVAL));
+        return -1;
+    }
+
+    return 0;
 }
 
 #endif //AERON_C_IMAGE_H

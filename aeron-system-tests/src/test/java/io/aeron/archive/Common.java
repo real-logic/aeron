@@ -132,7 +132,8 @@ class Common
         }
     }
 
-    static void awaitSignal(final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
+    static RecordingSignal awaitSignal(
+        final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
     {
         signalRef.set(null);
 
@@ -141,6 +142,8 @@ class Common
             pollForSignal(adapter);
         }
         while (signalRef.get() == null);
+
+        return signalRef.get();
     }
 
     static void awaitSignalOrResponse(

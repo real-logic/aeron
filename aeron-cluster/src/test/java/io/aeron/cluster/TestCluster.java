@@ -976,18 +976,18 @@ public class TestCluster implements AutoCloseable
 
     static class ServiceContext
     {
-        final Aeron.Context aeron = new Aeron.Context();
-        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
-        final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
+        final Aeron.Context aeronCtx = new Aeron.Context();
+        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
+        final ClusteredServiceContainer.Context serviceContainerCtx = new ClusteredServiceContainer.Context();
         TestNode.TestService service;
     }
 
     static class NodeContext
     {
-        final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
-        final Archive.Context archiveContext = new Archive.Context();
-        final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
-        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
+        final Archive.Context archiveCtx = new Archive.Context();
+        final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context();
+        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
     }
 
     static ServiceContext serviceContext(
@@ -1000,39 +1000,39 @@ public class TestCluster implements AutoCloseable
 
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + nodeIndex + "-" + serviceIndex;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeIndex + "-driver";
-        final ServiceContext context = new ServiceContext();
+        final ServiceContext serviceCtx = new ServiceContext();
 
-        context.service = serviceSupplier.get();
+        serviceCtx.service = serviceSupplier.get();
 
-        context.aeron
+        serviceCtx.aeronCtx
             .aeronDirectoryName(aeronDirName)
             .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE);
 
-        context.aeronArchiveContext
-            .controlRequestChannel(nodeContext.archiveContext.controlChannel())
-            .controlRequestStreamId(nodeContext.archiveContext.controlStreamId())
+        serviceCtx.aeronArchiveCtx
+            .controlRequestChannel(nodeContext.archiveCtx.controlChannel())
+            .controlRequestStreamId(nodeContext.archiveCtx.controlStreamId())
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, serviceIndex))
             .controlResponseStreamId(1100 + serviceIndex)
-            .recordingEventsChannel(nodeContext.archiveContext.recordingEventsChannel());
+            .recordingEventsChannel(nodeContext.archiveCtx.recordingEventsChannel());
 
-        context.serviceContainerContext
-            .archiveContext(context.aeronArchiveContext.clone())
+        serviceCtx.serviceContainerCtx
+            .archiveContext(serviceCtx.aeronArchiveCtx.clone())
             .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
+            .clusteredService(serviceCtx.service)
             .serviceId(serviceId)
             .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
             .errorHandler(ClusterTests.errorHandler(serviceIndex));
 
-        return context;
+        return serviceCtx;
     }
 
     static NodeContext nodeContext(final int index, final boolean cleanStart)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final NodeContext context = new NodeContext();
+        final NodeContext nodeCtx = new NodeContext();
 
-        context.mediaDriverContext
+        nodeCtx.mediaDriverCtx
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
@@ -1040,7 +1040,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);
 
-        context.archiveContext
+        nodeCtx.archiveCtx
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
             .segmentFileLength(256 * 1024)
             .aeronDirectoryName(aeronDirName)
@@ -1053,15 +1053,15 @@ public class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 
-        context.aeronArchiveContext
-            .controlRequestChannel(context.archiveContext.controlChannel())
-            .controlRequestStreamId(context.archiveContext.controlStreamId())
+        nodeCtx.aeronArchiveCtx
+            .controlRequestChannel(nodeCtx.archiveCtx.controlChannel())
+            .controlRequestStreamId(nodeCtx.archiveCtx.controlStreamId())
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
-            .recordingEventsChannel(context.archiveContext.recordingEventsChannel())
+            .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel())
             .aeronDirectoryName(aeronDirName);
 
-        context.consensusModuleContext
+        nodeCtx.consensusModuleCtx
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(clusterMembersString(3))
@@ -1071,10 +1071,10 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
-            .archiveContext(context.aeronArchiveContext.clone())
+            .archiveContext(nodeCtx.aeronArchiveCtx.clone())
             .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
             .deleteDirOnStart(cleanStart);
 
-        return context;
+        return nodeCtx;
     }
 }

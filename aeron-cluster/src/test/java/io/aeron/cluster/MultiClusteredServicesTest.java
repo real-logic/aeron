@@ -87,13 +87,13 @@ public class MultiClusteredServicesTest
         serviceContexts.add(TestCluster.serviceContext(2, 1, nodeContexts.get(2), ServiceB::new));
 
         nodeContexts.forEach((context) -> clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
-            context.mediaDriverContext, context.archiveContext, context.consensusModuleContext)));
+            context.mediaDriverCtx, context.archiveCtx, context.consensusModuleCtx)));
 
         serviceContexts.forEach(
             (context) ->
             {
-                context.serviceContainerContext.aeronDirectoryName(context.aeron.aeronDirectoryName());
-                clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerContext));
+                context.serviceContainerCtx.aeronDirectoryName(context.aeronCtx.aeronDirectoryName());
+                clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerCtx));
             });
 
         final String aeronDirName = CommonContext.getAeronDirectoryName();

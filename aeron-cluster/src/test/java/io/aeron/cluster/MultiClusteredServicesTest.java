@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
@@ -34,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class MultipleClusteredServicesTest
+public class MultiClusteredServicesTest
 {
     final AtomicLong serviceAMessageCount = new AtomicLong(0);
     final AtomicLong serviceBMessageCount = new AtomicLong(0);
@@ -69,7 +68,7 @@ public class MultipleClusteredServicesTest
 
     @Test
     @Timeout(20)
-    public void testMultiService()
+    public void shouldSupportMultipleServicesPerNode()
     {
         final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();
         final List<TestCluster.ServiceContext> serviceContexts = new ArrayList<>();
@@ -93,9 +92,7 @@ public class MultipleClusteredServicesTest
         serviceContexts.forEach(
             (context) ->
             {
-                final Aeron aeron = Aeron.connect(context.aeron);
-                context.aeronArchiveContext.aeron(aeron).ownsAeronClient(false);
-                context.serviceContainerContext.aeron(aeron).ownsAeronClient(true);
+                context.serviceContainerContext.aeronDirectoryName(context.aeron.aeronDirectoryName());
                 clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerContext));
             });
 
@@ -127,8 +124,8 @@ public class MultipleClusteredServicesTest
         finally
         {
             CloseHelper.closeAll(client, clientMediaDriver);
-            clusteredMediaDrivers.forEach(CloseHelper::close);
-            clusteredServiceContainers.forEach(CloseHelper::close);
+            CloseHelper.closeAll(clusteredMediaDrivers);
+            CloseHelper.closeAll(clusteredServiceContainers);
 
             clientMediaDriver.context().deleteDirectory();
             clusteredMediaDrivers.forEach((driver) -> driver.mediaDriver().context().deleteDirectory());

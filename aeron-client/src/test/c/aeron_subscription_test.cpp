@@ -108,7 +108,7 @@ public:
     }
 
     static void null_fragment_handler(
-        void *clientd, uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
     {
     }
 

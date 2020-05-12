@@ -476,8 +476,9 @@ public class PublicationImage
      */
     final void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
+        final long hwmPosition = this.hwmPosition.getVolatile();
         long minSubscriberPosition = Long.MAX_VALUE;
-        long maxSubscriberPosition = Long.MIN_VALUE;
+        long maxSubscriberPosition = 0;
 
         for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
@@ -487,7 +488,6 @@ public class PublicationImage
         }
 
         final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
-        final long hwmPosition = this.hwmPosition.getVolatile();
 
         final long scanOutcome = lossDetector.scan(
             termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],

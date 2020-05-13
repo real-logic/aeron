@@ -113,7 +113,7 @@ public class ArchiveTest
     {
         if (threadingMode == ThreadingMode.INVOKER)
         {
-            TestMediaDriver.notSupportedOnCMediaDriverYet("Foo");
+            TestMediaDriver.notYetSupportedOnCMediaDriver("C driver does not integrate with Java Invoker");
         }
 
         rnd.setSeed(seed);

@@ -31,7 +31,7 @@ public interface TestMediaDriver extends AutoCloseable
         return !isEmpty(System.getProperty(AERONMD_PATH_PROP_NAME));
     }
 
-    static void notSupportedOnCMediaDriverYet(final String reason)
+    static void notYetSupportedOnCMediaDriver(final String reason)
     {
         assumeFalse(shouldRunCMediaDriver(), () -> "Functionality not support by C Media Driver: " + reason);
     }

@@ -255,6 +255,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateStoppedRecordingsConcurrently()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
         final long[] srcRecordingIds = new long[2];

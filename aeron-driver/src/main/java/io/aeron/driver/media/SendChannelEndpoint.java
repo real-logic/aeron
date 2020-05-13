@@ -265,10 +265,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
             nowNs > (timeOfLastSmNs + DESTINATION_TIMEOUT))
         {
             final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
-            final InetSocketAddress address = udpChannel.remoteData();
-
-            conductorProxy.reResolveEndpoint(endpoint, this, address);
-            timeOfLastSmNs = nowNs;
+            if (null != endpoint)
+            {
+                conductorProxy.reResolveEndpoint(endpoint, this, udpChannel.remoteData());
+                timeOfLastSmNs = nowNs;
+            }
         }
     }
 

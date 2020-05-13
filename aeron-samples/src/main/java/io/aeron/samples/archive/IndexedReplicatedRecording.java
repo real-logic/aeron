@@ -68,14 +68,14 @@ public class IndexedReplicatedRecording implements AutoCloseable
     private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8040";
     private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8041";
 
-    private static final int LIVE_STREAM_ID = 33;
+    private static final int LIVE_STREAM_ID = 1033;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .controlEndpoint("localhost:8100")
         .termLength(TERM_LENGTH)
         .build();
 
-    private static final int INDEX_STREAM_ID = 97;
+    private static final int INDEX_STREAM_ID = 1097;
     private static final String INDEX_CHANNEL = new ChannelUriStringBuilder()
         .media("ipc")
         .termLength(TERM_LENGTH)
@@ -460,6 +460,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 }
                 catch (final InterruptedException ignore)
                 {
+                    Thread.currentThread().interrupt();
                     return;
                 }
             }

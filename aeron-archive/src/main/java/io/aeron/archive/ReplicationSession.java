@@ -447,21 +447,20 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private int extend()
     {
+        final boolean isMds = isTagged || null != liveDestination;
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
+        final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media(channelUri)
-            .alias(channelUri)
-            .rejoin(false)
-            .sessionId((int)srcReplaySessionId);
+            .alias(channelUri);
 
-        if (isTagged || null != liveDestination)
+        if (isMds)
         {
-            builder.tags(channelTagId + "," + subscriptionTagId)
-                .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
+            builder.tags(channelTagId + "," + subscriptionTagId).controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
         }
         else
         {
-            builder.endpoint(channelUri);
+            builder.endpoint(endpoint).sessionId((int)srcReplaySessionId);
         }
 
         final String channel = builder.build();
@@ -474,9 +473,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else
         {
-            if (isTagged || null != liveDestination)
+            if (isMds)
             {
-                replayDestination = builder.clear().media(channelUri).endpoint(channelUri).build();
+                replayDestination = "aeron:udp?endpoint=" + endpoint + "|session-id=" + ((int)srcReplaySessionId);
                 recordingSubscription.asyncAddDestination(replayDestination);
             }
 

@@ -746,7 +746,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscription = new NetworkSubscriptionLink(
+        final NetworkSubscriptionLink subscription = new NetworkSubscriptionLink(
             registrationId, channelEndpoint, streamId, channel, client, params);
 
         subscriptionLinks.add(subscription);
@@ -1317,23 +1317,24 @@ public class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null != channelEndpoint)
         {
-            final boolean isReliable = params.isReliable;
-            final boolean isRejoin = params.isRejoin;
-            final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
-
-            for (int i = 0, size = existingLinks.size(); i < size; i++)
+            for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
-                final SubscriptionLink subscription = existingLinks.get(i);
-                if (isReliable != subscription.isReliable() && subscription.matches(channelEndpoint, streamId, params))
-                {
-                    throw new IllegalStateException(
-                        "option conflicts with existing subscriptions: reliable=" + isReliable);
-                }
+                final SubscriptionLink subscription = subscriptionLinks.get(i);
+                final boolean matchesTag = !udpChannel.hasTag() || channelEndpoint.matchesTag(udpChannel);
 
-                if (isRejoin != subscription.isRejoin() && subscription.matches(channelEndpoint, streamId, params))
+                if (matchesTag && subscription.matches(channelEndpoint, streamId, params))
                 {
-                    throw new IllegalStateException(
-                        "option conflicts with existing subscriptions: rejoin=" + isRejoin);
+                    if (params.isReliable != subscription.isReliable())
+                    {
+                        throw new IllegalStateException(
+                            "option conflicts with existing subscriptions: reliable=" + params.isReliable);
+                    }
+
+                    if (params.isRejoin != subscription.isRejoin())
+                    {
+                        throw new IllegalStateException(
+                            "option conflicts with existing subscriptions: rejoin=" + params.isRejoin);
+                    }
                 }
             }
         }
@@ -1373,7 +1374,6 @@ public class DriverConductor implements Agent
 
     private ArrayList<SubscriberPosition> linkIpcSubscriptions(final IpcPublication publication)
     {
-        final ArrayList<SubscriptionLink> subscriptionLinks = this.subscriptionLinks;
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)

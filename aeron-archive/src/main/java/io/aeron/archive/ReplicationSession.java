@@ -376,12 +376,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (hasResponse(poller))
             {
                 srcRecordingPosition = poller.relevantId();
-                if (NULL_POSITION == srcRecordingPosition)
+                if (NULL_POSITION == srcRecordingPosition && null != liveDestination)
                 {
-                    if (null != liveDestination)
-                    {
-                        throw new ArchiveException("cannot live merge without active source recording");
-                    }
+                    throw new ArchiveException("cannot live merge without active source recording");
                 }
 
                 state(State.REPLAY);
@@ -452,7 +449,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media(channelUri)
-            .alias(channelUri);
+            .alias(channelUri)
+            .rejoin(false);
 
         if (isMds)
         {
@@ -575,12 +573,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 retryAttempts = RETRY_ATTEMPTS;
                 srcRecordingPosition = poller.relevantId();
 
-                if (NULL_POSITION == srcRecordingPosition)
+                if (NULL_POSITION == srcRecordingPosition && null != liveDestination)
                 {
-                    if (null != liveDestination)
-                    {
-                        throw new ArchiveException("cannot live merge without active source recording");
-                    }
+                    throw new ArchiveException("cannot live merge without active source recording");
                 }
 
                 final long position = image.position();

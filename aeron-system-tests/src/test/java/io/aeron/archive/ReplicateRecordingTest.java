@@ -495,7 +495,8 @@ public class ReplicateRecordingTest
         final long srcRecordingId;
         final long channelTagId = 333;
         final long subscriptionTagId = 777;
-        final String taggedChannel = "aeron:udp?control-mode=manual|tags=" + channelTagId + "," + subscriptionTagId;
+        final String taggedChannel =
+            "aeron:udp?control-mode=manual|rejoin=false|tags=" + channelTagId + "," + subscriptionTagId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
         final MutableReference<RecordingSignal> signalRef = new MutableReference<>();

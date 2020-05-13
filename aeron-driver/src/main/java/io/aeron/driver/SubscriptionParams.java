@@ -31,9 +31,9 @@ class SubscriptionParams
     boolean hasJoinPosition = false;
     boolean hasSessionId = false;
     boolean isReliable = true;
+    boolean isRejoin = true;
     boolean isSparse = true;
     boolean isTether = true;
-    boolean isRejoin = true;
     InferableBoolean group = InferableBoolean.INFER;
 
     static SubscriptionParams getSubscriptionParams(final ChannelUri channelUri, final MediaDriver.Context context)
@@ -97,6 +97,9 @@ class SubscriptionParams
         final String reliableStr = channelUri.get(RELIABLE_STREAM_PARAM_NAME);
         params.isReliable = null != reliableStr ? "true".equals(reliableStr) : context.reliableStream();
 
+        final String rejoinStr = channelUri.get(REJOIN_PARAM_NAME);
+        params.isRejoin = null != rejoinStr ? "true".equals(rejoinStr) : context.rejoinStream();
+
         final String tetherStr = channelUri.get(TETHER_PARAM_NAME);
         params.isTether = null != tetherStr ? "true".equals(tetherStr) : context.tetherSubscriptions();
 
@@ -105,9 +108,6 @@ class SubscriptionParams
 
         final String groupStr = channelUri.get(GROUP_PARAM_NAME);
         params.group = null != groupStr ? InferableBoolean.parse(groupStr) : context.receiverGroupConsideration();
-
-        final String rejoinStr = channelUri.get(REJOIN_PARAM_NAME);
-        params.isRejoin = null != rejoinStr ? "true".equals(rejoinStr) : context.rejoinStream();
 
         return params;
     }
@@ -122,9 +122,9 @@ class SubscriptionParams
             ", hasJoinPosition=" + hasJoinPosition +
             ", hasSessionId=" + hasSessionId +
             ", isReliable=" + isReliable +
+            ", isRejoin=" + isRejoin +
             ", isSparse=" + isSparse +
             ", isTether=" + isTether +
-            ", isRejoin=" + isRejoin +
             ", group=" + group +
             '}';
     }

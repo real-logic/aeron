@@ -187,7 +187,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     public String toString()
     {
-        return "SubscriptionLink{" +
+        return this.getClass().getSimpleName() + "{" +
             "registrationId=" + registrationId +
             ", streamId=" + streamId +
             ", sessionId=" + sessionId +

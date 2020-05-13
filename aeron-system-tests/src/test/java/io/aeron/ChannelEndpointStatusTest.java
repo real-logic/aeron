@@ -168,7 +168,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
-        TestMediaDriver.notYetSupportedOnCMediaDriver("Need to avoid using callback handlers in system tests");
+        TestMediaDriver.notSupportedOnCMediaDriver("Need to avoid using callback handlers in system tests");
 
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
@@ -200,7 +200,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
-        TestMediaDriver.notYetSupportedOnCMediaDriver("Need to avoid using callback handlers in system tests");
+        TestMediaDriver.notSupportedOnCMediaDriver("Need to avoid using callback handlers in system tests");
 
         final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
@@ -233,7 +233,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
-        TestMediaDriver.notYetSupportedOnCMediaDriver("Need to avoid using callback handlers in system tests");
+        TestMediaDriver.notSupportedOnCMediaDriver("Need to avoid using callback handlers in system tests");
 
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 

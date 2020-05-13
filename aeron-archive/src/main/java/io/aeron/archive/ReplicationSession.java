@@ -495,7 +495,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
         {
-            throw new TimeoutException("failed get replay image");
+            throw new TimeoutException(
+                "failed get replay image for sessionId " + (int)srcReplaySessionId +
+                " on channel " + recordingSubscription.channel());
         }
 
         return workCount;

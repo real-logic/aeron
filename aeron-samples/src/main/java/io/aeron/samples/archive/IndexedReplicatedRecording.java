@@ -172,9 +172,10 @@ public class IndexedReplicatedRecording implements AutoCloseable
             srcAeron,
             dstAeron,
             srcArchivingMediaDriver,
-            dstArchivingMediaDriver,
-            () -> srcArchivingMediaDriver.archive().context().deleteDirectory(),
-            () -> dstArchivingMediaDriver.archive().context().deleteDirectory());
+            dstArchivingMediaDriver);
+
+        srcArchivingMediaDriver.archive().context().deleteDirectory();
+        dstArchivingMediaDriver.archive().context().deleteDirectory();
     }
 
     public static void main(final String[] args) throws Exception
@@ -189,11 +190,11 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 test.srcAeron.addSubscription(CommonContext.SPY_PREFIX + sessionSpecificLiveChannel, LIVE_STREAM_ID),
                 test.srcAeron.addExclusivePublication(INDEX_CHANNEL, INDEX_STREAM_ID),
                 publication.sessionId());
-            test.srcAeronArchive.startRecording(INDEX_CHANNEL, INDEX_STREAM_ID, SourceLocation.LOCAL);
+            test.srcAeronArchive.startRecording(INDEX_CHANNEL, INDEX_STREAM_ID, SourceLocation.LOCAL, true);
             final Thread primaryIndexerThread = Indexer.start(primaryIndexer);
 
             final long srcRecordingSubscriptionId = test.srcAeronArchive.startRecording(
-                sessionSpecificLiveChannel, LIVE_STREAM_ID, SourceLocation.LOCAL);
+                sessionSpecificLiveChannel, LIVE_STREAM_ID, SourceLocation.LOCAL, true);
             final CountersReader srcCounters = test.srcAeron.countersReader();
             final int srcCounterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
             final long srcRecordingId = RecordingPos.getRecordingId(srcCounters, srcCounterId);
@@ -209,7 +210,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 test.dstAeron.addSubscription(taggedChannel, LIVE_STREAM_ID),
                 test.dstAeron.addExclusivePublication(INDEX_CHANNEL, INDEX_STREAM_ID),
                 publication.sessionId());
-            test.dstAeronArchive.startRecording(INDEX_CHANNEL, INDEX_STREAM_ID, SourceLocation.LOCAL);
+            test.dstAeronArchive.startRecording(INDEX_CHANNEL, INDEX_STREAM_ID, SourceLocation.LOCAL, true);
             final Thread secondaryIndexerThread = Indexer.start(secondaryIndexer);
 
             final long replicationId = test.dstAeronArchive.taggedReplicate(

@@ -995,7 +995,8 @@ class ClientConductor implements Agent, DriverEventsListener
 
         try
         {
-            workCount += onCheckTimeouts();
+            final long nowNs = nanoClock.nanoTime();
+            workCount += checkTimeouts(nowNs);
             workCount += driverEventsAdapter.receive(correlationId);
         }
         catch (final Throwable throwable)
@@ -1029,7 +1030,9 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void awaitResponse(final long correlationId)
     {
-        final long deadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
+        final long nowNs = nanoClock.nanoTime();
+        final long deadlineNs = nowNs + driverTimeoutNs;
+        checkTimeouts(nowNs);
 
         awaitingIdleStrategy.reset();
         do
@@ -1068,10 +1071,9 @@ class ClientConductor implements Agent, DriverEventsListener
         throw new DriverTimeoutException("no response from MediaDriver within (ns): " + driverTimeoutNs);
     }
 
-    private int onCheckTimeouts()
+    private int checkTimeouts(final long nowNs)
     {
         int workCount = 0;
-        final long nowNs = nanoClock.nanoTime();
 
         if ((timeOfLastServiceNs + IDLE_SLEEP_NS) - nowNs < 0)
         {

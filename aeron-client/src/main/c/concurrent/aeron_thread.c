@@ -20,6 +20,9 @@
 #endif
 
 #include "concurrent/aeron_thread.h"
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 
 #define SECOND_AS_NANOSECONDS (1000l * 1000l * 1000l)
 
@@ -55,6 +58,15 @@ void aeron_nano_sleep(uint64_t nanoseconds)
 #endif
 }
 
+void aeron_micro_sleep(size_t microseconds)
+{
+#ifdef _WIN32
+    aeron_nano_sleep(1000 * microseconds);
+#else
+    usleep(microseconds);
+#endif
+}
+
 #if defined(AERON_COMPILER_GCC)
 
 void aeron_thread_set_name(const char* role_name)
@@ -66,7 +78,7 @@ void aeron_thread_set_name(const char* role_name)
 #endif
 }
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
 static BOOL aeron_thread_once_callback(PINIT_ONCE init_once, void (*callback)(void), void** context)
 {
@@ -230,7 +242,7 @@ void proc_yield()
     __asm__ volatile("pause\n": : : "memory");
 }
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
 #else
 #error Unsupported platform!

@@ -20,8 +20,12 @@
 #include <util/aeron_platform.h>
 
 #include <stdint.h>
+#include <stddef.h>
 
 void aeron_thread_set_name(const char* role_name);
+
+void aeron_nano_sleep(uint64_t nanoseconds);
+void aeron_micro_sleep(size_t microseconds);
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -95,22 +99,14 @@ void aeron_thread_set_name(const char* role_name);
 
 // sched
 
-void aeron_nano_sleep(uint64_t nanoseconds);
-
 #if defined(AERON_COMPILER_GCC)
-
-#include <sched.h>
-
-#define aeron_micro_sleep usleep
 
 void proc_yield();
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
 #define sched_yield SwitchToThread
 #define proc_yield _mm_pause
-
-void aeron_micro_sleep(size_t microseconds);
 
 #else
 #error Unsupported platform!

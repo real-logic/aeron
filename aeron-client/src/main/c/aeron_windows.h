@@ -26,7 +26,7 @@
 #define aeron_drand48 drand48
 #define aeron_strndup strndup
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
 #include <basetsd.h>
 #include <stddef.h>

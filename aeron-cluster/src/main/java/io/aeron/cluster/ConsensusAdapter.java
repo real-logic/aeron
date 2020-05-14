@@ -24,7 +24,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-class MemberStatusAdapter implements FragmentHandler, AutoCloseable
+class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
     static final int FRAGMENT_POLL_LIMIT = 10;
 
@@ -51,7 +51,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;
 
-    MemberStatusAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
+    ConsensusAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
     {
         this.subscription = subscription;
         this.consensusModuleAgent = consensusModuleAgent;

@@ -158,7 +158,7 @@ public class BasicAuctionClusterClient implements EgressListener
     }
     // end::publish[]
 
-    public static String clientFacingMembers(final List<String> hostnames)
+    public static String ingressEndpoints(final List<String> hostnames)
     {
         final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < hostnames.size(); i++)
@@ -184,7 +184,7 @@ public class BasicAuctionClusterClient implements EgressListener
         final int numOfBids = Integer.parseInt(System.getProperty("aeron.tutorial.cluster.numOfBids"));         // <2>
         final int bidIntervalMs = Integer.parseInt(System.getProperty("aeron.tutorial.cluster.bidIntervalMs")); // <3>
 
-        final String clusterMembers = clientFacingMembers(Arrays.asList("localhost", "localhost", "localhost"));
+        final String clusterMembers = ingressEndpoints(Arrays.asList("localhost", "localhost", "localhost"));
         final BasicAuctionClusterClient client = new BasicAuctionClusterClient(customerId, numOfBids, bidIntervalMs);
 
         // tag::connect[]

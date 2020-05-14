@@ -145,8 +145,8 @@ final class ServiceProxy implements AutoCloseable
                 .logPosition(member.logPosition())
                 .timeOfLastAppendNs(member.timeOfLastAppendPositionNs())
                 .memberId(member.id())
-                .clientFacingEndpoint(member.clientFacingEndpoint())
-                .memberFacingEndpoint(member.memberFacingEndpoint())
+                .ingressEndpoint(member.ingressEndpoint())
+                .consensusEndpoint(member.consensusEndpoint())
                 .logEndpoint(member.logEndpoint())
                 .transferEndpoint(member.transferEndpoint())
                 .archiveEndpoint(member.archiveEndpoint());
@@ -161,8 +161,8 @@ final class ServiceProxy implements AutoCloseable
                 .logPosition(member.logPosition())
                 .timeOfLastAppendNs(member.timeOfLastAppendPositionNs())
                 .memberId(member.id())
-                .clientFacingEndpoint(member.clientFacingEndpoint())
-                .memberFacingEndpoint(member.memberFacingEndpoint())
+                .ingressEndpoint(member.ingressEndpoint())
+                .consensusEndpoint(member.consensusEndpoint())
                 .logEndpoint(member.logEndpoint())
                 .transferEndpoint(member.transferEndpoint())
                 .archiveEndpoint(member.archiveEndpoint());

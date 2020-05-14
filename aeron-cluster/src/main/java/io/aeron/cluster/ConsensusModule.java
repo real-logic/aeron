@@ -332,16 +332,16 @@ public class ConsensusModule implements AutoCloseable
             "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000,localhost:8010";
 
         /**
-         * Property name for the comma separated list of cluster member status endpoints used for adding passive
+         * Property name for the comma separated list of cluster consensus endpoints used for adding passive
          * followers as well as dynamic join of a cluster.
          */
-        public static final String CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME =
-            "aeron.cluster.members.status.endpoints";
+        public static final String CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME =
+            "aeron.cluster.consensus.endpoints";
 
         /**
          * Default property for the list of cluster member status endpoints.
          */
-        public static final String CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT = "";
+        public static final String CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT = "";
 
         /**
          * Property name for whether cluster member information in snapshots should be ignored on load or not.
@@ -368,7 +368,7 @@ public class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of member endpoints.
          * <p>
          * <code>
-         *     client-facing:port,member-facing:port,log:port,transfer:port,archive:port
+         *     ingress:port,consensus:port,log:port,transfer:port,archive:port
          * </code>
          *
          * @see #CLUSTER_MEMBERS_PROP_NAME
@@ -416,26 +416,26 @@ public class ConsensusModule implements AutoCloseable
         public static final String SESSION_INVALID_VERSION_MSG = "invalid client version";
 
         /**
-         * Channel to be used communicating cluster member status to each other. This can be used for default
+         * Channel to be used communicating cluster consensus to each other. This can be used for default
          * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
          */
-        public static final String MEMBER_STATUS_CHANNEL_PROP_NAME = "aeron.cluster.member.status.channel";
+        public static final String CONSENSUS_CHANNEL_PROP_NAME = "aeron.cluster.consensus.channel";
 
         /**
-         * Channel to be used for communicating cluster member status to each other. This can be used for default
+         * Channel to be used for communicating cluster consensus to each other. This can be used for default
          * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
          */
-        public static final String MEMBER_STATUS_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
+        public static final String CONSENSUS_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
 
         /**
          * Stream id within a channel for communicating cluster member status.
          */
-        public static final String MEMBER_STATUS_STREAM_ID_PROP_NAME = "aeron.cluster.member.status.stream.id";
+        public static final String CONSENSUS_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.stream.id";
 
         /**
          * Stream id for the archived snapshots within a channel.
          */
-        public static final int MEMBER_STATUS_STREAM_ID_DEFAULT = 108;
+        public static final int CONSENSUS_STREAM_ID_DEFAULT = 108;
 
         /**
          * Counter type id for the consensus module state.
@@ -702,16 +702,16 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME} if set.
+         * The value {@link #CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT} or system property
+         * {@link #CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME} if set.
          *
-         * @return {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME} it set.
+         * @return {@link #CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT} or system property
+         * {@link #CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME} it set.
          */
         public static String clusterMembersStatusEndpoints()
         {
             return System.getProperty(
-                CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME, CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT);
+                CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME, CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT);
         }
 
         /**
@@ -932,27 +932,27 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #MEMBER_STATUS_CHANNEL_DEFAULT} or system property
-         * {@link #MEMBER_STATUS_CHANNEL_PROP_NAME} if set.
+         * The value {@link #CONSENSUS_CHANNEL_DEFAULT} or system property
+         * {@link #CONSENSUS_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #MEMBER_STATUS_CHANNEL_DEFAULT} or system property
-         * {@link #MEMBER_STATUS_CHANNEL_PROP_NAME} if set.
+         * @return {@link #CONSENSUS_CHANNEL_DEFAULT} or system property
+         * {@link #CONSENSUS_CHANNEL_PROP_NAME} if set.
          */
-        public static String memberStatusChannel()
+        public static String consensusChannel()
         {
-            return System.getProperty(MEMBER_STATUS_CHANNEL_PROP_NAME, MEMBER_STATUS_CHANNEL_DEFAULT);
+            return System.getProperty(CONSENSUS_CHANNEL_PROP_NAME, CONSENSUS_CHANNEL_DEFAULT);
         }
 
         /**
-         * The value {@link #MEMBER_STATUS_STREAM_ID_DEFAULT} or system property
-         * {@link #MEMBER_STATUS_STREAM_ID_PROP_NAME} if set.
+         * The value {@link #CONSENSUS_STREAM_ID_DEFAULT} or system property
+         * {@link #CONSENSUS_STREAM_ID_PROP_NAME} if set.
          *
-         * @return {@link #MEMBER_STATUS_STREAM_ID_DEFAULT} or system property
-         * {@link #MEMBER_STATUS_STREAM_ID_PROP_NAME} if set.
+         * @return {@link #CONSENSUS_STREAM_ID_DEFAULT} or system property
+         * {@link #CONSENSUS_STREAM_ID_PROP_NAME} if set.
          */
-        public static int memberStatusStreamId()
+        public static int consensusStreamId()
         {
-            return Integer.getInteger(MEMBER_STATUS_STREAM_ID_PROP_NAME, MEMBER_STATUS_STREAM_ID_DEFAULT);
+            return Integer.getInteger(CONSENSUS_STREAM_ID_PROP_NAME, CONSENSUS_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -1027,7 +1027,7 @@ public class ConsensusModule implements AutoCloseable
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
-        private String clusterMembersStatusEndpoints = Configuration.clusterMembersStatusEndpoints();
+        private String clusterConsensusEndpoints = Configuration.clusterMembersStatusEndpoints();
         private boolean clusterMembersIgnoreSnapshot = Configuration.clusterMembersIgnoreSnapshot();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
@@ -1042,8 +1042,8 @@ public class ConsensusModule implements AutoCloseable
         private int serviceStreamId = ClusteredServiceContainer.Configuration.serviceStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
-        private String memberStatusChannel = Configuration.memberStatusChannel();
-        private int memberStatusStreamId = Configuration.memberStatusStreamId();
+        private String consensusChannel = Configuration.consensusChannel();
+        private int consensusStreamId = Configuration.consensusStreamId();
 
         private int serviceCount = Configuration.serviceCount();
         private int errorBufferLength = Configuration.errorBufferLength();
@@ -1601,11 +1601,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME
+         * @see Configuration#CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME
          */
-        public Context clusterMembersStatusEndpoints(final String endpoints)
+        public Context clusterConsensusEndpoints(final String endpoints)
         {
-            this.clusterMembersStatusEndpoints = endpoints;
+            this.clusterConsensusEndpoints = endpoints;
             return this;
         }
 
@@ -1613,11 +1613,11 @@ public class ConsensusModule implements AutoCloseable
          * The endpoints representing cluster members of the cluster to attempt to contact to join the cluster.
          *
          * @return members of the cluster to attempt to request to join from.
-         * @see Configuration#CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME
+         * @see Configuration#CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME
          */
-        public String clusterMembersStatusEndpoints()
+        public String clusterConsensusEndpoints()
         {
-            return clusterMembersStatusEndpoints;
+            return clusterConsensusEndpoints;
         }
 
         /**
@@ -1957,51 +1957,51 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for the member status communication channel.
+         * Set the channel parameter for the consensus communication channel.
          *
-         * @param channel parameter for the member status communication channel.
+         * @param channel parameter for the consensus communication channel.
          * @return this for a fluent API.
-         * @see Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         * @see Configuration#CONSENSUS_CHANNEL_PROP_NAME
          */
-        public Context memberStatusChannel(final String channel)
+        public Context consensusChannel(final String channel)
         {
-            memberStatusChannel = channel;
+            consensusChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the member status communication channel.
+         * Get the channel parameter for the consensus communication channel.
          *
-         * @return the channel parameter for the member status communication channel.
-         * @see Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         * @return the channel parameter for the consensus communication channel.
+         * @see Configuration#CONSENSUS_CHANNEL_PROP_NAME
          */
-        public String memberStatusChannel()
+        public String consensusChannel()
         {
-            return memberStatusChannel;
+            return consensusChannel;
         }
 
         /**
-         * Set the stream id for the member status channel.
+         * Set the stream id for the consensus channel.
          *
-         * @param streamId for the ingress channel.
+         * @param streamId for the consensus channel.
          * @return this for a fluent API
-         * @see Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         * @see Configuration#CONSENSUS_STREAM_ID_PROP_NAME
          */
-        public Context memberStatusStreamId(final int streamId)
+        public Context consensusStreamId(final int streamId)
         {
-            memberStatusStreamId = streamId;
+            consensusStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the member status channel.
+         * Get the stream id for the consensus channel.
          *
-         * @return the stream id for the member status channel.
-         * @see Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         * @return the stream id for the consensus channel.
+         * @see Configuration#CONSENSUS_STREAM_ID_PROP_NAME
          */
-        public int memberStatusStreamId()
+        public int consensusStreamId()
         {
-            return memberStatusStreamId;
+            return consensusStreamId;
         }
 
         /**

@@ -110,23 +110,23 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 clusterMembersExtendedResponseDecoder.activeMembers())
             {
                 final int id = activeMembersDecoder.memberId();
-                final String clientFacingEndpoint = activeMembersDecoder.clientFacingEndpoint();
-                final String memberFacingEndpoint = activeMembersDecoder.memberFacingEndpoint();
+                final String ingressEndpoint = activeMembersDecoder.ingressEndpoint();
+                final String consensusEndpoint = activeMembersDecoder.consensusEndpoint();
                 final String logEndpoint = activeMembersDecoder.logEndpoint();
                 final String transferEndpoint = activeMembersDecoder.transferEndpoint();
                 final String archiveEndpoint = activeMembersDecoder.archiveEndpoint();
                 final String endpointsDetail = String.join(
                     ",",
-                    clientFacingEndpoint,
-                    memberFacingEndpoint,
+                    ingressEndpoint,
+                    consensusEndpoint,
                     logEndpoint,
                     transferEndpoint,
                     archiveEndpoint);
 
                 final ClusterMember member = new ClusterMember(
                     id,
-                    clientFacingEndpoint,
-                    memberFacingEndpoint,
+                    ingressEndpoint,
+                    consensusEndpoint,
                     logEndpoint,
                     transferEndpoint,
                     archiveEndpoint,
@@ -143,23 +143,23 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 clusterMembersExtendedResponseDecoder.passiveMembers())
             {
                 final int id = passiveMembersDecoder.memberId();
-                final String clientFacingEndpoint = passiveMembersDecoder.clientFacingEndpoint();
-                final String memberFacingEndpoint = passiveMembersDecoder.memberFacingEndpoint();
+                final String ingressEndpoint = passiveMembersDecoder.ingressEndpoint();
+                final String consensusEndpoint = passiveMembersDecoder.consensusEndpoint();
                 final String logEndpoint = passiveMembersDecoder.logEndpoint();
                 final String transferEndpoint = passiveMembersDecoder.transferEndpoint();
                 final String archiveEndpoint = passiveMembersDecoder.archiveEndpoint();
                 final String endpointsDetail = String.join(
                     ",",
-                    clientFacingEndpoint,
-                    memberFacingEndpoint,
+                    ingressEndpoint,
+                    consensusEndpoint,
                     logEndpoint,
                     transferEndpoint,
                     archiveEndpoint);
 
                 final ClusterMember member = new ClusterMember(
                     id,
-                    clientFacingEndpoint,
-                    memberFacingEndpoint,
+                    ingressEndpoint,
+                    consensusEndpoint,
                     logEndpoint,
                     transferEndpoint,
                     archiveEndpoint,

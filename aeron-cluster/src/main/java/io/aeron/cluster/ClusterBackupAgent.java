@@ -45,7 +45,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.*;
 import static io.aeron.cluster.ClusterBackup.State.*;
-import static io.aeron.cluster.MemberStatusAdapter.FRAGMENT_POLL_LIMIT;
+import static io.aeron.cluster.ConsensusAdapter.FRAGMENT_POLL_LIMIT;
 import static io.aeron.exceptions.AeronException.Category;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -62,8 +62,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final Aeron aeron;
-    private final String[] clusterMemberStatusEndpoints;
-    private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
+    private final String[] clusterConsensusEndpoints;
+    private final ConsensusPublisher consensusPublisher = new ConsensusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
     private final Long2LongHashMap snapshotLengthMap = new Long2LongHashMap(NULL_LENGTH);
@@ -85,9 +85,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
     private SnapshotRetrieveMonitor snapshotRetrieveMonitor;
 
-    private final FragmentAssembler memberStatusFragmentAssembler = new FragmentAssembler(this::onFragment);
-    private final Subscription memberStatusSubscription;
-    private ExclusivePublication memberStatusPublication;
+    private final FragmentAssembler consensusFragmentAssembler = new FragmentAssembler(this::onFragment);
+    private final Subscription consensusSubscription;
+    private ExclusivePublication consensusPublication;
     private ClusterMember[] clusterMembers;
     private ClusterMember leaderMember;
     private RecordingLog.Entry leaderLogEntry;
@@ -118,14 +118,14 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         markFile = ctx.clusterMarkFile();
         eventsListener = ctx.eventsListener();
 
-        clusterMemberStatusEndpoints = ctx.clusterMembersStatusEndpoints().split(",");
+        clusterConsensusEndpoints = ctx.clusterConsensusEndpoints().split(",");
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
 
         aeron.addUnavailableCounterHandler(this);
 
-        memberStatusSubscription = aeron.addSubscription(ctx.memberStatusChannel(), ctx.memberStatusStreamId());
+        consensusSubscription = aeron.addSubscription(ctx.consensusChannel(), ctx.consensusStreamId());
 
         stateCounter = ctx.stateCounter();
         liveLogPositionCounter = ctx.liveLogPositionCounter();
@@ -143,8 +143,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     {
         if (!ctx.ownsAeronClient())
         {
-            CloseHelper.close(memberStatusSubscription);
-            CloseHelper.close(memberStatusPublication);
+            CloseHelper.close(consensusSubscription);
+            CloseHelper.close(consensusPublication);
         }
 
         if (NULL_VALUE != liveLogReplaySubscriptionId)
@@ -173,7 +173,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         try
         {
-            workCount += memberStatusSubscription.poll(memberStatusFragmentAssembler, FRAGMENT_POLL_LIMIT);
+            workCount += consensusSubscription.poll(consensusFragmentAssembler, FRAGMENT_POLL_LIMIT);
 
             switch (state)
             {
@@ -253,12 +253,12 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             recordingLog = null;
         }
 
-        memberStatusFragmentAssembler.clear();
-        final ExclusivePublication memberStatusPublication = this.memberStatusPublication;
+        consensusFragmentAssembler.clear();
+        final ExclusivePublication consensusPublication = this.consensusPublication;
         final AeronArchive clusterArchive = this.clusterArchive;
         final AeronArchive.AsyncConnect clusterArchiveAsyncConnect = this.clusterArchiveAsyncConnect;
 
-        this.memberStatusPublication = null;
+        this.consensusPublication = null;
         this.clusterArchive = null;
         this.clusterArchiveAsyncConnect = null;
 
@@ -268,7 +268,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         liveLogReplayId = NULL_VALUE;
         liveLogReplaySubscriptionId = NULL_VALUE;
 
-        CloseHelper.closeAll(memberStatusPublication, clusterArchive, clusterArchiveAsyncConnect);
+        CloseHelper.closeAll(consensusPublication, clusterArchive, clusterArchiveAsyncConnect);
     }
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -456,10 +456,10 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
     private int backupQuery(final long nowMs)
     {
-        if (null == memberStatusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
+        if (null == consensusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
             int cursor = ++clusterMembersStatusEndpointsCursor;
-            if (cursor >= clusterMemberStatusEndpoints.length)
+            if (cursor >= clusterConsensusEndpoints.length)
             {
                 clusterMembersStatusEndpointsCursor = 0;
                 cursor = 0;
@@ -470,25 +470,25 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             CloseHelper.close(clusterArchive);
             clusterArchive = null;
 
-            CloseHelper.close(memberStatusPublication);
-            final ChannelUri uri = ChannelUri.parse(ctx.memberStatusChannel());
-            uri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[cursor]);
-            memberStatusPublication = aeron.addExclusivePublication(uri.toString(), ctx.memberStatusStreamId());
+            CloseHelper.close(consensusPublication);
+            final ChannelUri uri = ChannelUri.parse(ctx.consensusChannel());
+            uri.put(ENDPOINT_PARAM_NAME, clusterConsensusEndpoints[cursor]);
+            consensusPublication = aeron.addExclusivePublication(uri.toString(), ctx.consensusStreamId());
             correlationId = NULL_VALUE;
             timeOfLastBackupQueryMs = nowMs;
 
             return 1;
         }
-        else if (NULL_VALUE == correlationId && memberStatusPublication.isConnected())
+        else if (NULL_VALUE == correlationId && consensusPublication.isConnected())
         {
             final long correlationId = aeron.nextCorrelationId();
 
-            if (memberStatusPublisher.backupQuery(
-                memberStatusPublication,
+            if (consensusPublisher.backupQuery(
+                consensusPublication,
                 correlationId,
-                ctx.memberStatusStreamId(),
+                ctx.consensusStreamId(),
                 AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION,
-                ctx.memberStatusChannel(),
+                ctx.consensusChannel(),
                 ArrayUtil.EMPTY_BYTE_ARRAY))
             {
                 timeOfLastBackupQueryMs = nowMs;

@@ -22,7 +22,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
-class MemberStatusPublisher
+class ConsensusPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
 

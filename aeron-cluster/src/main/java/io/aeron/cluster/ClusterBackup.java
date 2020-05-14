@@ -223,7 +223,7 @@ public final class ClusterBackup implements AutoCloseable
      */
     public static class Configuration
     {
-        public static final String MEMBER_STATUS_CHANNEL_DEFAULT;
+        public static final String CONSENSUS_CHANNEL_DEFAULT;
         public static final String TRANSFER_ENDPOINT_DEFAULT;
 
         /**
@@ -268,10 +268,10 @@ public final class ClusterBackup implements AutoCloseable
                 ConsensusModule.Configuration.clusterMemberId(),
                 ConsensusModule.Configuration.memberEndpoints());
 
-            final ChannelUri memberStatusUri = ChannelUri.parse(ConsensusModule.Configuration.memberStatusChannel());
-            memberStatusUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
+            final ChannelUri consensusUri = ChannelUri.parse(ConsensusModule.Configuration.consensusChannel());
+            consensusUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
 
-            MEMBER_STATUS_CHANNEL_DEFAULT = memberStatusUri.toString();
+            CONSENSUS_CHANNEL_DEFAULT = consensusUri.toString();
             TRANSFER_ENDPOINT_DEFAULT = member.transferEndpoint();
         }
 
@@ -324,8 +324,8 @@ public final class ClusterBackup implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
 
-        private String memberStatusChannel = Configuration.MEMBER_STATUS_CHANNEL_DEFAULT;
-        private int memberStatusStreamId = ConsensusModule.Configuration.memberStatusStreamId();
+        private String consensusChannel = Configuration.CONSENSUS_CHANNEL_DEFAULT;
+        private int consensusStreamId = ConsensusModule.Configuration.consensusStreamId();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private int logStreamId = ConsensusModule.Configuration.logStreamId();
         private String transferEndpoint = Configuration.TRANSFER_ENDPOINT_DEFAULT;
@@ -340,7 +340,7 @@ public final class ClusterBackup implements AutoCloseable
         private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
         private File clusterDir;
         private ClusterMarkFile markFile;
-        private String clusterMembersStatusEndpoints = ConsensusModule.Configuration.clusterMembersStatusEndpoints();
+        private String clusterConsensusEndpoints = ConsensusModule.Configuration.clusterMembersStatusEndpoints();
         private ThreadFactory threadFactory;
         private EpochClock epochClock;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -813,51 +813,51 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for the member status communication channel.
+         * Set the channel parameter for the consensus communication channel.
          *
-         * @param channel parameter for the member status communication channel.
+         * @param channel parameter for the consensus communication channel.
          * @return this for a fluent API.
-         * @see ConsensusModule.Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         * @see ConsensusModule.Configuration#CONSENSUS_CHANNEL_PROP_NAME
          */
-        public Context memberStatusChannel(final String channel)
+        public Context consensusChannel(final String channel)
         {
-            memberStatusChannel = channel;
+            consensusChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the member status communication channel.
+         * Get the channel parameter for the consensus communication channel.
          *
-         * @return the channel parameter for the member status communication channel.
-         * @see ConsensusModule.Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         * @return the channel parameter for the consensus communication channel.
+         * @see ConsensusModule.Configuration#CONSENSUS_CHANNEL_PROP_NAME
          */
-        public String memberStatusChannel()
+        public String consensusChannel()
         {
-            return memberStatusChannel;
+            return consensusChannel;
         }
 
         /**
-         * Set the stream id for the member status channel.
+         * Set the stream id for the consensus channel.
          *
-         * @param streamId for the ingress channel.
+         * @param streamId for the consensus channel.
          * @return this for a fluent API
-         * @see ConsensusModule.Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         * @see ConsensusModule.Configuration#CONSENSUS_STREAM_ID_PROP_NAME
          */
-        public Context memberStatusStreamId(final int streamId)
+        public Context consensusStreamId(final int streamId)
         {
-            memberStatusStreamId = streamId;
+            consensusStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the member status channel.
+         * Get the stream id for the consensus channel.
          *
-         * @return the stream id for the member status channel.
-         * @see ConsensusModule.Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         * @return the stream id for the consensus channel.
+         * @see ConsensusModule.Configuration#CONSENSUS_STREAM_ID_PROP_NAME
          */
-        public int memberStatusStreamId()
+        public int consensusStreamId()
         {
-            return memberStatusStreamId;
+            return consensusStreamId;
         }
 
         /**
@@ -1019,9 +1019,9 @@ public final class ClusterBackup implements AutoCloseable
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.
          */
-        public Context clusterMembersStatusEndpoints(final String endpoints)
+        public Context clusterConsensusEndpoints(final String endpoints)
         {
-            this.clusterMembersStatusEndpoints = endpoints;
+            this.clusterConsensusEndpoints = endpoints;
             return this;
         }
 
@@ -1030,9 +1030,9 @@ public final class ClusterBackup implements AutoCloseable
          *
          * @return members of the cluster to attempt to request to backup from.
          */
-        public String clusterMembersStatusEndpoints()
+        public String clusterConsensusEndpoints()
         {
-            return clusterMembersStatusEndpoints;
+            return clusterConsensusEndpoints;
         }
 
         /**

@@ -335,7 +335,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(NULL_VALUE)
             .clusterMembers("")
-            .clusterMembersStatusEndpoints(clusterMembersStatusEndpoints)
+            .clusterConsensusEndpoints(clusterMembersStatusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "consensus-module"))
@@ -395,14 +395,14 @@ public class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 
-        final ChannelUri memberStatusChannelUri = ChannelUri.parse(context.clusterBackupContext.memberStatusChannel());
+        final ChannelUri consensusChannelUri = ChannelUri.parse(context.clusterBackupContext.consensusChannel());
         final String backupStatusEndpoint = clusterBackupStatusEndpoint(staticMemberCount + dynamicMemberCount);
-        memberStatusChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, backupStatusEndpoint);
+        consensusChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, backupStatusEndpoint);
 
         context.clusterBackupContext
             .errorHandler(ClusterTests.errorHandler(index))
-            .clusterMembersStatusEndpoints(clusterMembersStatusEndpoints)
-            .memberStatusChannel(memberStatusChannelUri.toString())
+            .clusterConsensusEndpoints(clusterMembersStatusEndpoints)
+            .consensusChannel(consensusChannelUri.toString())
             .transferEndpoint(clusterBackupTransferEndpoint(staticMemberCount + dynamicMemberCount))
             .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "cluster-backup"))

@@ -43,8 +43,8 @@ public class ElectionTest
     private final Counter electionStateCounter = mock(Counter.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
     private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
-    private final MemberStatusAdapter memberStatusAdapter = mock(MemberStatusAdapter.class);
-    private final MemberStatusPublisher memberStatusPublisher = mock(MemberStatusPublisher.class);
+    private final ConsensusAdapter consensusAdapter = mock(ConsensusAdapter.class);
+    private final ConsensusPublisher consensusPublisher = mock(ConsensusPublisher.class);
     private final ConsensusModuleAgent consensusModuleAgent = mock(ConsensusModuleAgent.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -115,13 +115,13 @@ public class ElectionTest
         final long t3 = t2 + (ctx.electionTimeoutNs() >> 1);
         election.doWork(t3);
         election.doWork(t3);
-        verify(memberStatusPublisher).requestVote(
+        verify(consensusPublisher).requestVote(
             clusterMembers[1].publication(),
             leadershipTermId,
             logPosition,
             candidateTermId,
             candidateMember.id());
-        verify(memberStatusPublisher).requestVote(
+        verify(consensusPublisher).requestVote(
             clusterMembers[2].publication(),
             leadershipTermId,
             logPosition,
@@ -158,7 +158,7 @@ public class ElectionTest
         when(recordingLog.getTermTimestamp(candidateTermId)).thenReturn(t6);
 
         election.doWork(t6);
-        verify(memberStatusPublisher).newLeadershipTerm(
+        verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             leadershipTermId,
             logPosition,
@@ -167,7 +167,7 @@ public class ElectionTest
             t6,
             candidateMember.id(),
             LOG_SESSION_ID, election.isLeaderStartup());
-        verify(memberStatusPublisher).newLeadershipTerm(
+        verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             leadershipTermId,
             logPosition,
@@ -207,7 +207,7 @@ public class ElectionTest
         final long candidateTermId = leadershipTermId + 1;
         final long t2 = 2;
         election.onRequestVote(leadershipTermId, logPosition, candidateTermId, candidateId);
-        verify(memberStatusPublisher).placeVote(
+        verify(consensusPublisher).placeVote(
             clusterMembers[candidateId].publication(),
             candidateTermId,
             leadershipTermId,
@@ -231,13 +231,13 @@ public class ElectionTest
         election.doWork(t3);
         verify(electionStateCounter).setOrdered(Election.State.FOLLOWER_READY.code());
 
-        when(memberStatusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
+        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.electionComplete()).thenReturn(true);
 
         final long t4 = 4;
         election.doWork(t4);
-        final InOrder inOrder = inOrder(memberStatusPublisher, consensusModuleAgent, electionStateCounter);
-        inOrder.verify(memberStatusPublisher).appendPosition(
+        final InOrder inOrder = inOrder(consensusPublisher, consensusModuleAgent, electionStateCounter);
+        inOrder.verify(consensusPublisher).appendPosition(
             clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
         inOrder.verify(consensusModuleAgent).electionComplete();
         inOrder.verify(electionStateCounter).setOrdered(Election.State.CLOSED.code());
@@ -259,9 +259,9 @@ public class ElectionTest
 
         final long t2 = t1 + ctx.electionStatusIntervalNs();
         election.doWork(t2);
-        verify(memberStatusPublisher).canvassPosition(
+        verify(consensusPublisher).canvassPosition(
             clusterMembers[0].publication(), leadershipTermId, logPosition, followerMember.id());
-        verify(memberStatusPublisher).canvassPosition(
+        verify(consensusPublisher).canvassPosition(
             clusterMembers[2].publication(), leadershipTermId, logPosition, followerMember.id());
 
         election.onCanvassPosition(leadershipTermId, logPosition, 0);
@@ -615,8 +615,8 @@ public class ElectionTest
             clusterMembers,
             idToClusterMemberMap,
             thisMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
+            consensusAdapter,
+            consensusPublisher,
             ctx,
             consensusModuleAgent);
     }
@@ -639,8 +639,8 @@ public class ElectionTest
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
+            consensusAdapter,
+            consensusPublisher,
             ctx,
             consensusModuleAgent);
     }

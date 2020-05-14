@@ -47,8 +47,8 @@ public final class ClusterMember
     private long changeCorrelationId = Aeron.NULL_VALUE;
     private long removalPosition = NULL_POSITION;
     private long timeOfLastAppendPositionNs = Aeron.NULL_VALUE;
-    private final String clientFacingEndpoint;
-    private final String memberFacingEndpoint;
+    private final String ingressEndpoint;
+    private final String consensusEndpoint;
     private final String logEndpoint;
     private final String transferEndpoint;
     private final String archiveEndpoint;
@@ -59,26 +59,26 @@ public final class ClusterMember
     /**
      * Construct a new member of the cluster.
      *
-     * @param id                   unique id for the member.
-     * @param clientFacingEndpoint address and port endpoint to which cluster clients connect.
-     * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
-     * @param logEndpoint          address and port endpoint to which the log is replicated.
-     * @param transferEndpoint     address and port endpoint to which a stream is replayed to catchup to the leader.
-     * @param archiveEndpoint      address and port endpoint to which the archive control channel can be reached.
-     * @param endpointsDetail      comma separated list of endpoints.
+     * @param id                unique id for the member.
+     * @param ingressEndpoint   address and port endpoint to which cluster clients send ingress.
+     * @param consensusEndpoint address and port endpoint to which other cluster members connect.
+     * @param logEndpoint       address and port endpoint to which the log is replicated.
+     * @param transferEndpoint  address and port endpoint to which a stream is replayed to catchup to the leader.
+     * @param archiveEndpoint   address and port endpoint to which the archive control channel can be reached.
+     * @param endpointsDetail   comma separated list of endpoints.
      */
     public ClusterMember(
         final int id,
-        final String clientFacingEndpoint,
-        final String memberFacingEndpoint,
+        final String ingressEndpoint,
+        final String consensusEndpoint,
         final String logEndpoint,
         final String transferEndpoint,
         final String archiveEndpoint,
         final String endpointsDetail)
     {
         this.id = id;
-        this.clientFacingEndpoint = clientFacingEndpoint;
-        this.memberFacingEndpoint = memberFacingEndpoint;
+        this.ingressEndpoint = ingressEndpoint;
+        this.consensusEndpoint = consensusEndpoint;
         this.logEndpoint = logEndpoint;
         this.transferEndpoint = transferEndpoint;
         this.archiveEndpoint = archiveEndpoint;
@@ -422,23 +422,23 @@ public final class ClusterMember
     }
 
     /**
-     * The address:port endpoint for this cluster member that clients will connect to.
+     * The address:port endpoint for this cluster member that clients send ingress to.
      *
-     * @return the address:port endpoint for this cluster member that clients will connect to.
+     * @return the address:port endpoint for this cluster member that listens for ingress.
      */
-    public String clientFacingEndpoint()
+    public String ingressEndpoint()
     {
-        return clientFacingEndpoint;
+        return ingressEndpoint;
     }
 
     /**
-     * The address:port endpoint for this cluster member that other members connect to.
+     * The address:port endpoint for this cluster member that other members connect to for achieving consensus.
      *
-     * @return the address:port endpoint for this cluster member that other members will connect to.
+     * @return the address:port endpoint for this cluster member that other members will connect to for consensus.
      */
-    public String memberFacingEndpoint()
+    public String consensusEndpoint()
     {
-        return memberFacingEndpoint;
+        return consensusEndpoint;
     }
 
     /**
@@ -517,7 +517,7 @@ public final class ClusterMember
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
-     * member-id,client-facing:port,member-facing:port,log:port,transfer:port,archive:port|1,...
+     * member-id,ingress:port,member-facing:port,log:port,transfer:port,archive:port|1,...
      * </code>
      *
      * @param value of the string to be parsed.
@@ -624,7 +624,7 @@ public final class ClusterMember
      * @param streamId   for the publication.
      * @param aeron      to add the publications to.
      */
-    public static void addMemberStatusPublications(
+    public static void addConsensusPublications(
         final ClusterMember[] members,
         final ClusterMember exclude,
         final ChannelUri channelUri,
@@ -635,7 +635,7 @@ public final class ClusterMember
         {
             if (member != exclude)
             {
-                channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
+                channelUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
                 member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
             }
         }
@@ -656,17 +656,17 @@ public final class ClusterMember
     }
 
     /**
-     * Add an exclusive {@link Publication} for communicating to a member on the member status channel.
+     * Add an exclusive {@link Publication} for communicating to a member on the consensus channel.
      *
      * @param member     to which the publication is addressed.
      * @param channelUri for the target member.
      * @param streamId   for the target member.
      * @param aeron      from which the publication will be created.
      */
-    public static void addMemberStatusPublication(
+    public static void addConsensusPublication(
         final ClusterMember member, final ChannelUri channelUri, final int streamId, final Aeron aeron)
     {
-        channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
+        channelUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
         member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
     }
 
@@ -965,8 +965,8 @@ public final class ClusterMember
      */
     public static boolean areSameEndpoints(final ClusterMember lhs, final ClusterMember rhs)
     {
-        return lhs.clientFacingEndpoint().equals(rhs.clientFacingEndpoint()) &&
-            lhs.memberFacingEndpoint().equals(rhs.memberFacingEndpoint()) &&
+        return lhs.ingressEndpoint().equals(rhs.ingressEndpoint()) &&
+            lhs.consensusEndpoint().equals(rhs.consensusEndpoint()) &&
             lhs.logEndpoint().equals(rhs.logEndpoint()) &&
             lhs.transferEndpoint().equals(rhs.transferEndpoint()) &&
             lhs.archiveEndpoint().equals(rhs.archiveEndpoint());
@@ -1172,12 +1172,12 @@ public final class ClusterMember
     }
 
     /**
-     * Create a string of member facing endpoints by id in format {@code id=endpoint,id=endpoint, ...}.
+     * Create a string of ingress endpoints by member id in format {@code id=endpoint,id=endpoint, ...}.
      *
-     * @param members for which the endpoints string will be generated.
-     * @return a string of member facing endpoints by id.
+     * @param members for which the ingress endpoints string will be generated.
+     * @return a string of ingress endpoints by id.
      */
-    public static String clientFacingEndpoints(final ClusterMember[] members)
+    public static String ingressEndpoints(final ClusterMember[] members)
     {
         final StringBuilder builder = new StringBuilder(100);
 
@@ -1189,7 +1189,7 @@ public final class ClusterMember
             }
 
             final ClusterMember member = members[i];
-            builder.append(member.id()).append('=').append(member.clientFacingEndpoint());
+            builder.append(member.id()).append('=').append(member.ingressEndpoint());
         }
 
         return builder.toString();
@@ -1209,8 +1209,8 @@ public final class ClusterMember
             ", correlationId=" + changeCorrelationId +
             ", removalPosition=" + removalPosition +
             ", timeOfLastAppendPositionNs=" + timeOfLastAppendPositionNs +
-            ", clientFacingEndpoint='" + clientFacingEndpoint + '\'' +
-            ", memberFacingEndpoint='" + memberFacingEndpoint + '\'' +
+            ", ingressEndpoint='" + ingressEndpoint + '\'' +
+            ", consensusEndpoint='" + consensusEndpoint + '\'' +
             ", logEndpoint='" + logEndpoint + '\'' +
             ", transferEndpoint='" + transferEndpoint + '\'' +
             ", archiveEndpoint='" + archiveEndpoint + '\'' +

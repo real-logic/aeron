@@ -46,7 +46,7 @@ class ClusterTermination
     }
 
     void terminationPosition(
-        final MemberStatusPublisher memberStatusPublisher,
+        final ConsensusPublisher consensusPublisher,
         final ClusterMember[] members,
         final ClusterMember thisMember,
         final long position)
@@ -57,7 +57,7 @@ class ClusterTermination
 
             if (member != thisMember)
             {
-                memberStatusPublisher.terminationPosition(member.publication(), position);
+                consensusPublisher.terminationPosition(member.publication(), position);
             }
         }
     }

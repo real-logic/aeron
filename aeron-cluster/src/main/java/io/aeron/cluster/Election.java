@@ -127,8 +127,8 @@ public class Election
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
-    private final MemberStatusAdapter memberStatusAdapter;
-    private final MemberStatusPublisher memberStatusPublisher;
+    private final ConsensusAdapter consensusAdapter;
+    private final ConsensusPublisher consensusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final Random random;
@@ -141,8 +141,8 @@ public class Election
         final ClusterMember[] clusterMembers,
         final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap,
         final ClusterMember thisMember,
-        final MemberStatusAdapter memberStatusAdapter,
-        final MemberStatusPublisher memberStatusPublisher,
+        final ConsensusAdapter consensusAdapter,
+        final ConsensusPublisher consensusPublisher,
         final ConsensusModule.Context ctx,
         final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -155,8 +155,8 @@ public class Election
         this.clusterMembers = clusterMembers;
         this.clusterMemberByIdMap = clusterMemberByIdMap;
         this.thisMember = thisMember;
-        this.memberStatusAdapter = memberStatusAdapter;
-        this.memberStatusPublisher = memberStatusPublisher;
+        this.consensusAdapter = consensusAdapter;
+        this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
@@ -187,7 +187,7 @@ public class Election
     int doWork(final long nowNs)
     {
         int workCount = State.INIT == state ? init(nowNs) : 0;
-        workCount += memberStatusAdapter.poll();
+        workCount += consensusAdapter.poll();
 
         try
         {
@@ -268,7 +268,7 @@ public class Election
             if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
             {
                 final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
-                memberStatusPublisher.newLeadershipTerm(
+                consensusPublisher.newLeadershipTerm(
                     follower.publication(),
                     logLeadershipTermId,
                     termEntry.termBaseLogPosition,
@@ -283,7 +283,7 @@ public class Election
                 logLeadershipTermId < leadershipTermId)
             {
                 final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
-                memberStatusPublisher.newLeadershipTerm(
+                consensusPublisher.newLeadershipTerm(
                     follower.publication(),
                     null != termEntry ? logLeadershipTermId : this.logLeadershipTermId,
                     null != termEntry ? termEntry.termBaseLogPosition : this.appendPosition,
@@ -515,7 +515,7 @@ public class Election
             {
                 if (member != thisMember)
                 {
-                    memberStatusPublisher.canvassPosition(
+                    consensusPublisher.canvassPosition(
                         member.publication(), leadershipTermId, appendPosition, thisMember.id());
                 }
             }
@@ -591,7 +591,7 @@ public class Election
                 if (!member.isBallotSent())
                 {
                     workCount += 1;
-                    member.isBallotSent(memberStatusPublisher.requestVote(
+                    member.isBallotSent(consensusPublisher.requestVote(
                         member.publication(), logLeadershipTermId, appendPosition, candidateTermId, thisMember.id()));
                 }
             }
@@ -836,7 +836,7 @@ public class Election
     {
         final ExclusivePublication publication = leaderMember.publication();
 
-        if (memberStatusPublisher.appendPosition(publication, leadershipTermId, logPosition, thisMember.id()))
+        if (consensusPublisher.appendPosition(publication, leadershipTermId, logPosition, thisMember.id()))
         {
             if (consensusModuleAgent.electionComplete())
             {
@@ -864,7 +864,7 @@ public class Election
         final ClusterMember candidate = clusterMemberByIdMap.get(candidateId);
         if (null != candidate)
         {
-            memberStatusPublisher.placeVote(
+            consensusPublisher.placeVote(
                 candidate.publication(),
                 candidateTermId,
                 logLeadershipTermId,
@@ -878,7 +878,7 @@ public class Election
     private void publishNewLeadershipTerm(
         final ExclusivePublication publication, final long leadershipTermId, final long timestamp)
     {
-        memberStatusPublisher.newLeadershipTerm(
+        consensusPublisher.newLeadershipTerm(
             publication,
             logLeadershipTermId,
             appendPosition,
@@ -892,7 +892,7 @@ public class Election
 
     private boolean sendCatchupPosition()
     {
-        return memberStatusPublisher.catchupPosition(
+        return consensusPublisher.catchupPosition(
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());
     }
 

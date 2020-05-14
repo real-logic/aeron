@@ -27,7 +27,6 @@ import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.*;
 import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.AsciiEncoding;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
@@ -102,9 +101,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         receiverId = threadLocals.receiverId();
 
         final String groupTagValue = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
-        groupTag = null == groupTagValue ?
-            context.receiverGroupTag() :
-            Long.valueOf(AsciiEncoding.parseLongAscii(groupTagValue, 0, groupTagValue.length()));
+        groupTag = null == groupTagValue ? context.receiverGroupTag() : Long.valueOf(groupTagValue);
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
@@ -112,7 +109,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Allocate a channel binding status counter, if required (no used by control-mode=manual).
+     * Allocate a channel binding status counter, if required (not used by control-mode=manual).
      *
      * @param tempBuffer      to hold transient counter key/label information.
      * @param countersManager to use to create the counter.
@@ -631,7 +628,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             multiRcvDestination.checkForReResolution(this, nowNs, conductorProxy);
         }
-        else if (udpChannel.hasExplicitControl() && nowNs > (timeOfLastActivityNs + DESTINATION_ADDRESS_TIMEOUT))
+        else if (udpChannel.hasExplicitControl() && (timeOfLastActivityNs + DESTINATION_ADDRESS_TIMEOUT) - nowNs < 0)
         {
             conductorProxy.reResolveControl(
                 udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME),

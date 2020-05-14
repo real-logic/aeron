@@ -19,10 +19,8 @@ import io.aeron.ChannelUri;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.net.InetSocketAddress;
 
@@ -63,7 +61,7 @@ public class Sender extends SenderRhsPadding implements Agent
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
     private final AtomicCounter resolutionChanges;
-    private final NanoClock nanoClock;
+    private final CachedNanoClock nanoClock;
     private final DriverConductorProxy conductorProxy;
 
     private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;

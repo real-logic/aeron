@@ -22,9 +22,7 @@ import io.aeron.driver.media.UdpChannel;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -44,7 +42,7 @@ public class Receiver implements Agent
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
-    private final NanoClock nanoClock;
+    private final CachedNanoClock nanoClock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
@@ -102,7 +100,6 @@ public class Receiver implements Agent
         if (reResolutionCheckIntervalNs > 0 && (reResolutionDeadlineNs - nowNs) < 0)
         {
             dataTransportPoller.checkForReResolutions(nowNs, conductorProxy);
-
             reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
         }
 

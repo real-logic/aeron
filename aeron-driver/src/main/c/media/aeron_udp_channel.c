@@ -198,6 +198,7 @@ int aeron_udp_channel_parse(
     _channel->original_uri[copy_length] = '\0';
     _channel->uri_length = copy_length;
 
+    _channel->has_explicit_endpoint = NULL != _channel->uri.params.udp.endpoint;
     _channel->has_explicit_control = false;
     _channel->is_manual_control_mode = false;
     _channel->is_dynamic_control_mode = false;

@@ -50,8 +50,7 @@ int aeron_receive_destination_create(
     int32_t channel_status_counter_id);
 
 void aeron_receive_destination_delete(
-    aeron_receive_destination_t *destination,
-    aeron_counters_manager_t *counters_manager);
+    aeron_receive_destination_t *destination, aeron_counters_manager_t *counters_manager);
 
 inline void aeron_receive_destination_update_last_activity_ns(aeron_receive_destination_t *destination, int64_t now_ns)
 {

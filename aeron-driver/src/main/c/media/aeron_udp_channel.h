@@ -36,6 +36,7 @@ typedef struct aeron_udp_channel_stct
     size_t uri_length;
     size_t canonical_length;
     uint8_t multicast_ttl;
+    bool has_explicit_endpoint;
     bool has_explicit_control;
     bool is_manual_control_mode;
     bool is_dynamic_control_mode;

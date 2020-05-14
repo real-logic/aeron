@@ -247,9 +247,9 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (subscription.channelStatusId() == statusIndicatorId)
                 {
-                    handleError(new ChannelEndpointException(statusIndicatorId, message));
                     subscription.internalClose();
                     iterator.remove();
+                    handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
             else if (resource instanceof Publication)
@@ -258,10 +258,10 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (publication.channelStatusId() == statusIndicatorId)
                 {
-                    handleError(new ChannelEndpointException(statusIndicatorId, message));
                     publication.internalClose();
                     releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
                     iterator.remove();
+                    handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
         }

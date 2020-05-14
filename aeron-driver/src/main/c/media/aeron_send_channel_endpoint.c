@@ -345,10 +345,9 @@ void aeron_send_channel_endpoint_on_nak(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
     aeron_nak_header_t *nak_header = (aeron_nak_header_t *)buffer;
-    int64_t key_value =
-        aeron_map_compound_key(nak_header->stream_id, nak_header->session_id);
-    aeron_network_publication_t *publication =
-        aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
+    int64_t key_value = aeron_map_compound_key(nak_header->stream_id, nak_header->session_id);
+    aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
+        &endpoint->publication_dispatch_map, key_value);
 
     if (NULL != publication)
     {
@@ -356,8 +355,7 @@ void aeron_send_channel_endpoint_on_nak(
     }
 }
 
-void aeron_send_channel_endpoint_publication_trigger_send_setup_frame(
-    void *clientd, int64_t key, void *value)
+void aeron_send_channel_endpoint_publication_trigger_send_setup_frame(void *clientd, int64_t key, void *value)
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)value;
 
@@ -368,10 +366,9 @@ void aeron_send_channel_endpoint_on_status_message(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
     aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *)buffer;
-    int64_t key_value =
-        aeron_map_compound_key(sm_header->stream_id, sm_header->session_id);
-    aeron_network_publication_t *publication =
-        aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
+    int64_t key_value = aeron_map_compound_key(sm_header->stream_id, sm_header->session_id);
+    aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
+        &endpoint->publication_dispatch_map, key_value);
 
     if (NULL != endpoint->destination_tracker)
     {
@@ -407,10 +404,9 @@ void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
     aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *)buffer;
-    int64_t key_value =
-        aeron_map_compound_key(rttm_header->stream_id, rttm_header->session_id);
-    aeron_network_publication_t *publication =
-        aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
+    int64_t key_value = aeron_map_compound_key(rttm_header->stream_id, rttm_header->session_id);
+    aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
+        &endpoint->publication_dispatch_map, key_value);
 
     if (NULL != publication)
     {

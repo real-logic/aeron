@@ -197,7 +197,7 @@ class ManualSndMultiDestination extends MultiSndDestination
     {
         for (final Destination destination : destinations)
         {
-            if (nowNs > (destination.timeOfLastActivityNs + destinationTimeoutNs))
+            if ((destination.timeOfLastActivityNs + destinationTimeoutNs) - nowNs < 0)
             {
                 final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
                 final InetSocketAddress address = destination.address;

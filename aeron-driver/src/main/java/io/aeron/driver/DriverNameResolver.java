@@ -359,7 +359,6 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
     public int sendResolutionFrameTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        //System.out.println("out " + transport.bindAddressAndPort() + " " + remoteAddress);
         buffer.position(0);
 
         final int bytesRemaining = buffer.remaining();

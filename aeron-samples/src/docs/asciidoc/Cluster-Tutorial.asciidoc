@@ -55,13 +55,13 @@ acknowledgements.
 
 Within Aeron Cluster, replication (ensuring that a follower node has the same state as the leader) and recovery
 (restoring a stopped node to its previous state)footnote:[Where stopping could include crashing or manually shutting
-down] are the same problem or at least at similar enough that they use the same mechanism. They rely on three
-functions, firstly, some known initial state, this could either be the state when first provisioned (a 'null' or empty
-state) or some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by
-Cluster's Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its
-resulting state and output events from the initial state and the input messages, such that for the same inputs it will
-always get the same result. This can be a trickier than it first seems as it excludes some functionality that we may
-normally take for granted.
+down] are the same problem or at least at similar enough to use the same mechanism. They rely on three functions.
+Firstly, some known initial state, this could either be the state when first provisioned (a 'null' or empty state) or
+some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by Cluster's
+Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its resulting
+state and output events from the initial state and the input messages, such that for the same inputs it will always get
+the same result. This can be a trickier than it first seems as it excludes some functionality that we may normally take
+for granted.
 
 [TIP]
 ====
@@ -87,16 +87,15 @@ may be more appropriate.
 === Components of Aeron Cluster
 
 One of the key design goals of Aeron is to build a system that is highly composable. For example, Aeron Archive which
-provides a means to persist an Aeron stream is used by Aeron Cluster to persist the Raft log.  Messages are sent around
-a cluster using Aeron's Media Driver. Therefore, Aeron Cluster is an aggregation of a number of existing Aeron
-components and a few new ones. To successfully run a cluster node it is necessary to have one (or at least one in the
-case of ClusteredServiceContainer) of each of the Aeron components running. Because all communication between these
-components within a single node uses IPC they can be run all in the same process, in separate processes or any arbitrary
-combination.
+provides a means to persist the Raft log created by Aeron Cluster. Aeron Cluster sends messages via a Media Driver.
+Therefore, Aeron Cluster is an aggregation of a number of existing Aeron components and a few new ones. To successfully
+run a cluster node it is necessary to have one (or at least one in the case of ClusteredServiceContainer) of each of
+the Aeron components running. Because all communication between these components within a single node uses IPC they can
+be run all in the same process, in separate processes or any arbitrary combination.
 
 ==== MediaDriver
 
-The MediaDriver is the means by which data is moved into, out of, and around the cluster. Aeron Cluster reuses the
+The MediaDriver is the means by which data is sent into, out of, and around the cluster. Aeron Cluster reuses the
 Publication and Subscription functionality in Aeron to handle all distributed and inter-process messaging.
 
 NOTE: Currently, only the Java implementation of the MediaDriver is supported for use in Aeron Cluster.
@@ -156,14 +155,14 @@ You may wish to open these up in your favourite IDE or editor while we proceed w
 == Implementing a Clustered Service
 
 The first step to setting up a cluster is to implement the application logic. For this tutorial we are going implement
-a simple auction service. It will have one auction and will track a best price, and an id for the customer who bid that
-price. To properly demonstrate the state management and recovery features of cluster it is important to have some
+a simple auction service. It will have one auction and will track the best price, and an id for the customer who bid
+that price. To properly demonstrate the state management and recovery features of cluster it is important to have some
 functionality that is stateful, rather than something that is stateless like an echo service.
 
-NOTE: In order to show the various features of Cluster in an understandable way, we've kept the various aspects of the
-code (data serialisation, application logic, Cluster integration) very close together. It is unlikely you would do
-this in a real world application. You would probably want to have greater separation of concerns and perhaps use
-libraries to handle functionality like serialisation.
+NOTE: In order to understandably show the various features of Cluster, we've kept the various aspects of the code
+(data serialisation, application logic, Cluster integration) very close together. It is unlikely you would do this in a
+real world application. You would probably want to have greater separation of concerns and perhaps use libraries to
+handle functionality like serialisation.
 
 We must define the link between the application logic and Aeron Cluster. This is done by implementing the
 `ClusteredService` interface. The `ClusteredService` interface defines a number of callbacks which deliver messages
@@ -230,8 +229,8 @@ return responses back to the client.
 for `offer` is checked as it is a non-blocking call and not guaranteed to succeed.
 
 <6> When doing any busy loops within the clustered application use the Cluster's `IdleStrategy::idle(int)` within the
-wait loop to allow the service to pause in a friendly manner. It will take care of handling thread interrupts and
-ensure the node fails correctly.
+wait loop to allow the service to wait while allowing other threads to progress. It will take care of handling thread
+interrupts and ensure the node fails correctly.
 
 === Storing State
 
@@ -303,8 +302,8 @@ single process. Later we will then start the cluster as three separate processes
 
 In a production deployment, you will want to run the 3 instances on three separate servers, however for our example we
 want to run the services on a single machine. This does make port allocation a concern as each node within the cluster
-needs to bind to a number of ports, so we need to make sure are no clashes.  We could do this with VMs or containers,
-but in the interest of simplicity we are going to specify a port range for each node.  For example:
+needs to bind to a number of ports, so we need to make sure are no clashes. We could do this with VMs or containers,
+but in the interest of simplicity we are going to specify a port range for each node. For example:
 
 - Node 0, ports: 9000-9099
 - Node 1, ports: 9100-9199
@@ -407,15 +406,15 @@ into a single string of the form.
 Where each of the leading numeric values is a member id for the cluster (as specified in the `clusterMemberId` method).
 The values for each endpoint represent:
 
-* client-facing, where the client will connect to for the ingress channel.
-* member-facing, where other members of the cluster will connect to.
+* ingress, where the client will connect to for the ingress channel.
+* consensus, where other members of the cluster communicate with each other to achieve cluster consensus.
 * log, used to replicate logs to.
 * transfer, used for a stream that members can use to catch up to a leader.
 * archive, the same endpoint used to control archive running on this node.
 +
 In our example we've used the same hostname for each of the endpoints (localhost), however each endpoint allows the
-specification of a host, so that traffic could potentially be separated if required, e.g. running member-facing traffic
-on a separate network to the client-facing traffic.
+specification of a host, so that traffic could potentially be separated if required, e.g. running consensus traffic
+on a separate network to the ingress traffic.
 
 <3> Use the node's specific Media Driver.
 
@@ -427,7 +426,7 @@ template that specifies the parameters, but excludes the endpoint, which will be
 
 <6> Specify the log channel. Like the ingress channel this is specified as a template. This channel needs to be a
 multi-destination cast or multicast channel. In our example we are using multi-destination cast using manual
-configuration, hence we need a separate control endpoint (include a port) used for adding and removing destination to
+configuration, hence we need a separate control endpoint (including a port) used for adding and removing destination to
 the publication.
 
 <7> Clone the Archive Client context that the Consensus Module will use to talk to the Archive.
@@ -445,13 +444,13 @@ include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionCluster
 
 <1> Again we use the node specific Media Driver.
 
-<2> And the node's Archive, via the Archive Client configuration.
+<2> Plus the node's Archive, via the Archive Client configuration.
 
 <3> This is the point where we bind an instance of our application logic to the cluster.
 
 === Running the Cluster
 
-Now the cluster is configured we can start it running. The code for launching the service is as follows.
+Now we have a configured cluster, we can start it running. The code for launching the service is as follows.
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -462,10 +461,10 @@ include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionCluster
 
 <2> Immediately afterward we launch a `ClusteredServiceContainer` which is our application.
 
-<3> Use the shutdown barrier to keep our system live until it is signalled to shutdown (e.g. using SIG_TERM or SIG_INT
+<3> Use the shutdown barrier to keep our system live until it is signalled to shut down (e.g. using SIG_TERM or SIG_INT
 on Unix).
 
-There is a script provide to launch the cluster.  Assuming you've followed the <<usingthesource>> step above you
+There is a script provide to launch the cluster. Assuming you've followed the <<usingthesource>> step above you
 should be able to do the following:
 
 // TODO need to add windows command examples.
@@ -518,7 +517,7 @@ with the cluster.
 
 === Connecting to a Cluster
 
-First off, we need a way to connect our client to the cluster.  All the messaging between the client and the cluster
+First off, we need a way to connect our client to the cluster. All the messaging between the client and the cluster
 happens via Aeron, but we have an additional layer called `AeronCluster` that handles connections to the independent
 nodes and provides methods for offering messages into the cluster and polling for responses.
 
@@ -542,8 +541,8 @@ cluster events (e.g. new elected leaders).
 
 <3> Specify the channel to receive egress responses back from the cluster. In our case we are using a UDP unicast
 response, which will limit responses to the session that sent the ingress message. We are adjusting the port per client
-to allow for multiple clients on the same machine with multiple media drivers. If a single media driver is used then
-this would not be necessary.
+to allow for multiple clients on the same machine with multiple media drivers. For a single media driver this would not
+be necessary.
 
 +
 
@@ -564,8 +563,8 @@ supported or in very early stages, so unicast is currently recommended in those 
 
 === Publishing to the Cluster
 
-Next we are going push messages into the cluster itself. So that the client is able to fail over to different nodes as
-nodes come and go in the cluster the Aeron publications are wrapped in a class called `AeronCluster`. This is the
+Next we are going push messages into the cluster itself. So that the client is able to fail over to different nodes, as
+nodes come and go, in the cluster the Aeron publications are wrapped in a class called `AeronCluster`. This is the
 second of the two items that are connected at start up. This class provides an API very similar to the Publication API.
 
 [source, Java, indent=0, options="nowrap"]
@@ -578,9 +577,9 @@ Agrona `DirectBuffer`. The `AeronCluster` contains offer methods that behave in 
 methods.
 
 <2> Publish the data in the same way we would with a `Publication`. We must check the return value to ensure that the
-message has been sent.
+message has been sent because back pressure could happen at any time.
 
-<3> If we fail to send and need to run a busy wait loop, we should utilise an `IdleStrategy` to ensure that we don't
+<3> If we fail to send, and need to run a busy wait loop, we should utilise an `IdleStrategy` to ensure that we don't
 inappropriately overuse the CPU. With cluster clients we should also be continually polling the egress topic to pick up
 any messages that have been sent back from the cluster, including errors or session status messages.
 
@@ -602,7 +601,7 @@ Now we have all the pieces in place we start to run the cluster and client toget
 You will need at least three terminal windows as we will leave the one we used to start the cluster open showing logging
 information for the cluster.
 
-Firstly start the cluster up.
+Firstly, start up the cluster.
 
 ----
 > cd <AERON_HOME>/aeron-samples/scripts/cluster
@@ -615,7 +614,7 @@ Wait until you see a message that indicates one of the nodes is now leader.
 [57240.190127954] CLUSTER: ELECTION_STATE_CHANGE [29/29]: memberId=1, LEADER_READY -> CLOSE
 ----
 
-Now in a second terminal window run a client that will place some bids into our cluster hosted auction. The `10`
+Now in a second terminal window, run a client that will place some bids into our cluster hosted auction. The `10`
 parameter is the customer id to use for the client, change this number if you want to run multiple clients.
 
 ----
@@ -650,11 +649,11 @@ SessionMessage(1,8474093274723075715,10,142,true)
 
 === Failed Nodes and Leader Election
 
-Now the cluster is up and running and we are able to send and receive messages, we can look at some additional tools
-available for Cluster and experiment with some failover functionality.
+Now the cluster is up and running, and we are able to send and receive messages, we can look at some additional tools
+available for Cluster and experiment with the fault tolerance functionality.
 
-First thing we are interested in is which node of the three is the leader, with this information we can try to
-shutdown the leader and see if our client is able to recover.
+First thing we are interested in is which node of the three is the leader, with this information we can try shutdown the
+leader and see if our client is able to recover.
 
 [subs = "attributes+"]
 ----
@@ -668,19 +667,19 @@ This will show a list of all the members in the cluster, similar to the followin
 currentTimeNs=1579564309666000000, leaderMemberId=0, memberId=0, activeMembers=[ClusterMember{isBallotSent=false,
 isLeader=false, hasRequestedJoin=false, id=0, leadershipTermId=5, logPosition=11872, candidateTermId=-1,
 catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1, timeOfLastAppendPositionNs=1579564309666000000,
-clientFacingEndpoint='localhost:9003', memberFacingEndpoint='localhost:9004', logEndpoint='localhost:9005',
+ingressEndpoint='localhost:9003', consensusEndpoint='localhost:9004', logEndpoint='localhost:9005',
 transferEndpoint='localhost:9006', archiveEndpoint='localhost:9001',
 endpointsDetail='localhost:9003,localhost:9004,localhost:9005,localhost:9006,localhost:9001', publication=null,
 vote=null}, ClusterMember{isBallotSent=false, isLeader=false, hasRequestedJoin=false, id=1, leadershipTermId=5,
 logPosition=11872, candidateTermId=-1, catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1,
-timeOfLastAppendPositionNs=1579564309495000000, clientFacingEndpoint='localhost:9103',
-memberFacingEndpoint='localhost:9104', logEndpoint='localhost:9105', transferEndpoint='localhost:9106',
+timeOfLastAppendPositionNs=1579564309495000000, ingressEndpoint='localhost:9103',
+consensusEndpoint='localhost:9104', logEndpoint='localhost:9105', transferEndpoint='localhost:9106',
 archiveEndpoint='localhost:9101',
 endpointsDetail='localhost:9103,localhost:9104,localhost:9105,localhost:9106,localhost:9101', publication=null,
 vote=null}, ClusterMember{isBallotSent=false, isLeader=false, hasRequestedJoin=false, id=2, leadershipTermId=5,
 logPosition=11872, candidateTermId=-1, catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1,
-timeOfLastAppendPositionNs=1579564309552000000, clientFacingEndpoint='localhost:9203',
-memberFacingEndpoint='localhost:9204', logEndpoint='localhost:9205', transferEndpoint='localhost:9206',
+timeOfLastAppendPositionNs=1579564309552000000, ingressEndpoint='localhost:9203',
+consensusEndpoint='localhost:9204', logEndpoint='localhost:9205', transferEndpoint='localhost:9206',
 archiveEndpoint='localhost:9201',
 endpointsDetail='localhost:9203,localhost:9204,localhost:9205,localhost:9206,localhost:9201', publication=null,
 vote=null}], passiveMembers=[]
@@ -696,7 +695,7 @@ can discover the pid for that member using the following command:
 15060
 ----
 
-Note the second argument to the `ClusterTool` is the directory where the Consensus Module's data is stored, and we have
+Note the second argument to the `ClusterTool` is the directory where the Consensus Module's stores its data, and we have
 substituted the `leaderMemberId` to locate the correct directory for the leader.
 
 This will have printed out a simple number which is the pid of the leader process.
@@ -717,7 +716,7 @@ step.
 ----
 
 The system will stall for a short while until the followers timeout after not receiving a heartbeat from the leader
-before deciding to elect a new one.  The logs for the cluster will contain something similar to:
+before deciding to elect a new one. The logs for the cluster will contain something similar to:
 
 ----
 ==> logs/cluster-0.log <==
@@ -751,8 +750,8 @@ io.aeron.cluster.client.ClusterException: heartbeat timeout from leader
 Showing that a new leader has been elected to run the cluster. At this point the cluster will have no redundancy and
 will only have two working nodes.
 
-The client should automatically resumed sending messages into the cluster and receiving responses. There may or may
-not be an exception logged by the client depending on timing.
+The client should automatically resume sending messages into the cluster and receiving responses. There may, or may
+not, be an exception logged by the client depending on timing.
 
 ----
 Sent (-7819190107498904370,10,12969) bidsRemaining = 980

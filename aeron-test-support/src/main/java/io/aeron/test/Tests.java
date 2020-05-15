@@ -314,7 +314,7 @@ public class Tests
     {
         if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN)
         {
-            System.out.println("Warning: " + ex.getMessage());
+            //System.out.println("Warning: " + ex.getMessage());
             return;
         }
 

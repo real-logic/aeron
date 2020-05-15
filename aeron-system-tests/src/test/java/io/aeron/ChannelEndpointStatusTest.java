@@ -80,7 +80,7 @@ public class ChannelEndpointStatusTest
     private final ErrorHandler driverErrorHandler =
         (ex) ->
         {
-            if (ex instanceof AeronException && ex.getMessage().contains("channel error - Address already in use"))
+            if (ex instanceof AeronException && ex.getMessage().contains("Address already in use"))
             {
                 return;
             }
@@ -183,7 +183,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
+        TestMediaDriver.notSupportedOnCMediaDriver("C Driver raises error on conductor");
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
@@ -213,7 +213,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
+        TestMediaDriver.notSupportedOnCMediaDriver("C Driver raises error on conductor");
         final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
         while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
@@ -244,7 +244,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
+        TestMediaDriver.notSupportedOnCMediaDriver("C Driver raises error on conductor");
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)

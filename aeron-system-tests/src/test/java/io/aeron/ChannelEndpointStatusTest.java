@@ -183,6 +183,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
@@ -212,6 +213,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
         final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
         while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
@@ -242,6 +244,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Awaiting Bug Fix");
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)

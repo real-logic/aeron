@@ -80,8 +80,7 @@ public class ChannelEndpointStatusTest
     private final ErrorHandler driverErrorHandler =
         (ex) ->
         {
-            if (ex instanceof AeronException &&
-                ex.getMessage().startsWith("channel error - Address already in use:"))
+            if (ex instanceof AeronException && ex.getMessage().contains("channel error - Address already in use"))
             {
                 return;
             }

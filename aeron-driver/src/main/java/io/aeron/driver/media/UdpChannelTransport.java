@@ -160,10 +160,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
             sendDatagramChannel = null;
             receiveDatagramChannel = null;
 
-            throw new AeronException(
-                "channel error - " + ex.getMessage() +
-                " (at " + ex.getStackTrace()[0].toString() + "): " +
-                udpChannel.originalUriString(), ex);
+            final String message = "channel error - " + ex.getMessage() +
+                " (at " + ex.getStackTrace()[0].toString() + "): " + udpChannel.originalUriString();
+
+            throw new AeronException(message, ex);
         }
     }
 
@@ -220,17 +220,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
         try
         {
             final InetSocketAddress localAddress = (InetSocketAddress)receiveDatagramChannel.getLocalAddress();
-            if (null == localAddress)
+            if (null != localAddress)
             {
-                return "";
+                return NetworkUtil.formatAddressAndPort(localAddress.getAddress(), localAddress.getPort());
             }
-
-            return NetworkUtil.formatAddressAndPort(localAddress.getAddress(), localAddress.getPort());
         }
-        catch (final IOException ex)
+        catch (final IOException ignore)
         {
-            return "";
         }
+
+        return "";
     }
 
     /**
@@ -370,10 +369,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
             }
 
-            throw new AeronException(
-                "re-resolve endpoint channel error - " + ex.getMessage() +
-                    " (at " + ex.getStackTrace()[0].toString() + "): " +
-                    udpChannel.originalUriString(), ex);
+            final String message = "re-resolve endpoint channel error - " + ex.getMessage() +
+                " (at " + ex.getStackTrace()[0].toString() + "): " + udpChannel.originalUriString();
+
+            throw new AeronException(message, ex);
         }
     }
 }

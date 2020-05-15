@@ -162,7 +162,7 @@ TEST_F(ImageTest, shouldReadFirstMessage)
         EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
     };
 
-    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 1);
+    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 1);
     EXPECT_EQ(
         static_cast<size_t>(m_subscriber_position),
         AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT));
@@ -177,7 +177,7 @@ TEST_F(ImageTest, shouldNotReadPastTail)
         FAIL() << "should not be called";
     };
 
-    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 0);
+    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 0);
     EXPECT_EQ(static_cast<size_t>(m_subscriber_position), 0u);
 }
 
@@ -216,7 +216,7 @@ TEST_F(ImageTest, shouldReadMultipleMessages)
         handlerCallCount++;
     };
 
-    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX),2);
+    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()),2);
     EXPECT_EQ(handlerCallCount, 2u);
     EXPECT_EQ(m_subscriber_position, alignedMessageLength * 2);
 }
@@ -239,7 +239,7 @@ TEST_F(ImageTest, shouldReadLastMessage)
         EXPECT_EQ(length, messageLength);
     };
 
-    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 1);
+    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 1);
     EXPECT_EQ(m_subscriber_position, m_term_length);
 }
 
@@ -261,6 +261,6 @@ TEST_F(ImageTest, shouldNotReadLastMessageWhenPadding)
         FAIL() << "should not be called";
     };
 
-    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 0);
+    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 0);
     EXPECT_EQ(m_subscriber_position, m_term_length);
 }

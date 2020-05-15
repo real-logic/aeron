@@ -414,7 +414,7 @@ public class ChannelUri
                     break;
 
                 default:
-                    throw new IllegalStateException("unexpected state=" + state);
+                    throw new IllegalStateException("unexpected state=" + state + " in " + cs);
             }
         }
 
@@ -430,7 +430,7 @@ public class ChannelUri
                 break;
 
             default:
-                throw new IllegalStateException("no more input found, state=" + state);
+                throw new IllegalStateException("no more input found, state=" + state + " in " + cs);
         }
 
         return new ChannelUri(prefix, media, params);

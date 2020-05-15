@@ -95,6 +95,11 @@ public:
             (aeron_logbuffer_metadata_t *)m_image->log_buffer->mapped_raw_log.log_meta_data.addr;
         const size_t index = aeron_logbuffer_index_by_position(position, m_position_bits_to_shift);
         uint8_t buffer[1024];
+        int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
+            position, m_position_bits_to_shift, m_initial_term_id);
+        int32_t tail_offset = (int32_t)position;
+
+        metadata->term_tail_counters[index] = static_cast<int64_t>(term_id) << 32 | tail_offset;
 
         aeron_term_appender_append_unfragmented_message(
             &m_image->log_buffer->mapped_raw_log.term_buffers[index],
@@ -119,6 +124,13 @@ public:
         }
     }
 
+    template <typename F>
+    int imagePoll(F&& handler, size_t fragment_limit)
+    {
+        m_handler = handler;
+        return aeron_image_poll(m_image, fragment_handler, this, fragment_limit);
+    }
+
 protected:
     int64_t m_correlationId = 0;
     int64_t m_subscriber_position = 0;
@@ -136,9 +148,118 @@ protected:
 
 TEST_F(ImageTest, shouldReadFirstMessage)
 {
+    const size_t messageLength = 120;
+
     createImage();
 
-    appendMessage(0, 120);
+    appendMessage(m_subscriber_position, messageLength);
 
-    EXPECT_EQ(aeron_image_poll(m_image, fragment_handler, this, 1), 1);
+    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    {
+        EXPECT_EQ(offset, m_subscriber_position + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(length, messageLength);
+        EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
+    };
+
+    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 1);
+    EXPECT_EQ(
+        static_cast<size_t>(m_subscriber_position),
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT));
+}
+
+TEST_F(ImageTest, shouldNotReadPastTail)
+{
+    createImage();
+
+    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    {
+        FAIL() << "should not be called";
+    };
+
+    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 0);
+    EXPECT_EQ(static_cast<size_t>(m_subscriber_position), 0u);
+}
+
+TEST_F(ImageTest, shouldReadOneLimitedMessage)
+{
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+    createImage();
+
+    appendMessage(m_subscriber_position, messageLength);
+    appendMessage(m_subscriber_position + alignedMessageLength, messageLength);
+
+    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    {
+    };
+
+    EXPECT_EQ(imagePoll(null_handler, 1), 1);
+}
+
+TEST_F(ImageTest, shouldReadMultipleMessages)
+{
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+    createImage();
+
+    appendMessage(m_subscriber_position, messageLength);
+    appendMessage(m_subscriber_position + alignedMessageLength, messageLength);
+    size_t handlerCallCount = 0;
+
+    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    {
+        handlerCallCount++;
+    };
+
+    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX),2);
+    EXPECT_EQ(handlerCallCount, 2u);
+    EXPECT_EQ(m_subscriber_position, alignedMessageLength * 2);
+}
+
+TEST_F(ImageTest, shouldReadLastMessage)
+{
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+    createImage();
+
+    m_subscriber_position = m_term_length - alignedMessageLength;
+
+    appendMessage(m_subscriber_position, messageLength);
+
+    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    {
+        EXPECT_EQ(offset, m_subscriber_position + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(length, messageLength);
+    };
+
+    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 1);
+    EXPECT_EQ(m_subscriber_position, m_term_length);
+}
+
+TEST_F(ImageTest, shouldNotReadLastMessageWhenPadding)
+{
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+    createImage();
+
+    m_subscriber_position = m_term_length - alignedMessageLength;
+
+    // this will append padding instead of the message as it will trip over the end.
+    appendMessage(m_subscriber_position, messageLength + AERON_DATA_HEADER_LENGTH);
+
+    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    {
+        FAIL() << "should not be called";
+    };
+
+    EXPECT_EQ(imagePoll(handler, SIZE_T_MAX), 0);
+    EXPECT_EQ(m_subscriber_position, m_term_length);
 }

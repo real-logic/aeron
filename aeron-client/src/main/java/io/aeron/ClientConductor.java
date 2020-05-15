@@ -1050,6 +1050,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (driverEventsAdapter.receivedCorrelationId() == correlationId)
             {
+                stashedChannel = null;
                 final RegistrationException ex = driverException;
                 if (null != ex)
                 {

@@ -182,7 +182,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             final String bindAddressAndPort = bindAddressAndPort();
             statusIndicator.appendToLabel(bindAddressAndPort);
-
             updateLocalSocketAddress(bindAddressAndPort);
         }
 

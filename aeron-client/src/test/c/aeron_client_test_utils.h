@@ -28,6 +28,8 @@ extern "C"
 
 #define FILE_PAGE_SIZE (4 * 1024)
 
+#define INITIAL_TERM_ID (1234)
+
 namespace aeron
 {
 namespace test
@@ -57,6 +59,10 @@ void createLogFile(std::string &filename)
 
     metadata->term_length = AERON_LOGBUFFER_TERM_MIN_LENGTH;
     metadata->page_size = FILE_PAGE_SIZE;
+    metadata->initial_term_id = INITIAL_TERM_ID;
+    metadata->term_tail_counters[0] = (int64_t)INITIAL_TERM_ID << 32;
+    metadata->term_tail_counters[1] = (int64_t)(INITIAL_TERM_ID + 1) << 32;
+    metadata->term_tail_counters[2] = (int64_t)(INITIAL_TERM_ID + 2) << 32;
 
     aeron_unmap(&mappedFile);
 }

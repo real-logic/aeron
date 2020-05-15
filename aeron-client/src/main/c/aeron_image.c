@@ -50,6 +50,7 @@ int aeron_image_create(
     _image->correlation_id = correlation_id;
     _image->session_id = session_id;
     _image->removal_change_number = INT64_MAX;
+    _image->final_position = 0;
 
     aeron_logbuffer_metadata_t *metadata =
         (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
@@ -67,6 +68,51 @@ int aeron_image_create(
 int aeron_image_delete(aeron_image_t *image)
 {
     aeron_free(image);
+
+    return 0;
+}
+
+int64_t aeron_image_position(aeron_image_t *image)
+{
+    bool is_closed;
+
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_position(NULL): %s", strerror(EINVAL));
+        return -1;
+    }
+
+    AERON_GET_VOLATILE(is_closed, image->is_closed);
+    if (is_closed)
+    {
+        return image->final_position;
+    }
+
+    return *image->subscriber_position;
+}
+
+int aeron_image_set_position(aeron_image_t *image, int64_t position)
+{
+    bool is_closed;
+
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_set_position(NULL): %s", strerror(EINVAL));
+        return -1;
+    }
+
+    AERON_GET_VOLATILE(is_closed, image->is_closed);
+    if (!is_closed)
+    {
+        if (aeron_image_validate_position(image, position) < 0)
+        {
+            return -1;
+        }
+
+        AERON_PUT_ORDERED(*image->subscriber_position, position);
+    }
 
     return 0;
 }

@@ -408,6 +408,9 @@ int aeron_subscription_close(aeron_subscription_t *subscription);
 
 int aeron_image_release(aeron_image_t *image);
 
+int64_t aeron_image_position(aeron_image_t *image);
+int aeron_image_set_position(aeron_image_t *image, int64_t position);
+
 int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit);
 int aeron_image_controlled_poll(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, size_t fragment_limit);

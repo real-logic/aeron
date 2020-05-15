@@ -36,6 +36,7 @@ typedef struct aeron_image_stct
 
     int64_t correlation_id;
     int64_t removal_change_number;
+    int64_t final_position;
 
     int32_t session_id;
     int32_t term_length_mask;

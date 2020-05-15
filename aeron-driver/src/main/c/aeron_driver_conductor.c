@@ -123,8 +123,10 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+        bool matches_tag = AERON_URI_INVALID_TAG != endpoint->conductor_fields.udp_channel->tag_id ||
+            link->endpoint->conductor_fields.udp_channel->tag_id == endpoint->conductor_fields.udp_channel->tag_id;
 
-        if (aeron_subscription_link_matches(
+        if (matches_tag && aeron_subscription_link_matches(
             link, endpoint, stream_id, params->has_session_id, params->session_id))
         {
             if (params->is_reliable != link->is_reliable)

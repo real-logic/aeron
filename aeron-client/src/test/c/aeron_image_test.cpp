@@ -17,6 +17,7 @@
 #include <exception>
 #include <functional>
 #include <string>
+#include <limits>
 
 #include <gtest/gtest.h>
 

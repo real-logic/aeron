@@ -34,6 +34,7 @@ public class TermReaderTest
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     private static final int INITIAL_TERM_ID = 7;
+    private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_CAPACITY);
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
@@ -138,19 +139,29 @@ public class TermReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
+        final long startingPosition = LogBufferDescriptor.computePosition(
+            INITIAL_TERM_ID, frameOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
+        when(subscriberPosition.getVolatile()).thenReturn(startingPosition);
 
         final int readOutcome = TermReader.read(
-            termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+            termBuffer,
+            frameOffset,
+            handler,
+            Integer.MAX_VALUE,
+            header,
+            errorHandler,
+            startingPosition,
+            subscriberPosition);
         assertEquals(1, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(handler).onFragment(
             eq(termBuffer), eq(frameOffset + HEADER_LENGTH), eq(msgLength), any(Header.class));
-        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
+        inOrder.verify(subscriberPosition).setOrdered(TERM_BUFFER_CAPACITY);
     }
 
     @Test
@@ -160,17 +171,27 @@ public class TermReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
+        final long currentPosition = LogBufferDescriptor.computePosition(
+            INITIAL_TERM_ID, frameOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)PADDING_FRAME_TYPE);
+        when(subscriberPosition.getVolatile()).thenReturn(currentPosition);
 
         final int readOutcome = TermReader.read(
-            termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+            termBuffer,
+            frameOffset,
+            handler,
+            Integer.MAX_VALUE,
+            header,
+            errorHandler,
+            currentPosition,
+            subscriberPosition);
         assertEquals(0, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
-        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
+        inOrder.verify(subscriberPosition).setOrdered(TERM_BUFFER_CAPACITY);
     }
 }

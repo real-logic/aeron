@@ -20,10 +20,12 @@
 #endif
 
 #if !defined(_MSC_VER)
+
 #include <pthread.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+
 #endif
 
 #include <stdio.h>
@@ -125,7 +127,7 @@ static void initialize_agent_logging()
             }
         }
 
-        if ((rb_buffer = (uint8_t *) malloc(rb_length)) == NULL)
+        if ((rb_buffer = (uint8_t *)malloc(rb_length)) == NULL)
         {
             fprintf(stderr, "could not allocate ring buffer buffer. exiting.\n");
             exit(EXIT_FAILURE);
@@ -314,9 +316,7 @@ void aeron_driver_agent_incoming_msg(
         addr);
 }
 
-int aeron_driver_agent_interceptor_init(
-    void **interceptor_state,
-    aeron_udp_channel_transport_affinity_t affinity)
+int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_channel_transport_affinity_t affinity)
 {
     return 0;
 }
@@ -639,7 +639,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
             snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%*s\"",
-                cmd_id == AERON_RESPONSE_ON_PUBLICATION_READY ? "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY",
+                AERON_RESPONSE_ON_PUBLICATION_READY == cmd_id ? "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY",
                 command->session_id,
                 command->stream_id,
                 command->position_limit_counter_id,
@@ -721,7 +721,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_counter_update_t *command = (aeron_counter_update_t *)message;
 
-            snprintf(buffer, sizeof(buffer) -1 , "ON_COUNTER_READY %" PRId64 " %d",
+            snprintf(buffer, sizeof(buffer) - 1, "ON_COUNTER_READY %" PRId64 " %d",
                 command->correlation_id,
                 command->counter_id);
             break;
@@ -749,7 +749,7 @@ static char *dissect_flags(uint8_t flags, char *dissected_flags, size_t flags_le
 
     for (size_t i = 0; i < len; i++)
     {
-        dissected_flags[i] = (flags & flag_mask) == flag_mask ? '1' : '0';
+        dissected_flags[i] = (flags & flag_mask) == (flag_mask ? '1' : '0');
         flag_mask >>= 1;
     }
 

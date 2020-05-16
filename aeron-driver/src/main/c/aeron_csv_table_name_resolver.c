@@ -19,7 +19,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -159,5 +158,6 @@ int aeron_csv_table_name_resolver_supplier(
     }
 
     resolver->state = lookup_table;
+
     return 0;
 }

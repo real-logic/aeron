@@ -342,8 +342,8 @@ int aeron_data_packet_dispatcher_create_publication(
         return -1;
     }
 
-    struct sockaddr_storage *control_addr =
-        endpoint->conductor_fields.udp_channel->is_multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+    struct sockaddr_storage *control_addr = endpoint->conductor_fields.udp_channel->is_multicast ?
+        &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
     aeron_driver_conductor_proxy_on_create_publication_image_cmd(
         dispatcher->conductor_proxy,
@@ -444,8 +444,8 @@ int aeron_data_packet_dispatcher_on_rttm(
         {
             if (header->frame_header.flags & AERON_RTTM_HEADER_REPLY_FLAG)
             {
-                struct sockaddr_storage *control_addr =
-                    endpoint->conductor_fields.udp_channel->is_multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+                struct sockaddr_storage *control_addr = endpoint->conductor_fields.udp_channel->is_multicast ?
+                    &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
                 return aeron_receive_channel_endpoint_send_rttm(
                     endpoint, control_addr, header->stream_id, header->session_id, header->echo_timestamp, 0, false);
@@ -469,8 +469,8 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     int32_t stream_id,
     int32_t session_id)
 {
-    struct sockaddr_storage *control_addr =
-        endpoint->conductor_fields.udp_channel->is_multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+    struct sockaddr_storage *control_addr = endpoint->conductor_fields.udp_channel->is_multicast ?
+        &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
     if (aeron_int64_to_tagged_ptr_hash_map_put(
         &stream_interest->image_by_session_id_map,
@@ -497,8 +497,11 @@ extern int aeron_data_packet_dispatcher_remove_with_state(
     int32_t session_id,
     int32_t stream_id,
     uint32_t image_state);
+
 extern int aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
+
 extern int aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
+
 extern bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_packet_dispatcher_t *dispatcher);

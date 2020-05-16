@@ -279,7 +279,7 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
                 int result = aeron_udp_uri_parse(ptr, &params->params.udp);
                 if (result < 0)
                 {
-                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int) uri_length, uri);
+                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int)uri_length, uri);
                 }
                 return result;
             }
@@ -294,7 +294,7 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
                 int result = aeron_ipc_uri_parse(ptr, &params->params.ipc);
                 if (result < 0)
                 {
-                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int) uri_length, uri);
+                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int)uri_length, uri);
                 }
                 return result;
             }

@@ -461,7 +461,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithInitialOffsetNotZero()
+    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithInitialOffsetNotZero()
     {
         final long initialPosition = computePosition(
             INITIAL_TERM_ID, offsetForFrame(1), POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);

@@ -339,7 +339,7 @@ public class ConsensusModule implements AutoCloseable
             "aeron.cluster.consensus.endpoints";
 
         /**
-         * Default property for the list of cluster member status endpoints.
+         * Default property for the list of cluster consensus endpoints.
          */
         public static final String CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT = "";
 
@@ -428,7 +428,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String CONSENSUS_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
 
         /**
-         * Stream id within a channel for communicating cluster member status.
+         * Stream id within a channel for communicating consensus messages.
          */
         public static final String CONSENSUS_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.stream.id";
 
@@ -1594,7 +1594,7 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * String representing the cluster members member status endpoints used to request to join the cluster.
+         * String representing the cluster members consensus endpoints used to request to join the cluster.
          * <p>
          * {@code "endpoint,endpoint,endpoint"}
          * <p>

@@ -1011,7 +1011,7 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * String representing the cluster members member status endpoints.
+         * String representing the cluster members consensus endpoints.
          * <p>
          * {@code "endpoint,endpoint,endpoint"}
          * <p>

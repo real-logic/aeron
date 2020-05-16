@@ -503,7 +503,7 @@ public final class ClusterMember
     }
 
     /**
-     * Close member status publication and null out reference.
+     * Close consensus publication and null out reference.
      *
      * @param errorHandler to capture errors during close.
      */

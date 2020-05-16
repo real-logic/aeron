@@ -171,7 +171,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-        current_bindings->meta_info.source_symbol = (const void*)interceptor_load_func;
+        current_bindings->meta_info.source_symbol = (const void *)interceptor_load_func;
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
 #endif
@@ -209,7 +209,7 @@ int aeron_udp_channel_data_paths_init(
         {
             aeron_udp_channel_outgoing_interceptor_t *interceptor;
 
-            if (aeron_alloc((void **) &interceptor, sizeof(aeron_udp_channel_outgoing_interceptor_t)) < 0)
+            if (aeron_alloc((void **)&interceptor, sizeof(aeron_udp_channel_outgoing_interceptor_t)) < 0)
             {
                 aeron_set_err(ENOMEM, "could not allocate %s:%d", __FILE__, __LINE__);
                 return -1;
@@ -239,7 +239,7 @@ int aeron_udp_channel_data_paths_init(
         }
 
         if (aeron_alloc(
-            (void **) &outgoing_transport_interceptor, sizeof(aeron_udp_channel_outgoing_interceptor_t)) < 0)
+            (void **)&outgoing_transport_interceptor, sizeof(aeron_udp_channel_outgoing_interceptor_t)) < 0)
         {
             aeron_set_err(ENOMEM, "could not allocate %s:%d", __FILE__, __LINE__);
             return -1;
@@ -277,7 +277,7 @@ int aeron_udp_channel_data_paths_init(
         {
             aeron_udp_channel_incoming_interceptor_t *interceptor;
 
-            if (aeron_alloc((void **) &interceptor, sizeof(aeron_udp_channel_incoming_interceptor_t)) < 0)
+            if (aeron_alloc((void **)&interceptor, sizeof(aeron_udp_channel_incoming_interceptor_t)) < 0)
             {
                 aeron_set_err(ENOMEM, "could not allocate %s:%d", __FILE__, __LINE__);
                 return -1;
@@ -306,7 +306,7 @@ int aeron_udp_channel_data_paths_init(
         }
 
         if (aeron_alloc(
-            (void **) &incoming_transport_interceptor, sizeof(aeron_udp_channel_incoming_interceptor_t)) < 0)
+            (void **)&incoming_transport_interceptor, sizeof(aeron_udp_channel_incoming_interceptor_t)) < 0)
         {
             aeron_set_err(ENOMEM, "could not allocate %s:%d", __FILE__, __LINE__);
             return -1;

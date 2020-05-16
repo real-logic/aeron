@@ -20,10 +20,13 @@
 #endif
 
 #include "util/aeron_platform.h"
+
 #if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <io.h>
 #else
+
 #include <unistd.h>
+
 #endif
 
 #include "aeron_socket.h"
@@ -104,7 +107,7 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin6_addr = in6addr_any;
 
-            if (bind(transport->fd, (struct sockaddr *) &addr, bind_addr_len) < 0)
+            if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
                 aeron_set_err_from_last_err_code("multicast IPv6 bind");
                 goto error;
@@ -143,14 +146,14 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin_addr.s_addr = INADDR_ANY;
 
-            if (bind(transport->fd, (struct sockaddr *) &addr, bind_addr_len) < 0)
+            if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
                 aeron_set_err_from_last_err_code("multicast IPv4 bind");
                 goto error;
             }
 
             struct ip_mreq mreq;
-            struct sockaddr_in *interface_addr = (struct sockaddr_in *) multicast_if_addr;
+            struct sockaddr_in *interface_addr = (struct sockaddr_in *)multicast_if_addr;
 
             mreq.imr_multiaddr.s_addr = in4->sin_addr.s_addr;
             mreq.imr_interface.s_addr = interface_addr->sin_addr.s_addr;
@@ -234,7 +237,7 @@ int aeron_udp_channel_transport_recvmmsg(
     void *clientd)
 {
 #if defined(HAVE_RECVMMSG)
-    struct timespec tv = {.tv_nsec = 0, .tv_sec = 0};
+    struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
 
     int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
     if (result < 0)

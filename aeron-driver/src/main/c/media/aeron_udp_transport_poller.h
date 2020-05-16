@@ -25,7 +25,6 @@
 #include "aeron_windows.h"
 #endif
 
-
 #include "media/aeron_udp_channel_transport.h"
 #include "aeron_driver_conductor.h"
 

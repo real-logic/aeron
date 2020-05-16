@@ -54,7 +54,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_loa
     const aeron_udp_channel_interceptor_bindings_t *delegate_bindings)
 {
     aeron_udp_channel_interceptor_bindings_t *interceptor_bindings;
-    if (aeron_alloc((void **) &interceptor_bindings, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
+    if (aeron_alloc((void **)&interceptor_bindings, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
     {
         return NULL;
     }
@@ -106,10 +106,9 @@ void aeron_udp_channel_transport_loss_load_env()
 }
 
 int aeron_udp_channel_interceptor_loss_init_incoming(
-    void **interceptor_state,
-    aeron_udp_channel_transport_affinity_t affinity)
+    void **interceptor_state, aeron_udp_channel_transport_affinity_t affinity)
 {
-    (void) aeron_thread_once(&env_is_initialized, aeron_udp_channel_transport_loss_load_env);
+    (void)aeron_thread_once(&env_is_initialized, aeron_udp_channel_transport_loss_load_env);
 
     if (NULL == aeron_udp_channel_interceptor_loss_params)
     {
@@ -159,14 +158,14 @@ void aeron_udp_channel_interceptor_loss_incoming(
     }
 }
 
-int aeron_udp_channel_interceptor_loss_parse_params(char* uri, aeron_udp_channel_interceptor_loss_params_t* params)
+int aeron_udp_channel_interceptor_loss_parse_params(char *uri, aeron_udp_channel_interceptor_loss_params_t *params)
 {
-    return aeron_uri_parse_params(uri, aeron_udp_channel_interceptor_loss_parse_callback, (void *) params);
+    return aeron_uri_parse_params(uri, aeron_udp_channel_interceptor_loss_parse_callback, (void *)params);
 }
 
 int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char *key, const char *value)
 {
-    aeron_udp_channel_interceptor_loss_params_t* loss_params = clientd;
+    aeron_udp_channel_interceptor_loss_params_t *loss_params = clientd;
     int result = 0;
 
     if (strncmp(key, "rate", sizeof("rate")) == 0)

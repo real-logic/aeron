@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <uri/aeron_uri.h>
 #include "aeron_alloc.h"
-#include "util/aeron_strutil.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "media/aeron_udp_channel.h"
@@ -283,12 +282,12 @@ int aeron_udp_channel_parse(
         }
 
         if (aeron_find_multicast_interface(
-                endpoint_addr.ss_family, _channel->uri.params.udp.bind_interface, &interface_addr, &interface_index) < 0)
+            endpoint_addr.ss_family, _channel->uri.params.udp.bind_interface, &interface_addr, &interface_index) < 0)
         {
             aeron_set_err(
-                    -AERON_ERROR_CODE_INVALID_CHANNEL,
-                    "could not find interface=(%s): %s",
-                    _channel->uri.params.udp.bind_interface, aeron_errmsg());
+                -AERON_ERROR_CODE_INVALID_CHANNEL,
+                "could not find interface=(%s): %s",
+                _channel->uri.params.udp.bind_interface, aeron_errmsg());
             goto error_cleanup;
         }
 
@@ -325,7 +324,7 @@ int aeron_udp_channel_parse(
     else
     {
         if (aeron_find_unicast_interface(
-                endpoint_addr.ss_family, _channel->uri.params.udp.bind_interface, &interface_addr, &interface_index) < 0)
+            endpoint_addr.ss_family, _channel->uri.params.udp.bind_interface, &interface_addr, &interface_index) < 0)
         {
             goto error_cleanup;
         }
@@ -356,7 +355,7 @@ int aeron_udp_channel_parse(
             aeron_udp_channel_delete(_channel);
         }
 
-        return -1;
+    return -1;
 }
 
 void aeron_udp_channel_delete(const aeron_udp_channel_t *channel)
@@ -369,4 +368,5 @@ void aeron_udp_channel_delete(const aeron_udp_channel_t *channel)
 }
 
 extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);
+
 extern bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b);

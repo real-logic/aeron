@@ -15,10 +15,13 @@
  */
 
 #include "util/aeron_platform.h"
+
 #if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <io.h>
 #else
+
 #include <unistd.h>
+
 #endif
 
 #include "util/aeron_arrayutil.h"

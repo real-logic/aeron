@@ -147,7 +147,7 @@ int aeron_receive_channel_endpoint_delete(
     aeron_int64_counter_map_delete(&endpoint->stream_and_session_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     bool deleted_this_channel = false;
-    
+
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
@@ -212,7 +212,7 @@ int aeron_receive_channel_endpoint_send_sm(
     uint8_t flags)
 {
     uint8_t buffer[sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t)];
-    aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *) buffer;
+    aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *)buffer;
     aeron_status_message_optional_header_t *sm_optional_header =
         (aeron_status_message_optional_header_t *)(buffer + sizeof(aeron_status_message_header_t));
 
@@ -246,7 +246,7 @@ int aeron_receive_channel_endpoint_send_sm(
     msghdr.msg_controllen = 0;
 
     int bytes_sent;
-    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
+    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int)iov[0].iov_len)
     {
         if (bytes_sent >= 0)
         {
@@ -267,7 +267,7 @@ int aeron_receive_channel_endpoint_send_nak(
     int32_t length)
 {
     uint8_t buffer[sizeof(aeron_nak_header_t)];
-    aeron_nak_header_t *nak_header = (aeron_nak_header_t *) buffer;
+    aeron_nak_header_t *nak_header = (aeron_nak_header_t *)buffer;
     struct iovec iov[1];
     struct msghdr msghdr;
 
@@ -292,7 +292,7 @@ int aeron_receive_channel_endpoint_send_nak(
     msghdr.msg_controllen = 0;
 
     int bytes_sent;
-    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
+    if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int)iov[0].iov_len)
     {
         if (bytes_sent >= 0)
         {
@@ -313,7 +313,7 @@ int aeron_receive_channel_endpoint_send_rttm(
     bool is_reply)
 {
     uint8_t buffer[sizeof(aeron_rttm_header_t)];
-    aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *) buffer;
+    aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *)buffer;
     struct iovec iov[1];
     struct msghdr msghdr;
 
@@ -497,8 +497,7 @@ int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoi
     return 0;
 }
 
-int aeron_receive_channel_endpoint_decref_to_stream(
-    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
     const int64_t count = aeron_int64_counter_map_get(&endpoint->stream_id_to_refcnt_map, stream_id);
 
@@ -616,8 +615,7 @@ int aeron_receive_channel_endpoint_on_add_subscription_by_session(
 }
 
 int aeron_receive_channel_endpoint_add_destination(
-    aeron_receive_channel_endpoint_t *endpoint,
-    aeron_receive_destination_t *destination)
+    aeron_receive_channel_endpoint_t *endpoint, aeron_receive_destination_t *destination)
 {
     int capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(capacity_result, endpoint->destinations, aeron_receive_channel_endpoint_t);
@@ -701,7 +699,7 @@ static inline bool aeron_receive_channel_endpoint_validate_so_rcvbuf(
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -854,11 +852,17 @@ int aeron_receive_channel_endpoint_add_pending_setup(
 
 extern int aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id);
+
 extern int aeron_receive_channel_endpoint_on_remove_cool_down(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id);
+
 extern size_t aeron_receive_channel_endpoint_stream_count(aeron_receive_channel_endpoint_t *endpoint);
+
 extern void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channel_endpoint_t *endpoint);
+
 extern bool aeron_receive_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint);
+
 extern bool aeron_receive_channel_endpoint_should_elicit_setup_message(aeron_receive_channel_endpoint_t *endpoint);
+
 extern int aeron_receive_channel_endpoint_bind_addr_and_port(
     aeron_receive_channel_endpoint_t *endpoint, char *buffer, size_t length);

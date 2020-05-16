@@ -130,7 +130,7 @@ public:
     {
         auto image = reinterpret_cast<ImageTest *>(clientd);
 
-        if (image->m_handler)
+        if (image->m_controlled_handler)
         {
             return image->m_controlled_handler(buffer, offset, length, header);
         }
@@ -150,6 +150,14 @@ public:
     {
         m_controlled_handler = handler;
         return aeron_image_controlled_poll(m_image, controlled_fragment_handler, this, fragment_limit);
+    }
+
+    template <typename F>
+    int imageBoundedControlledPoll(F&& handler, int64_t max_position, size_t fragment_limit)
+    {
+        m_controlled_handler = handler;
+        return aeron_image_bounded_controlled_poll(
+            m_image, controlled_fragment_handler, this, max_position, fragment_limit);
     }
 
 protected:
@@ -420,4 +428,216 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnContinue)
 
     EXPECT_EQ(imageControlledPoll(handler, std::numeric_limits<size_t>::max()), 1);
     EXPECT_EQ(m_subscriber_position, alignedMessageLength);
+}
+
+TEST_F(ImageTest, shouldNotPollOneFragmentToControlledFragmentHandlerOnAbort)
+{
+    createImage();
+
+    const size_t messageLength = 120;
+    const int64_t initialPosition = aeron_logbuffer_compute_position(
+        INITIAL_TERM_ID, 0, m_position_bits_to_shift, INITIAL_TERM_ID);
+
+    m_subscriber_position = initialPosition;
+
+    appendMessage(m_subscriber_position, messageLength);
+
+    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+        -> aeron_controlled_fragment_handler_action_t
+    {
+        return AERON_ACTION_ABORT;
+    };
+
+    EXPECT_EQ(imageControlledPoll(handler, std::numeric_limits<size_t>::max()), 0);
+    EXPECT_EQ(m_subscriber_position, initialPosition);
+}
+
+TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
+{
+    createImage();
+
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+    appendMessage(m_subscriber_position, messageLength);
+    appendMessage(m_subscriber_position + alignedMessageLength, messageLength);
+
+    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+        -> aeron_controlled_fragment_handler_action_t
+    {
+        EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(length, messageLength);
+        EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
+        return AERON_ACTION_BREAK;
+    };
+
+    EXPECT_EQ(imageControlledPoll(null_handler, std::numeric_limits<size_t>::max()), 1);
+    EXPECT_EQ(m_subscriber_position, alignedMessageLength);
+}
+
+TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnCommit)
+{
+    createImage();
+
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    size_t fragmentCount = 0;
+
+    appendMessage(m_subscriber_position, messageLength);
+    appendMessage(m_subscriber_position + alignedMessageLength, messageLength);
+
+    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+        -> aeron_controlled_fragment_handler_action_t
+    {
+        fragmentCount++;
+
+        if (1 == fragmentCount)
+        {
+            EXPECT_EQ(m_subscriber_position, 0);
+
+            EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+        }
+        else if (2 == fragmentCount)
+        {
+            // testing current position here after first message commit
+            EXPECT_EQ(m_subscriber_position, alignedMessageLength);
+
+            EXPECT_EQ(offset, alignedMessageLength + AERON_DATA_HEADER_LENGTH);
+        }
+
+        EXPECT_EQ(length, messageLength);
+        return AERON_ACTION_COMMIT;
+    };
+
+    EXPECT_EQ(imageControlledPoll(null_handler, std::numeric_limits<size_t>::max()), 2);
+    EXPECT_EQ(m_subscriber_position, alignedMessageLength * 2);
+}
+
+TEST_F(ImageTest, shouldUpdatePositionToEndOfCommittedFragmentOnCommit)
+{
+    createImage();
+
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int64_t initialPosition = aeron_logbuffer_compute_position(
+        INITIAL_TERM_ID, 0, m_position_bits_to_shift, INITIAL_TERM_ID);
+    size_t fragmentCount = 0;
+
+    m_subscriber_position = initialPosition;
+
+    appendMessage(initialPosition, messageLength);
+    appendMessage(initialPosition + alignedMessageLength, messageLength);
+    appendMessage(initialPosition + (2 * alignedMessageLength), messageLength);
+
+    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+        -> aeron_controlled_fragment_handler_action_t
+    {
+        fragmentCount++;
+
+        EXPECT_EQ(length, messageLength);
+
+        if (1 == fragmentCount)
+        {
+            EXPECT_EQ(m_subscriber_position, initialPosition);
+
+            EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+            return AERON_ACTION_CONTINUE;
+        }
+        else if (2 == fragmentCount)
+        {
+            // testing current position here after first message continue
+            EXPECT_EQ(m_subscriber_position, initialPosition);
+
+            EXPECT_EQ(offset, alignedMessageLength + AERON_DATA_HEADER_LENGTH);
+            return AERON_ACTION_COMMIT;
+        }
+        else if (3 == fragmentCount)
+        {
+            // testing current position here after second message commit
+            EXPECT_EQ(m_subscriber_position, initialPosition + (2 * alignedMessageLength));
+
+            EXPECT_EQ(offset, (2 * alignedMessageLength) + AERON_DATA_HEADER_LENGTH);
+            return AERON_ACTION_CONTINUE;
+        }
+
+        return AERON_ACTION_COMMIT;
+    };
+
+    EXPECT_EQ(imageControlledPoll(null_handler, std::numeric_limits<size_t>::max()), 3);
+    EXPECT_EQ(m_subscriber_position, initialPosition + (3 * alignedMessageLength));
+}
+
+TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnContinue)
+{
+    createImage();
+
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int64_t initialPosition = aeron_logbuffer_compute_position(
+        INITIAL_TERM_ID, 0, m_position_bits_to_shift, INITIAL_TERM_ID);
+    size_t fragmentCount = 0;
+
+    m_subscriber_position = initialPosition;
+
+    appendMessage(initialPosition, messageLength);
+    appendMessage(initialPosition + alignedMessageLength, messageLength);
+
+    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+        -> aeron_controlled_fragment_handler_action_t
+    {
+        fragmentCount++;
+
+        if (1 == fragmentCount)
+        {
+            EXPECT_EQ(m_subscriber_position, initialPosition);
+
+            EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+        }
+        else if (2 == fragmentCount)
+        {
+            // testing current position here after first message continue
+            EXPECT_EQ(m_subscriber_position, initialPosition);
+
+            EXPECT_EQ(offset, alignedMessageLength + AERON_DATA_HEADER_LENGTH);
+        }
+
+        EXPECT_EQ(length, messageLength);
+        return AERON_ACTION_CONTINUE;
+    };
+
+    EXPECT_EQ(imageControlledPoll(null_handler, std::numeric_limits<size_t>::max()), 2);
+    EXPECT_EQ(m_subscriber_position, initialPosition + (2 * alignedMessageLength));
+}
+
+TEST_F(ImageTest, shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeInitialPosition)
+{
+    createImage();
+
+    const size_t messageLength = 120;
+    const int64_t alignedMessageLength =
+        AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int64_t initialPosition = aeron_logbuffer_compute_position(
+        INITIAL_TERM_ID, 0, m_position_bits_to_shift, INITIAL_TERM_ID);
+    const int64_t maxPosition = initialPosition - AERON_DATA_HEADER_LENGTH;
+    bool called = false;
+
+    m_subscriber_position = initialPosition;
+
+    appendMessage(initialPosition, messageLength);
+    appendMessage(initialPosition + alignedMessageLength, messageLength);
+
+    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+        -> aeron_controlled_fragment_handler_action_t
+    {
+        called = true;
+        return AERON_ACTION_CONTINUE;
+    };
+
+    EXPECT_FALSE(called);
+    EXPECT_EQ(imageBoundedControlledPoll(null_handler, maxPosition, std::numeric_limits<size_t>::max()), 0);
+    EXPECT_EQ(m_subscriber_position, initialPosition);
 }

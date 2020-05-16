@@ -290,7 +290,7 @@ int aeron_image_bounded_poll(
     const int32_t initial_offset = (int32_t)initial_position & image->term_length_mask;
     const int32_t capacity = (const int32_t)image->log_buffer->mapped_raw_log.term_length;
     const int64_t high_limit_offset = limit_position - initial_position + initial_offset;
-    const int32_t limit_offset = capacity < high_limit_offset ? capacity : high_limit_offset;
+    const int32_t limit_offset = (int64_t)capacity < high_limit_offset ? capacity : (int32_t)high_limit_offset;
     int32_t offset = initial_offset;
 
     while (fragments_read < fragment_limit && offset < limit_offset)
@@ -357,7 +357,7 @@ int aeron_image_bounded_controlled_poll(
     const int32_t capacity = (const int32_t)image->log_buffer->mapped_raw_log.term_length;
     int32_t initial_offset = (int32_t)initial_position & image->term_length_mask;
     const int64_t high_limit_offset = limit_position - initial_position + initial_offset;
-    const int32_t limit_offset = capacity < high_limit_offset ? capacity : high_limit_offset;
+    const int32_t limit_offset = (int64_t)capacity < high_limit_offset ? capacity : (int32_t)high_limit_offset;
     int32_t offset = initial_offset;
 
     while (fragments_read < fragment_limit && offset < limit_offset)
@@ -457,7 +457,7 @@ int64_t aeron_image_controlled_peek(
     const int32_t capacity = (const int32_t)image->log_buffer->mapped_raw_log.term_length;
     int32_t initial_offset = (int32_t)initial_position & image->term_length_mask;
     const int64_t high_limit_offset = limit_position - initial_position + initial_offset;
-    const int32_t limit_offset = capacity < high_limit_offset ? capacity : high_limit_offset;
+    const int32_t limit_offset = (int64_t)capacity < high_limit_offset ? capacity : (int32_t)high_limit_offset;
     int32_t offset = initial_offset;
 
     while (offset < limit_offset)
@@ -539,7 +539,7 @@ int aeron_image_block_poll(
     const int32_t offset = (int32_t)position & image->term_length_mask;
     const int32_t capacity = (const int32_t)image->log_buffer->mapped_raw_log.term_length;
     const int64_t high_limit_offset = offset + block_length_limit;
-    const int32_t limit_offset = capacity < high_limit_offset ? capacity : high_limit_offset;
+    const int32_t limit_offset = (int64_t)capacity < high_limit_offset ? capacity : (int32_t)high_limit_offset;
     int32_t scan_offset = offset;
 
     while (scan_offset < limit_offset)

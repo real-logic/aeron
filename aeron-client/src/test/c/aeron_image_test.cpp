@@ -764,7 +764,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     const int32_t initialOffset = m_term_length - (2 * alignedMessageLength);
     const int64_t initialPosition = aeron_logbuffer_compute_position(
         INITIAL_TERM_ID, initialOffset, m_position_bits_to_shift, INITIAL_TERM_ID);
-    const int64_t maxPosition = std::numeric_limits<int32_t>::max() + 1000L;
+    const int64_t maxPosition = static_cast<int64_t>(std::numeric_limits<int32_t>::max()) + 1000L;
 
     m_subscriber_position = initialPosition;
 
@@ -793,7 +793,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAbov
     const int32_t initialOffset = m_term_length - (2 * alignedMessageLength);
     const int64_t initialPosition = aeron_logbuffer_compute_position(
         INITIAL_TERM_ID, initialOffset, m_position_bits_to_shift, INITIAL_TERM_ID);
-    const int64_t maxPosition = std::numeric_limits<int32_t>::max() + 1000L;
+    const int64_t maxPosition = static_cast<int64_t>(std::numeric_limits<int32_t>::max()) + 1000L;
 
     m_subscriber_position = initialPosition;
 

@@ -237,18 +237,14 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onChannelEndpointError(final int statusIndicatorId, final String message)
     {
-        final Long2ObjectHashMap<Object>.ValueIterator iterator = resourceByRegIdMap.values().iterator();
-        while (iterator.hasNext())
+        for (final Object resource : resourceByRegIdMap.values())
         {
-            final Object resource = iterator.next();
             if (resource instanceof Subscription)
             {
                 final Subscription subscription = (Subscription)resource;
 
                 if (subscription.channelStatusId() == statusIndicatorId)
                 {
-                    subscription.internalClose();
-                    iterator.remove();
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
@@ -258,9 +254,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (publication.channelStatusId() == statusIndicatorId)
                 {
-                    publication.internalClose();
-                    releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-                    iterator.remove();
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }

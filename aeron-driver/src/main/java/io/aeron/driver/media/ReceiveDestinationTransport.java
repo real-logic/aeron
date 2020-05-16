@@ -112,9 +112,7 @@ public class ReceiveDestinationTransport extends UdpChannelTransport
 
     public void close()
     {
-        localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
         CloseHelper.close(localSocketAddressIndicator);
-
         super.close();
     }
 }

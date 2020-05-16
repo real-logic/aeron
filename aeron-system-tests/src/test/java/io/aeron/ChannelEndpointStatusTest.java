@@ -236,7 +236,7 @@ public class ChannelEndpointStatusTest
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
         assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
-        assertTrue(publicationB.isClosed());
+        assertThat(publicationB.channelStatus(), is(ChannelEndpointStatus.ERRORED));
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
         assertNull(testException.get());
     }
@@ -266,7 +266,6 @@ public class ChannelEndpointStatusTest
         verify(errorHandlerClientC, timeout(5000L)).onError(any(ChannelEndpointException.class));
 
         assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
-        assertTrue(subscriptionC.isClosed());
 
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
         assertThat(subscriptionB.channelStatus(), is(ChannelEndpointStatus.ACTIVE));

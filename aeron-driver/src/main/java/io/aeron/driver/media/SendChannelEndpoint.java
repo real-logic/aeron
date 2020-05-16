@@ -166,13 +166,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         if (!statusIndicator.isClosed())
         {
-            statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             statusIndicator.close();
         }
 
         if (null != localSocketAddressIndicator && !localSocketAddressIndicator.isClosed())
         {
-            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             localSocketAddressIndicator.close();
         }
     }

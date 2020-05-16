@@ -224,7 +224,7 @@ public final class ClusterBackup implements AutoCloseable
     public static class Configuration
     {
         public static final String CONSENSUS_CHANNEL_DEFAULT;
-        public static final String TRANSFER_ENDPOINT_DEFAULT;
+        public static final String CATCHUP_ENDPOINT_DEFAULT;
 
         /**
          * Interval at which a cluster backup will send backup queries.
@@ -272,7 +272,7 @@ public final class ClusterBackup implements AutoCloseable
             consensusUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
 
             CONSENSUS_CHANNEL_DEFAULT = consensusUri.toString();
-            TRANSFER_ENDPOINT_DEFAULT = member.transferEndpoint();
+            CATCHUP_ENDPOINT_DEFAULT = member.catchupEndpoint();
         }
 
         /**
@@ -328,7 +328,7 @@ public final class ClusterBackup implements AutoCloseable
         private int consensusStreamId = ConsensusModule.Configuration.consensusStreamId();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private int logStreamId = ConsensusModule.Configuration.logStreamId();
-        private String transferEndpoint = Configuration.TRANSFER_ENDPOINT_DEFAULT;
+        private String catchupEndpoint = Configuration.CATCHUP_ENDPOINT_DEFAULT;
 
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
         private long clusterBackupResponseTimeoutNs = Configuration.clusterBackupResponseTimeoutNs();
@@ -340,7 +340,7 @@ public final class ClusterBackup implements AutoCloseable
         private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
         private File clusterDir;
         private ClusterMarkFile markFile;
-        private String clusterConsensusEndpoints = ConsensusModule.Configuration.clusterMembersStatusEndpoints();
+        private String clusterConsensusEndpoints = ConsensusModule.Configuration.clusterConsensusEndpoints();
         private ThreadFactory threadFactory;
         private EpochClock epochClock;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -909,27 +909,27 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the transfer endpoint to use for snapshot and log retrieval.
+         * Set the catchup endpoint to use for snapshot and log retrieval.
          *
-         * @param transferEndpoint to use for the snapshot and log retrieval.
-         * @return transfer endpoint to use for the snapshot and log retrieval.
-         * @see Configuration#TRANSFER_ENDPOINT_DEFAULT
+         * @param catchupEndpoint to use for the snapshot and log retrieval.
+         * @return catchup endpoint to use for the snapshot and log retrieval.
+         * @see Configuration#CATCHUP_ENDPOINT_DEFAULT
          */
-        public Context transferEndpoint(final String transferEndpoint)
+        public Context catchupEndpoint(final String catchupEndpoint)
         {
-            this.transferEndpoint = transferEndpoint;
+            this.catchupEndpoint = catchupEndpoint;
             return this;
         }
 
         /**
-         * Get the transfer endpoint to use for snapshot and log retrieval.
+         * Get the catchup endpoint to use for snapshot and log retrieval.
          *
-         * @return transfer endpoint to use for the snapshot and log retrieval.
-         * @see Configuration#TRANSFER_ENDPOINT_DEFAULT
+         * @return catchup endpoint to use for the snapshot and log retrieval.
+         * @see Configuration#CATCHUP_ENDPOINT_DEFAULT
          */
-        public String transferEndpoint()
+        public String catchupEndpoint()
         {
-            return transferEndpoint;
+            return catchupEndpoint;
         }
 
         /**

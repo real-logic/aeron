@@ -400,8 +400,8 @@ along with all the endpoints that they require for the various operations of the
 into a single string of the form.
 +
 ----
-0,client-facing:port,member-facing:port,log:port,transfer:port,archive:port|\
-1,client-facing:port,member-facing:port,log:port,transfer:port,archive:port|...
+0,ingress:port,consensus:port,log:port,catchup:port,archive:port|\
+1,ingress:port,consensus:port,log:port,catchup:port,archive:port|...
 ----
 Where each of the leading numeric values is a member id for the cluster (as specified in the `clusterMemberId` method).
 The values for each endpoint represent:
@@ -409,7 +409,7 @@ The values for each endpoint represent:
 * ingress, where the client will connect to for the ingress channel.
 * consensus, where other members of the cluster communicate with each other to achieve cluster consensus.
 * log, used to replicate logs to.
-* transfer, used for a stream that members can use to catch up to a leader.
+* catchup, used for a stream that members can use to catch up to a leader when behind the current log position.
 * archive, the same endpoint used to control archive running on this node.
 +
 In our example we've used the same hostname for each of the endpoints (localhost), however each endpoint allows the
@@ -668,18 +668,18 @@ currentTimeNs=1579564309666000000, leaderMemberId=0, memberId=0, activeMembers=[
 isLeader=false, hasRequestedJoin=false, id=0, leadershipTermId=5, logPosition=11872, candidateTermId=-1,
 catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1, timeOfLastAppendPositionNs=1579564309666000000,
 ingressEndpoint='localhost:9003', consensusEndpoint='localhost:9004', logEndpoint='localhost:9005',
-transferEndpoint='localhost:9006', archiveEndpoint='localhost:9001',
+catchupEndpoint='localhost:9006', archiveEndpoint='localhost:9001',
 endpointsDetail='localhost:9003,localhost:9004,localhost:9005,localhost:9006,localhost:9001', publication=null,
 vote=null}, ClusterMember{isBallotSent=false, isLeader=false, hasRequestedJoin=false, id=1, leadershipTermId=5,
 logPosition=11872, candidateTermId=-1, catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1,
 timeOfLastAppendPositionNs=1579564309495000000, ingressEndpoint='localhost:9103',
-consensusEndpoint='localhost:9104', logEndpoint='localhost:9105', transferEndpoint='localhost:9106',
+consensusEndpoint='localhost:9104', logEndpoint='localhost:9105', catchupEndpoint='localhost:9106',
 archiveEndpoint='localhost:9101',
 endpointsDetail='localhost:9103,localhost:9104,localhost:9105,localhost:9106,localhost:9101', publication=null,
 vote=null}, ClusterMember{isBallotSent=false, isLeader=false, hasRequestedJoin=false, id=2, leadershipTermId=5,
 logPosition=11872, candidateTermId=-1, catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1,
 timeOfLastAppendPositionNs=1579564309552000000, ingressEndpoint='localhost:9203',
-consensusEndpoint='localhost:9204', logEndpoint='localhost:9205', transferEndpoint='localhost:9206',
+consensusEndpoint='localhost:9204', logEndpoint='localhost:9205', catchupEndpoint='localhost:9206',
 archiveEndpoint='localhost:9201',
 endpointsDetail='localhost:9203,localhost:9204,localhost:9205,localhost:9206,localhost:9201', publication=null,
 vote=null}], passiveMembers=[]

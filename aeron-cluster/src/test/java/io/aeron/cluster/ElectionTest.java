@@ -70,7 +70,7 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint");
+            "0,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint");
 
         final ClusterMember thisMember = clusterMembers[0];
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember);
@@ -648,9 +648,9 @@ public class ElectionTest
     private static ClusterMember[] prepareClusterMembers()
     {
         final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
-            "1,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
-            "2,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|");
+            "0,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|" +
+            "1,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|" +
+            "2,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|");
 
         clusterMembers[0].publication(mock(ExclusivePublication.class));
         clusterMembers[1].publication(mock(ExclusivePublication.class));

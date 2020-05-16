@@ -403,7 +403,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterConsensusEndpoints(clusterMembersStatusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
-            .transferEndpoint(clusterBackupTransferEndpoint(staticMemberCount + dynamicMemberCount))
+            .catchupEndpoint(clusterBackupCatchupEndpoint(staticMemberCount + dynamicMemberCount))
             .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .archiveContext(context.aeronArchiveContext.clone())
@@ -955,7 +955,7 @@ public class TestCluster implements AutoCloseable
         return "localhost:2022" + maxMemberCount;
     }
 
-    private static String clusterBackupTransferEndpoint(final int maxMemberCount)
+    private static String clusterBackupCatchupEndpoint(final int maxMemberCount)
     {
         return "localhost:2044" + maxMemberCount;
     }

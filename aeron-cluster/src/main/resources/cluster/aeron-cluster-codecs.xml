@@ -350,7 +350,7 @@
             <data name="ingressEndpoint"       id="10" type="varAsciiEncoding"/>
             <data name="consensusEndpoint"     id="11" type="varAsciiEncoding"/>
             <data name="logEndpoint"           id="12" type="varAsciiEncoding"/>
-            <data name="transferEndpoint"      id="13" type="varAsciiEncoding"/>
+            <data name="catchupEndpoint"       id="13" type="varAsciiEncoding"/>
             <data name="archiveEndpoint"       id="14" type="varAsciiEncoding"/>
         </group>
         <group name="passiveMembers"           id="15" dimensionType="groupSizeEncoding">
@@ -361,7 +361,7 @@
             <data name="ingressEndpoint"       id="20" type="varAsciiEncoding"/>
             <data name="consensusEndpoint"     id="21" type="varAsciiEncoding"/>
             <data name="logEndpoint"           id="22" type="varAsciiEncoding"/>
-            <data name="transferEndpoint"      id="23" type="varAsciiEncoding"/>
+            <data name="catchupEndpoint"       id="23" type="varAsciiEncoding"/>
             <data name="archiveEndpoint"       id="24" type="varAsciiEncoding"/>
         </group>
     </sbe:message>

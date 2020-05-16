@@ -63,7 +63,7 @@ class DynamicJoin implements AutoCloseable
     private final String[] clusterConsensusEndpoints;
     private final String consensusEndpoints;
     private final String consensusEndpoint;
-    private final String transferEndpoint;
+    private final String catchupEndpoint;
     private final String archiveEndpoint;
     private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>();
     private final Long2LongHashMap leaderSnapshotLengthMap = new Long2LongHashMap(NULL_LENGTH);
@@ -104,7 +104,7 @@ class DynamicJoin implements AutoCloseable
         this.intervalNs = ctx.dynamicJoinIntervalNs();
         this.consensusEndpoints = ctx.memberEndpoints();
         this.consensusEndpoint = thisMember.consensusEndpoint();
-        this.transferEndpoint = thisMember.transferEndpoint();
+        this.catchupEndpoint = thisMember.catchupEndpoint();
         this.archiveEndpoint = thisMember.archiveEndpoint();
         this.clusterConsensusEndpoints = clusterConsensusEndpoints.split(",");
     }
@@ -409,13 +409,13 @@ class DynamicJoin implements AutoCloseable
         {
             final long replayId = ctx.aeron().nextCorrelationId();
             final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
-            final String transferChannel = "aeron:udp?endpoint=" + transferEndpoint;
+            final String catchupChannel = "aeron:udp?endpoint=" + catchupEndpoint;
 
             if (leaderArchive.archiveProxy().replay(
                 snapshot.recordingId,
                 0,
                 NULL_LENGTH,
-                transferChannel,
+                catchupChannel,
                 ctx.replayStreamId(),
                 replayId,
                 leaderArchive.controlSessionId()))
@@ -428,7 +428,7 @@ class DynamicJoin implements AutoCloseable
         {
             snapshotReplaySessionId = (int)leaderArchive.controlResponsePoller().relevantId();
             final String replaySubscriptionChannel =
-                "aeron:udp?endpoint=" + transferEndpoint + "|session-id=" + snapshotReplaySessionId;
+                "aeron:udp?endpoint=" + catchupEndpoint + "|session-id=" + snapshotReplaySessionId;
 
             snapshotRetrieveSubscription = ctx.aeron().addSubscription(replaySubscriptionChannel, ctx.replayStreamId());
             localArchive.startRecording(replaySubscriptionChannel, ctx.replayStreamId(), SourceLocation.REMOTE, true);

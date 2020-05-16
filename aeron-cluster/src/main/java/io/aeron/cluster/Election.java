@@ -750,7 +750,7 @@ public class Election
         {
             createFollowerSubscription();
 
-            final String replayDestination = "aeron:udp?endpoint=" + thisMember.transferEndpoint();
+            final String replayDestination = "aeron:udp?endpoint=" + thisMember.catchupEndpoint();
             logSubscription.asyncAddDestination(replayDestination);
             consensusModuleAgent.replayLogDestination(replayDestination);
         }

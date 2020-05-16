@@ -148,7 +148,7 @@ final class ServiceProxy implements AutoCloseable
                 .ingressEndpoint(member.ingressEndpoint())
                 .consensusEndpoint(member.consensusEndpoint())
                 .logEndpoint(member.logEndpoint())
-                .transferEndpoint(member.transferEndpoint())
+                .catchupEndpoint(member.catchupEndpoint())
                 .archiveEndpoint(member.archiveEndpoint());
         }
 
@@ -164,7 +164,7 @@ final class ServiceProxy implements AutoCloseable
                 .ingressEndpoint(member.ingressEndpoint())
                 .consensusEndpoint(member.consensusEndpoint())
                 .logEndpoint(member.logEndpoint())
-                .transferEndpoint(member.transferEndpoint())
+                .catchupEndpoint(member.catchupEndpoint())
                 .archiveEndpoint(member.archiveEndpoint());
         }
 

@@ -25,9 +25,9 @@ import static org.hamcrest.Matchers.is;
 public class ClusterMemberTest
 {
     private final ClusterMember[] members = ClusterMember.parse(
-        "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
-        "1,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
-        "2,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|");
+        "0,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|" +
+        "1,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|" +
+        "2,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|");
 
     private final long[] rankedPositions = new long[quorumThreshold(members.length)];
 

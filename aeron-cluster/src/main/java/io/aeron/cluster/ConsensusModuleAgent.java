@@ -605,7 +605,7 @@ class ConsensusModuleAgent implements Agent
             {
                 final String replayChannel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
-                    .endpoint(follower.transferEndpoint())
+                    .endpoint(follower.catchupEndpoint())
                     .isSessionIdTagged(true)
                     .sessionId(logPublicationTag)
                     .linger(0L)

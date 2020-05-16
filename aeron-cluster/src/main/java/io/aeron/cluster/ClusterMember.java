@@ -50,7 +50,7 @@ public final class ClusterMember
     private final String ingressEndpoint;
     private final String consensusEndpoint;
     private final String logEndpoint;
-    private final String transferEndpoint;
+    private final String catchupEndpoint;
     private final String archiveEndpoint;
     private final String endpointsDetail;
     private ExclusivePublication publication;
@@ -63,7 +63,7 @@ public final class ClusterMember
      * @param ingressEndpoint   address and port endpoint to which cluster clients send ingress.
      * @param consensusEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint       address and port endpoint to which the log is replicated.
-     * @param transferEndpoint  address and port endpoint to which a stream is replayed to catchup to the leader.
+     * @param catchupEndpoint   address and port endpoint to which a stream is replayed to catchup to the leader.
      * @param archiveEndpoint   address and port endpoint to which the archive control channel can be reached.
      * @param endpointsDetail   comma separated list of endpoints.
      */
@@ -72,7 +72,7 @@ public final class ClusterMember
         final String ingressEndpoint,
         final String consensusEndpoint,
         final String logEndpoint,
-        final String transferEndpoint,
+        final String catchupEndpoint,
         final String archiveEndpoint,
         final String endpointsDetail)
     {
@@ -80,7 +80,7 @@ public final class ClusterMember
         this.ingressEndpoint = ingressEndpoint;
         this.consensusEndpoint = consensusEndpoint;
         this.logEndpoint = logEndpoint;
-        this.transferEndpoint = transferEndpoint;
+        this.catchupEndpoint = catchupEndpoint;
         this.archiveEndpoint = archiveEndpoint;
         this.endpointsDetail = endpointsDetail;
     }
@@ -456,9 +456,9 @@ public final class ClusterMember
      *
      * @return the address:port endpoint for this cluster member to which a stream is replayed to for leader catchup.
      */
-    public String transferEndpoint()
+    public String catchupEndpoint()
     {
-        return transferEndpoint;
+        return catchupEndpoint;
     }
 
     /**
@@ -517,7 +517,7 @@ public final class ClusterMember
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
-     * member-id,ingress:port,member-facing:port,log:port,transfer:port,archive:port|1,...
+     * member-id,ingress:port,consensus:port,log:port,catchup:port,archive:port|1,...
      * </code>
      *
      * @param value of the string to be parsed.
@@ -968,7 +968,7 @@ public final class ClusterMember
         return lhs.ingressEndpoint().equals(rhs.ingressEndpoint()) &&
             lhs.consensusEndpoint().equals(rhs.consensusEndpoint()) &&
             lhs.logEndpoint().equals(rhs.logEndpoint()) &&
-            lhs.transferEndpoint().equals(rhs.transferEndpoint()) &&
+            lhs.catchupEndpoint().equals(rhs.catchupEndpoint()) &&
             lhs.archiveEndpoint().equals(rhs.archiveEndpoint());
     }
 
@@ -1198,10 +1198,10 @@ public final class ClusterMember
     public String toString()
     {
         return "ClusterMember{" +
-            "isBallotSent=" + isBallotSent +
+            "id=" + id +
+            ", isBallotSent=" + isBallotSent +
             ", isLeader=" + isLeader +
             ", hasRequestedJoin=" + hasRequestedJoin +
-            ", id=" + id +
             ", leadershipTermId=" + leadershipTermId +
             ", logPosition=" + logPosition +
             ", candidateTermId=" + candidateTermId +
@@ -1212,7 +1212,7 @@ public final class ClusterMember
             ", ingressEndpoint='" + ingressEndpoint + '\'' +
             ", consensusEndpoint='" + consensusEndpoint + '\'' +
             ", logEndpoint='" + logEndpoint + '\'' +
-            ", transferEndpoint='" + transferEndpoint + '\'' +
+            ", catchupEndpoint='" + catchupEndpoint + '\'' +
             ", archiveEndpoint='" + archiveEndpoint + '\'' +
             ", endpointsDetail='" + endpointsDetail + '\'' +
             ", publication=" + publication +

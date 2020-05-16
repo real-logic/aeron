@@ -113,14 +113,14 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 final String ingressEndpoint = activeMembersDecoder.ingressEndpoint();
                 final String consensusEndpoint = activeMembersDecoder.consensusEndpoint();
                 final String logEndpoint = activeMembersDecoder.logEndpoint();
-                final String transferEndpoint = activeMembersDecoder.transferEndpoint();
+                final String catchupEndpoint = activeMembersDecoder.catchupEndpoint();
                 final String archiveEndpoint = activeMembersDecoder.archiveEndpoint();
                 final String endpointsDetail = String.join(
                     ",",
                     ingressEndpoint,
                     consensusEndpoint,
                     logEndpoint,
-                    transferEndpoint,
+                    catchupEndpoint,
                     archiveEndpoint);
 
                 final ClusterMember member = new ClusterMember(
@@ -128,7 +128,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                     ingressEndpoint,
                     consensusEndpoint,
                     logEndpoint,
-                    transferEndpoint,
+                    catchupEndpoint,
                     archiveEndpoint,
                     endpointsDetail)
                     .leadershipTermId(activeMembersDecoder.leadershipTermId())
@@ -146,14 +146,14 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 final String ingressEndpoint = passiveMembersDecoder.ingressEndpoint();
                 final String consensusEndpoint = passiveMembersDecoder.consensusEndpoint();
                 final String logEndpoint = passiveMembersDecoder.logEndpoint();
-                final String transferEndpoint = passiveMembersDecoder.transferEndpoint();
+                final String catchupEndpoint = passiveMembersDecoder.catchupEndpoint();
                 final String archiveEndpoint = passiveMembersDecoder.archiveEndpoint();
                 final String endpointsDetail = String.join(
                     ",",
                     ingressEndpoint,
                     consensusEndpoint,
                     logEndpoint,
-                    transferEndpoint,
+                    catchupEndpoint,
                     archiveEndpoint);
 
                 final ClusterMember member = new ClusterMember(
@@ -161,7 +161,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                     ingressEndpoint,
                     consensusEndpoint,
                     logEndpoint,
-                    transferEndpoint,
+                    catchupEndpoint,
                     archiveEndpoint,
                     endpointsDetail)
                     .leadershipTermId(passiveMembersDecoder.leadershipTermId())

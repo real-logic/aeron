@@ -315,11 +315,11 @@ public class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of cluster member endpoints.
          * <p>
          * <code>
-         *     0,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| \
-         *     1,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| ...
+         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
-         * The client facing endpoints will be used as the endpoint substituted into the
+         * The ingress endpoints will be used as the endpoint substituted into the
          * {@link io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint
          * is not provided when unicast.
          */
@@ -368,7 +368,7 @@ public class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of member endpoints.
          * <p>
          * <code>
-         *     ingress:port,consensus:port,log:port,transfer:port,archive:port
+         *     ingress:port,consensus:port,log:port,catchup:port,archive:port
          * </code>
          *
          * @see #CLUSTER_MEMBERS_PROP_NAME
@@ -393,7 +393,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Channel to be used for archiving snapshots.
          */
-        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL + "?alias=snapshot";
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = "aeron:ipc?alias=snapshot";
 
         /**
          * Stream id for the archived snapshots within a channel.
@@ -708,7 +708,7 @@ public class ConsensusModule implements AutoCloseable
          * @return {@link #CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT} or system property
          * {@link #CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME} it set.
          */
-        public static String clusterMembersStatusEndpoints()
+        public static String clusterConsensusEndpoints()
         {
             return System.getProperty(
                 CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME, CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT);
@@ -1027,7 +1027,7 @@ public class ConsensusModule implements AutoCloseable
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
-        private String clusterConsensusEndpoints = Configuration.clusterMembersStatusEndpoints();
+        private String clusterConsensusEndpoints = Configuration.clusterConsensusEndpoints();
         private boolean clusterMembersIgnoreSnapshot = Configuration.clusterMembersIgnoreSnapshot();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
@@ -1562,11 +1562,11 @@ public class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         *     0,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| \
-         *     1,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| ...
+         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
-         * The client facing endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}
+         * The ingress endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}
          * if the endpoint is not provided unless it is multicast.
          *
          * @param clusterMembers which are all candidates to be leader.
@@ -1582,7 +1582,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * The endpoints representing members of the cluster which are all candidates to be leader.
          * <p>
-         * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
+         * The ingress endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
          * not provided in that when it is not multicast.
          *
          * @return members of the cluster which are all candidates to be leader.

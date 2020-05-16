@@ -23,7 +23,7 @@ buildscript {
 plugins {
     id 'java-library'
     id 'idea'
-    id 'io.freefair.javadoc-links' version '5.0.1' apply false
+    id 'io.freefair.javadoc-links' version '5.1.0' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
     id 'biz.aQute.bnd.builder' version '5.0.1' apply false
     id "com.github.ben-manes.versions" version "0.28.0"
@@ -830,6 +830,6 @@ task copyCrashLogs(type: Copy) {
 }
 
 wrapper {
-    gradleVersion = '6.4'
+    gradleVersion = '6.4.1'
     distributionType = 'ALL'
 }

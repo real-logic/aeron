@@ -98,10 +98,12 @@ public class ClusteredMediaDriver implements AutoCloseable
 
             archive = Archive.launch(archiveCtx
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .aeronDirectoryName(driver.aeronDirectoryName())
                 .errorHandler(errorHandler)
                 .errorCounter(errorCounter));
 
-            consensusModule = ConsensusModule.launch(consensusModuleCtx);
+            consensusModule = ConsensusModule.launch(consensusModuleCtx
+                .aeronDirectoryName(driverCtx.aeronDirectoryName()));
 
             return new ClusteredMediaDriver(driver, archive, consensusModule);
         }

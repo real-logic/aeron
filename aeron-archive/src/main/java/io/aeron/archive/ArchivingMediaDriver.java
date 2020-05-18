@@ -95,6 +95,7 @@ public class ArchivingMediaDriver implements AutoCloseable
 
             archive = Archive.launch(archiveCtx
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .aeronDirectoryName(driverCtx.aeronDirectoryName())
                 .errorHandler(errorHandler)
                 .errorCounter(errorCounter));
 

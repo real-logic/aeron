@@ -109,7 +109,6 @@ public class ArchiveLoggingAgentTest
             .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
 
         final Archive.Context archiveCtx = new Archive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
             .errorHandler(Tests::onError)
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)

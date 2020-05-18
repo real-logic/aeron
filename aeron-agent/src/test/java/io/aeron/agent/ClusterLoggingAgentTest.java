@@ -121,7 +121,6 @@ public class ClusterLoggingAgentTest
             .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
 
         final Archive.Context archiveCtx = new Archive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
             .errorHandler(Tests::onError)
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)
@@ -132,7 +131,6 @@ public class ClusterLoggingAgentTest
             .threadingMode(ArchiveThreadingMode.SHARED);
 
         final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
-            .aeronDirectoryName(aeronDirectoryName)
             .errorHandler(Tests::onError)
             .clusterDir(new File(testDir, "consensus-module"))
             .archiveContext(aeronArchiveContext.clone())

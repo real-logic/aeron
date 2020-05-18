@@ -97,11 +97,13 @@ public class ClusterBackupMediaDriver implements AutoCloseable
                 driverCtx.errorHandler() : archiveCtx.errorHandler();
 
             archive = Archive.launch(archiveCtx
+                .aeronDirectoryName(driverCtx.aeronDirectoryName())
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .errorHandler(errorHandler)
                 .errorCounter(errorCounter));
 
-            clusterBackup = ClusterBackup.launch(clusterBackupCtx);
+            clusterBackup = ClusterBackup.launch(clusterBackupCtx
+                .aeronDirectoryName(driverCtx.aeronDirectoryName()));
 
             return new ClusterBackupMediaDriver(driver, archive, clusterBackup);
         }

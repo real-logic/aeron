@@ -108,7 +108,6 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-                .aeronDirectoryName(srcAeronDirectoryName)
                 .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsEnabled(false)
@@ -131,7 +130,6 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-                .aeronDirectoryName(dstAeronDirectoryName)
                 .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsEnabled(false)

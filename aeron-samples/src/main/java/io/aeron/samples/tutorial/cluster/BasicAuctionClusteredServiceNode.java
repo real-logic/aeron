@@ -134,7 +134,6 @@ public class BasicAuctionClusteredServiceNode
 
         // tag::archive[]
         final Archive.Context archiveContext = new Archive.Context()
-            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, "localhost", ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
@@ -155,11 +154,10 @@ public class BasicAuctionClusteredServiceNode
             .errorHandler(errorHandler("Consensus Module"))
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(hostnames))                                                   // <2>
-            .aeronDirectoryName(aeronDirName)                                                            // <3>
-            .clusterDir(new File(baseDir, "consensus-module"))                                     // <4>
-            .ingressChannel("aeron:udp?term-length=64k")                                                 // <5>
-            .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <6>
-            .archiveContext(aeronArchiveContext.clone());                                                // <7>
+            .clusterDir(new File(baseDir, "consensus-module"))                                     // <3>
+            .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
+            .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
+            .archiveContext(aeronArchiveContext.clone());                                                // <6>
         // end::consensus_module[]
 
         // tag::clustered_service[]

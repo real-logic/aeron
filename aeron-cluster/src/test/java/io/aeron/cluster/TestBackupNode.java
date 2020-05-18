@@ -32,9 +32,7 @@ public class TestBackupNode implements AutoCloseable
     TestBackupNode(final Context context)
     {
         clusterBackupMediaDriver = ClusterBackupMediaDriver.launch(
-            context.mediaDriverContext,
-            context.archiveContext,
-            context.clusterBackupContext);
+            context.mediaDriverContext, context.archiveContext, context.clusterBackupContext);
     }
 
     public void close()

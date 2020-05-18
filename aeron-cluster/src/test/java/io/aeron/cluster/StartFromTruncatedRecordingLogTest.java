@@ -329,7 +329,6 @@ public class StartFromTruncatedRecordingLogTest
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-                .aeronDirectoryName(aeronDirName)
                 .archiveDir(new File(baseDirName, "archive"))
                 .controlChannel(archiveCtx.controlRequestChannel())
                 .controlStreamId(archiveCtx.controlRequestStreamId())
@@ -343,7 +342,6 @@ public class StartFromTruncatedRecordingLogTest
                 .errorHandler(ClusterTests.errorHandler(index))
                 .clusterMemberId(index)
                 .clusterMembers(CLUSTER_MEMBERS)
-                .aeronDirectoryName(aeronDirName)
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
                 .logChannel(memberSpecificPort(LOG_CHANNEL, index))

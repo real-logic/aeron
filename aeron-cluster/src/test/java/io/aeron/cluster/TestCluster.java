@@ -250,7 +250,6 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -267,7 +266,6 @@ public class TestCluster implements AutoCloseable
             .clusterMembers(staticClusterMembers)
             .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
             .appointedLeaderId(appointedLeaderId)
-            .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
@@ -321,7 +319,6 @@ public class TestCluster implements AutoCloseable
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
             .segmentFileLength(SEGMENT_FILE_LENGTH)
-            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -337,7 +334,6 @@ public class TestCluster implements AutoCloseable
             .clusterMembers("")
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
-            .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
@@ -385,7 +381,6 @@ public class TestCluster implements AutoCloseable
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
             .segmentFileLength(SEGMENT_FILE_LENGTH)
-            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -405,7 +400,6 @@ public class TestCluster implements AutoCloseable
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(clusterBackupCatchupEndpoint(staticMemberCount + dynamicMemberCount))
-            .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .archiveContext(context.aeronArchiveContext.clone())
             .deleteDirOnStart(cleanStart);
@@ -436,7 +430,7 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, backupNodeIndex))
             .controlResponseStreamId(110 + backupNodeIndex)
-            .aeronDirectoryName(baseDirName);
+            .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext
             .aeronDirectoryName(aeronDirName)
@@ -447,7 +441,6 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -462,7 +455,6 @@ public class TestCluster implements AutoCloseable
             .clusterMemberId(backupNodeIndex)
             .clusterMembers(singleNodeClusterMemberString(backupNodeIndex))
             .appointedLeaderId(backupNodeIndex)
-            .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, backupNodeIndex))
@@ -1044,7 +1036,6 @@ public class TestCluster implements AutoCloseable
         nodeCtx.archiveCtx
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
             .segmentFileLength(256 * 1024)
-            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(TestCluster.memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
             .controlStreamId(100)
@@ -1068,7 +1059,6 @@ public class TestCluster implements AutoCloseable
             .clusterMembers(clusterMembersString(3))
             .serviceCount(2)
             .appointedLeaderId(NULL_VALUE)
-            .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))

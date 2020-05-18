@@ -416,20 +416,18 @@ In our example we've used the same hostname for each of the endpoints (localhost
 specification of a host, so that traffic could potentially be separated if required, e.g. running consensus traffic
 on a separate network to the ingress traffic.
 
-<3> Use the node's specific Media Driver.
+<3> Specify the data directory for the Consensus Module. Make sure it is node specific.
 
-<4> Specify the data directory for the Consensus Module. Make sure it is node specific.
-
-<5> Define the ingress channel for the cluster. Note this value does not need to be the full channel URI. It can be a
+<4> Define the ingress channel for the cluster. Note this value does not need to be the full channel URI. It can be a
 template that specifies the parameters, but excludes the endpoint, which will be filled using value from the
 `clusterMembersString` as appropriate for this node.
 
-<6> Specify the log channel. Like the ingress channel this is specified as a template. This channel needs to be a
+<5> Specify the log channel. Like the ingress channel this is specified as a template. This channel needs to be a
 multi-destination cast or multicast channel. In our example we are using multi-destination cast using manual
 configuration, hence we need a separate control endpoint (including a port) used for adding and removing destination to
 the publication.
 
-<7> Clone the Archive Client context that the Consensus Module will use to talk to the Archive.
+<6> Clone the Archive Client context that the Consensus Module will use to talk to the Archive.
 
 ==== Clustered Service Container
 

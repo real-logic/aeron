@@ -225,8 +225,8 @@ return responses back to the client.
 
 <4> Serialise response message.
 
-<5> Calling `offer` on the client session will send the response on the egress channel. Make sure the return value
-for `offer` is checked as it is a non-blocking call and not guaranteed to succeed.
+<5> Calling `offer` on the client session will send the response on the egress channel. Make sure to check the return
+value of `offer` as it is a non-blocking call and not guaranteed to succeed.
 
 <6> When doing any busy loops within the clustered application use the Cluster's `IdleStrategy::idle(int)` within the
 wait loop to allow the service to wait while allowing other threads to progress. It will take care of handling thread
@@ -239,9 +239,9 @@ recovery and facilitate release migration. There is a callback `onTakeSnapshot` 
 snapshot the state of the service.
 
 Aeron Cluster provides an `ExclusivePublication` to write a snapshot as the serialised representation of the application
-logic's state. For real world applications snapshotting can become tricky. The two big concerns you will have are to
-ensure that snapshots are written in a consistent manner, and dealing with fragmentation of the application state across
-messages. For now, our state is so simple neither of those will impact us.
+logic's state. For real world applications snapshotting can become tricky. The two big concerns you have includes:
+ensuring that you consistently write snapshots, and dealing with fragmentation of the application state across messages.
+For now, our state is so simple neither of those will impact us.
 
 [source%autofit, Java, indent=0, options="nowrap"]
 ----
@@ -256,10 +256,10 @@ the Cluster's `IdleStrategy::idle` inside of the busy wait loop.
 
 === Loading State
 
-Our `onStart` implementation contained a method to load the snapshot. Now we have seen how the snapshot is written, we
-can look at how it is loaded. The `Image` provided to the `onStart` has a method that will indicate if there is no more
-data available. However, application code should also encode enough information that the end of the stream can be
-detected from the store messages. The two approaches can be used to do sanity checking that all the data is received.
+Our `onStart` implementation contained a method to load the snapshot. Now we have seen how to take a snapshot, we
+can now look at how it is loaded. The `Image` provided to the `onStart` has a method that will indicate if there is no
+more data available. However, application code should also encode enough information that the end of the stream can be
+detected from the store messages. The two approaches can be used to sanity check all the data is received.
 
 [source, Java, indent=0, options="nowrap"]
 ----

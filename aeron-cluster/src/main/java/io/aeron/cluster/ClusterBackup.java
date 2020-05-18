@@ -252,6 +252,17 @@ public final class ClusterBackup implements AutoCloseable
         public static final String CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME = "aeron.cluster.backup.progress.timeout";
 
         /**
+         * Interval at which the cluster backup is re-initialised after an exception has been thrown.
+         */
+        public static final String CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME =
+            "aeron.cluster.backup.cool.down.interval";
+
+        /**
+         * Default interval at which the cluster back is re-initialised after an exception has been thrown.
+         */
+        public static final long CLUSTER_BACKUP_COOL_DOWN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(30);
+
+        /**
          * Default timeout within which a cluster backup will expect progress.
          */
         public static final long CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
@@ -309,6 +320,18 @@ public final class ClusterBackup implements AutoCloseable
             return getDurationInNanos(
                 CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME, CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS);
         }
+
+        /**
+         * Interval at which the cluster backup is re-initialised after an exception has been thrown.
+         *
+         * @return interval at which the cluster backup is re-initialised after an exception has been thrown.
+         * @see #CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME
+         */
+        public static long clusterBackupCoolDownIntervalNs()
+        {
+            return getDurationInNanos(
+                CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME, CLUSTER_BACKUP_COOL_DOWN_INTERVAL_DEFAULT_NS);
+        }
     }
 
     /**
@@ -333,6 +356,7 @@ public final class ClusterBackup implements AutoCloseable
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
         private long clusterBackupResponseTimeoutNs = Configuration.clusterBackupResponseTimeoutNs();
         private long clusterBackupProgressTimeoutNs = Configuration.clusterBackupProgressTimeoutNs();
+        private long clusterBackupCoolDownIntervalNs = Configuration.clusterBackupCoolDownIntervalNs();
         private int errorBufferLength = ConsensusModule.Configuration.errorBufferLength();
 
         private boolean deleteDirOnStart = false;
@@ -1008,6 +1032,32 @@ public final class ClusterBackup implements AutoCloseable
         public long clusterBackupProgressTimeoutNs()
         {
             return clusterBackupProgressTimeoutNs;
+        }
+
+        /**
+         * Interval at which the cluster backup is re-initialised after an exception has been thrown.
+         *
+         * @param clusterBackupCoolDownIntervalNs time before the cluster backup is re-initialised.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_COOL_DOWN_INTERVAL_DEFAULT_NS
+         */
+        public Context clusterBackupCoolDownIntervalNs(final long clusterBackupCoolDownIntervalNs)
+        {
+            this.clusterBackupCoolDownIntervalNs = clusterBackupCoolDownIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which the cluster backup is re-initialised after an exception has been thrown.
+         *
+         * @return interval at which the cluster backup is re-initialised after an exception has been thrown.
+         * @see Configuration#CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_COOL_DOWN_INTERVAL_DEFAULT_NS
+         */
+        public long clusterBackupCoolDownIntervalNs()
+        {
+            return clusterBackupCoolDownIntervalNs;
         }
 
         /**

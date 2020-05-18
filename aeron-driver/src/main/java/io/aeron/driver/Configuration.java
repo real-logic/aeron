@@ -237,7 +237,7 @@ public class Configuration
     public static final int SEND_TO_STATUS_POLL_RATIO_DEFAULT = 6;
 
     /**
-     * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
+     * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
      */
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 

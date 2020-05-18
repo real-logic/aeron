@@ -102,7 +102,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private long liveLogRecordingId = NULL_VALUE;
     private long liveLogReplayId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
-    private int clusterMembersStatusEndpointsCursor = NULL_VALUE;
+    private int clusterConsensusEndpointsCursor = NULL_VALUE;
     private int snapshotCursor = 0;
     private int liveLogReplaySessionId = NULL_VALUE;
     private int liveLogRecCounterId = NULL_COUNTER_ID;
@@ -210,8 +210,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             {
                 if (null != eventsListener)
                 {
-                    eventsListener.onPossibleFailure(
-                        new TimeoutException("progress has stalled", Category.WARN));
+                    eventsListener.onPossibleFailure(new TimeoutException("progress has stalled", Category.WARN));
                 }
 
                 state(RESET_BACKUP, nowMs);
@@ -245,7 +244,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         snapshotLengthMap.clear();
         leaderLogEntry = null;
         leaderLastTermEntry = null;
-        clusterMembersStatusEndpointsCursor = NULL_VALUE;
+        clusterConsensusEndpointsCursor = NULL_VALUE;
 
         if (null != recordingLog)
         {
@@ -458,10 +457,10 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     {
         if (null == consensusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
-            int cursor = ++clusterMembersStatusEndpointsCursor;
+            int cursor = ++clusterConsensusEndpointsCursor;
             if (cursor >= clusterConsensusEndpoints.length)
             {
-                clusterMembersStatusEndpointsCursor = 0;
+                clusterConsensusEndpointsCursor = 0;
                 cursor = 0;
             }
 

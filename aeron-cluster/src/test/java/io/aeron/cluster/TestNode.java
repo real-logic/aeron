@@ -28,7 +28,6 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -351,21 +350,18 @@ class TestNode implements AutoCloseable
         {
             super.onStart(cluster, snapshotImage);
 
-            activeSessionCount = cluster.clientSessions().size();
-
             if (null != snapshotImage)
             {
-                final MutableInteger snapshotFragmentCount = new MutableInteger();
-                final FragmentHandler handler =
-                    (buffer, offset, length, header) ->
-                    {
-                        messageCount = buffer.getInt(offset);
-                        snapshotFragmentCount.value += 1;
-                    };
+                activeSessionCount = cluster.clientSessions().size();
 
+                final FragmentHandler handler =
+                    (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
+
+                int fragmentCount = 0;
                 while (true)
                 {
-                    final int fragments = snapshotImage.poll(handler, 1);
+                    final int fragments = snapshotImage.poll(handler, 10);
+                    fragmentCount += fragments;
 
                     if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
                     {
@@ -375,11 +371,10 @@ class TestNode implements AutoCloseable
                     idleStrategy.idle(fragments);
                 }
 
-                if (snapshotFragmentCount.get() != SNAPSHOT_FRAGMENT_COUNT)
+                if (fragmentCount != SNAPSHOT_FRAGMENT_COUNT)
                 {
                     throw new AgentTerminationException(
-                        "unexpected snapshot length: expected=" + SNAPSHOT_FRAGMENT_COUNT +
-                        " actual=" + snapshotFragmentCount);
+                        "unexpected snapshot length: expected=" + SNAPSHOT_FRAGMENT_COUNT + " actual=" + fragmentCount);
                 }
 
                 wasSnapshotLoaded = true;

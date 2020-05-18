@@ -108,7 +108,7 @@ public class TestCluster implements AutoCloseable
     private final String staticClusterMembers;
     private final String staticClusterMemberEndpoints;
     private final String[] clusterMembersEndpoints;
-    private final String clusterMembersStatusEndpoints;
+    private final String clusterConsensusEndpoints;
     private final int staticMemberCount;
     private final int dynamicMemberCount;
     private final int appointedLeaderId;
@@ -130,7 +130,7 @@ public class TestCluster implements AutoCloseable
         this.staticClusterMembers = clusterMembersString(staticMemberCount);
         this.staticClusterMemberEndpoints = clientMemberEndpoints(staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(staticMemberCount + dynamicMemberCount);
-        this.clusterMembersStatusEndpoints = clusterMembersStatusEndpoints(staticMemberCount);
+        this.clusterConsensusEndpoints = clusterConsensusEndpoints(staticMemberCount);
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
@@ -335,7 +335,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(NULL_VALUE)
             .clusterMembers("")
-            .clusterConsensusEndpoints(clusterMembersStatusEndpoints)
+            .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "consensus-module"))
@@ -401,7 +401,7 @@ public class TestCluster implements AutoCloseable
 
         context.clusterBackupContext
             .errorHandler(ClusterTests.errorHandler(index))
-            .clusterConsensusEndpoints(clusterMembersStatusEndpoints)
+            .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .catchupEndpoint(clusterBackupCatchupEndpoint(staticMemberCount + dynamicMemberCount))
             .aeronDirectoryName(aeronDirName)
@@ -936,7 +936,7 @@ public class TestCluster implements AutoCloseable
         return clusterMembersEndpoints;
     }
 
-    private static String clusterMembersStatusEndpoints(final int staticMemberCount)
+    private static String clusterConsensusEndpoints(final int staticMemberCount)
     {
         final StringBuilder builder = new StringBuilder();
 

@@ -82,7 +82,7 @@ class DynamicJoin implements AutoCloseable
     private long timeOfLastActivityNs = 0;
     private long correlationId = NULL_VALUE;
     private int memberId = NULL_VALUE;
-    private int clusterMembersStatusEndpointsCursor = NULL_VALUE;
+    private int clusterConsensusEndpointsCursor = NULL_VALUE;
     private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
 
@@ -186,7 +186,7 @@ class DynamicJoin implements AutoCloseable
                     if (null != leaderMember)
                     {
                         if (!leaderMember.consensusEndpoint().equals(
-                            clusterConsensusEndpoints[clusterMembersStatusEndpointsCursor]))
+                            clusterConsensusEndpoints[clusterConsensusEndpointsCursor]))
                         {
                             CloseHelper.close(ctx.countedErrorHandler(), consensusPublication);
 
@@ -257,10 +257,10 @@ class DynamicJoin implements AutoCloseable
     {
         if (nowNs > (timeOfLastActivityNs + intervalNs))
         {
-            int cursor = ++clusterMembersStatusEndpointsCursor;
+            int cursor = ++clusterConsensusEndpointsCursor;
             if (cursor >= clusterConsensusEndpoints.length)
             {
-                clusterMembersStatusEndpointsCursor = 0;
+                clusterConsensusEndpointsCursor = 0;
                 cursor = 0;
             }
 

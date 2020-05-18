@@ -74,6 +74,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
     private final long backupProgressTimeoutMs;
+    private final long coolOffIntervalMs;
 
     private ClusterBackup.State state = INIT;
 
@@ -96,7 +97,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private long timeOfLastTickMs = 0;
     private long timeOfLastBackupQueryMs = 0;
     private long timeOfLastProgressMs = 0;
-    private long timeOfBackoffDeadlineMs = NULL_VALUE;
+    private long coolOffDeadlineMs = NULL_VALUE;
     private long correlationId = NULL_VALUE;
     private long leaderLogRecordingId = NULL_VALUE;
     private long liveLogReplaySubscriptionId = NULL_VALUE;
@@ -116,6 +117,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         backupResponseTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupResponseTimeoutNs());
         backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
         backupProgressTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupProgressTimeoutNs());
+        coolOffIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupCoolOffIntervalNs());
         markFile = ctx.clusterMarkFile();
         eventsListener = ctx.eventsListener();
 
@@ -450,15 +452,15 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     {
         timeOfLastProgressMs = nowMs;
 
-        if (NULL_VALUE == timeOfBackoffDeadlineMs)
+        if (NULL_VALUE == coolOffDeadlineMs)
         {
-            timeOfBackoffDeadlineMs = nowMs + backupQueryIntervalMs;
+            coolOffDeadlineMs = nowMs + coolOffIntervalMs;
             reset();
             return 1;
         }
-        else if (nowMs > timeOfBackoffDeadlineMs)
+        else if (nowMs > coolOffDeadlineMs)
         {
-            timeOfBackoffDeadlineMs = NULL_VALUE;
+            coolOffDeadlineMs = NULL_VALUE;
             state(INIT, nowMs);
             return 1;
         }

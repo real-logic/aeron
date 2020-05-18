@@ -403,7 +403,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
-            .clusterBackupCoolOffIntervalNs(TimeUnit.SECONDS.toNanos(1))
+            .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(clusterBackupCatchupEndpoint(staticMemberCount + dynamicMemberCount))
             .aeronDirectoryName(aeronDirName)
             .clusterDir(new File(baseDirName, "cluster-backup"))

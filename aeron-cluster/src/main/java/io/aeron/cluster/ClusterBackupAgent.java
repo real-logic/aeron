@@ -74,7 +74,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
     private final long backupProgressTimeoutMs;
-    private final long coolOffIntervalMs;
+    private final long coolDownIntervalMs;
 
     private ClusterBackup.State state = INIT;
 
@@ -97,7 +97,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private long timeOfLastTickMs = 0;
     private long timeOfLastBackupQueryMs = 0;
     private long timeOfLastProgressMs = 0;
-    private long coolOffDeadlineMs = NULL_VALUE;
+    private long coolDownDeadlineMs = NULL_VALUE;
     private long correlationId = NULL_VALUE;
     private long leaderLogRecordingId = NULL_VALUE;
     private long liveLogReplaySubscriptionId = NULL_VALUE;
@@ -117,7 +117,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         backupResponseTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupResponseTimeoutNs());
         backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
         backupProgressTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupProgressTimeoutNs());
-        coolOffIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupCoolOffIntervalNs());
+        coolDownIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupCoolDownIntervalNs());
         markFile = ctx.clusterMarkFile();
         eventsListener = ctx.eventsListener();
 
@@ -452,15 +452,15 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     {
         timeOfLastProgressMs = nowMs;
 
-        if (NULL_VALUE == coolOffDeadlineMs)
+        if (NULL_VALUE == coolDownDeadlineMs)
         {
-            coolOffDeadlineMs = nowMs + coolOffIntervalMs;
+            coolDownDeadlineMs = nowMs + coolDownIntervalMs;
             reset();
             return 1;
         }
-        else if (nowMs > coolOffDeadlineMs)
+        else if (nowMs > coolDownDeadlineMs)
         {
-            coolOffDeadlineMs = NULL_VALUE;
+            coolDownDeadlineMs = NULL_VALUE;
             state(INIT, nowMs);
             return 1;
         }

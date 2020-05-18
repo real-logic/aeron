@@ -16,9 +16,9 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ControlResponsePoller;
+import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
@@ -307,8 +307,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     public void onUnavailableCounter(
         final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        if (counterId == liveLogRecCounterId ||
-            (null != snapshotRetrieveMonitor && counterId == snapshotRetrieveMonitor.counterId))
+        if (counterId == liveLogRecCounterId)
         {
             if (null != eventsListener)
             {
@@ -576,12 +575,11 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         if (null != snapshotRetrieveMonitor)
         {
-            if (snapshotRetrieveMonitor.hasRecordingProgressed())
-            {
-                timeOfLastProgressMs = nowMs;
-                workCount++;
-            }
-            else if (snapshotRetrieveMonitor.isDone())
+            workCount += snapshotRetrieveMonitor.poll();
+
+            timeOfLastProgressMs = nowMs;
+
+            if (snapshotRetrieveMonitor.isDone())
             {
                 final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
 
@@ -630,10 +628,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             final String catchupChannel =
                 "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + replaySessionId;
 
-            backupArchive.startRecording(catchupChannel, ctx.replayStreamId(), SourceLocation.REMOTE, true);
+            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengthMap.get(snapshotCursor));
 
-            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(
-                replaySessionId, ctx.aeron().countersReader(), snapshotLengthMap.get(snapshotCursor));
+            backupArchive.startRecording(catchupChannel, ctx.replayStreamId(), SourceLocation.REMOTE, true);
 
             timeOfLastProgressMs = nowMs;
             workCount++;
@@ -867,52 +864,86 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
     }
 
-    static class SnapshotRetrieveMonitor
+    static class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSignalConsumer
     {
-        private final long endPosition;
-        private final int sessionId;
-        private final CountersReader countersReader;
+        private final long expectedStopPosition;
+        private final RecordingSignalAdapter recordingSignalAdapter;
 
-        private long lastRecordingPosition = 0;
         private long recordingId = RecordingPos.NULL_RECORDING_ID;
-        private long recordingPosition = NULL_POSITION;
-        private int counterId;
+        private boolean isDone = false;
+        private String errorMessage;
 
-        SnapshotRetrieveMonitor(final int sessionId, final CountersReader countersReader, final long endPosition)
+        SnapshotRetrieveMonitor(final AeronArchive clusterArchive, final long expectedStopPosition)
         {
-            this.endPosition = endPosition;
-            this.countersReader = countersReader;
-            this.counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
-            this.sessionId = sessionId;
+            this.expectedStopPosition = expectedStopPosition;
+
+            final Subscription subscription = clusterArchive.controlResponsePoller().subscription();
+            final long controlSessionId = clusterArchive.controlSessionId();
+            recordingSignalAdapter = new RecordingSignalAdapter(
+                controlSessionId, this, this, subscription, FRAGMENT_POLL_LIMIT);
         }
 
         boolean isDone()
         {
-            return endPosition <= recordingPosition;
+            return isDone;
         }
 
-        boolean hasRecordingProgressed()
+        public int poll()
         {
-            final boolean result;
+            final int poll = recordingSignalAdapter.poll();
 
-            if (NULL_COUNTER_ID == counterId)
+            if (null != errorMessage)
             {
-                counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
-                result = NULL_COUNTER_ID != counterId;
-            }
-            else if (RecordingPos.NULL_RECORDING_ID == recordingId)
-            {
-                recordingId = RecordingPos.getRecordingId(countersReader, counterId);
-                result = RecordingPos.NULL_RECORDING_ID != recordingId;
-            }
-            else
-            {
-                recordingPosition = countersReader.getCounterValue(counterId);
-                result = recordingPosition > lastRecordingPosition;
-                lastRecordingPosition = recordingPosition;
+                throw new AeronException("error occurred while transferring snapshot: " + errorMessage);
             }
 
-            return result;
+            return poll;
+        }
+
+        public void onResponse(
+            final long controlSessionId,
+            final long correlationId,
+            final long relevantId,
+            final ControlResponseCode code,
+            final String errorMessage)
+        {
+            if (code == ControlResponseCode.ERROR)
+            {
+                this.errorMessage = errorMessage;
+            }
+        }
+
+        public void onSignal(
+            final long controlSessionId,
+            final long correlationId,
+            final long recordingId,
+            final long subscriptionId,
+            final long position,
+            final RecordingSignal signal)
+        {
+            if (signal == RecordingSignal.START && this.recordingId == RecordingPos.NULL_RECORDING_ID)
+            {
+                if (0 != position)
+                {
+                    errorMessage = "unexpected start position expected = 0, actual = " + position;
+                }
+                else
+                {
+                    this.recordingId = recordingId;
+                }
+            }
+            else if (signal == RecordingSignal.STOP && this.recordingId == recordingId)
+            {
+                if (expectedStopPosition == position)
+                {
+                    isDone = true;
+                }
+                else
+                {
+                    errorMessage = "unexpected stop position expected = " + expectedStopPosition +
+                        ", actual = " + position;
+                }
+            }
         }
     }
 }

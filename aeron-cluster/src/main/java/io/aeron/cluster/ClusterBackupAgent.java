@@ -96,6 +96,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private long timeOfLastTickMs = 0;
     private long timeOfLastBackupQueryMs = 0;
     private long timeOfLastProgressMs = 0;
+    private long timeOfBackoffDeadlineMs = NULL_VALUE;
     private long correlationId = NULL_VALUE;
     private long leaderLogRecordingId = NULL_VALUE;
     private long liveLogReplaySubscriptionId = NULL_VALUE;
@@ -447,10 +448,22 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
     private int resetBackup(final long nowMs)
     {
-        reset();
         timeOfLastProgressMs = nowMs;
-        state(INIT, nowMs);
-        return 1;
+
+        if (NULL_VALUE == timeOfBackoffDeadlineMs)
+        {
+            timeOfBackoffDeadlineMs = nowMs + backupQueryIntervalMs;
+            reset();
+            return 1;
+        }
+        else if (nowMs > timeOfBackoffDeadlineMs)
+        {
+            timeOfBackoffDeadlineMs = NULL_VALUE;
+            state(INIT, nowMs);
+            return 1;
+        }
+
+        return 0;
     }
 
     private int backupQuery(final long nowMs)

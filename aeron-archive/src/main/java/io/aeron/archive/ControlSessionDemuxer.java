@@ -19,6 +19,7 @@ import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -780,9 +781,11 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new ArchiveException("unknown controlSessionId=" + controlSessionId +
+            final String message = "unknown controlSessionId=" + controlSessionId +
                 " for correlationId=" + correlationId +
-                " from source=" + image.sourceIdentity());
+                " from source=" + image.sourceIdentity();
+
+            throw new ArchiveException(message, ArchiveException.GENERIC, correlationId, AeronException.Category.WARN);
         }
 
         return controlSession;

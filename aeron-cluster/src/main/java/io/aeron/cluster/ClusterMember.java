@@ -642,12 +642,12 @@ public final class ClusterMember
     }
 
     /**
-     * Close the publications associated with members of the cluster.
+     * Close the publications associated with members of the cluster used for the consensus protocol.
      *
      * @param errorHandler   to capture errors during close.
      * @param clusterMembers to close the publications for.
      */
-    public static void closeMemberPublications(final ErrorHandler errorHandler, final ClusterMember[] clusterMembers)
+    public static void closeConsensusPublications(final ErrorHandler errorHandler, final ClusterMember[] clusterMembers)
     {
         for (final ClusterMember member : clusterMembers)
         {

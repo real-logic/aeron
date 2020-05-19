@@ -213,26 +213,30 @@ class ConsensusModuleAgent implements Agent
 
     public void onClose()
     {
-        if (!ctx.ownsAeronClient() && !aeron.isClosed())
+        if (!aeron.isClosed())
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandler);
-
-            logPublisher.disconnect(ctx.countedErrorHandler());
-            logAdapter.disconnect(ctx.countedErrorHandler());
             asyncStopLogRecording();
 
-            final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
-            for (final ClusterSession session : sessionByIdMap.values())
+            if (!ctx.ownsAeronClient())
             {
-                session.close(errorHandler);
-            }
+                logPublisher.disconnect(ctx.countedErrorHandler());
+                logAdapter.disconnect(ctx.countedErrorHandler());
 
-            CloseHelper.close(errorHandler, ingressAdapter);
-            ClusterMember.closeMemberPublications(errorHandler, clusterMembers);
-            CloseHelper.close(errorHandler, consensusAdapter);
-            CloseHelper.close(errorHandler, serviceProxy);
-            CloseHelper.close(errorHandler, consensusModuleAdapter);
-            CloseHelper.close(errorHandler, archive);
+                final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
+                for (final ClusterSession session : sessionByIdMap.values())
+                {
+                    session.close(errorHandler);
+                }
+
+                CloseHelper.close(errorHandler, ingressAdapter);
+                ClusterMember.closeConsensusPublications(errorHandler, clusterMembers);
+                CloseHelper.close(errorHandler, consensusAdapter);
+                CloseHelper.close(errorHandler, serviceProxy);
+                CloseHelper.close(errorHandler, consensusModuleAdapter);
+                CloseHelper.close(errorHandler, archive);
+
+            }
 
             state(ConsensusModule.State.CLOSED);
         }

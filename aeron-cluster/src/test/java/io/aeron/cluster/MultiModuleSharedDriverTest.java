@@ -138,6 +138,111 @@ public class MultiModuleSharedDriverTest
         }
     }
 
+    @Test
+    @Timeout(20)
+    @SuppressWarnings("MethodLength")
+    public void shouldSupportTwoMultiNodeClusters()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED)
+            .errorHandler(Tests::onError)
+            .dirDeleteOnStart(true);
+
+        final Archive.Context archiveCtx = new Archive.Context()
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
+            .errorHandler(Tests::onError)
+            .recordingEventsEnabled(false)
+            .deleteArchiveOnStart(true);
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
+        {
+            final ConsensusModule.Context moduleCtx0 = new ConsensusModule.Context()
+                .errorHandler(Tests::onError)
+                .deleteDirOnStart(true)
+                .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-zero"))
+                .logChannel("aeron:ipc?term-length=64k")
+                .logStreamId(100)
+                .serviceControlChannel("aeron:ipc?term-length=64k")
+                .serviceStreamId(104)
+                .consensusModuleStreamId(105)
+                .ingressChannel("aeron:udp?endpoint=localhost:9010")
+                .clusterId(0);
+
+            final ClusteredServiceContainer.Context containerCtx0 = new ClusteredServiceContainer.Context()
+                .errorHandler(Tests::onError)
+                .clusteredService(new EchoService())
+                .clusterDir(moduleCtx0.clusterDir())
+                .serviceControlChannel(moduleCtx0.serviceControlChannel())
+                .serviceStreamId(moduleCtx0.serviceStreamId())
+                .consensusModuleStreamId(moduleCtx0.consensusModuleStreamId())
+                .clusterId(moduleCtx0.clusterId());
+
+            final ConsensusModule.Context moduleCtx1 = new ConsensusModule.Context()
+                .errorHandler(Tests::onError)
+                .deleteDirOnStart(true)
+                .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-one"))
+                .logChannel("aeron:ipc?term-length=64k")
+                .logStreamId(200)
+                .serviceControlChannel("aeron:ipc?term-length=64k")
+                .serviceStreamId(204)
+                .consensusModuleStreamId(205)
+                .ingressChannel("aeron:udp?endpoint=localhost:9011")
+                .clusterId(1);
+
+            final ClusteredServiceContainer.Context containerCtx1 = new ClusteredServiceContainer.Context()
+                .errorHandler(Tests::onError)
+                .clusteredService(new EchoService())
+                .clusterDir(moduleCtx1.clusterDir())
+                .serviceControlChannel(moduleCtx1.serviceControlChannel())
+                .serviceStreamId(moduleCtx1.serviceStreamId())
+                .consensusModuleStreamId(moduleCtx1.consensusModuleStreamId())
+                .clusterId(moduleCtx1.clusterId());
+
+            ConsensusModule consensusModule0 = null;
+            ClusteredServiceContainer container0 = null;
+            ConsensusModule consensusModule1 = null;
+            ClusteredServiceContainer container1 = null;
+            AeronCluster client0 = null;
+            AeronCluster client1 = null;
+
+            try
+            {
+                consensusModule0 = ConsensusModule.launch(moduleCtx0);
+                consensusModule1 = ConsensusModule.launch(moduleCtx1);
+
+                container0 = ClusteredServiceContainer.launch(containerCtx0);
+                container1 = ClusteredServiceContainer.launch(containerCtx1);
+
+                final MutableReference<String> egress = new MutableReference<>();
+                final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
+                    egress.set(buffer.getStringWithoutLengthAscii(offset, length));
+
+                client0 = AeronCluster.connect(new AeronCluster.Context()
+                    .egressListener(egressListener)
+                    .ingressChannel(moduleCtx0.ingressChannel())
+                    .egressChannel("aeron:udp?endpoint=localhost:9020"));
+
+                client1 = AeronCluster.connect(new AeronCluster.Context()
+                    .egressListener(egressListener)
+                    .ingressChannel(moduleCtx1.ingressChannel())
+                    .egressChannel("aeron:udp?endpoint=localhost:9021"));
+
+                echoMessage(client0, "Message 0", egress);
+                echoMessage(client1, "Message 1", egress);
+            }
+            finally
+            {
+                CloseHelper.closeAll(client0, client1, consensusModule0, consensusModule1, container0, container1);
+            }
+        }
+        finally
+        {
+            archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
+        }
+    }
+
     private void echoMessage(final AeronCluster client, final String message, final MutableReference<String> egress)
     {
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();

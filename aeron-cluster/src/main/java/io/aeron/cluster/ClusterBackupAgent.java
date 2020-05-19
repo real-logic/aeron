@@ -146,8 +146,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     {
         if (!ctx.ownsAeronClient())
         {
-            CloseHelper.close(consensusSubscription);
-            CloseHelper.close(consensusPublication);
+            CloseHelper.closeAll(consensusSubscription, consensusPublication);
         }
 
         if (NULL_VALUE != liveLogReplaySubscriptionId)
@@ -155,10 +154,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             backupArchive.tryStopRecording(liveLogReplaySubscriptionId);
         }
 
-        CloseHelper.close(backupArchive);
-        CloseHelper.close(clusterArchiveAsyncConnect);
-        CloseHelper.close(clusterArchive);
-        CloseHelper.close(recordingLog);
+        CloseHelper.closeAll(backupArchive, clusterArchiveAsyncConnect, clusterArchive, recordingLog);
         ctx.close();
     }
 
@@ -304,8 +300,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         }
     }
 
-    public void onUnavailableCounter(
-        final CountersReader countersReader, final long registrationId, final int counterId)
+    public void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
     {
         if (counterId == liveLogRecCounterId)
         {
@@ -341,12 +336,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 {
                     final RecordingLog.Entry entry = recordingLog.getLatestSnapshot(snapshot.serviceId());
 
-                    if (null != entry)
+                    if (null != entry && snapshot.logPosition() == entry.logPosition)
                     {
-                        if (snapshot.logPosition() == entry.logPosition)
-                        {
-                            continue;
-                        }
+                        continue;
                     }
 
                     snapshotsToRetrieve.add(new RecordingLog.Snapshot(
@@ -358,8 +350,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                         snapshot.serviceId()));
                 }
             }
-
-            final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
 
             if (null == leaderMember || leaderMember.id() != leaderMemberId || logRecordingId != leaderLogRecordingId)
             {
@@ -373,9 +363,11 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                     NULL_TIMESTAMP,
                     NULL_VALUE,
                     RecordingLog.ENTRY_TYPE_TERM,
-                    true, -1
-                );
+                    true,
+                    -1);
             }
+
+            final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
 
             if (null == lastTerm ||
                 lastLeadershipTermId != lastTerm.leadershipTermId ||
@@ -390,8 +382,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                     NULL_VALUE,
                     RecordingLog.ENTRY_TYPE_TERM,
                     true,
-                    -1
-                );
+                    -1);
             }
 
             timeOfLastBackupQueryMs = 0;
@@ -424,7 +415,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             }
 
             final long nowMs = epochClock.time();
-
             timeOfLastProgressMs = nowMs;
 
             if (snapshotsToRetrieve.isEmpty())
@@ -444,6 +434,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         recordingLog = new RecordingLog(ctx.clusterDir());
         timeOfLastProgressMs = nowMs;
         state(BACKUP_QUERY, nowMs);
+
         return 1;
     }
 
@@ -576,7 +567,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         if (null != snapshotRetrieveMonitor)
         {
             workCount += snapshotRetrieveMonitor.poll();
-
             timeOfLastProgressMs = nowMs;
 
             if (snapshotRetrieveMonitor.isDone())
@@ -629,10 +619,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + replaySessionId;
 
             snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengthMap.get(snapshotCursor));
-
             backupArchive.startRecording(catchupChannel, ctx.replayStreamId(), SourceLocation.REMOTE, true);
-
             timeOfLastProgressMs = nowMs;
+
             workCount++;
         }
 
@@ -653,12 +642,11 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
             if (NULL_VALUE == correlationId)
             {
-                final long replayId = ctx.aeron().nextCorrelationId();
                 final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
+                final String catchupChannel = "aeron:udp?endpoint=" + ctx.catchupEndpoint();
+                final long replayId = ctx.aeron().nextCorrelationId();
                 final long startPosition = null == logEntry ?
                     NULL_POSITION : backupArchive.getStopPosition(logEntry.recordingId);
-
-                final String catchupChannel = "aeron:udp?endpoint=" + ctx.catchupEndpoint();
 
                 if (clusterArchive.archiveProxy().boundedReplay(
                     leaderLogRecordingId,
@@ -693,9 +681,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             }
             else if (pollForResponse(clusterArchive, correlationId))
             {
-                final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
                 liveLogReplayId = clusterArchive.controlResponsePoller().relevantId();
                 liveLogReplaySessionId = (int)liveLogReplayId;
+                final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
                 final String catchupChannel =
                     "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + liveLogReplaySessionId;
 
@@ -878,9 +866,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             this.expectedStopPosition = expectedStopPosition;
 
             final Subscription subscription = clusterArchive.controlResponsePoller().subscription();
-            final long controlSessionId = clusterArchive.controlSessionId();
             recordingSignalAdapter = new RecordingSignalAdapter(
-                controlSessionId, this, this, subscription, FRAGMENT_POLL_LIMIT);
+                clusterArchive.controlSessionId(), this, this, subscription, FRAGMENT_POLL_LIMIT);
         }
 
         boolean isDone()
@@ -890,14 +877,13 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         public int poll()
         {
-            final int poll = recordingSignalAdapter.poll();
-
+            final int fragments = recordingSignalAdapter.poll();
             if (null != errorMessage)
             {
                 throw new AeronException("error occurred while transferring snapshot: " + errorMessage);
             }
 
-            return poll;
+            return fragments;
         }
 
         public void onResponse(
@@ -907,7 +893,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             final ControlResponseCode code,
             final String errorMessage)
         {
-            if (code == ControlResponseCode.ERROR)
+            if (ControlResponseCode.ERROR == code)
             {
                 this.errorMessage = errorMessage;
             }
@@ -921,18 +907,18 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             final long position,
             final RecordingSignal signal)
         {
-            if (signal == RecordingSignal.START && this.recordingId == RecordingPos.NULL_RECORDING_ID)
+            if (RecordingSignal.START == signal && RecordingPos.NULL_RECORDING_ID == this.recordingId)
             {
                 if (0 != position)
                 {
-                    errorMessage = "unexpected start position expected = 0, actual = " + position;
+                    errorMessage = "unexpected start position expected=0, actual=" + position;
                 }
                 else
                 {
                     this.recordingId = recordingId;
                 }
             }
-            else if (signal == RecordingSignal.STOP && this.recordingId == recordingId)
+            else if (RecordingSignal.STOP == signal && recordingId == this.recordingId)
             {
                 if (expectedStopPosition == position)
                 {
@@ -940,8 +926,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 }
                 else
                 {
-                    errorMessage = "unexpected stop position expected = " + expectedStopPosition +
-                        ", actual = " + position;
+                    errorMessage = "unexpected stop position expected=" + expectedStopPosition + ", actual=" + position;
                 }
             }
         }

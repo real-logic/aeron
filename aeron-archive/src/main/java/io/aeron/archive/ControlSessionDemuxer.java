@@ -785,7 +785,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 " for correlationId=" + correlationId +
                 " from source=" + image.sourceIdentity();
 
-            throw new ArchiveException(message, ArchiveException.GENERIC, correlationId, AeronException.Category.WARN);
+            throw new ArchiveException(message, correlationId, AeronException.Category.WARN);
         }
 
         return controlSession;

@@ -20,6 +20,7 @@ import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -202,7 +203,8 @@ class ControlResponseProxy
         if (result == Publication.NOT_CONNECTED)
         {
             session.abort();
-            throw new ArchiveException("response publication is not connected: " + session);
+            throw new ArchiveException(
+                "response publication is not connected: " + session, AeronException.Category.WARN);
         }
 
         if (result == Publication.CLOSED)

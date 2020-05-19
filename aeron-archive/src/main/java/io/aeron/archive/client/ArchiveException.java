@@ -73,6 +73,20 @@ public class ArchiveException extends AeronException
         this.correlationId = correlationId;
     }
 
+    public ArchiveException(final String message, final Category category)
+    {
+        super(message, category);
+        this.errorCode = GENERIC;
+        this.correlationId = Aeron.NULL_VALUE;
+    }
+
+    public ArchiveException(final String message, final long correlationId, final Category category)
+    {
+        super(message, category);
+        this.errorCode = GENERIC;
+        this.correlationId = correlationId;
+    }
+
     public ArchiveException(
         final String message, final int errorCode, final long correlationId, final Category category)
     {

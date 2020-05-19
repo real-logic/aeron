@@ -20,7 +20,6 @@
 #endif
 
 #include <errno.h>
-#include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "aeron_congestion_control.h"

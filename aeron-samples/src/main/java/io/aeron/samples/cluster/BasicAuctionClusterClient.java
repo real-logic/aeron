@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.aeron.samples.tutorial.cluster;
+package io.aeron.samples.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
@@ -32,9 +32,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.aeron.samples.tutorial.cluster.BasicAuctionClusteredService.*;
-import static io.aeron.samples.tutorial.cluster.BasicAuctionClusteredServiceNode.CLIENT_FACING_PORT_OFFSET;
-import static io.aeron.samples.tutorial.cluster.BasicAuctionClusteredServiceNode.calculatePort;
+import static io.aeron.samples.cluster.BasicAuctionClusteredService.*;
+import static io.aeron.samples.cluster.BasicAuctionClusteredServiceNode.CLIENT_FACING_PORT_OFFSET;
+import static io.aeron.samples.cluster.BasicAuctionClusteredServiceNode.calculatePort;
 
 // tag::client[]
 public class BasicAuctionClusterClient implements EgressListener
@@ -77,7 +77,7 @@ public class BasicAuctionClusterClient implements EgressListener
             customerId + "," + currentPrice + "," + bidSucceed + ")");
     }
 
-    public void sessionEvent(
+    public void onSessionEvent(
         final long correlationId,
         final long clusterSessionId,
         final long leadershipTermId,
@@ -90,7 +90,7 @@ public class BasicAuctionClusterClient implements EgressListener
             leaderMemberId + "," + code + "," + detail + ")");
     }
 
-    public void newLeader(
+    public void onNewLeader(
         final long clusterSessionId,
         final long leadershipTermId,
         final int leaderMemberId,
@@ -180,9 +180,9 @@ public class BasicAuctionClusterClient implements EgressListener
 
     public static void main(final String[] args)
     {
-        final int customerId = Integer.parseInt(System.getProperty("aeron.tutorial.cluster.customerId"));       // <1>
-        final int numOfBids = Integer.parseInt(System.getProperty("aeron.tutorial.cluster.numOfBids"));         // <2>
-        final int bidIntervalMs = Integer.parseInt(System.getProperty("aeron.tutorial.cluster.bidIntervalMs")); // <3>
+        final int customerId = Integer.parseInt(System.getProperty("aeron.cluster.tutorial.customerId"));       // <1>
+        final int numOfBids = Integer.parseInt(System.getProperty("aeron.cluster.tutorial.numOfBids"));         // <2>
+        final int bidIntervalMs = Integer.parseInt(System.getProperty("aeron.cluster.tutorial.bidIntervalMs")); // <3>
 
         final String clusterMembers = ingressEndpoints(Arrays.asList("localhost", "localhost", "localhost"));
         final BasicAuctionClusterClient client = new BasicAuctionClusterClient(customerId, numOfBids, bidIntervalMs);

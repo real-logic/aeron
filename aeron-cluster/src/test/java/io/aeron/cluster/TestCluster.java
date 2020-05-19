@@ -80,7 +80,7 @@ public class TestCluster implements AutoCloseable
             responseCount.value++;
         }
 
-        public void sessionEvent(
+        public void onSessionEvent(
             final long correlationId,
             final long clusterSessionId,
             final long leadershipTermId,
@@ -94,7 +94,7 @@ public class TestCluster implements AutoCloseable
             }
         }
 
-        public void newLeader(
+        public void onNewLeader(
             final long clusterSessionId,
             final long leadershipTermId,
             final int leaderMemberId,

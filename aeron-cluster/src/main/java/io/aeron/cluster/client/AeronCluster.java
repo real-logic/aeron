@@ -525,7 +525,7 @@ public final class AeronCluster implements AutoCloseable
 
         fragmentAssembler.clear();
         controlledFragmentAssembler.clear();
-        egressListener.newLeader(clusterSessionId, leadershipTermId, leaderMemberId, memberEndpoints);
+        egressListener.onNewLeader(clusterSessionId, leadershipTermId, leaderMemberId, memberEndpoints);
         controlledEgressListener.newLeader(clusterSessionId, leadershipTermId, leaderMemberId, memberEndpoints);
     }
 
@@ -637,7 +637,7 @@ public final class AeronCluster implements AutoCloseable
                     isClosed = true;
                 }
 
-                egressListener.sessionEvent(
+                egressListener.onSessionEvent(
                     sessionEventDecoder.correlationId(),
                     sessionId,
                     sessionEventDecoder.leadershipTermId(),

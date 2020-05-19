@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.aeron.samples.tutorial.cluster;
+package io.aeron.samples.cluster;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;

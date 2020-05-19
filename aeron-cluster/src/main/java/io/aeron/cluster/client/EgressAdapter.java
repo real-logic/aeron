@@ -103,7 +103,7 @@ public class EgressAdapter implements FragmentHandler
                 final long sessionId = sessionEventDecoder.clusterSessionId();
                 if (sessionId == clusterSessionId)
                 {
-                    listener.sessionEvent(
+                    listener.onSessionEvent(
                         sessionEventDecoder.correlationId(),
                         sessionId,
                         sessionEventDecoder.leadershipTermId(),
@@ -125,7 +125,7 @@ public class EgressAdapter implements FragmentHandler
                 final long sessionId = newLeaderEventDecoder.clusterSessionId();
                 if (sessionId == clusterSessionId)
                 {
-                    listener.newLeader(
+                    listener.onNewLeader(
                         sessionId,
                         newLeaderEventDecoder.leadershipTermId(),
                         newLeaderEventDecoder.leaderMemberId(),

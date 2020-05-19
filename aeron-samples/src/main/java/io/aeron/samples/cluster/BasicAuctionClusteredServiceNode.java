@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.aeron.samples.tutorial.cluster;
+package io.aeron.samples.cluster;
 
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
@@ -111,7 +111,7 @@ public class BasicAuctionClusteredServiceNode
     // tag::main[]
     public static void main(final String[] args)
     {
-        final int nodeId = parseInt(System.getProperty("aeron.tutorial.cluster.nodeId"));                // <1>
+        final int nodeId = parseInt(System.getProperty("aeron.cluster.tutorial.nodeId"));                // <1>
 
         final List<String> hostnames = Arrays.asList("localhost", "localhost", "localhost");             // <2>
         final String hostname = hostnames.get(nodeId);

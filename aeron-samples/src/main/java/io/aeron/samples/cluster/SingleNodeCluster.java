@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.samples.cluster;
 
 import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.cluster.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.CloseReason;
@@ -77,12 +78,13 @@ public class SingleNodeCluster implements AutoCloseable
             System.out.println("egress onMessage " + clusterSessionId);
         }
 
-        public void newLeader(
+        public void onNewLeader(
             final long clusterSessionId,
             final long leadershipTermId,
             final int leaderMemberId,
             final String memberEndpoints)
         {
+            System.out.println("SingleNodeCluster.onNewLeader");
         }
     };
 
@@ -207,7 +209,7 @@ public class SingleNodeCluster implements AutoCloseable
 
         protected long serviceCorrelationId(final int correlationId)
         {
-            return ((long)cluster.context().serviceId()) << 32 | correlationId;
+            return ((long)cluster.context().serviceId()) << 56 | correlationId;
         }
     }
 
@@ -251,6 +253,7 @@ public class SingleNodeCluster implements AutoCloseable
     {
         final ErrorHandler errorHandler = clientMediaDriver.context().errorHandler();
         CloseHelper.close(errorHandler, client);
+        CloseHelper.close(errorHandler, clusteredMediaDriver.consensusModule());
         CloseHelper.close(errorHandler, container);
         CloseHelper.close(errorHandler, clusteredMediaDriver);
         CloseHelper.close(errorHandler, clientMediaDriver);

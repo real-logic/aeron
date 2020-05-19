@@ -53,7 +53,7 @@ public interface EgressListener
      * @param code             to indicate the type of event.
      * @param detail           Textual detail to explain the event.
      */
-    default void sessionEvent(
+    default void onSessionEvent(
         long correlationId,
         long clusterSessionId,
         long leadershipTermId,
@@ -71,7 +71,7 @@ public interface EgressListener
      * @param leaderMemberId   identity of the active leader.
      * @param memberEndpoints  for connecting to the cluster which can be updated due to dynamic membership.
      */
-    default void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints)
+    default void onNewLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints)
     {
     }
 }

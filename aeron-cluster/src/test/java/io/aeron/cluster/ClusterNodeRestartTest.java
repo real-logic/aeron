@@ -159,8 +159,7 @@ public class ClusterNodeRestartTest
 
         while (null == serviceState.get())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         assertEquals("0", serviceState.get());
@@ -197,8 +196,7 @@ public class ClusterNodeRestartTest
 
         while (null == serviceState.get())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         assertEquals("3", serviceState.get());
@@ -425,8 +423,7 @@ public class ClusterNodeRestartTest
             }
 
             checkResult(result);
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 

@@ -365,8 +365,7 @@ public class ArchiveTest
         {
             if (recordingEventsAdapter.poll() == 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
 
@@ -409,8 +408,7 @@ public class ArchiveTest
         {
             if (recordingEventsAdapter.poll() == 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
 
@@ -501,8 +499,7 @@ public class ArchiveTest
         {
             if (controlResponseAdapter.poll() == 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
     }
@@ -580,8 +577,7 @@ public class ArchiveTest
                     throw new IllegalStateException("Publication not connected: result=" + result);
                 }
 
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
 
@@ -630,8 +626,7 @@ public class ArchiveTest
                 final int fragments = replay.poll(this::validateFragment, 10);
                 if (0 == fragments)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                 }
             }
 
@@ -649,8 +644,7 @@ public class ArchiveTest
 
         while (catalog.stopPosition(recordingId) != stopPosition)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         try (RecordingReader recordingReader = new RecordingReader(
@@ -661,8 +655,10 @@ public class ArchiveTest
         {
             while (!recordingReader.isDone())
             {
-                recordingReader.poll(this::validateRecordingFragment, messageCount);
-                Tests.checkInterruptStatus();
+                if (0 == recordingReader.poll(this::validateRecordingFragment, messageCount))
+                {
+                    Tests.yield();
+                }
             }
         }
 
@@ -731,7 +727,6 @@ public class ArchiveTest
                         if (recordingEventsAdapter.poll() == 0)
                         {
                             Tests.sleep(1);
-                            Tests.checkInterruptStatus();
                         }
                     }
                 }
@@ -801,8 +796,7 @@ public class ArchiveTest
                         final int fragments = replay.poll(fragmentHandler, 10);
                         if (0 == fragments)
                         {
-                            Thread.yield();
-                            Tests.checkInterruptStatus();
+                            Tests.yield();
                         }
                     }
                 }

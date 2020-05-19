@@ -73,26 +73,22 @@ public class MultiSubscriberTest
 
             while (!subscriptionOne.isConnected() || !subscriptionTwo.isConnected())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             while (publication.offer(srcBuffer) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             while (subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT) == 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             while (subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT) == 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             verifyData(srcBuffer, mockFragmentHandlerOne);

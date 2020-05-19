@@ -97,8 +97,7 @@ public class UntetheredSubscriptionTest
         {
             while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
                 aeron.conductorAgentInvoker().invoke();
             }
 
@@ -106,8 +105,7 @@ public class UntetheredSubscriptionTest
             {
                 if (publication.offer(srcBuffer) < 0)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
@@ -125,8 +123,7 @@ public class UntetheredSubscriptionTest
 
                     while (publication.offer(srcBuffer) < 0)
                     {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
+                        Tests.yield();
                         aeron.conductorAgentInvoker().invoke();
                     }
 
@@ -159,8 +156,7 @@ public class UntetheredSubscriptionTest
         {
             while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
                 aeron.conductorAgentInvoker().invoke();
             }
 
@@ -168,8 +164,7 @@ public class UntetheredSubscriptionTest
             {
                 if (publication.offer(srcBuffer) < 0)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
@@ -184,8 +179,7 @@ public class UntetheredSubscriptionTest
                 {
                     while (availableImageCount.get() < 2)
                     {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
+                        Tests.yield();
                         aeron.conductorAgentInvoker().invoke();
                     }
 

@@ -119,14 +119,12 @@ public class StopStartSecondSubscriberTest
 
         while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         final MutableInteger fragmentsRead1 = new MutableInteger();
@@ -180,8 +178,7 @@ public class StopStartSecondSubscriberTest
         {
             while (running.get() && publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
     }

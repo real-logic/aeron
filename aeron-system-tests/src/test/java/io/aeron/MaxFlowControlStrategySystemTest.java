@@ -123,8 +123,7 @@ public class MaxFlowControlStrategySystemTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -145,8 +144,7 @@ public class MaxFlowControlStrategySystemTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
@@ -155,8 +153,7 @@ public class MaxFlowControlStrategySystemTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             fragmentsRead.set(0);

@@ -110,8 +110,7 @@ public class MultiDriverTest
 
         while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -131,8 +130,7 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -157,8 +155,7 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -202,8 +199,7 @@ public class MultiDriverTest
 
         while (!publication.isConnected() && !subscriptionA.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         final CountDownLatch newImageLatch = new CountDownLatch(1);
@@ -216,8 +212,7 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();

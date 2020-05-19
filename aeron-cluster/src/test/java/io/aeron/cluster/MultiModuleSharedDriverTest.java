@@ -250,15 +250,13 @@ public class MultiModuleSharedDriverTest
 
         while (client.offer(buffer, 0, length) < 0)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         egress.set(null);
         while (null == egress.get())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
             client.pollEgress();
         }
 

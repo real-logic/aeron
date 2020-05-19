@@ -133,8 +133,7 @@ public class TwoBufferOfferMessageTest
     {
         while (publication.offer(bufferOne, 0, bufferOne.capacity(), bufferTwo, 0, bufferTwo.capacity()) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -148,8 +147,7 @@ public class TwoBufferOfferMessageTest
             final int fragments = subscription.poll(handler, FRAGMENT_COUNT_LIMIT);
             if (fragments == 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
     }

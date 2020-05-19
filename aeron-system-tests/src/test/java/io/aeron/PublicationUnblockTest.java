@@ -91,8 +91,7 @@ public class PublicationUnblockTest
 
             while (publicationOne.tryClaim(length, bufferClaim) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             bufferClaim.buffer().setMemory(bufferClaim.offset(), length, (byte)65);
@@ -100,20 +99,17 @@ public class PublicationUnblockTest
 
             while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             while (publicationOne.tryClaim(length, bufferClaim) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final int expectedFragments = 3;
@@ -123,8 +119,7 @@ public class PublicationUnblockTest
                 final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (fragments == 0)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                 }
 
                 numFragments += fragments;

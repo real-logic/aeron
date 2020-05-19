@@ -121,8 +121,7 @@ class ClusterTests
     {
         while (electionStateCounter.get() != state.code())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 

@@ -181,6 +181,16 @@ public class Tests
     }
 
     /**
+     * Yield the thread then check for interrupt in a test.
+     * @see #checkInterruptStatus()
+     */
+    public static void yield()
+    {
+        Thread.yield();
+        checkInterruptStatus();
+    }
+
+    /**
      * Helper method to mock {@link AutoCloseable#close()} method to throw exception.
      *
      * @param mock      to have it's method mocked

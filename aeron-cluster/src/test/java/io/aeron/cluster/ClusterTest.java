@@ -496,8 +496,7 @@ public class ClusterTest
 
             while (leader.appendPosition() <= leader.commitPosition())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final long targetPosition = leader.appendPosition();
@@ -547,8 +546,7 @@ public class ClusterTest
 
             while (leader.appendPosition() <= leader.commitPosition())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             cluster.closeClient();

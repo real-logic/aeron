@@ -104,15 +104,13 @@ public class ExclusivePublicationTest
             {
                 while (publicationOne.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                     totalFragmentsRead += pollFragments(subscription, fragmentHandler);
                 }
 
                 while (publicationTwo.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                     totalFragmentsRead += pollFragments(subscription, fragmentHandler);
                 }
 
@@ -139,8 +137,7 @@ public class ExclusivePublicationTest
         {
             while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final int termBufferLength = publication.termBufferLength();
@@ -187,8 +184,7 @@ public class ExclusivePublicationTest
 
             while (publication.availableWindow() <= 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -237,8 +233,7 @@ public class ExclusivePublicationTest
             awaitConnection(subscription, 1);
             while (publication.availableWindow() <= 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final long position = publication.position();
@@ -277,8 +272,7 @@ public class ExclusivePublicationTest
 
             while (publication.offerBlock(srcBuffer, offset, length) < 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final long result = publication.offerBlock(srcBuffer, 0, offset);
@@ -290,8 +284,7 @@ public class ExclusivePublicationTest
     {
         while (subscription.imageCount() < imageCount)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -300,8 +293,7 @@ public class ExclusivePublicationTest
         final int fragmentsRead = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
         if (0 == fragmentsRead)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         return fragmentsRead;

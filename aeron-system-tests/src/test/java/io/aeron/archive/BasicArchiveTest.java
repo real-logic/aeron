@@ -212,8 +212,7 @@ public class BasicArchiveTest
 
             while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
 

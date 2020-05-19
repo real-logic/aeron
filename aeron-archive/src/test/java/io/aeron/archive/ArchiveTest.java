@@ -192,7 +192,7 @@ public class ArchiveTest
 
             while ((resultingPosition = publication.offer(buffer)) <= 0)
             {
-                Thread.yield();
+                Tests.yield();
             }
 
             final Aeron aeron = archive.context().aeron();
@@ -202,14 +202,14 @@ public class ArchiveTest
             final CountersReader countersReader = aeron.countersReader();
             while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
             {
-                Thread.yield();
+                Tests.yield();
             }
 
             recordingId = RecordingPos.getRecordingId(countersReader, counterId);
 
             while (countersReader.getCounterValue(counterId) < resultingPosition)
             {
-                Thread.yield();
+                Tests.yield();
             }
         }
 

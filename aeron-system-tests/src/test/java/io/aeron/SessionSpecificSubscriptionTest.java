@@ -88,8 +88,7 @@ public class SessionSpecificSubscriptionTest
                 subscriptionTwo.imageCount() != 1 ||
                 subscriptionWildcard.imageCount() != 2)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
@@ -134,8 +133,7 @@ public class SessionSpecificSubscriptionTest
         {
             while (!publication.isConnected())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             assertEquals(1, subscription.imageCount());
@@ -162,8 +160,7 @@ public class SessionSpecificSubscriptionTest
     {
         while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 }

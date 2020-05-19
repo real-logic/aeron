@@ -85,8 +85,7 @@ public class SessionSpecificPublicationTest
         {
             while (!publication.isConnected())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final int existingSessionId = publication.sessionId();

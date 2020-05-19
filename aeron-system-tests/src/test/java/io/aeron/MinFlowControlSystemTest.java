@@ -151,8 +151,7 @@ public class MinFlowControlSystemTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         for (long i = 0; numFragmentsFromB < numMessagesToSend; i++)
@@ -170,8 +169,7 @@ public class MinFlowControlSystemTest
                 }
             }
 
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
 
             // A keeps up
             subscriptionA.poll(fragmentHandlerA, 10);
@@ -221,8 +219,7 @@ public class MinFlowControlSystemTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         while (numFragmentsReadFromA < numMessagesToSend)
@@ -376,11 +373,9 @@ public class MinFlowControlSystemTest
 
         while (!otherPublication.isConnected())
         {
-            Tests.sleep(1);
+            Tests.yield();
         }
         // We know another publication on the same channel is connected
-
-        assertFalse(publication.isConnected());
 
         subscriptionA = clientA.addSubscription(plainUri, STREAM_ID);
 

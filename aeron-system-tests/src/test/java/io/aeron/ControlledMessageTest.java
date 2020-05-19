@@ -76,8 +76,7 @@ public class ControlledMessageTest
             {
                 while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                 }
             }
 
@@ -88,8 +87,7 @@ public class ControlledMessageTest
                 final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
+                    Tests.yield();
                 }
                 numFragments += fragments;
             }

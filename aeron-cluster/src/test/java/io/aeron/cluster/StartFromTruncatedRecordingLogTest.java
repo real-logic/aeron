@@ -393,8 +393,7 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (client.offer(msgBuffer, 0, ClusterTests.HELLO_WORLD_MSG.length()) < 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
                 client.pollEgress();
             }
 
@@ -406,8 +405,7 @@ public class StartFromTruncatedRecordingLogTest
     {
         while (responseCount.get() < messageCount)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
             client.pollEgress();
         }
 
@@ -415,8 +413,7 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (echoServices[i].messageCount() < messageCount)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
         }
     }
@@ -529,8 +526,7 @@ public class StartFromTruncatedRecordingLogTest
         final AtomicCounter controlToggle = getControlToggle(index);
         while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 

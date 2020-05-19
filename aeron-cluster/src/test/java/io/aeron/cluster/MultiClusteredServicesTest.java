@@ -114,8 +114,7 @@ public class MultiClusteredServicesTest
 
             while (client.offer(buffer, 0, 100) < 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             Tests.awaitValue(serviceAMessageCount, 3);

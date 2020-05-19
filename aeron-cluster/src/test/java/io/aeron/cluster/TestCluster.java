@@ -599,8 +599,7 @@ public class TestCluster implements AutoCloseable
                 throw new ClusterException("max position exceeded");
             }
 
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -644,8 +643,7 @@ public class TestCluster implements AutoCloseable
     {
         while (node.commitPosition() < logPosition)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -777,8 +775,7 @@ public class TestCluster implements AutoCloseable
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
         while (snapshotCounter.get() != value)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -786,8 +783,7 @@ public class TestCluster implements AutoCloseable
     {
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -837,8 +833,7 @@ public class TestCluster implements AutoCloseable
     {
         while (!node.service().wasSnapshotLoaded())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -847,8 +842,7 @@ public class TestCluster implements AutoCloseable
         final AtomicCounter controlToggle = getControlToggle(leaderNode);
         while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 

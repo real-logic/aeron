@@ -104,8 +104,7 @@ public class PublishFromArbitraryPositionTest
         {
             while (!publication.isConnected())
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             final Thread t = new Thread(
@@ -146,8 +145,7 @@ public class PublishFromArbitraryPositionTest
     {
         while (publication.offer(buffer, 0, 1 + rnd.nextInt(MAX_MESSAGE_LENGTH - 1)) < 0L)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 }

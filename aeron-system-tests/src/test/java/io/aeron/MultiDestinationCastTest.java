@@ -130,8 +130,7 @@ public class MultiDestinationCastTest
 
         while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 
@@ -151,8 +150,7 @@ public class MultiDestinationCastTest
 
         while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         assertFalse(clientA.isCommandActive(correlationId));
@@ -173,16 +171,14 @@ public class MultiDestinationCastTest
 
         while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             pollForFragment(subscriptionA, fragmentHandlerA);
@@ -210,16 +206,14 @@ public class MultiDestinationCastTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !subscriptionC.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             pollForFragment(subscriptionA, fragmentHandlerA);
@@ -249,16 +243,14 @@ public class MultiDestinationCastTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             pollForFragment(subscriptionA, fragmentHandlerA);
@@ -291,16 +283,14 @@ public class MultiDestinationCastTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yield();
             }
 
             pollForFragment(subscriptionA, fragmentHandlerA);
@@ -312,7 +302,7 @@ public class MultiDestinationCastTest
             else
             {
                 subscriptionB.poll(fragmentHandlerB, 10);
-                Thread.yield();
+                Tests.yield();
             }
 
             if (i == numMessageForSub2 - 1)
@@ -354,8 +344,7 @@ public class MultiDestinationCastTest
 
         while (!subscriptionA.isConnected())
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
 
         while (messagesSent.value < numMessagesToSend)

@@ -415,8 +415,7 @@ public class AuthenticationTest
 
         while (aeronCluster.offer(msgBuffer, 0, SIZE_OF_INT) < 0)
         {
-            Thread.yield();
-            Tests.checkInterruptStatus();
+            Tests.yield();
         }
     }
 

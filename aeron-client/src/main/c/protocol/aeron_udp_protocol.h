@@ -169,7 +169,7 @@ inline size_t aeron_res_header_address_length(int8_t res_type)
 
 inline size_t aeron_frame_compute_max_message_length(size_t term_length)
 {
-    return (term_length < AERON_FRAME_MAX_MESSAGE_LENGTH) ? term_length : AERON_FRAME_MAX_MESSAGE_LENGTH;
+    return term_length < AERON_FRAME_MAX_MESSAGE_LENGTH ? term_length : AERON_FRAME_MAX_MESSAGE_LENGTH;
 }
 
 size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header);

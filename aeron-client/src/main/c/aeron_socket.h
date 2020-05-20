@@ -32,7 +32,7 @@
 
 typedef int aeron_socket_t;
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 #include <WinSock2.h>
 #include <windows.h>
 #include <Ws2ipdef.h>

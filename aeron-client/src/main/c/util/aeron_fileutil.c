@@ -29,7 +29,7 @@
 #include "aeron_error.h"
 #include "aeron_fileutil.h"
 
-#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#if defined(AERON_COMPILER_MSVC)
 
 #include <windows.h>
 #include <stdint.h>

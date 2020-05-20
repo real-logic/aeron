@@ -49,7 +49,7 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 
 #define aeron_mkdir mkdir
 #define aeron_ftruncate ftruncate
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 #define _CRT_RAND_S
 #include <io.h>
 #include <direct.h>

@@ -19,7 +19,7 @@
 
 #include "aeron_platform.h"
 
-#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#if defined(AERON_COMPILER_MSVC)
 #define restrict __restrict
 #endif
 

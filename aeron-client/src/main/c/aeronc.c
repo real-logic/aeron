@@ -36,67 +36,6 @@
 #include "aeron_cnc_file_descriptor.h"
 #include "concurrent/aeron_mpsc_rb.h"
 
-const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
-int aeron_major_version = AERON_VERSION_MAJOR;
-int aeron_minor_version = AERON_VERSION_MINOR;
-int aeron_patch_version = AERON_VERSION_PATCH;
-
-const char *aeron_version_full()
-{
-    return aeron_version_full_str;
-}
-
-int aeron_version_major()
-{
-    return aeron_major_version;
-}
-
-int aeron_version_minor()
-{
-    return aeron_minor_version;
-}
-
-int aeron_version_patch()
-{
-    return aeron_patch_version;
-}
-
-int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch)
-{
-    return (major << 16) | (minor << 8) | patch;
-}
-
-uint8_t aeron_semantic_version_major(int32_t version)
-{
-    return (uint8_t)((version >> 16) & 0xFF);
-}
-
-uint8_t aeron_semantic_version_minor(int32_t version)
-{
-    return (uint8_t)((version >> 8) & 0xFF);
-}
-
-uint8_t aeron_semantic_version_patch(int32_t version)
-{
-    return (uint8_t)(version & 0xFF);
-}
-
-void aeron_log_func_stderr(const char *str)
-{
-    fprintf(stderr, "%s\n", str);
-}
-
-void aeron_log_func_none(const char *str)
-{
-}
-
-int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
-{
-    int32_t cnc_version;
-    AERON_GET_VOLATILE(cnc_version, metadata->cnc_version);
-    return cnc_version;
-}
-
 int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context)
 {
     long long start_ms = context->epoch_clock();
@@ -199,15 +138,3 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
 
     return 0;
 }
-
-extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
-extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
-extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);
-extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
-extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
-extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment);
-
-extern int aeron_number_of_trailing_zeroes(int32_t value);
-extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);
-extern int32_t aeron_find_next_power_of_two(int32_t value);
-

@@ -214,13 +214,6 @@ int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
 
 size_t aeron_cnc_length(aeron_driver_context_t *context);
 
-inline int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
-{
-    int32_t cnc_version;
-    AERON_GET_VOLATILE(cnc_version, metadata->cnc_version);
-    return cnc_version;
-}
-
 inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version)
 {
     AERON_PUT_VOLATILE(metadata->cnc_version, cnc_version);

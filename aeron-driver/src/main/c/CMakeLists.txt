@@ -112,7 +112,129 @@ if (FALLOCATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_FALLOCATE)
 endif ()
 
+SET(C_CLIENT_SOURCE
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_tagged_ptr_hash_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_receiver.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_transmitter.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_counters_manager.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_distinct_error_log.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_exclusive_term_appender.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_logbuffer_descriptor.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_appender.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_rebuilder.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_scanner.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_unblocker.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_error.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_fileutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_http_util.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_math.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_netutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client_conductor.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_cnc_file_descriptor.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_context.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_counter.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_exclusive_publication.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_image.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_log_buffer.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_version.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.c
+    )
+
+set(C_CLIENT_HEADERS
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_tagged_ptr_hash_map.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/command/aeron_control_protocol.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_gcc_x86_64.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_msvc.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_descriptor.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_receiver.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_transmitter.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_concurrent_array_queue.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_counters_manager.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_distinct_error_log.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_exclusive_term_appender.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_logbuffer_descriptor.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_rb.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_appender.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_rebuilder.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_scanner.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_unblocker.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_error.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_fileutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_http_util.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_math.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_netutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_platform.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client_conductor.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_cnc_file_descriptor.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_common.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_context.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_counter.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_exclusive_publication.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_image.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_log_buffer.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.h
+    )
+
 SET(SOURCE
+    ${C_CLIENT_SOURCE}
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.c
@@ -190,6 +312,7 @@ SET(SOURCE
     agent/aeron_driver_agent.c)
 
 SET(HEADERS
+    ${C_CLIENT_HEADERS}
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_platform.h

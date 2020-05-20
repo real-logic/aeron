@@ -58,6 +58,7 @@ set(SOURCE
     concurrent/aeron_thread.c
     protocol/aeron_udp_protocol.c
     util/aeron_arrayutil.c
+    util/aeron_bitutil.c
     util/aeron_clock.c
     util/aeron_dlopen.c
     util/aeron_env.c
@@ -74,6 +75,7 @@ set(SOURCE
     aeron_alloc.c
     aeron_client.c
     aeron_client_conductor.c
+    aeron_cnc_file_descriptor.c
     aeron_context.c
     aeron_counter.c
     aeron_exclusive_publication.c
@@ -82,6 +84,7 @@ set(SOURCE
     aeron_publication.c
     aeron_socket.c
     aeron_subscription.c
+    aeron_version.c
     aeron_windows.c
     )
 

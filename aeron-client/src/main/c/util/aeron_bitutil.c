@@ -14,24 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef AERON_COMMON_H
-#define AERON_COMMON_H
+#include "aeron_bitutil.h"
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-
-#define AERON_MAX_PATH (384)
-
-typedef void (*aeron_idle_strategy_func_t)(void *state, int work_count);
-typedef int (*aeron_idle_strategy_init_func_t)(void **state, const char *env_var, const char *init_args);
-
-int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch);
-
-uint8_t aeron_semantic_version_major(int32_t version);
-
-uint8_t aeron_semantic_version_minor(int32_t version);
-
-uint8_t aeron_semantic_version_patch(int32_t version);
-
-#endif //AERON_COMMON_H
+extern int aeron_number_of_trailing_zeroes(int32_t value);
+extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);
+extern int aeron_number_of_leading_zeroes(int32_t value);
+extern int32_t aeron_find_next_power_of_two(int32_t value);

@@ -79,7 +79,7 @@ inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t a
     return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);
 }
 
-int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch);
+int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata);
 
 #define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 2, 0))
 

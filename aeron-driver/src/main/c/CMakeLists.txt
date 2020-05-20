@@ -166,8 +166,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_version.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.c
-    )
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.c)
 
 set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.h
@@ -230,44 +229,13 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.h
-    )
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.h)
 
 SET(SOURCE
     ${C_CLIENT_SOURCE}
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_distinct_error_log.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_transmitter.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_counters_manager.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_logbuffer_descriptor.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_scanner.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_rebuilder.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_unblocker.c
     concurrent/aeron_logbuffer_unblocker.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_fileutil.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_error.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_math.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_netutil.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_http_util.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.c
     aeron_driver_context.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.c
     aeron_driver.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.c
     aeron_system_counters.c
     aeron_driver_conductor.c
     aeron_driver_sender.c
@@ -285,7 +253,6 @@ SET(SOURCE
     aeron_congestion_control.c
     aeron_loss_detector.c
     aeron_retransmit_handler.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.c
     aeron_termination_validator.c
     aeron_name_resolver.c
     aeron_csv_table_name_resolver.c
@@ -300,63 +267,16 @@ SET(SOURCE
     media/aeron_udp_channel_transport_bindings.c
     media/aeron_udp_channel_transport_loss.c
     media/aeron_receive_destination.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.c
     uri/aeron_uri.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_tagged_ptr_hash_map.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.c
     reports/aeron_loss_reporter.c
     agent/aeron_driver_agent.c)
 
 SET(HEADERS
     ${C_CLIENT_HEADERS}
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_platform.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_math.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_fileutil.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_error.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_netutil.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_http_util.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_gcc_x86_64.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_msvc.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_rb.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_distinct_error_log.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_transmitter.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_counters_manager.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_logbuffer_descriptor.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_concurrent_array_queue.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_scanner.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_rebuilder.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_unblocker.h
     concurrent/aeron_logbuffer_unblocker.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/command/aeron_control_protocol.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.h
     aeronmd.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.h
     aeron_driver.h
     aeron_driver_context.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_cnc_file_descriptor.h
     aeron_system_counters.h
     aeron_driver_conductor.h
     aeron_driver_sender.h
@@ -388,11 +308,6 @@ SET(HEADERS
     media/aeron_udp_channel_transport_loss.h
     media/aeron_receive_destination.h
     uri/aeron_uri.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.h
     reports/aeron_loss_reporter.h
     agent/aeron_driver_agent.h)
 

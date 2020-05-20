@@ -329,7 +329,7 @@ public class ConsensusModule implements AutoCloseable
          * Default property for the list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBERS_DEFAULT =
-            "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000,localhost:8010";
+            "0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:8010";
 
         /**
          * Property name for the comma separated list of cluster consensus endpoints used for adding passive
@@ -710,8 +710,7 @@ public class ConsensusModule implements AutoCloseable
          */
         public static String clusterConsensusEndpoints()
         {
-            return System.getProperty(
-                CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME, CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT);
+            return System.getProperty(CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME, CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT);
         }
 
         /**
@@ -1208,19 +1207,19 @@ public class ConsensusModule implements AutoCloseable
                 }
 
                 moduleStateCounter = ClusterCounters.allocate(
-                    aeron, "Consensus Module State", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
+                    aeron, "Consensus Module state", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             }
 
             if (null == electionStateCounter)
             {
                 electionStateCounter = ClusterCounters.allocate(
-                    aeron, "Election State", ELECTION_STATE_TYPE_ID, clusterId);
+                    aeron, "Cluster election state", ELECTION_STATE_TYPE_ID, clusterId);
             }
 
             if (null == clusterNodeRoleCounter)
             {
                 clusterNodeRoleCounter = ClusterCounters.allocate(
-                    aeron, "Cluster Node Role", CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
+                    aeron, "Cluster node role", CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
             }
 
             if (null == commitPosition)
@@ -1232,19 +1231,19 @@ public class ConsensusModule implements AutoCloseable
             if (null == controlToggle)
             {
                 controlToggle = ClusterCounters.allocate(
-                    aeron, "Cluster Control Toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
+                    aeron, "Cluster control toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
             }
 
             if (null == snapshotCounter)
             {
                 snapshotCounter = ClusterCounters.allocate(
-                    aeron, "Snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
+                    aeron, "Cluster snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
             }
 
             if (null == timedOutClientCounter)
             {
                 timedOutClientCounter = ClusterCounters.allocate(
-                    aeron, "Timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
+                    aeron, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
             }
 
             if (null == threadFactory)

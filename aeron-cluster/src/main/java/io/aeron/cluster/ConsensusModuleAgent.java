@@ -27,7 +27,6 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.RecoveryState;
-import io.aeron.driver.MinMulticastFlowControl;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
@@ -2763,7 +2762,7 @@ class ConsensusModuleAgent implements Agent
         if (channelUri.isUdp() && !channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
         {
             final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() / 2), 2L);
-            final String fc = MinMulticastFlowControl.FC_PARAM_VALUE + ",t:" + timeout + "s";
+            final String fc = "min,t:" + timeout + "s";
             channelUri.put(FLOW_CONTROL_PARAM_NAME, fc);
         }
 

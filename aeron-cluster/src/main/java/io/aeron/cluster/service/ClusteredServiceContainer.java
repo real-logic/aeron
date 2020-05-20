@@ -225,7 +225,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Default stream id within a channel for communications from the consensus module to the services.
          */
-        public static final int SERVICE_CONTROL_STREAM_ID_DEFAULT = 104;
+        public static final int SERVICE_STREAM_ID_DEFAULT = 104;
 
         /**
          * Stream id within a channel for communications from the services to the consensus module.
@@ -245,7 +245,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Default channel to be used for archiving snapshots.
          */
-        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL + "?alias=snapshot";
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = "aeron:ipc?alias=snapshot";
 
         /**
          * Stream id within a channel for archiving snapshots.
@@ -386,15 +386,15 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #SERVICE_CONTROL_STREAM_ID_DEFAULT} or system property
+         * The value {@link #SERVICE_STREAM_ID_DEFAULT} or system property
          * {@link #SERVICE_STREAM_ID_PROP_NAME} if set.
          *
-         * @return {@link #SERVICE_CONTROL_STREAM_ID_DEFAULT} or system property
+         * @return {@link #SERVICE_STREAM_ID_DEFAULT} or system property
          * {@link #SERVICE_STREAM_ID_PROP_NAME} if set.
          */
         public static int serviceStreamId()
         {
-            return Integer.getInteger(SERVICE_STREAM_ID_PROP_NAME, SERVICE_CONTROL_STREAM_ID_DEFAULT);
+            return Integer.getInteger(SERVICE_STREAM_ID_PROP_NAME, SERVICE_STREAM_ID_DEFAULT);
         }
 
         /**

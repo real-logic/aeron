@@ -208,27 +208,27 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int REPLAY_STREAM_ID_DEFAULT = 103;
 
         /**
-         * Channel for communications between the local consensus module and services.
+         * Channel for control communications between the local consensus module and services.
          */
-        public static final String SERVICE_CONTROL_CHANNEL_PROP_NAME = "aeron.cluster.service.control.channel";
+        public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.cluster.control.channel";
 
         /**
          * Default channel for communications between the local consensus module and services. This should be IPC.
          */
-        public static final String SERVICE_CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k|mtu=8k";
+        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k|mtu=8k";
 
         /**
-         * Stream id within a channel for communications from the consensus module to the services.
+         * Stream id within the control channel for communications from the consensus module to the services.
          */
         public static final String SERVICE_STREAM_ID_PROP_NAME = "aeron.cluster.service.stream.id";
 
         /**
-         * Default stream id within a channel for communications from the consensus module to the services.
+         * Default stream id within the control channel for communications from the consensus module.
          */
         public static final int SERVICE_STREAM_ID_DEFAULT = 104;
 
         /**
-         * Stream id within a channel for communications from the services to the consensus module.
+         * Stream id within the control channel for communications from the services to the consensus module.
          */
         public static final String CONSENSUS_MODULE_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.module.stream.id";
 
@@ -362,15 +362,15 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #SERVICE_CONTROL_CHANNEL_DEFAULT} or system property
-         * {@link #SERVICE_CONTROL_CHANNEL_PROP_NAME} if set.
+         * The value {@link #CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #SERVICE_CONTROL_CHANNEL_DEFAULT} or system property
-         * {@link #SERVICE_CONTROL_CHANNEL_PROP_NAME} if set.
+         * @return {@link #CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
          */
-        public static String serviceControlChannel()
+        public static String controlChannel()
         {
-            return System.getProperty(SERVICE_CONTROL_CHANNEL_PROP_NAME, SERVICE_CONTROL_CHANNEL_DEFAULT);
+            return System.getProperty(CONTROL_CHANNEL_PROP_NAME, CONTROL_CHANNEL_DEFAULT);
         }
 
         /**
@@ -548,7 +548,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private String serviceName = Configuration.serviceName();
         private String replayChannel = Configuration.replayChannel();
         private int replayStreamId = Configuration.replayStreamId();
-        private String serviceControlChannel = Configuration.serviceControlChannel();
+        private String controlChannel = Configuration.controlChannel();
         private int consensusModuleStreamId = Configuration.consensusModuleStreamId();
         private int serviceStreamId = Configuration.serviceStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
@@ -878,11 +878,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param channel parameter for sending messages to the Consensus Module.
          * @return this for a fluent API.
-         * @see Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         * @see Configuration#CONTROL_CHANNEL_PROP_NAME
          */
-        public Context serviceControlChannel(final String channel)
+        public Context controlChannel(final String channel)
         {
-            serviceControlChannel = channel;
+            controlChannel = channel;
             return this;
         }
 
@@ -890,11 +890,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Get the channel parameter for bi-directional communications between the consensus module and services.
          *
          * @return the channel parameter for sending messages to the Consensus Module.
-         * @see Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         * @see Configuration#CONTROL_CHANNEL_PROP_NAME
          */
-        public String serviceControlChannel()
+        public String controlChannel()
         {
-            return serviceControlChannel;
+            return controlChannel;
         }
 
         /**
@@ -1483,7 +1483,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             ClusterMarkFile.checkHeaderLength(
                 aeron.context().aeronDirectoryName(),
-                serviceControlChannel(),
+                controlChannel(),
                 null,
                 serviceName,
                 null);
@@ -1494,12 +1494,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .archiveStreamId(archiveContext.controlRequestStreamId())
                 .serviceStreamId(serviceStreamId)
                 .consensusModuleStreamId(consensusModuleStreamId)
-                .ingressStreamId(0)
+                .ingressStreamId(Aeron.NULL_VALUE)
                 .memberId(Aeron.NULL_VALUE)
                 .serviceId(serviceId)
                 .clusterId(clusterId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
-                .serviceControlChannel(serviceControlChannel)
+                .controlChannel(controlChannel)
                 .ingressChannel(null)
                 .serviceName(serviceName)
                 .authenticator(null);

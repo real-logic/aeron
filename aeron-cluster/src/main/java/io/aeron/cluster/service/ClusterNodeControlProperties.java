@@ -24,19 +24,19 @@ package io.aeron.cluster.service;
 public class ClusterNodeControlProperties
 {
     public final String aeronDirectoryName;
-    public final String serviceControlChannel;
-    public final int toServiceStreamId;
-    public final int toConsensusModuleStreamId;
+    public final String controlChannel;
+    public final int serviceStreamId;
+    public final int consensusModuleStreamId;
 
     public ClusterNodeControlProperties(
-        final int toServiceStreamId,
-        final int toConsensusModuleStreamId,
+        final int serviceStreamId,
+        final int consensusModuleStreamId,
         final String aeronDirectoryName,
-        final String serviceControlChannel)
+        final String controlChannel)
     {
         this.aeronDirectoryName = aeronDirectoryName;
-        this.serviceControlChannel = serviceControlChannel;
-        this.toServiceStreamId = toServiceStreamId;
-        this.toConsensusModuleStreamId = toConsensusModuleStreamId;
+        this.controlChannel = controlChannel;
+        this.serviceStreamId = serviceStreamId;
+        this.consensusModuleStreamId = consensusModuleStreamId;
     }
 }

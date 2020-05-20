@@ -204,8 +204,8 @@ class ConsensusModuleAgent implements Agent
         logAdapter = new LogAdapter(this);
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
-            aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
-        serviceProxy = new ServiceProxy(aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
+            aeron.addSubscription(ctx.controlChannel(), ctx.consensusModuleStreamId()), this);
+        serviceProxy = new ServiceProxy(aeron.addPublication(ctx.controlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().get();
     }

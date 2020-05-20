@@ -1036,7 +1036,7 @@ public class ConsensusModule implements AutoCloseable
         private String memberEndpoints = Configuration.memberEndpoints();
         private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
-        private String serviceControlChannel = ClusteredServiceContainer.Configuration.serviceControlChannel();
+        private String controlChannel = ClusteredServiceContainer.Configuration.controlChannel();
         private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
         private int serviceStreamId = ClusteredServiceContainer.Configuration.serviceStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
@@ -1840,11 +1840,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for bi-directional communications between the consensus module and services.
          * @return this for a fluent API.
-         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
-        public Context serviceControlChannel(final String channel)
+        public Context controlChannel(final String channel)
         {
-            serviceControlChannel = channel;
+            controlChannel = channel;
             return this;
         }
 
@@ -1852,11 +1852,11 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for bi-directional communications between the consensus module and services.
          *
          * @return the channel parameter for bi-directional communications between the consensus module and services.
-         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
-        public String serviceControlChannel()
+        public String controlChannel()
         {
-            return serviceControlChannel;
+            return controlChannel;
         }
 
         /**
@@ -2948,7 +2948,7 @@ public class ConsensusModule implements AutoCloseable
         {
             ClusterMarkFile.checkHeaderLength(
                 aeron.context().aeronDirectoryName(),
-                serviceControlChannel(),
+                controlChannel(),
                 ingressChannel,
                 null,
                 authenticatorSupplier.getClass().toString());
@@ -2962,7 +2962,7 @@ public class ConsensusModule implements AutoCloseable
                 .serviceId(SERVICE_ID)
                 .clusterId(clusterId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
-                .serviceControlChannel(serviceControlChannel)
+                .controlChannel(controlChannel)
                 .ingressChannel(ingressChannel)
                 .serviceName("")
                 .authenticator(authenticatorSupplier.getClass().toString());

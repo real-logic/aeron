@@ -476,9 +476,9 @@ public class ClusterTool
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(controlProperties.aeronDirectoryName));
             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(
-                controlProperties.serviceControlChannel, controlProperties.toConsensusModuleStreamId));
+                controlProperties.controlChannel, controlProperties.consensusModuleStreamId));
             MemberServiceAdapter memberServiceAdapter = new MemberServiceAdapter(aeron.addSubscription(
-                controlProperties.serviceControlChannel, controlProperties.toServiceStreamId), handler))
+                controlProperties.controlChannel, controlProperties.serviceStreamId), handler))
         {
             id.set(aeron.nextCorrelationId());
             if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
@@ -518,12 +518,12 @@ public class ClusterTool
     public static boolean removeMember(final ClusterMarkFile markFile, final int memberId, final boolean isPassive)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
-        final String channel = markFile.decoder().serviceControlChannel();
-        final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
+        final String controlChannel = markFile.decoder().controlChannel();
+        final int consensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
-                aeron.addPublication(channel, toConsensusModuleStreamId)))
+                aeron.addPublication(controlChannel, consensusModuleStreamId)))
         {
             if (consensusModuleProxy.removeMember(memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))
             {

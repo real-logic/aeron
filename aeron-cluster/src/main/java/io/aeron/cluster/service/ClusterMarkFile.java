@@ -33,7 +33,6 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -281,27 +280,23 @@ public class ClusterMarkFile implements AutoCloseable
 
     public static void checkHeaderLength(
         final String aeronDirectory,
-        final String serviceControlChannel,
+        final String controlChannel,
         final String ingressChannel,
         final String serviceName,
         final String authenticator)
     {
-        Objects.requireNonNull(aeronDirectory);
-        Objects.requireNonNull(serviceControlChannel);
-
         final int lengthRequired =
             MarkFileHeaderEncoder.BLOCK_LENGTH +
             (5 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-            aeronDirectory.length() +
-            serviceControlChannel.length() +
+            (null == aeronDirectory ? 0 : aeronDirectory.length()) +
+            (null == controlChannel ? 0 : controlChannel.length()) +
             (null == ingressChannel ? 0 : ingressChannel.length()) +
             (null == serviceName ? 0 : serviceName.length()) +
             (null == authenticator ? 0 : authenticator.length());
 
         if (lengthRequired > HEADER_LENGTH)
         {
-            throw new ClusterException(
-                "MarkFile length required " + lengthRequired + " greater than " + HEADER_LENGTH);
+            throw new ClusterException("MarkFile header length " + lengthRequired + " > " + HEADER_LENGTH);
         }
     }
 
@@ -312,19 +307,17 @@ public class ClusterMarkFile implements AutoCloseable
 
     public ClusterNodeControlProperties loadControlProperties()
     {
-        final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
-        headerDecoder.wrap(
-            this.headerDecoder.buffer(),
-            this.headerDecoder.initialOffset(),
+        final MarkFileHeaderDecoder decoder = new MarkFileHeaderDecoder();
+        decoder.wrap(
+            headerDecoder.buffer(),
+            headerDecoder.initialOffset(),
             MarkFileHeaderDecoder.BLOCK_LENGTH,
             MarkFileHeaderDecoder.SCHEMA_VERSION);
 
-        final int toServiceStreamId = headerDecoder.serviceStreamId();
-        final int toConsensusModuleStreamId = headerDecoder.consensusModuleStreamId();
-        final String aeronDirectoryName = headerDecoder.aeronDirectory();
-        final String serviceControlChannel = headerDecoder.serviceControlChannel();
-
         return new ClusterNodeControlProperties(
-            toServiceStreamId, toConsensusModuleStreamId, aeronDirectoryName, serviceControlChannel);
+            decoder.serviceStreamId(),
+            decoder.consensusModuleStreamId(),
+            decoder.aeronDirectory(),
+            decoder.controlChannel());
     }
 }

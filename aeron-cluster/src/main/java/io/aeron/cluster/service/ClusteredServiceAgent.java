@@ -94,7 +94,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         serviceId = ctx.serviceId();
         epochClock = ctx.epochClock();
 
-        final String channel = ctx.serviceControlChannel();
+        final String channel = ctx.controlChannel();
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
         sessionMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());

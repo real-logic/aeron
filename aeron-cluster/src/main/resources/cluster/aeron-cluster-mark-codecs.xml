@@ -50,7 +50,7 @@
         <field name="errorBufferLength"       id="14" type="int32"/>
         <field name="clusterId"               id="15" type="int32"/>
         <data  name="aeronDirectory"          id="16" type="varAsciiEncoding"/>
-        <data  name="serviceControlChannel"   id="17" type="varAsciiEncoding"/>
+        <data  name="controlChannel"          id="17" type="varAsciiEncoding"/>
         <data  name="ingressChannel"          id="18" type="varAsciiEncoding"/>
         <data  name="serviceName"             id="19" type="varAsciiEncoding"/>
         <data  name="authenticator"           id="20" type="varAsciiEncoding"/>

@@ -86,6 +86,9 @@ aeron_driver_test(driver_configuration_test aeron_driver_configuration_test.cpp)
 aeron_driver_test(system_test aeron_system_test.cpp)
 set_tests_properties(system_test PROPERTIES TIMEOUT 10)
 
+aeron_driver_test(c_system_test aeron_c_system_test.cpp)
+set_tests_properties(c_system_test PROPERTIES TIMEOUT 10)
+
 aeron_driver_test(udp_channel_transport_loss_test media/aeron_udp_channel_transport_loss_test.cpp)
 aeron_driver_test(strutil_test aeron_strutil_test.cpp)
 aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)

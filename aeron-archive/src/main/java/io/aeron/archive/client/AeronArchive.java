@@ -568,8 +568,7 @@ public class AeronArchive implements AutoCloseable
 
             lastCorrelationId = aeron.nextCorrelationId();
 
-            if (!archiveProxy.startRecording(
-                channel, streamId, sourceLocation, lastCorrelationId, controlSessionId))
+            if (!archiveProxy.startRecording(channel, streamId, sourceLocation, lastCorrelationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send start recording request");
             }
@@ -1586,9 +1585,10 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Stop a replication session by id.
+     * Stop a replication session by id returned from {@link #replicate(long, long, int, String, String)}.
      *
      * @param replicationId to stop replication for.
+     * @see #replicate(long, long, int, String, String)
      */
     public void stopReplication(final long replicationId)
     {
@@ -1922,12 +1922,12 @@ public class AeronArchive implements AutoCloseable
     }
 
     private int pollForDescriptors(
-        final long correlationId, final int recordCount, final RecordingDescriptorConsumer consumer)
+        final long correlationId, final int count, final RecordingDescriptorConsumer consumer)
     {
-        int existingRemainCount = recordCount;
+        int existingRemainCount = count;
         long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final RecordingDescriptorPoller poller = recordingDescriptorPoller();
-        poller.reset(correlationId, recordCount, consumer);
+        poller.reset(correlationId, count, consumer);
         idleStrategy.reset();
 
         while (true)
@@ -1937,7 +1937,7 @@ public class AeronArchive implements AutoCloseable
 
             if (poller.isDispatchComplete())
             {
-                return recordCount - remainingRecordCount;
+                return count - remainingRecordCount;
             }
 
             if (remainingRecordCount != existingRemainCount)
@@ -1964,12 +1964,12 @@ public class AeronArchive implements AutoCloseable
     }
 
     private int pollForSubscriptionDescriptors(
-        final long correlationId, final int recordCount, final RecordingSubscriptionDescriptorConsumer consumer)
+        final long correlationId, final int count, final RecordingSubscriptionDescriptorConsumer consumer)
     {
-        int existingRemainCount = recordCount;
+        int existingRemainCount = count;
         long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final RecordingSubscriptionDescriptorPoller poller = recordingSubscriptionDescriptorPoller();
-        poller.reset(correlationId, recordCount, consumer);
+        poller.reset(correlationId, count, consumer);
         idleStrategy.reset();
 
         while (true)
@@ -1979,7 +1979,7 @@ public class AeronArchive implements AutoCloseable
 
             if (poller.isDispatchComplete())
             {
-                return recordCount - remainingSubscriptionCount;
+                return count - remainingSubscriptionCount;
             }
 
             if (remainingSubscriptionCount != existingRemainCount)

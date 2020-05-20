@@ -78,7 +78,7 @@ public class ReplicateRecordingTest
     private AeronArchive dstAeronArchive;
 
     @RegisterExtension
-    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @BeforeEach
     public void before()

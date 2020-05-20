@@ -47,7 +47,7 @@ public class ImageAvailabilityTest
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)

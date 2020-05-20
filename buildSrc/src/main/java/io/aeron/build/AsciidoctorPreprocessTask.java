@@ -38,16 +38,16 @@ import static java.util.stream.Collectors.joining;
 public class AsciidoctorPreprocessTask extends DefaultTask
 {
     @Input
-    public String sampleBaseDir = getProject().getProjectDir().getAbsolutePath();
+    public final String sampleBaseDir = getProject().getProjectDir().getAbsolutePath();
 
     @Input
-    public String sampleSourceDir = sampleBaseDir + "/src/main/java";
+    public final String sampleSourceDir = sampleBaseDir + "/src/main/java";
 
     @InputDirectory
-    public File source = new File(sampleBaseDir, "/src/docs/asciidoc");
+    public final File source = new File(sampleBaseDir, "/src/docs/asciidoc");
 
     @OutputDirectory
-    public File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
+    public final File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
 
     // Has a slightly silly name to avoid name clashes in the build script.
     @Input

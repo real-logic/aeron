@@ -84,7 +84,7 @@ public class MultiDestinationCastTest
     private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class, "fragmentHandlerC");
 
     @RegisterExtension
-    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     private void launch()
     {

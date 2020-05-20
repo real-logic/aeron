@@ -70,7 +70,7 @@ public class MaxFlowControlStrategySystemTest
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     @RegisterExtension
-    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     private void launch()
     {

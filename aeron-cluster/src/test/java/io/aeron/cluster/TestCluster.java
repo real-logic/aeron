@@ -120,16 +120,17 @@ public class TestCluster implements AutoCloseable
 
     TestCluster(final int staticMemberCount, final int dynamicMemberCount, final int appointedLeaderId)
     {
-        if ((staticMemberCount + dynamicMemberCount + 1) >= 10)
+        final int memberCount = staticMemberCount + dynamicMemberCount;
+        if ((memberCount + 1) >= 10)
         {
-            throw new IllegalArgumentException("too many members memberCount=" + staticMemberCount + ": max 9");
+            throw new IllegalArgumentException("max members exceeded: max=9 count=" + memberCount);
         }
 
-        this.nodes = new TestNode[staticMemberCount + dynamicMemberCount + 1];
-        this.backupNodeIndex = staticMemberCount + dynamicMemberCount;
+        this.nodes = new TestNode[memberCount + 1];
+        this.backupNodeIndex = memberCount;
         this.staticClusterMembers = clusterMembersString(staticMemberCount);
         this.staticClusterMemberEndpoints = clientMemberEndpoints(staticMemberCount);
-        this.clusterMembersEndpoints = clusterMembersEndpoints(staticMemberCount + dynamicMemberCount);
+        this.clusterMembersEndpoints = clusterMembersEndpoints(memberCount);
         this.clusterConsensusEndpoints = clusterConsensusEndpoints(staticMemberCount);
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;

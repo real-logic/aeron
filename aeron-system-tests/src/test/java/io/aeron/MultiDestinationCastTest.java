@@ -342,10 +342,7 @@ public class MultiDestinationCastTest
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
 
-        while (!subscriptionA.isConnected())
-        {
-            Tests.yield();
-        }
+        Tests.awaitConnected(subscriptionA);
 
         while (messagesSent.value < numMessagesToSend)
         {

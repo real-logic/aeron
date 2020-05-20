@@ -170,9 +170,9 @@ public class TaggedFlowControlSystemTest
         subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
 
-        Tests.yieldUntilDone(subscriptionA::isConnected);
-        Tests.yieldUntilDone(subscriptionB::isConnected);
-        Tests.yieldUntilDone(publication::isConnected);
+        Tests.awaitConnected(subscriptionA);
+        Tests.awaitConnected(subscriptionB);
+        Tests.awaitConnected(publication);
 
         for (long i = 0; state.numFragmentsReadFromB < state.numMessagesToSend; i++)
         {
@@ -242,9 +242,9 @@ public class TaggedFlowControlSystemTest
         subscriptionB = clientB.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + "|fc=tagged,g:123,t:1s", STREAM_ID);
 
-        Tests.yieldUntilDone(subscriptionA::isConnected);
-        Tests.yieldUntilDone(subscriptionB::isConnected);
-        Tests.yieldUntilDone(publication::isConnected);
+        Tests.awaitConnected(subscriptionA);
+        Tests.awaitConnected(subscriptionB);
+        Tests.awaitConnected(publication);
 
         while (state.numFragmentsReadFromA < state.numMessagesToSend)
         {

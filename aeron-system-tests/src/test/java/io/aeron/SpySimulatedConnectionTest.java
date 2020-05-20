@@ -103,10 +103,7 @@ public class SpySimulatedConnectionTest
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         publication = client.addPublication(channel, STREAM_ID);
 
-        while (!spy.isConnected())
-        {
-            Tests.yield();
-        }
+        Tests.awaitConnected(spy);
 
         assertFalse(publication.isConnected());
     }

@@ -76,10 +76,7 @@ public class MaxPositionPublicationTest
         try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
         {
-            while (!subscription.isConnected())
-            {
-                Tests.yield();
-            }
+            Tests.awaitConnected(subscription);
 
             assertEquals(lastMessagePosition, publication.position());
             assertEquals(lastMessagePosition, subscription.imageAtIndex(0).joinPosition());

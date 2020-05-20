@@ -15,8 +15,7 @@
  */
 package io.aeron.test;
 
-import io.aeron.Aeron;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
@@ -400,6 +399,30 @@ public class Tests
 
                 yieldingWait(ex.getMessage());
             }
+        }
+    }
+
+    public static void awaitConnected(final Publication publication)
+    {
+        while (!publication.isConnected())
+        {
+            Tests.yield();
+        }
+    }
+
+    public static void awaitConnected(final Subscription subscription)
+    {
+        while (!subscription.isConnected())
+        {
+            Tests.yield();
+        }
+    }
+
+    public static void awaitConnections(final Subscription subscription, final int connectionCount)
+    {
+        while (subscription.imageCount() < connectionCount)
+        {
+            Tests.yield();
         }
     }
 }

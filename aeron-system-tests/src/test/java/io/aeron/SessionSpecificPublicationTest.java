@@ -83,10 +83,7 @@ public class SessionSpecificPublicationTest
         try (Subscription ignored = aeron.addSubscription(channelBuilder.build(), STREAM_ID);
             Publication publication = aeron.addExclusivePublication(channelBuilder.build(), STREAM_ID))
         {
-            while (!publication.isConnected())
-            {
-                Tests.yield();
-            }
+            Tests.awaitConnected(publication);
 
             final int existingSessionId = publication.sessionId();
 

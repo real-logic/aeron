@@ -98,7 +98,7 @@ public class ExclusivePublicationTest
                     messageCount.value++;
                 };
 
-            awaitConnection(subscription, 2);
+            Tests.awaitConnections(subscription, 2);
 
             for (int i = 0; i < expectedNumberOfFragments; i += 2)
             {
@@ -230,7 +230,7 @@ public class ExclusivePublicationTest
             srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, currentTermId, LITTLE_ENDIAN);
             srcBuffer.setMemory(offset + DATA_OFFSET, termBufferLength - HEADER_LENGTH, (byte)13);
 
-            awaitConnection(subscription, 1);
+            Tests.awaitConnections(subscription, 1);
             while (publication.availableWindow() <= 0)
             {
                 Tests.yield();
@@ -277,14 +277,6 @@ public class ExclusivePublicationTest
 
             final long result = publication.offerBlock(srcBuffer, 0, offset);
             assertEquals(BACK_PRESSURED, result);
-        }
-    }
-
-    private static void awaitConnection(final Subscription subscription, final int imageCount)
-    {
-        while (subscription.imageCount() < imageCount)
-        {
-            Tests.yield();
         }
     }
 

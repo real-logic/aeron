@@ -102,10 +102,7 @@ public class PublishFromArbitraryPositionTest
         try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
         {
-            while (!publication.isConnected())
-            {
-                Tests.yield();
-            }
+            Tests.awaitConnected(publication);
 
             final Thread t = new Thread(
                 () ->

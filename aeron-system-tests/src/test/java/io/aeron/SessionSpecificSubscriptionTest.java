@@ -131,10 +131,7 @@ public class SessionSpecificSubscriptionTest
             Publication publicationWildcard = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID);
             Publication publicationWrongSession = aeron.addExclusivePublication(channelUriWithSessionIdTwo, STREAM_ID))
         {
-            while (!publication.isConnected())
-            {
-                Tests.yield();
-            }
+            Tests.awaitConnected(publication);
 
             assertEquals(1, subscription.imageCount());
 

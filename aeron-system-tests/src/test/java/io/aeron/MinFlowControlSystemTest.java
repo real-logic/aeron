@@ -371,10 +371,8 @@ public class MinFlowControlSystemTest
         publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
         final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
 
-        while (!otherPublication.isConnected())
-        {
-            Tests.yield();
-        }
+        Tests.awaitConnected(otherPublication);
+
         // We know another publication on the same channel is connected
 
         subscriptionA = clientA.addSubscription(plainUri, STREAM_ID);

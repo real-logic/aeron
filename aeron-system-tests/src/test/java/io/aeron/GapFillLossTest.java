@@ -121,10 +121,7 @@ public class GapFillLossTest
 
         public void run()
         {
-            while (!subscription.isConnected())
-            {
-                Tests.yield();
-            }
+            Tests.awaitConnected(subscription);
 
             final Image image = subscription.imageAtIndex(0);
 

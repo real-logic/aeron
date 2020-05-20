@@ -171,7 +171,7 @@ public class PongTest
         // wait for disconnect to ensure we stay in lock step
         while (pingPublication.isConnected())
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         // restart Pong side

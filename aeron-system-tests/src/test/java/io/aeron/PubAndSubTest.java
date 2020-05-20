@@ -563,10 +563,7 @@ public class PubAndSubTest
 
         launch(channel);
 
-        while (!subscription.isConnected())
-        {
-            Tests.yield();
-        }
+        Tests.awaitConnected(subscription);
 
         for (int i = 0; i < numMessagesToSendStageOne; i++)
         {
@@ -583,10 +580,7 @@ public class PubAndSubTest
         subscription.close();
         subscription = Tests.reAddSubscription(subscribingClient, channel, STREAM_ID);
 
-        while (!subscription.isConnected())
-        {
-            Tests.yield();
-        }
+        Tests.awaitConnected(subscription);
 
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
@@ -664,10 +658,7 @@ public class PubAndSubTest
     {
         launch(channel);
 
-        while (!publication.isConnected())
-        {
-            Tests.yield();
-        }
+        Tests.awaitConnected(publication);
 
         subscription.close();
 

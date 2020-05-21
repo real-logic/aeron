@@ -16,6 +16,6 @@
 
 /**
  * Services implement {@link io.aeron.cluster.service.ClusteredService} and have their lifecycle managed by the
- * {@link io.aeron.cluster.service.Cluster}. This is where business logic is hosted.
+ * {@link io.aeron.cluster.service.Cluster}. This is where application logic is contained.
  */
 package io.aeron.cluster.service;

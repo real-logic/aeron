@@ -247,7 +247,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 clusterSessionId = newLeaderEventDecoder.clusterSessionId();
                 leadershipTermId = newLeaderEventDecoder.leadershipTermId();
                 leaderMemberId = newLeaderEventDecoder.leaderMemberId();
-                detail = newLeaderEventDecoder.memberEndpoints();
+                detail = newLeaderEventDecoder.ingressEndpoints();
                 isPollComplete = true;
                 return Action.BREAK;
 

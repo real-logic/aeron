@@ -129,7 +129,7 @@ public class EgressAdapter implements FragmentHandler
                         sessionId,
                         newLeaderEventDecoder.leadershipTermId(),
                         newLeaderEventDecoder.leaderMemberId(),
-                        newLeaderEventDecoder.memberEndpoints());
+                        newLeaderEventDecoder.ingressEndpoints());
                 }
                 break;
             }

@@ -65,7 +65,7 @@ public class RecoveryState
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "cluster recovery: leadershipTermId=";
+    public static final String NAME = "Cluster recovery: leadershipTermId=";
 
     public static final int LEADERSHIP_TERM_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;

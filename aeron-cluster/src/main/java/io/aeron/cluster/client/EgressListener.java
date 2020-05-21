@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 public interface EgressListener
 {
     /**
-     * Message event returned from the clustered service.
+     * Message returned from the clustered service.
      *
      * @param clusterSessionId to which the message belongs.
      * @param timestamp        at which the correlated ingress was sequenced in the cluster.
@@ -69,9 +69,9 @@ public interface EgressListener
      * @param clusterSessionId to which the event belongs.
      * @param leadershipTermId for identifying the active term of leadership
      * @param leaderMemberId   identity of the active leader.
-     * @param memberEndpoints  for connecting to the cluster which can be updated due to dynamic membership.
+     * @param ingressEndpoints  for connecting to the cluster which can be updated due to dynamic membership.
      */
-    default void onNewLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints)
+    default void onNewLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String ingressEndpoints)
     {
     }
 }

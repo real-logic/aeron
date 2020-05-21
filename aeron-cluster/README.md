@@ -4,8 +4,8 @@ Aeron Cluster
 **Note:** Aeron Cluster is currently a preview feature, commercial support is available from
  [sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron%20Cluster).
 
-The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log which is
-replicated and archived on a number of nodes to achieve resilience. Cluster services process this log and respond
+The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. This log is
+replicated and archived on a number of nodes to achieve fault tolerance. Cluster services process this log and respond
 to cluster clients.
 
 Aeron Cluster works on the concept of a strong leader using an adaptation of the [Raft](https://raft.github.io/raft.pdf)

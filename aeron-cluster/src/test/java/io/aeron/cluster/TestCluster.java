@@ -97,7 +97,7 @@ public class TestCluster implements AutoCloseable
             final long clusterSessionId,
             final long leadershipTermId,
             final int leaderMemberId,
-            final String memberEndpoints)
+            final String ingressEndpoints)
         {
             newLeaderEvent.increment();
         }
@@ -529,7 +529,7 @@ public class TestCluster implements AutoCloseable
                 .egressListener(egressMessageListener)
                 .ingressChannel("aeron:udp?term-length=64k")
                 .egressChannel(CLUSTER_EGRESS_CHANNEL)
-                .clusterMemberEndpoints(staticClusterMemberEndpoints));
+                .ingressEndpoints(staticClusterMemberEndpoints));
     }
 
     AeronCluster connectClient()
@@ -549,7 +549,7 @@ public class TestCluster implements AutoCloseable
                 .egressListener(egressMessageListener)
                 .ingressChannel("aeron:udp?term-length=64k")
                 .egressChannel(CLUSTER_EGRESS_CHANNEL)
-                .clusterMemberEndpoints(staticClusterMemberEndpoints));
+                .ingressEndpoints(staticClusterMemberEndpoints));
 
         return client;
     }

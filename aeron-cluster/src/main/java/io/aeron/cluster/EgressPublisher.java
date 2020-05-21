@@ -104,12 +104,12 @@ class EgressPublisher
         final ClusterSession session,
         final long leadershipTermId,
         final int leaderMemberId,
-        final String memberEndpoints)
+        final String ingressEndpoints)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             NewLeaderEventEncoder.BLOCK_LENGTH +
-            NewLeaderEventEncoder.memberEndpointsHeaderLength() +
-            memberEndpoints.length();
+            NewLeaderEventEncoder.ingressEndpointsHeaderLength() +
+            ingressEndpoints.length();
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -122,7 +122,7 @@ class EgressPublisher
                     .clusterSessionId(session.id())
                     .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
-                    .memberEndpoints(memberEndpoints);
+                    .ingressEndpoints(ingressEndpoints);
 
                 bufferClaim.commit();
 

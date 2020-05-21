@@ -82,7 +82,7 @@ public class SingleNodeCluster implements AutoCloseable
             final long clusterSessionId,
             final long leadershipTermId,
             final int leaderMemberId,
-            final String memberEndpoints)
+            final String ingressEndpoints)
         {
             System.out.println("SingleNodeCluster.onNewLeader");
         }

@@ -375,7 +375,7 @@ public class StartFromTruncatedRecordingLogTest
                 .egressListener(egressMessageListener)
                 .ingressChannel("aeron:udp?term-length=64k")
                 .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:9020")
-                .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+                .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
     private void closeClient()

@@ -43,6 +43,13 @@ public class SnapshotTaker
     protected final AgentInvoker aeronAgentInvoker;
     private final SnapshotMarkerEncoder snapshotMarkerEncoder = new SnapshotMarkerEncoder();
 
+    /**
+     * Construct a {@link SnapshotTaker} which will encode the snapshot to a publication.
+     *
+     * @param publication       into which the snapshot will be encoded.
+     * @param idleStrategy      to call when the publication is back pressured.
+     * @param aeronAgentInvoker to call when idling so it stays active.
+     */
     public SnapshotTaker(
         final ExclusivePublication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronAgentInvoker)
     {
@@ -51,6 +58,16 @@ public class SnapshotTaker
         this.aeronAgentInvoker = aeronAgentInvoker;
     }
 
+    /**
+     * Mark the beginning of the encoded snapshot.
+     *
+     * @param snapshotTypeId   type to identify snapshot within a cluster.
+     * @param logPosition      at which the snapshot was taken.
+     * @param leadershipTermId at which the snapshot was taken.
+     * @param snapshotIndex    so the snapshot can be sectioned.
+     * @param timeUnit         of the cluster timestamps stored in the snapshot.
+     * @param appVersion       associated with the snapshot from {@link ClusteredServiceContainer.Context#appVersion()}.
+     */
     public void markBegin(
         final long snapshotTypeId,
         final long logPosition,
@@ -63,6 +80,16 @@ public class SnapshotTaker
             snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.BEGIN, timeUnit, appVersion);
     }
 
+    /**
+     * Mark the end of the encoded snapshot.
+     *
+     * @param snapshotTypeId   type to identify snapshot within a cluster.
+     * @param logPosition      at which the snapshot was taken.
+     * @param leadershipTermId at which the snapshot was taken.
+     * @param snapshotIndex    so the snapshot can be sectioned.
+     * @param timeUnit         of the cluster timestamps stored in the snapshot.
+     * @param appVersion       associated with the snapshot from {@link ClusteredServiceContainer.Context#appVersion()}.
+     */
     public void markEnd(
         final long snapshotTypeId,
         final long logPosition,
@@ -75,6 +102,17 @@ public class SnapshotTaker
             snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.END, timeUnit, appVersion);
     }
 
+    /**
+     * Generically {@link SnapshotMark} a snapshot.
+     *
+     * @param snapshotTypeId   type to identify snapshot within a cluster.
+     * @param logPosition      at which the snapshot was taken.
+     * @param leadershipTermId at which the snapshot was taken.
+     * @param snapshotIndex    so the snapshot can be sectioned.
+     * @param snapshotMark     which specifies the type of snapshot mark.
+     * @param timeUnit         of the cluster timestamps stored in the snapshot.
+     * @param appVersion       associated with the snapshot from {@link ClusteredServiceContainer.Context#appVersion()}.
+     */
     public void markSnapshot(
         final long snapshotTypeId,
         final long logPosition,

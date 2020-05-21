@@ -18,9 +18,9 @@
  * <b>Note:</b> Aeron Cluster is currently a preview feature, commercial support and training is available from
  * <a href="mailto:sales@real-logic.co.uk?subject=Aeron%20Cluster">sales@real-logic.co.uk</a>.
  * <p>
- * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log which is
- * replicated and archived on a number of nodes to achieve resilience. Cluster services process this log and respond
- * to cluster clients.
+ * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. This log
+ * is replicated and archived on a number of nodes to achieve fault tolerance. Cluster services process this log and
+ * respond to cluster clients.
  * <p>
  * Aeron Cluster works on the concept of a strong leader using an adaptation of the
  * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> protocol. The leader sequences the log and is
@@ -31,10 +31,10 @@
  * across cluster members. Recording of the log to persistent storage is performed by the Aeron Archive module. Services
  * consume the log once a majority of the cluster members have safely recorded the log to persistent storage.
  * <p>
- * To enable fast recovery the services and consensus module can take a snapshot of their state as of a given log
+ * To enable fast recovery, the services and consensus module can take a snapshot of their state as of a given log
  * position thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward.
- * Snapshots are recorded as streams in the Archive for local and remote replay so that a distributed file system is
- * not required.
+ * Snapshots are recorded as streams in the {@link io.aeron.archive.Archive} for local and remote replay so that a
+ * distributed file system is not required.
  * <h2>Usage</h2>
  * The cluster can run in various configurations:
  * <ul>

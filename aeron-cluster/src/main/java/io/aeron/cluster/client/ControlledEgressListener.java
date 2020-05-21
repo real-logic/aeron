@@ -47,7 +47,17 @@ public interface ControlledEgressListener
         int length,
         Header header);
 
-    default void sessionEvent(
+    /**
+     * Session event emitted from the cluster which after connect can indicate an error or session close.
+     *
+     * @param correlationId    associated with the cluster ingress.
+     * @param clusterSessionId to which the event belongs.
+     * @param leadershipTermId for identifying the active term of leadership
+     * @param leaderMemberId   identity of the active leader.
+     * @param code             to indicate the type of event.
+     * @param detail           Textual detail to explain the event.
+     */
+    default void onSessionEvent(
         long correlationId,
         long clusterSessionId,
         long leadershipTermId,
@@ -57,7 +67,15 @@ public interface ControlledEgressListener
     {
     }
 
-    default void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints)
+    /**
+     * Event indicating a new leader has been elected.
+     *
+     * @param clusterSessionId to which the event belongs.
+     * @param leadershipTermId for identifying the active term of leadership
+     * @param leaderMemberId   identity of the active leader.
+     * @param ingressEndpoints  for connecting to the cluster which can be updated due to dynamic membership.
+     */
+    default void onNewLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String ingressEndpoints)
     {
     }
 }

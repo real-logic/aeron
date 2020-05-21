@@ -94,10 +94,9 @@ public class BasicAuctionClusterClient implements EgressListener
         final long clusterSessionId,
         final long leadershipTermId,
         final int leaderMemberId,
-        final String memberEndpoints)
+        final String ingressEndpoints)
     {
-        printOutput(
-            "New Leader(" + clusterSessionId + "," + leadershipTermId + "," + leaderMemberId + ")");
+        printOutput("NewLeader(" + clusterSessionId + "," + leadershipTermId + "," + leaderMemberId + ")");
     }
     // end::response[]
 
@@ -145,13 +144,13 @@ public class BasicAuctionClusterClient implements EgressListener
     private long sendBid(final AeronCluster aeronCluster, final long price)
     {
         final long correlationId = this.correlationId++;
-        actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);            // <1>
+        actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);                   // <1>
         actionBidBuffer.putLong(CUSTOMER_ID_OFFSET, customerId);
         actionBidBuffer.putLong(PRICE_OFFSET, price);
 
         while (aeronCluster.offer(actionBidBuffer, 0, BID_MESSAGE_LENGTH) < 0)    // <2>
         {
-            idleStrategy.idle(aeronCluster.pollEgress());                         // <3>
+            idleStrategy.idle(aeronCluster.pollEgress());                                // <3>
         }
 
         return correlationId;
@@ -184,7 +183,7 @@ public class BasicAuctionClusterClient implements EgressListener
         final int numOfBids = Integer.parseInt(System.getProperty("aeron.cluster.tutorial.numOfBids"));         // <2>
         final int bidIntervalMs = Integer.parseInt(System.getProperty("aeron.cluster.tutorial.bidIntervalMs")); // <3>
 
-        final String clusterMembers = ingressEndpoints(Arrays.asList("localhost", "localhost", "localhost"));
+        final String ingressEndpoints = ingressEndpoints(Arrays.asList("localhost", "localhost", "localhost"));
         final BasicAuctionClusterClient client = new BasicAuctionClusterClient(customerId, numOfBids, bidIntervalMs);
 
         // tag::connect[]
@@ -201,7 +200,7 @@ public class BasicAuctionClusterClient implements EgressListener
                 .egressChannel("aeron:udp?endpoint=localhost:" + egressPort)                                    // <3>
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .ingressChannel("aeron:udp")                                                                    // <4>
-                .clusterMemberEndpoints(clusterMembers)))                                                       // <5>
+                .ingressEndpoints(ingressEndpoints)))                                                           // <5>
         {
         // end::connect[]
             client.bidInAuction(aeronCluster);

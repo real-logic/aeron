@@ -15,6 +15,6 @@
  */
 
 /**
- * {@link io.aeron.cluster.client.AeronCluster} clients interact with resilient services running in the cluster.
+ * {@link io.aeron.cluster.client.AeronCluster} clients interact with fault tolerant services running in the cluster.
  */
 package io.aeron.cluster.client;

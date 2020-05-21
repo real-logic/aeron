@@ -17,6 +17,9 @@ package io.aeron.cluster.client;
 
 import io.aeron.exceptions.AeronException;
 
+/**
+ * Exceptions specific to Cluster operation.
+ */
 public class ClusterException extends AeronException
 {
     public ClusterException()

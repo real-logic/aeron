@@ -48,22 +48,22 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
         this.agent = agent;
     }
 
-    public boolean isDone()
+    boolean isDone()
     {
         return isDone;
     }
 
-    public int appVersion()
+    int appVersion()
     {
         return appVersion;
     }
 
-    public TimeUnit timeUnit()
+    TimeUnit timeUnit()
     {
         return timeUnit;
     }
 
-    public int poll()
+    int poll()
     {
         return image.controlledPoll(this, FRAGMENT_LIMIT);
     }

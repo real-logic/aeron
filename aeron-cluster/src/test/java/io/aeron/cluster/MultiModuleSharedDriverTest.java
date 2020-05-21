@@ -152,13 +152,13 @@ public class MultiModuleSharedDriverTest
                     .aeronDirectoryName(node0.archivingMediaDriver.mediaDriver().aeronDirectoryName())
                     .egressListener(egressListener)
                     .ingressChannel("aeron:udp?term-length=64k")
-                    .clusterMemberEndpoints(TestCluster.ingressEndpoints(0, 2))
+                    .ingressEndpoints(TestCluster.ingressEndpoints(0, 2))
                     .egressChannel("aeron:udp?endpoint=localhost:9020"));
                 AeronCluster client1 = AeronCluster.connect(new AeronCluster.Context()
                     .aeronDirectoryName(node1.archivingMediaDriver.mediaDriver().aeronDirectoryName())
                     .egressListener(egressListener)
                     .ingressChannel("aeron:udp?term-length=64k")
-                    .clusterMemberEndpoints(TestCluster.ingressEndpoints(1, 2))
+                    .ingressEndpoints(TestCluster.ingressEndpoints(1, 2))
                     .egressChannel("aeron:udp?endpoint=localhost:9120")))
             {
                 echoMessage(client0, "Message 0", egress);

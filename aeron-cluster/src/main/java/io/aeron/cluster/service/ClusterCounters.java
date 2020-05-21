@@ -24,6 +24,10 @@ import org.agrona.concurrent.status.CountersReader;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.status.CountersReader.*;
 
+/**
+ * For allocating and finding cluster associated counters identified by
+ * {@link ClusteredServiceContainer.Context#clusterId()}.
+ */
 public class ClusterCounters
 {
     /**

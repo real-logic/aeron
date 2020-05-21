@@ -32,11 +32,11 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 endif ()
 
 set(SOURCE
-    collections/aeron_map.c
     collections/aeron_bit_set.c
     collections/aeron_int64_counter_map.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_int64_to_tagged_ptr_hash_map.c
+    collections/aeron_map.c
     collections/aeron_str_to_ptr_hash_map.c
     concurrent/aeron_atomic.c
     concurrent/aeron_broadcast_receiver.c
@@ -70,7 +70,6 @@ set(SOURCE
     util/aeron_parse_util.c
     util/aeron_properties_util.c
     util/aeron_strutil.c
-    aeronc.c
     aeron_agent.c
     aeron_alloc.c
     aeron_client.c
@@ -86,14 +85,15 @@ set(SOURCE
     aeron_subscription.c
     aeron_version.c
     aeron_windows.c
+    aeronc.c
     )
 
 set(HEADERS
-    collections/aeron_map.h
     collections/aeron_bit_set.h
     collections/aeron_int64_counter_map.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_int64_to_tagged_ptr_hash_map.h
+    collections/aeron_map.h
     collections/aeron_str_to_ptr_hash_map.h
     command/aeron_control_protocol.h
     concurrent/aeron_atomic.h
@@ -134,7 +134,6 @@ set(HEADERS
     util/aeron_platform.h
     util/aeron_properties_util.h
     util/aeron_strutil.h
-    aeronc.h
     aeron_agent.h
     aeron_alloc.h
     aeron_client.h
@@ -150,6 +149,7 @@ set(HEADERS
     aeron_socket.h
     aeron_subscription.h
     aeron_windows.h
+    aeronc.h
     )
 
 add_library(aeron SHARED ${SOURCE} ${HEADERS})

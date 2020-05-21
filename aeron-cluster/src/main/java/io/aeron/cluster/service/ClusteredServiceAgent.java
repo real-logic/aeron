@@ -98,11 +98,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
         sessionMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
-        aeron.addCloseHandler(abortHandler);
     }
 
     public void onStart()
     {
+        aeron.addCloseHandler(abortHandler);
         final CountersReader counters = aeron.countersReader();
         roleCounter = awaitClusterRoleCounter(counters, ctx.clusterId());
         commitPosition = awaitCommitPositionCounter(counters, ctx.clusterId());

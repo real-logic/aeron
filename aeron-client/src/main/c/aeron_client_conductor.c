@@ -1055,8 +1055,16 @@ int aeron_client_conductor_async_add_counter(
         return -1;
     }
 
-    memcpy(key_buffer_copy, key_buffer, key_buffer_length);
-    memcpy(label_buffer_copy, label_buffer, label_buffer_length);
+    if (key_buffer && key_buffer_length > 0)
+    {
+        memcpy(key_buffer_copy, key_buffer, key_buffer_length);
+    }
+
+    if (label_buffer && label_buffer_length > 0)
+    {
+        memcpy(label_buffer_copy, label_buffer, label_buffer_length);
+    }
+
     label_buffer_copy[label_buffer_length] = '\0';
 
     cmd->command_base.func = aeron_client_conductor_on_cmd_add_counter;
@@ -1451,6 +1459,7 @@ int aeron_client_conductor_on_available_image(
 
         if (aeron_image_create(
             &image,
+            subscription,
             conductor,
             log_buffer,
             subscriber_position,
@@ -1474,7 +1483,10 @@ int aeron_client_conductor_on_available_image(
             subscription->on_available_image(subscription->on_available_image_clientd, image);
         }
 
-        // TODO: add image to subscription
+        if (aeron_client_conductor_subscription_add_image(subscription, image) < 0)
+        {
+            return -1;
+        }
     }
 
     return 0;
@@ -1492,14 +1504,19 @@ int aeron_client_conductor_on_unavailable_image(
         aeron_image_t *image = aeron_int64_to_ptr_hash_map_remove(
             &conductor->resource_by_id_map, response->correlation_id);
 
-        // TODO: remove image from subscription
-
         if (NULL != image)
         {
+            if (aeron_client_conductor_subscription_remove_image(subscription, image) < 0)
+            {
+                return -1;
+            }
+
             if (NULL != subscription->on_unavailable_image)
             {
                 subscription->on_unavailable_image(subscription->on_unavailable_image_clientd, image);
             }
+
+            // TODO: drop image into lingering_resources
         }
     }
 

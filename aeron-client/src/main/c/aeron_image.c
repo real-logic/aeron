@@ -23,6 +23,7 @@
 
 int aeron_image_create(
     aeron_image_t **image,
+    aeron_subscription_t *subscription,
     aeron_client_conductor_t *conductor,
     aeron_log_buffer_t *log_buffer,
     int64_t *subscriber_position,
@@ -42,6 +43,7 @@ int aeron_image_create(
 
     _image->command_base.type = AERON_CLIENT_TYPE_IMAGE;
 
+    _image->subscription = subscription;
     _image->log_buffer = log_buffer;
 
     _image->subscriber_position = subscriber_position;
@@ -51,6 +53,7 @@ int aeron_image_create(
     _image->session_id = session_id;
     _image->removal_change_number = INT64_MAX;
     _image->final_position = 0;
+    _image->refcnt = 1;
 
     aeron_logbuffer_metadata_t *metadata =
         (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
@@ -69,6 +72,32 @@ int aeron_image_delete(aeron_image_t *image)
 {
     aeron_free(image);
 
+    return 0;
+}
+
+int aeron_image_retain(aeron_image_t *image)
+{
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_retain(NULL): %s", strerror(EINVAL));
+        return -1;
+    }
+
+    aeron_image_incr_refcnt(image);
+    return 0;
+}
+
+int aeron_image_release(aeron_image_t *image)
+{
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_release(NULL): %s", strerror(EINVAL));
+        return -1;
+    }
+
+    aeron_image_decr_refcnt(image);
     return 0;
 }
 
@@ -609,5 +638,8 @@ bool aeron_image_is_closed(aeron_image_t *image)
 }
 
 extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
-extern bool aeron_image_is_in_use(aeron_image_t *image, int64_t last_change_number);
+extern bool aeron_image_is_in_use_by_subcription(aeron_image_t *image, int64_t last_change_number);
 extern int aeron_image_validate_position(aeron_image_t *image, int64_t position);
+extern int64_t aeron_image_incr_refcnt(aeron_image_t *image);
+extern int64_t aeron_image_decr_refcnt(aeron_image_t *image);
+extern int64_t aeron_image_refcnt_volatile(aeron_image_t *image);

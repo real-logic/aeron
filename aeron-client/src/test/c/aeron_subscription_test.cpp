@@ -82,7 +82,7 @@ public:
         return subscription;
     }
 
-    int64_t createImage(int64_t *subscriber_position)
+    int64_t createImage(int64_t *sub_pos)
     {
         aeron_image_t *image = nullptr;
         aeron_log_buffer_t *log_buffer = nullptr;
@@ -96,7 +96,7 @@ public:
         }
 
         if (aeron_image_create(
-            &image, m_conductor, log_buffer, subscriber_position, m_correlationId, (int32_t)m_correlationId) < 0)
+            &image, nullptr, m_conductor, log_buffer, sub_pos, m_correlationId, (int32_t)m_correlationId) < 0)
         {
             throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
         }
@@ -116,6 +116,7 @@ protected:
     aeron_client_conductor_t *m_conductor = nullptr;
     aeron_subscription_t *m_subscription = nullptr;
     int64_t m_channel_status = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
+    int64_t m_sub_pos = 0;
 
     int64_t m_correlationId = 0;
 
@@ -129,7 +130,7 @@ TEST_F(SubscriptionTest, shouldInitAndDelete)
 
 TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithoutPoll)
 {
-    int64_t image_id = createImage(&m_channel_status);
+    int64_t image_id = createImage(&m_sub_pos);
     aeron_image_t *image = m_imageMap.find(image_id)->second;
 
     ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
@@ -139,7 +140,8 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithoutPoll)
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
 
     EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 0);
-    EXPECT_TRUE(aeron_image_is_in_use(image, aeron_subscription_last_image_list_change_number(m_subscription)));
+    EXPECT_TRUE(
+        aeron_image_is_in_use_by_subcription(image, aeron_subscription_last_image_list_change_number(m_subscription)));
 
     aeron_log_buffer_delete(image->log_buffer);
     aeron_image_delete(image);
@@ -147,7 +149,7 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithoutPoll)
 
 TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollAfter)
 {
-    int64_t image_id = createImage(&m_channel_status);
+    int64_t image_id = createImage(&m_sub_pos);
     aeron_image_t *image = m_imageMap.find(image_id)->second;
 
     ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
@@ -156,7 +158,8 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollAfter)
 
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
     EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 2);
-    EXPECT_FALSE(aeron_image_is_in_use(image, aeron_subscription_last_image_list_change_number(m_subscription)));
+    EXPECT_FALSE(
+        aeron_image_is_in_use_by_subcription(image, aeron_subscription_last_image_list_change_number(m_subscription)));
 
     aeron_log_buffer_delete(image->log_buffer);
     aeron_image_delete(image);
@@ -164,7 +167,7 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollAfter)
 
 TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollBetween)
 {
-    int64_t image_id = createImage(&m_channel_status);
+    int64_t image_id = createImage(&m_sub_pos);
     aeron_image_t *image = m_imageMap.find(image_id)->second;
 
     ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
@@ -173,7 +176,8 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollBetween)
 
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
     EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 1);
-    EXPECT_TRUE(aeron_image_is_in_use(image, aeron_subscription_last_image_list_change_number(m_subscription)));
+    EXPECT_TRUE(
+        aeron_image_is_in_use_by_subcription(image, aeron_subscription_last_image_list_change_number(m_subscription)));
 
     aeron_log_buffer_delete(image->log_buffer);
     aeron_image_delete(image);

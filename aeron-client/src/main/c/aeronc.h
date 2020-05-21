@@ -390,8 +390,7 @@ long aeron_subscription_block_poll(
 bool aeron_subscription_is_connected(aeron_subscription_t *subscription);
 int aeron_subscription_image_count(aeron_subscription_t *subscription);
 
-aeron_image_t *aeron_subscription_image_by_session_id(
-    aeron_subscription_t *subscription, int32_t session_id, bool require_release);
+aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id);
 
 void aeron_subscription_for_each_image(
     aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image));
@@ -406,6 +405,7 @@ int aeron_subscription_close(aeron_subscription_t *subscription);
  * Image functions
  */
 
+int aeron_image_retain(aeron_image_t *image);
 int aeron_image_release(aeron_image_t *image);
 
 int64_t aeron_image_position(aeron_image_t *image);

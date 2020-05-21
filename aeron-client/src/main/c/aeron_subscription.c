@@ -249,7 +249,7 @@ int aeron_subscription_image_count(aeron_subscription_t *subscription)
 }
 
 aeron_image_t *aeron_subscription_image_by_session_id(
-    aeron_subscription_t *subscription, int32_t session_id, bool require_release)
+    aeron_subscription_t *subscription, int32_t session_id)
 {
     volatile aeron_image_list_t *image_list;
     aeron_image_t *result = NULL;
@@ -265,8 +265,7 @@ aeron_image_t *aeron_subscription_image_by_session_id(
         }
     }
 
-    // TODO: handle require_release
-
+    aeron_image_incr_refcnt(result);
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return result;
@@ -281,7 +280,11 @@ void aeron_subscription_for_each_image(
 
     for (size_t i = 0, length = image_list->length; i < length; i++)
     {
+        aeron_image_t *image = image_list->array[i];
+
+        aeron_image_incr_refcnt(image);
         handler(image_list->array[i]);
+        aeron_image_decr_refcnt(image);
     }
 
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);

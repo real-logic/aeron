@@ -21,6 +21,9 @@
 #include "EmbeddedMediaDriver.h"
 #include "aeronc.h"
 
+#define PUB_URI "aeron:udp?endpoint=localhost:24325"
+#define STREAM_ID (117)
+
 using namespace aeron;
 
 class CSystemTest : public testing::Test
@@ -33,11 +36,78 @@ public:
 
     ~CSystemTest() override
     {
+        if (m_aeron)
+        {
+            aeron_close(m_aeron);
+        }
+
+        if (m_context)
+        {
+            aeron_context_close(m_context);
+        }
+
         m_driver.stop();
+    }
+
+    aeron_t *connect()
+    {
+        if (aeron_context_init(&m_context) < 0)
+        {
+            throw std::runtime_error(aeron_errmsg());
+        }
+
+        if (aeron_init(&m_aeron, m_context) < 0)
+        {
+            throw std::runtime_error(aeron_errmsg());
+        }
+
+        if (aeron_start(m_aeron) < 0)
+        {
+            throw std::runtime_error(aeron_errmsg());
+        }
+
+        return m_aeron;
+    }
+
+    aeron_publication_t *awaitPublicationOrError(aeron_async_add_publication_t *async)
+    {
+        aeron_publication_t *publication = nullptr;
+
+        do
+        {
+            std::this_thread::yield();
+            if (aeron_async_add_publication_poll(&publication, async) < 0)
+            {
+                return nullptr;
+            }
+        }
+        while (!publication);
+
+        return publication;
+    }
+
+    aeron_exclusive_publication_t *awaitExclusivePublicationOrError(
+        aeron_async_add_exclusive_publication_t *async)
+    {
+        aeron_exclusive_publication_t *publication = nullptr;
+
+        do
+        {
+            std::this_thread::yield();
+            if (aeron_async_add_exclusive_publication_poll(&publication, async) < 0)
+            {
+                return nullptr;
+            }
+        }
+        while (!publication);
+
+        return publication;
     }
 
 protected:
     EmbeddedMediaDriver m_driver;
+    aeron_context_t *m_context = nullptr;
+    aeron_t *m_aeron = nullptr;
 };
 
 TEST_F(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
@@ -52,4 +122,32 @@ TEST_F(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
 
     aeron_close(aeron);
     aeron_context_close(context);
+}
+
+TEST_F(CSystemTest, shouldAddAndClosePublication)
+{
+    aeron_async_add_publication_t *async;
+    aeron_publication_t *publication;
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_publication(&async, m_aeron, PUB_URI, STREAM_ID), 0);
+
+    ASSERT_TRUE((publication = awaitPublicationOrError(async))) << aeron_errmsg();
+
+    aeron_publication_close(publication);
+}
+
+TEST_F(CSystemTest, shouldAddAndCloseExclusivePublication)
+{
+    aeron_async_add_exclusive_publication_t *async;
+    aeron_exclusive_publication_t *publication;
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_exclusive_publication(&async, m_aeron, PUB_URI, STREAM_ID), 0);
+
+    ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async))) << aeron_errmsg();
+
+    aeron_exclusive_publication_close(publication);
 }

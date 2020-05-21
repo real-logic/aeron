@@ -178,7 +178,7 @@ public class ReplayMergeTest
             final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
             final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
 
-            aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
+            final long subscriptionId = aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE, true);
 
             final CountersReader counters = aeron.countersReader();
             final int recordingCounterId = awaitRecordingCounterId(counters, publication.sessionId());
@@ -236,7 +236,7 @@ public class ReplayMergeTest
                 {
                     if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        assertFalse(replayMerge.hasFailed(), "image closed unexpectedly");
+                        assertFalse(image.isClosed(), "image closed unexpectedly");
 
                         Tests.yieldingWait(
                             "received.get()=%d < totalMessageCount=%d", received.get(), totalMessageCount);
@@ -250,7 +250,7 @@ public class ReplayMergeTest
             }
             finally
             {
-                aeronArchive.stopRecording(recordingChannel, STREAM_ID);
+                aeronArchive.tryStopRecording(subscriptionId);
             }
         }
     }

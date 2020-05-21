@@ -56,7 +56,7 @@ acknowledgements.
 Within Aeron Cluster, replication (ensuring that a follower node has the same state as the leader) and recovery
 (restoring a stopped node to its previous state)footnote:[Where stopping could include crashing or manually shutting
 down] are the same problem or at least at similar enough to use the same mechanism. They rely on three functions.
-Firstly, some known initial state, this could either be the state when first provisioned (a 'null' or empty state) or
+Firstly, some known initial state, this could either be the state when first provisioned (a 'null' or empty state), or
 some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by Cluster's
 Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its resulting
 state and output events from the initial state and the input messages, such that for the same inputs it will always get
@@ -76,7 +76,8 @@ Be careful to ensure determinism in clustered service, common pitfalls include:
 Timestamps are provide by Aeron Cluster (will be shown later). Random numbers are best avoided or use a seed fixed in
 the initial state or via a message. Configuration changes should be pushed into the application logic via messages.
 Iterating over collections should happen in a known order, with a collection that preserves ordering (e.g. TreeMap,
-LinkedHashMap) through sorting the values from the collection before sending them as messages.
+LinkedHashMap) through sorting the values from the collection before sending them as messages. Alternatively, the
+Agrona collections can be used with their consistent iteration order and low allocation characteristics.
 
 As it may be impractical to replay all data from the "beginning of time" the system should take snapshots periodically,
 e.g. daily or hourly. The frequency of snapshots should be determined by the volume of data into the
@@ -95,8 +96,8 @@ be run all in the same process, in separate processes or any arbitrary combinati
 
 ==== MediaDriver
 
-The MediaDriver is the means by which data is sent into, out of, and around the cluster. Aeron Cluster reuses the
-Publication and Subscription functionality in Aeron to handle all distributed and inter-process messaging.
+The MediaDriver is the means by which the cluster communicates. Aeron Cluster reuses the Publication, Subscription, and
+Counter functionality in Aeron to handle all distributed and inter-process communication.
 
 NOTE: Currently, only the Java implementation of the MediaDriver is supported for use in Aeron Cluster.
 
@@ -118,10 +119,10 @@ implemented by the application to receive the events and messages from Cluster.
 
 == Getting Started Aeron Cluster
 
-Install JDK 8 or JDK 11 and ensure that `$JAVA_HOME` is set correctly and `$JAVA_HOME/bin` is on your `$PATH`.
+Install JDK 8 or JDK 11 and ensure that `$JAVA_HOME` is set and `$JAVA_HOME/bin` is on your `$PATH`.
 
 The typical way to get started with Aeron in your own application is to use the
-https://search.maven.org/artifact/io.aeron/aeron-all[aeron-all jar].  However, for this tutorial we are going to
+https://search.maven.org/artifact/io.aeron/aeron-all[aeron-all jar]. However, for this tutorial we are going to
 recommend that you check out the source code from Github.
 
 [#usingthesource]
@@ -192,13 +193,13 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService
 
 <2> Take a reference to the cluster's idle strategy. This will be used anytime we enter a busy loop within service.
 
-<3> The snapshot can be null (this occurs the first time that the service is started).
+<3> The snapshot can be null (this occurs the first time the service is started).
 
 === Handling Messages
 
 The `onSessionMessage` callback is the main entry point for requests coming into the cluster. Messages reach here by
-being published to Cluster's ingress channel. This method will also be passed messages during replay from a log. It is
-from within this method we will interact with our application logic. Cluster also provides a reliable timestamp as a
+being published to Cluster's ingress channel. This method will also be passed messages during log replay. It is from
+within this method we will interact with our application logic. Cluster also provides a reliable timestamp as a
 parameter to this method. As mentioned earlier this is one of the challenges of building deterministic systems. Use
 this value as the timestamp within your application state, so it will be consistent under replay.
 
@@ -259,7 +260,7 @@ the Cluster's `IdleStrategy::idle` inside of the busy wait loop.
 Our `onStart` implementation contained a method to load the snapshot. Now we have seen how to take a snapshot, we
 can now look at how it is loaded. The `Image` provided to the `onStart` has a method that will indicate if there is no
 more data available. However, application code should also encode enough information that the end of the stream can be
-detected from the store messages. The two approaches can be used to sanity check all the data is received.
+detected from the store messages. The two approaches can be used to sanity check all the received data.
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -274,7 +275,7 @@ extracting data from the snapshot.
 <3> Our total snapshot length (16 bytes) is going to be smaller than any reasonable MTU therefore we can assume that all
 the data will come in a single message.
 
-<4> Once all the data is loaded, we can initialise the application logic state from the snapshot.
+<4> Once all data is loaded, we can initialise the application logic state from the snapshot.
 
 <5> Once we've loaded all the data for the application we can break out of the snapshot loading loop.
 
@@ -295,8 +296,8 @@ disconnecting from the cluster, and leadership and role changes. We won't look a
 Now we have our application implemented we can move onto running it in a cluster. There are a number of moving parts to
 setting up a cluster node, one of the trickiest parts of using Aeron Cluster is getting the configuration correct. We
 are going to start with a static three-node cluster with a simplified configuration where all the components
-(MediaDriver, Archive, ConsensusModule and ClusteredServiceContainer) for a single node are hosted in a
-single process. Later we will then start the cluster as three separate processes.
+(MediaDriver, Archive, ConsensusModule and ClusteredServiceContainer) for a single node withing a single process. Later
+we will then start the cluster as three separate processes.
 
 === Running Multiple Nodes on the Same Host
 
@@ -562,7 +563,7 @@ supported or in very early stages, so unicast is currently recommended in those 
 === Publishing to the Cluster
 
 Next we are going push messages into the cluster itself. So that the client is able to fail over to different nodes, as
-nodes come and go, in the cluster the Aeron publications are wrapped in a class called `AeronCluster`. This is the
+nodes come and go, in the cluster the Aeron publications are contained in a class called `AeronCluster`. This is the
 second of the two items that are connected at start up. This class provides an API very similar to the Publication API.
 
 [source, Java, indent=0, options="nowrap"]
@@ -577,9 +578,9 @@ methods.
 <2> Publish the data in the same way we would with a `Publication`. We must check the return value to ensure that the
 message has been sent because back pressure could happen at any time.
 
-<3> If we fail to send, and need to run a busy wait loop, we should utilise an `IdleStrategy` to ensure that we don't
-inappropriately overuse the CPU. With cluster clients we should also be continually polling the egress topic to pick up
-any messages that have been sent back from the cluster, including errors or session status messages.
+<3> If we fail to send, and need to run an idle loop, we should utilise an `IdleStrategy` to ensure that we don't
+inappropriately overuse the CPU. With cluster clients we should also be continually polling the egress stream to pick
+up any messages that have been sent back from the cluster, including errors or session status messages.
 
 === Receiving Responses
 
@@ -623,26 +624,26 @@ parameter is the customer id to use for the client, change this number if you wa
 We should see some output similar to the following:
 
 ----
-Sent (8474093274723075706,10,105) bidsRemaining = 9
-SessionMessage(1,8474093274723075706,10,105,true)
-Sent (8474093274723075707,10,109) bidsRemaining = 8
-SessionMessage(1,8474093274723075707,10,109,true)
-Sent (8474093274723075708,10,110) bidsRemaining = 7
-SessionMessage(1,8474093274723075708,10,110,true)
-Sent (8474093274723075709,10,119) bidsRemaining = 6
-SessionMessage(1,8474093274723075709,10,119,true)
-Sent (8474093274723075710,10,122) bidsRemaining = 5
-SessionMessage(1,8474093274723075710,10,122,true)
-Sent (8474093274723075711,10,127) bidsRemaining = 4
-SessionMessage(1,8474093274723075711,10,127,true)
-Sent (8474093274723075712,10,129) bidsRemaining = 3
-SessionMessage(1,8474093274723075712,10,129,true)
-Sent (8474093274723075713,10,135) bidsRemaining = 2
-SessionMessage(1,8474093274723075713,10,135,true)
-Sent (8474093274723075714,10,136) bidsRemaining = 1
-SessionMessage(1,8474093274723075714,10,136,true)
-Sent (8474093274723075715,10,142) bidsRemaining = 0
-SessionMessage(1,8474093274723075715,10,142,true)
+Sent(8474093274723075706, 10, 105) bidsRemaining=9
+SessionMessage(1, 8474093274723075706, 10, 105, true)
+Sent(8474093274723075707, 10, 109) bidsRemaining=8
+SessionMessage(1, 8474093274723075707, 10, 109, true)
+Sent(8474093274723075708, 10, 110) bidsRemaining=7
+SessionMessage(1, 8474093274723075708, 10, 110,true)
+Sent(8474093274723075709, 10, 119) bidsRemaining=6
+SessionMessage(1, 8474093274723075709, 10, 119, true)
+Sent(8474093274723075710, 10, 122) bidsRemaining=5
+SessionMessage(1, 8474093274723075710, 10, 122, true)
+Sent(8474093274723075711, 10, 127) bidsRemaining=4
+SessionMessage(1, 8474093274723075711, 10, 127, true)
+Sent(8474093274723075712, 10, 129) bidsRemaining=3
+SessionMessage(1, 8474093274723075712, 10, 129, true)
+Sent(8474093274723075713, 10, 135) bidsRemaining=2
+SessionMessage(1, 8474093274723075713, 10, 135, true)
+Sent(8474093274723075714, 10, 136) bidsRemaining=1
+SessionMessage(1, 8474093274723075714, 10, 136,true)
+Sent(8474093274723075715, 10, 142) bidsRemaining=0
+SessionMessage(1, 8474093274723075715, 10, 142, true)
 ----
 
 === Failed Nodes and Leader Election
@@ -667,19 +668,19 @@ isLeader=false, hasRequestedJoin=false, id=0, leadershipTermId=5, logPosition=11
 catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1, timeOfLastAppendPositionNs=1579564309666000000,
 ingressEndpoint='localhost:9003', consensusEndpoint='localhost:9004', logEndpoint='localhost:9005',
 catchupEndpoint='localhost:9006', archiveEndpoint='localhost:9001',
-endpointsDetail='localhost:9003,localhost:9004,localhost:9005,localhost:9006,localhost:9001', publication=null,
+endpoints='localhost:9003,localhost:9004,localhost:9005,localhost:9006,localhost:9001', publication=null,
 vote=null}, ClusterMember{isBallotSent=false, isLeader=false, hasRequestedJoin=false, id=1, leadershipTermId=5,
 logPosition=11872, candidateTermId=-1, catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1,
 timeOfLastAppendPositionNs=1579564309495000000, ingressEndpoint='localhost:9103',
 consensusEndpoint='localhost:9104', logEndpoint='localhost:9105', catchupEndpoint='localhost:9106',
 archiveEndpoint='localhost:9101',
-endpointsDetail='localhost:9103,localhost:9104,localhost:9105,localhost:9106,localhost:9101', publication=null,
+endpoints='localhost:9103,localhost:9104,localhost:9105,localhost:9106,localhost:9101', publication=null,
 vote=null}, ClusterMember{isBallotSent=false, isLeader=false, hasRequestedJoin=false, id=2, leadershipTermId=5,
 logPosition=11872, candidateTermId=-1, catchupReplaySessionId=-1, correlationId=-1, removalPosition=-1,
 timeOfLastAppendPositionNs=1579564309552000000, ingressEndpoint='localhost:9203',
 consensusEndpoint='localhost:9204', logEndpoint='localhost:9205', catchupEndpoint='localhost:9206',
 archiveEndpoint='localhost:9201',
-endpointsDetail='localhost:9203,localhost:9204,localhost:9205,localhost:9206,localhost:9201', publication=null,
+endpoints='localhost:9203,localhost:9204,localhost:9205,localhost:9206,localhost:9201', publication=null,
 vote=null}], passiveMembers=[]
 ----
 
@@ -752,13 +753,13 @@ The client should automatically resume sending messages into the cluster and rec
 not, be an exception logged by the client depending on timing.
 
 ----
-Sent (-7819190107498904370,10,12969) bidsRemaining = 980
-SessionMessage(20,-7819190107498904370,10,12969,true)
-Sent (-7819190107498904369,10,12969) bidsRemaining = 979
-Sent (-7819190107498904368,10,12970) bidsRemaining = 978
-Sent (-7819190107498904367,10,12978) bidsRemaining = 977
-Sent (-7819190107498904366,10,12975) bidsRemaining = 976
-Sent (-7819190107498904365,10,12971) bidsRemaining = 975
+Sent(-7819190107498904370, 10, 12969) bidsRemaining=980
+SessionMessage(20, -7819190107498904370, 10, 12969, true)
+Sent(-7819190107498904369, 10, 12969) bidsRemaining=979
+Sent(-7819190107498904368, 10, 12970) bidsRemaining=978
+Sent(-7819190107498904367, 10, 12978) bidsRemaining=977
+Sent(-7819190107498904366, 10, 12975) bidsRemaining=976
+Sent(-7819190107498904365, 10, 12971) bidsRemaining=975
 Consensus Module
 io.aeron.cluster.client.ClusterException: heartbeat timeout from leader
         at io.aeron.cluster.ConsensusModuleAgent.slowTickWork(ConsensusModuleAgent.java:1884)
@@ -766,11 +767,11 @@ io.aeron.cluster.client.ClusterException: heartbeat timeout from leader
         at org.agrona.concurrent.AgentRunner.doDutyCycle(AgentRunner.java:283)
         at org.agrona.concurrent.AgentRunner.run(AgentRunner.java:164)
         at java.lang.Thread.run(Thread.java:748)
-New Leader(20,7,1)
-Sent (-7819190107498904364,10,12977) bidsRemaining = 974
-Sent (-7819190107498904363,10,12974) bidsRemaining = 973
-SessionMessage(20,-7819190107498904364,10,12977,true)
-SessionMessage(20,-7819190107498904363,10,12977,false)
+NewLeader(20, 7, 1)
+Sent(-7819190107498904364, 10, 12977) bidsRemaining=974
+Sent(-7819190107498904363, 10, 12974) bidsRemaining=973
+SessionMessage(20, -7819190107498904364, 10, 12977, true)
+SessionMessage(20, -7819190107498904363, 10, 12977, false)
 ----
 
 IMPORTANT: If you look carefully at the `correlationId` values you will notice there are no `SessionMessage` log entries

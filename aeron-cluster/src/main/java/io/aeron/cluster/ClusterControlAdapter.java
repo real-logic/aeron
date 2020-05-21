@@ -26,9 +26,9 @@ import org.agrona.DirectBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-class MemberServiceAdapter implements FragmentHandler, AutoCloseable
+final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
 {
-    interface MemberServiceHandler
+    interface Listener
     {
         void onClusterMembersResponse(
             long correlationId, int leaderMemberId, String activeMembers, String passiveMembers);
@@ -43,17 +43,17 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
     }
 
     private final Subscription subscription;
-    private final MemberServiceHandler handler;
+    private final Listener listener;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ClusterMembersResponseDecoder clusterMembersResponseDecoder = new ClusterMembersResponseDecoder();
     private final ClusterMembersExtendedResponseDecoder clusterMembersExtendedResponseDecoder =
         new ClusterMembersExtendedResponseDecoder();
 
-    MemberServiceAdapter(final Subscription subscription, final MemberServiceHandler handler)
+    ClusterControlAdapter(final Subscription subscription, final Listener listener)
     {
         this.subscription = subscription;
-        this.handler = handler;
+        this.listener = listener;
     }
 
     public void close()
@@ -61,7 +61,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
         CloseHelper.close(subscription);
     }
 
-    public int poll()
+    int poll()
     {
         return subscription.poll(this, 1);
     }
@@ -86,7 +86,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            handler.onClusterMembersResponse(
+            listener.onClusterMembersResponse(
                 clusterMembersResponseDecoder.correlationId(),
                 clusterMembersResponseDecoder.leaderMemberId(),
                 clusterMembersResponseDecoder.activeMembers(),
@@ -115,7 +115,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 final String logEndpoint = activeMembersDecoder.logEndpoint();
                 final String catchupEndpoint = activeMembersDecoder.catchupEndpoint();
                 final String archiveEndpoint = activeMembersDecoder.archiveEndpoint();
-                final String endpointsDetail = String.join(
+                final String endpoints = String.join(
                     ",",
                     ingressEndpoint,
                     consensusEndpoint,
@@ -130,7 +130,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                     logEndpoint,
                     catchupEndpoint,
                     archiveEndpoint,
-                    endpointsDetail)
+                    endpoints)
                     .leadershipTermId(activeMembersDecoder.leadershipTermId())
                     .logPosition(activeMembersDecoder.logPosition())
                     .timeOfLastAppendPositionNs(activeMembersDecoder.timeOfLastAppendNs());
@@ -148,7 +148,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 final String logEndpoint = passiveMembersDecoder.logEndpoint();
                 final String catchupEndpoint = passiveMembersDecoder.catchupEndpoint();
                 final String archiveEndpoint = passiveMembersDecoder.archiveEndpoint();
-                final String endpointsDetail = String.join(
+                final String endpoints = String.join(
                     ",",
                     ingressEndpoint,
                     consensusEndpoint,
@@ -163,7 +163,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                     logEndpoint,
                     catchupEndpoint,
                     archiveEndpoint,
-                    endpointsDetail)
+                    endpoints)
                     .leadershipTermId(passiveMembersDecoder.leadershipTermId())
                     .logPosition(passiveMembersDecoder.logPosition())
                     .timeOfLastAppendPositionNs(passiveMembersDecoder.timeOfLastAppendNs());
@@ -171,7 +171,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
                 passiveMembers.add(member);
             }
 
-            handler.onClusterMembersExtendedResponse(
+            listener.onClusterMembersExtendedResponse(
                 correlationId,
                 currentTimeNs,
                 leaderMemberId,

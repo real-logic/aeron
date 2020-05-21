@@ -52,7 +52,7 @@ public final class ClusterMember
     private final String logEndpoint;
     private final String catchupEndpoint;
     private final String archiveEndpoint;
-    private final String endpointsDetail;
+    private final String endpoints;
     private ExclusivePublication publication;
     private Boolean vote = null;
 
@@ -65,7 +65,7 @@ public final class ClusterMember
      * @param logEndpoint       address and port endpoint to which the log is replicated.
      * @param catchupEndpoint   address and port endpoint to which a stream is replayed to catchup to the leader.
      * @param archiveEndpoint   address and port endpoint to which the archive control channel can be reached.
-     * @param endpointsDetail   comma separated list of endpoints.
+     * @param endpoints   comma separated list of endpoints.
      */
     public ClusterMember(
         final int id,
@@ -74,7 +74,7 @@ public final class ClusterMember
         final String logEndpoint,
         final String catchupEndpoint,
         final String archiveEndpoint,
-        final String endpointsDetail)
+        final String endpoints)
     {
         this.id = id;
         this.ingressEndpoint = ingressEndpoint;
@@ -82,7 +82,7 @@ public final class ClusterMember
         this.logEndpoint = logEndpoint;
         this.catchupEndpoint = catchupEndpoint;
         this.archiveEndpoint = archiveEndpoint;
-        this.endpointsDetail = endpointsDetail;
+        this.endpoints = endpoints;
     }
 
     /**
@@ -477,9 +477,9 @@ public final class ClusterMember
      * @return list of endpoints for this member in a comma separated list.
      * @see #parse(String)
      */
-    public String endpointsDetail()
+    public String endpoints()
     {
-        return endpointsDetail;
+        return endpoints;
     }
 
     /**
@@ -536,14 +536,14 @@ public final class ClusterMember
 
         for (int i = 0; i < length; i++)
         {
-            final String endpointsDetail = memberValues[i];
-            final String[] memberAttributes = endpointsDetail.split(",");
+            final String idAndEndpoints = memberValues[i];
+            final String[] memberAttributes = idAndEndpoints.split(",");
             if (memberAttributes.length != 6)
             {
-                throw new ClusterException("invalid member value: " + endpointsDetail + " within: " + value);
+                throw new ClusterException("invalid member value: " + idAndEndpoints + " within: " + value);
             }
 
-            final String justEndpoints = String.join(
+            final String endpoints = String.join(
                 ",",
                 memberAttributes[1],
                 memberAttributes[2],
@@ -558,18 +558,18 @@ public final class ClusterMember
                 memberAttributes[3],
                 memberAttributes[4],
                 memberAttributes[5],
-                justEndpoints);
+                endpoints);
         }
 
         return members;
     }
 
-    public static ClusterMember parseEndpoints(final int id, final String endpointsDetail)
+    public static ClusterMember parseEndpoints(final int id, final String endpoints)
     {
-        final String[] memberAttributes = endpointsDetail.split(",");
+        final String[] memberAttributes = endpoints.split(",");
         if (memberAttributes.length != 5)
         {
-            throw new ClusterException("invalid member value: " + endpointsDetail);
+            throw new ClusterException("invalid member value: " + endpoints);
         }
 
         return new ClusterMember(
@@ -579,11 +579,11 @@ public final class ClusterMember
             memberAttributes[2],
             memberAttributes[3],
             memberAttributes[4],
-            endpointsDetail);
+            endpoints);
     }
 
     /**
-     * Encode member details from a cluster members array to a string.
+     * Encode member endpoints from a cluster members array to a string.
      *
      * @param clusterMembers to fill the details from
      * @return String representation suitable for use with {@link ClusterMember#parse}
@@ -604,7 +604,7 @@ public final class ClusterMember
             builder
                 .append(member.id())
                 .append(',')
-                .append(member.endpointsDetail());
+                .append(member.endpoints());
 
             if ((length - 1) != i)
             {
@@ -947,12 +947,12 @@ public final class ClusterMember
      */
     public static void validateMemberEndpoints(final ClusterMember member, final String memberEndpoints)
     {
-        final ClusterMember endpointMember = ClusterMember.parseEndpoints(Aeron.NULL_VALUE, memberEndpoints);
+        final ClusterMember endpoints = ClusterMember.parseEndpoints(Aeron.NULL_VALUE, memberEndpoints);
 
-        if (!areSameEndpoints(member, endpointMember))
+        if (!areSameEndpoints(member, endpoints))
         {
             throw new ClusterException(
-                "clusterMembers and memberEndpoints differ: " + member.endpointsDetail() + " != " + memberEndpoints);
+                "clusterMembers and endpoints differ: " + member.endpoints() + " != " + memberEndpoints);
         }
     }
 
@@ -1069,15 +1069,15 @@ public final class ClusterMember
     /**
      * Is the string of member endpoints not duplicated in the members.
      *
-     * @param members         to check if the provided endpoints have a duplicate.
-     * @param memberEndpoints to check for duplicates.
+     * @param members   to check if the provided endpoints have a duplicate.
+     * @param endpoints to check for duplicates.
      * @return true if no duplicate is found otherwise false.
      */
-    public static boolean isNotDuplicateEndpoint(final ClusterMember[] members, final String memberEndpoints)
+    public static boolean isNotDuplicateEndpoint(final ClusterMember[] members, final String endpoints)
     {
         for (final ClusterMember member : members)
         {
-            if (member.endpointsDetail().equals(memberEndpoints))
+            if (member.endpoints().equals(endpoints))
             {
                 return false;
             }
@@ -1214,7 +1214,7 @@ public final class ClusterMember
             ", logEndpoint='" + logEndpoint + '\'' +
             ", catchupEndpoint='" + catchupEndpoint + '\'' +
             ", archiveEndpoint='" + archiveEndpoint + '\'' +
-            ", endpointsDetail='" + endpointsDetail + '\'' +
+            ", endpoints='" + endpoints + '\'' +
             ", publication=" + publication +
             ", vote=" + vote +
             '}';

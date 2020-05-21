@@ -429,7 +429,7 @@ public class ClusterTool
         final ClusterMembership clusterMembership)
     {
         final MutableLong id = new MutableLong(NULL_VALUE);
-        final MemberServiceAdapter.MemberServiceHandler handler = new MemberServiceAdapter.MemberServiceHandler()
+        final ClusterControlAdapter.Listener listener = new ClusterControlAdapter.Listener()
         {
             public void onClusterMembersResponse(
                 final long correlationId,
@@ -477,8 +477,8 @@ public class ClusterTool
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(controlProperties.aeronDirectoryName));
             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(
                 controlProperties.controlChannel, controlProperties.consensusModuleStreamId));
-            MemberServiceAdapter memberServiceAdapter = new MemberServiceAdapter(aeron.addSubscription(
-                controlProperties.controlChannel, controlProperties.serviceStreamId), handler))
+            ClusterControlAdapter clusterControlAdapter = new ClusterControlAdapter(aeron.addSubscription(
+                controlProperties.controlChannel, controlProperties.serviceStreamId), listener))
         {
             id.set(aeron.nextCorrelationId());
             if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
@@ -486,7 +486,7 @@ public class ClusterTool
                 final long startTime = System.currentTimeMillis();
                 do
                 {
-                    if (memberServiceAdapter.poll() == 0)
+                    if (clusterControlAdapter.poll() == 0)
                     {
                         if ((System.currentTimeMillis() - startTime) > timeoutMs)
                         {

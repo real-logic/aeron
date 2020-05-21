@@ -73,8 +73,8 @@ public class BasicAuctionClusterClient implements EgressListener
         lastBidSeen = currentPrice;
 
         printOutput(
-            "SessionMessage(" + clusterSessionId + "," + correlationId + "," +
-            customerId + "," + currentPrice + "," + bidSucceed + ")");
+            "SessionMessage(" + clusterSessionId + ", " + correlationId + "," +
+            customerId + ", " + currentPrice + ", " + bidSucceed + ")");
     }
 
     public void onSessionEvent(
@@ -86,8 +86,8 @@ public class BasicAuctionClusterClient implements EgressListener
         final String detail)
     {
         printOutput(
-            "SessionEvent(" + correlationId + "," + leadershipTermId + "," +
-            leaderMemberId + "," + code + "," + detail + ")");
+            "SessionEvent(" + correlationId + ", " + leadershipTermId + ", " +
+            leaderMemberId + ", " + code + ", " + detail + ")");
     }
 
     public void onNewLeader(
@@ -96,7 +96,7 @@ public class BasicAuctionClusterClient implements EgressListener
         final int leaderMemberId,
         final String ingressEndpoints)
     {
-        printOutput("NewLeader(" + clusterSessionId + "," + leadershipTermId + "," + leaderMemberId + ")");
+        printOutput("NewLeader(" + clusterSessionId + ", " + leadershipTermId + ", " + leaderMemberId + ")");
     }
     // end::response[]
 
@@ -120,7 +120,7 @@ public class BasicAuctionClusterClient implements EgressListener
                 --bidsLeftToSend;
 
                 printOutput(
-                    "Sent (" + (correlationId) + "," + customerId + "," + price + ") bidsRemaining = " +
+                    "Sent(" + (correlationId) + ", " + customerId + ", " + price + ") bidsRemaining=" +
                     bidsLeftToSend);
             }
             else if (keepAliveDeadlineMs <= currentTimeMs)         // <2>

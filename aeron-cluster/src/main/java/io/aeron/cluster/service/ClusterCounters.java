@@ -71,7 +71,7 @@ public class ClusterCounters
             final int recordOffset = CountersReader.metaDataOffset(i);
 
             if (counters.getCounterState(i) == RECORD_ALLOCATED &&
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == typeId &&
+                counters.getCounterTypeId(i) == typeId &&
                 buffer.getInt(recordOffset + KEY_OFFSET) == clusterId)
             {
                 return i;

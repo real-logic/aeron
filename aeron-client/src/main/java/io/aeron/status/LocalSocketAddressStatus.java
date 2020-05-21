@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
-import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
 /**
  * Counter used to store the status of a bind address and port for the local end of a channel.
@@ -130,13 +129,13 @@ public class LocalSocketAddressStatus
 
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
                 final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
 
-                if (LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == buffer.getInt(recordOffset + TYPE_ID_OFFSET) &&
-                    channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
+                if (channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
                     ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
                 {
                     final int length = buffer.getInt(keyIndex + LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);

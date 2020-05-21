@@ -1801,18 +1801,12 @@ public class DriverConductorTest
 
     private static AtomicCounter clientHeartbeatCounter(final CountersReader countersReader)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
-
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == CLIENT_HEARTBEAT_TYPE_ID)
             {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CLIENT_HEARTBEAT_TYPE_ID)
-                {
-                    return new AtomicCounter(countersReader.valuesBuffer(), i);
-                }
+                return new AtomicCounter(countersReader.valuesBuffer(), i);
             }
         }
 

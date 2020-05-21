@@ -139,12 +139,10 @@ public class RecoveryState
 
         for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
-            if (counters.getCounterState(i) == RECORD_ALLOCATED)
+            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
+                counters.getCounterTypeId(i) == RECOVERY_STATE_TYPE_ID)
             {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID &&
-                    buffer.getInt(recordOffset + KEY_OFFSET + CLUSTER_ID_OFFSET) == clusterId)
+                if (buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + CLUSTER_ID_OFFSET) == clusterId)
                 {
                     return i;
                 }
@@ -165,14 +163,10 @@ public class RecoveryState
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
+            counters.getCounterTypeId(counterId) == RECOVERY_STATE_TYPE_ID)
         {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
-            {
-                return buffer.getLong(recordOffset + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
-            }
+            return buffer.getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
         }
 
         return NULL_VALUE;
@@ -189,14 +183,10 @@ public class RecoveryState
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
+            counters.getCounterTypeId(counterId) == RECOVERY_STATE_TYPE_ID)
         {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
-            {
-                return buffer.getLong(recordOffset + KEY_OFFSET + LOG_POSITION_OFFSET);
-            }
+            return buffer.getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + LOG_POSITION_OFFSET);
         }
 
         return NULL_VALUE;
@@ -213,14 +203,10 @@ public class RecoveryState
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
+            counters.getCounterTypeId(counterId) == RECOVERY_STATE_TYPE_ID)
         {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
-            {
-                return buffer.getLong(recordOffset + KEY_OFFSET + TIMESTAMP_OFFSET);
-            }
+            return buffer.getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + TIMESTAMP_OFFSET);
         }
 
         return NULL_VALUE;
@@ -238,21 +224,19 @@ public class RecoveryState
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
+            counters.getCounterTypeId(counterId) == RECOVERY_STATE_TYPE_ID)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
+            final int serviceCount = buffer.getInt(recordOffset + KEY_OFFSET + SERVICE_COUNT_OFFSET);
+            if (serviceId < 0 || serviceId >= serviceCount)
             {
-                final int serviceCount = buffer.getInt(recordOffset + KEY_OFFSET + SERVICE_COUNT_OFFSET);
-                if (serviceId < 0 || serviceId >= serviceCount)
-                {
-                    throw new ClusterException("invalid serviceId " + serviceId + " for count of " + serviceCount);
-                }
-
-                return buffer.getLong(
-                    recordOffset + KEY_OFFSET + SNAPSHOT_RECORDING_IDS_OFFSET + (serviceId * SIZE_OF_LONG));
+                throw new ClusterException("invalid serviceId " + serviceId + " for count of " + serviceCount);
             }
+
+            return buffer.getLong(
+                recordOffset + KEY_OFFSET + SNAPSHOT_RECORDING_IDS_OFFSET + (serviceId * SIZE_OF_LONG));
         }
 
         throw new ClusterException("active counter not found " + counterId);

@@ -27,8 +27,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
-import static org.agrona.concurrent.status.CountersReader.metaDataOffset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
@@ -153,17 +151,16 @@ public class CounterTest
         }
     }
 
-    private void createReadableCounter(
-        final CountersReader countersReader, final long registrationId, final int counterId)
+    private void createReadableCounter(final CountersReader counters, final long registrationId, final int counterId)
     {
-        if (COUNTER_TYPE_ID == countersReader.metaDataBuffer().getInt(metaDataOffset(counterId) + TYPE_ID_OFFSET))
+        if (COUNTER_TYPE_ID == counters.getCounterTypeId(counterId))
         {
-            readableCounter = new ReadableCounter(countersReader, registrationId, counterId);
+            readableCounter = new ReadableCounter(counters, registrationId, counterId);
         }
     }
 
     private void unavailableCounterHandler(
-        @SuppressWarnings("unused") final CountersReader countersReader, final long registrationId, final int counterId)
+        @SuppressWarnings("unused") final CountersReader counters, final long registrationId, final int counterId)
     {
         if (null != readableCounter && readableCounter.registrationId() == registrationId)
         {

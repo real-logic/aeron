@@ -900,38 +900,38 @@ public class Configuration
 
         switch (strategyName)
         {
-            case "noop":
+            case NoOpIdleStrategy.ALIAS:
             case "org.agrona.concurrent.NoOpIdleStrategy":
                 idleStrategy = NoOpIdleStrategy.INSTANCE;
                 break;
 
-            case "spin":
+            case BusySpinIdleStrategy.ALIAS:
             case "org.agrona.concurrent.BusySpinIdleStrategy":
                 idleStrategy = BusySpinIdleStrategy.INSTANCE;
                 break;
 
-            case "yield":
+            case YieldingIdleStrategy.ALIAS:
             case "org.agrona.concurrent.YieldingIdleStrategy":
                 idleStrategy = YieldingIdleStrategy.INSTANCE;
                 break;
 
-            case "sleep-ns":
+            case SleepingIdleStrategy.ALIAS:
             case "org.agrona.concurrent.SleepingIdleStrategy":
                 idleStrategy = new SleepingIdleStrategy();
                 break;
 
-            case "sleep-ms":
+            case SleepingMillisIdleStrategy.ALIAS:
             case "org.agrona.concurrent.SleepingMillisIdleStrategy":
                 idleStrategy = new SleepingMillisIdleStrategy();
                 break;
 
-            case "backoff":
+            case BackoffIdleStrategy.ALIAS:
             case DEFAULT_IDLE_STRATEGY:
                 idleStrategy = new BackoffIdleStrategy(
                     IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
                 break;
 
-            case "controllable":
+            case ControllableIdleStrategy.ALIAS:
             case CONTROLLABLE_IDLE_STRATEGY:
                 Objects.requireNonNull(controllableStatus);
                 controllableStatus.setOrdered(ControllableIdleStrategy.PARK);

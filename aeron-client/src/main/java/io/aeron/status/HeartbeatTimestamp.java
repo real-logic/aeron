@@ -115,12 +115,12 @@ public class HeartbeatTimestamp
 
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == counterTypeId)
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == counterTypeId &&
-                    buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId)
+                if (buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId)
                 {
                     return i;
                 }
@@ -145,7 +145,7 @@ public class HeartbeatTimestamp
         final DirectBuffer buffer = countersReader.metaDataBuffer();
         final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-        return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == counterTypeId &&
+        return countersReader.getCounterTypeId(counterId) == counterTypeId &&
             buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId &&
             countersReader.getCounterState(counterId) == RECORD_ALLOCATED;
     }

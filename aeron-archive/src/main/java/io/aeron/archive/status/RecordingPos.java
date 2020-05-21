@@ -113,12 +113,10 @@ public class RecordingPos
 
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
             {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
+                if (buffer.getLong(CountersReader.metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
                 {
                     return i;
                 }
@@ -141,12 +139,10 @@ public class RecordingPos
 
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
             {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                if (buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
                 {
                     return i;
                 }
@@ -167,14 +163,10 @@ public class RecordingPos
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED &&
+            countersReader.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID)
-            {
-                return buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET);
-            }
+            return buffer.getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET);
         }
 
         return NULL_RECORDING_ID;
@@ -183,22 +175,19 @@ public class RecordingPos
     /**
      * Get the {@link Image#sourceIdentity()} for the recording.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active recording.
+     * @param counters  to search within.
+     * @param counterId for the active recording.
      * @return {@link Image#sourceIdentity()} for the recording or null if not found.
      */
-    public static String getSourceIdentity(final CountersReader countersReader, final int counterId)
+    public static String getSourceIdentity(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
+            counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID)
-            {
-                return buffer.getStringAscii(recordOffset + KEY_OFFSET + SOURCE_IDENTITY_LENGTH_OFFSET);
-            }
+            return buffer.getStringAscii(recordOffset + KEY_OFFSET + SOURCE_IDENTITY_LENGTH_OFFSET);
         }
 
         return null;
@@ -207,18 +196,18 @@ public class RecordingPos
     /**
      * Is the recording counter still active.
      *
-     * @param countersReader to search within.
-     * @param counterId      to search for.
-     * @param recordingId    to confirm it is still the same value.
+     * @param counters    to search within.
+     * @param counterId   to search for.
+     * @param recordingId to confirm it is still the same value.
      * @return true if the counter is still active otherwise false.
      */
-    public static boolean isActive(final CountersReader countersReader, final int counterId, final long recordingId)
+    public static boolean isActive(final CountersReader counters, final int counterId, final long recordingId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
         final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-        return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+        return counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID &&
             buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId &&
-            countersReader.getCounterState(counterId) == RECORD_ALLOCATED;
+            counters.getCounterState(counterId) == RECORD_ALLOCATED;
     }
 }

@@ -1123,6 +1123,7 @@ abstract class ArchiveConductor
                 final File srcFile = new File(archiveDir, segmentFileName(srcRecordingId, position));
                 if (position == recordingSummary.stopPosition)
                 {
+                    //noinspection ResultOfMethodCallIgnored
                     srcFile.delete();
                     position -= segmentLength;
                     continue;

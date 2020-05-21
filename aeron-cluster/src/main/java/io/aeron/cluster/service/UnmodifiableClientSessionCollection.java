@@ -1,5 +1,7 @@
 package io.aeron.cluster.service;
 
+import org.agrona.collections.Long2ObjectHashMap;
+
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -7,10 +9,10 @@ import java.util.stream.Stream;
 
 class UnmodifiableClientSessionCollection implements Collection<ClientSession>
 {
-    private final Collection<ClientSession> collection;
+    private final Long2ObjectHashMap<ClientSession>.ValueCollection collection;
     private final ClientSessionIterator iteratorWrapper = new ClientSessionIterator();
 
-    UnmodifiableClientSessionCollection(final Collection<ClientSession> collection)
+    UnmodifiableClientSessionCollection(final Long2ObjectHashMap<ClientSession>.ValueCollection collection)
     {
         this.collection = collection;
     }
@@ -45,7 +47,7 @@ class UnmodifiableClientSessionCollection implements Collection<ClientSession>
         return collection.toString();
     }
 
-    public Iterator<ClientSession> iterator()
+    public ClientSessionIterator iterator()
     {
         return iteratorWrapper.iterator(collection.iterator());
     }

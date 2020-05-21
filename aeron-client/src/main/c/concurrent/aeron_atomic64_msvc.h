@@ -49,19 +49,19 @@ do \
 } \
 while (false)
 
-#define AERON_GET_AND_ADD_INT64(original, current, value) \
-do \
-{ \
-    original = _InlineInterlockedAdd64((long long volatile *)&current, (long long)value) - value; \
-} \
-while (false)
+inline int64_t aeron_get_and_add_int64(volatile int64_t *current, int64_t value)
+{
+    int64_t original;
+    original = _InlineInterlockedAdd64((long long volatile *)current, (long long)value) - value;
+    return original;
+}
 
-#define AERON_GET_AND_ADD_INT32(original, current, value) \
-do \
-{ \
-    original = _InlineInterlockedAdd((long volatile *)&current, (long)value) - value; \
-} \
-while (false)
+inline int32_t aeron_get_and_add_int32(volatile int32_t *current, int32_t value)
+{
+    int32_t original;
+    original = _InlineInterlockedAdd((long volatile *)current, (long)value) - value;
+    return original;
+}
 
 inline bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int64_t desired)
 {

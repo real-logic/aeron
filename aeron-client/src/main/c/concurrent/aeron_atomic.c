@@ -16,6 +16,10 @@
 
 #include "concurrent/aeron_atomic.h"
 
+extern int64_t aeron_get_and_add_int64(volatile int64_t *current, int64_t value);
+
+extern int32_t aeron_get_and_add_int32(volatile int32_t *current, int32_t value);
+
 extern bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int64_t desired);
 
 extern bool aeron_cmpxchgu64(volatile uint64_t *destination, uint64_t expected, uint64_t desired);

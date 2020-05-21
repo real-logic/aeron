@@ -183,9 +183,7 @@ size_t aeron_spsc_rb_read(
 
 int64_t aeron_spsc_rb_next_correlation_id(aeron_spsc_rb_t *ring_buffer)
 {
-    int64_t result;
-    AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
-    return result;
+    return aeron_get_and_add_int64(&(ring_buffer->descriptor->correlation_counter), 1);
 }
 
 void aeron_spsc_rb_consumer_heartbeat_time(aeron_spsc_rb_t *ring_buffer, int64_t time_ms)

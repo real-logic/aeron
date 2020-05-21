@@ -152,8 +152,7 @@ int aeron_uri_udp_canonicalise(
         }
         else
         {
-            int32_t result;
-            AERON_GET_AND_ADD_INT32(result, unique_canonical_form_value, 1);
+            int32_t result = aeron_get_and_add_int32(&unique_canonical_form_value, 1);
             snprintf(unique_suffix, sizeof(unique_suffix) - 1, "-%" PRId32, result);
         }
     }

@@ -190,9 +190,7 @@ inline int64_t aeron_counter_get_volatile(volatile int64_t *addr)
 
 inline int64_t aeron_counter_increment(volatile int64_t *addr, int64_t value)
 {
-    int64_t result;
-    AERON_GET_AND_ADD_INT64(result, *addr, value);
-    return result;
+    return aeron_get_and_add_int64(addr, value);
 }
 
 inline int64_t aeron_counter_ordered_increment(volatile int64_t *addr, int64_t value)

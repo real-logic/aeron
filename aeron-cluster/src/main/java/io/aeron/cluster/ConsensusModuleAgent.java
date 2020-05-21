@@ -1796,10 +1796,7 @@ class ConsensusModuleAgent implements Agent
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        if (null != archive)
-        {
-            checkForArchiveErrors();
-        }
+        checkForArchiveErrors();
 
         if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
         {
@@ -1862,36 +1859,38 @@ class ConsensusModuleAgent implements Agent
 
     private void checkForArchiveErrors()
     {
-        final ControlResponsePoller controlResponsePoller = archive.controlResponsePoller();
-        if (!controlResponsePoller.subscription().isConnected())
+        if (null != archive)
         {
-            ctx.countedErrorHandler().onError(new ClusterException(
-                "local archive not connected", AeronException.Category.FATAL));
-        }
-        else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
-        {
-            if (controlResponsePoller.controlSessionId() == archive.controlSessionId() &&
-                controlResponsePoller.code() == ControlResponseCode.ERROR)
+            final ControlResponsePoller controlResponsePoller = archive.controlResponsePoller();
+            if (!controlResponsePoller.subscription().isConnected())
             {
-                for (final ClusterMember member : clusterMembers)
+                throw new AgentTerminationException("local archive not connected");
+            }
+            else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            {
+                if (controlResponsePoller.controlSessionId() == archive.controlSessionId() &&
+                    controlResponsePoller.code() == ControlResponseCode.ERROR)
                 {
-                    if (member.catchupReplayCorrelationId() != NULL_VALUE &&
-                        member.catchupReplayCorrelationId() == controlResponsePoller.correlationId())
+                    for (final ClusterMember member : clusterMembers)
                     {
-                        member.catchupReplaySessionId(NULL_VALUE);
-                        member.catchupReplayCorrelationId(NULL_VALUE);
+                        if (member.catchupReplayCorrelationId() != NULL_VALUE &&
+                            member.catchupReplayCorrelationId() == controlResponsePoller.correlationId())
+                        {
+                            member.catchupReplaySessionId(NULL_VALUE);
+                            member.catchupReplayCorrelationId(NULL_VALUE);
 
-                        ctx.countedErrorHandler().onError(new ClusterException(
-                            "catchup replay failed - " + controlResponsePoller.errorMessage(),
-                            AeronException.Category.WARN));
-                        return;
+                            ctx.countedErrorHandler().onError(new ClusterException(
+                                "catchup replay failed - " + controlResponsePoller.errorMessage(),
+                                AeronException.Category.WARN));
+                            return;
+                        }
                     }
-                }
 
-                ctx.countedErrorHandler().onError(new ArchiveException(
-                    controlResponsePoller.errorMessage(),
-                    (int)controlResponsePoller.relevantId(),
-                    controlResponsePoller.correlationId()));
+                    ctx.countedErrorHandler().onError(new ArchiveException(
+                        controlResponsePoller.errorMessage(),
+                        (int)controlResponsePoller.relevantId(),
+                        controlResponsePoller.correlationId()));
+                }
             }
         }
     }

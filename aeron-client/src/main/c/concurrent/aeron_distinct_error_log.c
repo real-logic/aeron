@@ -200,9 +200,7 @@ int aeron_distinct_error_log_record(
 
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + observation->offset);
 
-    int32_t dest;
-
-    AERON_GET_AND_ADD_INT32(dest, entry->observation_count, 1);
+    aeron_get_and_add_int32(&(entry->observation_count), 1);
     AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp);
 
     return 0;

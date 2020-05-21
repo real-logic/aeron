@@ -73,11 +73,10 @@ inline void aeron_loss_reporter_record_observation(
     {
         uint8_t *ptr = reporter->buffer + offset;
         aeron_loss_reporter_entry_t *entry = (aeron_loss_reporter_entry_t *)ptr;
-        int64_t dest;
 
         entry->last_observation_timestamp = timestamp_ms;
-        AERON_GET_AND_ADD_INT64(dest, entry->total_bytes_lost, bytes_lost);
-        AERON_GET_AND_ADD_INT64(dest, entry->observation_count, 1);
+        aeron_get_and_add_int64(&(entry->total_bytes_lost), bytes_lost);
+        aeron_get_and_add_int64(&(entry->observation_count), 1);
     }
 }
 

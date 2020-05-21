@@ -112,13 +112,14 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public void onClose()
     {
+        aeron.removeCloseHandler(abortHandler);
+
         if (isAbort)
         {
             ctx.abortLatch().countDown();
         }
         else
         {
-            aeron.removeCloseHandler(abortHandler);
 
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             if (isServiceActive)

@@ -153,7 +153,6 @@ public class ReplayMergeTest
         mediaDriver.context().deleteDirectory();
     }
 
-    @SuppressWarnings("methodlength")
     @Test
     @Timeout(10)
     public void shouldMergeFromReplayToLive()
@@ -179,7 +178,6 @@ public class ReplayMergeTest
             final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
 
             final long subscriptionId = aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE, true);
-
             final CountersReader counters = aeron.countersReader();
             final int recordingCounterId = awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
@@ -226,7 +224,6 @@ public class ReplayMergeTest
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
                         assertFalse(replayMerge.hasFailed(), "failed to merge");
-
                         Tests.yieldingWait("replay did not merge");
                     }
                 }
@@ -237,7 +234,6 @@ public class ReplayMergeTest
                     if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
                         assertFalse(image.isClosed(), "image closed unexpectedly");
-
                         Tests.yieldingWait(
                             "received.get()=%d < totalMessageCount=%d", received.get(), totalMessageCount);
                     }

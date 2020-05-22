@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
@@ -26,13 +25,11 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupResponseDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.ArrayUtil;
-import org.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.*;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -45,7 +42,6 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.*;
 import static io.aeron.cluster.ClusterBackup.State.*;
-import static io.aeron.cluster.ConsensusAdapter.FRAGMENT_POLL_LIMIT;
 import static io.aeron.exceptions.AeronException.Category;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -66,7 +62,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private final ConsensusPublisher consensusPublisher = new ConsensusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
-    private final Long2LongHashMap snapshotLengthMap = new Long2LongHashMap(NULL_LENGTH);
+    private final LongArrayList snapshotLengths = new LongArrayList();
     private final Counter stateCounter;
     private final Counter liveLogPositionCounter;
     private final Counter nextQueryDeadlineMsCounter;
@@ -172,7 +168,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         try
         {
-            workCount += consensusSubscription.poll(consensusFragmentAssembler, FRAGMENT_POLL_LIMIT);
+            workCount += consensusSubscription.poll(consensusFragmentAssembler, ConsensusAdapter.FRAGMENT_LIMIT);
 
             switch (state)
             {
@@ -240,7 +236,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         leaderMember = null;
         snapshotsToRetrieve.clear();
         snapshotsRetrieved.clear();
-        snapshotLengthMap.clear();
+        snapshotLengths.clear();
         leaderLogEntry = null;
         leaderLastTermEntry = null;
         clusterConsensusEndpointsCursor = NULL_VALUE;
@@ -307,7 +303,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             if (null != eventsListener)
             {
                 eventsListener.onPossibleFailure(
-                    new AeronException("log recording counter became unavailable", Category.WARN));
+                    new ClusterException("log recording counter became unavailable", Category.WARN));
             }
 
             state(RESET_BACKUP, epochClock.time());
@@ -540,7 +536,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 state(RESET_BACKUP, nowMs);
             }
 
-            snapshotLengthMap.put(snapshotCursor, snapshotStopPosition);
+            snapshotLengths.addLong(snapshotCursor, snapshotStopPosition);
             if (++snapshotCursor >= snapshotsToRetrieve.size())
             {
                 snapshotCursor = 0;
@@ -574,7 +570,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
 
                 snapshotsRetrieved.add(new RecordingLog.Snapshot(
-                    snapshotRetrieveMonitor.recordingId,
+                    snapshotRetrieveMonitor.recordingId(),
                     snapshot.leadershipTermId,
                     snapshot.termBaseLogPosition,
                     snapshot.logPosition,
@@ -618,8 +614,16 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             final String catchupChannel =
                 "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + replaySessionId;
 
-            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengthMap.get(snapshotCursor));
-            backupArchive.startRecording(catchupChannel, ctx.replayStreamId(), SourceLocation.REMOTE, true);
+            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengths.get(snapshotCursor));
+
+            backupArchive.archiveProxy().startRecording(
+                catchupChannel,
+                ctx.replayStreamId(),
+                SourceLocation.REMOTE,
+                true,
+                backupArchive.context().aeron().nextCorrelationId(),
+                backupArchive.controlSessionId());
+
             timeOfLastProgressMs = nowMs;
 
             workCount++;
@@ -767,7 +771,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         snapshotsRetrieved.clear();
         snapshotsToRetrieve.clear();
-        snapshotLengthMap.clear();
+        snapshotLengths.clear();
 
         timeOfLastProgressMs = nowMs;
 
@@ -850,85 +854,5 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private boolean hasProgressStalled(final long nowMs)
     {
         return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
-    }
-
-    static class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSignalConsumer
-    {
-        private final long expectedStopPosition;
-        private final RecordingSignalAdapter recordingSignalAdapter;
-
-        private long recordingId = RecordingPos.NULL_RECORDING_ID;
-        private boolean isDone = false;
-        private String errorMessage;
-
-        SnapshotRetrieveMonitor(final AeronArchive clusterArchive, final long expectedStopPosition)
-        {
-            this.expectedStopPosition = expectedStopPosition;
-
-            final Subscription subscription = clusterArchive.controlResponsePoller().subscription();
-            recordingSignalAdapter = new RecordingSignalAdapter(
-                clusterArchive.controlSessionId(), this, this, subscription, FRAGMENT_POLL_LIMIT);
-        }
-
-        boolean isDone()
-        {
-            return isDone;
-        }
-
-        public int poll()
-        {
-            final int fragments = recordingSignalAdapter.poll();
-            if (null != errorMessage)
-            {
-                throw new AeronException("error occurred while transferring snapshot: " + errorMessage);
-            }
-
-            return fragments;
-        }
-
-        public void onResponse(
-            final long controlSessionId,
-            final long correlationId,
-            final long relevantId,
-            final ControlResponseCode code,
-            final String errorMessage)
-        {
-            if (ControlResponseCode.ERROR == code)
-            {
-                this.errorMessage = errorMessage;
-            }
-        }
-
-        public void onSignal(
-            final long controlSessionId,
-            final long correlationId,
-            final long recordingId,
-            final long subscriptionId,
-            final long position,
-            final RecordingSignal signal)
-        {
-            if (RecordingSignal.START == signal && RecordingPos.NULL_RECORDING_ID == this.recordingId)
-            {
-                if (0 != position)
-                {
-                    errorMessage = "unexpected start position expected=0, actual=" + position;
-                }
-                else
-                {
-                    this.recordingId = recordingId;
-                }
-            }
-            else if (RecordingSignal.STOP == signal && recordingId == this.recordingId)
-            {
-                if (expectedStopPosition == position)
-                {
-                    isDone = true;
-                }
-                else
-                {
-                    errorMessage = "unexpected stop position expected=" + expectedStopPosition + ", actual=" + position;
-                }
-            }
-        }
     }
 }

@@ -1853,7 +1853,7 @@ class ConsensusModuleAgent implements Agent
 
     private void checkForArchiveErrors()
     {
-        if (null != archive)
+        if (null != archive && null == dynamicJoin)
         {
             final ControlResponsePoller controlResponsePoller = archive.controlResponsePoller();
             if (!controlResponsePoller.subscription().isConnected())

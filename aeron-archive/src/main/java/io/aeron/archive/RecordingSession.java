@@ -105,14 +105,14 @@ class RecordingSession implements Session
 
     public void close()
     {
-        CloseHelper.close(countedErrorHandler, recordingWriter);
-        CloseHelper.close(countedErrorHandler, position);
         if (autoStop)
         {
             final Subscription subscription = image.subscription();
             CloseHelper.close(countedErrorHandler, subscription);
             controlSession.archiveConductor().removeRecordingSubscription(subscription.registrationId());
         }
+        CloseHelper.close(countedErrorHandler, recordingWriter);
+        CloseHelper.close(countedErrorHandler, position);
     }
 
     public void abortClose()

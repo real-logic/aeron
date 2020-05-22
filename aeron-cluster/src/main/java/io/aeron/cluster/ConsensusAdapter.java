@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 
 class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
-    static final int FRAGMENT_POLL_LIMIT = 10;
+    static final int FRAGMENT_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final CanvassPositionDecoder canvassPositionDecoder = new CanvassPositionDecoder();
@@ -64,7 +64,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
 
     public int poll()
     {
-        return subscription.poll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
+        return subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     public int poll(final int limit)

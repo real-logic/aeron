@@ -906,16 +906,17 @@ abstract class ArchiveConductor
 
         if (!isAbort)
         {
-            catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
+            final long position = session.recordedPosition();
+            closeSession(session);
+
+            catalog.recordingStopped(recordingId, position, epochClock.time());
 
             session.controlSession().attemptSignal(
                 session.correlationId(),
                 recordingId,
                 session.image().subscription().registrationId(),
-                session.recordedPosition(),
+                position,
                 RecordingSignal.STOP);
-
-            closeSession(session);
         }
         else
         {

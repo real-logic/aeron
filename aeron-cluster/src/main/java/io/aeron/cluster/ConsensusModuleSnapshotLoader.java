@@ -30,7 +30,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 @SuppressWarnings("MethodLength")
 class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 {
-    private static final int FRAGMENT_LIMIT = 10;
+    static final int FRAGMENT_LIMIT = 10;
 
     private boolean inSnapshot = false;
     private boolean isDone = false;

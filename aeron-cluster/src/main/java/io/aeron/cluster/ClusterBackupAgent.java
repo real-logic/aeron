@@ -168,6 +168,16 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             timeOfLastTickMs = nowMs;
             workCount += aeronClientInvoker.invoke();
             markFile.updateActivityTimestamp(nowMs);
+
+            if (NULL_VALUE == correlationId && null == snapshotRetrieveMonitor)
+            {
+                backupArchive.checkForErrorResponse();
+
+                if (null != clusterArchive)
+                {
+                    clusterArchive.pollForErrorResponse();
+                }
+            }
         }
 
         try

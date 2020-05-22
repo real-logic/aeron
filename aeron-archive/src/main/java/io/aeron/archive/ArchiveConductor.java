@@ -1666,19 +1666,19 @@ abstract class ArchiveConductor
             return false;
         }
 
-        long earliestReplayPosition = Long.MAX_VALUE;
+        long replayBasePosition = Long.MAX_VALUE;
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
             if (replaySession.recordingId() == recordingId)
             {
-                earliestReplayPosition = min(earliestReplayPosition, replaySession.segmentFileBasePosition());
+                replayBasePosition = min(replayBasePosition, replaySession.segmentFileBasePosition());
             }
         }
 
-        if (position > earliestReplayPosition)
+        if (position > replayBasePosition)
         {
             final String msg = "invalid detach: replay in progress, newStartPosition=" + position +
-                " upperBound=" + earliestReplayPosition;
+                " upperBound=" + replayBasePosition;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }

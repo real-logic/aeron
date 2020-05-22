@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Image;
+import io.aeron.ImageControlledFragmentAssembler;
 import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
@@ -39,6 +40,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClientSessionDecoder clientSessionDecoder = new ClientSessionDecoder();
+    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
     private final ClusteredServiceAgent agent;
 
@@ -65,7 +67,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
 
     int poll()
     {
-        return image.controlledPoll(this, FRAGMENT_LIMIT);
+        return image.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

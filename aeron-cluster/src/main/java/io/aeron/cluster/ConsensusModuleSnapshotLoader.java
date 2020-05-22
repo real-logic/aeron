@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Image;
+import io.aeron.*;
 import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
@@ -43,6 +43,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     private final TimerDecoder timerDecoder = new TimerDecoder();
     private final ConsensusModuleDecoder consensusModuleDecoder = new ConsensusModuleDecoder();
     private final ClusterMembersDecoder clusterMembersDecoder = new ClusterMembersDecoder();
+    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
     private final ConsensusModuleAgent consensusModuleAgent;
 
@@ -69,7 +70,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 
     int poll()
     {
-        return image.controlledPoll(this, FRAGMENT_LIMIT);
+        return image.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

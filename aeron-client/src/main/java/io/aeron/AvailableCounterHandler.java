@@ -26,7 +26,7 @@ public interface AvailableCounterHandler
     /**
      * Method called by Aeron to deliver notification of a {@link Counter} being available.
      * <p>
-     * Within this callback reentrant calls to use the {@link Aeron} client are not permitted and
+     * Within this callback reentrant calls to the {@link Aeron} client are not permitted and
      * will result in undefined behaviour.
      *
      * @param countersReader for more detail on the counter.

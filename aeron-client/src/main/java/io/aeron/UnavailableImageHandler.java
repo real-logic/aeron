@@ -24,7 +24,7 @@ public interface UnavailableImageHandler
     /**
      * Method called by Aeron to deliver notification that an {@link Image} is no longer available for polling.
      * <p>
-     * Within this callback reentrant calls to use the {@link Aeron} client are not permitted and
+     * Within this callback reentrant calls to the {@link Aeron} client are not permitted and
      * will result in undefined behaviour.
      *
      * @param image that is no longer available for polling.

@@ -1695,7 +1695,7 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    boolean isCatchupNearLivePosition(final long position)
+    boolean isCatchupNearLive(final long position)
     {
         boolean result = false;
 

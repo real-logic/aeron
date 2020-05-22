@@ -769,7 +769,7 @@ public class Election
     {
         int workCount = consensusModuleAgent.catchupPoll(logSubscription, logSessionId, catchupPosition, nowNs);
 
-        if (null == liveLogDestination && consensusModuleAgent.isCatchupNearLivePosition(catchupPosition))
+        if (null == liveLogDestination && consensusModuleAgent.isCatchupNearLive(catchupPosition))
         {
             addLiveLogDestination();
             workCount += 1;

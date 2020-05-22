@@ -206,8 +206,7 @@ class DynamicJoin implements AutoCloseable
         }
     }
 
-    void onSnapshotRecordings(
-        final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
+    void onSnapshotRecordings(final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
     {
         if (State.PASSIVE_FOLLOWER == state && correlationId == this.correlationId)
         {
@@ -331,9 +330,8 @@ class DynamicJoin implements AutoCloseable
         }
         else if (pollForResponse(leaderArchive, correlationId))
         {
-            final long snapshotStopPosition = (int)leaderArchive.controlResponsePoller().relevantId();
-
             correlationId = NULL_VALUE;
+            final long snapshotStopPosition = (int)leaderArchive.controlResponsePoller().relevantId();
 
             if (NULL_POSITION == snapshotStopPosition)
             {

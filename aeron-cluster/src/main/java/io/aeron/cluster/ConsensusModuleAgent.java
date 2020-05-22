@@ -266,10 +266,7 @@ class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
             }
 
-            if (ConsensusModule.State.SUSPENDED != state)
-            {
-                state(ConsensusModule.State.ACTIVE);
-            }
+            state(ConsensusModule.State.ACTIVE);
 
             if (null != recoveryPlan.log)
             {
@@ -1769,10 +1766,7 @@ class ConsensusModuleAgent implements Agent
             ++serviceAckId;
 
             CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
-            if (ConsensusModule.State.SUSPENDED != state)
-            {
-                state(ConsensusModule.State.ACTIVE);
-            }
+            state(ConsensusModule.State.ACTIVE);
 
             timeOfLastLogUpdateNs = nowNs;
             leadershipTermId(recoveryPlan.lastLeadershipTermId);

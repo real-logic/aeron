@@ -1654,21 +1654,31 @@ abstract class ArchiveConductor
         }
 
         final long stopPosition = recordingSummary.stopPosition;
-        long upperBound = NULL_VALUE == stopPosition ?
+        long endPosition = NULL_VALUE == stopPosition ?
             recordingSessionByIdMap.get(recordingId).recordedPosition() : stopPosition;
-        upperBound = segmentFileBasePosition(startPosition, upperBound, termLength, segmentLength);
+        endPosition = segmentFileBasePosition(startPosition, endPosition, termLength, segmentLength);
 
+        if (position > endPosition)
+        {
+            final String msg =
+                "invalid detach: in use, newStartPosition=" + position + " upperBound=" + endPosition;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        long earliestReplayPosition = Long.MAX_VALUE;
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
             if (replaySession.recordingId() == recordingId)
             {
-                upperBound = min(upperBound, replaySession.segmentFileBasePosition());
+                earliestReplayPosition = min(earliestReplayPosition, replaySession.segmentFileBasePosition());
             }
         }
 
-        if (position > upperBound)
+        if (position > earliestReplayPosition)
         {
-            final String msg = "invalid detach: newStartPosition=" + position + " upperBound=" + upperBound;
+            final String msg = "invalid detach: replay in progress, newStartPosition=" + position +
+                " upperBound=" + earliestReplayPosition;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }

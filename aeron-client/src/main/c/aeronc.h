@@ -406,11 +406,26 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
 
 int aeron_subscription_close(aeron_subscription_t *subscription);
 
-/*
- * Image functions
+/**
+ * Image Functions
  */
 
+/**
+ * Retain the given image for access in the application.
+ *
+ * @param image to retain
+ * @return 0 for success and -1 for error.
+ */
 int aeron_image_retain(aeron_image_t *image);
+
+/**
+ * Release the given image and relinquish desire to call this
+ *
+ * NOTE: Images are not threadsafe and should not be shared between subscribers.
+ *
+ * @param image to release
+ * @return 0 for succes and -1 for error.
+ */
 int aeron_image_release(aeron_image_t *image);
 
 int64_t aeron_image_position(aeron_image_t *image);

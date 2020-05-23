@@ -20,6 +20,7 @@
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "aeron_log_buffer.h"
+#include "aeron_subscription.h"
 
 int aeron_image_create(
     aeron_image_t **image,
@@ -96,6 +97,13 @@ int aeron_image_release(aeron_image_t *image)
         aeron_set_err(EINVAL, "aeron_image_release(NULL): %s", strerror(EINVAL));
         return -1;
     }
+
+    /*
+     * Update the subscriptions last image change number so that if the subscription isn't polling or touching
+     * or touched the image list, then at least this will allow the previous image_lists to be reclaimed.
+     */
+    int64_t last_change_number = aeron_subscription_last_image_list_change_number(image->subscription);
+    aeron_subscription_propose_last_image_change_number(image->subscription, last_change_number);
 
     aeron_image_decr_refcnt(image);
     return 0;

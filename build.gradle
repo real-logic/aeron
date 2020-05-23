@@ -36,7 +36,7 @@ def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.5.0'
 def agronaVersionRange = '[1.5,1.6[' // allow any patch release of 1.5.x
-def sbeVersion = '1.17.0'
+def sbeVersion = '1.18.1'
 def checkstyleVersion = '8.28'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.6.2'

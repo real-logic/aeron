@@ -149,6 +149,8 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_DATA_HEADER_END_FLAG ((uint8_t)(0x40))
 #define AERON_DATA_HEADER_EOS_FLAG ((uint8_t)(0x20))
 
+#define AERON_DATA_HEADER_UNFRAGMENTED ((uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG))
+
 #define AERON_DATA_HEADER_DEFAULT_RESERVED_VALUE (0L)
 
 #define AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG ((uint8_t)(0x80))

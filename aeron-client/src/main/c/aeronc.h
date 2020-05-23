@@ -46,6 +46,11 @@ typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_
 typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
 
+typedef struct aeron_image_fragment_assembler_stct aeron_image_fragment_assembler_t;
+typedef struct aeron_image_controlled_fragment_assembler_stct aeron_image_controlled_fragment_assembler_t;
+typedef struct aeron_fragment_assembler_stct aeron_fragment_assembler_t;
+typedef struct aeron_controlled_fragment_assembler_stct aeron_controlled_fragment_assembler_t;
+
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
  */
@@ -429,6 +434,42 @@ int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
 bool aeron_image_is_closed(aeron_image_t *image);
+
+int aeron_image_fragment_assembler_create(
+    aeron_image_fragment_assembler_t **assembler,
+    aeron_fragment_handler_t delegate,
+    void *delegate_clientd);
+int aeron_image_fragment_assembler_delete(aeron_image_fragment_assembler_t *assembler);
+
+void aeron_image_fragment_assembler_handler(
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+
+int aeron_image_controlled_fragment_assembler_create(
+    aeron_image_controlled_fragment_assembler_t **assembler,
+    aeron_controlled_fragment_handler_t delegate,
+    void *delegate_clientd);
+int aeron_image_controlled_fragment_assembler_delete(aeron_image_fragment_assembler_t *assembler);
+
+aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assembler_handler(
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+
+int aeron_fragment_assembler_create(
+    aeron_fragment_assembler_t **assembler,
+    aeron_fragment_handler_t delegate,
+    void *delegate_clientd);
+int aeron_fragment_assembler_delete(aeron_fragment_assembler_t *assembler);
+
+void aeron_fragment_assembler_handler(
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+
+int aeron_controlled_fragment_assembler_create(
+    aeron_controlled_fragment_assembler_t **assembler,
+    aeron_controlled_fragment_handler_t delegate,
+    void *delegate_clientd);
+int aeron_controlled_fragment_assembler_delete(aeron_controlled_fragment_assembler_t *assembler);
+
+aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_handler(
+    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
 
 /*
  * Counter functions

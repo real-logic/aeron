@@ -159,6 +159,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_context.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_counter.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_exclusive_publication.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_fragment_assembler.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_image.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_log_buffer.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.c
@@ -223,6 +224,7 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_context.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_counter.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_exclusive_publication.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_fragment_assembler.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_image.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_log_buffer.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.h

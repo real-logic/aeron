@@ -26,7 +26,6 @@
 #include "command/aeron_control_protocol.h"
 
 #if defined(AERON_COMPILER_MSVC)
-#include <WinSock2.h>
 #include <windows.h>
 #endif
 
@@ -122,6 +121,24 @@ void aeron_set_err(int errcode, const char *format, ...)
     vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
     va_end(args);
     strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
+}
+
+void aeron_set_errno(int errcode)
+{
+    errno = errcode;
+#if defined(AERON_COMPILER_MSVC)
+    switch (errcode)
+    {
+    default:
+        break;
+    case EINVAL:
+        SetLastError(ERROR_BAD_ARGUMENTS);
+        break;
+    case ENOMEM:
+        SetLastError(ERROR_OUTOFMEMORY);
+        break;
+    }
+#endif
 }
 
 void aeron_set_err_from_last_err_code(const char* format, ...)

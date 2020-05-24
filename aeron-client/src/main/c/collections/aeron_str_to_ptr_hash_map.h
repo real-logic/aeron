@@ -24,12 +24,6 @@
 
 #include "util/aeron_platform.h"
 #include "collections/aeron_map.h"
-
-#if defined(AERON_COMPILER_MSVC)
-#include <WinSock2.h>
-#include <windows.h>
-#endif
-
 #include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_strutil.h"
@@ -162,10 +156,7 @@ inline int aeron_str_to_ptr_hash_map_put(aeron_str_to_ptr_hash_map_t *map, const
 {
     if (NULL == value)
     {
-        errno = EINVAL;
-#if defined(AERON_COMPILER_MSVC)
-        SetLastError(ERROR_BAD_ARGUMENTS);
-#endif
+        aeron_set_errno(EINVAL);
         return -1;
     }
 

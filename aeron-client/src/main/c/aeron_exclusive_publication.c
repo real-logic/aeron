@@ -459,6 +459,32 @@ int64_t aeron_exclusive_publication_offer_block(
     }
 }
 
+int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *publication, const char *uri)
+{
+    if (NULL == publication || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_offer_destination_command(
+        publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri);
+}
+
+int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *publication, const char *uri)
+{
+    if (NULL == publication || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_offer_destination_command(
+        publication->conductor, publication->registration_id, AERON_COMMAND_REMOVE_DESTINATION, uri);
+}
+
 extern void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication);
 
 extern int64_t aeron_exclusive_publication_new_position(

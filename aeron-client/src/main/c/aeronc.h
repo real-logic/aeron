@@ -331,6 +331,9 @@ int64_t aeron_publication_try_claim(
     size_t length,
     aeron_buffer_claim_t *buffer_claim);
 
+int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri);
+int aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri);
+
 int aeron_publication_close(aeron_publication_t *publication);
 
 /*
@@ -364,6 +367,9 @@ int64_t aeron_exclusive_publication_offer_block(
     aeron_exclusive_publication_t *publication,
     const uint8_t *buffer,
     size_t length);
+
+int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
+int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
 
 int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
 
@@ -403,6 +409,9 @@ void aeron_subscription_for_each_image(
 bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 
 int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
+
+int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri);
+int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri);
 
 int aeron_subscription_close(aeron_subscription_t *subscription);
 

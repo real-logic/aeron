@@ -397,6 +397,32 @@ long aeron_subscription_block_poll(
     return bytes_consumed;
 }
 
+int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri)
+{
+    if (NULL == subscription || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_offer_destination_command(
+        subscription->conductor, subscription->registration_id, AERON_COMMAND_ADD_RCV_DESTINATION, uri);
+}
+
+int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri)
+{
+    if (NULL == subscription || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_offer_destination_command(
+        subscription->conductor, subscription->registration_id, AERON_COMMAND_REMOVE_RCV_DESTINATION, uri);
+}
+
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
 extern void aeron_subscription_propose_last_image_change_number(

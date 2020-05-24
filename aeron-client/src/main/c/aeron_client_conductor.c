@@ -1583,6 +1583,39 @@ int aeron_client_conductor_on_counter_ready(
     return 0;
 }
 
+int aeron_client_conductor_offer_destination_command(
+    aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type, const char *uri)
+{
+    size_t uri_length = strlen(uri);
+    char buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
+    aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
+    int rb_offer_fail_count = 0;
+
+    command->correlated.correlation_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    command->correlated.client_id = conductor->client_id;
+    command->registration_id = registration_id;
+    command->channel_length = uri_length;
+    memcpy(buffer + sizeof(aeron_destination_command_t), uri, uri_length);
+
+    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+        &conductor->to_driver_buffer, command_type, buffer,sizeof(aeron_destination_command_t) + uri_length))
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "destination command could not be sent (%s:%d)",
+                __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, err_buffer);
+            return -1;
+        }
+
+        sched_yield();
+    }
+
+    return 0;
+}
+
 extern int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id);
 extern bool aeron_counter_heartbeat_timestamp_is_active(

@@ -17,6 +17,7 @@
 #include "ReplayMerge.h"
 
 using namespace aeron::archive::client;
+using namespace aeron;
 
 ReplayMerge::ReplayMerge(
     std::shared_ptr<Subscription> subscription,

@@ -859,7 +859,7 @@ private:
         int attempts = m_retryAttempts;
         while (true)
         {
-            const long result = m_publication->offer(m_buffer, offset, length);
+            const int64_t result = m_publication->offer(m_buffer, offset, length);
             if (result > 0)
             {
                 return true;

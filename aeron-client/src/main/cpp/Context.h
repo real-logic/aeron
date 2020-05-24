@@ -415,7 +415,7 @@ public:
     }
 
     static void requestDriverTermination(
-        const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength);
+        const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength, long timeout_ms);
 
     static std::string defaultAeronPath();
 

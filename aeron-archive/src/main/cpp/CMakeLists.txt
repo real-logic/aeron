@@ -111,6 +111,10 @@ target_link_libraries(aeron_archive_client
     PRIVATE aeron_client
     INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
+if (MSVC)
+    target_compile_options(aeron_archive_client PRIVATE -std:c++17 -Zc:__cplusplus)
+endif()
+
 if (AERON_INSTALL_TARGETS)
     install(TARGETS aeron_archive_client ARCHIVE DESTINATION lib)
     install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")

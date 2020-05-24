@@ -30,31 +30,20 @@ using namespace aeron;
 using namespace aeron::util;
 
 void Context::requestDriverTermination(
-    const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
+    const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength,  long timeout_ms)
 {
     const std::string cncFilename = directory + AERON_PATH_SEP + CncFileDescriptor::CNC_FILE;
-
-    if (MemoryMappedFile::getFileSize(cncFilename.c_str()) > 0)
+    MemoryMappedFile::ptr_t cncFile = Aeron::mapCncFile(cncFilename, timeout_ms);
+    if (!cncFile)
     {
-        MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(cncFilename.c_str());
-
-        const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
-
-        if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
-        {
-            throw AeronException(
-                "Aeron CnC version does not match:"
-                " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
-                " file=" + semanticVersionToString(cncVersion),
-                SOURCEINFO);
-        }
-
-        AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));
-        ManyToOneRingBuffer ringBuffer(toDriverBuffer);
-        DriverProxy driverProxy(ringBuffer);
-
-        driverProxy.terminateDriver(tokenBuffer, tokenLength);
+        return;
     }
+
+    AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));
+    ManyToOneRingBuffer ringBuffer(toDriverBuffer);
+    DriverProxy driverProxy(ringBuffer);
+
+    driverProxy.terminateDriver(tokenBuffer, tokenLength);
 }
 
 #if !defined(__linux__)

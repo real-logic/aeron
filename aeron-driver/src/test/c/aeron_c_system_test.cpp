@@ -122,6 +122,23 @@ public:
         return subscription;
     }
 
+    aeron_counter_t *awaitCounterOrError(aeron_async_add_counter_t *async)
+    {
+        aeron_counter_t *counter = nullptr;
+
+        do
+        {
+            std::this_thread::yield();
+            if (aeron_async_add_counter_poll(&counter, async) < 0)
+            {
+                return nullptr;
+            }
+        }
+        while (!counter);
+
+        return counter;
+    }
+
 protected:
     EmbeddedMediaDriver m_driver;
     aeron_context_t *m_context = nullptr;
@@ -183,6 +200,21 @@ TEST_F(CSystemTest, shouldAddAndCloseSubscription)
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
 
     aeron_subscription_close(subscription);
+}
+
+TEST_F(CSystemTest, shouldAddAndCloseCounter)
+{
+    aeron_async_add_counter_t *async;
+    aeron_counter_t *counter;
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_counter(
+        &async, m_aeron, 12, nullptr, 0, "my counter", strlen("my counter")), 0);
+
+    ASSERT_TRUE((counter = awaitCounterOrError(async))) << aeron_errmsg();
+
+    aeron_counter_close(counter);
 }
 
 TEST_F(CSystemTest, shouldAddPublicationAndSubscription)

@@ -17,6 +17,9 @@
 #include "AeronArchive.h"
 #include "ArchiveException.h"
 
+namespace aeron
+{
+
 using namespace aeron::archive::client;
 
 AeronArchive::AsyncConnect::AsyncConnect(
@@ -219,4 +222,6 @@ std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArch
 std::string AeronArchive::version()
 {
     return std::string("aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__);
+}
+
 }

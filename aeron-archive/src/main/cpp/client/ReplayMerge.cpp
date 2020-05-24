@@ -16,6 +16,9 @@
 
 #include "ReplayMerge.h"
 
+namespace aeron
+{
+
 using namespace aeron::archive::client;
 
 ReplayMerge::ReplayMerge(
@@ -294,4 +297,6 @@ bool ReplayMerge::pollForResponse(AeronArchive &archive, std::int64_t correlatio
     }
 
     return false;
+}
+
 }

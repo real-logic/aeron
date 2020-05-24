@@ -94,7 +94,6 @@ int aeron_subscription_close(aeron_subscription_t *subscription)
 {
     if (NULL != subscription)
     {
-        AERON_PUT_ORDERED(subscription->is_closed, true);
         return aeron_client_conductor_async_close_subscription(subscription->conductor, subscription);
     }
 

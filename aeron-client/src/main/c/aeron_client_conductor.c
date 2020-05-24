@@ -195,23 +195,27 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
         {
             aeron_image_buffers_ready_t *response = (aeron_image_buffers_ready_t *)buffer;
             uint8_t *ptr = buffer + sizeof(aeron_image_buffers_ready_t);
-            int32_t log_file_length, source_identity_length;
+            int32_t log_file_length, source_identity_length, aligned_log_file_length;
             const char *log_file = (const char *)(ptr + sizeof(int32_t));
             const char *source_identity;
 
             memcpy(&log_file_length, ptr, sizeof(int32_t));
 
-            if (length < sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) ||
-                length < sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) + log_file_length)
+            if (length < (sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t)) ||
+                length < (sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) + log_file_length))
             {
                 goto malformed_command;
             }
 
-            ptr += sizeof(int32_t) + log_file_length;
+            aligned_log_file_length = AERON_ALIGN(log_file_length, sizeof(int32_t));
+            ptr += sizeof(int32_t) + aligned_log_file_length;
             memcpy(&source_identity_length, ptr, sizeof(int32_t));
 
             if (length <
-                sizeof(aeron_image_buffers_ready_t) + 2 * sizeof(int32_t) + log_file_length + source_identity_length)
+                (sizeof(aeron_image_buffers_ready_t) +
+                2 * sizeof(int32_t) +
+                aligned_log_file_length +
+                source_identity_length))
             {
                 goto malformed_command;
             }
@@ -270,7 +274,7 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
     return;
 
     malformed_command:
-    AERON_CLIENT_FORMAT_BUFFER(error_message, "command=%d too short: length=%zu", type_id, (size_t)length);
+    AERON_CLIENT_FORMAT_BUFFER(error_message, "command=%x too short: length=%" PRIu32, type_id, (uint32_t)length);
     conductor->error_handler(conductor->error_handler_clientd, AERON_ERROR_CODE_MALFORMED_COMMAND, error_message);
 }
 
@@ -491,7 +495,7 @@ void aeron_client_conductor_delete_resource(void *clientd, int64_t key, void *va
 
         case AERON_CLIENT_TYPE_IMAGE:
         {
-            //TODO: aeron_image_release
+            aeron_image_delete((aeron_image_t *)value);
             break;
         }
 
@@ -524,6 +528,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
+    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
@@ -565,8 +570,8 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
 
 void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
 {
-    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *) clientd;
-    aeron_publication_t *publication = (aeron_publication_t *) item;
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_publication_t *publication = (aeron_publication_t *)item;
 
     if (publication->is_closed)
     {
@@ -588,6 +593,7 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
+    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
@@ -653,6 +659,7 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     aeron_subscription_command_t *command = (aeron_subscription_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
+    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
@@ -719,6 +726,7 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
     char *cursor = buffer + sizeof(aeron_counter_command_t);
 
+    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->type_id = async->counter.type_id;
@@ -1448,7 +1456,7 @@ int aeron_client_conductor_on_available_image(
         aeron_log_buffer_t *log_buffer;
 
         if (aeron_client_conductor_get_or_create_log_buffer(
-            conductor, &log_buffer, log_file, response->correlation_id, conductor->pre_touch) < 0)
+            conductor, &log_buffer, log_file_str, response->correlation_id, conductor->pre_touch) < 0)
         {
             return -1;
         }

@@ -104,7 +104,7 @@ int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication
 
 int64_t aeron_exclusive_publication_offer(
     aeron_exclusive_publication_t *publication,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd)
@@ -377,7 +377,7 @@ int64_t aeron_exclusive_publication_append_padding(
 
 int64_t aeron_exclusive_publication_offer_block(
     aeron_exclusive_publication_t *publication,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length)
 {
     bool is_closed;

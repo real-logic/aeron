@@ -94,7 +94,7 @@ int aeron_publication_close(aeron_publication_t *publication)
 
 int64_t aeron_publication_offer(
     aeron_publication_t *publication,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd)

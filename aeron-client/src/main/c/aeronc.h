@@ -314,7 +314,7 @@ int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim);
 
 int64_t aeron_publication_offer(
     aeron_publication_t *publication,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd);
@@ -339,7 +339,7 @@ int aeron_publication_close(aeron_publication_t *publication);
 
 int64_t aeron_exclusive_publication_offer(
     aeron_exclusive_publication_t *publication,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd);
@@ -362,7 +362,7 @@ int64_t aeron_exclusive_publication_append_padding(
 
 int64_t aeron_exclusive_publication_offer_block(
     aeron_exclusive_publication_t *publication,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length);
 
 int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
@@ -386,9 +386,9 @@ typedef void (*aeron_block_handler_t)(
     void *clientd, const uint8_t *buffer, size_t offset, size_t length, int32_t session_id, int32_t term_id);
 
 int aeron_subscription_poll(
-    aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, int fragment_limit);
+    aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit);
 int aeron_subscription_controlled_poll(
-    aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, int fragment_limit);
+    aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, size_t fragment_limit);
 long aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 

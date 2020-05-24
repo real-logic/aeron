@@ -140,7 +140,7 @@ inline int32_t aeron_term_appender_claim(
 inline int32_t aeron_term_appender_append_unfragmented_message(
     aeron_mapped_buffer_t *term_buffer,
     volatile int64_t *term_tail_counter,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd,
@@ -247,7 +247,7 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
 inline int32_t aeron_term_appender_append_fragmented_message(
     aeron_mapped_buffer_t *term_buffer,
     volatile int64_t *term_tail_counter,
-    uint8_t *buffer,
+    const uint8_t *buffer,
     size_t length,
     size_t max_payload_length,
     aeron_reserved_value_supplier_t reserved_value_supplier,

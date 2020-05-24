@@ -282,7 +282,8 @@ TEST_F(CSystemTest, shouldOfferAndPollOneMessage)
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async_sub))) << aeron_errmsg();
     awaitConnected(subscription);
 
-    while (aeron_publication_offer(publication, (uint8_t *)message, strlen(message), nullptr, nullptr) < 0)
+    while (aeron_publication_offer(
+        publication, (const uint8_t *)message, strlen(message), nullptr, nullptr) < 0)
     {
         std::this_thread::yield();
     }
@@ -301,6 +302,51 @@ TEST_F(CSystemTest, shouldOfferAndPollOneMessage)
     }
     EXPECT_EQ(poll_result, 1) << aeron_errmsg();
     EXPECT_TRUE(called);
+
+    EXPECT_EQ(aeron_publication_close(publication), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+}
+
+TEST_F(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
+{
+    aeron_async_add_publication_t *async_pub;
+    aeron_publication_t *publication;
+    aeron_async_add_subscription_t *async_sub;
+    aeron_subscription_t *subscription;
+    const char message[1024] = "message";
+    size_t num_messages = 64 * 3 + 1;
+
+    ASSERT_TRUE(connect());
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, PUB_URI "|term-length=64k", STREAM_ID), 0);
+    ASSERT_TRUE((publication = awaitPublicationOrError(async_pub))) << aeron_errmsg();
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, SUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    ASSERT_TRUE((subscription = awaitSubscriptionOrError(async_sub))) << aeron_errmsg();
+    awaitConnected(subscription);
+
+    for (size_t i = 0; i < num_messages; i++)
+    {
+        while (aeron_publication_offer(
+            publication, (const uint8_t *) message, sizeof(message), nullptr, nullptr) < 0)
+        {
+            std::this_thread::yield();
+        }
+
+        int poll_result;
+        bool called = false;
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        {
+            EXPECT_EQ(length, sizeof(message));
+            called = true;
+        };
+
+        while ((poll_result = poll(subscription, handler, 1)) == 0)
+        {
+            std::this_thread::yield();
+        }
+        EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+        EXPECT_TRUE(called);
+    }
 
     EXPECT_EQ(aeron_publication_close(publication), 0);
     EXPECT_EQ(aeron_subscription_close(subscription), 0);

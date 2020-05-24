@@ -129,7 +129,7 @@ inline int32_t aeron_logbuffer_compute_term_id_from_position(
 
 inline int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t position, size_t position_bits_to_shift)
 {
-    int64_t mask = (1l << position_bits_to_shift) - 1l;
+    int64_t mask = (1u << position_bits_to_shift) - 1l;
 
     return (int32_t)(position & mask);
 }
@@ -176,7 +176,8 @@ inline bool aeron_logbuffer_rotate_log(
             break;
         }
     }
-    while (!aeron_logbuffer_cas_raw_tail(log_meta_data, next_index, raw_tail, (int64_t)next_term_id << 32));
+    while (!aeron_logbuffer_cas_raw_tail(
+        log_meta_data, next_index, raw_tail, (int64_t)((uint64_t)next_term_id << 32u)));
 
     return aeron_logbuffer_cas_active_term_count(log_meta_data, current_term_count, next_term_count);
 }

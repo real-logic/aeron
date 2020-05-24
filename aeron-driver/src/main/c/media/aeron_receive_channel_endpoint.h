@@ -34,12 +34,6 @@ typedef enum aeron_receive_channel_endpoint_status_enum
 }
 aeron_receive_channel_endpoint_status_t;
 
-typedef struct aeron_stream_id_refcnt_stct
-{
-    int32_t refcnt;
-}
-aeron_stream_id_refcnt_t;
-
 typedef struct aeron_receive_destination_entry_stct
 {
     aeron_receive_destination_t *destination;

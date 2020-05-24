@@ -129,12 +129,6 @@ int aeron_receive_channel_endpoint_create(
     return 0;
 }
 
-void aeron_receive_channel_endpoint_free_stream_id_refcnt(void *clientd, int64_t key, void *value)
-{
-    aeron_stream_id_refcnt_t *count = value;
-    aeron_free(count);
-}
-
 int aeron_receive_channel_endpoint_delete(
     aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *endpoint)
 {

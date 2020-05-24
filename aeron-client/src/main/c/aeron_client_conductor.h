@@ -205,6 +205,7 @@ aeron_client_conductor_t;
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context);
 int aeron_client_conductor_do_work(aeron_client_conductor_t *conductor);
 void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor);
+void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *conductor);
 
 void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item);
 void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item);
@@ -260,6 +261,12 @@ int aeron_client_conductor_on_unavailable_image(
 int aeron_client_conductor_on_counter_ready(
     aeron_client_conductor_t *conductor,
     aeron_counter_update_t *response);
+int aeron_client_conductor_on_unavailable_counter(
+    aeron_client_conductor_t *conductor,
+    aeron_counter_update_t *response);
+int aeron_client_conductor_on_client_timeout(
+    aeron_client_conductor_t *conductor,
+    aeron_client_timeout_t *response);
 
 int aeron_client_conductor_get_or_create_log_buffer(
     aeron_client_conductor_t *conductor,

@@ -62,6 +62,7 @@ int aeron_publication_create(
     int64_t registration_id);
 
 int aeron_publication_delete(aeron_publication_t *publication);
+void aeron_publication_force_close(aeron_publication_t *publication);
 
 inline int64_t aeron_publication_new_position(
     aeron_publication_t *publication,

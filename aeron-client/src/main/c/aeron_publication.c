@@ -86,10 +86,30 @@ int aeron_publication_delete(aeron_publication_t *publication)
     return 0;
 }
 
+void aeron_publication_force_close(aeron_publication_t *publication)
+{
+    AERON_PUT_ORDERED(publication->is_closed, true);
+}
+
 int aeron_publication_close(aeron_publication_t *publication)
 {
-    return NULL != publication ?
-        aeron_client_conductor_async_close_publication(publication->conductor, publication) : 0;
+    if (NULL != publication)
+    {
+        bool is_closed;
+
+        AERON_GET_VOLATILE(is_closed, publication->is_closed);
+        if (!is_closed)
+        {
+            if (aeron_client_conductor_async_close_publication(publication->conductor, publication) < 0)
+            {
+                return -1;
+            }
+
+            AERON_PUT_ORDERED(publication->is_closed, true);
+        }
+    }
+
+    return 0;
 }
 
 int64_t aeron_publication_offer(

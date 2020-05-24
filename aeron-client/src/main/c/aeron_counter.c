@@ -54,8 +54,28 @@ int aeron_counter_delete(aeron_counter_t *counter)
     return 0;
 }
 
+void aeron_counter_force_close(aeron_counter_t *counter)
+{
+    AERON_PUT_ORDERED(counter->is_closed, true);
+}
+
 int aeron_counter_close(aeron_counter_t *counter)
 {
-    return NULL != counter ?
-        aeron_client_conductor_async_close_counter(counter->conductor, counter) : 0;
+    if (NULL != counter)
+    {
+        bool is_closed;
+
+        AERON_GET_VOLATILE(is_closed, counter->is_closed);
+        if (!is_closed)
+        {
+            if (aeron_client_conductor_async_close_counter(counter->conductor, counter) < 0)
+            {
+                return -1;
+            }
+
+            AERON_PUT_ORDERED(counter->is_closed, true);
+        }
+    }
+
+    return 0;
 }

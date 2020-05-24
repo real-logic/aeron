@@ -68,6 +68,7 @@ int aeron_exclusive_publication_create(
     int64_t registration_id);
 
 int aeron_exclusive_publication_delete(aeron_exclusive_publication_t *publication);
+void aeron_exclusive_publication_force_close(aeron_exclusive_publication_t *publication);
 
 inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication)
 {

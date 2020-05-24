@@ -76,11 +76,17 @@ int aeron_subscription_create(
     void *on_unavailable_image_clientd);
 
 int aeron_subscription_delete(aeron_subscription_t *subscription);
+void aeron_subscription_force_close(aeron_subscription_t *subscription);
 
 int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list, size_t length);
 
 int aeron_client_conductor_subscription_add_image(aeron_subscription_t *subscription, aeron_image_t *image);
 int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subscription, aeron_image_t *image);
+
+inline volatile aeron_image_list_t *aeron_client_conductor_subscription_image_list(aeron_subscription_t *subscription)
+{
+    return subscription->conductor_fields.image_lists_head.next_list;
+}
 
 int aeron_client_conductor_subscription_install_new_image_list(
     aeron_subscription_t *subscription, volatile aeron_image_list_t *image_list);

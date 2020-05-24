@@ -90,11 +90,27 @@ int aeron_subscription_delete(aeron_subscription_t *subscription)
     return 0;
 }
 
+void aeron_subscription_force_close(aeron_subscription_t *subscription)
+{
+    AERON_PUT_ORDERED(subscription->is_closed, true);
+}
+
 int aeron_subscription_close(aeron_subscription_t *subscription)
 {
     if (NULL != subscription)
     {
-        return aeron_client_conductor_async_close_subscription(subscription->conductor, subscription);
+        bool is_closed;
+
+        AERON_GET_VOLATILE(is_closed, subscription->is_closed);
+        if (!is_closed)
+        {
+            if (aeron_client_conductor_async_close_subscription(subscription->conductor, subscription) < 0)
+            {
+                return -1;
+            }
+
+            AERON_PUT_ORDERED(subscription->is_closed, true);
+        }
     }
 
     return 0;
@@ -427,3 +443,4 @@ extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *imag
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
 extern void aeron_subscription_propose_last_image_change_number(
     aeron_subscription_t *subscription, int64_t change_number);
+extern volatile aeron_image_list_t *aeron_client_conductor_subscription_image_list(aeron_subscription_t *subscription);

@@ -65,6 +65,7 @@ int aeron_image_create(
     int32_t session_id);
 
 int aeron_image_delete(aeron_image_t *image);
+void aeron_image_force_close(aeron_image_t *image);
 
 inline int64_t aeron_image_removal_change_number(aeron_image_t *image)
 {

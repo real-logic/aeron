@@ -43,5 +43,6 @@ int aeron_counter_create(
     int64_t *counter_addr);
 
 int aeron_counter_delete(aeron_counter_t *counter);
+void aeron_counter_force_close(aeron_counter_t *counter);
 
 #endif //AERON_C_COUNTER_H

@@ -76,6 +76,11 @@ int aeron_image_delete(aeron_image_t *image)
     return 0;
 }
 
+void aeron_image_force_close(aeron_image_t *image)
+{
+    AERON_PUT_ORDERED(image->is_closed, true);
+}
+
 int aeron_image_retain(aeron_image_t *image)
 {
     if (NULL == image)

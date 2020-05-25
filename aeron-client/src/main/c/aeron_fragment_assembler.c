@@ -202,7 +202,7 @@ int aeron_image_controlled_fragment_assembler_create(
     return 0;
 }
 
-int aeron_image_controlled_fragment_assembler_delete(aeron_image_fragment_assembler_t *assembler)
+int aeron_image_controlled_fragment_assembler_delete(aeron_image_controlled_fragment_assembler_t *assembler)
 {
     if (assembler)
     {

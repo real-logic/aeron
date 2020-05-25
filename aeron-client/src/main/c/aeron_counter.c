@@ -59,6 +59,11 @@ void aeron_counter_force_close(aeron_counter_t *counter)
     AERON_PUT_ORDERED(counter->is_closed, true);
 }
 
+int64_t *aeron_counter_addr(aeron_counter_t *counter)
+{
+    return counter->counter_addr;
+}
+
 int aeron_counter_close(aeron_counter_t *counter)
 {
     if (NULL != counter)

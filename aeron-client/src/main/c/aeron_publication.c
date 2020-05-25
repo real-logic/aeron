@@ -355,6 +355,31 @@ int64_t aeron_publication_try_claim(
     return new_position;
 }
 
+bool aeron_publication_is_closed(aeron_publication_t *publication)
+{
+    bool is_closed = false;
+
+    if (NULL != publication)
+    {
+        AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    }
+
+    return is_closed;
+}
+
+int64_t aeron_publication_channel_status(aeron_publication_t *publication)
+{
+    if (NULL != publication && !aeron_publication_is_closed(publication))
+    {
+        int64_t value;
+        AERON_GET_VOLATILE(value, *publication->channel_status_indicator);
+
+        return value;
+    }
+
+    return AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_NO_ID_ALLOCATED;
+}
+
 int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri)
 {
     if (NULL == publication || uri == NULL)

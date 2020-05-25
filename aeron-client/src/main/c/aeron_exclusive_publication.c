@@ -478,6 +478,31 @@ int64_t aeron_exclusive_publication_offer_block(
     }
 }
 
+bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *publication)
+{
+    bool is_closed = false;
+
+    if (NULL != publication)
+    {
+        AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    }
+
+    return is_closed;
+}
+
+int64_t aeron_exclusive_publication_channel_status(aeron_exclusive_publication_t *publication)
+{
+    if (NULL != publication && !aeron_exclusive_publication_is_closed(publication))
+    {
+        int64_t value;
+        AERON_GET_VOLATILE(value, *publication->channel_status_indicator);
+
+        return value;
+    }
+
+    return AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_NO_ID_ALLOCATED;
+}
+
 int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *publication, const char *uri)
 {
     if (NULL == publication || uri == NULL)

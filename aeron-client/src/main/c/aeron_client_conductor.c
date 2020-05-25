@@ -377,28 +377,33 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
     {
         aeron_client_managed_resource_t *resource = &conductor->lingering_resources.array[i];
 
-        if (now_ns > (resource->time_of_last_state_change_ns + (long long)conductor->resource_linger_duration_ns))
+        if (AERON_CLIENT_TYPE_IMAGE == resource->type)
         {
-            if (AERON_CLIENT_TYPE_IMAGE == resource->type)
-            {
-                aeron_image_t *image = resource->resource.image;
-                int64_t refcnt;
+            aeron_image_t *image = resource->resource.image;
 
-                AERON_GET_VOLATILE(refcnt, image->refcnt);
-                if (refcnt <= 0)
+            if (image->removal_change_number != INT64_MIN)
+            {
+                if (!aeron_image_is_in_use_by_subcription(
+                    image, aeron_subscription_last_image_list_change_number(image->subscription)))
                 {
-                    aeron_client_conductor_release_log_buffer(conductor, image->log_buffer);
-                    aeron_image_delete(image);
+                    aeron_image_decr_refcnt(image);
+                    image->removal_change_number = INT16_MIN;
                 }
             }
 
-            aeron_array_fast_unordered_remove(
-                (uint8_t *)conductor->lingering_resources.array,
-                sizeof(aeron_client_managed_resource_t),
-                i,
-                last_index);
-            conductor->lingering_resources.length--;
-            work_count += 1;
+            if (aeron_image_refcnt_volatile(image) <= 0)
+            {
+                aeron_client_conductor_release_log_buffer(conductor, image->log_buffer);
+                aeron_image_delete(image);
+
+                aeron_array_fast_unordered_remove(
+                    (uint8_t *)conductor->lingering_resources.array,
+                    sizeof(aeron_client_managed_resource_t),
+                    i,
+                    last_index);
+                conductor->lingering_resources.length--;
+                work_count += 1;
+            }
         }
     }
 
@@ -615,42 +620,28 @@ void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *cond
         &conductor->resource_by_id_map, aeron_client_conductor_force_close_resource, NULL);
 }
 
-int aeron_client_conductor_linger_or_delete_image(
-    aeron_client_conductor_t *conductor,
-    aeron_image_t *image)
+int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aeron_image_t *image)
 {
     int ensure_capacity_result = 0;
-    int64_t refcnt;
 
-    aeron_image_decr_refcnt(image);
-    AERON_GET_VOLATILE(refcnt, image->refcnt);
-
-    if (refcnt <= 0)
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, conductor->lingering_resources, aeron_client_managed_resource_t);
+    if (ensure_capacity_result < 0)
     {
-        aeron_client_conductor_release_log_buffer(conductor, image->log_buffer);
-        aeron_image_delete(image);
-    }
-    else
-    {
-        AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result, conductor->lingering_resources, aeron_client_managed_resource_t);
-        if (ensure_capacity_result < 0)
-        {
-            char err_buffer[AERON_MAX_PATH];
+        char err_buffer[AERON_MAX_PATH];
 
-            snprintf(err_buffer, sizeof(err_buffer) - 1, "lingering image: %s", aeron_errmsg());
-            conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
-            return -1;
-        }
-
-        aeron_client_managed_resource_t *resource =
-            &conductor->lingering_resources.array[conductor->lingering_resources.length++];
-        resource->type = AERON_CLIENT_TYPE_IMAGE;
-        resource->time_of_last_state_change_ns = conductor->nano_clock();
-        resource->registration_id = image->correlation_id;
-        resource->resource.image = image;
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "lingering image: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
+        return -1;
     }
 
+    aeron_client_managed_resource_t *resource =
+        &conductor->lingering_resources.array[conductor->lingering_resources.length++];
+    resource->type = AERON_CLIENT_TYPE_IMAGE;
+    resource->time_of_last_state_change_ns = conductor->nano_clock();
+    resource->registration_id = image->correlation_id;
+    resource->resource.image = image;
+    image->is_lingering = true;
     return 0;
 }
 
@@ -660,9 +651,23 @@ int aeron_client_conductor_linger_or_delete_all_images(
 {
     for (size_t i = 0; i < current_image_list->length; i++)
     {
-        if (aeron_client_conductor_linger_or_delete_image(conductor, current_image_list->array[i]) < 0)
+        aeron_image_t *image = current_image_list->array[i];
+        int64_t refcnt;
+
+        aeron_image_decr_refcnt(image);
+        refcnt = aeron_image_refcnt_volatile(image);
+
+        if (refcnt <= 0)
         {
-            return -1;
+            aeron_client_conductor_release_log_buffer(conductor, image->log_buffer);
+            aeron_image_delete(image);
+        }
+        else if (!image->is_lingering)
+        {
+            if (aeron_client_conductor_linger_image(conductor, image) < 0)
+            {
+                return -1;
+            }
         }
     }
 
@@ -1659,7 +1664,10 @@ int aeron_client_conductor_on_unavailable_image(
                 subscription->on_unavailable_image(subscription->on_unavailable_image_clientd, image);
             }
 
-            aeron_client_conductor_linger_or_delete_image(conductor, image);
+            if (aeron_client_conductor_linger_image(conductor, image) < 0)
+            {
+                return -1;
+            }
         }
     }
 

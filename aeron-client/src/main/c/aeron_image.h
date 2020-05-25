@@ -46,6 +46,7 @@ typedef struct aeron_image_stct
     size_t position_bits_to_shift;
 
     bool is_closed;
+    bool is_lingering;
 }
 aeron_image_t;
 

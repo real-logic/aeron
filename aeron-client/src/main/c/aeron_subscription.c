@@ -104,12 +104,11 @@ int aeron_subscription_close(aeron_subscription_t *subscription)
         AERON_GET_VOLATILE(is_closed, subscription->is_closed);
         if (!is_closed)
         {
+            AERON_PUT_ORDERED(subscription->is_closed, true);
             if (aeron_client_conductor_async_close_subscription(subscription->conductor, subscription) < 0)
             {
                 return -1;
             }
-
-            AERON_PUT_ORDERED(subscription->is_closed, true);
         }
     }
 

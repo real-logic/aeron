@@ -68,12 +68,11 @@ int aeron_counter_close(aeron_counter_t *counter)
         AERON_GET_VOLATILE(is_closed, counter->is_closed);
         if (!is_closed)
         {
+            AERON_PUT_ORDERED(counter->is_closed, true);
             if (aeron_client_conductor_async_close_counter(counter->conductor, counter) < 0)
             {
                 return -1;
             }
-
-            AERON_PUT_ORDERED(counter->is_closed, true);
         }
     }
 

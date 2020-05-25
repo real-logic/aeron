@@ -278,6 +278,8 @@ int aeron_client_conductor_release_log_buffer(
     aeron_client_conductor_t *conductor,
     aeron_log_buffer_t *log_buffer);
 
+int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aeron_image_t *image);
+
 int aeron_client_conductor_offer_destination_command(
     aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type, const char *uri);
 

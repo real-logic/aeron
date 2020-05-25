@@ -110,12 +110,11 @@ int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication
         AERON_GET_VOLATILE(is_closed, publication->is_closed);
         if (!is_closed)
         {
+            AERON_PUT_ORDERED(publication->is_closed, true);
             if (aeron_client_conductor_async_close_exclusive_publication(publication->conductor, publication) < 0)
             {
                 return -1;
             }
-
-            AERON_PUT_ORDERED(publication->is_closed, true);
         }
     }
 

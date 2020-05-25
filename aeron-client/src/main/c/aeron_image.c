@@ -64,6 +64,7 @@ int aeron_image_create(
     _image->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes(term_length);
 
     _image->is_closed = false;
+    _image->is_lingering = false;
 
     *image = _image;
     return 0;

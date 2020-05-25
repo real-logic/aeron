@@ -262,7 +262,7 @@
         <data  name="clusterMembers"           id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
-<!-- Messages for service control between clustered services and the Consensus Module -->
+<!-- Messages for the control protocol between clustered services, or cluster tool, and the Consensus Module -->
 
     <sbe:message name="CloseSession"
                  id="30"

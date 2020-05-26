@@ -573,7 +573,7 @@ public final class AeronCluster implements AutoCloseable
             newLeader.publication = publication;
         }
 
-        endpointByIdMap.values().forEach(MemberIngress::disconnect);
+        CloseHelper.closeAll(endpointByIdMap.values());
         endpointByIdMap = map;
     }
 
@@ -1454,10 +1454,7 @@ public final class AeronCluster implements AutoCloseable
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, ingressPublication);
                 CloseHelper.close(errorHandler, egressSubscription);
-                for (final MemberIngress memberIngress : memberByIdMap.values())
-                {
-                    CloseHelper.close(errorHandler, memberIngress::disconnect);
-                }
+                CloseHelper.closeAll(errorHandler, memberByIdMap.values());
 
                 ctx.close();
             }
@@ -1517,7 +1514,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     endpoint.publication = null;
                 }
-                memberByIdMap.values().forEach(MemberIngress::disconnect);
+                CloseHelper.closeAll(memberByIdMap.values());
 
                 step(5);
             }
@@ -1540,7 +1537,7 @@ public final class AeronCluster implements AutoCloseable
 
         private void createIngressPublications()
         {
-            if (ctx.ingressEndpoints() == null)
+            if (null == ctx.ingressEndpoints())
             {
                 ingressPublication = addIngressPublication(ctx, ctx.ingressChannel(), ctx.ingressStreamId());
             }
@@ -1559,21 +1556,21 @@ public final class AeronCluster implements AutoCloseable
 
         private void awaitPublicationConnected()
         {
-            if (null != ingressPublication && ingressPublication.isConnected())
-            {
-                prepareConnectRequest();
-            }
-            else
+            if (null == ingressPublication)
             {
                 for (final MemberIngress member : memberByIdMap.values())
                 {
-                    if (null != member.publication && member.publication.isConnected())
+                    if (member.publication.isConnected())
                     {
                         ingressPublication = member.publication;
                         prepareConnectRequest();
-                        break;
+                        return;
                     }
                 }
+            }
+            else if (ingressPublication.isConnected())
+            {
+                prepareConnectRequest();
             }
         }
 
@@ -1673,12 +1670,12 @@ public final class AeronCluster implements AutoCloseable
             {
                 ingressPublication = leader.publication;
                 leader.publication = null;
-                memberByIdMap.values().forEach(MemberIngress::disconnect);
+                CloseHelper.closeAll(memberByIdMap.values());
                 memberByIdMap = parseIngressEndpoints(egressPoller.detail());
             }
             else
             {
-                memberByIdMap.values().forEach(MemberIngress::disconnect);
+                CloseHelper.closeAll(memberByIdMap.values());
                 memberByIdMap = parseIngressEndpoints(egressPoller.detail());
 
                 final MemberIngress member = memberByIdMap.get(leaderMemberId);
@@ -1705,7 +1702,7 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    static final class MemberIngress
+    static final class MemberIngress implements AutoCloseable
     {
         final int memberId;
         final String endpoint;
@@ -1717,7 +1714,7 @@ public final class AeronCluster implements AutoCloseable
             this.endpoint = endpoint;
         }
 
-        void disconnect()
+        public void close()
         {
             CloseHelper.close(publication);
             publication = null;

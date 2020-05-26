@@ -592,13 +592,6 @@ public:
      */
     void removeDestination(const std::string &endpointChannel);
 
-    /**
-     * Get the status for the channel of this {@link ExclusivePublication}
-     *
-     * @return status code for this channel
-     */
-    std::int64_t channelStatus();
-
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {

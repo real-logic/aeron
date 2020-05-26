@@ -314,8 +314,15 @@ public class Tests
                 throw new TimeoutException();
             }
 
-            Thread.yield();
-            checkInterruptStatus();
+            Tests.yield();
+        }
+    }
+
+    public static void await(final BooleanSupplier conditionSupplier)
+    {
+        while (!conditionSupplier.getAsBoolean())
+        {
+            Tests.yield();
         }
     }
 

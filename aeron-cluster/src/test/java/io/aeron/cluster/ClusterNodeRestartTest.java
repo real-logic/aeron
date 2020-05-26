@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,7 +76,7 @@ public class ClusterNodeRestartTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
+        CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), aeronCluster, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {
@@ -157,11 +158,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        while (null == serviceState.get())
-        {
-            Tests.yield();
-        }
-
+        Tests.await(() -> null != serviceState.get());
         assertEquals("0", serviceState.get());
 
         ClusterTests.failOnClusterError();
@@ -194,11 +191,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
         connectClient();
 
-        while (null == serviceState.get())
-        {
-            Tests.yield();
-        }
-
+        Tests.await(() -> null != serviceState.get());
         assertEquals("3", serviceState.get());
 
         ClusterTests.failOnClusterError();
@@ -225,7 +218,6 @@ public class ClusterNodeRestartTest
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendNumberedMessageIntoCluster(3);
-
         Tests.awaitValue(serviceMsgCounter, 4);
 
         forceCloseForRestart();
@@ -236,7 +228,6 @@ public class ClusterNodeRestartTest
         connectClient();
 
         Tests.awaitValue(serviceMsgCounter, 1);
-
         assertEquals("4", serviceState.get());
 
         ClusterTests.failOnClusterError();
@@ -289,7 +280,6 @@ public class ClusterNodeRestartTest
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendNumberedMessageIntoCluster(4);
-
         Tests.awaitValue(serviceMsgCounter, 5);
 
         forceCloseForRestart();
@@ -300,7 +290,6 @@ public class ClusterNodeRestartTest
         connectClient();
 
         Tests.awaitValue(serviceMsgCounter, 1);
-
         assertEquals("5", serviceState.get());
 
         ClusterTests.failOnClusterError();
@@ -351,14 +340,13 @@ public class ClusterNodeRestartTest
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendNumberedMessageIntoCluster(3);
-
         Tests.awaitValue(serviceMsgCounter, 4);
 
         forceCloseForRestart();
 
         final PrintStream mockOut = mock(PrintStream.class);
-        assertTrue(ClusterTool.invalidateLatestSnapshot(
-            mockOut, clusteredMediaDriver.consensusModule().context().clusterDir()));
+        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+        assertTrue(ClusterTool.invalidateLatestSnapshot(mockOut, clusterDir));
 
         verify(mockOut).println(" invalidate latest snapshot: true");
 
@@ -367,7 +355,6 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
 
         Tests.awaitValue(serviceMsgCounter, 4);
-
         assertEquals("4", serviceState.get());
 
         connectClient();
@@ -588,7 +575,7 @@ public class ClusterNodeRestartTest
 
     private void forceCloseForRestart()
     {
-        CloseHelper.closeAll(aeronCluster, clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
+        CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), aeronCluster, container, clusteredMediaDriver);
     }
 
     private void connectClient()

@@ -70,7 +70,7 @@ public class TutorialPublishTask extends DefaultTask
                 StandardCopyOption.REPLACE_EXISTING);
         }
 
-        git.add().addFilepattern(".").setUpdate(true).call();
+        git.add().addFilepattern(".").setUpdate(false).call();
         git.commit().setMessage("Update Docs").call();
 
         System.out.println("Publishing to: " + wikiUri);

@@ -21,6 +21,8 @@ To enable fast recovery the services and consensus module can take a snapshot of
 thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward. Snapshots are
 recorded as streams in the Archive for local and remote replay so that a distributed file system is not required.
 
+A [Cluster Tutorial](Cluster-Tutorial) is available to get started.
+
 Usage
 =====
 

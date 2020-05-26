@@ -175,7 +175,17 @@ public:
         }
         while (headAfter != headBefore);
 
-        return static_cast<std::int32_t>(tail - headAfter);
+        int64_t size = tail - headAfter;
+        if (size < 0)
+        {
+            return 0;
+        }
+        else if (size > m_capacity)
+        {
+            return static_cast<std::int32_t>(m_capacity);
+        }
+
+        return static_cast<std::int32_t>(size);
     }
 
     bool unblock()

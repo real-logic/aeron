@@ -45,6 +45,7 @@ features such as Solarflare ef_vi transport binding for a further 40-60% reducti
 1. [Configuration Options](https://github.com/real-logic/aeron/wiki/Configuration-Options)
 1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
 1. [Aeron Archive (Durable/Persistent Stream Storage)](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
+1. [Aeron Cluster (Fault Toleratant Services)](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
 
 ### How does Aeron work?
 

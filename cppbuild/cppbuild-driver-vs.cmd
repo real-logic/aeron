@@ -1,5 +1,5 @@
 @if "%DEBUG%" == "" @echo off
-setlocal
+setlocal EnableDelayedExpansion
 
 set SOURCE_DIR=%CD%
 set BUILD_DIR=%CD%\cppbuild\Release

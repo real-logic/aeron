@@ -1,6 +1,5 @@
 @if "%DEBUG%" == "" @echo off
-setlocal
-Setlocal EnableDelayedExpansion
+setlocal EnableDelayedExpansion
 
 set SOURCE_DIR=%CD%
 set ZLIB_ZIP=%CD%\cppbuild\zlib1211.zip

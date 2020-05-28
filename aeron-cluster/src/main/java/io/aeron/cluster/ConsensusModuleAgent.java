@@ -276,7 +276,7 @@ class ConsensusModuleAgent implements Agent
             election = new Election(
                 true,
                 recoveryPlan.lastLeadershipTermId,
-                recoveryPlan.committedLogPosition,
+                commitPosition.getWeak(),
                 recoveryPlan.appendedLogPosition,
                 clusterMembers,
                 clusterMemberByIdMap,
@@ -1310,8 +1310,6 @@ class ConsensusModuleAgent implements Agent
     void becomeLeader(
         final long leadershipTermId, final long logPosition, final int logSessionId, final boolean isStartup)
     {
-        leadershipTermId(leadershipTermId);
-
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         channelUri.put(TAGS_PARAM_NAME, Long.toString(logPublicationChannelTag));
@@ -1323,6 +1321,7 @@ class ConsensusModuleAgent implements Agent
 
         final String logChannel = channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel;
         awaitServicesReady(logChannel, logSessionId, logPosition, isStartup);
+        leadershipTermId(leadershipTermId);
 
         if (!isStartup)
         {
@@ -1417,12 +1416,12 @@ class ConsensusModuleAgent implements Agent
 
     void awaitFollowerLogImage(final Subscription subscription, final int logSessionId)
     {
-        leadershipTermId(election.leadershipTermId());
         idleStrategy.reset();
         while (!findLogImage(subscription, logSessionId))
         {
             idle();
         }
+        leadershipTermId(election.leadershipTermId());
     }
 
     void awaitServicesReady(
@@ -1609,7 +1608,7 @@ class ConsensusModuleAgent implements Agent
         election = new Election(
             false,
             leadershipTermId,
-            recoveryPlan.committedLogPosition,
+            commitPosition.getWeak(),
             recoveryPlan.appendedLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
@@ -2593,11 +2592,10 @@ class ConsensusModuleAgent implements Agent
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
         role(Cluster.Role.FOLLOWER);
 
-        final long commitPosition = this.commitPosition.getWeak();
         election = new Election(
             false,
             leadershipTermId,
-            commitPosition,
+            commitPosition.getWeak(),
             appendPosition.get(),
             clusterMembers,
             clusterMemberByIdMap,

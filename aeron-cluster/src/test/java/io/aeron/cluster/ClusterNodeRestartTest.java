@@ -15,9 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Image;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -369,6 +367,49 @@ public class ClusterNodeRestartTest
 
         connectClient();
         assertEquals("5", serviceState.get());
+
+        ClusterTests.failOnClusterError();
+    }
+
+    @Test
+    @Timeout(20)
+    public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot()
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(serviceMsgCounter);
+        connectClient();
+
+        sendNumberedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(2);
+
+        Tests.awaitValue(serviceMsgCounter, 3);
+
+        final AtomicCounter controlToggle = getControlToggle();
+        assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
+
+        final Counter moduleStateCounter = clusteredMediaDriver.consensusModule().context().moduleStateCounter();
+        Tests.awaitValue(moduleStateCounter, ConsensusModule.State.CLOSED.code());
+
+        forceCloseForRestart();
+
+        final PrintStream mockOut = mock(PrintStream.class);
+        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+        assertTrue(ClusterTool.invalidateLatestSnapshot(mockOut, clusterDir));
+
+        verify(mockOut).println(" invalidate latest snapshot: true");
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(serviceMsgCounter);
+
+        Tests.awaitValue(serviceMsgCounter, 3);
+        assertEquals("3", serviceState.get());
+
+        connectClient();
+        sendNumberedMessageIntoCluster(3);
+        Tests.awaitValue(serviceMsgCounter, 4);
 
         ClusterTests.failOnClusterError();
     }

@@ -28,7 +28,7 @@ for %%o in (%*) do (
     )
 
     if "%%o"=="--build-aeron-driver" (
-        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DBUILD_AERON_DRIVER=ON
+        echo "Enabling building of aeron driver is now the default"
         set PROCESSED=1
     )
 

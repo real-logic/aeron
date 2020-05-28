@@ -373,6 +373,60 @@ public class ClusterNodeRestartTest
         ClusterTests.failOnClusterError();
     }
 
+    @Test
+    @Timeout(20)
+    public void shouldRestartServiceAfterShutdownWithInvalidSnapshot()
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(serviceMsgCounter);
+        connectClient();
+
+        sendNumberedMessageIntoCluster(0);
+        sendNumberedMessageIntoCluster(1);
+        sendNumberedMessageIntoCluster(2);
+
+        Tests.awaitValue(serviceMsgCounter, 3);
+
+        final AtomicCounter controlToggle = getControlToggle();
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
+
+        sendNumberedMessageIntoCluster(3);
+        Tests.awaitValue(serviceMsgCounter, 4);
+
+        forceCloseForRestart();
+
+        final PrintStream mockOut = mock(PrintStream.class);
+        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+        assertTrue(ClusterTool.invalidateLatestSnapshot(mockOut, clusterDir));
+
+        verify(mockOut).println(" invalidate latest snapshot: true");
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(serviceMsgCounter);
+
+        Tests.awaitValue(serviceMsgCounter, 4);
+        assertEquals("4", serviceState.get());
+
+        connectClient();
+        sendNumberedMessageIntoCluster(4);
+        Tests.awaitValue(serviceMsgCounter, 5);
+
+        forceCloseForRestart();
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(serviceMsgCounter);
+
+        connectClient();
+        assertEquals("5", serviceState.get());
+
+        ClusterTests.failOnClusterError();
+    }
+
     private AtomicCounter getControlToggle()
     {
         final CountersReader counters = container.context().aeron().countersReader();

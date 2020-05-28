@@ -74,6 +74,7 @@ public final class ArchiveEventLogger
     {
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
         if (index > 0)
         {

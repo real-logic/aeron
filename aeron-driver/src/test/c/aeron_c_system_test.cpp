@@ -31,6 +31,7 @@ class CSystemTest : public testing::Test
 {
 public:
     using poll_handler_t = std::function<void(const uint8_t *, size_t, size_t, aeron_header_t *)>;
+    using image_handler_t = std::function<void(aeron_image_t *)>;
 
     CSystemTest()
     {
@@ -163,11 +164,23 @@ public:
         return aeron_subscription_poll(subscription, poll_handler, this, fragment_limit);
     }
 
+    static void onUnavailableImage(void *clientd, aeron_image_t *image)
+    {
+        auto test = reinterpret_cast<CSystemTest *>(clientd);
+
+        if (test->m_onUnavailableImage)
+        {
+            test->m_onUnavailableImage(image);
+        }
+    }
+
 protected:
     EmbeddedMediaDriver m_driver;
     aeron_context_t *m_context = nullptr;
     aeron_t *m_aeron = nullptr;
+
     poll_handler_t m_poll_handler = nullptr;
+    image_handler_t m_onUnavailableImage = nullptr;
 };
 
 TEST_F(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
@@ -349,5 +362,125 @@ TEST_F(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
     }
 
     EXPECT_EQ(aeron_publication_close(publication), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+}
+
+TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
+{
+    aeron_async_add_publication_t *async_pub;
+    aeron_publication_t *publication;
+    aeron_async_add_subscription_t *async_sub;
+    aeron_subscription_t *subscription;
+    const char message[1024] = "message";
+    size_t num_messages = 11;
+    std::atomic<bool> on_unavailable_image_called = { false };
+
+    m_onUnavailableImage = [&](aeron_image_t *image)
+    {
+        on_unavailable_image_called = true;
+    };
+
+    ASSERT_TRUE(connect());
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, PUB_URI "|linger=0", STREAM_ID), 0);
+    ASSERT_TRUE((publication = awaitPublicationOrError(async_pub))) << aeron_errmsg();
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, SUB_URI, STREAM_ID, nullptr, nullptr, onUnavailableImage, this), 0);
+    ASSERT_TRUE((subscription = awaitSubscriptionOrError(async_sub))) << aeron_errmsg();
+    awaitConnected(subscription);
+
+    for (size_t i = 0; i < num_messages; i++)
+    {
+        while (aeron_publication_offer(
+            publication, (const uint8_t *) message, sizeof(message), nullptr, nullptr) < 0)
+        {
+            std::this_thread::yield();
+        }
+
+        int poll_result;
+        bool called = false;
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        {
+            EXPECT_EQ(length, sizeof(message));
+            called = true;
+        };
+
+        while ((poll_result = poll(subscription, handler, 10)) == 0)
+        {
+            std::this_thread::yield();
+        }
+        EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+        EXPECT_TRUE(called);
+    }
+
+    EXPECT_EQ(aeron_publication_close(publication), 0);
+
+    while (!on_unavailable_image_called)
+    {
+        std::this_thread::yield();
+    }
+
+    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+}
+
+TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
+{
+    aeron_async_add_publication_t *async_pub;
+    aeron_publication_t *publication;
+    aeron_async_add_subscription_t *async_sub;
+    aeron_subscription_t *subscription;
+    const char message[1024] = "message";
+    size_t num_messages = 11;
+    std::atomic<bool> on_unavailable_image_called = { false };
+
+    m_onUnavailableImage = [&](aeron_image_t *image)
+    {
+        on_unavailable_image_called = true;
+    };
+
+    ASSERT_TRUE(connect());
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, PUB_URI "|linger=0", STREAM_ID), 0);
+    ASSERT_TRUE((publication = awaitPublicationOrError(async_pub))) << aeron_errmsg();
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, SUB_URI, STREAM_ID, nullptr, nullptr, onUnavailableImage, this), 0);
+    ASSERT_TRUE((subscription = awaitSubscriptionOrError(async_sub))) << aeron_errmsg();
+    awaitConnected(subscription);
+
+    for (size_t i = 0; i < num_messages; i++)
+    {
+        while (aeron_publication_offer(
+            publication, (const uint8_t *) message, sizeof(message), nullptr, nullptr) < 0)
+        {
+            std::this_thread::yield();
+        }
+
+        int poll_result;
+        bool called = false;
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        {
+            EXPECT_EQ(length, sizeof(message));
+            called = true;
+        };
+
+        while ((poll_result = poll(subscription, handler, 10)) == 0)
+        {
+            std::this_thread::yield();
+        }
+        EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+        EXPECT_TRUE(called);
+    }
+
+    EXPECT_EQ(aeron_publication_close(publication), 0);
+
+    while (!on_unavailable_image_called)
+    {
+        std::this_thread::yield();
+    }
+
+    poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    {
+    };
+
+    poll(subscription, handler, 1);
+
     EXPECT_EQ(aeron_subscription_close(subscription), 0);
 }

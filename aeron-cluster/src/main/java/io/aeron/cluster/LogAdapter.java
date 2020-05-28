@@ -225,8 +225,8 @@ final class LogAdapter implements ControlledFragmentHandler
                 consensusModuleAgent.onReplayNewLeadershipTermEvent(
                     newLeadershipTermEventDecoder.leadershipTermId(),
                     newLeadershipTermEventDecoder.logPosition(),
+                    newLeadershipTermEventDecoder.timestamp(),
                     newLeadershipTermEventDecoder.termBaseLogPosition(),
-                    newLeadershipTermEventDecoder.leaderMemberId(),
                     ClusterClock.map(newLeadershipTermEventDecoder.timeUnit()),
                     newLeadershipTermEventDecoder.appVersion());
                 break;

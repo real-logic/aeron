@@ -1272,10 +1272,10 @@ public class Configuration
      */
     public static void validateMtuLength(final int mtuLength)
     {
-        if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
+        if (mtuLength <= DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
             throw new ConfigurationException(
-                "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: " + mtuLength);
+                "mtuLength must be a > HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: " + mtuLength);
         }
 
         if ((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)

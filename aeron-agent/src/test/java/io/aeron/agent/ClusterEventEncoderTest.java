@@ -40,7 +40,7 @@ class ClusterEventEncoderTest
         final Election.State from = Election.State.CANDIDATE_BALLOT;
         final Election.State to = Election.State.CANVASS;
         final int memberId = 42;
-        final String payload = from.name() + SEPARATOR + to.name();
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
         final int length = payload.length() + SIZE_OF_INT * 2;
         final int captureLength = captureLength(length);
 
@@ -119,7 +119,7 @@ class ClusterEventEncoderTest
     {
         final ChronoUnit from = ChronoUnit.CENTURIES;
         final ChronoUnit to = ChronoUnit.HALF_DAYS;
-        final String payload = from.name() + SEPARATOR + to.name();
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
 
         assertEquals(payload.length() + (SIZE_OF_INT * 2), stateChangeLength(from, to));
     }

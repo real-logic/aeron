@@ -24,7 +24,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ClusterEventEncoder
 {
-    static final String SEPARATOR = " -> ";
 
     private ClusterEventEncoder()
     {
@@ -96,19 +95,10 @@ final class ClusterEventEncoder
         relativeOffset += SIZE_OF_INT;
 
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, from.name());
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, SEPARATOR);
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, CommonEventEncoder.STATE_SEPARATOR);
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, to.name());
 
         return relativeOffset;
     }
 
-    static <T extends Enum<T>> int stateChangeLength(final T from, final T to)
-    {
-        return stateTransitionStringLength(from, to) + (SIZE_OF_INT * 2);
-    }
-
-    private static <T extends Enum<T>> int stateTransitionStringLength(final T from, final T to)
-    {
-        return from.name().length() + SEPARATOR.length() + to.name().length();
-    }
 }

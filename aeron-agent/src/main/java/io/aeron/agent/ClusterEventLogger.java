@@ -85,7 +85,7 @@ public final class ClusterEventLogger
     public <T extends Enum<T>> void logStateChange(
         final ClusterEventCode eventCode, final T oldState, final T newState, final int memberId)
     {
-        final int length = stateChangeLength(oldState, newState);
+        final int length = CommonEventEncoder.stateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);

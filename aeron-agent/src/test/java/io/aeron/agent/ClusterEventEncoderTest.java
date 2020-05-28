@@ -19,13 +19,12 @@ import io.aeron.cluster.Election;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-import java.time.temporal.ChronoUnit;
-
 import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -112,15 +111,5 @@ class ClusterEventEncoderTest
     void testNewLeaderShipTermLength()
     {
         assertEquals(SIZE_OF_LONG * 5 + SIZE_OF_INT * 3, newLeaderShipTermLength());
-    }
-
-    @Test
-    void testStateChangeLength()
-    {
-        final ChronoUnit from = ChronoUnit.CENTURIES;
-        final ChronoUnit to = ChronoUnit.HALF_DAYS;
-        final String payload = from.name() + STATE_SEPARATOR + to.name();
-
-        assertEquals(payload.length() + (SIZE_OF_INT * 2), stateChangeLength(from, to));
     }
 }

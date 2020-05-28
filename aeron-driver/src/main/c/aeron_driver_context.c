@@ -1116,11 +1116,11 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
 
 int aeron_driver_context_validate_mtu_length(uint64_t mtu_length)
 {
-    if (mtu_length < AERON_DATA_HEADER_LENGTH || mtu_length > AERON_MAX_UDP_PAYLOAD_LENGTH)
+    if (mtu_length <= AERON_DATA_HEADER_LENGTH || mtu_length > AERON_MAX_UDP_PAYLOAD_LENGTH)
     {
         aeron_set_err(
             EINVAL,
-            "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=%" PRIu64,
+            "mtuLength must be a > HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=%" PRIu64,
             mtu_length);
         return -1;
     }

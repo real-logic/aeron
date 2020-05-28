@@ -73,14 +73,14 @@ inline void aeron_buffer_builder_reset(aeron_buffer_builder_t *buffer_builder)
 }
 
 inline int aeron_buffer_builder_append(
-    aeron_buffer_builder_t *buffer_builder, const uint8_t *buffer, size_t offset, size_t length)
+    aeron_buffer_builder_t *buffer_builder, const uint8_t *buffer, size_t length)
 {
     if (aeron_buffer_builder_ensure_capacity(buffer_builder, length) < 0)
     {
         return -1;
     }
 
-    memcpy(buffer_builder->buffer + buffer_builder->limit, buffer + offset, length);
+    memcpy(buffer_builder->buffer + buffer_builder->limit, buffer, length);
     buffer_builder->limit += length;
     return 0;
 }

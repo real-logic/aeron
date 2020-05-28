@@ -206,8 +206,7 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
 
             handler(
                 clientd,
-                term_buffer,
-                frame_offset + AERON_DATA_HEADER_LENGTH,
+                term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
             ++fragments_read;
@@ -274,8 +273,7 @@ int aeron_image_controlled_poll(
         aeron_controlled_fragment_handler_action_t action =
             handler(
                 clientd,
-                term_buffer,
-                frame_offset + AERON_DATA_HEADER_LENGTH,
+                term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
 
@@ -357,8 +355,7 @@ int aeron_image_bounded_poll(
 
             handler(
                 clientd,
-                term_buffer,
-                frame_offset + AERON_DATA_HEADER_LENGTH,
+                term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
             ++fragments_read;
@@ -428,8 +425,7 @@ int aeron_image_bounded_controlled_poll(
         aeron_controlled_fragment_handler_action_t action =
             handler(
                 clientd,
-                term_buffer,
-                frame_offset + AERON_DATA_HEADER_LENGTH,
+                term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
 
@@ -531,8 +527,7 @@ int64_t aeron_image_controlled_peek(
         aeron_controlled_fragment_handler_action_t action =
             handler(
                 clientd,
-                term_buffer,
-                frame_offset + AERON_DATA_HEADER_LENGTH,
+                term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
 
@@ -627,8 +622,7 @@ int aeron_image_block_poll(
 
         handler(
             clientd,
-            term_buffer,
-            offset,
+            term_buffer + offset,
             length,
             image->session_id,
             term_id);

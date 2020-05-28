@@ -30,7 +30,7 @@ using namespace aeron;
 class CSystemTest : public testing::Test
 {
 public:
-    using poll_handler_t = std::function<void(const uint8_t *, size_t, size_t, aeron_header_t *)>;
+    using poll_handler_t = std::function<void(const uint8_t *, size_t, aeron_header_t *)>;
     using image_handler_t = std::function<void(aeron_image_t *)>;
 
     CSystemTest()
@@ -151,11 +151,11 @@ public:
     }
 
     static void poll_handler(
-        void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         auto test = reinterpret_cast<CSystemTest *>(clientd);
 
-        test->m_poll_handler(buffer, offset, length, header);
+        test->m_poll_handler(buffer, length, header);
     }
 
     int poll(aeron_subscription_t *subscription, poll_handler_t &handler, int fragment_limit)
@@ -303,7 +303,7 @@ TEST_F(CSystemTest, shouldOfferAndPollOneMessage)
 
     int poll_result;
     bool called = false;
-    poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         EXPECT_EQ(length, strlen(message));
         called = true;
@@ -347,7 +347,7 @@ TEST_F(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
 
         int poll_result;
         bool called = false;
-        poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         {
             EXPECT_EQ(length, sizeof(message));
             called = true;
@@ -398,7 +398,7 @@ TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
 
         int poll_result;
         bool called = false;
-        poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         {
             EXPECT_EQ(length, sizeof(message));
             called = true;
@@ -455,7 +455,7 @@ TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
 
         int poll_result;
         bool called = false;
-        poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         {
             EXPECT_EQ(length, sizeof(message));
             called = true;
@@ -476,7 +476,7 @@ TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
         std::this_thread::yield();
     }
 
-    poll_handler_t handler = [&](const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
     };
 

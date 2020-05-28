@@ -783,12 +783,11 @@ int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication
  *
  * @param clientd passed to the poll function.
  * @param buffer containing the data.
- * @param offset at which the data begins.
  * @param length of the data in bytes.
  * @param header representing the meta data for the data.
  */
 typedef void (*aeron_fragment_handler_t)(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 typedef enum aeron_controlled_fragment_handler_action_en
 {
@@ -825,13 +824,12 @@ aeron_controlled_fragment_handler_action_t;
  *
  * @param clientd passed to the controlled poll function.
  * @param buffer containing the data.
- * @param offset at which the data begins.
  * @param length of the data in bytes.
  * @param header representing the meta data for the data.
  * @return The action to be taken with regard to the stream position after the callback.
  */
 typedef aeron_controlled_fragment_handler_action_t (*aeron_controlled_fragment_handler_t)(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 /**
  * Callback for handling a block of messages being read from a log.
@@ -844,7 +842,7 @@ typedef aeron_controlled_fragment_handler_action_t (*aeron_controlled_fragment_h
  * @param term_id of the stream containing this block of message fragments.
  */
 typedef void (*aeron_block_handler_t)(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, int32_t session_id, int32_t term_id);
+    void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
 
 /**
  * Poll the images under the subscription for available message fragments.
@@ -1177,12 +1175,11 @@ int aeron_image_fragment_assembler_delete(aeron_image_fragment_assembler_t *asse
  *
  * @param clientd passed in the poll call (must be a aeron_image_fragment_assembler_t)
  * @param buffer containing the data.
- * @param offset at which the data begins.
  * @param length of the data in bytes.
  * @param header representing the meta data for the data.
  */
 void aeron_image_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 /**
  * Create an image controlled fragment assembler for use with a single image.
@@ -1210,13 +1207,12 @@ int aeron_image_controlled_fragment_assembler_delete(aeron_image_controlled_frag
  *
  * @param clientd passed in the poll call (must be a aeron_image_controlled_fragment_assembler_t)
  * @param buffer containing the data.
- * @param offset at which the data begins.
  * @param length of the data in bytes.
  * @param header representing the meta data for the data.
  * @return The action to be taken with regard to the stream position after the callback.
  */
 aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 /**
  * Create a fragment assembler for use with a subscription.
@@ -1244,12 +1240,11 @@ int aeron_fragment_assembler_delete(aeron_fragment_assembler_t *assembler);
  *
  * @param clientd passed in the poll call (must be a aeron_fragment_assembler_t)
  * @param buffer containing the data.
- * @param offset at which the data begins.
  * @param length of the data in bytes.
  * @param header representing the meta data for the data.
  */
 void aeron_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 /**
  * Create a controlled fragment assembler for use with a subscription.
@@ -1277,13 +1272,12 @@ int aeron_controlled_fragment_assembler_delete(aeron_controlled_fragment_assembl
  *
  * @param clientd passed in the poll call (must be a aeron_controlled_fragment_assembler_t)
  * @param buffer containing the data.
- * @param offset at which the data begins.
  * @param length of the data in bytes.
  * @param header representing the meta data for the data.
  * @return The action to be taken with regard to the stream position after the callback.
  */
 aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header);
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 /*
 * Counter functions

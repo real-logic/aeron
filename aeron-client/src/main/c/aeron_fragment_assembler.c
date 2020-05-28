@@ -146,7 +146,7 @@ int aeron_image_fragment_assembler_delete(aeron_image_fragment_assembler_t *asse
 }
 
 void aeron_image_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_image_fragment_assembler_t *assembler = (aeron_image_fragment_assembler_t *)clientd;
     aeron_buffer_builder_t *buffer_builder = assembler->buffer_builder;
@@ -154,23 +154,23 @@ void aeron_image_fragment_assembler_handler(
 
     if ((flags & AERON_DATA_HEADER_UNFRAGMENTED) == AERON_DATA_HEADER_UNFRAGMENTED)
     {
-        assembler->delegate(assembler->delegate_clientd, buffer, offset, length, header);
+        assembler->delegate(assembler->delegate_clientd, buffer, length, header);
     }
     else
     {
         if (flags & AERON_DATA_HEADER_BEGIN_FLAG)
         {
             aeron_buffer_builder_reset(buffer_builder);
-            aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+            aeron_buffer_builder_append(buffer_builder, buffer, length);
         }
         else if (buffer_builder->limit > 0)
         {
-            aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+            aeron_buffer_builder_append(buffer_builder, buffer, length);
 
             if (flags & AERON_DATA_HEADER_END_FLAG)
             {
                 assembler->delegate(
-                    assembler->delegate_clientd, buffer_builder->buffer, 0, buffer_builder->limit, header);
+                    assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
                 aeron_buffer_builder_reset(buffer_builder);
             }
         }
@@ -214,7 +214,7 @@ int aeron_image_controlled_fragment_assembler_delete(aeron_image_controlled_frag
 }
 
 aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_image_controlled_fragment_assembler_t *assembler = (aeron_image_controlled_fragment_assembler_t *)clientd;
     aeron_buffer_builder_t *buffer_builder = assembler->buffer_builder;
@@ -223,26 +223,26 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assem
 
     if ((flags & AERON_DATA_HEADER_UNFRAGMENTED) == AERON_DATA_HEADER_UNFRAGMENTED)
     {
-        action = assembler->delegate(assembler->delegate_clientd, buffer, offset, length, header);
+        action = assembler->delegate(assembler->delegate_clientd, buffer, length, header);
     }
     else
     {
         if (flags & AERON_DATA_HEADER_BEGIN_FLAG)
         {
             aeron_buffer_builder_reset(buffer_builder);
-            aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+            aeron_buffer_builder_append(buffer_builder, buffer, length);
         }
         else
         {
             size_t limit = buffer_builder->limit;
             if (limit > 0)
             {
-                aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+                aeron_buffer_builder_append(buffer_builder, buffer, length);
 
                 if (flags & AERON_DATA_HEADER_END_FLAG)
                 {
                     action = assembler->delegate(
-                        assembler->delegate_clientd, buffer_builder->buffer, 0, buffer_builder->limit, header);
+                        assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
 
                     if (AERON_ACTION_ABORT == action)
                     {
@@ -302,14 +302,14 @@ int aeron_fragment_assembler_delete(aeron_fragment_assembler_t *assembler)
 }
 
 void aeron_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_fragment_assembler_t *assembler = (aeron_fragment_assembler_t *)clientd;
     uint8_t flags = header->frame->frame_header.flags;
 
     if ((flags & AERON_DATA_HEADER_UNFRAGMENTED) == AERON_DATA_HEADER_UNFRAGMENTED)
     {
-        assembler->delegate(assembler->delegate_clientd, buffer, offset, length, header);
+        assembler->delegate(assembler->delegate_clientd, buffer, length, header);
     }
     else
     {
@@ -329,16 +329,16 @@ void aeron_fragment_assembler_handler(
             }
 
             aeron_buffer_builder_reset(buffer_builder);
-            aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+            aeron_buffer_builder_append(buffer_builder, buffer, length);
         }
         else if (buffer_builder && buffer_builder->limit > 0)
         {
-            aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+            aeron_buffer_builder_append(buffer_builder, buffer, length);
 
             if (flags & AERON_DATA_HEADER_END_FLAG)
             {
                 assembler->delegate(
-                    assembler->delegate_clientd, buffer_builder->buffer, 0, buffer_builder->limit, header);
+                    assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
                 aeron_buffer_builder_reset(buffer_builder);
             }
         }
@@ -387,7 +387,7 @@ int aeron_controlled_fragment_assembler_delete(aeron_controlled_fragment_assembl
 }
 
 aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_handler(
-    void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_controlled_fragment_assembler_t *assembler = (aeron_controlled_fragment_assembler_t *)clientd;
     uint8_t flags = header->frame->frame_header.flags;
@@ -395,7 +395,7 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
 
     if ((flags & AERON_DATA_HEADER_UNFRAGMENTED) == AERON_DATA_HEADER_UNFRAGMENTED)
     {
-        action = assembler->delegate(assembler->delegate_clientd, buffer, offset, length, header);
+        action = assembler->delegate(assembler->delegate_clientd, buffer, length, header);
     }
     else
     {
@@ -415,19 +415,19 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
             }
 
             aeron_buffer_builder_reset(buffer_builder);
-            aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+            aeron_buffer_builder_append(buffer_builder, buffer, length);
         }
         else if (NULL != buffer_builder)
         {
             size_t limit = buffer_builder->limit;
             if (limit > 0)
             {
-                aeron_buffer_builder_append(buffer_builder, buffer, offset, length);
+                aeron_buffer_builder_append(buffer_builder, buffer, length);
 
                 if (flags & AERON_DATA_HEADER_END_FLAG)
                 {
                     action = assembler->delegate(
-                        assembler->delegate_clientd, buffer_builder->buffer, 0, buffer_builder->limit, header);
+                        assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
 
                     if (AERON_ACTION_ABORT == action)
                     {
@@ -447,4 +447,4 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
 
 extern void aeron_buffer_builder_reset(aeron_buffer_builder_t *buffer_builder);
 extern int aeron_buffer_builder_append(
-    aeron_buffer_builder_t *buffer_builder, const uint8_t *buffer, size_t offset, size_t length);
+    aeron_buffer_builder_t *buffer_builder, const uint8_t *buffer, size_t length);

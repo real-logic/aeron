@@ -115,24 +115,24 @@ public:
     }
 
     static void fragment_handler(
-        void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         auto image = reinterpret_cast<ImageTest *>(clientd);
 
         if (image->m_handler)
         {
-            image->m_handler(buffer, offset, length, header);
+            image->m_handler(buffer, length, header);
         }
     }
 
     static aeron_controlled_fragment_handler_action_t controlled_fragment_handler(
-        void *clientd, const uint8_t *buffer, size_t offset, size_t length, aeron_header_t *header)
+        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         auto image = reinterpret_cast<ImageTest *>(clientd);
 
         if (image->m_controlled_handler)
         {
-            return image->m_controlled_handler(buffer, offset, length, header);
+            return image->m_controlled_handler(buffer, length, header);
         }
 
         return AERON_ACTION_CONTINUE;
@@ -167,6 +167,11 @@ public:
             m_image, controlled_fragment_handler, this, max_position, fragment_limit);
     }
 
+    const uint8_t *termBuffer(size_t index)
+    {
+        return m_image->log_buffer->mapped_raw_log.term_buffers[index].addr;
+    }
+
 protected:
     int64_t m_correlationId = 0;
     int64_t m_sub_pos = 0;
@@ -176,8 +181,8 @@ protected:
 
     size_t m_position_bits_to_shift;
 
-    std::function<void(const uint8_t *, size_t, size_t, aeron_header_t *)> m_handler = nullptr;
-    std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, size_t, aeron_header_t *)>
+    std::function<void(const uint8_t *, size_t, aeron_header_t *)> m_handler = nullptr;
+    std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, aeron_header_t *)>
         m_controlled_handler = nullptr;
 
     aeron_image_t *m_image;
@@ -194,9 +199,9 @@ TEST_F(ImageTest, shouldReadFirstMessage)
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        EXPECT_EQ(offset, m_sub_pos + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + m_sub_pos + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
         EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
     };
@@ -209,7 +214,7 @@ TEST_F(ImageTest, shouldNotReadPastTail)
 {
     createImage();
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
         FAIL() << "should not be called";
     };
@@ -229,7 +234,7 @@ TEST_F(ImageTest, shouldReadOneLimitedMessage)
     appendMessage(m_sub_pos, messageLength);
     appendMessage(m_sub_pos + alignedMessageLength, messageLength);
 
-    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
     };
 
@@ -248,7 +253,7 @@ TEST_F(ImageTest, shouldReadMultipleMessages)
     appendMessage(m_sub_pos + alignedMessageLength, messageLength);
     size_t handlerCallCount = 0;
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
         handlerCallCount++;
     };
@@ -270,9 +275,9 @@ TEST_F(ImageTest, shouldReadLastMessage)
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        EXPECT_EQ(offset, m_sub_pos + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + m_sub_pos + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
     };
 
@@ -293,7 +298,7 @@ TEST_F(ImageTest, shouldNotReadLastMessageWhenPadding)
     // this will append padding instead of the message as it will trip over the end.
     appendMessage(m_sub_pos, messageLength + AERON_DATA_HEADER_LENGTH);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
         FAIL() << "should not be called";
     };
@@ -338,7 +343,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
     };
 
@@ -361,9 +366,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        EXPECT_EQ(offset, initialTermOffset + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + initialTermOffset + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
     };
 
@@ -387,9 +392,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        EXPECT_EQ(offset, initialTermOffset + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(1) + initialTermOffset + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
     };
 
@@ -402,7 +407,7 @@ TEST_F(ImageTest, shouldPollNoFragmentsToControlledFragmentHandler)
     createImage();
 
     bool called = false;
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         called = true;
@@ -424,10 +429,10 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnContinue)
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
-        EXPECT_EQ(offset, m_sub_pos + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + m_sub_pos + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
         EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
         return AERON_ACTION_CONTINUE;
@@ -449,7 +454,7 @@ TEST_F(ImageTest, shouldNotPollOneFragmentToControlledFragmentHandlerOnAbort)
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         return AERON_ACTION_ABORT;
@@ -470,10 +475,10 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
     appendMessage(m_sub_pos, messageLength);
     appendMessage(m_sub_pos + alignedMessageLength, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
-        EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
         EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
         return AERON_ACTION_BREAK;
@@ -495,7 +500,7 @@ TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnCommit)
     appendMessage(m_sub_pos, messageLength);
     appendMessage(m_sub_pos + alignedMessageLength, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         fragmentCount++;
@@ -504,14 +509,14 @@ TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnCommit)
         {
             EXPECT_EQ(m_sub_pos, 0);
 
-            EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + AERON_DATA_HEADER_LENGTH);
         }
         else if (2 == fragmentCount)
         {
             // testing current position here after first message commit
             EXPECT_EQ(m_sub_pos, alignedMessageLength);
 
-            EXPECT_EQ(offset, alignedMessageLength + AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + alignedMessageLength + AERON_DATA_HEADER_LENGTH);
         }
 
         EXPECT_EQ(length, messageLength);
@@ -539,7 +544,7 @@ TEST_F(ImageTest, shouldUpdatePositionToEndOfCommittedFragmentOnCommit)
     appendMessage(initialPosition + alignedMessageLength, messageLength);
     appendMessage(initialPosition + (2 * alignedMessageLength), messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         fragmentCount++;
@@ -550,7 +555,7 @@ TEST_F(ImageTest, shouldUpdatePositionToEndOfCommittedFragmentOnCommit)
         {
             EXPECT_EQ(m_sub_pos, initialPosition);
 
-            EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + AERON_DATA_HEADER_LENGTH);
             return AERON_ACTION_CONTINUE;
         }
         else if (2 == fragmentCount)
@@ -558,7 +563,7 @@ TEST_F(ImageTest, shouldUpdatePositionToEndOfCommittedFragmentOnCommit)
             // testing current position here after first message continue
             EXPECT_EQ(m_sub_pos, initialPosition);
 
-            EXPECT_EQ(offset, alignedMessageLength + AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + alignedMessageLength + AERON_DATA_HEADER_LENGTH);
             return AERON_ACTION_COMMIT;
         }
         else if (3 == fragmentCount)
@@ -566,7 +571,7 @@ TEST_F(ImageTest, shouldUpdatePositionToEndOfCommittedFragmentOnCommit)
             // testing current position here after second message commit
             EXPECT_EQ(m_sub_pos, initialPosition + (2 * alignedMessageLength));
 
-            EXPECT_EQ(offset, (2 * alignedMessageLength) + AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + (2 * alignedMessageLength) + AERON_DATA_HEADER_LENGTH);
             return AERON_ACTION_CONTINUE;
         }
 
@@ -593,7 +598,7 @@ TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnContinue)
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         fragmentCount++;
@@ -602,14 +607,14 @@ TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnContinue)
         {
             EXPECT_EQ(m_sub_pos, initialPosition);
 
-            EXPECT_EQ(offset, AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + AERON_DATA_HEADER_LENGTH);
         }
         else if (2 == fragmentCount)
         {
             // testing current position here after first message continue
             EXPECT_EQ(m_sub_pos, initialPosition);
 
-            EXPECT_EQ(offset, alignedMessageLength + AERON_DATA_HEADER_LENGTH);
+            EXPECT_EQ(buffer, termBuffer(0) + alignedMessageLength + AERON_DATA_HEADER_LENGTH);
         }
 
         EXPECT_EQ(length, messageLength);
@@ -637,7 +642,7 @@ TEST_F(ImageTest, shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMax
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         called = true;
@@ -665,7 +670,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithIniti
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         return AERON_ACTION_CONTINUE;
@@ -691,7 +696,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
         return AERON_ACTION_CONTINUE;
@@ -717,7 +722,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionBefo
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength);
 
-    auto null_handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
     };
 
@@ -742,10 +747,10 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength * 2);  // will insert padding
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
-        EXPECT_EQ(offset, initialOffset + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + initialOffset + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
         return AERON_ACTION_CONTINUE;
     };
@@ -771,10 +776,10 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength * 2);  // will insert padding
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
-        EXPECT_EQ(offset, initialOffset + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + initialOffset + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
         return AERON_ACTION_CONTINUE;
     };
@@ -800,9 +805,9 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAbov
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength * 2);  // will insert padding
 
-    auto handler = [&](const uint8_t *, size_t offset, size_t length, aeron_header_t *header)
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        EXPECT_EQ(offset, initialOffset + AERON_DATA_HEADER_LENGTH);
+        EXPECT_EQ(buffer, termBuffer(0) + initialOffset + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
     };
 

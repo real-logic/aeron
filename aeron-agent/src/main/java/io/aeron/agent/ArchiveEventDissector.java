@@ -86,7 +86,7 @@ final class ArchiveEventDissector
     }
 
     @SuppressWarnings("MethodLength")
-    static void controlRequest(
+    static void dissectControlRequest(
         final ArchiveEventCode eventCode,
         final MutableDirectBuffer buffer,
         final int offset,
@@ -392,7 +392,7 @@ final class ArchiveEventDissector
         }
     }
 
-    static void controlResponse(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    static void dissectControlResponse(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = dissectLogHeader(CONTEXT, CMD_OUT_RESPONSE, buffer, offset, builder);
 

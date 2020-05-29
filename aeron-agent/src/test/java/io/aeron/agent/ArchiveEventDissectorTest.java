@@ -49,7 +49,7 @@ class ArchiveEventDissectorTest
             .version(111)
             .errorMessage("the %ERR% msg");
 
-        ArchiveEventDissector.controlResponse(buffer, 0, builder);
+        dissectControlResponse(buffer, 0, builder);
 
         assertEquals("[1.25] " + CONTEXT + ": " + CMD_OUT_RESPONSE.name() + " [100/100]: " +
             "controlSessionId=13" +
@@ -72,7 +72,7 @@ class ArchiveEventDissectorTest
             .version(-10)
             .responseChannel("call me maybe");
 
-        controlRequest(CMD_IN_CONNECT, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_CONNECT, buffer, 0, builder);
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_CONNECT.name() + " [32/64]: " +
             "correlationId=88" +
@@ -90,7 +90,7 @@ class ArchiveEventDissectorTest
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(-1);
 
-        controlRequest(CMD_IN_CLOSE_SESSION, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_CLOSE_SESSION, buffer, 0, builder);
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_CLOSE_SESSION.name() + " [32/64]: controlSessionId=-1",
             builder.toString());
@@ -108,7 +108,7 @@ class ArchiveEventDissectorTest
             .sourceLocation(SourceLocation.REMOTE)
             .channel("foo");
 
-        controlRequest(CMD_IN_START_RECORDING, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_START_RECORDING, buffer, 0, builder);
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_START_RECORDING.name() + " [32/64]:" +
             " controlSessionId=5" +
@@ -132,7 +132,7 @@ class ArchiveEventDissectorTest
             .autoStop(BooleanType.TRUE)
             .channel("foo");
 
-        controlRequest(CMD_IN_START_RECORDING2, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_START_RECORDING2, buffer, 0, builder);
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_START_RECORDING2.name() + " [32/64]:" +
             " controlSessionId=5" +
@@ -155,7 +155,7 @@ class ArchiveEventDissectorTest
             .streamId(7)
             .channel("bar");
 
-        controlRequest(CMD_IN_STOP_RECORDING, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_RECORDING, buffer, 0, builder);
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING.name() + " [32/64]:" +
             " controlSessionId=5" +
@@ -179,7 +179,7 @@ class ArchiveEventDissectorTest
             .replayStreamId(99)
             .replayChannel("replay channel");
 
-        controlRequest(CMD_IN_REPLAY, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_REPLAY, buffer, 0, builder);
 
         assertEquals("[1.125] " + CONTEXT + ": " + CMD_IN_REPLAY.name() + " [90/90]:" +
             " controlSessionId=5" +
@@ -202,7 +202,7 @@ class ArchiveEventDissectorTest
             .correlationId(42)
             .replaySessionId(66);
 
-        controlRequest(CMD_IN_STOP_REPLAY, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_REPLAY, buffer, 0, builder);
 
         assertEquals("[1.125] " + CONTEXT + ": " + CMD_IN_STOP_REPLAY.name() + " [90/90]:" +
             " controlSessionId=5" +
@@ -222,7 +222,7 @@ class ArchiveEventDissectorTest
             .fromRecordingId(45)
             .recordCount(10);
 
-        controlRequest(CMD_IN_LIST_RECORDINGS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_LIST_RECORDINGS, buffer, 0, builder);
 
         assertEquals("[0.1] " + CONTEXT + ": " + CMD_IN_LIST_RECORDINGS.name() + " [32/32]:" +
             " controlSessionId=9" +
@@ -245,7 +245,7 @@ class ArchiveEventDissectorTest
             .streamId(200)
             .channel("CH");
 
-        controlRequest(CMD_IN_LIST_RECORDINGS_FOR_URI, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_LIST_RECORDINGS_FOR_URI, buffer, 0, builder);
 
         assertEquals("[0.1] " + CONTEXT + ": " + CMD_IN_LIST_RECORDINGS_FOR_URI.name() + " [32/32]:" +
             " controlSessionId=9" +
@@ -267,7 +267,7 @@ class ArchiveEventDissectorTest
             .correlationId(178)
             .recordingId(1010101);
 
-        controlRequest(CMD_IN_LIST_RECORDING, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_LIST_RECORDING, buffer, 0, builder);
 
         assertEquals("[0.1] " + CONTEXT + ": " + CMD_IN_LIST_RECORDING.name() + " [32/32]:" +
             " controlSessionId=19" +
@@ -289,7 +289,7 @@ class ArchiveEventDissectorTest
             .sourceLocation(SourceLocation.LOCAL)
             .channel("extend me");
 
-        controlRequest(CMD_IN_EXTEND_RECORDING, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_EXTEND_RECORDING, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_EXTEND_RECORDING.name() + " [12/32]:" +
             " controlSessionId=9" +
@@ -315,7 +315,7 @@ class ArchiveEventDissectorTest
             .autoStop(BooleanType.TRUE)
             .channel("extend me");
 
-        controlRequest(CMD_IN_EXTEND_RECORDING2, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_EXTEND_RECORDING2, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_EXTEND_RECORDING2.name() + " [12/32]:" +
             " controlSessionId=9" +
@@ -338,7 +338,7 @@ class ArchiveEventDissectorTest
             .correlationId(3)
             .recordingId(6);
 
-        controlRequest(CMD_IN_RECORDING_POSITION, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_RECORDING_POSITION, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_RECORDING_POSITION.name() + " [12/32]:" +
             " controlSessionId=2" +
@@ -358,7 +358,7 @@ class ArchiveEventDissectorTest
             .recordingId(8)
             .position(1_000_000);
 
-        controlRequest(CMD_IN_TRUNCATE_RECORDING, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_TRUNCATE_RECORDING, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_TRUNCATE_RECORDING.name() + " [12/32]:" +
             " controlSessionId=2" +
@@ -378,7 +378,7 @@ class ArchiveEventDissectorTest
             .correlationId(33)
             .subscriptionId(888);
 
-        controlRequest(CMD_IN_STOP_RECORDING_SUBSCRIPTION, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_RECORDING_SUBSCRIPTION, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING_SUBSCRIPTION.name() + " [12/32]:" +
             " controlSessionId=22" +
@@ -397,7 +397,7 @@ class ArchiveEventDissectorTest
             .correlationId(33)
             .recordingId(777);
 
-        controlRequest(CMD_IN_STOP_RECORDING_BY_IDENTITY, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_RECORDING_BY_IDENTITY, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING_BY_IDENTITY.name() + " [12/32]:" +
             " controlSessionId=22" +
@@ -416,7 +416,7 @@ class ArchiveEventDissectorTest
             .correlationId(33)
             .recordingId(44);
 
-        controlRequest(CMD_IN_STOP_POSITION, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_POSITION, buffer, 0, builder);
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_POSITION.name() + " [12/32]:" +
             " controlSessionId=22" +
@@ -438,7 +438,7 @@ class ArchiveEventDissectorTest
             .streamId(5)
             .channel("this is a channel");
 
-        controlRequest(CMD_IN_FIND_LAST_MATCHING_RECORD, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_FIND_LAST_MATCHING_RECORD, buffer, 0, builder);
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_FIND_LAST_MATCHING_RECORD.name() + " [90/90]:" +
             " controlSessionId=1" +
@@ -464,7 +464,7 @@ class ArchiveEventDissectorTest
             .streamId(555)
             .channel("ch2");
 
-        controlRequest(CMD_IN_LIST_RECORDING_SUBSCRIPTIONS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_LIST_RECORDING_SUBSCRIPTIONS, buffer, 0, builder);
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_LIST_RECORDING_SUBSCRIPTIONS.name() + " [90/90]:" +
             " controlSessionId=1" +
@@ -492,7 +492,7 @@ class ArchiveEventDissectorTest
             .replayStreamId(14)
             .replayChannel("rep ch");
 
-        controlRequest(CMD_IN_START_BOUNDED_REPLAY, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_START_BOUNDED_REPLAY, buffer, 0, builder);
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_START_BOUNDED_REPLAY.name() + " [90/90]:" +
             " controlSessionId=10" +
@@ -516,7 +516,7 @@ class ArchiveEventDissectorTest
             .correlationId(20)
             .recordingId(30);
 
-        controlRequest(CMD_IN_STOP_ALL_REPLAYS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_ALL_REPLAYS, buffer, 0, builder);
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_STOP_ALL_REPLAYS.name() + " [90/90]:" +
             " controlSessionId=10" +
@@ -539,7 +539,7 @@ class ArchiveEventDissectorTest
             .srcControlChannel("CTRL ch")
             .liveDestination("live destination");
 
-        controlRequest(CMD_IN_REPLICATE, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_REPLICATE, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_REPLICATE.name() + " [1000/1000]:" +
             " controlSessionId=2" +
@@ -562,7 +562,7 @@ class ArchiveEventDissectorTest
             .correlationId(-5)
             .replicationId(-999);
 
-        controlRequest(CMD_IN_STOP_REPLICATION, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_STOP_REPLICATION, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_STOP_REPLICATION.name() + " [1000/1000]:" +
             " controlSessionId=-2" +
@@ -581,7 +581,7 @@ class ArchiveEventDissectorTest
             .correlationId(16)
             .recordingId(1);
 
-        controlRequest(CMD_IN_START_POSITION, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_START_POSITION, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_START_POSITION.name() + " [1000/1000]:" +
             " controlSessionId=3" +
@@ -600,7 +600,7 @@ class ArchiveEventDissectorTest
             .correlationId(16)
             .recordingId(1);
 
-        controlRequest(CMD_IN_DETACH_SEGMENTS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_DETACH_SEGMENTS, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_DETACH_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=3" +
@@ -619,7 +619,7 @@ class ArchiveEventDissectorTest
             .correlationId(516)
             .recordingId(51);
 
-        controlRequest(CMD_IN_DELETE_DETACHED_SEGMENTS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_DELETE_DETACHED_SEGMENTS, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_DELETE_DETACHED_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=53" +
@@ -639,7 +639,7 @@ class ArchiveEventDissectorTest
             .recordingId(15)
             .newStartPosition(100);
 
-        controlRequest(CMD_IN_PURGE_SEGMENTS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_PURGE_SEGMENTS, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_PURGE_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=3" +
@@ -659,7 +659,7 @@ class ArchiveEventDissectorTest
             .correlationId(560)
             .recordingId(50);
 
-        controlRequest(CMD_IN_ATTACH_SEGMENTS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_ATTACH_SEGMENTS, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_ATTACH_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=30" +
@@ -679,7 +679,7 @@ class ArchiveEventDissectorTest
             .srcRecordingId(1)
             .dstRecordingId(21902);
 
-        controlRequest(CMD_IN_MIGRATE_SEGMENTS, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_MIGRATE_SEGMENTS, buffer, 0, builder);
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_MIGRATE_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=7" +
@@ -701,7 +701,7 @@ class ArchiveEventDissectorTest
             .responseChannel("English Channel")
             .putEncodedCredentials("hello".getBytes(US_ASCII), 0, 5);
 
-        controlRequest(CMD_IN_AUTH_CONNECT, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_AUTH_CONNECT, buffer, 0, builder);
 
         assertEquals("[5.5] " + CONTEXT + ": " + CMD_IN_AUTH_CONNECT.name() + " [3/6]:" +
             " correlationId=16" +
@@ -721,7 +721,7 @@ class ArchiveEventDissectorTest
             .controlSessionId(31)
             .correlationId(119);
 
-        controlRequest(CMD_IN_KEEP_ALIVE, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_KEEP_ALIVE, buffer, 0, builder);
 
         assertEquals("[5.5] " + CONTEXT + ": " + CMD_IN_KEEP_ALIVE.name() + " [3/6]:" +
             " controlSessionId=31" +
@@ -745,7 +745,7 @@ class ArchiveEventDissectorTest
             .srcControlChannel("src")
             .liveDestination("alive and well");
 
-        controlRequest(CMD_IN_TAGGED_REPLICATE, buffer, 0, builder);
+        dissectControlRequest(CMD_IN_TAGGED_REPLICATE, buffer, 0, builder);
 
         assertEquals("[5.5] " + CONTEXT + ": " + CMD_IN_TAGGED_REPLICATE.name() + " [3/6]:" +
             " controlSessionId=1" +
@@ -766,7 +766,7 @@ class ArchiveEventDissectorTest
         internalEncodeLogHeader(buffer, 0, 10, 20, () -> 2_500_000_000L);
         headerEncoder.wrap(buffer, LOG_HEADER_LENGTH).templateId(Integer.MIN_VALUE);
 
-        controlRequest(CMD_OUT_RESPONSE, buffer, 0, builder);
+        dissectControlRequest(CMD_OUT_RESPONSE, buffer, 0, builder);
 
         assertEquals("[2.5] " + CONTEXT + ": " + CMD_OUT_RESPONSE.name() + " [10/20]: unknown command",
             builder.toString());

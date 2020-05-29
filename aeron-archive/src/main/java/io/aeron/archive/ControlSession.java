@@ -805,7 +805,7 @@ final class ControlSession implements Session
 
     private boolean hasNoActivity(final long nowMs)
     {
-        return Aeron.NULL_VALUE != activityDeadlineMs & nowMs > activityDeadlineMs;
+        return Aeron.NULL_VALUE != activityDeadlineMs && nowMs > activityDeadlineMs;
     }
 
     private void attemptToGoActive()

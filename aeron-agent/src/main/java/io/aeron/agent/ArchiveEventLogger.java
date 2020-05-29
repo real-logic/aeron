@@ -24,8 +24,8 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
-import static io.aeron.agent.ArchiveEventEncoder.encodeReplicationSessionStateChange;
-import static io.aeron.agent.ArchiveEventEncoder.stateChangeLength;
+import static io.aeron.agent.ArchiveEventEncoder.encodeSessionStateChange;
+import static io.aeron.agent.ArchiveEventEncoder.sessionStateChangeLength;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.ARCHIVE_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
@@ -41,7 +41,7 @@ public final class ArchiveEventLogger
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EVENT_RING_BUFFER);
 
     static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS =
-        complementOf(of(CMD_OUT_RESPONSE, REPLICATION_SESSION_STATE_CHANGE));
+        complementOf(of(CMD_OUT_RESPONSE, REPLICATION_SESSION_STATE_CHANGE, CONTROL_SESSION_STATE_CHANGE));
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
@@ -73,27 +73,27 @@ public final class ArchiveEventLogger
         log(CMD_OUT_RESPONSE, srcBuffer, 0, length);
     }
 
-    public <E extends Enum<E>> void logReplicationSessionStateChange(
-        final E oldState, final E newState, final long replicationId)
+    public <E extends Enum<E>> void logSessionStateChange(
+        final ArchiveEventCode eventCode, final E oldState, final E newState, final long id)
     {
-        final int length = stateChangeLength(oldState, newState);
+        final int length = sessionStateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(toEventCodeId(REPLICATION_SESSION_STATE_CHANGE), encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
 
         if (index > 0)
         {
             try
             {
-                encodeReplicationSessionStateChange(
+                encodeSessionStateChange(
                     (UnsafeBuffer)ringBuffer.buffer(),
                     index,
                     captureLength,
                     length,
                     oldState,
                     newState,
-                    replicationId);
+                    id);
             }
             finally
             {

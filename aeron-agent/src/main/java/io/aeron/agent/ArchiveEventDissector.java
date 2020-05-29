@@ -18,8 +18,7 @@ package io.aeron.agent;
 import io.aeron.archive.codecs.*;
 import org.agrona.MutableDirectBuffer;
 
-import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
-import static io.aeron.agent.ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -426,6 +425,20 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": replicationId=").append(replicationId);
+        builder.append(", ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectControlSessionStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, CONTROL_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": controlSessionId=").append(controlSessionId);
         builder.append(", ");
         buffer.getStringAscii(absoluteOffset, builder);
     }

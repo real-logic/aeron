@@ -21,8 +21,7 @@ import org.agrona.MutableDirectBuffer;
 import java.util.Arrays;
 import java.util.function.ToIntFunction;
 
-import static io.aeron.agent.ArchiveEventDissector.controlResponse;
-import static io.aeron.agent.ArchiveEventDissector.dissectReplicationSessionStateChange;
+import static io.aeron.agent.ArchiveEventDissector.*;
 
 /**
  * Events that can be enabled for logging in the archive module.
@@ -73,7 +72,9 @@ public enum ArchiveEventCode implements EventCode
         ArchiveEventDissector::controlRequest),
 
     REPLICATION_SESSION_STATE_CHANGE(34, -1,
-        (event, buffer, offset, builder) -> dissectReplicationSessionStateChange(buffer, offset, builder));
+        (event, buffer, offset, builder) -> dissectReplicationSessionStateChange(buffer, offset, builder)),
+    CONTROL_SESSION_STATE_CHANGE(35, -1,
+        (event, buffer, offset, builder) -> dissectControlSessionStateChange(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

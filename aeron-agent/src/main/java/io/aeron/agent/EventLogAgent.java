@@ -280,6 +280,7 @@ public final class EventLogAgent
         tempBuilder = addArchiveControlSessionDemuxerInstrumentation(tempBuilder);
         tempBuilder = addArchiveControlResponseProxyInstrumentation(tempBuilder);
         tempBuilder = addArchiveReplicationSessionInstrumentation(tempBuilder);
+        tempBuilder = addArchiveControlSessionInstrumentation(tempBuilder);
 
         return tempBuilder;
     }
@@ -323,6 +324,20 @@ public final class EventLogAgent
             .type(nameEndsWith("ReplicationSession"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ArchiveInterceptor.ReplicationSessionStateChange.class)
+                    .on(named("stateChange")))));
+    }
+
+    private static AgentBuilder addArchiveControlSessionInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("ControlSession"))
+            .transform(((builder, typeDescription, classLoader, module) -> builder
+                .visit(to(ArchiveInterceptor.ControlSessionStateChange.class)
                     .on(named("stateChange")))));
     }
 

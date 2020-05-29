@@ -28,18 +28,18 @@ final class ArchiveEventEncoder
     {
     }
 
-    static <T extends Enum<T>> int encodeReplicationSessionStateChange(
+    static <T extends Enum<T>> int encodeSessionStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,
         final T from,
         final T to,
-        final long replicationId)
+        final long id)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, replicationId, LITTLE_ENDIAN);
+        encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
         encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_LONG + SIZE_OF_INT), LITTLE_ENDIAN);
@@ -52,7 +52,7 @@ final class ArchiveEventEncoder
         return relativeOffset;
     }
 
-    static <E extends Enum<E>> int stateChangeLength(final E from, final E to)
+    static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to)
     {
         return stateTransitionStringLength(from, to) + (SIZE_OF_LONG + SIZE_OF_INT);
     }

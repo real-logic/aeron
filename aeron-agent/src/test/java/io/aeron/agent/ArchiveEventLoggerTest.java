@@ -67,7 +67,7 @@ class ArchiveEventLoggerTest
     @EnumSource(
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
-        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE" })
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE", "CONTROL_SESSION_STATE_CHANGE" })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
         ARCHIVE_EVENT_CODES.add(eventCode);
@@ -126,7 +126,7 @@ class ArchiveEventLoggerTest
     @EnumSource(
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
-        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE" })
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE", "CONTROL_SESSION_STATE_CHANGE" })
     void controlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertTrue(CONTROL_REQUEST_EVENTS.contains(eventCode));
@@ -136,28 +136,28 @@ class ArchiveEventLoggerTest
     @EnumSource(
         value = ArchiveEventCode.class,
         mode = INCLUDE,
-        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE" })
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE", "CONTROL_SESSION_STATE_CHANGE" })
     void nonControlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertFalse(CONTROL_REQUEST_EVENTS.contains(eventCode));
     }
 
     @Test
-    void replicationSessionStateChange()
+    void logSessionStateChange()
     {
         final int offset = ALIGNMENT * 4;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final ChronoUnit from = ChronoUnit.CENTURIES;
         final ChronoUnit to = ChronoUnit.MICROS;
-        final long replicationId = 555_000_000_000L;
+        final long id = 555_000_000_000L;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
         final int captureLength = SIZE_OF_LONG + SIZE_OF_INT + payload.length();
 
-        logger.logReplicationSessionStateChange(from, to, replicationId);
+        logger.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, from, to, id);
 
         verifyLogHeader(
-            logBuffer, offset, toEventCodeId(REPLICATION_SESSION_STATE_CHANGE), captureLength, captureLength);
-        assertEquals(replicationId, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+            logBuffer, offset, toEventCodeId(CONTROL_SESSION_STATE_CHANGE), captureLength, captureLength);
+        assertEquals(id, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG)));
     }
 }

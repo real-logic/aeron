@@ -786,4 +786,19 @@ class ArchiveEventDissectorTest
             ", x -> y",
             builder.toString());
     }
+
+    @Test
+    void controlSessionStateChange()
+    {
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_500_000_000L);
+        buffer.putLong(LOG_HEADER_LENGTH, -10_000_000_000L, LITTLE_ENDIAN);
+        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_LONG, "x -> y");
+
+        dissectControlSessionStateChange(buffer, 0, builder);
+
+        assertEquals("[1.5] " + CONTEXT + ": " + CONTROL_SESSION_STATE_CHANGE.name() + " [10/20]:" +
+            " controlSessionId=-10000000000" +
+            ", x -> y",
+            builder.toString());
+    }
 }

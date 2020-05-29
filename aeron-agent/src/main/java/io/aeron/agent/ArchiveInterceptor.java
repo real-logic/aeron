@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import net.bytebuddy.asm.Advice;
 
+import static io.aeron.agent.ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE;
+import static io.aeron.agent.ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE;
 import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
 /**
@@ -29,7 +31,16 @@ class ArchiveInterceptor
         @Advice.OnMethodEnter
         static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final long replicationId)
         {
-            LOGGER.logReplicationSessionStateChange(oldState, newState, replicationId);
+            LOGGER.logSessionStateChange(REPLICATION_SESSION_STATE_CHANGE, oldState, newState, replicationId);
+        }
+    }
+
+    static class ControlSessionStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final long controlSessionId)
+        {
+            LOGGER.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, oldState, newState, controlSessionId);
         }
     }
 }

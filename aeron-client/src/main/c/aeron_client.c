@@ -561,3 +561,160 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
         }
     }
 }
+
+int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd)
+{
+    bool processed = cmd->processed;
+
+    while (!processed)
+    {
+        sched_yield();
+        AERON_GET_VOLATILE(processed, cmd->processed);
+    }
+
+    return 0;
+}
+
+int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair)
+{
+    aeron_client_handler_cmd_t cmd;
+
+    if (NULL == client || NULL == pair)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_add_available_counter_handler: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    cmd.type = AERON_CLIENT_HANDLER_ADD_AVAILABLE_COUNTER;
+    cmd.handler.on_available_counter = pair->handler;
+    cmd.clientd = pair->clientd;
+    cmd.processed = false;
+
+    if (aeron_client_conductor_async_handler(&client->conductor, &cmd) < 0)
+    {
+        return -1;
+    }
+
+    return aeron_client_handler_cmd_await_processed(&cmd);
+}
+
+int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair)
+{
+    aeron_client_handler_cmd_t cmd;
+
+    if (NULL == client || NULL == pair)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_remove_available_counter_handler: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    cmd.type = AERON_CLIENT_HANDLER_REMOVE_AVAILABLE_COUNTER;
+    cmd.handler.on_available_counter = pair->handler;
+    cmd.clientd = pair->clientd;
+    cmd.processed = false;
+
+    if (aeron_client_conductor_async_handler(&client->conductor, &cmd) < 0)
+    {
+        return -1;
+    }
+
+    return aeron_client_handler_cmd_await_processed(&cmd);
+}
+
+int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair)
+{
+    aeron_client_handler_cmd_t cmd;
+
+    if (NULL == client || NULL == pair)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_add_unavailable_counter_handler: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    cmd.type = AERON_CLIENT_HANDLER_ADD_UNAVAILABLE_COUNTER;
+    cmd.handler.on_unavailable_counter = pair->handler;
+    cmd.clientd = pair->clientd;
+    cmd.processed = false;
+
+    if (aeron_client_conductor_async_handler(&client->conductor, &cmd) < 0)
+    {
+        return -1;
+    }
+
+    return aeron_client_handler_cmd_await_processed(&cmd);
+}
+
+int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair)
+{
+    aeron_client_handler_cmd_t cmd;
+
+    if (NULL == client || NULL == pair)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_remove_unavailable_counter_handler: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    cmd.type = AERON_CLIENT_HANDLER_REMOVE_UNAVAILABLE_COUNTER;
+    cmd.handler.on_unavailable_counter = pair->handler;
+    cmd.clientd = pair->clientd;
+    cmd.processed = false;
+
+    if (aeron_client_conductor_async_handler(&client->conductor, &cmd) < 0)
+    {
+        return -1;
+    }
+
+    return aeron_client_handler_cmd_await_processed(&cmd);
+}
+
+int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
+{
+    aeron_client_handler_cmd_t cmd;
+
+    if (NULL == client || NULL == pair)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_add_close_handler: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    cmd.type = AERON_CLIENT_HANDLER_ADD_CLOSE_HANDLER;
+    cmd.handler.on_close_handler = pair->handler;
+    cmd.clientd = pair->clientd;
+    cmd.processed = false;
+
+    if (aeron_client_conductor_async_handler(&client->conductor, &cmd) < 0)
+    {
+        return -1;
+    }
+
+    return aeron_client_handler_cmd_await_processed(&cmd);
+}
+
+int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
+{
+    aeron_client_handler_cmd_t cmd;
+
+    if (NULL == client || NULL == pair)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_remove_close_handler: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    cmd.type = AERON_CLIENT_HANDLER_REMOVE_CLOSE_HANDLER;
+    cmd.handler.on_close_handler = pair->handler;
+    cmd.clientd = pair->clientd;
+    cmd.processed = false;
+
+    if (aeron_client_conductor_async_handler(&client->conductor, &cmd) < 0)
+    {
+        return -1;
+    }
+
+    return aeron_client_handler_cmd_await_processed(&cmd);
+}

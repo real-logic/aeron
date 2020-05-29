@@ -398,13 +398,34 @@ int aeron_async_add_counter(
  */
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
 
-int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_t handler, void *clientd);
-int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_t handler, void *clientd);
-int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_t handler, void *clientd);
-int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_t handler, void *clientd);
+typedef struct aeron_on_available_counter_pair_stct
+{
+    aeron_on_available_counter_t handler;
+    void *clientd;
+}
+aeron_on_available_counter_pair_t;
 
-int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_t handler, void *clientd);
-int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_t handler, void *clientd);
+typedef struct aeron_on_unavailable_counter_pair_stct
+{
+    aeron_on_unavailable_counter_t handler;
+    void *clientd;
+}
+aeron_on_unavailable_counter_pair_t;
+
+typedef struct aeron_on_close_client_pair_stct
+{
+    aeron_on_close_client_t handler;
+    void *clientd;
+}
+aeron_on_close_client_pair_t;
+
+int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair);
+int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair);
+int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair);
+int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair);
+
+int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
+int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
 
 /*
  * Counters Reader functions

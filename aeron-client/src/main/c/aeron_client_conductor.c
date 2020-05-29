@@ -88,6 +88,78 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
 
     conductor->client_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
 
+    conductor->available_counter_handlers.array = NULL;
+    conductor->available_counter_handlers.capacity = 0;
+    conductor->available_counter_handlers.length = 0;
+
+    if (NULL != context->on_available_counter_clientd)
+    {
+        int result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(
+            result, conductor->available_counter_handlers, aeron_on_available_counter_pair_t);
+        if (result < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "available_counter_handlers: %s", strerror(errcode));
+            return -1;
+        }
+
+        aeron_on_available_counter_pair_t *pair = &conductor->available_counter_handlers.array[0];
+
+        pair->handler = context->on_available_counter;
+        pair->clientd = context->on_available_counter_clientd;
+        conductor->available_counter_handlers.length++;
+    }
+
+    conductor->unavailable_counter_handlers.array = NULL;
+    conductor->unavailable_counter_handlers.capacity = 0;
+    conductor->unavailable_counter_handlers.length = 0;
+
+    if (NULL != context->on_unavailable_counter_clientd)
+    {
+        int result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(
+            result, conductor->unavailable_counter_handlers, aeron_on_unavailable_counter_pair_t);
+        if (result < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "unavailable_counter_handlers: %s", strerror(errcode));
+            return -1;
+        }
+
+        aeron_on_unavailable_counter_pair_t *pair = &conductor->unavailable_counter_handlers.array[0];
+
+        pair->handler = context->on_unavailable_counter;
+        pair->clientd = context->on_unavailable_counter_clientd;
+        conductor->unavailable_counter_handlers.length++;
+    }
+
+    conductor->close_handlers.array = NULL;
+    conductor->close_handlers.capacity = 0;
+    conductor->close_handlers.length = 0;
+
+    if (NULL != context->on_close_client)
+    {
+        int result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(
+            result, conductor->close_handlers, aeron_on_close_client_pair_t);
+        if (result < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "close_handlers: %s", strerror(errcode));
+            return -1;
+        }
+
+        aeron_on_close_client_pair_t *pair = &conductor->close_handlers.array[0];
+
+        pair->handler = context->on_close_client;
+        pair->clientd = context->on_close_client_clientd;
+        conductor->close_handlers.length++;
+    }
+
     conductor->registering_resources.array = NULL;
     conductor->registering_resources.capacity = 0;
     conductor->registering_resources.length = 0;
@@ -584,6 +656,9 @@ void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
     aeron_int64_to_ptr_hash_map_delete(&conductor->resource_by_id_map);
     aeron_free(conductor->registering_resources.array);
     aeron_free(conductor->lingering_resources.array);
+    aeron_free(conductor->available_counter_handlers.array);
+    aeron_free(conductor->unavailable_counter_handlers.array);
+    aeron_free(conductor->close_handlers.array);
 }
 
 void aeron_client_conductor_force_close_resource(void *clientd, int64_t key, void *value)
@@ -969,6 +1044,131 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
     aeron_counter_delete(counter);
 }
 
+#define AERON_ON_HANDLER_ADD(p,c,m,t) \
+{ \
+    int ensure_capacity_result = 0; \
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, c->m, t); \
+    if (ensure_capacity_result < 0) \
+    { \
+        char err_buffer[AERON_MAX_PATH]; \
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "add " #t ": %s", aeron_errmsg()); \
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer); \
+        p = NULL; \
+    } \
+    p = &c->m.array[c->m.length++]; \
+}
+
+void aeron_client_conductor_on_cmd_handler(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_client_handler_cmd_t *cmd = (aeron_client_handler_cmd_t *)item;
+
+    switch (cmd->type)
+    {
+        case AERON_CLIENT_HANDLER_ADD_AVAILABLE_COUNTER:
+        {
+            aeron_on_available_counter_pair_t *pair;
+
+            AERON_ON_HANDLER_ADD(pair, conductor, available_counter_handlers, aeron_on_available_counter_pair_t);
+            if (NULL != pair)
+            {
+                pair->handler = cmd->handler.on_available_counter;
+                pair->clientd = cmd->clientd;
+            }
+            break;
+        }
+
+        case AERON_CLIENT_HANDLER_REMOVE_AVAILABLE_COUNTER:
+        {
+            for (size_t i = 0, size = conductor->available_counter_handlers.length, last_index = size - 1;
+                i < size;
+                i++)
+            {
+                aeron_on_available_counter_pair_t *pair = &conductor->available_counter_handlers.array[i];
+
+                if (cmd->handler.on_available_counter == pair->handler && cmd->clientd == pair->clientd)
+                {
+                    aeron_array_fast_unordered_remove(
+                        (uint8_t *)conductor->available_counter_handlers.array,
+                        sizeof(aeron_on_available_counter_pair_t),
+                        i,
+                        last_index);
+                    conductor->available_counter_handlers.length--;
+                }
+            }
+            break;
+        }
+
+        case AERON_CLIENT_HANDLER_ADD_UNAVAILABLE_COUNTER:
+        {
+            aeron_on_unavailable_counter_pair_t *pair;
+
+            AERON_ON_HANDLER_ADD(pair, conductor, unavailable_counter_handlers, aeron_on_unavailable_counter_pair_t);
+            if (NULL != pair)
+            {
+                pair->handler = cmd->handler.on_unavailable_counter;
+                pair->clientd = cmd->clientd;
+            }
+            break;
+        }
+
+        case AERON_CLIENT_HANDLER_REMOVE_UNAVAILABLE_COUNTER:
+        {
+            for (size_t i = 0, size = conductor->unavailable_counter_handlers.length, last_index = size - 1;
+                i < size;
+                i++)
+            {
+                aeron_on_unavailable_counter_pair_t *pair = &conductor->unavailable_counter_handlers.array[i];
+
+                if (cmd->handler.on_unavailable_counter == pair->handler && cmd->clientd == pair->clientd)
+                {
+                    aeron_array_fast_unordered_remove(
+                        (uint8_t *)conductor->unavailable_counter_handlers.array,
+                        sizeof(aeron_on_unavailable_counter_pair_t),
+                        i,
+                        last_index);
+                    conductor->unavailable_counter_handlers.length--;
+                }
+            }
+            break;
+        }
+
+        case AERON_CLIENT_HANDLER_ADD_CLOSE_HANDLER:
+        {
+            aeron_on_close_client_pair_t *pair;
+
+            AERON_ON_HANDLER_ADD(pair, conductor, close_handlers, aeron_on_close_client_pair_t);
+            if (NULL != pair)
+            {
+                pair->handler = cmd->handler.on_close_handler;
+                pair->clientd = cmd->clientd;
+            }
+            break;
+        }
+
+        case AERON_CLIENT_HANDLER_REMOVE_CLOSE_HANDLER:
+        {
+            for (size_t i = 0, size = conductor->close_handlers.length, last_index = size - 1; i < size; i++)
+            {
+                aeron_on_close_client_pair_t *pair = &conductor->close_handlers.array[i];
+
+                if (cmd->handler.on_close_handler == pair->handler && cmd->clientd == pair->clientd)
+                {
+                    aeron_array_fast_unordered_remove(
+                        (uint8_t *)conductor->close_handlers.array,
+                        sizeof(aeron_on_close_client_pair_t),
+                        i,
+                        last_index);
+                    conductor->close_handlers.length--;
+                }
+            }
+            break;
+        }
+    }
+
+    AERON_PUT_ORDERED(cmd->processed, true);
+}
+
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
 {
     int fail_count = 0;
@@ -1325,6 +1525,26 @@ int aeron_client_conductor_async_close_counter(
     else
     {
         if (aeron_client_conductor_command_offer(conductor->command_queue, counter) < 0)
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_handler(aeron_client_conductor_t *conductor, aeron_client_handler_cmd_t *cmd)
+{
+    cmd->command_base.func = aeron_client_conductor_on_cmd_handler;
+    cmd->command_base.item = NULL;
+
+    if (conductor->invoker_mode)
+    {
+        aeron_client_conductor_on_cmd_handler(conductor, cmd);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
         {
             return -1;
         }
@@ -1788,7 +2008,12 @@ int aeron_client_conductor_on_counter_ready(
         }
     }
 
-    // TODO: notify counter_available
+    for (size_t i = 0, length = conductor->available_counter_handlers.length; i < length; i++)
+    {
+        aeron_on_available_counter_pair_t *pair = &conductor->available_counter_handlers.array[i];
+
+        pair->handler(pair->clientd, &conductor->counters_reader, response->correlation_id, response->counter_id);
+    }
 
     return 0;
 }
@@ -1797,7 +2022,13 @@ int aeron_client_conductor_on_unavailable_counter(
     aeron_client_conductor_t *conductor,
     aeron_counter_update_t *response)
 {
-    // TODO: notify counter_unavailable
+    for (size_t i = 0, length = conductor->unavailable_counter_handlers.length; i < length; i++)
+    {
+        aeron_on_unavailable_counter_pair_t *pair = &conductor->unavailable_counter_handlers.array[i];
+
+        pair->handler(pair->clientd, &conductor->counters_reader, response->correlation_id, response->counter_id);
+    }
+
     return 0;
 }
 

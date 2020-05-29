@@ -314,7 +314,7 @@ public final class EventLogAgent
 
     private static AgentBuilder addArchiveReplicationSessionInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.REPLICATION_STATE_CHANGE))
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE))
         {
             return agentBuilder;
         }

@@ -22,7 +22,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static io.aeron.agent.CommonEventEncoder.*;
@@ -179,16 +178,6 @@ class CommonEventEncoderTest
     void testEncodedLength(final int length, final int encodedLength)
     {
         assertEquals(encodedLength, encodedLength(length));
-    }
-
-    @Test
-    void testStateChangeLength()
-    {
-        final ChronoUnit from = ChronoUnit.CENTURIES;
-        final ChronoUnit to = ChronoUnit.HALF_DAYS;
-        final String payload = from.name() + STATE_SEPARATOR + to.name();
-
-        assertEquals(payload.length() + (SIZE_OF_INT * 2), stateChangeLength(from, to));
     }
 
     private static List<Arguments> captureLengthArgs()

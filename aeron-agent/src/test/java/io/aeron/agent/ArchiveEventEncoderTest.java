@@ -18,15 +18,18 @@ package io.aeron.agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.agent.ArchiveEventEncoder.*;
+import static io.aeron.agent.ArchiveEventEncoder.encodeReplicationSessionStateChange;
+import static io.aeron.agent.ArchiveEventEncoder.stateChangeLength;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -40,19 +43,29 @@ class ArchiveEventEncoderTest
         final int offset = 24;
         final TimeUnit from = DAYS;
         final TimeUnit to = MILLISECONDS;
-        final int replaySessionId = 521;
+        final long replicationId = Long.MAX_VALUE;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
-        final int length = payload.length() + SIZE_OF_INT * 2;
+        final int length = payload.length() + SIZE_OF_LONG + SIZE_OF_INT;
         final int captureLength = captureLength(length);
 
         final int encodedLength =
-            encodeReplicationStateChange(buffer, offset, captureLength, length, from, to, replaySessionId);
+            encodeReplicationSessionStateChange(buffer, offset, captureLength, length, from, to, replicationId);
 
         assertEquals(encodedLength(stateChangeLength(from, to)), encodedLength);
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(replaySessionId, buffer.getInt(offset + LOG_HEADER_LENGTH));
-        assertEquals(payload, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT));
+        assertEquals(replicationId, buffer.getLong(offset + LOG_HEADER_LENGTH));
+        assertEquals(payload, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
+    }
+
+    @Test
+    void testStateChangeLength()
+    {
+        final ChronoUnit from = ChronoUnit.ERAS;
+        final ChronoUnit to = ChronoUnit.MILLENNIA;
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
+
+        assertEquals(payload.length() + SIZE_OF_LONG + SIZE_OF_INT, stateChangeLength(from, to));
     }
 }

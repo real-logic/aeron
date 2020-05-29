@@ -19,6 +19,8 @@ import io.aeron.cluster.ConsensusModule;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.time.temporal.ChronoUnit;
+
 import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
@@ -111,5 +113,15 @@ class ClusterEventEncoderTest
     void testNewLeaderShipTermLength()
     {
         assertEquals(SIZE_OF_LONG * 5 + SIZE_OF_INT * 3, newLeaderShipTermLength());
+    }
+
+    @Test
+    void testStateChangeLength()
+    {
+        final ChronoUnit from = ChronoUnit.CENTURIES;
+        final ChronoUnit to = ChronoUnit.HALF_DAYS;
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
+
+        assertEquals(payload.length() + (SIZE_OF_INT * 2), stateChangeLength(from, to));
     }
 }

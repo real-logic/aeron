@@ -27,9 +27,9 @@ class ArchiveInterceptor
     static class ReplicationSessionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final int replaySessionId)
+        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final long replicationId)
         {
-            LOGGER.logReplicationStateChange(oldState, newState, replaySessionId);
+            LOGGER.logReplicationSessionStateChange(oldState, newState, replicationId);
         }
     }
 }

@@ -27,7 +27,7 @@ import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.archive.codecs.ControlResponseCode.NULL_VAL;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveEventDissectorTest
@@ -773,16 +773,16 @@ class ArchiveEventDissectorTest
     }
 
     @Test
-    void replicationStateChange()
+    void replicationSessionStateChange()
     {
         internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_500_000_000L);
-        buffer.putInt(LOG_HEADER_LENGTH, 222, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT, "x -> y");
+        buffer.putLong(LOG_HEADER_LENGTH, 10_000_000_000L, LITTLE_ENDIAN);
+        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_LONG, "x -> y");
 
-        dissectReplicationStateChange(buffer, 0, builder);
+        dissectReplicationSessionStateChange(buffer, 0, builder);
 
-        assertEquals("[1.5] " + CONTEXT + ": " + REPLICATION_STATE_CHANGE.name() + " [10/20]:" +
-            " replaySessionId=222" +
+        assertEquals("[1.5] " + CONTEXT + ": " + REPLICATION_SESSION_STATE_CHANGE.name() + " [10/20]:" +
+            " replicationId=10000000000" +
             ", x -> y",
             builder.toString());
     }

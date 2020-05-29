@@ -149,12 +149,7 @@ final class CommonEventEncoder
         return 2 * SIZE_OF_INT + address.getAddress().getAddress().length;
     }
 
-    static <E extends Enum<E>> int stateChangeLength(final E from, final E to)
-    {
-        return stateTransitionStringLength(from, to) + (SIZE_OF_INT * 2);
-    }
-
-    private static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)
+    static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)
     {
         return from.name().length() + STATE_SEPARATOR.length() + to.name().length();
     }

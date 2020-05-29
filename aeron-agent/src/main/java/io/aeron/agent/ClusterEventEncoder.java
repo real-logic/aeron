@@ -17,8 +17,7 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
-import static io.aeron.agent.CommonEventEncoder.encodeLogHeader;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -102,4 +101,8 @@ final class ClusterEventEncoder
         return relativeOffset;
     }
 
+    static <E extends Enum<E>> int stateChangeLength(final E from, final E to)
+    {
+        return stateTransitionStringLength(from, to) + (SIZE_OF_INT * 2);
+    }
 }

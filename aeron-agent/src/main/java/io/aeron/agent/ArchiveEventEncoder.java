@@ -17,10 +17,10 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
-import static io.aeron.agent.CommonEventEncoder.encodeLogHeader;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ArchiveEventEncoder
 {
@@ -28,21 +28,21 @@ final class ArchiveEventEncoder
     {
     }
 
-    static <T extends Enum<T>> int encodeReplicationStateChange(
+    static <T extends Enum<T>> int encodeReplicationSessionStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,
         final T from,
         final T to,
-        final int replaySessionId)
+        final long replicationId)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, replaySessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putLong(offset + relativeOffset, replicationId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_INT * 2), LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_LONG + SIZE_OF_INT), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, from.name());
@@ -50,5 +50,10 @@ final class ArchiveEventEncoder
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, to.name());
 
         return relativeOffset;
+    }
+
+    static <E extends Enum<E>> int stateChangeLength(final E from, final E to)
+    {
+        return stateTransitionStringLength(from, to) + (SIZE_OF_LONG + SIZE_OF_INT);
     }
 }

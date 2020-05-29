@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.function.ToIntFunction;
 
 import static io.aeron.agent.ArchiveEventDissector.controlResponse;
-import static io.aeron.agent.ArchiveEventDissector.dissectReplicationStateChange;
+import static io.aeron.agent.ArchiveEventDissector.dissectReplicationSessionStateChange;
 
 /**
  * Events that can be enabled for logging in the archive module.
@@ -72,8 +72,8 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_STOP_RECORDING_BY_IDENTITY(33, StopRecordingByIdentityRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::controlRequest),
 
-    REPLICATION_STATE_CHANGE(34, -1,
-        (event, buffer, offset, builder) -> dissectReplicationStateChange(buffer, offset, builder));
+    REPLICATION_SESSION_STATE_CHANGE(34, -1,
+        (event, buffer, offset, builder) -> dissectReplicationSessionStateChange(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

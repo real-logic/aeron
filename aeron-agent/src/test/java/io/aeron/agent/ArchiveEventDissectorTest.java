@@ -20,13 +20,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.agent.ArchiveEventCode.*;
-import static io.aeron.agent.ArchiveEventDissector.CONTEXT;
-import static io.aeron.agent.ArchiveEventDissector.controlRequest;
+import static io.aeron.agent.ArchiveEventDissector.*;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.archive.codecs.ControlResponseCode.NULL_VAL;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveEventDissectorTest
@@ -768,6 +769,21 @@ class ArchiveEventDissectorTest
         controlRequest(CMD_OUT_RESPONSE, buffer, 0, builder);
 
         assertEquals("[2.5] " + CONTEXT + ": " + CMD_OUT_RESPONSE.name() + " [10/20]: unknown command",
+            builder.toString());
+    }
+
+    @Test
+    void replicationStateChange()
+    {
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_500_000_000L);
+        buffer.putInt(LOG_HEADER_LENGTH, 222, LITTLE_ENDIAN);
+        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT, "x -> y");
+
+        dissectReplicationStateChange(buffer, 0, builder);
+
+        assertEquals("[1.5] " + CONTEXT + ": " + REPLICATION_STATE_CHANGE.name() + " [10/20]:" +
+            " replaySessionId=222" +
+            ", x -> y",
             builder.toString());
     }
 }

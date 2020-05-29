@@ -21,6 +21,9 @@ import org.agrona.MutableDirectBuffer;
 import java.util.Arrays;
 import java.util.function.ToIntFunction;
 
+import static io.aeron.agent.ArchiveEventDissector.controlResponse;
+import static io.aeron.agent.ArchiveEventDissector.dissectReplicationStateChange;
+
 /**
  * Events that can be enabled for logging in the archive module.
  */
@@ -62,12 +65,15 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_TAGGED_REPLICATE(29, TaggedReplicateRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
 
     CMD_OUT_RESPONSE(30, ControlResponseDecoder.TEMPLATE_ID,
-        (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder)),
+        (event, buffer, offset, builder) -> controlResponse(buffer, offset, builder)),
 
     CMD_IN_START_RECORDING2(31, StartRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
     CMD_IN_EXTEND_RECORDING2(32, ExtendRecordingRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
     CMD_IN_STOP_RECORDING_BY_IDENTITY(33, StopRecordingByIdentityRequestDecoder.TEMPLATE_ID,
-        ArchiveEventDissector::controlRequest);
+        ArchiveEventDissector::controlRequest),
+
+    REPLICATION_STATE_CHANGE(34, -1,
+        (event, buffer, offset, builder) -> dissectReplicationStateChange(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;
@@ -97,12 +103,15 @@ public enum ArchiveEventCode implements EventCode
         for (final ArchiveEventCode code : codes)
         {
             final int id = idSupplier.applyAsInt(code);
-            if (null != array[id])
+            if (id >= 0)
             {
-                throw new IllegalArgumentException("id already in use: " + id);
-            }
+                if (null != array[id])
+                {
+                    throw new IllegalArgumentException("id already in use: " + id);
+                }
 
-            array[id] = code;
+                array[id] = code;
+            }
         }
 
         return array;

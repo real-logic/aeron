@@ -15,7 +15,7 @@
  */
 package io.aeron.agent;
 
-import io.aeron.cluster.Election;
+import io.aeron.cluster.ConsensusModule;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -36,8 +36,8 @@ class ClusterEventEncoderTest
     void testEncodeStateChange()
     {
         final int offset = 24;
-        final Election.State from = Election.State.CANDIDATE_BALLOT;
-        final Election.State to = Election.State.CANVASS;
+        final ConsensusModule.State from = ConsensusModule.State.ACTIVE;
+        final ConsensusModule.State to = ConsensusModule.State.CLOSED;
         final int memberId = 42;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
         final int length = payload.length() + SIZE_OF_INT * 2;

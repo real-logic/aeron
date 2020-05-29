@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
+import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
 import static io.aeron.agent.CommonEventEncoder.encodeLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -95,7 +96,7 @@ final class ClusterEventEncoder
         relativeOffset += SIZE_OF_INT;
 
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, from.name());
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, CommonEventEncoder.STATE_SEPARATOR);
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, to.name());
 
         return relativeOffset;

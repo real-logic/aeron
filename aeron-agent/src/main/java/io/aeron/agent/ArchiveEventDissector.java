@@ -19,7 +19,10 @@ import io.aeron.archive.codecs.*;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
+import static io.aeron.agent.ArchiveEventCode.REPLICATION_STATE_CHANGE;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 final class ArchiveEventDissector
 {
@@ -412,6 +415,21 @@ final class ArchiveEventDissector
 
         CONTROL_RESPONSE_DECODER.getErrorMessage(builder);
     }
+
+    static void dissectReplicationStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REPLICATION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final int replaySessionId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(": replaySessionId=").append(replaySessionId);
+        builder.append(", ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
 
     private static void appendConnect(final StringBuilder builder)
     {

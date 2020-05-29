@@ -24,8 +24,10 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
+import static io.aeron.agent.ArchiveEventEncoder.encodeReplicationStateChange;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.ARCHIVE_EVENT_CODES;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.of;
 
@@ -35,9 +37,10 @@ import static java.util.EnumSet.of;
  */
 public final class ArchiveEventLogger
 {
-    public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
+    public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EVENT_RING_BUFFER);
 
-    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(CMD_OUT_RESPONSE));
+    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS =
+        complementOf(of(CMD_OUT_RESPONSE, REPLICATION_STATE_CHANGE));
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
@@ -67,6 +70,35 @@ public final class ArchiveEventLogger
     public void logControlResponse(final DirectBuffer srcBuffer, final int length)
     {
         log(CMD_OUT_RESPONSE, srcBuffer, 0, length);
+    }
+
+    public <E extends Enum<E>> void logReplicationStateChange(
+        final E oldState, final E newState, final int replaySessionId)
+    {
+        final int length = stateChangeLength(oldState, newState);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(REPLICATION_STATE_CHANGE), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeReplicationStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    replaySessionId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     private void log(

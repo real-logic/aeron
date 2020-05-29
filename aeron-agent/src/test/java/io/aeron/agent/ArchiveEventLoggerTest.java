@@ -25,19 +25,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
-import static io.aeron.agent.ArchiveEventCode.EVENT_CODE_TYPE;
+import java.time.temporal.ChronoUnit;
+
+import static io.aeron.agent.AgentTests.verifyLogHeader;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.ArchiveEventLogger.toEventCodeId;
-import static io.aeron.agent.AgentTests.verifyLogHeader;
-import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
-import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.*;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BitUtil.align;
+import static org.agrona.BitUtil.*;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,7 +64,10 @@ class ArchiveEventLoggerTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = ArchiveEventCode.class, mode = EXCLUDE, names = { "CMD_OUT_RESPONSE" })
+    @EnumSource(
+        value = ArchiveEventCode.class,
+        mode = EXCLUDE,
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_STATE_CHANGE" })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
         ARCHIVE_EVENT_CODES.add(eventCode);
@@ -121,16 +123,40 @@ class ArchiveEventLoggerTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = ArchiveEventCode.class, mode = EXCLUDE, names = { "CMD_OUT_RESPONSE" })
+    @EnumSource(
+        value = ArchiveEventCode.class,
+        mode = EXCLUDE,
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_STATE_CHANGE" })
     void controlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertTrue(CONTROL_REQUEST_EVENTS.contains(eventCode));
     }
 
     @ParameterizedTest
-    @EnumSource(value = ArchiveEventCode.class, mode = INCLUDE, names = { "CMD_OUT_RESPONSE" })
+    @EnumSource(
+        value = ArchiveEventCode.class,
+        mode = INCLUDE,
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_STATE_CHANGE" })
     void nonControlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertFalse(CONTROL_REQUEST_EVENTS.contains(eventCode));
+    }
+
+    @Test
+    void replicationStateChange()
+    {
+        final int offset = ALIGNMENT * 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final ChronoUnit from = ChronoUnit.CENTURIES;
+        final ChronoUnit to = ChronoUnit.MICROS;
+        final int replaySessionId = 555;
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
+        final int captureLength = SIZE_OF_INT * 2 + payload.length();
+
+        logger.logReplicationStateChange(from, to, replaySessionId);
+
+        verifyLogHeader(logBuffer, offset, toEventCodeId(REPLICATION_STATE_CHANGE), captureLength, captureLength);
+        assertEquals(replaySessionId, logBuffer.getInt(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_INT)));
     }
 }

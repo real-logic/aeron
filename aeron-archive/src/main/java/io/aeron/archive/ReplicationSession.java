@@ -692,8 +692,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private void state(final State newState)
     {
         timeOfLastActionMs = epochClock.time();
-        //System.out.println("ReplicationSession: " + timeOfLastActionMs + ": " + state + " -> " + newState);
+        stateChange(state, newState, replaySessionId);
         state = newState;
         activeCorrelationId = NULL_VALUE;
+    }
+
+    @SuppressWarnings("unused")
+    void stateChange(final State oldState, final State newState, final int replaySessionId)
+    {
+//        System.out.println("ReplicationSession: " + timeOfLastActionMs + ": " + oldState + " -> " + newState);
     }
 }

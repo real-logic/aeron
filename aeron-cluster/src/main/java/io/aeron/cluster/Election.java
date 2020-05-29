@@ -32,14 +32,14 @@ import static io.aeron.cluster.ClusterMember.compareLog;
 /**
  * Election process to determine a new cluster leader and catch up followers.
  */
-public class Election
+class Election
 {
     /**
      * The type id of the {@link Counter} used for the election state.
      */
     static final int ELECTION_STATE_TYPE_ID = 207;
 
-    public enum State
+    enum State
     {
         INIT(0),
         CANVASS(1),
@@ -133,7 +133,7 @@ public class Election
     private final ConsensusModuleAgent consensusModuleAgent;
     private final Random random;
 
-    public Election(
+    Election(
         final boolean isNodeStartup,
         final long leadershipTermId,
         final long logPosition,

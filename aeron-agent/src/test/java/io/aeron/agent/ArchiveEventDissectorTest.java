@@ -801,4 +801,19 @@ class ArchiveEventDissectorTest
             ", x -> y",
             builder.toString());
     }
+
+    @Test
+    void replaySessionError()
+    {
+        internalEncodeLogHeader(buffer, 0, 6, 100, () -> 5_600_000_000L);
+        buffer.putLong(LOG_HEADER_LENGTH, -8, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 42, LITTLE_ENDIAN);
+        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_LONG * 2, "something went wrong");
+
+        dissectReplaySessionError(buffer, 0, builder);
+
+        assertEquals("[5.6] " + CONTEXT + ": " + REPLAY_SESSION_ERROR.name() + " [6/100]:" +
+            " sessionId=-8, recordingId=42, errorMessage=something went wrong",
+            builder.toString());
+    }
 }

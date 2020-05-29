@@ -43,4 +43,13 @@ class ArchiveInterceptor
             LOGGER.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, oldState, newState, controlSessionId);
         }
     }
+
+    static class ReplaySession
+    {
+        @Advice.OnMethodEnter
+        static void onPendingError(final long sessionId, final long recordingId, final String errorMessage)
+        {
+            LOGGER.logReplaySessionError(sessionId, recordingId, errorMessage);
+        }
+    }
 }

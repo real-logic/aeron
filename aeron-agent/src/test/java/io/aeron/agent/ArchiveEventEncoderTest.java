@@ -21,8 +21,7 @@ import org.junit.jupiter.api.Test;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.agent.ArchiveEventEncoder.encodeSessionStateChange;
-import static io.aeron.agent.ArchiveEventEncoder.sessionStateChangeLength;
+import static io.aeron.agent.ArchiveEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -67,5 +66,25 @@ class ArchiveEventEncoderTest
         final String payload = from.name() + STATE_SEPARATOR + to.name();
 
         assertEquals(payload.length() + SIZE_OF_LONG + SIZE_OF_INT, sessionStateChangeLength(from, to));
+    }
+
+    @Test
+    void testEncodeReplaySessionError()
+    {
+        final int offset = 24;
+        final long sessionId = Long.MAX_VALUE;
+        final long recordingId = 56;
+        final String errorMessage = "funny";
+        final int length = errorMessage.length() + SIZE_OF_LONG * 2 + SIZE_OF_INT;
+        final int captureLength = captureLength(length);
+
+        encodeReplaySessionError(buffer, offset, captureLength, length, sessionId, recordingId, errorMessage);
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getLong(offset + LOG_HEADER_LENGTH));
+        assertEquals(recordingId, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
+        assertEquals(errorMessage, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG * 2));
     }
 }

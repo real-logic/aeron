@@ -56,4 +56,24 @@ final class ArchiveEventEncoder
     {
         return stateTransitionStringLength(from, to) + (SIZE_OF_LONG + SIZE_OF_INT);
     }
+
+    static void encodeReplaySessionError(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long sessionId,
+        final long recordingId,
+        final String errorMessage)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, recordingId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - (SIZE_OF_INT * 2), errorMessage);
+    }
 }

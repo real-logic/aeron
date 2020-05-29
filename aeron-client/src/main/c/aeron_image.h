@@ -32,6 +32,7 @@ typedef struct aeron_image_stct
 
     aeron_subscription_t *subscription;
     aeron_log_buffer_t *log_buffer;
+    aeron_logbuffer_metadata_t *metadata;
 
     int64_t *subscriber_position;
 
@@ -46,6 +47,7 @@ typedef struct aeron_image_stct
     size_t position_bits_to_shift;
 
     bool is_closed;
+    bool is_eos;
     bool is_lingering;
 }
 aeron_image_t;

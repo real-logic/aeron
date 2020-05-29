@@ -1101,6 +1101,25 @@ int64_t aeron_image_position(aeron_image_t *image);
 int aeron_image_set_position(aeron_image_t *image, int64_t position);
 
 /**
+ * Is the current consumed position at the end of the stream?
+ *
+ * @param image to check.
+ * @return true if at the end of the stream or false if not.
+ */
+bool aeron_image_is_end_of_stream(aeron_image_t *image);
+
+/**
+ * Count of observed active transports within the image liveness timeout.
+ *
+ * If the image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC
+ * Images also will be 0.
+ *
+ * @param image to check.
+ * @return count of active transports - 0 if Image is closed, no datagrams yet, or IPC. Or -1 for error.
+ */
+int aeron_image_active_transport_count(aeron_image_t *image);
+
+/**
  * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
  * will be delivered to the handler up to a limited number of fragments as specified.
  * <p>

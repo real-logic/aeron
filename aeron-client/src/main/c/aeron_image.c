@@ -56,9 +56,9 @@ int aeron_image_create(
     _image->final_position = 0;
     _image->refcnt = 1;
 
-    aeron_logbuffer_metadata_t *metadata =
+    _image->metadata =
         (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
-    int32_t term_length = metadata->term_length;
+    int32_t term_length = _image->metadata->term_length;
 
     _image->term_length_mask = term_length - 1;
     _image->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes(term_length);
@@ -79,6 +79,12 @@ int aeron_image_delete(aeron_image_t *image)
 
 void aeron_image_force_close(aeron_image_t *image)
 {
+    int64_t end_of_stream_position;
+
+    AERON_GET_VOLATILE(end_of_stream_position, image->metadata->end_of_stream_position);
+
+    AERON_PUT_ORDERED(image->final_position, *image->subscriber_position);
+    AERON_PUT_ORDERED(image->is_eos, (image->final_position >= end_of_stream_position));
     AERON_PUT_ORDERED(image->is_closed, true);
 }
 
@@ -158,6 +164,53 @@ int aeron_image_set_position(aeron_image_t *image, int64_t position)
     }
 
     return 0;
+}
+
+bool aeron_image_is_end_of_stream(aeron_image_t *image)
+{
+    bool is_closed;
+    int64_t end_of_stream_position, subscriber_position;
+
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_is_end_of_stream: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    AERON_GET_VOLATILE(is_closed, image->is_closed);
+    if (is_closed)
+    {
+        return image->is_eos;
+    }
+
+    AERON_GET_VOLATILE(end_of_stream_position, image->metadata->end_of_stream_position);
+    AERON_GET_VOLATILE(subscriber_position, *image->subscriber_position);
+
+    return subscriber_position >= end_of_stream_position;
+}
+
+int aeron_image_active_transport_count(aeron_image_t *image)
+{
+    int32_t active_transport_count;
+    bool is_closed;
+
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_active_transport_count: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    AERON_GET_VOLATILE(is_closed, image->is_closed);
+    if (is_closed)
+    {
+        return 0;
+    }
+
+    AERON_GET_VOLATILE(active_transport_count, image->metadata->active_transport_count);
+
+    return (int)active_transport_count;
 }
 
 int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit)

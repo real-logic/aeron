@@ -419,12 +419,70 @@ typedef struct aeron_on_close_client_pair_stct
 }
 aeron_on_close_client_pair_t;
 
+/**
+ * Add a handler to be called when a new counter becomes available.
+ *
+ * NOTE: This function blocks until the handler is added by the client conductor thread.
+ *
+ * @param client for the counter
+ * @param pair holding the handler to call and a clientd to pass when called.
+ * @return 0 for succes and -1 for error
+ */
 int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair);
+
+/**
+ * Remove a previously added handler to be called when a new counter becomes available.
+ *
+ * NOTE: This function blocks until the handler is removed by the client conductor thread.
+ *
+ * @param client for the counter
+ * @param pair holding the handler to call and a clientd to pass when called.
+ * @return 0 for succes and -1 for error
+ */
 int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair);
+
+/**
+ * Add a handler to be called when a new counter becomes unavailable or goes away.
+ *
+ * NOTE: This function blocks until the handler is added by the client conductor thread.
+ *
+ * @param client for the counter
+ * @param pair holding the handler to call and a clientd to pass when called.
+ * @return 0 for succes and -1 for error
+ */
 int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair);
+
+/**
+ * Remove a previously added handler to be called when a new counter becomes unavailable or goes away.
+ *
+ * NOTE: This function blocks until the handler is removed by the client conductor thread.
+ *
+ * @param client for the counter
+ * @param pair holding the handler to call and a clientd to pass when called.
+ * @return 0 for succes and -1 for error
+ */
 int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair);
 
+/**
+ * Add a handler to be called when client is closed.
+ *
+ * NOTE: This function blocks until the handler is added by the client conductor thread.
+ *
+ * @param client for the counter
+ * @param pair holding the handler to call and a clientd to pass when called.
+ * @return 0 for succes and -1 for error
+ */
 int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
+
+/**
+ * Remove a previously added handler to be called when client is closed.
+ *
+ * NOTE: This function blocks until the handler is removed by the client conductor thread.
+ *
+ * @param client for the counter
+ * @param pair holding the handler to call and a clientd to pass when called.
+ * @return 0 for succes and -1 for error
+ */
 int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
 
 /*

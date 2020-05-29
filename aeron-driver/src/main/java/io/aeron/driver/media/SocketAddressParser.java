@@ -44,6 +44,7 @@ class SocketAddressParser
      * @param isReResolution for the parse.
      * @param nameResolver   to be used for resolving hostnames.
      * @return An {@link InetSocketAddress} for the parsed input.
+     * @throws UnknownHostException if address cannot be resolved
      */
     static InetSocketAddress parse(
         final String value, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)

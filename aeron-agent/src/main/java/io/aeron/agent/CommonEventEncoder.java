@@ -32,6 +32,7 @@ final class CommonEventEncoder
 {
     static final int LOG_HEADER_LENGTH = 16;
     static final int MAX_CAPTURE_LENGTH = MAX_EVENT_LENGTH - LOG_HEADER_LENGTH;
+    static final String STATE_SEPARATOR = " -> ";
 
     private CommonEventEncoder()
     {
@@ -146,5 +147,10 @@ final class CommonEventEncoder
     static int socketAddressLength(final InetSocketAddress address)
     {
         return 2 * SIZE_OF_INT + address.getAddress().getAddress().length;
+    }
+
+    static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)
+    {
+        return from.name().length() + STATE_SEPARATOR.length() + to.name().length();
     }
 }

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
-import static io.aeron.agent.ClusterEventEncoder.SEPARATOR;
+import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
 import static io.aeron.agent.ClusterEventLogger.toEventCodeId;
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
@@ -106,7 +106,7 @@ class ClusterEventLoggerTest
         final TimeUnit from = MINUTES;
         final TimeUnit to = SECONDS;
         final int memberId = 42;
-        final String payload = from.name() + SEPARATOR + to.name();
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
         final int captureLength = SIZE_OF_INT * 2 + payload.length();
 
         logger.logStateChange(STATE_CHANGE, from, to, memberId);

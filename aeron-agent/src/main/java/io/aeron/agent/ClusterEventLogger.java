@@ -23,8 +23,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import static io.aeron.agent.ClusterEventCode.EVENT_CODE_TYPE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventEncoder.*;
-import static io.aeron.agent.CommonEventEncoder.captureLength;
-import static io.aeron.agent.CommonEventEncoder.encodedLength;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 
 /**
@@ -55,6 +54,7 @@ public final class ClusterEventLogger
         final int length = newLeaderShipTermLength();
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(NEW_LEADERSHIP_TERM), encodedLength);
 
         if (index > 0)
@@ -88,6 +88,7 @@ public final class ClusterEventLogger
         final int length = stateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
 
         if (index > 0)

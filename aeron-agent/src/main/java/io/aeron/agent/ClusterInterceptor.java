@@ -16,7 +16,6 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.ConsensusModule;
-import io.aeron.cluster.Election;
 import io.aeron.cluster.service.Cluster;
 import net.bytebuddy.asm.Advice;
 
@@ -31,7 +30,7 @@ class ClusterInterceptor
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static void stateChange(final Election.State oldState, final Election.State newState, final int memberId)
+        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final int memberId)
         {
             LOGGER.logStateChange(ELECTION_STATE_CHANGE, oldState, newState, memberId);
         }

@@ -253,10 +253,22 @@ class ReplaySession implements Session, AutoCloseable
 
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
-        if (null != errorMessage && !controlSession.isDone())
+        final String errorMessage = this.errorMessage;
+        if (null != errorMessage)
         {
-            controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+            onPendingError(sessionId, recordingId, errorMessage);
+            final ControlSession controlSession = this.controlSession;
+            if (!controlSession.isDone())
+            {
+                controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+            }
         }
+    }
+
+    @SuppressWarnings("unused")
+    void onPendingError(final long sessionId, final long recordingId, final String errorMessage)
+    {
+        // Hook for Agent logging
     }
 
     private int init() throws IOException

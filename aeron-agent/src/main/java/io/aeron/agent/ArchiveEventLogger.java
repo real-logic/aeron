@@ -24,10 +24,14 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
+import static io.aeron.agent.ArchiveEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.ARCHIVE_EVENT_CODES;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.of;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Event logger interface used by interceptors for recording events into a {@link RingBuffer} for an
@@ -35,9 +39,10 @@ import static java.util.EnumSet.of;
  */
 public final class ArchiveEventLogger
 {
-    public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
+    public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EVENT_RING_BUFFER);
 
-    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(CMD_OUT_RESPONSE));
+    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(
+        CMD_OUT_RESPONSE, REPLICATION_SESSION_STATE_CHANGE, CONTROL_SESSION_STATE_CHANGE, REPLAY_SESSION_ERROR));
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
@@ -69,12 +74,71 @@ public final class ArchiveEventLogger
         log(CMD_OUT_RESPONSE, srcBuffer, 0, length);
     }
 
+    public <E extends Enum<E>> void logSessionStateChange(
+        final ArchiveEventCode eventCode, final E oldState, final E newState, final long id)
+    {
+        final int length = sessionStateChangeLength(oldState, newState);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeSessionStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    id);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    public void logReplaySessionError(final long sessionId, final long recordingId, final String errorMessage)
+    {
+        final int length = SIZE_OF_LONG * 2 + SIZE_OF_INT + errorMessage.length();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(REPLAY_SESSION_ERROR), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeReplaySessionError(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    sessionId,
+                    recordingId,
+                    errorMessage);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
     private void log(
         final ArchiveEventCode eventCode, final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+
         if (index > 0)
         {
             try

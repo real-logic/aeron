@@ -279,6 +279,9 @@ public final class EventLogAgent
         AgentBuilder tempBuilder = agentBuilder;
         tempBuilder = addArchiveControlSessionDemuxerInstrumentation(tempBuilder);
         tempBuilder = addArchiveControlResponseProxyInstrumentation(tempBuilder);
+        tempBuilder = addArchiveReplicationSessionInstrumentation(tempBuilder);
+        tempBuilder = addArchiveControlSessionInstrumentation(tempBuilder);
+        tempBuilder = addArchiveReplaySessionInstrumentation(tempBuilder);
 
         return tempBuilder;
     }
@@ -309,6 +312,48 @@ public final class EventLogAgent
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ControlInterceptor.ControlResponse.class)
                     .on(named("sendResponseHook")))));
+    }
+
+    private static AgentBuilder addArchiveReplicationSessionInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("ReplicationSession"))
+            .transform(((builder, typeDescription, classLoader, module) -> builder
+                .visit(to(ArchiveInterceptor.ReplicationSessionStateChange.class)
+                    .on(named("stateChange")))));
+    }
+
+    private static AgentBuilder addArchiveControlSessionInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("ControlSession"))
+            .transform(((builder, typeDescription, classLoader, module) -> builder
+                .visit(to(ArchiveInterceptor.ControlSessionStateChange.class)
+                    .on(named("stateChange")))));
+    }
+
+    private static AgentBuilder addArchiveReplaySessionInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.REPLAY_SESSION_ERROR))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("ReplaySession"))
+            .transform(((builder, typeDescription, classLoader, module) -> builder
+                .visit(to(ArchiveInterceptor.ReplaySession.class)
+                    .on(named("onPendingError")))));
     }
 
     private static AgentBuilder addClusterInstrumentation(final AgentBuilder agentBuilder)

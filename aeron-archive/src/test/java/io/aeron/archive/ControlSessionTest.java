@@ -23,8 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static io.aeron.archive.ControlSession.State.CLOSING;
+import static io.aeron.archive.ControlSession.State.INACTIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ControlSessionTest
 {
@@ -66,6 +70,9 @@ public class ControlSessionTest
 
         cachedEpochClock.update(CONNECT_TIMEOUT_MS + 1L);
         session.doWork();
+        assertEquals(INACTIVE, session.state());
+        session.doWork();
+        assertEquals(CLOSING, session.state());
         assertTrue(session.isDone());
     }
 
@@ -81,6 +88,9 @@ public class ControlSessionTest
 
         cachedEpochClock.update(CONNECT_TIMEOUT_MS + 1L);
         session.doWork();
+        assertEquals(INACTIVE, session.state());
+        session.doWork();
+        assertEquals(CLOSING, session.state());
         assertTrue(session.isDone());
     }
 }

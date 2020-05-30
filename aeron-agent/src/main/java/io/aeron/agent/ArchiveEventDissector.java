@@ -18,8 +18,10 @@ package io.aeron.agent;
 import io.aeron.archive.codecs.*;
 import org.agrona.MutableDirectBuffer;
 
-import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ArchiveEventDissector
 {
@@ -84,7 +86,7 @@ final class ArchiveEventDissector
     }
 
     @SuppressWarnings("MethodLength")
-    static void controlRequest(
+    static void dissectControlRequest(
         final ArchiveEventCode eventCode,
         final MutableDirectBuffer buffer,
         final int offset,
@@ -390,7 +392,7 @@ final class ArchiveEventDissector
         }
     }
 
-    static void controlResponse(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    static void dissectControlResponse(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = dissectLogHeader(CONTEXT, CMD_OUT_RESPONSE, buffer, offset, builder);
 
@@ -411,6 +413,52 @@ final class ArchiveEventDissector
             .append(", errorMessage=");
 
         CONTROL_RESPONSE_DECODER.getErrorMessage(builder);
+    }
+
+    static void dissectReplicationSessionStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REPLICATION_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final long replicationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": replicationId=").append(replicationId);
+        builder.append(", ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectControlSessionStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, CONTROL_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": controlSessionId=").append(controlSessionId);
+        builder.append(", ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectReplaySessionError(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REPLAY_SESSION_ERROR, buffer, absoluteOffset, builder);
+
+        final long sessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": sessionId=").append(sessionId);
+        builder.append(", recordingId=").append(recordingId);
+        builder.append(", errorMessage=");
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     private static void appendConnect(final StringBuilder builder)

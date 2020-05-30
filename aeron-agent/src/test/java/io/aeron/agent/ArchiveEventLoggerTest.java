@@ -25,19 +25,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
-import static io.aeron.agent.ArchiveEventCode.EVENT_CODE_TYPE;
+import java.time.temporal.ChronoUnit;
+
+import static io.aeron.agent.AgentTests.verifyLogHeader;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.ArchiveEventLogger.toEventCodeId;
-import static io.aeron.agent.AgentTests.verifyLogHeader;
-import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
-import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.*;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BitUtil.align;
+import static org.agrona.BitUtil.*;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,7 +64,11 @@ class ArchiveEventLoggerTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = ArchiveEventCode.class, mode = EXCLUDE, names = { "CMD_OUT_RESPONSE" })
+    @EnumSource(
+        value = ArchiveEventCode.class,
+        mode = EXCLUDE,
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
+        "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR" })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
         ARCHIVE_EVENT_CODES.add(eventCode);
@@ -121,16 +124,63 @@ class ArchiveEventLoggerTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = ArchiveEventCode.class, mode = EXCLUDE, names = { "CMD_OUT_RESPONSE" })
+    @EnumSource(
+        value = ArchiveEventCode.class,
+        mode = EXCLUDE,
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
+        "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR" })
     void controlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertTrue(CONTROL_REQUEST_EVENTS.contains(eventCode));
     }
 
     @ParameterizedTest
-    @EnumSource(value = ArchiveEventCode.class, mode = INCLUDE, names = { "CMD_OUT_RESPONSE" })
+    @EnumSource(
+        value = ArchiveEventCode.class,
+        mode = INCLUDE,
+        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
+        "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR" })
     void nonControlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertFalse(CONTROL_REQUEST_EVENTS.contains(eventCode));
+    }
+
+    @Test
+    void logSessionStateChange()
+    {
+        final int offset = ALIGNMENT * 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final ChronoUnit from = ChronoUnit.CENTURIES;
+        final ChronoUnit to = ChronoUnit.MICROS;
+        final long id = 555_000_000_000L;
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
+        final int captureLength = SIZE_OF_LONG + SIZE_OF_INT + payload.length();
+
+        logger.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, from, to, id);
+
+        verifyLogHeader(
+            logBuffer, offset, toEventCodeId(CONTROL_SESSION_STATE_CHANGE), captureLength, captureLength);
+        assertEquals(id, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG)));
+    }
+
+    @Test
+    void logReplaySessionError()
+    {
+        final int offset = ALIGNMENT * 5 + 128;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final long sessionId = 123;
+        final long recordingId = Long.MIN_VALUE;
+        final String errorMessage = "the error";
+        final int captureLength = SIZE_OF_LONG * 2 + SIZE_OF_INT + errorMessage.length();
+
+        logger.logReplaySessionError(sessionId, recordingId, errorMessage);
+
+        verifyLogHeader(logBuffer, offset, toEventCodeId(REPLAY_SESSION_ERROR), captureLength, captureLength);
+        assertEquals(sessionId, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(recordingId,
+            logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(errorMessage,
+            logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG * 2)));
     }
 }

@@ -44,7 +44,7 @@ final class ControlSession implements Session
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED, CLOSING
     }
 
     private final long controlSessionId;
@@ -103,7 +103,7 @@ final class ControlSession implements Session
 
     public void abort()
     {
-        state(State.INACTIVE);
+        state(State.CLOSING);
         if (null != activeListing)
         {
             activeListing.abort();
@@ -127,7 +127,7 @@ final class ControlSession implements Session
 
     public boolean isDone()
     {
-        return state == State.INACTIVE;
+        return state == State.CLOSING;
     }
 
     public int doWork()
@@ -160,9 +160,18 @@ final class ControlSession implements Session
             case REJECTED:
                 workCount += sendReject(nowMs);
                 break;
+
+            case INACTIVE:
+                state(State.CLOSING);
+                break;
         }
 
         return workCount;
+    }
+
+    State state()
+    {
+        return state;
     }
 
     ArchiveConductor archiveConductor()
@@ -805,7 +814,7 @@ final class ControlSession implements Session
 
     private boolean hasNoActivity(final long nowMs)
     {
-        return Aeron.NULL_VALUE != activityDeadlineMs & nowMs > activityDeadlineMs;
+        return Aeron.NULL_VALUE != activityDeadlineMs && nowMs > activityDeadlineMs;
     }
 
     private void attemptToGoActive()
@@ -818,8 +827,14 @@ final class ControlSession implements Session
 
     private void state(final State state)
     {
-        //System.out.println(controlSessionId + ": " + this.state + " -> " + state);
+        stateChange(this.state, state, controlSessionId);
         this.state = state;
+    }
+
+    @SuppressWarnings("unused")
+    void stateChange(final State oldState, final State newState, final long controlSessionId)
+    {
+//        System.out.println(controlSessionId + ": " + oldState + " -> " + newState);
     }
 
     public String toString()

@@ -93,12 +93,12 @@ public class AsciidoctorPreprocessTask extends DefaultTask
             options.put("attributes", attributes);
             options.put("safe", org.asciidoctor.SafeMode.UNSAFE.getLevel());
 
-            try (final PrintStream output = new PrintStream(outputFile))
+            try (PrintStream output = new PrintStream(outputFile))
             {
                 asciidoctor.javaExtensionRegistry().preprocessor(
                     new org.asciidoctor.extension.Preprocessor()
                     {
-                        public void process(Document document, PreprocessorReader reader)
+                        public void process(final Document document, final PreprocessorReader reader)
                         {
                             String line;
                             while (null != (line = reader.readLine()))

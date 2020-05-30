@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.net.InetSocketAddress;
@@ -40,9 +41,9 @@ public final class DriverEventLogger
 {
     public static final DriverEventLogger LOGGER = new DriverEventLogger(EVENT_RING_BUFFER);
 
-    private final RingBuffer ringBuffer;
+    private final ManyToOneRingBuffer ringBuffer;
 
-    DriverEventLogger(final RingBuffer ringBuffer)
+    DriverEventLogger(final ManyToOneRingBuffer ringBuffer)
     {
         this.ringBuffer = ringBuffer;
     }
@@ -54,6 +55,7 @@ public final class DriverEventLogger
             final int captureLength = captureLength(length);
             final int encodedLength = encodedLength(captureLength);
 
+            final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
             final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
             if (index > 0)
             {
@@ -76,6 +78,7 @@ public final class DriverEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(FRAME_IN), encodedLength);
         if (index > 0)
         {
@@ -97,6 +100,7 @@ public final class DriverEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(FRAME_OUT), encodedLength);
         if (index > 0)
         {
@@ -124,6 +128,7 @@ public final class DriverEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(REMOVE_PUBLICATION_CLEANUP), encodedLength);
         if (index > 0)
         {
@@ -145,6 +150,7 @@ public final class DriverEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(REMOVE_SUBSCRIPTION_CLEANUP), encodedLength);
         if (index > 0)
         {
@@ -166,6 +172,7 @@ public final class DriverEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(REMOVE_IMAGE_CLEANUP), encodedLength);
         if (index > 0)
         {
@@ -187,6 +194,7 @@ public final class DriverEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
         if (index > 0)
         {

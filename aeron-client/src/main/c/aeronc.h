@@ -144,18 +144,20 @@ void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context);
  * Function called by aeron_client_t to deliver notifications that an aeron_image_t was added.
  *
  * @param clientd to be returned in the call.
+ * @param subscription that image is part of.
  * @param image that has become available.
  */
-typedef void (*aeron_on_available_image_t)(void *clientd, aeron_image_t *image);
+typedef void (*aeron_on_available_image_t)(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image);
 
 /**
  * Function called by aeron_client_t to deliver notifications than an aeron_image_t has been removed from use and
  * should not be used any longer.
  *
  * @param clientd to be returned in the call.
+ * @param subscription that image is part of.
  * @param image that has become unavailble.
  */
-typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_image_t *image);
+typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image);
 
 typedef void (*aeron_on_available_counter_t)(
     void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
@@ -1007,6 +1009,29 @@ aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subs
 void aeron_subscription_for_each_image(
     aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image));
 
+/**
+ * Retain the given image for access in the application.
+ *
+ * Note: A retain call must have a corresponding release call.
+ * Note: Subscriptions are not threadsafe and should not be shared between subscribers.
+ *
+ * @param subscription that image is part of.
+ * @param image to retain
+ * @return 0 for success and -1 for error.
+ */
+int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_image_t *image);
+
+/**
+ * Release the given image and relinquish desire to use the image directly.
+ *
+ * Note: Subscriptions are not threadsafe and should not be shared between subscribers.
+ *
+ * @param subscription that image is part of.
+ * @param image to release
+ * @return 0 for succes and -1 for error.
+ */
+int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_image_t *image);
+
 bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 
 /*
@@ -1063,26 +1088,6 @@ int aeron_subscription_close(aeron_subscription_t *subscription);
  * <p>
  * <b>Note:</b>Images are not threadsafe and should not be shared between subscribers.
  */
-
-/**
- * Retain the given image for access in the application.
- *
- * Note: A retain call must have a corresponding release call.
- *
- * @param image to retain
- * @return 0 for success and -1 for error.
- */
-int aeron_image_retain(aeron_image_t *image);
-
-/**
- * Release the given image and relinquish desire to use the image directly.
- *
- * Note: Images are not threadsafe and should not be shared between subscribers.
- *
- * @param image to release
- * @return 0 for succes and -1 for error.
- */
-int aeron_image_release(aeron_image_t *image);
 
 /**
  * The position this image has been consumed to by the subscriber.

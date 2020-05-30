@@ -31,7 +31,7 @@ class CSystemTest : public testing::Test
 {
 public:
     using poll_handler_t = std::function<void(const uint8_t *, size_t, aeron_header_t *)>;
-    using image_handler_t = std::function<void(aeron_image_t *)>;
+    using image_handler_t = std::function<void(aeron_subscription_t *, aeron_image_t *)>;
 
     CSystemTest()
     {
@@ -164,13 +164,13 @@ public:
         return aeron_subscription_poll(subscription, poll_handler, this, fragment_limit);
     }
 
-    static void onUnavailableImage(void *clientd, aeron_image_t *image)
+    static void onUnavailableImage(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
         auto test = reinterpret_cast<CSystemTest *>(clientd);
 
         if (test->m_onUnavailableImage)
         {
-            test->m_onUnavailableImage(image);
+            test->m_onUnavailableImage(subscription, image);
         }
     }
 
@@ -375,7 +375,7 @@ TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
     size_t num_messages = 11;
     std::atomic<bool> on_unavailable_image_called = { false };
 
-    m_onUnavailableImage = [&](aeron_image_t *image)
+    m_onUnavailableImage = [&](aeron_subscription_t *, aeron_image_t *)
     {
         on_unavailable_image_called = true;
     };
@@ -432,7 +432,7 @@ TEST_F(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
     size_t num_messages = 11;
     std::atomic<bool> on_unavailable_image_called = { false };
 
-    m_onUnavailableImage = [&](aeron_image_t *image)
+    m_onUnavailableImage = [&](aeron_subscription_t *, aeron_image_t *)
     {
         on_unavailable_image_called = true;
     };

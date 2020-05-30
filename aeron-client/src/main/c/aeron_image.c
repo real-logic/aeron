@@ -88,39 +88,6 @@ void aeron_image_force_close(aeron_image_t *image)
     AERON_PUT_ORDERED(image->is_closed, true);
 }
 
-int aeron_image_retain(aeron_image_t *image)
-{
-    if (NULL == image)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_retain(NULL): %s", strerror(EINVAL));
-        return -1;
-    }
-
-    aeron_image_incr_refcnt(image);
-    return 0;
-}
-
-int aeron_image_release(aeron_image_t *image)
-{
-    if (NULL == image)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_release(NULL): %s", strerror(EINVAL));
-        return -1;
-    }
-
-    /*
-     * Update the subscriptions last image change number so that if the subscription isn't polling or touching
-     * or touched the image list, then at least this will allow the previous image_lists to be reclaimed.
-     */
-    int64_t last_change_number = aeron_subscription_last_image_list_change_number(image->subscription);
-    aeron_subscription_propose_last_image_change_number(image->subscription, last_change_number);
-
-    aeron_image_decr_refcnt(image);
-    return 0;
-}
-
 int64_t aeron_image_position(aeron_image_t *image)
 {
     bool is_closed;

@@ -304,6 +304,46 @@ void aeron_subscription_for_each_image(
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 }
 
+int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_image_t *image)
+{
+    if (NULL == subscription || NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_subscription_image_retain: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    /*
+    * Update the subscriptions last image change number so that if the subscription isn't polling or touching
+    * or touched the image list, then at least this will allow the previous image_lists to be reclaimed.
+    */
+    aeron_subscription_propose_last_image_change_number(
+        subscription, aeron_subscription_last_image_list_change_number(subscription));
+
+    aeron_image_incr_refcnt(image);
+    return 0;
+}
+
+int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_image_t *image)
+{
+    if (NULL == subscription || NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_subscription_image_release: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    /*
+     * Update the subscriptions last image change number so that if the subscription isn't polling or touching
+     * or touched the image list, then at least this will allow the previous image_lists to be reclaimed.
+     */
+    aeron_subscription_propose_last_image_change_number(
+        subscription, aeron_subscription_last_image_list_change_number(subscription));
+
+    aeron_image_decr_refcnt(image);
+    return 0;
+}
+
 bool aeron_subscription_is_closed(aeron_subscription_t *subscription)
 {
     bool is_closed = false;

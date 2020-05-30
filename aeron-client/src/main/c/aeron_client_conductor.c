@@ -1918,7 +1918,7 @@ int aeron_client_conductor_on_available_image(
 
         if (NULL != subscription->on_available_image)
         {
-            subscription->on_available_image(subscription->on_available_image_clientd, image);
+            subscription->on_available_image(subscription->on_available_image_clientd, subscription, image);
         }
     }
 
@@ -1948,7 +1948,7 @@ int aeron_client_conductor_on_unavailable_image(
 
             if (NULL != subscription->on_unavailable_image)
             {
-                subscription->on_unavailable_image(subscription->on_unavailable_image_clientd, image);
+                subscription->on_unavailable_image(subscription->on_unavailable_image_clientd, subscription, image);
             }
 
             if (aeron_client_conductor_linger_image(conductor, image) < 0)

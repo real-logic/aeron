@@ -47,8 +47,8 @@ class ArchiveEventEncoderTest
         final int length = payload.length() + SIZE_OF_LONG + SIZE_OF_INT;
         final int captureLength = captureLength(length);
 
-        final int encodedLength =
-            encodeSessionStateChange(buffer, offset, captureLength, length, from, to, sessionId);
+        final int encodedLength = encodeSessionStateChange(
+            buffer, offset, captureLength, length, from, to, sessionId);
 
         assertEquals(encodedLength(sessionStateChangeLength(from, to)), encodedLength);
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));

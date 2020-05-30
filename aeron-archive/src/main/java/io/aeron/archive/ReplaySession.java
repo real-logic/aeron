@@ -265,10 +265,10 @@ class ReplaySession implements Session, AutoCloseable
         }
     }
 
-    // Hook for Agent logging
     @SuppressWarnings("unused")
     void onPendingError(final long sessionId, final long recordingId, final String errorMessage)
     {
+        // Hook for Agent logging
     }
 
     private int init() throws IOException

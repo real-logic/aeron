@@ -38,6 +38,7 @@ int aeron_receive_destination_create(
     _destination->transport.fd = -1;
     _destination->data_paths = &context->receiver_proxy->receiver->data_paths;
     _destination->transport.data_paths = _destination->data_paths;
+    _destination->local_sockaddr_indicator.counter_id = AERON_NULL_COUNTER_ID;
 
     if (context->udp_channel_transport_bindings->init_func(
         &_destination->transport,
@@ -62,7 +63,6 @@ int aeron_receive_destination_create(
         return -1;
     }
 
-    _destination->local_sockaddr_indicator.counter_id = -1;
     _destination->local_sockaddr_indicator.counter_id = aeron_counter_local_sockaddr_indicator_allocate(
         counters_manager, AERON_COUNTER_RCV_LOCAL_SOCKADDR_NAME, channel_status_counter_id, local_sockaddr);
     _destination->local_sockaddr_indicator.value_addr = aeron_counters_manager_addr(

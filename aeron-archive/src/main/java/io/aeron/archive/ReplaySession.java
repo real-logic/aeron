@@ -359,9 +359,7 @@ class ReplaySession implements Session, AutoCloseable
             final int frameLength = frameLength(replayBuffer, batchOffset);
             if (frameLength <= 0)
             {
-                throw new IllegalStateException(
-                    "unexpected end of recording at replayPosition=" + replayPosition + " remaining=" + remaining +
-                    " batchOffset=" + batchOffset + " bytesRead=" + bytesRead + " limitPosition=" + limitPosition);
+                replayError(bytesRead, batchOffset, remaining);
             }
 
             final int frameType = frameType(replayBuffer, batchOffset);
@@ -414,6 +412,14 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         return workCount;
+    }
+
+    private void replayError(final int bytesRead, final int batchOffset, final long remaining)
+    {
+        throw new IllegalStateException(
+            "unexpected end of recording " + recordingId + " at replayPosition=" + replayPosition +
+            " remaining=" + remaining + " limitPosition=" + limitPosition +
+            " batchOffset=" + batchOffset + " bytesRead=" + bytesRead);
     }
 
     private boolean hasPublicationAdvanced(final long position, final int alignedLength)

@@ -150,7 +150,7 @@ void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context);
 typedef void (*aeron_on_available_image_t)(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image);
 
 /**
- * Function called by aeron_client_t to deliver notifications than an aeron_image_t has been removed from use and
+ * Function called by aeron_client_t to deliver notifications that an aeron_image_t has been removed from use and
  * should not be used any longer.
  *
  * @param clientd to be returned in the call.
@@ -159,11 +159,33 @@ typedef void (*aeron_on_available_image_t)(void *clientd, aeron_subscription_t *
  */
 typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image);
 
+/**
+ * Function called by aeron_client_t to deliver notifications that a counter has been added to the driver.
+ *
+ * @param clientd to be returned in the call.
+ * @param counters_reader that holds the counter.
+ * @param registration_id of the counter.
+ * @param counter_id of the counter.
+ */
 typedef void (*aeron_on_available_counter_t)(
     void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
+
+/**
+ * Function called by aeron_client_t to deliver notifications that a counter has been removed from the driver.
+ *
+ * @param clientd to be returned in the call.
+ * @param counters_reader that holds the counter.
+ * @param registration_id of the counter.
+ * @param counter_id of the counter.
+ */
 typedef void (*aeron_on_unavailable_counter_t)(
     void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
 
+/**
+ * Function called by aeron_client_t to deliver notifications that the client is closing.
+ *
+ * @param clientd to be returned in the call.
+ */
 typedef void (*aeron_on_close_client_t)(void *clientd);
 
 /**

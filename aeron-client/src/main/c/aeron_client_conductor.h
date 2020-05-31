@@ -369,4 +369,14 @@ inline bool aeron_counter_heartbeat_timestamp_is_active(
         registration_id == counter_registration_id;
 }
 
+inline void aeron_client_conductor_notify_close_handlers(aeron_client_conductor_t *conductor)
+{
+    for (size_t i = 0, length = conductor->close_handlers.length; i < length; i++)
+    {
+        aeron_on_close_client_pair_t *pair = &conductor->close_handlers.array[i];
+
+        pair->handler(pair->clientd);
+    }
+}
+
 #endif //AERON_C_CLIENT_CONDUCTOR_H

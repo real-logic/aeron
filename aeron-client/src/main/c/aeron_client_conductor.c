@@ -642,6 +642,8 @@ void aeron_client_conductor_delete_lingering_resource(aeron_client_managed_resou
 
 void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 {
+    aeron_client_conductor_notify_close_handlers(conductor);
+
     aeron_int64_to_ptr_hash_map_for_each(
         &conductor->log_buffer_by_id_map, aeron_client_conductor_delete_log_buffer, NULL);
     aeron_int64_to_ptr_hash_map_for_each(
@@ -2118,3 +2120,4 @@ extern int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id);
 extern bool aeron_counter_heartbeat_timestamp_is_active(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t type_id, int64_t registration_id);
+extern void aeron_client_conductor_notify_close_handlers(aeron_client_conductor_t *conductor);

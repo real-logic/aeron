@@ -928,67 +928,65 @@ public class PublicationImage
     {
         final ArrayList<UntetheredSubscription> untetheredSubscriptions = this.untetheredSubscriptions;
         final int untetheredSubscriptionsSize = untetheredSubscriptions.size();
-        if (0 == untetheredSubscriptionsSize)
+        if (untetheredSubscriptionsSize > 0)
         {
-            return;
-        }
-
-        long maxConsumerPosition = 0;
-        for (final ReadablePosition subscriberPosition : subscriberPositions)
-        {
-            final long position = subscriberPosition.getVolatile();
-            if (position > maxConsumerPosition)
+            long maxConsumerPosition = 0;
+            for (final ReadablePosition subscriberPosition : subscriberPositions)
             {
-                maxConsumerPosition = position;
+                final long position = subscriberPosition.getVolatile();
+                if (position > maxConsumerPosition)
+                {
+                    maxConsumerPosition = position;
+                }
             }
-        }
 
-        final int windowLength = nextSmReceiverWindowLength;
-        final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 3);
+            final int windowLength = nextSmReceiverWindowLength;
+            final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 3);
 
-        for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
-        {
-            final UntetheredSubscription untethered = untetheredSubscriptions.get(i);
-            switch (untethered.state)
+            for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
             {
-                case UntetheredSubscription.ACTIVE:
-                    if (untethered.position.getVolatile() > untetheredWindowLimit)
-                    {
-                        untethered.timeOfLastUpdateNs = nowNs;
-                    }
-                    else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
-                    {
-                        conductor.notifyUnavailableImageLink(correlationId, untethered.subscriptionLink);
-                        untethered.state = UntetheredSubscription.LINGER;
-                        untethered.timeOfLastUpdateNs = nowNs;
-                    }
-                    break;
+                final UntetheredSubscription untethered = untetheredSubscriptions.get(i);
+                switch (untethered.state)
+                {
+                    case UntetheredSubscription.ACTIVE:
+                        if (untethered.position.getVolatile() > untetheredWindowLimit)
+                        {
+                            untethered.timeOfLastUpdateNs = nowNs;
+                        }
+                        else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
+                        {
+                            conductor.notifyUnavailableImageLink(correlationId, untethered.subscriptionLink);
+                            untethered.state = UntetheredSubscription.LINGER;
+                            untethered.timeOfLastUpdateNs = nowNs;
+                        }
+                        break;
 
-                case UntetheredSubscription.LINGER:
-                    if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
-                    {
-                        subscriberPositions = ArrayUtil.remove(subscriberPositions, untethered.position);
-                        untethered.state = UntetheredSubscription.RESTING;
-                        untethered.timeOfLastUpdateNs = nowNs;
-                    }
-                    break;
+                    case UntetheredSubscription.LINGER:
+                        if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
+                        {
+                            subscriberPositions = ArrayUtil.remove(subscriberPositions, untethered.position);
+                            untethered.state = UntetheredSubscription.RESTING;
+                            untethered.timeOfLastUpdateNs = nowNs;
+                        }
+                        break;
 
-                case UntetheredSubscription.RESTING:
-                    if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
-                    {
-                        subscriberPositions = ArrayUtil.add(subscriberPositions, untethered.position);
-                        conductor.notifyAvailableImageLink(
-                            correlationId,
-                            sessionId,
-                            untethered.subscriptionLink,
-                            untethered.position.id(),
-                            rebuildPosition.get(),
-                            rawLog.fileName(),
-                            Configuration.sourceIdentity(sourceAddress));
-                        untethered.state = UntetheredSubscription.ACTIVE;
-                        untethered.timeOfLastUpdateNs = nowNs;
-                    }
-                    break;
+                    case UntetheredSubscription.RESTING:
+                        if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
+                        {
+                            subscriberPositions = ArrayUtil.add(subscriberPositions, untethered.position);
+                            conductor.notifyAvailableImageLink(
+                                correlationId,
+                                sessionId,
+                                untethered.subscriptionLink,
+                                untethered.position.id(),
+                                rebuildPosition.get(),
+                                rawLog.fileName(),
+                                Configuration.sourceIdentity(sourceAddress));
+                            untethered.state = UntetheredSubscription.ACTIVE;
+                            untethered.timeOfLastUpdateNs = nowNs;
+                        }
+                        break;
+                }
             }
         }
     }

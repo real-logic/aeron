@@ -25,6 +25,8 @@
 #include <errno.h>
 #include <string.h>
 
+#define AERON_DLL_EXPORTS
+
 #include "util/aeron_strutil.h"
 #include "aeron_windows.h"
 
@@ -118,5 +120,57 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
 
     return num_tokens;
 }
+
+#if defined(_MSC_VER) && !defined(AERON_NO_GETOPT)
+
+/* Taken from https://github.com/iotivity/iotivity/blob/master/resource/c_common/windows/src/getopt.c */
+/* *****************************************************************
+*
+* Copyright 2016 Microsoft
+*
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+******************************************************************/
+AERON_EXPORT char* optarg = NULL;
+AERON_EXPORT int optind = 1;
+
+int getopt(int argc, char *const argv[], const char *optstring)
+{
+    if ((optind >= argc) || (argv[optind][0] != '-') || (argv[optind][0] == 0))
+    {
+        return -1;
+    }
+
+    int opt = argv[optind][1];
+    const char *p = strchr(optstring, opt);
+
+    if (p == NULL)
+    {
+        return '?';
+    }
+    if (p[1] == ':')
+    {
+        optind++;
+        if (optind >= argc)
+        {
+            return '?';
+        }
+        optarg = argv[optind];
+        optind++;
+    }
+    return opt;
+}
+#endif
 
 extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);

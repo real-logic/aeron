@@ -58,4 +58,17 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
  */
 int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char **tokens);
 
+#if defined(AERON_DLL_EXPORTS)
+#define AERON_EXPORT __declspec(dllexport)
+#else
+#define AERON_EXPORT __declspec(dllimport)
+#endif
+
+#if defined(_MSC_VER) && !defined(AERON_NO_GETOPT)
+AERON_EXPORT extern char *optarg;
+AERON_EXPORT extern int optind;
+
+int getopt(int argc, char *const argv[], const char *optstring);
+#endif
+
 #endif //AERON_STRUTIL_H

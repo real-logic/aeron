@@ -155,7 +155,7 @@ void aeron_idle_strategy_backoff_idle(void *state, int work_count)
                 aeron_nano_sleep(backoff_state->park_period_ns);
                 backoff_state->park_period_ns =
                     ((backoff_state->park_period_ns << 1) < backoff_state->max_park_period_ns) ?
-                    backoff_state->park_period_ns << 1 : backoff_state->max_park_period_ns;
+                        backoff_state->park_period_ns << 1 : backoff_state->max_park_period_ns;
                 break;
         }
     }
@@ -308,25 +308,30 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     if (strncmp(idle_strategy_name, "sleep-ns", sizeof("sleep-ns")) == 0 ||
         strncmp(idle_strategy_name, "sleeping", sizeof("sleeping")) == 0)
     {
-        return aeron_idle_strategy_load("aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load(
+            "aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "yield", sizeof("yield")) == 0 ||
         strncmp(idle_strategy_name, "yielding", sizeof("yielding")) == 0)
     {
-        return aeron_idle_strategy_load("aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load(
+            "aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "spin", sizeof("spin")) == 0 ||
         strncmp(idle_strategy_name, "spinning", sizeof("spinning")) == 0)
     {
-        return aeron_idle_strategy_load("aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load(
+            "aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "noop", sizeof("noop")) == 0)
     {
-        return aeron_idle_strategy_load("aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load(
+            "aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "backoff", sizeof("backoff")) == 0)
     {
-        return aeron_idle_strategy_load("aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load(
+            "aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
     }
     else
     {
@@ -509,5 +514,7 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
 }
 
 extern int aeron_agent_do_work(aeron_agent_runner_t *runner);
+
 extern bool aeron_agent_is_running(aeron_agent_runner_t *runner);
+
 extern void aeron_agent_idle(aeron_agent_runner_t *runner, int work_count);

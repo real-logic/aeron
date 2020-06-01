@@ -21,87 +21,92 @@
 #include <stdint.h>
 
 #if defined(AERON_COMPILER_GCC)
-    #include <netinet/in.h>
-    #include <sys/socket.h>
-    #include <net/if.h>
-    #include <netinet/ip.h>
-    #include <arpa/inet.h>
-    #include <netdb.h>
-    #include <ifaddrs.h>
 
-    typedef int aeron_socket_t;
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <netinet/ip.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+
+typedef int aeron_socket_t;
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
-    #include <WinSock2.h>
-    #include <windows.h>
-    #include <Ws2ipdef.h>
-    #include <WS2tcpip.h>
-    #include <Iphlpapi.h>
+#include <WinSock2.h>
+#include <windows.h>
+#include <Ws2ipdef.h>
+#include <WS2tcpip.h>
+#include <Iphlpapi.h>
 
-    // SOCKET is uint64_t but we need a signed type to match the Linux version
-    typedef int64_t aeron_socket_t;
+// SOCKET is uint64_t but we need a signed type to match the Linux version
+typedef int64_t aeron_socket_t;
 
-    struct iovec
+struct iovec
+{
+    ULONG iov_len;
+    void *iov_base;
+};
+
+// must match _WSAMSG
+struct msghdr {
+    void *msg_name;
+    INT msg_namelen;
+    struct iovec *msg_iov;
+    ULONG msg_iovlen;
+    ULONG msg_controllen;
+    void* msg_control;
+    ULONG msg_flags;
+};
+
+struct ifaddrs
+{
+    struct ifaddrs *ifa_next;
+    char *ifa_name;
+    unsigned int ifa_flags;
+
+    struct sockaddr *ifa_addr;
+    struct sockaddr *ifa_netmask;
+    union
     {
-        ULONG iov_len;
-        void* iov_base;
-    };
+        struct sockaddr *ifu_broadaddr;
+        struct sockaddr *ifu_dstaddr;
+    } ifa_ifu;
 
-    // must match _WSAMSG
-    struct msghdr {
-        void* msg_name;
-        INT msg_namelen;
-        struct iovec *msg_iov;
-        ULONG msg_iovlen;
-        ULONG msg_controllen;
-        void* msg_control;
-        ULONG msg_flags;
-    };
+# ifndef ifa_broadaddr
+#  define ifa_broadaddr        ifa_ifu.ifu_broadaddr
+# endif
+# ifndef ifa_dstaddr
+#  define ifa_dstaddr        ifa_ifu.ifu_dstaddr
+# endif
 
-    struct ifaddrs
-    {
-        struct ifaddrs *ifa_next;
-        char *ifa_name;
-        unsigned int ifa_flags;
+    void *ifa_data;
+};
 
-        struct sockaddr *ifa_addr;
-        struct sockaddr *ifa_netmask;
-        union
-        {
-            struct sockaddr *ifu_broadaddr;
-            struct sockaddr *ifu_dstaddr;
-        } ifa_ifu;
+int getifaddrs(struct ifaddrs **ifap);
+void freeifaddrs(struct ifaddrs *ifa);
 
-        # ifndef ifa_broadaddr
-        #  define ifa_broadaddr        ifa_ifu.ifu_broadaddr
-        # endif
-        # ifndef ifa_dstaddr
-        #  define ifa_dstaddr        ifa_ifu.ifu_dstaddr
-        # endif
+typedef unsigned long int nfds_t;
+typedef SSIZE_T ssize_t;
 
-        void *ifa_data;
-    };
-
-    int getifaddrs(struct ifaddrs **ifap);
-    void freeifaddrs(struct ifaddrs *ifa);
-
-    typedef unsigned long int nfds_t;
-    typedef SSIZE_T ssize_t;
-
-    ssize_t recvmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags);
-    ssize_t sendmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags);
-    int poll(struct pollfd* fds, nfds_t nfds, int timeout);
+ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 
 #else
 #error Unsupported platform!
 #endif
 
 int set_socket_non_blocking(aeron_socket_t fd);
+
 aeron_socket_t aeron_socket(int domain, int type, int protocol);
+
 void aeron_close_socket(aeron_socket_t socket);
+
 void aeron_net_init();
 
-int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void* optval, socklen_t* optlen);
-int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void* optval, socklen_t optlen);
+int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen);
+
+int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen);
 
 #endif //AERON_SOCKET_H

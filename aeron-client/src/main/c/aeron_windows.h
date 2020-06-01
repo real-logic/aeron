@@ -37,7 +37,7 @@ double aeron_drand48();
 int aeron_clock_gettime_monotonic(struct timespec *tp);
 int aeron_clock_gettime_realtime(struct timespec *tp);
 char *aeron_strndup(const char *value, size_t length);
-void localtime_r(const time_t* timep, struct tm* result);
+void localtime_r(const time_t *timep, struct tm *result);
 
 #endif
 

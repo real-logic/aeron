@@ -26,6 +26,7 @@
 #include "aeronc.h"
 
 typedef int (*aeron_agent_do_work_func_t)(void *);
+
 typedef void (*aeron_agent_on_close_func_t)(void *);
 
 #define AERON_AGENT_STATE_UNUSED 0
@@ -48,8 +49,11 @@ aeron_idle_strategy_t;
 #define AERON_IDLE_STRATEGY_BACKOFF_MAX_PARK_PERIOD_NS (1 * 1000 * 1000LL)
 
 void aeron_idle_strategy_sleeping_idle(void *state, int work_count);
+
 void aeron_idle_strategy_yielding_idle(void *state, int work_count);
+
 void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count);
+
 void aeron_idle_strategy_noop_idle(void *state, int work_count);
 
 void aeron_idle_strategy_backoff_idle(void *state, int work_count);
@@ -114,6 +118,7 @@ inline void aeron_agent_idle(aeron_agent_runner_t *runner, int work_count)
 }
 
 int aeron_agent_stop(aeron_agent_runner_t *runner);
+
 int aeron_agent_close(aeron_agent_runner_t *runner);
 
 #endif //AERON_AGENT_H

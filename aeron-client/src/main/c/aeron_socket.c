@@ -142,13 +142,14 @@ int getifaddrs(struct ifaddrs **ifap)
             unicast = unicast->Next, ++unicastIndex)
         {
             /* ensure IP adapter */
-            if (AF_INET != unicast->Address.lpSockaddr->sa_family && AF_INET6 != unicast->Address.lpSockaddr->sa_family)
+            if (AF_INET != unicast->Address.lpSockaddr->sa_family &&
+                AF_INET6 != unicast->Address.lpSockaddr->sa_family)
             {
                 continue;
             }
 
             /* Next */
-            if(ift == NULL)
+            if (ift == NULL)
             {
                 ift = ifa;
             }
@@ -256,7 +257,7 @@ void freeifaddrs(struct ifaddrs *current)
 #include <iphlpapi.h>
 #include <stdio.h>
 
-ssize_t recvmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags)
+ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSARecvFrom(
@@ -284,7 +285,7 @@ ssize_t recvmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags)
     return size;
 }
 
-ssize_t sendmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags)
+ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSASendTo(
@@ -312,7 +313,7 @@ ssize_t sendmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags)
     return size;
 }
 
-int poll(struct pollfd* fds, nfds_t nfds, int timeout)
+int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     return WSAPoll(fds, nfds, timeout);
 }
@@ -336,12 +337,12 @@ void aeron_close_socket(aeron_socket_t socket)
 /* aeron_getsockopt and aeron_setsockopt ensure a consistent signature between platforms
  * (MSVC uses char* instead of void* for optval, which causes warnings)
  */
-int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void* optval, socklen_t* optlen)
+int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
 {
     return getsockopt(fd, level, optname, optval, optlen);
 }
 
-int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void* optval, socklen_t optlen)
+int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen)
 {
     return setsockopt(fd, level, optname, optval, optlen);
 }

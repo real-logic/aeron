@@ -39,10 +39,11 @@
 #include "sample_util.h"
 
 const char usage_str[] =
-    "[-h][-v][-c uri][-p prefix][-s stream-id]\n"
+    "[-h][-v][-c uri][-f fragments][-p prefix][-s stream-id]\n"
     "    -h               help\n"
     "    -v               show version and exit\n"
     "    -c uri           use channel specified in uri\n"
+    "    -f limit         limit to fragments per poll\n"
     "    -p prefix        aeron.dir location specified as prefix\n"
     "    -s stream-id     stream-id to use\n";
 
@@ -60,21 +61,9 @@ inline bool is_running()
     return result;
 }
 
-void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
-{
-    aeron_subscription_t *subscription = (aeron_subscription_t *)clientd;
-
-    printf(
-        "Message to stream %" PRId32 " from session %" PRId32 " (%" PRIu32 " bytes) <<%*s>>\n",
-        aeron_subscription_stream_id(subscription),
-        aeron_header_session_id(header),
-        (uint32_t)length,
-        (int)length,
-        buffer);
-}
-
 int main(int argc, char **argv)
 {
+    rate_reporter_t rate_reporter;
     int status = EXIT_FAILURE, opt;
     aeron_context_t *context = NULL;
     aeron_t *aeron = NULL;
@@ -83,16 +72,22 @@ int main(int argc, char **argv)
     aeron_fragment_assembler_t *fragment_assembler = NULL;
     const char *channel = DEFAULT_CHANNEL;
     const char *aeron_dir = NULL;
-    const uint64_t idle_duration_ns = 1000ul * 1000ul; /* 1ms */
     int32_t stream_id = DEFAULT_STREAM_ID;
+    size_t fragment_limit = DEFAULT_FRAGMENT_COUNT_LIMIT;
 
-    while ((opt = getopt(argc, argv, "hvc:p:s:")) != -1)
+    while ((opt = getopt(argc, argv, "hvc:f:p:s:")) != -1)
     {
         switch (opt)
         {
             case 'c':
             {
                 channel = optarg;
+                break;
+            }
+
+            case 'f':
+            {
+                fragment_limit = strtoul(optarg, NULL, 0);
                 break;
             }
 
@@ -180,16 +175,22 @@ int main(int argc, char **argv)
 
     printf("Subscription channel status %" PRIu64 "\n", aeron_subscription_channel_status(subscription));
 
-    if (aeron_fragment_assembler_create(&fragment_assembler, poll_handler, subscription) < 0)
+    if (aeron_fragment_assembler_create(&fragment_assembler, rate_reporter_poll_handler, &rate_reporter) < 0)
     {
         fprintf(stderr, "aeron_fragment_assembler_create: %s\n", aeron_errmsg());
+        goto cleanup;
+    }
+
+    if (rate_reporter_start(&rate_reporter, print_rate_report) < 0)
+    {
+        fprintf(stderr, "rate_reporter_start: %s\n", aeron_errmsg());
         goto cleanup;
     }
 
     while (is_running())
     {
         int fragments_read = aeron_subscription_poll(
-            subscription, aeron_fragment_assembler_handler, fragment_assembler, DEFAULT_FRAGMENT_COUNT_LIMIT);
+            subscription, aeron_fragment_assembler_handler, fragment_assembler, fragment_limit);
 
         if (fragments_read < 0)
         {
@@ -197,10 +198,11 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
-        aeron_idle_strategy_sleeping_idle((void *)&idle_duration_ns, fragments_read);
+        aeron_idle_strategy_busy_spinning_idle(NULL, fragments_read);
     }
 
     printf("Shutting down...\n");
+    rate_reporter_halt(&rate_reporter);
     status = EXIT_SUCCESS;
 
     cleanup:

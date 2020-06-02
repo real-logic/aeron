@@ -38,6 +38,7 @@ set(HEADERS
 
 add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
 add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
+add_executable(rate_subscriber rate_subscriber.c ${HEADERS} ${SOURCES})
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
@@ -45,8 +46,11 @@ target_link_libraries(basic_publisher
 target_link_libraries(basic_subscriber
     ${CLIENT_LINK_LIB})
 
+target_link_libraries(rate_subscriber
+    ${CLIENT_LINK_LIB})
+
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS basic_publisher basic_subscriber
+        TARGETS basic_publisher basic_subscriber rate_subscriber
         DESTINATION bin)
 endif ()

@@ -37,3 +37,76 @@ void print_unavailable_image(void *clientd, aeron_subscription_t *subscription, 
         aeron_subscription_stream_id(subscription),
         aeron_image_session_id(image));
 }
+
+void print_rate_report(uint64_t duration_ns, double mps, double bps, uint64_t total_messages, uint64_t total_bytes)
+{
+    printf("%" PRIu64 "ms, %.04g msgs/sec, %.04g bytes/sec, totals %" PRIu64 " messages %" PRIu64 " MB payloads\n",
+        duration_ns / (1000 * 1000), mps, bps, total_messages, total_bytes / (1024 * 1024));
+}
+
+int rate_reporter_do_work(void *state)
+{
+    rate_reporter_t *reporter = (rate_reporter_t *)state;
+    uint64_t current_total_bytes, current_total_messages;
+    int64_t current_timestamp_ns, duration_ns;
+    double mps, bps;
+
+    AERON_GET_VOLATILE(current_total_bytes, reporter->polling_fields.total_bytes);
+    AERON_GET_VOLATILE(current_total_messages, reporter->polling_fields.total_messages);
+    current_timestamp_ns = aeron_nano_clock();
+    duration_ns = current_timestamp_ns - reporter->last_timestamp_ns;
+    mps = ((double)(current_total_messages - reporter->last_total_messages) *
+        (double)reporter->idle_duration_ns) / (double)duration_ns;
+    bps = ((double)(current_total_bytes - reporter->last_total_bytes) *
+        (double)reporter->idle_duration_ns) / (double)duration_ns;
+
+    reporter->on_report(duration_ns, mps, bps, current_total_messages, current_total_bytes);
+
+    reporter->last_total_bytes = current_total_bytes;
+    reporter->last_total_messages = current_total_messages;
+    reporter->last_timestamp_ns = current_timestamp_ns;
+
+    return 0;
+}
+
+int rate_reporter_start(rate_reporter_t *reporter, on_rate_report_t on_report)
+{
+    reporter->idle_duration_ns = 1000ul * 1000ul * 1000ul;
+    reporter->on_report = on_report;
+    reporter->last_total_bytes = 0;
+    reporter->last_total_messages = 0;
+    reporter->last_timestamp_ns = aeron_nano_clock();
+    reporter->polling_fields.total_bytes = 0;
+    reporter->polling_fields.total_messages = 0;
+
+    if (aeron_agent_init(
+        &reporter->runner,
+        "rate reporter",
+        reporter,
+        NULL,
+        NULL,
+        rate_reporter_do_work,
+        NULL,
+        aeron_idle_strategy_sleeping_idle,
+        &reporter->idle_duration_ns) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_agent_start(&reporter->runner) < 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int rate_reporter_halt(rate_reporter_t *reporter)
+{
+    aeron_agent_stop(&reporter->runner);
+    aeron_agent_close(&reporter->runner);
+
+    return 0;
+}
+
+extern void rate_reporter_poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);

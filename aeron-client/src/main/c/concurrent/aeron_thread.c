@@ -21,6 +21,8 @@
 
 #include "concurrent/aeron_thread.h"
 
+#define SECOND_AS_NANOSECONDS (1000l * 1000l * 1000l)
+
 void aeron_nano_sleep(uint64_t nanoseconds)
 {
 #ifdef AERON_COMPILER_MSVC
@@ -42,7 +44,14 @@ void aeron_nano_sleep(uint64_t nanoseconds)
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
 #else
-    nanosleep(&(struct timespec) { .tv_nsec = (long)nanoseconds }, NULL);
+    time_t seconds = nanoseconds / SECOND_AS_NANOSECONDS;
+    struct timespec ts =
+    {
+        .tv_sec = seconds,
+        .tv_nsec = (long)nanoseconds - (seconds * SECOND_AS_NANOSECONDS)
+    };
+
+    nanosleep(&ts, NULL);
 #endif
 }
 

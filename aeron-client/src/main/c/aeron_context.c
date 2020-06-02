@@ -168,6 +168,12 @@ int aeron_context_init(aeron_context_t **context)
     _context->on_new_exclusive_publication_clientd = NULL;
     _context->on_new_subscription = aeron_default_on_new_subscription;
     _context->on_new_subscription_clientd = NULL;
+    _context->on_available_counter = NULL;
+    _context->on_available_counter_clientd = NULL;
+    _context->on_unavailable_counter = NULL;
+    _context->on_unavailable_counter_clientd = NULL;
+    _context->on_close_client = NULL;
+    _context->on_close_client_clientd = NULL;
 
     _context->use_conductor_agent_invoker = AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT;
     _context->agent_on_start_func = NULL;
@@ -385,6 +391,66 @@ aeron_on_new_subscription_t aeron_context_get_on_new_subscription(aeron_context_
 void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context)
 {
     return NULL != context ? context->on_new_subscription_clientd : NULL;
+}
+
+int aeron_context_set_on_available_counter(
+    aeron_context_t *context, aeron_on_available_counter_t handler, void *clientd)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->on_available_counter = handler;
+    context->on_available_counter_clientd = clientd;
+    return 0;
+}
+
+aeron_on_available_counter_t aeron_context_get_on_available_counter(aeron_context_t *context)
+{
+    return NULL != context ? context->on_available_counter : NULL;
+}
+
+void *aeron_context_get_on_available_counter_clientd(aeron_context_t *context)
+{
+    return NULL != context ? context->on_available_counter_clientd : NULL;
+}
+
+int aeron_context_set_on_unavailable_counter(
+    aeron_context_t *context, aeron_on_unavailable_counter_t handler, void *clientd)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->on_unavailable_counter = handler;
+    context->on_unavailable_counter_clientd = clientd;
+    return 0;
+}
+
+aeron_on_unavailable_counter_t aeron_context_get_on_unavailable_counter(aeron_context_t *context)
+{
+    return NULL != context ? context->on_unavailable_counter : NULL;
+}
+
+void *aeron_context_get_on_unavailable_counter_clientd(aeron_context_t *context)
+{
+    return NULL != context ? context->on_unavailable_counter_clientd : NULL;
+}
+
+int aeron_context_set_on_close_client(
+    aeron_context_t *context, aeron_on_close_client_t handler, void *clientd)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->on_close_client = handler;
+    context->on_close_client_clientd = clientd;
+    return 0;
+}
+
+aeron_on_close_client_t aeron_context_get_on_close_client(aeron_context_t *context)
+{
+    return NULL != context ? context->on_close_client : NULL;
+}
+
+void *aeron_context_get_on_close_client_clientd(aeron_context_t *context)
+{
+    return NULL != context ? context->on_close_client_clientd : NULL;
 }
 
 int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool value)

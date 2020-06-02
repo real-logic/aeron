@@ -170,6 +170,11 @@ typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_subscription_t
 typedef void (*aeron_on_available_counter_t)(
     void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
 
+int aeron_context_set_on_available_counter(
+    aeron_context_t *context, aeron_on_available_counter_t handler, void *clientd);
+aeron_on_available_counter_t aeron_context_get_on_available_counter(aeron_context_t *context);
+void *aeron_context_get_on_available_counter_clientd(aeron_context_t *context);
+
 /**
  * Function called by aeron_client_t to deliver notifications that a counter has been removed from the driver.
  *
@@ -181,12 +186,22 @@ typedef void (*aeron_on_available_counter_t)(
 typedef void (*aeron_on_unavailable_counter_t)(
     void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id);
 
+int aeron_context_set_on_unavailable_counter(
+    aeron_context_t *context, aeron_on_unavailable_counter_t handler, void *clientd);
+aeron_on_unavailable_counter_t aeron_context_get_on_unavailable_counter(aeron_context_t *context);
+void *aeron_context_get_on_unavailable_counter_clientd(aeron_context_t *context);
+
 /**
  * Function called by aeron_client_t to deliver notifications that the client is closing.
  *
  * @param clientd to be returned in the call.
  */
 typedef void (*aeron_on_close_client_t)(void *clientd);
+
+int aeron_context_set_on_close_client(
+    aeron_context_t *context, aeron_on_close_client_t handler, void *clientd);
+aeron_on_close_client_t aeron_context_get_on_close_client(aeron_context_t *context);
+void *aeron_context_get_on_close_client_clientd(aeron_context_t *context);
 
 /**
  * Whether to use an invoker to control the conductor agent or spawn a thread.

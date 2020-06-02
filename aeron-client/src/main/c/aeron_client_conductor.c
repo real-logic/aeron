@@ -92,7 +92,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->available_counter_handlers.capacity = 0;
     conductor->available_counter_handlers.length = 0;
 
-    if (NULL != context->on_available_counter_clientd)
+    if (NULL != context->on_available_counter)
     {
         int result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(
@@ -116,7 +116,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->unavailable_counter_handlers.capacity = 0;
     conductor->unavailable_counter_handlers.length = 0;
 
-    if (NULL != context->on_unavailable_counter_clientd)
+    if (NULL != context->on_unavailable_counter)
     {
         int result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(

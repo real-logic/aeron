@@ -367,6 +367,19 @@ bool aeron_publication_is_closed(aeron_publication_t *publication)
     return is_closed;
 }
 
+bool aeron_publication_is_connected(aeron_publication_t *publication)
+{
+    if (NULL != publication && !aeron_publication_is_closed(publication))
+    {
+        int32_t is_connected;
+
+        AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+        return 1 == is_connected;
+    }
+
+    return false;
+}
+
 int64_t aeron_publication_channel_status(aeron_publication_t *publication)
 {
     if (NULL != publication && !aeron_publication_is_closed(publication))

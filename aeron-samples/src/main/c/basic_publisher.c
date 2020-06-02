@@ -222,11 +222,10 @@ int main(int argc, char **argv)
             printf("yay!\n");
         }
 
-// TODO:
-//        if (!aeron_publication_is_connected(publication))
-//        {
-//            printf("No active subscribers detected\n");
-//        }
+        if (!aeron_publication_is_connected(publication))
+        {
+            printf("No active subscribers detected\n");
+        }
 
         aeron_nano_sleep(1000ul * 1000ul * 1000ul);
     }

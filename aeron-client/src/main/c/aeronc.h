@@ -703,6 +703,14 @@ int64_t aeron_publication_try_claim(
 int64_t aeron_publication_channel_status(aeron_publication_t *publication);
 
 /**
+ * Has the publication seen an active Subscriber recently?
+ *
+ * @param publication to check.
+ * @return true if this publication has recently seen an active subscriber otherwise false.
+ */
+bool aeron_publication_is_connected(aeron_publication_t *publication);
+
+/**
  * Add a destination manually to a multi-destination-cast publication.
  *
  * @param publication to add destination to.

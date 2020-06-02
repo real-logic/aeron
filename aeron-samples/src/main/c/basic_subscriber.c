@@ -36,6 +36,7 @@
 #include "aeron_agent.h"
 
 #include "samples_configuration.h"
+#include "sample_util.h"
 
 const char usage_str[] =
     "[-h][-v][-c uri][-l linger][-m messages][-p prefix][-s stream-id]\n"
@@ -59,25 +60,6 @@ inline bool is_running()
     return result;
 }
 
-void available_image_handler(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
-{
-    printf(
-        "Available image on %s streamId=%" PRId32 " sessionId=%" PRId32 " from %s\n",
-        aeron_subscription_channel(subscription),
-        aeron_subscription_stream_id(subscription),
-        aeron_image_session_id(image),
-        aeron_image_source_identity(image));
-}
-
-void unavailable_image_handler(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
-{
-    printf(
-        "Unavailable image on %s streamId=%" PRId32 " sessionId=%" PRId32 "\n",
-        aeron_subscription_channel(subscription),
-        aeron_subscription_stream_id(subscription),
-        aeron_image_session_id(image));
-}
-
 void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_subscription_t *subscription = (aeron_subscription_t *)clientd;
@@ -98,7 +80,7 @@ int main(int argc, char **argv)
     aeron_t *aeron = NULL;
     aeron_async_add_subscription_t *async = NULL;
     aeron_subscription_t *subscription = NULL;
-    aeron_fragment_assembler_t *fragment_assembler;
+    aeron_fragment_assembler_t *fragment_assembler = NULL;
     const char *channel = DEFAULT_CHANNEL;
     const char *aeron_dir = NULL;
     const uint64_t idle_duration_ns = 1000ul * 1000ul; /* 1ms */
@@ -176,9 +158,9 @@ int main(int argc, char **argv)
         aeron,
         channel,
         stream_id,
-        available_image_handler,
+        print_available_image,
         NULL,
-        unavailable_image_handler,
+        print_unavailable_image,
         NULL) < 0)
     {
         fprintf(stderr, "aeron_async_add_subscription: %s\n", aeron_errmsg());

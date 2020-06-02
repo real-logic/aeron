@@ -29,11 +29,15 @@ include_directories(${AERON_CLIENT_SOURCE_PATH})
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
-set(HEADERS
-    samples_configuration.h)
+set(SOURCES
+    sample_util.c)
 
-add_executable(basic_publisher basic_publisher.c ${HEADERS})
-add_executable(basic_subscriber basic_subscriber.c ${HEADERS})
+set(HEADERS
+    samples_configuration.h
+    sample_util.h)
+
+add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
+add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})

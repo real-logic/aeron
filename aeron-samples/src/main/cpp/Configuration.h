@@ -21,7 +21,7 @@
 
 namespace aeron { namespace samples { namespace configuration {
 
-const static std::string DEFAULT_CHANNEL = "aeron:udp?endpoint=localhost:20122";
+const static std::string DEFAULT_CHANNEL = "aeron:udp?endpoint=localhost:20121";
 const static std::string DEFAULT_PING_CHANNEL = "aeron:udp?endpoint=localhost:20123";
 const static std::string DEFAULT_PONG_CHANNEL = "aeron:udp?endpoint=localhost:20124";
 const static std::int32_t DEFAULT_STREAM_ID = 1001;

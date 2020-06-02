@@ -17,7 +17,7 @@
 #ifndef AERON_SAMPLES_CONFIGURATION_H
 #define AERON_SAMPLES_CONFIGURATION_H
 
-#define DEFAULT_CHANNEL "aeron:udp?endpoint=localhost:20122"
+#define DEFAULT_CHANNEL "aeron:udp?endpoint=localhost:20121"
 #define DEFAULT_PING_CHANNEL "aeron:udp?endpoint=localhost:20123"
 #define DEFAULT_PONG_CHANNEL "aeron:udp?endpoint=localhost:20124"
 #define DEFAULT_STREAM_ID (1001)

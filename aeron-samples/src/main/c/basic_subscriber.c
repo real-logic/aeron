@@ -219,6 +219,7 @@ int main(int argc, char **argv)
     }
 
     printf("Shutting down...\n");
+    status = EXIT_SUCCESS;
 
     cleanup:
         aeron_subscription_close(subscription);

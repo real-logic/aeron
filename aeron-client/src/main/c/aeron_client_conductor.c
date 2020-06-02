@@ -1897,7 +1897,9 @@ int aeron_client_conductor_on_available_image(
             log_buffer,
             subscriber_position,
             response->correlation_id,
-            response->session_id) < 0)
+            response->session_id,
+            source_identity_str,
+            (size_t)source_identity_length) < 0)
         {
             return -1;
         }

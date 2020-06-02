@@ -33,12 +33,16 @@ set(HEADERS
     samples_configuration.h)
 
 add_executable(basic_publisher basic_publisher.c ${HEADERS})
+add_executable(basic_subscriber basic_subscriber.c ${HEADERS})
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
 
+target_link_libraries(basic_subscriber
+    ${CLIENT_LINK_LIB})
+
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS basic_publisher
+        TARGETS basic_publisher basic_subscriber
         DESTINATION bin)
 endif ()

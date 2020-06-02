@@ -369,6 +369,33 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription)
     return AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_NO_ID_ALLOCATED;
 }
 
+const char *aeron_subscription_channel(aeron_subscription_t *subscription)
+{
+    if (NULL == subscription)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_subscription_channel: %s", strerror(EINVAL));
+        return NULL;
+    }
+
+    return subscription->channel;
+}
+
+int32_t aeron_subscription_stream_id(aeron_subscription_t *subscription)
+{
+    if (NULL == subscription)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_subscription_stream_id: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+
+    return subscription->stream_id;
+}
+
 int aeron_subscription_poll(
     aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit)
 {
@@ -476,6 +503,20 @@ int aeron_subscription_remove_destination(aeron_subscription_t *subscription, co
 
     return aeron_client_conductor_offer_destination_command(
         subscription->conductor, subscription->registration_id, AERON_COMMAND_REMOVE_RCV_DESTINATION, uri);
+}
+
+int32_t aeron_header_session_id(aeron_header_t *header)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    return header->frame->session_id;
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);

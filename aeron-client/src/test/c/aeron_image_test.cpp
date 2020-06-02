@@ -72,7 +72,8 @@ public:
         }
 
         if (aeron_image_create(
-            &image, nullptr, nullptr, log_buffer, &m_sub_pos, m_correlationId, (int32_t)m_correlationId) < 0)
+            &image, nullptr, nullptr, log_buffer, &m_sub_pos, m_correlationId, (int32_t)m_correlationId,
+            "none", strlen("none")) < 0)
         {
             throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
         }

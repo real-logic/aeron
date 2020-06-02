@@ -29,12 +29,15 @@ int aeron_image_create(
     aeron_log_buffer_t *log_buffer,
     int64_t *subscriber_position,
     int64_t correlation_id,
-    int32_t session_id)
+    int32_t session_id,
+    const char *source_identity,
+    size_t source_identity_length)
 {
     aeron_image_t *_image;
 
     *image = NULL;
-    if (aeron_alloc((void **)&_image, sizeof(aeron_image_t)) < 0)
+    if (aeron_alloc((void **)&_image, sizeof(aeron_image_t)) < 0 ||
+        aeron_alloc((void **)&_image->source_identity, source_identity_length + 1) < 0)
     {
         int errcode = errno;
 
@@ -43,6 +46,9 @@ int aeron_image_create(
     }
 
     _image->command_base.type = AERON_CLIENT_TYPE_IMAGE;
+
+    memcpy(_image->source_identity, source_identity, source_identity_length);
+    _image->source_identity[source_identity_length] = '\0';
 
     _image->subscription = subscription;
     _image->log_buffer = log_buffer;
@@ -72,6 +78,7 @@ int aeron_image_create(
 
 int aeron_image_delete(aeron_image_t *image)
 {
+    aeron_free((void *)image->source_identity);
     aeron_free(image);
 
     return 0;
@@ -86,6 +93,33 @@ void aeron_image_force_close(aeron_image_t *image)
     AERON_PUT_ORDERED(image->final_position, *image->subscriber_position);
     AERON_PUT_ORDERED(image->is_eos, (image->final_position >= end_of_stream_position));
     AERON_PUT_ORDERED(image->is_closed, true);
+}
+
+int32_t aeron_image_session_id(aeron_image_t *image)
+{
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_image_session_id: %s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+
+    return image->session_id;
+}
+
+const char *aeron_image_source_identity(aeron_image_t *image)
+{
+    if (NULL == image)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return NULL;
+    }
+
+    return image->source_identity;
 }
 
 int64_t aeron_image_position(aeron_image_t *image)

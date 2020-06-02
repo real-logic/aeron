@@ -971,6 +971,14 @@ typedef void (*aeron_block_handler_t)(
     void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
 
 /**
+ * Get session id field from the message header.
+ *
+ * @param header to query.
+ * @return session id field or -1 for error (Check aeron_errcode).
+ */
+int32_t aeron_header_session_id(aeron_header_t *header);
+
+/**
  * Poll the images under the subscription for available message fragments.
  * <p>
  * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
@@ -1090,6 +1098,22 @@ bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
 
 /**
+ * Media address for delivery to the channel.
+ *
+ * @param subscription to query.
+ * @return Media address for delivery to the channel or NULL for error.
+ */
+const char *aeron_subscription_channel(aeron_subscription_t *subscription);
+
+/**
+ * Stream identity for scoping within the channel media address.
+ *
+ * @param subscription to query.
+ * @return Stream identity for scoping within the channel media address or -1 for error. Check aeron_errcode.
+ */
+int32_t aeron_subscription_stream_id(aeron_subscription_t *subscription);
+
+/**
  * Add a destination manually to a multi-destination subscription.
  *
  * @param subscription to add destination to.
@@ -1133,6 +1157,23 @@ int aeron_subscription_close(aeron_subscription_t *subscription);
  * <p>
  * <b>Note:</b>Images are not threadsafe and should not be shared between subscribers.
  */
+
+/**
+ * The sessionId for the steam of messages. Sessions are unique within a subscription and unique across
+ * all publications from a source identity.
+ *
+ * @param image to query.
+ * @return the sessionId for the steam of messages or -1 for error (Check aeron_errcode).
+ */
+int32_t aeron_image_session_id(aeron_image_t *image);
+
+/**
+ * The source identity of the sending publisher as an abstract concept appropriate for the media.
+ *
+ * @param image to query.
+ * @return source identity of the sending publisher as an abstract concept appropriate for the media or NULL for error.
+ */
+const char *aeron_image_source_identity(aeron_image_t *image);
 
 /**
  * The position this image has been consumed to by the subscriber.

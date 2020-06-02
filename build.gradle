@@ -757,7 +757,6 @@ project(':aeron-all') {
             'Implementation-Version': "${aeronVersion}",
             'Implementation-Vendor': 'Real Logic Limited',
             'Automatic-Module-Name': 'io.aeron.all')
-        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 
     jar.finalizedBy shadowJar

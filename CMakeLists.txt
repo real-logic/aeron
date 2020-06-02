@@ -226,6 +226,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
 if (AERON_BUILD_SAMPLES)
     set(AERON_SAMPLES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-samples/src/main/cpp")
+    set(AERON_C_SAMPLES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-samples/src/main/c")
 endif ()
 
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp")
@@ -266,6 +267,7 @@ if (AERON_TESTS)
 endif ()
 if (AERON_BUILD_SAMPLES)
     add_subdirectory(${AERON_SAMPLES_PATH})
+    add_subdirectory(${AERON_C_SAMPLES_PATH})
 endif ()
 
 if (BUILD_AERON_DRIVER)

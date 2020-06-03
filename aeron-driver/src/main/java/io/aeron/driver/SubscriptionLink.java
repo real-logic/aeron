@@ -336,13 +336,13 @@ class UntetheredSubscription
 
     void state(final State newState, final long nowNs, final int streamId, final int sessionId)
     {
-        changeState(state, newState, subscriptionLink.registrationId, streamId, sessionId, nowNs);
+        stateChange(state, newState, subscriptionLink.registrationId, streamId, sessionId, nowNs);
         state = newState;
         timeOfLastUpdateNs = nowNs;
     }
 
     @SuppressWarnings("unused")
-    void changeState(
+    void stateChange(
         final State oldState,
         final State newState,
         final long subscriptionId,

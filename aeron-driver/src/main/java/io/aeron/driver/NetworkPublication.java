@@ -759,44 +759,42 @@ public class NetworkPublication
             for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
             {
                 final UntetheredSubscription untethered = untetheredSubscriptions.get(i);
-                switch (untethered.state)
+                if (UntetheredSubscription.State.ACTIVE == untethered.state)
                 {
-                    case ACTIVE:
-                        if (untethered.position.getVolatile() > untetheredWindowLimit)
-                        {
-                            untethered.timeOfLastUpdateNs = nowNs;
-                        }
-                        else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
-                        {
-                            conductor.notifyUnavailableImageLink(registrationId, untethered.subscriptionLink);
-                            untethered.state(UntetheredSubscription.State.LINGER, nowNs, streamId, sessionId);
-                        }
-                        break;
-
-                    case LINGER:
-                        if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
-                        {
-                            spyPositions = ArrayUtil.remove(spyPositions, untethered.position);
-                            untethered.state(UntetheredSubscription.State.RESTING, nowNs, streamId, sessionId);
-                        }
-                        break;
-
-                    case RESTING:
-                        if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
-                        {
-                            spyPositions = ArrayUtil.add(spyPositions, untethered.position);
-                            conductor.notifyAvailableImageLink(
-                                registrationId,
-                                sessionId,
-                                untethered.subscriptionLink,
-                                untethered.position.id(),
-                                senderPosition,
-                                rawLog.fileName(),
-                                CommonContext.IPC_CHANNEL);
-                            untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);
-                            LogBufferDescriptor.isConnected(metaDataBuffer, true);
-                        }
-                        break;
+                    if (untethered.position.getVolatile() > untetheredWindowLimit)
+                    {
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
+                    {
+                        conductor.notifyUnavailableImageLink(registrationId, untethered.subscriptionLink);
+                        untethered.state(UntetheredSubscription.State.LINGER, nowNs, streamId, sessionId);
+                    }
+                }
+                else if (UntetheredSubscription.State.LINGER == untethered.state)
+                {
+                    if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
+                    {
+                        spyPositions = ArrayUtil.remove(spyPositions, untethered.position);
+                        untethered.state(UntetheredSubscription.State.RESTING, nowNs, streamId, sessionId);
+                    }
+                }
+                else if (UntetheredSubscription.State.RESTING == untethered.state)
+                {
+                    if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
+                    {
+                        spyPositions = ArrayUtil.add(spyPositions, untethered.position);
+                        conductor.notifyAvailableImageLink(
+                            registrationId,
+                            sessionId,
+                            untethered.subscriptionLink,
+                            untethered.position.id(),
+                            senderPosition,
+                            rawLog.fileName(),
+                            CommonContext.IPC_CHANNEL);
+                        untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);
+                        LogBufferDescriptor.isConnected(metaDataBuffer, true);
+                    }
                 }
             }
         }

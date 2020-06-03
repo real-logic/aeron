@@ -25,5 +25,5 @@ set /p VERSION=<..\..\version.txt
     -XX:+UseParallelOldGC ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.messageLength=32 ^
-    -Daeron.ipc.mtu.length=16K \
+    -Daeron.ipc.mtu.length=16K ^
     %JVM_OPTS% io.aeron.samples.EmbeddedIpcThroughput %*

@@ -77,13 +77,13 @@ final class ClusterEventEncoder
         return (SIZE_OF_LONG * 5) + (SIZE_OF_INT * 3);
     }
 
-    static <T extends Enum<T>> int encodeStateChange(
+    static <E extends Enum<E>> int encodeStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,
-        final T from,
-        final T to,
+        final E from,
+        final E to,
         final int memberId)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);

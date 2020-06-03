@@ -82,8 +82,8 @@ public final class ClusterEventLogger
         }
     }
 
-    public <T extends Enum<T>> void logStateChange(
-        final ClusterEventCode eventCode, final T oldState, final T newState, final int memberId)
+    public <E extends Enum<E>> void logStateChange(
+        final ClusterEventCode eventCode, final E oldState, final E newState, final int memberId)
     {
         final int length = stateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);

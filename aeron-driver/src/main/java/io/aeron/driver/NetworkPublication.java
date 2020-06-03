@@ -263,7 +263,7 @@ public class NetworkPublication
         for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
         {
             final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
-            if (UntetheredSubscription.RESTING == untetheredSubscription.state)
+            if (UntetheredSubscription.State.RESTING == untetheredSubscription.state)
             {
                 CloseHelper.close(errorHandler, untetheredSubscription.position);
             }
@@ -761,7 +761,7 @@ public class NetworkPublication
                 final UntetheredSubscription untethered = untetheredSubscriptions.get(i);
                 switch (untethered.state)
                 {
-                    case UntetheredSubscription.ACTIVE:
+                    case ACTIVE:
                         if (untethered.position.getVolatile() > untetheredWindowLimit)
                         {
                             untethered.timeOfLastUpdateNs = nowNs;
@@ -769,21 +769,19 @@ public class NetworkPublication
                         else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
                         {
                             conductor.notifyUnavailableImageLink(registrationId, untethered.subscriptionLink);
-                            untethered.state = UntetheredSubscription.LINGER;
-                            untethered.timeOfLastUpdateNs = nowNs;
+                            untethered.state(UntetheredSubscription.State.LINGER, nowNs, streamId, sessionId);
                         }
                         break;
 
-                    case UntetheredSubscription.LINGER:
+                    case LINGER:
                         if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
                         {
                             spyPositions = ArrayUtil.remove(spyPositions, untethered.position);
-                            untethered.state = UntetheredSubscription.RESTING;
-                            untethered.timeOfLastUpdateNs = nowNs;
+                            untethered.state(UntetheredSubscription.State.RESTING, nowNs, streamId, sessionId);
                         }
                         break;
 
-                    case UntetheredSubscription.RESTING:
+                    case RESTING:
                         if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
                         {
                             spyPositions = ArrayUtil.add(spyPositions, untethered.position);
@@ -795,8 +793,7 @@ public class NetworkPublication
                                 senderPosition,
                                 rawLog.fileName(),
                                 CommonContext.IPC_CHANNEL);
-                            untethered.state = UntetheredSubscription.ACTIVE;
-                            untethered.timeOfLastUpdateNs = nowNs;
+                            untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);
                             LogBufferDescriptor.isConnected(metaDataBuffer, true);
                         }
                         break;

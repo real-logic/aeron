@@ -209,6 +209,37 @@ public final class DriverEventLogger
         }
     }
 
+    public <E extends Enum<E>> void logUntetheredSubscriptionStateChange(
+        final E oldState, final E newState, final long subscriptionId, final int streamId, final int sessionId)
+    {
+        final int length = untetheredSubscriptionStateChangeLength(oldState, newState);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(UNTETHERED_SUBSCRIPTION_STATE_CHANGE), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeUntetheredSubscriptionStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    subscriptionId,
+                    streamId,
+                    sessionId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
     public static int toEventCodeId(final DriverEventCode code)
     {
         return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);

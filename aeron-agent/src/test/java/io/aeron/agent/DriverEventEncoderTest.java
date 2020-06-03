@@ -15,16 +15,19 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.codecs.ClusterTimeUnit;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
-import static io.aeron.agent.CommonEventEncoder.captureLength;
+import java.time.temporal.ChronoField;
+
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -160,5 +163,40 @@ class DriverEventEncoderTest
         assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(uri.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 3 - 3) + "...",
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void untetheredSubscriptionStateChangeLengthComputesLengthBasedOnProvidedState()
+    {
+        final ClusterTimeUnit from = ClusterTimeUnit.MILLIS;
+        final ClusterTimeUnit to = ClusterTimeUnit.NANOS;
+
+        assertEquals(stateTransitionStringLength(from, to) + SIZE_OF_LONG + 2 * SIZE_OF_INT,
+            untetheredSubscriptionStateChangeLength(from, to));
+    }
+
+    @Test
+    void encodeUntetheredSubscriptionStateChangeShouldEncodeStateChangeLast()
+    {
+        final int offset = 0;
+        final ChronoField from = ChronoField.ALIGNED_DAY_OF_WEEK_IN_MONTH;
+        final ChronoField to = ChronoField.AMPM_OF_DAY;
+        final int length = untetheredSubscriptionStateChangeLength(from, to);
+        final int captureLength = captureLength(length);
+        final long subscriptionId = 1_010_010_000_010L;
+        final int sessionId = 42;
+        final int streamId = Integer.MIN_VALUE;
+
+        encodeUntetheredSubscriptionStateChange(
+            buffer, offset, captureLength, length, from, to, subscriptionId, streamId, sessionId);
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(subscriptionId, buffer.getLong(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(from.name() + STATE_SEPARATOR + to.name(),
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT * 2, LITTLE_ENDIAN));
     }
 }

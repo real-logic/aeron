@@ -274,6 +274,26 @@ final class DriverEventDissector
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
+    static void dissectUntetheredSubscriptionStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(
+            CONTEXT, UNTETHERED_SUBSCRIPTION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        builder.append(": subscriptionId=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(", sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(", ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
     private static void dissectDataFrame(final StringBuilder builder)
     {
         builder

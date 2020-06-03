@@ -24,11 +24,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.AgentTests.verifyLogHeader;
-import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
-import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
+import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChangeLength;
 import static io.aeron.agent.DriverEventLogger.toEventCodeId;
 import static io.aeron.agent.EventConfiguration.*;
 import static java.nio.ByteBuffer.allocate;
@@ -225,6 +226,33 @@ class DriverEventLoggerTest
         assertEquals(id,
             logBuffer.getLong(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2), LITTLE_ENDIAN));
         assertEquals(uri, logBuffer.getStringAscii(
+            encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG), LITTLE_ENDIAN));
+    }
+
+    @Test
+    void logUntetheredSubscriptionStateChange()
+    {
+        final int recordOffset = align(192, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        final TimeUnit from = TimeUnit.DAYS;
+        final TimeUnit to = TimeUnit.NANOSECONDS;
+        final long subscriptionId = Long.MIN_VALUE;
+        final int streamId = 61;
+        final int sessionId = 8;
+        final int captureLength = captureLength(untetheredSubscriptionStateChangeLength(from, to));
+
+        logger.logUntetheredSubscriptionStateChange(from, to, subscriptionId, streamId, sessionId);
+
+        verifyLogHeader(
+            logBuffer, recordOffset, toEventCodeId(UNTETHERED_SUBSCRIPTION_STATE_CHANGE), captureLength, captureLength);
+        assertEquals(subscriptionId,
+            logBuffer.getLong(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(streamId,
+            logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(sessionId,
+            logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT),
+            LITTLE_ENDIAN));
+        assertEquals(from.name() + STATE_SEPARATOR + to.name(), logBuffer.getStringAscii(
             encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG), LITTLE_ENDIAN));
     }
 }

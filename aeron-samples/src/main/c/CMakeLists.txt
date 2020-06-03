@@ -40,6 +40,7 @@ add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
 add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(rate_subscriber rate_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
+add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
@@ -53,8 +54,11 @@ target_link_libraries(rate_subscriber
 target_link_libraries(streaming_publisher
     ${CLIENT_LINK_LIB})
 
+target_link_libraries(streaming_exclusive_publisher
+    ${CLIENT_LINK_LIB})
+
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS basic_publisher basic_subscriber rate_subscriber streaming_publisher
+        TARGETS basic_publisher basic_subscriber rate_subscriber streaming_publisher streaming_exclusive_publisher
         DESTINATION bin)
 endif ()

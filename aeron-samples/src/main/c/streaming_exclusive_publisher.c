@@ -222,6 +222,7 @@ int main(int argc, char **argv)
         {
             *((uint64_t *)buffer_claim.data) = i;
             aeron_buffer_claim_commit(&buffer_claim);
+            rate_reporter_on_message(&rate_reporter, message_length);
         }
     }
     duration_ns = aeron_nano_clock() - start_timestamp_ns;

@@ -222,6 +222,8 @@ int main(int argc, char **argv)
         {
             aeron_idle_strategy_busy_spinning_idle(NULL, 0);
         }
+
+        rate_reporter_on_message(&rate_reporter, message_length);
     }
     duration_ns = aeron_nano_clock() - start_timestamp_ns;
 

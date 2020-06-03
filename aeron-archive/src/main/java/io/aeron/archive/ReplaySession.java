@@ -359,7 +359,7 @@ class ReplaySession implements Session, AutoCloseable
             final int frameLength = frameLength(replayBuffer, batchOffset);
             if (frameLength <= 0)
             {
-                replayError(bytesRead, batchOffset, remaining);
+                raiseError(bytesRead, batchOffset, remaining);
             }
 
             final int frameType = frameType(replayBuffer, batchOffset);
@@ -414,7 +414,7 @@ class ReplaySession implements Session, AutoCloseable
         return workCount;
     }
 
-    private void replayError(final int bytesRead, final int batchOffset, final long remaining)
+    private void raiseError(final int bytesRead, final int batchOffset, final long remaining)
     {
         throw new IllegalStateException(
             "unexpected end of recording " + recordingId + " at replayPosition=" + replayPosition +

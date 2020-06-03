@@ -21,7 +21,7 @@ if [[ ! -v JAVA_HOME ]]; then
   exit 1
 fi
 
-VERSION=`cat ../../../version.txt`
+VERSION=$(cat ../../../version.txt)
 
 JDK_VERSION=$(${JAVA_HOME}/bin/java -version 2>&1 | awk -F '"' '/version/ {print $2}')
 

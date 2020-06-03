@@ -103,6 +103,6 @@ final class ClusterEventEncoder
 
     static <E extends Enum<E>> int stateChangeLength(final E from, final E to)
     {
-        return stateTransitionStringLength(from, to) + (SIZE_OF_INT * 2);
+        return stateTransitionStringLength(from, to) + SIZE_OF_INT;
     }
 }

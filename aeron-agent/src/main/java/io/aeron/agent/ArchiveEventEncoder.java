@@ -54,7 +54,7 @@ final class ArchiveEventEncoder
 
     static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to)
     {
-        return stateTransitionStringLength(from, to) + (SIZE_OF_LONG + SIZE_OF_INT);
+        return stateTransitionStringLength(from, to) + SIZE_OF_LONG;
     }
 
     static void encodeReplaySessionError(

@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
@@ -178,6 +179,15 @@ class CommonEventEncoderTest
     void testEncodedLength(final int length, final int encodedLength)
     {
         assertEquals(encodedLength, encodedLength(length));
+    }
+
+    @Test
+    void testStateTransitionStringLength()
+    {
+        final TimeUnit from = TimeUnit.NANOSECONDS;
+        final TimeUnit to = TimeUnit.HOURS;
+        assertEquals(from.name().length() + STATE_SEPARATOR.length() + to.name().length() + SIZE_OF_INT,
+            stateTransitionStringLength(from, to));
     }
 
     private static List<Arguments> captureLengthArgs()

@@ -259,13 +259,13 @@ final class EventConfiguration
         return eventCodeSet;
     }
 
-    private static <T extends Enum<T>> EnumSet<T> parseEventCodes(
-        final Class<T> eventCodeType,
+    private static <E extends Enum<E>> EnumSet<E> parseEventCodes(
+        final Class<E> eventCodeType,
         final String enabledEventCodes,
-        final Function<Integer, T> eventCodeById,
-        final Function<String, T> eventCodeByName)
+        final Function<Integer, E> eventCodeById,
+        final Function<String, E> eventCodeByName)
     {
-        final EnumSet<T> eventCodeSet = EnumSet.noneOf(eventCodeType);
+        final EnumSet<E> eventCodeSet = EnumSet.noneOf(eventCodeType);
         final String[] codeIds = enabledEventCodes.split(",");
 
         for (final String codeId : codeIds)
@@ -276,7 +276,7 @@ final class EventConfiguration
             }
             else
             {
-                T code = null;
+                E code = null;
                 try
                 {
                     code = eventCodeByName.apply(codeId);

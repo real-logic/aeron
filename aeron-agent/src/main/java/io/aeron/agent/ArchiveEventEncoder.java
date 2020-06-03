@@ -28,13 +28,13 @@ final class ArchiveEventEncoder
     {
     }
 
-    static <T extends Enum<T>> int encodeSessionStateChange(
+    static <E extends Enum<E>> int encodeSessionStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,
-        final T from,
-        final T to,
+        final E from,
+        final E to,
         final long id)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
@@ -54,7 +54,7 @@ final class ArchiveEventEncoder
 
     static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to)
     {
-        return stateTransitionStringLength(from, to) + (SIZE_OF_LONG + SIZE_OF_INT);
+        return stateTransitionStringLength(from, to) + SIZE_OF_LONG;
     }
 
     static void encodeReplaySessionError(

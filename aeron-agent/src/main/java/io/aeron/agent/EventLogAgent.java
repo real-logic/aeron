@@ -125,6 +125,7 @@ public final class EventLogAgent
         tempBuilder = addDriverSenderProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverReceiverProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverUdpChannelTransportInstrumentation(tempBuilder);
+        tempBuilder = addDriverUntetheredSubscriptionInstrumentation(tempBuilder);
 
         return tempBuilder;
     }
@@ -272,6 +273,21 @@ public final class EventLogAgent
 
                 return builder;
             });
+    }
+
+    private static AgentBuilder addDriverUntetheredSubscriptionInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!DRIVER_EVENT_CODES.contains(DriverEventCode.UNTETHERED_SUBSCRIPTION_STATE_CHANGE))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("UntetheredSubscription"))
+            .transform((builder, typeDescription, classLoader, javaModule) ->
+                builder
+                    .visit(to(DriverInterceptor.UntetheredSubscriptionStateChange.class)
+                        .on(named("stateChange"))));
     }
 
     private static AgentBuilder addArchiveInstrumentation(final AgentBuilder agentBuilder)

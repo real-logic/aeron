@@ -146,4 +146,39 @@ final class DriverEventEncoder
         encodeTrailingString(
             encodingBuffer, offset + relativeOffset, captureLength - (SIZE_OF_INT * 2) - SIZE_OF_LONG, uri);
     }
+
+    static <E extends Enum<E>> int untetheredSubscriptionStateChangeLength(final E from, final E to)
+    {
+        return stateTransitionStringLength(from, to) + SIZE_OF_LONG + 2 * SIZE_OF_INT;
+    }
+
+    static <E extends Enum<E>> void encodeUntetheredSubscriptionStateChange(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final E from,
+        final E to,
+        final long subscriptionId,
+        final int streamId,
+        final int sessionId)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + relativeOffset, subscriptionId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_LONG + 3 * SIZE_OF_INT), LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, from.name());
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, to.name());
+    }
 }

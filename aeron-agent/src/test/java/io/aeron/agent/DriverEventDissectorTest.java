@@ -33,7 +33,8 @@ import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DriverEventDissectorTest
@@ -559,6 +560,23 @@ class DriverEventDissectorTest
         dissectAsCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.0] " + CONTEXT + ": " + eventCode.name() + " [5/5]: COMMAND_UNKNOWN: " + eventCode,
+            builder.toString());
+    }
+
+    @Test
+    void dissectUntetheredSubscriptionStateChange()
+    {
+        final int offset = 12;
+        internalEncodeLogHeader(buffer, offset, 22, 88, () -> 1_500_000_000L);
+        buffer.putLong(offset + LOG_HEADER_LENGTH, 88, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG, 123, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT, 777, LITTLE_ENDIAN);
+        buffer.putStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + 2 * SIZE_OF_INT, "state changed");
+
+        DriverEventDissector.dissectUntetheredSubscriptionStateChange(buffer, offset, builder);
+
+        assertEquals("[1.5] " + CONTEXT + ": " + UNTETHERED_SUBSCRIPTION_STATE_CHANGE.name() +
+            " [22/88]: subscriptionId=88, streamId=123, sessionId=777, state changed",
             builder.toString());
     }
 

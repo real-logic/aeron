@@ -40,8 +40,9 @@
 #include "samples_configuration.h"
 
 const char usage_str[] =
-    "[-h][-v][-c uri][-L length][-l linger][-m messages][-p prefix][-s stream-id]\n"
+    "[-h][-P][-v][-c uri][-L length][-l linger][-m messages][-p prefix][-s stream-id]\n"
     "    -h               help\n"
+    "    -P               print progress\n"
     "    -v               show version and exit\n"
     "    -c uri           use channel specified in uri\n"
     "    -L length        use message length of length bytes\n"
@@ -80,8 +81,9 @@ int main(int argc, char **argv)
     uint64_t message_length = DEFAULT_MESSAGE_LENGTH;
     int64_t start_timestamp_ns, duration_ns;
     int32_t stream_id = DEFAULT_STREAM_ID;
+    bool show_rate_progress = false;
 
-    while ((opt = getopt(argc, argv, "hvc:L:l:m:p:s:")) != -1)
+    while ((opt = getopt(argc, argv, "hPvc:L:l:m:p:s:")) != -1)
     {
         switch (opt)
         {
@@ -118,6 +120,12 @@ int main(int argc, char **argv)
                     fprintf(stderr, "malformed number of messages %s: %s\n", optarg, aeron_errmsg());
                     exit(status);
                 }
+                break;
+            }
+
+            case 'P':
+            {
+                show_rate_progress = true;
                 break;
             }
 
@@ -198,10 +206,13 @@ int main(int argc, char **argv)
 
     printf("Publication channel status %" PRIu64 "\n", aeron_exclusive_publication_channel_status(publication));
 
-    if (rate_reporter_start(&rate_reporter, print_rate_report) < 0)
+    if (show_rate_progress)
     {
-        fprintf(stderr, "rate_reporter_start: %s\n", aeron_errmsg());
-        goto cleanup;
+        if (rate_reporter_start(&rate_reporter, print_rate_report) < 0)
+        {
+            fprintf(stderr, "rate_reporter_start: %s\n", aeron_errmsg());
+            goto cleanup;
+        }
     }
 
     start_timestamp_ns = aeron_nano_clock();
@@ -222,14 +233,21 @@ int main(int argc, char **argv)
         {
             *((uint64_t *)buffer_claim.data) = i;
             aeron_buffer_claim_commit(&buffer_claim);
-            rate_reporter_on_message(&rate_reporter, message_length);
+
+            if (show_rate_progress)
+            {
+                rate_reporter_on_message(&rate_reporter, message_length);
+            }
         }
     }
     duration_ns = aeron_nano_clock() - start_timestamp_ns;
 
     printf("Done sending.\n");
 
-    rate_reporter_halt(&rate_reporter);
+    if (show_rate_progress)
+    {
+        rate_reporter_halt(&rate_reporter);
+    }
 
     printf(
         "Total: %" PRId64 "ms, %.04g msgs/sec, %.04g bytes/sec, totals %" PRIu64 " messages %" PRIu64 " MB payloads\n",

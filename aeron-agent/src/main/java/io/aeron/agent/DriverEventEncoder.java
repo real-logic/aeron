@@ -179,6 +179,6 @@ final class DriverEventEncoder
 
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, from.name());
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, to.name());
+        encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, to.name());
     }
 }

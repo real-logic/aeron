@@ -110,3 +110,4 @@ int rate_reporter_halt(rate_reporter_t *reporter)
 }
 
 extern void rate_reporter_poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
+extern void rate_reporter_on_message(rate_reporter_t *reporter, size_t length);

@@ -821,8 +821,10 @@ task testReport(type: TestReport) {
 
 task copyCrashLogs(type: Copy) {
     from '.'
+    include '**/build/test-output/**'
     include '**/hs_err*.log'
     include 'LICENSE'
+    exclude 'build'
     into 'build/crash_logs'
 
     includeEmptyDirs = false

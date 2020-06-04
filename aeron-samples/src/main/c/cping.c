@@ -334,12 +334,17 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
+    printf("Warming up the media driver with %" PRIu64 " messages of length %" PRIu64 " bytes\n",
+        warm_up_messages, message_length);
+
     int64_t start_warm_up_ns = aeron_nano_clock();
 
     send_ping_and_receive_pong(
         publication, image, null_handler, NULL, warm_up_messages, message_length);
 
     printf("Warm up complete in %" PRId64 "ns\n", aeron_nano_clock() - start_warm_up_ns);
+    printf("Pinging %" PRIu64 " messages of length %" PRIu64 " bytes\n", messages, message_length);
+
     hdr_reset(histogram);
 
     send_ping_and_receive_pong(

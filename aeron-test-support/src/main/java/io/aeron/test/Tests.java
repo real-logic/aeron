@@ -362,6 +362,11 @@ public class Tests
                 unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
                 fail("unexpected interrupt");
             }
+
+            if (counter.isClosed())
+            {
+                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
+            }
         }
     }
 

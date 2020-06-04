@@ -416,8 +416,8 @@ public class ClusterNodeRestartTest
 
     private AtomicCounter getControlToggle()
     {
-        final CountersReader counters = container.context().aeron().countersReader();
         final int clusterId = container.context().clusterId();
+        final CountersReader counters = container.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters, clusterId);
         assertNotNull(controlToggle);
 
@@ -468,16 +468,17 @@ public class ClusterNodeRestartTest
 
                 if (null != snapshotImage)
                 {
-                    final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
-                    {
-                        nextCorrelationId = buffer.getInt(offset);
-                        offset += SIZE_OF_INT;
+                    final FragmentHandler fragmentHandler =
+                        (buffer, offset, length, header) ->
+                        {
+                            nextCorrelationId = buffer.getInt(offset);
+                            offset += SIZE_OF_INT;
 
-                        counterValue = buffer.getInt(offset);
-                        offset += SIZE_OF_INT;
+                            counterValue = buffer.getInt(offset);
+                            offset += SIZE_OF_INT;
 
-                        serviceState.set(buffer.getStringAscii(offset));
-                    };
+                            serviceState.set(buffer.getStringAscii(offset));
+                        };
 
                     while (true)
                     {

@@ -137,9 +137,9 @@ public final class DataCollector
                 }
             }
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -209,12 +209,13 @@ public final class DataCollector
                         {
                             found = true;
                             processed.add(path2);
-                            final Set<Path> children = result.computeIfAbsent(parent, key -> new HashSet<>());
+                            final Set<Path> children = result.computeIfAbsent(parent, (key) -> new HashSet<>());
                             children.addAll(e1.getValue());
                             children.addAll(e2.getValue());
                         }
                     }
                 }
+
                 if (!found)
                 {
                     result.put(path1, e1.getValue());
@@ -227,6 +228,7 @@ public final class DataCollector
         {
             return groupByParent(result);
         }
+
         return locations;
     }
 
@@ -245,6 +247,7 @@ public final class DataCollector
                 parent = parent.getParent();
             }
         }
+
         return parent;
     }
 
@@ -258,8 +261,8 @@ public final class DataCollector
         {
             walkFileTree(src, new SimpleFileVisitor<Path>()
             {
-                public FileVisitResult preVisitDirectory(
-                    final Path dir, final BasicFileAttributes attrs) throws IOException
+                public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
+                    throws IOException
                 {
                     final Path destDir = dest.resolve(src.relativize(dir));
                     if (!exists(destDir.getParent()))
@@ -267,17 +270,17 @@ public final class DataCollector
                         createDirectories(destDir.getParent());
                     }
                     copy(dir, destDir, COPY_ATTRIBUTES);
+
                     return FileVisitResult.CONTINUE;
                 }
 
-                public FileVisitResult visitFile(
-                    final Path file, final BasicFileAttributes attrs) throws IOException
+                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
                 {
                     copy(file, dest.resolve(src.relativize(file)), COPY_ATTRIBUTES);
+
                     return FileVisitResult.CONTINUE;
                 }
             });
         }
     }
-
 }

@@ -41,8 +41,8 @@ class DataCollectorTest
     void throwsIllegalArgumentExceptionIfTargetDirectoryIsAFile(final @TempDir Path tempDir) throws IOException
     {
         final Path file = createFile(tempDir.resolve("my.txt"));
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> new DataCollector(file));
+        final IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class, () -> new DataCollector(file));
 
         assertEquals(file + " is not a directory", exception.getMessage());
     }
@@ -190,8 +190,7 @@ class DataCollectorTest
     }
 
     @Test
-    void copyUsingTestInfoIsANoOpIfNoFilesRegistered(
-        final @TempDir Path tempDir, final TestInfo testInfo) throws Exception
+    void copyUsingTestInfoIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir, final TestInfo testInfo)
     {
         final Path rootDirectory = tempDir.resolve("no-copy");
 
@@ -201,7 +200,7 @@ class DataCollectorTest
     }
 
     @Test
-    void copyUsingDirectoryNameIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir) throws Exception
+    void copyUsingDirectoryNameIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir)
     {
         final Path rootDirectory = tempDir.resolve("no-copy");
 
@@ -209,5 +208,4 @@ class DataCollectorTest
 
         assertFalse(exists(rootDirectory));
     }
-
 }

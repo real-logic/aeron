@@ -73,7 +73,6 @@ class DataCollectorTest
         assertThrows(IllegalArgumentException.class, () -> testWatcher.dumpData(""));
     }
 
-    @Disabled
     @Test
     void copyUsingTestInfo(final @TempDir Path tempDir, final TestInfo testInfo) throws Exception
     {
@@ -86,6 +85,7 @@ class DataCollectorTest
             final Path my1 = createFile(tempDir.resolve("my.txt"));
             final Path myDir1 = createDirectories(tempDir.resolve("my-dir"));
             createFile(myDir1.resolve("some1.txt"));
+
             final Path dir11 = createDirectories(tempDir.resolve("path1/dir1"));
             final Path dir12 = createDirectories(tempDir.resolve("path1/dir2"));
             final Path dir13 = createDirectories(tempDir.resolve("path1/dir2/dir3"));
@@ -93,6 +93,7 @@ class DataCollectorTest
             createFile(dir11.resolve("file11.txt"));
             createFile(dir12.resolve("file12.txt"));
             createFile(dir13.resolve("file13.txt"));
+
             final Path my2 = createFile(dir13.resolve("my.txt"));
             final Path dir21 = createDirectories(tempDir.resolve("path2/dir1"));
             final Path dir22 = createDirectories(tempDir.resolve("path2/dir2"));
@@ -100,12 +101,14 @@ class DataCollectorTest
             createFile(dir21.resolve("file21.txt"));
             createFile(dir22.resolve("file22.txt"));
             createFile(dir23.resolve("file23.txt"));
+
             final Path dir31 = createDirectories(buildDir.resolve("dir1"));
             final Path dir32 = createDirectories(buildDir.resolve("dir2"));
             final Path dir33 = createDirectories(buildDir.resolve("dir2/dir3"));
             createFile(dir31.resolve("file31.txt"));
             createFile(dir32.resolve("file32.txt"));
             createFile(dir33.resolve("file33.txt"));
+
             final Path my3 = createFile(buildDir.resolve("my.txt"));
             final Path myDir2 = createDirectories(buildDir.resolve("my-dir"));
             createFile(myDir2.resolve("some2.txt"));

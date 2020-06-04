@@ -64,10 +64,10 @@ inline bool is_running()
 
 void ping_poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
-    aeron_publication_t *publication = (aeron_publication_t *)clientd;
+    aeron_exclusive_publication_t *publication = (aeron_exclusive_publication_t *)clientd;
     aeron_buffer_claim_t buffer_claim;
 
-    while (aeron_publication_try_claim(publication, length, &buffer_claim) < 0)
+    while (aeron_exclusive_publication_try_claim(publication, length, &buffer_claim) < 0)
     {
         aeron_idle_strategy_busy_spinning_idle(NULL, 0);
     }
@@ -82,9 +82,9 @@ int main(int argc, char **argv)
     aeron_context_t *context = NULL;
     aeron_t *aeron = NULL;
     aeron_async_add_subscription_t *async_ping_sub = NULL;
-    aeron_async_add_publication_t *async_pong_pub = NULL;
+    aeron_async_add_exclusive_publication_t *async_pong_pub = NULL;
     aeron_subscription_t *subscription = NULL;
-    aeron_publication_t *publication = NULL;
+    aeron_exclusive_publication_t *publication = NULL;
     aeron_fragment_assembler_t *fragment_assembler = NULL;
     const char *pong_channel = DEFAULT_PONG_CHANNEL;
     const char *ping_channel = DEFAULT_PING_CHANNEL;
@@ -199,28 +199,28 @@ int main(int argc, char **argv)
 
     printf("Subscription channel status %" PRIu64 "\n", aeron_subscription_channel_status(subscription));
 
-    if (aeron_async_add_publication(
+    if (aeron_async_add_exclusive_publication(
         &async_pong_pub,
         aeron,
         ping_channel,
         ping_stream_id) < 0)
     {
-        fprintf(stderr, "aeron_async_add_publication: %s\n", aeron_errmsg());
+        fprintf(stderr, "aeron_async_add_exclusive_publication: %s\n", aeron_errmsg());
         goto cleanup;
     }
 
     while (NULL == publication)
     {
-        if (aeron_async_add_publication_poll(&publication, async_pong_pub) < 0)
+        if (aeron_async_add_exclusive_publication_poll(&publication, async_pong_pub) < 0)
         {
-            fprintf(stderr, "aeron_async_add_publication_poll: %s\n", aeron_errmsg());
+            fprintf(stderr, "aeron_async_add_exclusive_publication_poll: %s\n", aeron_errmsg());
             goto cleanup;
         }
 
         sched_yield();
     }
 
-    printf("Publication channel status %" PRIu64 "\n", aeron_publication_channel_status(publication));
+    printf("Publication channel status %" PRIu64 "\n", aeron_exclusive_publication_channel_status(publication));
 
     if (aeron_fragment_assembler_create(&fragment_assembler, ping_poll_handler, publication) < 0)
     {
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 
     cleanup:
         aeron_subscription_close(subscription);
-        aeron_publication_close(publication);
+        aeron_exclusive_publication_close(publication);
         aeron_close(aeron);
         aeron_context_close(context);
         aeron_fragment_assembler_delete(fragment_assembler);

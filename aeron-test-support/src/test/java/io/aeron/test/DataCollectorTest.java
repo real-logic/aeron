@@ -16,12 +16,10 @@
 package io.aeron.test;
 
 import org.agrona.IoUtil;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -80,12 +78,14 @@ class DataCollectorTest
     {
         final Path buildDir = Paths.get("build/test/source").toAbsolutePath();
         createDirectories(buildDir);
+
         try
         {
             final Path rootDir = tempDir.resolve("copy-root");
             final Path my1 = createFile(tempDir.resolve("my.txt"));
             final Path myDir1 = createDirectories(tempDir.resolve("my-dir"));
             createFile(myDir1.resolve("some1.txt"));
+
             final Path dir11 = createDirectories(tempDir.resolve("path1/dir1"));
             final Path dir12 = createDirectories(tempDir.resolve("path1/dir2"));
             final Path dir13 = createDirectories(tempDir.resolve("path1/dir2/dir3"));
@@ -93,6 +93,7 @@ class DataCollectorTest
             createFile(dir11.resolve("file11.txt"));
             createFile(dir12.resolve("file12.txt"));
             createFile(dir13.resolve("file13.txt"));
+
             final Path my2 = createFile(dir13.resolve("my.txt"));
             final Path dir21 = createDirectories(tempDir.resolve("path2/dir1"));
             final Path dir22 = createDirectories(tempDir.resolve("path2/dir2"));
@@ -100,12 +101,14 @@ class DataCollectorTest
             createFile(dir21.resolve("file21.txt"));
             createFile(dir22.resolve("file22.txt"));
             createFile(dir23.resolve("file23.txt"));
+
             final Path dir31 = createDirectories(buildDir.resolve("dir1"));
             final Path dir32 = createDirectories(buildDir.resolve("dir2"));
             final Path dir33 = createDirectories(buildDir.resolve("dir2/dir3"));
             createFile(dir31.resolve("file31.txt"));
             createFile(dir32.resolve("file32.txt"));
             createFile(dir33.resolve("file33.txt"));
+
             final Path my3 = createFile(buildDir.resolve("my.txt"));
             final Path myDir2 = createDirectories(buildDir.resolve("my-dir"));
             createFile(myDir2.resolve("some2.txt"));
@@ -127,11 +130,12 @@ class DataCollectorTest
             dataCollector.add(myDir1);
             dataCollector.add(myDir2);
 
-            final String testClass = testInfo.getTestClass().map(Class::getName).orElse(null);
-            final String testMethod = testInfo.getTestMethod().map(Method::getName).orElse(null);
             dataCollector.dumpData(testInfo);
 
+            final String testClass = testInfo.getTestClass().get().getName();
+            final String testMethod = testInfo.getTestMethod().get().getName();
             final Path destination = rootDir.resolve(testClass + "-" + testMethod);
+
             assertTrue(exists(destination));
             assertTrue(exists(destination.resolve("my.txt")));
             assertTrue(exists(destination.resolve("my-dir/some1.txt")));
@@ -162,6 +166,8 @@ class DataCollectorTest
         createDirectories(rootDir.resolve("destination"));
 
         final Path file0 = createFile(tempDir.resolve("my.txt"));
+        final Path nonExistingDir = createDirectories(tempDir.resolve("non-existing/folder"));
+        final Path file1 = createFile(nonExistingDir.resolve("some.png"));
         final Path dir1 = createDirectories(tempDir.resolve("my-dir/nested/again"));
         final Path dir2 = createDirectories(tempDir.resolve("again"));
         final Path dir3 = createDirectories(tempDir.resolve("nested/again"));
@@ -177,6 +183,7 @@ class DataCollectorTest
         dataCollector.add(tempDir.resolve("again"));
         dataCollector.add(tempDir.resolve("nested"));
         dataCollector.add(dir4);
+        dataCollector.add(file1);
 
         dataCollector.dumpData("destination");
 
@@ -187,6 +194,7 @@ class DataCollectorTest
         assertTrue(exists(destination.resolve("again/file2.txt")));
         assertTrue(exists(destination.resolve("nested/again/file3.txt")));
         assertTrue(exists(destination.resolve("level1/level2/level3/again/file4.txt")));
+        assertTrue(exists(destination.resolve("non-existing/folder/some.png")));
     }
 
     @Test

@@ -19,14 +19,13 @@ import org.agrona.LangUtil;
 import org.junit.jupiter.api.TestInfo;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.nio.file.Files.*;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -50,7 +49,7 @@ public final class DataCollector
     public DataCollector(final Path rootDir)
     {
         requireNonNull(rootDir);
-        if (exists(rootDir) && !isDirectory(rootDir))
+        if (Files.exists(rootDir) && !Files.isDirectory(rootDir))
         {
             throw new IllegalArgumentException(rootDir + " is not a directory");
         }
@@ -82,8 +81,8 @@ public final class DataCollector
      */
     public void dumpData(final TestInfo testInfo)
     {
-        final String testClass = testInfo.getTestClass().map(Class::getName).get();
-        final String testMethod = testInfo.getTestMethod().map(Method::getName).get();
+        final String testClass = testInfo.getTestClass().get().getName();
+        final String testMethod = testInfo.getTestMethod().get().getName();
         copyData(testClass + SEPARATOR + testMethod);
     }
 
@@ -114,6 +113,14 @@ public final class DataCollector
         copyData(destinationDir);
     }
 
+    public String toString()
+    {
+        return "DataCollector{" +
+            "rootDir=" + rootDir +
+            ", locations=" + locations +
+            '}';
+    }
+
     private void copyData(final String destinationDir)
     {
         final List<Path> locations = this.locations.stream().filter(Files::exists).collect(toList());
@@ -132,8 +139,8 @@ public final class DataCollector
                 final Path parent = adjustParentToEnsureUniqueContext(destination, files, group.getKey());
                 for (final Path srcFile : files)
                 {
-                    final Path destFile = destination.resolve(parent.relativize(srcFile));
-                    copyFiles(srcFile, destFile);
+                    final Path dstFile = destination.resolve(parent.relativize(srcFile));
+                    copyFiles(srcFile, dstFile);
                 }
             }
         }
@@ -146,11 +153,12 @@ public final class DataCollector
     private Path createUniqueDirectory(final String name) throws IOException
     {
         Path path = rootDir.resolve(name);
-        while (exists(path))
+        while (Files.exists(path))
         {
             path = rootDir.resolve(name + SEPARATOR + UNIQUE_ID.incrementAndGet());
         }
-        return createDirectories(path);
+
+        return Files.createDirectories(path);
     }
 
     private Map<Path, Set<Path>> groupByParent(final List<Path> locations)
@@ -239,8 +247,8 @@ public final class DataCollector
         {
             while (true)
             {
-                final Path dest = destination.resolve(parent.relativize(srcFile));
-                if (!exists(dest))
+                final Path dst = destination.resolve(parent.relativize(srcFile));
+                if (!Files.exists(dst))
                 {
                     break;
                 }
@@ -251,36 +259,43 @@ public final class DataCollector
         return parent;
     }
 
-    private void copyFiles(final Path src, final Path dest) throws IOException
+    private void copyFiles(final Path src, final Path dst) throws IOException
     {
-        if (isRegularFile(src))
+        if (Files.isRegularFile(src))
         {
-            copy(src, dest, COPY_ATTRIBUTES);
+            ensurePathExists(dst);
+
+            Files.copy(src, dst, COPY_ATTRIBUTES, REPLACE_EXISTING);
         }
         else
         {
-            walkFileTree(src, new SimpleFileVisitor<Path>()
+            Files.walkFileTree(src, new SimpleFileVisitor<Path>()
             {
                 public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
                     throws IOException
                 {
-                    final Path destDir = dest.resolve(src.relativize(dir));
-                    if (!exists(destDir.getParent()))
-                    {
-                        createDirectories(destDir.getParent());
-                    }
-                    copy(dir, destDir, COPY_ATTRIBUTES);
+                    final Path dstDir = dst.resolve(src.relativize(dir));
+                    ensurePathExists(dstDir);
+                    Files.copy(dir, dstDir, COPY_ATTRIBUTES);
 
                     return FileVisitResult.CONTINUE;
                 }
 
                 public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
                 {
-                    copy(file, dest.resolve(src.relativize(file)), COPY_ATTRIBUTES);
+                    Files.copy(file, dst.resolve(src.relativize(file)), COPY_ATTRIBUTES);
 
                     return FileVisitResult.CONTINUE;
                 }
             });
+        }
+    }
+
+    private void ensurePathExists(final Path dst) throws IOException
+    {
+        if (!Files.exists(dst.getParent()))
+        {
+            Files.createDirectories(dst.getParent());
         }
     }
 }

@@ -503,6 +503,20 @@ int64_t aeron_exclusive_publication_channel_status(aeron_exclusive_publication_t
     return AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_NO_ID_ALLOCATED;
 }
 
+int32_t aeron_exclusive_publication_session_id(aeron_exclusive_publication_t *publication)
+{
+    if (NULL == publication)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    return publication->session_id;
+}
+
 int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *publication, const char *uri)
 {
     if (NULL == publication || uri == NULL)

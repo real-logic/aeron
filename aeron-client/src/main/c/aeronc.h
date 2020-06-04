@@ -726,6 +726,14 @@ int64_t aeron_publication_channel_status(aeron_publication_t *publication);
 bool aeron_publication_is_connected(aeron_publication_t *publication);
 
 /**
+ * Get the session id of the publication.
+ *
+ * @param publication to query
+ * @return session id of the publication or -1 for error (Check aeron_errcode).
+ */
+int32_t aeron_publication_session_id(aeron_publication_t *publication);
+
+/**
  * Add a destination manually to a multi-destination-cast publication.
  *
  * @param publication to add destination to.
@@ -852,6 +860,14 @@ int64_t aeron_exclusive_publication_offer_block(
  * @return 1 for ACTIVE, -1 for ERRORED
  */
 int64_t aeron_exclusive_publication_channel_status(aeron_exclusive_publication_t *publication);
+
+/**
+ * Get the session id of the publication.
+ *
+ * @param publication to query
+ * @return session id of the publication or -1 for error (Check aeron_errcode).
+ */
+int32_t aeron_exclusive_publication_session_id(aeron_exclusive_publication_t *publication);
 
 /**
  * Add a destination manually to a multi-destination-cast publication.

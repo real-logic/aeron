@@ -41,6 +41,8 @@ add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(rate_subscriber rate_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
 add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
+add_executable(cpong cpong.c ${HEADERS} ${SOURCES})
+add_executable(cping cping.c ${HEADERS} ${SOURCES})
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
@@ -57,8 +59,17 @@ target_link_libraries(streaming_publisher
 target_link_libraries(streaming_exclusive_publisher
     ${CLIENT_LINK_LIB})
 
+target_link_libraries(cpong
+    ${CLIENT_LINK_LIB})
+
+target_link_libraries(cping
+    ${CLIENT_LINK_LIB}
+    ${HDRHISTOGRAM_LIBS})
+
+add_dependencies(cping hdr_histogram)
+
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS basic_publisher basic_subscriber rate_subscriber streaming_publisher streaming_exclusive_publisher
+        TARGETS basic_publisher basic_subscriber rate_subscriber streaming_publisher streaming_exclusive_publisher cpong cping
         DESTINATION bin)
 endif ()

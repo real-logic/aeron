@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 
             case 'L':
             {
-                if (aeron_parse_size64(optarg, &messages) < 0)
+                if (aeron_parse_size64(optarg, &message_length) < 0)
                 {
                     fprintf(stderr, "malformed message length %s: %s\n", optarg, aeron_errmsg());
                     exit(status);

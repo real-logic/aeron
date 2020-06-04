@@ -380,6 +380,20 @@ bool aeron_publication_is_connected(aeron_publication_t *publication)
     return false;
 }
 
+int32_t aeron_publication_session_id(aeron_publication_t *publication)
+{
+    if (NULL == publication)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    return publication->session_id;
+}
+
 int64_t aeron_publication_channel_status(aeron_publication_t *publication)
 {
     if (NULL != publication && !aeron_publication_is_closed(publication))

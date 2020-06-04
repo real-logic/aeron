@@ -19,7 +19,6 @@ import org.agrona.LangUtil;
 import org.junit.jupiter.api.TestInfo;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -82,8 +81,8 @@ public final class DataCollector
      */
     public void dumpData(final TestInfo testInfo)
     {
-        final String testClass = testInfo.getTestClass().map(Class::getName).get();
-        final String testMethod = testInfo.getTestMethod().map(Method::getName).get();
+        final String testClass = testInfo.getTestClass().get().getName();
+        final String testMethod = testInfo.getTestMethod().get().getName();
         copyData(testClass + SEPARATOR + testMethod);
     }
 
@@ -150,6 +149,7 @@ public final class DataCollector
         {
             path = rootDir.resolve(name + SEPARATOR + UNIQUE_ID.incrementAndGet());
         }
+
         return createDirectories(path);
     }
 

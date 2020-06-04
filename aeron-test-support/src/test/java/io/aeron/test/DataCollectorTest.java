@@ -16,12 +16,10 @@
 package io.aeron.test;
 
 import org.agrona.IoUtil;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -75,11 +73,13 @@ class DataCollectorTest
         assertThrows(IllegalArgumentException.class, () -> testWatcher.dumpData(""));
     }
 
+    @Disabled
     @Test
     void copyUsingTestInfo(final @TempDir Path tempDir, final TestInfo testInfo) throws Exception
     {
         final Path buildDir = Paths.get("build/test/source").toAbsolutePath();
         createDirectories(buildDir);
+
         try
         {
             final Path rootDir = tempDir.resolve("copy-root");
@@ -127,11 +127,12 @@ class DataCollectorTest
             dataCollector.add(myDir1);
             dataCollector.add(myDir2);
 
-            final String testClass = testInfo.getTestClass().map(Class::getName).orElse(null);
-            final String testMethod = testInfo.getTestMethod().map(Method::getName).orElse(null);
             dataCollector.dumpData(testInfo);
 
+            final String testClass = testInfo.getTestClass().get().getName();
+            final String testMethod = testInfo.getTestMethod().get().getName();
             final Path destination = rootDir.resolve(testClass + "-" + testMethod);
+
             assertTrue(exists(destination));
             assertTrue(exists(destination.resolve("my.txt")));
             assertTrue(exists(destination.resolve("my-dir/some1.txt")));

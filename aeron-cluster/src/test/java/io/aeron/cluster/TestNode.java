@@ -15,7 +15,9 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.Counter;
+import io.aeron.ExclusivePublication;
+import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
@@ -27,7 +29,11 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.*;
+import io.aeron.test.DataCollector;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -47,7 +53,7 @@ class TestNode implements AutoCloseable
     private final Context context;
     private boolean isClosed = false;
 
-    TestNode(final Context context)
+    TestNode(final Context context, final DataCollector dataCollector)
     {
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             context.mediaDriverContext,
@@ -63,6 +69,11 @@ class TestNode implements AutoCloseable
 
         service = context.service;
         this.context = context;
+
+        dataCollector.add(container.context().clusterDir().toPath());
+        dataCollector.add(clusteredMediaDriver.consensusModule().context().clusterDir().toPath());
+        dataCollector.add(clusteredMediaDriver.archive().context().archiveDir().toPath());
+        dataCollector.add(clusteredMediaDriver.mediaDriver().context().aeronDirectory().toPath());
     }
 
     ConsensusModule consensusModule()

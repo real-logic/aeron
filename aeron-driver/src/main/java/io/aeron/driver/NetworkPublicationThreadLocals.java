@@ -24,7 +24,7 @@ import org.agrona.BufferUtil;
 
 import java.nio.ByteBuffer;
 
-class NetworkPublicationThreadLocals
+final class NetworkPublicationThreadLocals
 {
     private final ByteBuffer heartbeatBuffer;
     private final DataHeaderFlyweight dataHeader;
@@ -66,32 +66,32 @@ class NetworkPublicationThreadLocals
             .frameLength(RttMeasurementFlyweight.HEADER_LENGTH);
     }
 
-    public ByteBuffer heartbeatBuffer()
+    ByteBuffer heartbeatBuffer()
     {
         return heartbeatBuffer;
     }
 
-    public DataHeaderFlyweight heartbeatDataHeader()
+    DataHeaderFlyweight heartbeatDataHeader()
     {
         return dataHeader;
     }
 
-    public ByteBuffer setupBuffer()
+    ByteBuffer setupBuffer()
     {
         return setupBuffer;
     }
 
-    public SetupFlyweight setupHeader()
+    SetupFlyweight setupHeader()
     {
         return setupHeader;
     }
 
-    public ByteBuffer rttMeasurementBuffer()
+    ByteBuffer rttMeasurementBuffer()
     {
         return rttMeasurementBuffer;
     }
 
-    public RttMeasurementFlyweight rttMeasurementHeader()
+    RttMeasurementFlyweight rttMeasurementHeader()
     {
         return rttMeasurementHeader;
     }

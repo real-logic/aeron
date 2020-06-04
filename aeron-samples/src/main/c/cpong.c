@@ -235,6 +235,11 @@ int main(int argc, char **argv)
 
     while (!aeron_subscription_is_connected(subscription))
     {
+        if (!is_running())
+        {
+            goto cleanup;
+        }
+
         sched_yield();
     }
 

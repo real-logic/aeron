@@ -97,7 +97,7 @@ void send_ping_and_receive_pong(
 
     memset(message, 0, sizeof(message));
 
-    for (size_t i = 0; i < messages; i++)
+    for (size_t i = 0; i < messages && is_running(); i++)
     {
         int64_t position;
 

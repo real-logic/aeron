@@ -166,6 +166,8 @@ class DataCollectorTest
         createDirectories(rootDir.resolve("destination"));
 
         final Path file0 = createFile(tempDir.resolve("my.txt"));
+        final Path nonExistingDir = createDirectories(tempDir.resolve("non-existing/folder"));
+        final Path file1 = createFile(nonExistingDir.resolve("some.png"));
         final Path dir1 = createDirectories(tempDir.resolve("my-dir/nested/again"));
         final Path dir2 = createDirectories(tempDir.resolve("again"));
         final Path dir3 = createDirectories(tempDir.resolve("nested/again"));
@@ -181,6 +183,7 @@ class DataCollectorTest
         dataCollector.add(tempDir.resolve("again"));
         dataCollector.add(tempDir.resolve("nested"));
         dataCollector.add(dir4);
+        dataCollector.add(file1);
 
         dataCollector.dumpData("destination");
 
@@ -191,6 +194,7 @@ class DataCollectorTest
         assertTrue(exists(destination.resolve("again/file2.txt")));
         assertTrue(exists(destination.resolve("nested/again/file3.txt")));
         assertTrue(exists(destination.resolve("level1/level2/level3/again/file4.txt")));
+        assertTrue(exists(destination.resolve("non-existing/folder/some.png")));
     }
 
     @Test

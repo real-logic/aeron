@@ -24,7 +24,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.nio.file.Files.*;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Collections.singleton;
@@ -50,7 +49,7 @@ public final class DataCollector
     public DataCollector(final Path rootDir)
     {
         requireNonNull(rootDir);
-        if (exists(rootDir) && !isDirectory(rootDir))
+        if (Files.exists(rootDir) && !Files.isDirectory(rootDir))
         {
             throw new IllegalArgumentException(rootDir + " is not a directory");
         }
@@ -140,11 +139,8 @@ public final class DataCollector
                 final Path parent = adjustParentToEnsureUniqueContext(destination, files, group.getKey());
                 for (final Path srcFile : files)
                 {
-                    if (Files.exists(srcFile))
-                    {
-                        final Path dstFile = destination.resolve(parent.relativize(srcFile));
-                        copyFiles(srcFile, dstFile);
-                    }
+                    final Path dstFile = destination.resolve(parent.relativize(srcFile));
+                    copyFiles(srcFile, dstFile);
                 }
             }
         }
@@ -157,12 +153,12 @@ public final class DataCollector
     private Path createUniqueDirectory(final String name) throws IOException
     {
         Path path = rootDir.resolve(name);
-        while (exists(path))
+        while (Files.exists(path))
         {
             path = rootDir.resolve(name + SEPARATOR + UNIQUE_ID.incrementAndGet());
         }
 
-        return createDirectories(path);
+        return Files.createDirectories(path);
     }
 
     private Map<Path, Set<Path>> groupByParent(final List<Path> locations)
@@ -252,7 +248,7 @@ public final class DataCollector
             while (true)
             {
                 final Path dst = destination.resolve(parent.relativize(srcFile));
-                if (!exists(dst))
+                if (!Files.exists(dst))
                 {
                     break;
                 }
@@ -265,27 +261,21 @@ public final class DataCollector
 
     private void copyFiles(final Path src, final Path dst) throws IOException
     {
-        if (isRegularFile(src))
+        if (Files.isRegularFile(src))
         {
-            if (!Files.exists(dst.getParent()))
-            {
-                Files.createDirectories(dst.getParent());
-            }
+            ensurePathExists(dst);
 
             Files.copy(src, dst, COPY_ATTRIBUTES, REPLACE_EXISTING);
         }
         else
         {
-            walkFileTree(src, new SimpleFileVisitor<Path>()
+            Files.walkFileTree(src, new SimpleFileVisitor<Path>()
             {
                 public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
                     throws IOException
                 {
                     final Path dstDir = dst.resolve(src.relativize(dir));
-                    if (!exists(dstDir.getParent()))
-                    {
-                        createDirectories(dstDir.getParent());
-                    }
+                    ensurePathExists(dstDir);
                     Files.copy(dir, dstDir, COPY_ATTRIBUTES);
 
                     return FileVisitResult.CONTINUE;
@@ -298,6 +288,14 @@ public final class DataCollector
                     return FileVisitResult.CONTINUE;
                 }
             });
+        }
+    }
+
+    private void ensurePathExists(final Path dst) throws IOException
+    {
+        if (!Files.exists(dst.getParent()))
+        {
+            Files.createDirectories(dst.getParent());
         }
     }
 }

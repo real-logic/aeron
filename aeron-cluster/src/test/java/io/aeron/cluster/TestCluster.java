@@ -27,17 +27,22 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.NoOpLock;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -63,6 +68,7 @@ public class TestCluster implements AutoCloseable
         "aeron:udp?term-length=64k|endpoint=localhost:9020";
     private static final String SMALL_TERM_IPC_CHANNEL = "aeron:ipc?term-length=64k";
 
+    private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final MutableInteger responseCount = new MutableInteger();
     private final MutableInteger newLeaderEvent = new MutableInteger();
@@ -283,7 +289,7 @@ public class TestCluster implements AutoCloseable
             .clusteredService(context.service)
             .errorHandler(ClusterTests.errorHandler(index));
 
-        nodes[index] = new TestNode(context);
+        nodes[index] = new TestNode(context, dataCollector);
 
         return nodes[index];
     }
@@ -351,7 +357,7 @@ public class TestCluster implements AutoCloseable
             .clusteredService(context.service)
             .errorHandler(ClusterTests.errorHandler(index));
 
-        nodes[index] = new TestNode(context);
+        nodes[index] = new TestNode(context, dataCollector);
 
         return nodes[index];
     }
@@ -473,7 +479,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(backupNodeIndex));
 
         backupNode = null;
-        nodes[backupNodeIndex] = new TestNode(context);
+        nodes[backupNodeIndex] = new TestNode(context, dataCollector);
 
         return nodes[backupNodeIndex];
     }
@@ -535,6 +541,8 @@ public class TestCluster implements AutoCloseable
     AeronCluster connectClient()
     {
         final String aeronDirName = CommonContext.getAeronDirectoryName();
+
+        dataCollector.add(Paths.get(aeronDirName));
 
         clientMediaDriver = MediaDriver.launch(
             new MediaDriver.Context()
@@ -958,6 +966,11 @@ public class TestCluster implements AutoCloseable
                 }
             }
         }
+    }
+
+    public void dumpData(final TestInfo testInfo)
+    {
+        dataCollector.dumpData(testInfo);
     }
 
     static class ServiceContext

@@ -195,6 +195,11 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
+        if (!is_running())
+        {
+            goto cleanup;
+        }
+
         sched_yield();
     }
 
@@ -203,8 +208,8 @@ int main(int argc, char **argv)
     if (aeron_async_add_exclusive_publication(
         &async_pong_pub,
         aeron,
-        ping_channel,
-        ping_stream_id) < 0)
+        pong_channel,
+        pong_stream_id) < 0)
     {
         fprintf(stderr, "aeron_async_add_exclusive_publication: %s\n", aeron_errmsg());
         goto cleanup;
@@ -218,6 +223,11 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
+        if (!is_running())
+        {
+            goto cleanup;
+        }
+
         sched_yield();
     }
 
@@ -228,8 +238,7 @@ int main(int argc, char **argv)
         sched_yield();
     }
 
-    if ((image = aeron_subscription_image_by_session_id(
-        subscription, aeron_exclusive_publication_session_id(publication))) == NULL)
+    if ((image = aeron_subscription_image_at_index(subscription, 0)) == NULL)
     {
         fprintf(stderr, "%s", "could not find image\n");
         goto cleanup;

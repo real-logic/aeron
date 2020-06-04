@@ -279,7 +279,29 @@ aeron_image_t *aeron_subscription_image_by_session_id(
         }
     }
 
-    aeron_image_incr_refcnt(result);
+    if (NULL != result)
+    {
+        aeron_image_incr_refcnt(result);
+    }
+
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
+
+    return result;
+}
+
+aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscription, size_t index)
+{
+    volatile aeron_image_list_t *image_list;
+    aeron_image_t *result = NULL;
+
+    AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+
+    if (index < image_list->length)
+    {
+        result = image_list->array[index];
+        aeron_image_incr_refcnt(result);
+    }
+
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return result;

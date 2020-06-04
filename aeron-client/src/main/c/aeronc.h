@@ -1070,6 +1070,18 @@ int aeron_subscription_image_count(aeron_subscription_t *subscription);
 aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id);
 
 /**
+ * Return the image at the given index.
+ *
+ * Note: the returned image is considered retained by the application and thus must be released via
+ * aeron_image_release when finished or if the image becomes unavailable.
+ *
+ * @param subscription to search.
+ * @param index for the image.
+ * @return image at the given index or NULL if no image exists.
+ */
+aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscription, size_t index);
+
+/**
  * Iterate over the images for this subscription calling the given function.
  *
  * @param subscription to iterate over.

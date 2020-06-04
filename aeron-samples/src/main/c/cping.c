@@ -253,8 +253,8 @@ int main(int argc, char **argv)
     if (aeron_async_add_subscription(
         &async_pong_sub,
         aeron,
-        ping_channel,
-        ping_stream_id,
+        pong_channel,
+        pong_stream_id,
         print_available_image,
         NULL,
         print_unavailable_image,
@@ -272,18 +272,23 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
+        if (!is_running())
+        {
+            goto cleanup;
+        }
+
         sched_yield();
     }
 
     printf("Subscription channel status %" PRIu64 "\n", aeron_subscription_channel_status(subscription));
 
-    if (aeron_async_add_publication(
+    if (aeron_async_add_exclusive_publication(
         &async_ping_pub,
         aeron,
         ping_channel,
         ping_stream_id) < 0)
     {
-        fprintf(stderr, "aeron_async_add_publication: %s\n", aeron_errmsg());
+        fprintf(stderr, "aeron_async_add_exclusive_publication: %s\n", aeron_errmsg());
         goto cleanup;
     }
 
@@ -295,6 +300,11 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
+        if (!is_running())
+        {
+            goto cleanup;
+        }
+
         sched_yield();
     }
 
@@ -302,11 +312,15 @@ int main(int argc, char **argv)
 
     while (!aeron_subscription_is_connected(subscription))
     {
+        if (!is_running())
+        {
+            goto cleanup;
+        }
+
         sched_yield();
     }
 
-    if ((image = aeron_subscription_image_by_session_id(
-        subscription, aeron_exclusive_publication_session_id(publication))) == NULL)
+    if ((image = aeron_subscription_image_at_index(subscription, 0)) == NULL)
     {
         fprintf(stderr, "%s", "could not find image\n");
         goto cleanup;
@@ -329,7 +343,7 @@ int main(int argc, char **argv)
     hdr_reset(histogram);
 
     send_ping_and_receive_pong(
-        publication, image, aeron_image_fragment_assembler_handler, &fragment_assembler, messages, message_length);
+        publication, image, aeron_image_fragment_assembler_handler, fragment_assembler, messages, message_length);
 
     hdr_percentiles_print(histogram, stdout, 5, 1000.0, CLASSIC);
     fflush(stdout);

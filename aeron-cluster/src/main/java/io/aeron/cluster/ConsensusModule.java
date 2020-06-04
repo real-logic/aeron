@@ -1486,7 +1486,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param clusterId for this clustered instance.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#CLUSTER_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_ID_PROP_NAME
          */
         public Context clusterId(final int clusterId)
         {
@@ -1498,7 +1498,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the id for this cluster instance. This must match with the service containers.
          *
          * @return the id for this cluster instance.
-         * @see ClusteredServiceContainer.Configuration#CLUSTER_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_ID_PROP_NAME
          */
         public int clusterId()
         {

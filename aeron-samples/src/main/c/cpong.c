@@ -84,8 +84,9 @@ int main(int argc, char **argv)
     aeron_async_add_subscription_t *async_ping_sub = NULL;
     aeron_async_add_exclusive_publication_t *async_pong_pub = NULL;
     aeron_subscription_t *subscription = NULL;
+    aeron_image_t *image = NULL;
     aeron_exclusive_publication_t *publication = NULL;
-    aeron_fragment_assembler_t *fragment_assembler = NULL;
+    aeron_image_fragment_assembler_t *fragment_assembler = NULL;
     const char *pong_channel = DEFAULT_PONG_CHANNEL;
     const char *ping_channel = DEFAULT_PING_CHANNEL;
     const char *aeron_dir = NULL;
@@ -222,20 +223,32 @@ int main(int argc, char **argv)
 
     printf("Publication channel status %" PRIu64 "\n", aeron_exclusive_publication_channel_status(publication));
 
-    if (aeron_fragment_assembler_create(&fragment_assembler, ping_poll_handler, publication) < 0)
+    while (!aeron_subscription_is_connected(subscription))
     {
-        fprintf(stderr, "aeron_fragment_assembler_create: %s\n", aeron_errmsg());
+        sched_yield();
+    }
+
+    if ((image = aeron_subscription_image_by_session_id(
+        subscription, aeron_exclusive_publication_session_id(publication))) == NULL)
+    {
+        fprintf(stderr, "%s", "could not find image\n");
+        goto cleanup;
+    }
+
+    if (aeron_image_fragment_assembler_create(&fragment_assembler, ping_poll_handler, publication) < 0)
+    {
+        fprintf(stderr, "aeron_image_fragment_assembler_create: %s\n", aeron_errmsg());
         goto cleanup;
     }
 
     while (is_running())
     {
-        int fragments_read = aeron_subscription_poll(
-            subscription, aeron_fragment_assembler_handler, fragment_assembler, DEFAULT_FRAGMENT_COUNT_LIMIT);
+        int fragments_read = aeron_image_poll(
+            image, aeron_image_fragment_assembler_handler, fragment_assembler, DEFAULT_FRAGMENT_COUNT_LIMIT);
 
         if (fragments_read < 0)
         {
-            fprintf(stderr, "aeron_subscription_poll: %s\n", aeron_errmsg());
+            fprintf(stderr, "aeron_image_poll: %s\n", aeron_errmsg());
             goto cleanup;
         }
 
@@ -246,11 +259,12 @@ int main(int argc, char **argv)
     status = EXIT_SUCCESS;
 
     cleanup:
+        aeron_subscription_image_release(subscription, image);
         aeron_subscription_close(subscription);
         aeron_exclusive_publication_close(publication);
         aeron_close(aeron);
         aeron_context_close(context);
-        aeron_fragment_assembler_delete(fragment_assembler);
+        aeron_image_fragment_assembler_delete(fragment_assembler);
 
     return status;
 }

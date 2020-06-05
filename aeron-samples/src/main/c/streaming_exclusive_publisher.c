@@ -79,6 +79,7 @@ int main(int argc, char **argv)
     uint64_t linger_ns = DEFAULT_LINGER_TIMEOUT_MS * 1000ul * 1000ul;
     uint64_t messages = DEFAULT_NUMBER_OF_MESSAGES;
     uint64_t message_length = DEFAULT_MESSAGE_LENGTH;
+    uint64_t back_pressure_count = 0, message_sent_count = 0;
     int64_t start_timestamp_ns, duration_ns;
     int32_t stream_id = DEFAULT_STREAM_ID;
     bool show_rate_progress = false;
@@ -227,6 +228,7 @@ int main(int argc, char **argv)
         }
         else if (result < 0)
         {
+            back_pressure_count++;
             aeron_idle_strategy_busy_spinning_idle(NULL, 0);
         }
         else
@@ -238,6 +240,8 @@ int main(int argc, char **argv)
             {
                 rate_reporter_on_message(&rate_reporter, message_length);
             }
+
+            message_sent_count++;
         }
     }
     duration_ns = aeron_nano_clock() - start_timestamp_ns;
@@ -249,6 +253,7 @@ int main(int argc, char **argv)
         rate_reporter_halt(&rate_reporter);
     }
 
+    printf("Publisher back pressure ratio %g\n", (double)back_pressure_count / (double)message_sent_count);
     printf(
         "Total: %" PRId64 "ms, %.04g msgs/sec, %.04g bytes/sec, totals %" PRIu64 " messages %" PRIu64 " MB payloads\n",
         duration_ns / (1000 * 1000),

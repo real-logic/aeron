@@ -413,6 +413,8 @@ public:
      */
     static std::string version();
 
+    static MemoryMappedFile::ptr_t mapCncFile(const std::string cncFileName, long mediaDriverTimeoutMs);
+
 private:
     std::random_device m_randomDevice;
     std::default_random_engine m_randomEngine;
@@ -437,8 +439,6 @@ private:
     SleepingIdleStrategy m_idleStrategy;
     AgentRunner<ClientConductor, SleepingIdleStrategy> m_conductorRunner;
     AgentInvoker<ClientConductor> m_conductorInvoker;
-
-    MemoryMappedFile::ptr_t mapCncFile(Context &context);
 };
 
 }

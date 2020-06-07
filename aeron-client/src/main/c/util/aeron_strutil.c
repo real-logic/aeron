@@ -19,6 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <ctype.h>
 #include <time.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -123,55 +124,76 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
 
 #if defined(_MSC_VER) && !defined(AERON_NO_GETOPT)
 
-/* Taken from https://github.com/iotivity/iotivity/blob/master/resource/c_common/windows/src/getopt.c */
-/* *****************************************************************
-*
-* Copyright 2016 Microsoft
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-******************************************************************/
-AERON_EXPORT char *optarg = NULL;
+/* Taken from https://github.com/skeeto/getopt/blob/master/getopt.h */
+/* A minimal POSIX getopt() implementation in ANSI C
+ *
+ * This is free and unencumbered software released into the public domain.
+ *
+ * This implementation supports the convention of resetting the option
+ * parser by assigning optind to 0. This resets the internal state
+ * appropriately.
+ *
+ * Ref: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html
+ */
+
+static int opterr = 1;
+static int optopt;
 AERON_EXPORT int optind = 1;
+AERON_EXPORT char *optarg = NULL;
 
-int getopt(int argc, char *const argv[], const char *optstring)
+int getopt(int argc, char * const argv[], const char *optstring)
 {
-    if ((optind >= argc) || (argv[optind][0] != '-') || (argv[optind][0] == 0))
-    {
+    static int optpos = 1;
+    const char *arg;
+    (void)argc;
+
+    /* Reset? */
+    if (optind == 0) {
+        optind = 1;
+        optpos = 1;
+    }
+
+    arg = argv[optind];
+    if (arg && strcmp(arg, "--") == 0) {
+        optind++;
         return -1;
-    }
-
-    int opt = argv[optind][1];
-    const char *p = strchr(optstring, opt);
-
-    if (p == NULL)
-    {
-        return '?';
-    }
-
-    if (p[1] == ':')
-    {
-        optind++;
-        if (optind >= argc)
-        {
+    } else if (!arg || arg[0] != '-' || !isalnum(arg[1])) {
+        return -1;
+    } else {
+        const char *opt = strchr(optstring, arg[optpos]);
+        optopt = arg[optpos];
+        if (!opt) {
+            if (opterr && *optstring != ':')
+                fprintf(stderr, "%s: illegal option: %c\n", argv[0], optopt);
             return '?';
+        } else if (opt[1] == ':') {
+            if (arg[optpos + 1]) {
+                optarg = (char *)arg + optpos + 1;
+                optind++;
+                optpos = 1;
+                return optopt;
+            } else if (argv[optind + 1]) {
+                optarg = (char *)argv[optind + 1];
+                optind += 2;
+                optpos = 1;
+                return optopt;
+            } else {
+                if (opterr && *optstring != ':')
+                    fprintf(stderr, 
+                            "%s: option requires an argument: %c\n", 
+                            argv[0], optopt);
+                return *optstring == ':' ? ':' : '?';
+            }
+        } else {
+            if (!arg[++optpos]) {
+                optind++;
+                optpos = 1;
+            }
+            return optopt;
         }
-        optarg = argv[optind];
-        optind++;
     }
-
-    return opt;
 }
+
 #endif
 
 extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);

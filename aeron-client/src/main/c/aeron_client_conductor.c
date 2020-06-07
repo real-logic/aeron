@@ -1756,7 +1756,7 @@ int aeron_client_conductor_on_publication_ready(
                     conductor->on_new_exclusive_publication_clientd,
                     resource,
                     channel,
-                    resource->stream_id,
+                    response->stream_id,
                     response->session_id,
                     response->correlation_id);
             }
@@ -1766,7 +1766,7 @@ int aeron_client_conductor_on_publication_ready(
                     conductor->on_new_publication_clientd,
                     resource,
                     channel,
-                    resource->stream_id,
+                    response->stream_id,
                     response->session_id,
                     response->correlation_id);
             }
@@ -1790,12 +1790,13 @@ int aeron_client_conductor_on_subscription_ready(
             aeron_subscription_t *subscription;
             int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
                 &conductor->counters_reader, response->channel_status_indicator_id);
+            int32_t stream_id = resource->stream_id;
 
             if (aeron_subscription_create(
                 &subscription,
                 conductor,
                 resource->uri,
-                resource->stream_id,
+                stream_id,
                 resource->registration_id,
                 channel_status_indicator_addr,
                 resource->on_available_image,
@@ -1834,7 +1835,7 @@ int aeron_client_conductor_on_subscription_ready(
                     conductor->on_new_subscription_clientd,
                     resource,
                     channel,
-                    resource->stream_id,
+                    stream_id,
                     response->correlation_id);
             }
             break;

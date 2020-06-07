@@ -104,25 +104,6 @@ void aeron_default_error_handler(void *clientd, int errcode, const char *message
     exit(EXIT_FAILURE);
 }
 
-void aeron_default_on_new_publication(
-    void *clientd,
-    aeron_async_add_publication_t *async,
-    const char *channel,
-    int32_t stream_id,
-    int32_t session_id,
-    int64_t correlation_id)
-{
-}
-
-void aeron_default_on_new_subscription(
-    void *clientd,
-    aeron_async_add_subscription_t *async,
-    const char *channel,
-    int32_t stream_id,
-    int64_t correlation_id)
-{
-}
-
 int aeron_context_init(aeron_context_t **context)
 {
     aeron_context_t *_context = NULL;
@@ -162,11 +143,11 @@ int aeron_context_init(aeron_context_t **context)
 
     _context->error_handler = aeron_default_error_handler;
     _context->error_handler_clientd = NULL;
-    _context->on_new_publication = aeron_default_on_new_publication;
+    _context->on_new_publication = NULL;
     _context->on_new_publication_clientd = NULL;
-    _context->on_new_exclusive_publication = aeron_default_on_new_publication;
+    _context->on_new_exclusive_publication = NULL;
     _context->on_new_exclusive_publication_clientd = NULL;
-    _context->on_new_subscription = aeron_default_on_new_subscription;
+    _context->on_new_subscription = NULL;
     _context->on_new_subscription_clientd = NULL;
     _context->on_available_counter = NULL;
     _context->on_available_counter_clientd = NULL;
@@ -345,7 +326,7 @@ int aeron_context_set_on_new_publication(aeron_context_t *context, aeron_on_new_
 
 aeron_on_new_publication_t aeron_context_get_on_new_publication(aeron_context_t *context)
 {
-    return NULL != context ? context->on_new_publication : aeron_default_on_new_publication;
+    return NULL != context ? context->on_new_publication : NULL;
 }
 
 void *aeron_context_get_on_new_publication_clientd(aeron_context_t *context)
@@ -365,7 +346,7 @@ int aeron_context_set_on_new_exclusive_publication(
 
 aeron_on_new_publication_t aeron_context_get_on_new_exclusive_publication(aeron_context_t *context)
 {
-    return NULL != context ? context->on_new_exclusive_publication : aeron_default_on_new_publication;
+    return NULL != context ? context->on_new_exclusive_publication : NULL;
 }
 
 void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *context)
@@ -385,7 +366,7 @@ int aeron_context_set_on_new_subscription(
 
 aeron_on_new_subscription_t aeron_context_get_on_new_subscription(aeron_context_t *context)
 {
-    return NULL != context ? context->on_new_subscription : aeron_default_on_new_subscription;
+    return NULL != context ? context->on_new_subscription : NULL;
 }
 
 void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context)

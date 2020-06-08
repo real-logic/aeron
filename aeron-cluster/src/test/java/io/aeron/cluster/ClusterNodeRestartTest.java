@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,6 +65,7 @@ public class ClusterNodeRestartTest
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final AtomicReference<String> serviceState = new AtomicReference<>();
+    private final CountDownLatch terminationLatch = new CountDownLatch(1);
 
     @BeforeEach
     public void before()
@@ -89,22 +91,22 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldRestartServiceWithReplay()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-        final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
+        final AtomicLong restartServiceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
-        Tests.awaitValue(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCount, 1);
 
         forceCloseForRestart();
 
         launchClusteredMediaDriver(false);
-        launchService(restartServiceMsgCounter);
+        launchService(restartServiceMsgCount);
         connectClient();
 
-        Tests.awaitValue(restartServiceMsgCounter, 1);
+        Tests.awaitValue(restartServiceMsgCount, 1);
 
         ClusterTests.failOnClusterError();
     }
@@ -113,13 +115,13 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldRestartServiceWithReplayAndContinue()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
-        Tests.awaitValue(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCount, 1);
 
         forceCloseForRestart();
 
@@ -139,9 +141,9 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldRestartServiceFromEmptySnapshot()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         final AtomicCounter controlToggle = getControlToggle();
@@ -153,7 +155,7 @@ public class ClusterNodeRestartTest
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         Tests.await(() -> null != serviceState.get());
@@ -166,16 +168,16 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldRestartServiceFromSnapshot()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
         sendNumberedMessageIntoCluster(1);
         sendNumberedMessageIntoCluster(2);
 
-        Tests.awaitValue(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCount, 3);
 
         final AtomicCounter controlToggle = getControlToggle();
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
@@ -186,7 +188,7 @@ public class ClusterNodeRestartTest
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         Tests.await(() -> null != serviceState.get());
@@ -199,16 +201,16 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldRestartServiceFromSnapshotWithFurtherLog()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
         sendNumberedMessageIntoCluster(1);
         sendNumberedMessageIntoCluster(2);
 
-        Tests.awaitValue(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCount, 3);
 
         final AtomicCounter controlToggle = getControlToggle();
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
@@ -216,16 +218,16 @@ public class ClusterNodeRestartTest
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendNumberedMessageIntoCluster(3);
-        Tests.awaitValue(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCount, 4);
 
         forceCloseForRestart();
 
-        serviceMsgCounter.set(0);
+        serviceMsgCount.set(0);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
-        Tests.awaitValue(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCount, 1);
         assertEquals("4", serviceState.get());
 
         ClusterTests.failOnClusterError();
@@ -235,8 +237,8 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldTakeMultipleSnapshots()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-        launchService(serviceMsgCounter);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
+        launchService(serviceMsgCount);
         connectClient();
 
         final AtomicCounter controlToggle = getControlToggle();
@@ -260,9 +262,9 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
@@ -270,7 +272,7 @@ public class ClusterNodeRestartTest
         sendNumberedMessageIntoCluster(2);
         sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
 
-        Tests.awaitValue(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCount, 4);
 
         final AtomicCounter controlToggle = getControlToggle();
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
@@ -278,16 +280,16 @@ public class ClusterNodeRestartTest
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendNumberedMessageIntoCluster(4);
-        Tests.awaitValue(serviceMsgCounter, 5);
+        Tests.awaitValue(serviceMsgCount, 5);
 
         forceCloseForRestart();
 
-        serviceMsgCounter.set(0);
+        serviceMsgCount.set(0);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
-        Tests.awaitValue(serviceMsgCounter, 1);
+        Tests.awaitValue(serviceMsgCount, 1);
         assertEquals("5", serviceState.get());
 
         ClusterTests.failOnClusterError();
@@ -297,22 +299,22 @@ public class ClusterNodeRestartTest
     @Timeout(10)
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
-        final AtomicLong triggeredTimersCounter = new AtomicLong();
+        final AtomicLong triggeredTimersCount = new AtomicLong();
 
-        launchReschedulingService(triggeredTimersCounter);
+        launchReschedulingService(triggeredTimersCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
-        Tests.awaitValue(triggeredTimersCounter, 2);
+        Tests.awaitValue(triggeredTimersCount, 2);
 
         forceCloseForRestart();
 
-        final long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+        final long triggeredSinceStart = triggeredTimersCount.getAndSet(0);
 
         launchClusteredMediaDriver(false);
-        launchReschedulingService(triggeredTimersCounter);
+        launchReschedulingService(triggeredTimersCount);
 
-        Tests.awaitValue(triggeredTimersCounter, triggeredSinceStart + 1);
+        Tests.awaitValue(triggeredTimersCount, triggeredSinceStart + 1);
 
         ClusterTests.failOnClusterError();
     }
@@ -321,16 +323,16 @@ public class ClusterNodeRestartTest
     @Timeout(20)
     public void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
         sendNumberedMessageIntoCluster(1);
         sendNumberedMessageIntoCluster(2);
 
-        Tests.awaitValue(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCount, 3);
 
         final AtomicCounter controlToggle = getControlToggle();
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
@@ -338,7 +340,7 @@ public class ClusterNodeRestartTest
         Tests.awaitValue(clusteredMediaDriver.consensusModule().context().snapshotCounter(), 1);
 
         sendNumberedMessageIntoCluster(3);
-        Tests.awaitValue(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCount, 4);
 
         forceCloseForRestart();
 
@@ -348,22 +350,22 @@ public class ClusterNodeRestartTest
 
         verify(mockOut).println(" invalidate latest snapshot: true");
 
-        serviceMsgCounter.set(0);
+        serviceMsgCount.set(0);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
 
-        Tests.awaitValue(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCount, 4);
         assertEquals("4", serviceState.get());
 
         connectClient();
         sendNumberedMessageIntoCluster(4);
-        Tests.awaitValue(serviceMsgCounter, 5);
+        Tests.awaitValue(serviceMsgCount, 5);
 
         forceCloseForRestart();
 
-        serviceMsgCounter.set(0);
+        serviceMsgCount.set(0);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
 
         connectClient();
         assertEquals("5", serviceState.get());
@@ -373,25 +375,23 @@ public class ClusterNodeRestartTest
 
     @Test
     @Timeout(20)
-    public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot()
+    public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot() throws InterruptedException
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong serviceMsgCount = new AtomicLong(0);
 
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
         connectClient();
 
         sendNumberedMessageIntoCluster(0);
         sendNumberedMessageIntoCluster(1);
         sendNumberedMessageIntoCluster(2);
 
-        Tests.awaitValue(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCount, 3);
 
         final AtomicCounter controlToggle = getControlToggle();
         assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
 
-        final Counter moduleStateCounter = clusteredMediaDriver.consensusModule().context().moduleStateCounter();
-        Tests.awaitValue(moduleStateCounter, ConsensusModule.State.CLOSED.code());
-
+        terminationLatch.await();
         forceCloseForRestart();
 
         final PrintStream mockOut = mock(PrintStream.class);
@@ -400,16 +400,16 @@ public class ClusterNodeRestartTest
 
         verify(mockOut).println(" invalidate latest snapshot: true");
 
-        serviceMsgCounter.set(0);
+        serviceMsgCount.set(0);
         launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+        launchService(serviceMsgCount);
 
-        Tests.awaitValue(serviceMsgCounter, 3);
+        Tests.awaitValue(serviceMsgCount, 3);
         assertEquals("3", serviceState.get());
 
         connectClient();
         sendNumberedMessageIntoCluster(3);
-        Tests.awaitValue(serviceMsgCounter, 4);
+        Tests.awaitValue(serviceMsgCount, 4);
 
         ClusterTests.failOnClusterError();
     }
@@ -451,6 +451,11 @@ public class ClusterNodeRestartTest
             }
 
             checkResult(result);
+            if (cluster.isClosed())
+            {
+                fail("unexpected cluster client close");
+            }
+
             Tests.yield();
         }
     }
@@ -642,7 +647,7 @@ public class ClusterNodeRestartTest
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(terminationLatch::countDown)
                 .deleteDirOnStart(initialLaunch));
     }
 

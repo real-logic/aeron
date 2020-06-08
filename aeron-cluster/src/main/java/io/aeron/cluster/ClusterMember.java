@@ -651,7 +651,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            CloseHelper.close(errorHandler, member.publication);
+            member.closePublication(errorHandler);
         }
     }
 

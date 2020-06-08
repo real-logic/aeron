@@ -787,6 +787,11 @@ public class Archive implements AutoCloseable
                     "catalogFileSyncLevel " + catalogFileSyncLevel + " < fileSyncLevel " + fileSyncLevel);
             }
 
+            if (fileIoMaxLength < TERM_MIN_LENGTH || !BitUtil.isPowerOfTwo(fileIoMaxLength))
+            {
+                throw new ConfigurationException("invalid fileIoMaxLength=" + fileIoMaxLength);
+            }
+
             if (null == archiveDir)
             {
                 archiveDir = new File(archiveDirectoryName);

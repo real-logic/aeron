@@ -194,9 +194,9 @@ public class Archive implements AutoCloseable
         static final String RECORDING_SEGMENT_SUFFIX = ".rec";
 
         /**
-         * Default block length of data read from disk in a single IO operation during a recording or replay.
+         * Default block length of data in a single IO operation during a recording or replay.
          */
-        public static final int FILE_IO_MAX_LENGTH_DEFAULT = 2 * 1024 * 1024;
+        public static final int FILE_IO_MAX_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
          * Maximum length of a file IO operation for recording or replay. Must be a power of 2.

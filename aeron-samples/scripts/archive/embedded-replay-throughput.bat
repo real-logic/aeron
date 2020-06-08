@@ -34,6 +34,6 @@ set /p VERSION=<..\..\..\version.txt
     -Daeron.socket.so_sndbuf=2m ^
     -Daeron.socket.so_rcvbuf=2m ^
     -Daeron.rcv.initial.window.length=2m ^
-    -Daeron.archive.file.io.max.length=2m ^
+    -Daeron.archive.file.io.max.length=1m ^
     -Daeron.sample.channel=aeron:ipc ^
     %JVM_OPTS% io.aeron.samples.archive.EmbeddedReplayThroughput %*

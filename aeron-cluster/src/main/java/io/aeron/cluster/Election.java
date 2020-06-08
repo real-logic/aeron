@@ -275,7 +275,7 @@ class Election
                     logLeadershipTermId,
                     termEntry.termBaseLogPosition,
                     leadershipTermId,
-                    this.appendPosition,
+                    appendPosition,
                     termEntry.timestamp,
                     thisMember.id(),
                     logSessionId,
@@ -288,9 +288,9 @@ class Election
                 consensusPublisher.newLeadershipTerm(
                     follower.publication(),
                     null != termEntry ? logLeadershipTermId : this.logLeadershipTermId,
-                    null != termEntry ? termEntry.termBaseLogPosition : this.appendPosition,
+                    null != termEntry ? termEntry.termBaseLogPosition : appendPosition,
                     leadershipTermId,
-                    this.appendPosition,
+                    appendPosition,
                     null != termEntry ? termEntry.timestamp : ctx.clusterClock().time(),
                     thisMember.id(),
                     logSessionId,
@@ -315,7 +315,7 @@ class Election
         {
             placeVote(candidateTermId, candidateId, false);
         }
-        else if (compareLog(this.logLeadershipTermId, this.appendPosition, logLeadershipTermId, logPosition) > 0)
+        else if (compareLog(this.logLeadershipTermId, appendPosition, logLeadershipTermId, logPosition) > 0)
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
@@ -374,7 +374,7 @@ class Election
 
         if (leadershipTermId > this.leadershipTermId &&
             logLeadershipTermId == this.logLeadershipTermId &&
-            logTruncatePosition < this.appendPosition)
+            logTruncatePosition < appendPosition)
         {
             consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logTruncatePosition);
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logTruncatePosition);

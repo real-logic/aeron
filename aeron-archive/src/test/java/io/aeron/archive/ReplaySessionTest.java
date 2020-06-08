@@ -81,10 +81,7 @@ public class ReplaySessionTest
     private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final Counter recordingPositionCounter = mock(Counter.class);
-    private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
-        ByteBuffer.allocateDirect(Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT));
-    private final UnsafeBuffer recordingBuffer = new UnsafeBuffer(
-        ByteBuffer.allocateDirect(Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT));
+    private final UnsafeBuffer replayBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
     private int messageCounter = 0;
     private int offerBlockOffset = 0;
@@ -351,6 +348,7 @@ public class ReplaySessionTest
         when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
         recordingPosition = START_POSITION;
 
+        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
         final RecordingWriter writer = new RecordingWriter(
             recordingId,
             START_POSITION,
@@ -462,6 +460,7 @@ public class ReplaySessionTest
     public void shouldDoCrcForEachDataFrame() throws IOException
     {
         final Checksum checksum = crc32();
+        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
         final RecordingWriter writer = new RecordingWriter(
             RECORDING_ID,
             START_POSITION,
@@ -582,6 +581,7 @@ public class ReplaySessionTest
     @Test
     public void shouldCalculateBlockSizeBasedOnFullFragments() throws IOException
     {
+        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
         final RecordingWriter writer = new RecordingWriter(
             RECORDING_ID,
             START_POSITION,

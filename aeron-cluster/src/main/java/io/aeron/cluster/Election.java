@@ -166,22 +166,22 @@ class Election
         ctx.electionStateCounter().setOrdered(State.INIT.code());
     }
 
-    public ClusterMember leader()
+    ClusterMember leader()
     {
         return leaderMember;
     }
 
-    public long leadershipTermId()
+    long leadershipTermId()
     {
         return leadershipTermId;
     }
 
-    public long logPosition()
+    long logPosition()
     {
         return logPosition;
     }
 
-    public boolean isLeaderStartup()
+    boolean isLeaderStartup()
     {
         return isLeaderStartup;
     }

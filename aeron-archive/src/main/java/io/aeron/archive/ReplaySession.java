@@ -36,7 +36,6 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
-import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
@@ -462,7 +461,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         if (publication.availableWindow() > 0)
         {
-            final int limit = min((int)min(availableReplay, MAX_BLOCK_LENGTH), termLength - termOffset);
+            final int limit = min((int)min(availableReplay, replayBuffer.capacity()), termLength - termOffset);
             final ByteBuffer byteBuffer = replayBuffer.byteBuffer();
             byteBuffer.clear().limit(limit);
 

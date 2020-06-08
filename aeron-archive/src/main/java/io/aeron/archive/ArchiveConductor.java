@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
@@ -1207,7 +1206,7 @@ abstract class ArchiveConductor
             boolean found = false;
             do
             {
-                byteBuffer.clear().limit(min(termLength - termOffset, MAX_BLOCK_LENGTH));
+                byteBuffer.clear().limit(min(termLength - termOffset, byteBuffer.capacity()));
                 final int bytesRead = fileChannel.read(byteBuffer, termOffset);
                 if (bytesRead <= 0)
                 {

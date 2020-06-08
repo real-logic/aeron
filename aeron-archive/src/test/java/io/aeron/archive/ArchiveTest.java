@@ -49,7 +49,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntConsumer;
 
-import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.archive.ArchiveThreadingMode.SHARED;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
@@ -310,7 +309,7 @@ public class ArchiveTest
         final UnsafeBuffer buffer = context.dataBuffer();
 
         assertNotNull(buffer);
-        assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
+        assertEquals(context.fileIoMaxLength(), buffer.capacity());
         assertSame(buffer, context.dataBuffer());
     }
 
@@ -332,7 +331,7 @@ public class ArchiveTest
         final UnsafeBuffer buffer = context.replayBuffer();
 
         assertNotNull(buffer);
-        assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
+        assertEquals(context.fileIoMaxLength(), buffer.capacity());
         assertSame(buffer, context.replayBuffer());
         assertNotSame(context.dataBuffer(), buffer);
     }
@@ -374,7 +373,7 @@ public class ArchiveTest
         final UnsafeBuffer buffer = context.recordChecksumBuffer();
 
         assertNotNull(buffer);
-        assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
+        assertEquals(context.fileIoMaxLength(), buffer.capacity());
         assertSame(buffer, context.recordChecksumBuffer());
         assertNotSame(context.dataBuffer(), buffer);
     }

@@ -82,9 +82,9 @@ public class ReplaySessionTest
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final Counter recordingPositionCounter = mock(Counter.class);
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
-        ByteBuffer.allocateDirect(Archive.Configuration.MAX_BLOCK_LENGTH));
+        ByteBuffer.allocateDirect(Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT));
     private final UnsafeBuffer recordingBuffer = new UnsafeBuffer(
-        ByteBuffer.allocateDirect(Archive.Configuration.MAX_BLOCK_LENGTH));
+        ByteBuffer.allocateDirect(Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT));
 
     private int messageCounter = 0;
     private int offerBlockOffset = 0;

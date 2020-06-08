@@ -78,7 +78,7 @@ class RecordingSession implements Session
         countedErrorHandler = ctx.countedErrorHandler();
         progressEventPosition = image.joinPosition();
 
-        blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
+        blockLengthLimit = Math.min(image.termBufferLength(), ctx.fileIoMaxLength());
         recordingWriter = new RecordingWriter(
             recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel, checksumBuffer, checksum);
     }

@@ -32,7 +32,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
-import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
+import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -701,7 +701,7 @@ class Catalog implements AutoCloseable
         if (fixOnRefresh)
         {
             final UnsafeBuffer segmentFileBuffer = null != buffer ?
-                buffer : new UnsafeBuffer(ByteBuffer.allocateDirect(MAX_BLOCK_LENGTH));
+                buffer : new UnsafeBuffer(ByteBuffer.allocateDirect(FILE_IO_MAX_LENGTH_DEFAULT));
             forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 refreshAndFixDescriptor(
                 headerEncoder,
@@ -920,7 +920,7 @@ class Catalog implements AutoCloseable
         final FileChannel segment, final ByteBuffer byteBuffer, final int offset, final int limit) throws IOException
     {
         int position = offset;
-        byteBuffer.clear().limit(min(MAX_BLOCK_LENGTH, limit - position));
+        byteBuffer.clear().limit(min(byteBuffer.capacity(), limit - position));
         do
         {
             final int bytesRead = segment.read(byteBuffer, position);

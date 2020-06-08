@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
+import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
@@ -663,7 +663,7 @@ public class ArchiveTool
         final MutableInteger errorCount,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final ByteBuffer buffer = BufferUtil.allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH);
+        final ByteBuffer buffer = BufferUtil.allocateDirectAligned(FILE_IO_MAX_LENGTH_DEFAULT, CACHE_LINE_LENGTH);
         buffer.order(LITTLE_ENDIAN);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 

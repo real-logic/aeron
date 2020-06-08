@@ -368,7 +368,7 @@ abstract class ArchiveConductor
             final String key = makeKey(streamId, channelUri);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
-            if (oldSubscription == null)
+            if (null == oldSubscription)
             {
                 final String strippedChannel = strippedChannelBuilder(channelUri).build();
                 final String channel = sourceLocation == SourceLocation.LOCAL && channelUri.isUdp() ?
@@ -403,7 +403,7 @@ abstract class ArchiveConductor
             final String key = makeKey(streamId, ChannelUri.parse(channel));
             final Subscription subscription = recordingSubscriptionMap.remove(key);
 
-            if (subscription != null)
+            if (null != subscription)
             {
                 subscription.close();
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
@@ -570,7 +570,7 @@ abstract class ArchiveConductor
         catalog.recordingSummary(recordingId, recordingSummary);
         long replayPosition = recordingSummary.startPosition;
 
-        if (position != NULL_POSITION)
+        if (NULL_POSITION != position)
         {
             if (isInvalidReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
             {
@@ -633,7 +633,7 @@ abstract class ArchiveConductor
         catalog.recordingSummary(recordingId, recordingSummary);
         long replayPosition = recordingSummary.startPosition;
 
-        if (position != NULL_POSITION)
+        if (NULL_POSITION != position)
         {
             if (isInvalidReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
             {
@@ -742,7 +742,7 @@ abstract class ArchiveConductor
             final String key = makeKey(streamId, channelUri);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
-            if (oldSubscription == null)
+            if (null == oldSubscription)
             {
                 final String strippedChannel = strippedChannelBuilder(channelUri).build();
                 final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?

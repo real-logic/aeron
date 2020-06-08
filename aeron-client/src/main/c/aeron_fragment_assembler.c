@@ -22,6 +22,9 @@
 #include "util/aeron_error.h"
 #include "aeron_image.h"
 
+#define AERON_BUFFER_BUILDER_MIN_ALLOCATED_CAPACITY (4096)
+#define AERON_BUFFER_BUILDER_MAX_CAPACITY (INT32_MAX - 8)
+
 int aeron_buffer_builder_create(aeron_buffer_builder_t **buffer_builder)
 {
     aeron_buffer_builder_t *_buffer_builder;
@@ -40,9 +43,6 @@ int aeron_buffer_builder_create(aeron_buffer_builder_t **buffer_builder)
     return 0;
 }
 
-#define AERON_BUFFER_BUILDER_MIN_ALLOCATED_CAPACITY (4096)
-#define AERON_BUFFER_BUILDER_MAX_CAPACITY (INT32_MAX - 8)
-
 int aeron_buffer_builder_find_suitable_capacity(size_t current_capacity, size_t required_capacity)
 {
     size_t capacity = current_capacity;
@@ -53,7 +53,7 @@ int aeron_buffer_builder_find_suitable_capacity(size_t current_capacity, size_t 
         const size_t new_capacity = candidate_capacity > AERON_BUFFER_BUILDER_MIN_ALLOCATED_CAPACITY ?
             candidate_capacity : AERON_BUFFER_BUILDER_MIN_ALLOCATED_CAPACITY;
 
-        if (new_capacity > candidate_capacity)
+        if (new_capacity > AERON_BUFFER_BUILDER_MAX_CAPACITY)
         {
             if (capacity == AERON_BUFFER_BUILDER_MAX_CAPACITY)
             {

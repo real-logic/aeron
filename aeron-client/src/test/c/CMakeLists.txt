@@ -38,3 +38,4 @@ aeron_c_client_test(exclusive_term_appender_test concurrent/aeron_exclusive_term
 aeron_c_client_test(client_conductor_test aeron_client_conductor_test.cpp)
 aeron_c_client_test(subscription_test aeron_subscription_test.cpp)
 aeron_c_client_test(image_test aeron_image_test.cpp)
+aeron_c_client_test(fragment_assembler_test aeron_fragment_assembler_test.cpp)

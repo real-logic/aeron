@@ -818,7 +818,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
-    public void shouldRecoverWhileMessagesContinue(final TestInfo testInfo) throws InterruptedException
+    public void shouldRecoverWhileMessagesContinue(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try

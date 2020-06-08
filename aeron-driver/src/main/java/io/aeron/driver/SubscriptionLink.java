@@ -319,7 +319,7 @@ class UntetheredSubscription
     {
         ACTIVE,
         LINGER,
-        RESTING;
+        RESTING
     }
 
     State state = State.ACTIVE;

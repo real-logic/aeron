@@ -53,7 +53,7 @@ public class GapFillLossTest
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
 
     @RegisterExtension
-    MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     @Test
     @Timeout(10)

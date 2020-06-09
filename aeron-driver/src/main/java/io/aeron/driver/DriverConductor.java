@@ -130,8 +130,7 @@ public class DriverConductor implements Agent
         }
         else
         {
-            driverNameResolver = new DriverNameResolver(
-                ctx.resolverName(), ctx.resolverInterface(), ctx.resolverBootstrapNeighbor(), ctx);
+            driverNameResolver = new DriverNameResolver(ctx);
             driverNameResolver.openDatagramChannel();
             nameResolver = driverNameResolver;
         }

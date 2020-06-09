@@ -87,32 +87,28 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private long deadlineSelfResolutionMs;
     private long deadlineNeighborResolutionMs;
 
-    DriverNameResolver(
-        final String name,
-        final String resolverInterface,
-        final String bootstrapNeighbor,
-        final MediaDriver.Context context)
+    DriverNameResolver(final MediaDriver.Context ctx)
     {
         this.neighborTimeoutMs = TIMEOUT_MS;
         this.selfResolutionIntervalMs = SELF_RESOLUTION_INTERVAL_MS;
         this.neighborResolutionIntervalMs = NEIGHBOR_RESOLUTION_INTERVAL_MS;
-        this.mtuLength = context.mtuLength();
-        invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
-        shortSends = context.systemCounters().get(SystemCounterDescriptor.SHORT_SENDS);
-        delegateResolver = context.nameResolver();
+        this.mtuLength = ctx.mtuLength();
+        invalidPackets = ctx.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        shortSends = ctx.systemCounters().get(SystemCounterDescriptor.SHORT_SENDS);
+        delegateResolver = ctx.nameResolver();
 
-        final long nowMs = context.epochClock().time();
+        final long nowMs = ctx.epochClock().time();
 
-        this.bootstrapNeighbor = bootstrapNeighbor;
+        this.bootstrapNeighbor = ctx.resolverBootstrapNeighbor();
         bootstrapNeighborAddress = null == bootstrapNeighbor ?
             null : UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
         timeOfLastBootstrapNeighborResolveMs = nowMs;
 
-        localSocketAddress = null != resolverInterface ?
-            UdpNameResolutionTransport.getInterfaceAddress(resolverInterface) :
+        localSocketAddress = null != ctx.resolverInterface() ?
+            UdpNameResolutionTransport.getInterfaceAddress(ctx.resolverInterface()) :
             new InetSocketAddress("0.0.0.0", 0);
 
-        final String driverName = null != name ? name : getCanonicalName();
+        final String driverName = null != ctx.resolverName() ? ctx.resolverName() : getCanonicalName();
 
         localDriverName = driverName;
         localName = driverName.getBytes(StandardCharsets.US_ASCII);
@@ -125,11 +121,11 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
         final UdpChannel placeholderChannel = UdpChannel.parse("aeron:udp?endpoint=localhost:8050");
 
-        transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, context);
+        transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, ctx);
 
-        neighborsCounter = context.countersManager().newCounter(
+        neighborsCounter = ctx.countersManager().newCounter(
             "Resolver neighbors", NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
-        cacheEntriesCounter = context.countersManager().newCounter(
+        cacheEntriesCounter = ctx.countersManager().newCounter(
             "Resolver cache entries: name " + localDriverName, NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
     }
 

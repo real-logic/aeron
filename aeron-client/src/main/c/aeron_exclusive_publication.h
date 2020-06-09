@@ -34,11 +34,6 @@ typedef struct aeron_exclusive_publication_stct
     int64_t *position_limit;
     int64_t *channel_status_indicator;
 
-    int32_t term_offset;
-    int32_t term_id;
-    size_t active_partition_index;
-    int64_t term_begin_position;
-
     int64_t registration_id;
     int64_t original_registration_id;
     int32_t stream_id;
@@ -52,6 +47,13 @@ typedef struct aeron_exclusive_publication_stct
     int32_t term_buffer_length;
 
     bool is_closed;
+
+    uint8_t pre_fields_padding[AERON_CACHE_LINE_LENGTH];
+    int64_t term_begin_position;
+    int32_t term_offset;
+    int32_t term_id;
+    size_t active_partition_index;
+    uint8_t post_fields_padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_exclusive_publication_t;
 

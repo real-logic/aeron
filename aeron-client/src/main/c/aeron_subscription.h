@@ -41,8 +41,10 @@ typedef struct aeron_subscription_stct
 
     struct subscription_conductor_fields_stct
     {
+        uint8_t pre_fields_padding[AERON_CACHE_LINE_LENGTH];
         aeron_image_list_t image_lists_head;
         int64_t next_change_number;
+        uint8_t post_fields_padding[AERON_CACHE_LINE_LENGTH];
     }
     conductor_fields;
 
@@ -50,16 +52,17 @@ typedef struct aeron_subscription_stct
 
     int64_t last_image_list_change_number;
 
-    int64_t registration_id;
-    int32_t stream_id;
-
     aeron_on_available_image_t on_available_image;
     void *on_available_image_clientd;
     aeron_on_unavailable_image_t on_unavailable_image;
     void *on_unavailable_image_clientd;
 
+    int64_t registration_id;
+    int32_t stream_id;
     size_t round_robin_index;
     bool is_closed;
+
+    uint8_t post_fields_padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_subscription_t;
 

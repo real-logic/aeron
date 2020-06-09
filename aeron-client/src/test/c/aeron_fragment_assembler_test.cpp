@@ -60,11 +60,11 @@ public:
     {
         auto frame = (aeron_data_header_t *)(m_fragment.data() + offset);
 
-        frame->frame_header.frame_length = AERON_DATA_HEADER_LENGTH + length;
+        frame->frame_header.frame_length = (int32_t)(AERON_DATA_HEADER_LENGTH + length);
         frame->frame_header.version = AERON_FRAME_HEADER_VERSION;
         frame->frame_header.flags = flags;
         frame->frame_header.type = AERON_HDR_TYPE_DATA;
-        frame->term_offset = offset;
+        frame->term_offset = (int32_t)offset;
         frame->session_id = SESSION_ID;
         frame->stream_id = STREAM_ID;
         frame->term_id = ACTIVE_TERM_ID;

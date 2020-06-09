@@ -384,10 +384,19 @@ int aeron_controlled_fragment_assembler_create(
     return 0;
 }
 
+void aeron_controlled_fragment_assembler_entry_delete(void *clientd, int64_t key, void *value)
+{
+    aeron_buffer_builder_t *builder = (aeron_buffer_builder_t *)value;
+
+    aeron_buffer_builder_delete(builder);
+}
+
 int aeron_controlled_fragment_assembler_delete(aeron_controlled_fragment_assembler_t *assembler)
 {
     if (assembler)
     {
+        aeron_int64_to_ptr_hash_map_for_each(
+            &assembler->builder_by_session_id_map, aeron_controlled_fragment_assembler_entry_delete, NULL);
         aeron_int64_to_ptr_hash_map_delete(&assembler->builder_by_session_id_map);
         aeron_free(assembler);
     }

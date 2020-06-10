@@ -1285,6 +1285,7 @@ abstract class ArchiveConductor
             .tags(channelUri)
             .rejoin(channelUri)
             .group(channelUri)
+            .flowControl(channelUri)
             .congestionControl(channelUri)
             .alias(channelUri);
 
@@ -1495,9 +1496,6 @@ abstract class ArchiveConductor
             .ttl(channelUri)
             .eos(channelUri)
             .sparse(channelUri)
-            .congestionControl(channelUri)
-            .flowControl(channelUri)
-            .alias(channelUri)
             .mtu(recording.mtuLength);
 
         final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);

@@ -29,11 +29,10 @@
 #define AERON_CMD_IN (0x01)
 #define AERON_CMD_OUT (0x02)
 #define AERON_FRAME_IN (0x04)
-#define AERON_FRAME_IN_DROPPED (0x05)
-#define AERON_FRAME_OUT (0x08)
-#define AERON_MAP_RAW_LOG_OP (0x10)
-
-#define AERON_MAP_RAW_LOG_OP_CLOSE (0x11)
+#define AERON_FRAME_IN_DROPPED (0x08)
+#define AERON_FRAME_OUT (0x10)
+#define AERON_MAP_RAW_LOG_OP (0x20)
+#define AERON_MAP_RAW_LOG_OP_CLOSE (0x40)
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {

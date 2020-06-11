@@ -53,7 +53,7 @@ static uint8_t *rb_buffer = NULL;
 static uint64_t mask = 0;
 static FILE *logfp = NULL;
 static aeron_thread_t log_reader_thread = NULL;
-volatile bool log_reader_running;
+volatile bool log_reader_running = true;
 
 int64_t aeron_agent_epoch_clock()
 {

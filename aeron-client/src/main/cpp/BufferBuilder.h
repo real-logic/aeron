@@ -91,7 +91,7 @@ private:
 
         do
         {
-            const std::uint32_t newCapacity = capacity + (capacity >> 1);
+            const std::uint32_t newCapacity = capacity + (capacity / 2);
 
             if (newCapacity < capacity || newCapacity > BUFFER_BUILDER_MAX_CAPACITY)
             {

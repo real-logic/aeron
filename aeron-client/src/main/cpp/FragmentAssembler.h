@@ -101,9 +101,7 @@ private:
                     header.sessionId(), BufferBuilder(static_cast<std::uint32_t>(m_initialBufferLength)));
                 BufferBuilder &builder = result.first->second;
 
-                builder
-                    .reset()
-                    .append(buffer, offset, length, header);
+                builder.reset().append(buffer, offset, length, header);
             }
             else
             {

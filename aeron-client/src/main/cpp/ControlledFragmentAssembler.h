@@ -100,12 +100,10 @@ private:
             if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
             {
                 auto result = m_builderBySessionIdMap.emplace(
-                    header.sessionId(), static_cast<std::uint32_t>(m_initialBufferLength));
+                    header.sessionId(), BufferBuilder(static_cast<std::uint32_t>(m_initialBufferLength)));
                 BufferBuilder &builder = result.first->second;
 
-                builder
-                    .reset()
-                    .append(buffer, offset, length, header);
+                builder.reset().append(buffer, offset, length, header);
             }
             else
             {

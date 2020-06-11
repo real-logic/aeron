@@ -644,6 +644,78 @@ int aeron_buffer_claim_commit(aeron_buffer_claim_t *buffer_claim);
 int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim);
 
 /**
+ * Configuration for a publication that does not change during it's lifetime.
+ */
+typedef struct aeron_publication_constants_stct
+{
+    /**
+     * Media address for delivery to the channel.
+     *
+     * This returns a pointer only valid for the lifetime of the publication.
+     */
+    const char *channel;
+
+    /**
+     * The registration used to register this Publication with the media driver by the first publisher.
+     */
+    int64_t original_registration_id;
+
+    /**
+     * Get the registration id used to register this Publication with the media driver.
+     *
+     * If this value is different from the original_registration_id then a previous active registration exists.
+     */
+    int64_t registration_id;
+
+    /**
+     * The maximum possible position this stream can reach due to its term buffer length.
+     *
+     * Maximum possible position is term-length times 2^31 in bytes.
+     */
+    int64_t max_possible_position;
+
+    /**
+     * Number of bits to right shift a position to get a term count for how far the stream has progressed.
+     */
+    size_t position_bits_to_shift;
+
+    /**
+     * Get the length in bytes for each term partition in the log buffer.
+     */
+    size_t term_buffer_length;
+
+    /**
+     * Maximum message length supported in bytes. Messages may be made of multiple fragments if greater than
+     * MTU length.
+     */
+    size_t max_message_length;
+
+    /**
+     * Maximum length of a message payload that fits within a message fragment.
+     *
+     * This is he MTU length minus the message fragment header length.
+     */
+    size_t max_payload_length;
+
+    /**
+     * Session id of the publication.
+     */
+    int32_t stream_id;
+
+    /**
+     * Session id of the publication.
+     */
+    int32_t session_id;
+
+    /**
+     * The initial term id assigned when this publication was created. This can be used to determine how many
+     * terms have passed since creation.
+     */
+    int32_t initial_term_id;
+}
+aeron_publication_constants_t;
+
+/**
  * Non-blocking publish of a buffer containing a message.
  *
  * @param publication to publish on.
@@ -726,12 +798,31 @@ int64_t aeron_publication_channel_status(aeron_publication_t *publication);
 bool aeron_publication_is_connected(aeron_publication_t *publication);
 
 /**
- * Get the session id of the publication.
+ * Fill in a structure with the constants in use by a publication.
  *
- * @param publication to query
- * @return session id of the publication or -1 for error (Check aeron_errcode).
+ * @param publication to get the constants for.
+ * @param constants structure to fill in with the constants
+ * @return 0 for succes and -1 for error.
  */
-int32_t aeron_publication_session_id(aeron_publication_t *publication);
+int aeron_publication_constants(aeron_publication_t *publication, aeron_publication_constants_t *constants);
+
+/**
+ * Get the current position to which the publication has advanced for this stream.
+ *
+ * @param publication to query.
+ * @return the current position to which the publication has advanced for this stream or a negative error value.
+ */
+int64_t aeron_publication_position(aeron_publication_t *publication);
+
+/**
+ * Get the position limit beyond which this publication will be back pressured.
+ *
+ * This should only be used as a guide to determine when back pressure is likely to be applied.
+ *
+ * @param publication to query.
+ * @return the position limit beyond which this publication will be back pressured or a negative error value.
+ */
+int64_t aeron_publication_position_limit(aeron_publication_t *publication);
 
 /**
  * Add a destination manually to a multi-destination-cast publication.
@@ -862,12 +953,32 @@ int64_t aeron_exclusive_publication_offer_block(
 int64_t aeron_exclusive_publication_channel_status(aeron_exclusive_publication_t *publication);
 
 /**
- * Get the session id of the publication.
+ * Fill in a structure with the constants in use by a publication.
  *
- * @param publication to query
- * @return session id of the publication or -1 for error (Check aeron_errcode).
+ * @param publication to get the constants for.
+ * @param constants structure to fill in with the constants
+ * @return 0 for succes and -1 for error.
  */
-int32_t aeron_exclusive_publication_session_id(aeron_exclusive_publication_t *publication);
+int aeron_exclusive_publication_constants(
+    aeron_exclusive_publication_t *publication, aeron_publication_constants_t *constants);
+
+/**
+ * Get the current position to which the publication has advanced for this stream.
+ *
+ * @param publication to query.
+ * @return the current position to which the publication has advanced for this stream or a negative error value.
+ */
+int64_t aeron_exclusive_publication_position(aeron_exclusive_publication_t *publication);
+
+/**
+ * Get the position limit beyond which this publication will be back pressured.
+ *
+ * This should only be used as a guide to determine when back pressure is likely to be applied.
+ *
+ * @param publication to query.
+ * @return the position limit beyond which this publication will be back pressured or a negative error value.
+ */
+int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t *publication);
 
 /**
  * Add a destination manually to a multi-destination-cast publication.

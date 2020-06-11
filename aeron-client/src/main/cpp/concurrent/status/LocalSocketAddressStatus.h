@@ -59,7 +59,7 @@ private:
     static std::string localSocketAddressFromKeyBuffer(const AtomicBuffer &keyBuffer)
     {
         const int32_t length = keyBuffer.getStringLength(LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
-        return keyBuffer.getStringWithoutLength(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, length);
+        return keyBuffer.getStringWithoutLength(LOCAL_SOCKET_ADDRESS_STRING_OFFSET, static_cast<size_t>(length));
     }
 };
 

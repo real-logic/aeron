@@ -77,7 +77,7 @@ public:
     typedef StatusMessageFlyweight this_t;
 
     inline StatusMessageFlyweight(concurrent::AtomicBuffer &buffer, util::index_t offset) :
-        HeaderFlyweight(buffer, offset), m_struct(overlayStruct<StatusMessageDefn>(0))
+        HeaderFlyweight(buffer, static_cast<std::int32_t>(offset)), m_struct(overlayStruct<StatusMessageDefn>(0))
     {
     }
 

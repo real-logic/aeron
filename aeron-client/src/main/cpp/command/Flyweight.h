@@ -58,7 +58,7 @@ protected:
 
     inline std::string stringGetWithoutLength(util::index_t offset, std::int32_t size) const
     {
-        return m_buffer.getStringWithoutLength(m_baseOffset + offset, size);
+        return m_buffer.getStringWithoutLength(m_baseOffset + offset, static_cast<size_t>(size));
     }
 
     inline std::int32_t getInt32(util::index_t offset) const

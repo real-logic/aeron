@@ -93,7 +93,7 @@ public:
             {
                 if (bytesRead != 0)
                 {
-                    m_buffer.setMemory(headIndex, bytesRead, 0);
+                    m_buffer.setMemory(headIndex, static_cast<size_t>(bytesRead), 0);
                     m_buffer.putInt64Ordered(m_headPositionIndex, head + bytesRead);
                 }
             }};

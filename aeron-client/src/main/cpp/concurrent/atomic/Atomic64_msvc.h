@@ -61,8 +61,9 @@ inline void cpu_pause()
 */
 inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
 {
-    int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
+    std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
     acquire();
+
     return sequence;
 }
 
@@ -89,8 +90,9 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 */
 inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 {
-    int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
+    std::nt64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
     acquire();
+
     return sequence;
 }
 

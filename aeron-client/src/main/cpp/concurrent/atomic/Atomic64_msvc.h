@@ -90,7 +90,7 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 */
 inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 {
-    std::nt64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
+    std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
     acquire();
 
     return sequence;

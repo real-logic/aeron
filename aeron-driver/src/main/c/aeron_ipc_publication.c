@@ -78,6 +78,7 @@ int aeron_ipc_publication_create(
         return -1;
     }
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;
+    _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -292,16 +293,24 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        tetherable_position->state = AERON_SUBSCRIPTION_TETHER_LINGER;
-                        tetherable_position->time_of_last_update_ns = now_ns;
+                        publication->untethered_subscription_state_change_func(
+                                tetherable_position,
+                                now_ns,
+                                AERON_SUBSCRIPTION_TETHER_LINGER,
+                                publication->stream_id,
+                                publication->session_id);
                     }
                     break;
 
                 case AERON_SUBSCRIPTION_TETHER_LINGER:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
-                        tetherable_position->state = AERON_SUBSCRIPTION_TETHER_RESTING;
-                        tetherable_position->time_of_last_update_ns = now_ns;
+                        publication->untethered_subscription_state_change_func(
+                                tetherable_position,
+                                now_ns,
+                                AERON_SUBSCRIPTION_TETHER_RESTING,
+                                publication->stream_id,
+                                publication->session_id);
                     }
                     break;
 
@@ -320,8 +329,13 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                             tetherable_position->subscription_registration_id,
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
-                        tetherable_position->state = AERON_SUBSCRIPTION_TETHER_ACTIVE;
-                        tetherable_position->time_of_last_update_ns = now_ns;
+
+                        publication->untethered_subscription_state_change_func(
+                                tetherable_position,
+                                now_ns,
+                                AERON_SUBSCRIPTION_TETHER_ACTIVE,
+                                publication->stream_id,
+                                publication->session_id);
                     }
                     break;
             }

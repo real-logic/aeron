@@ -33,6 +33,7 @@
 #define AERON_FRAME_OUT (0x10)
 #define AERON_MAP_RAW_LOG_OP (0x20)
 #define AERON_MAP_RAW_LOG_OP_CLOSE (0x40)
+#define AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE (0x80)
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
@@ -75,6 +76,17 @@ typedef struct aeron_driver_agent_map_raw_log_op_header_stct
     map_raw;
 }
 aeron_driver_agent_map_raw_log_op_header_t;
+
+typedef struct aeron_driver_agent_untethered_subscription_state_change_log_header_stct
+{
+    int64_t time_ms;
+    int64_t subscription_id;
+    int32_t stream_id;
+    int32_t session_id;
+    aeron_subscription_tether_state_t old_state;
+    aeron_subscription_tether_state_t new_state;
+}
+aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 

@@ -67,6 +67,20 @@ typedef struct aeron_tetherable_position_stct
 }
 aeron_tetherable_position_t;
 
+typedef void (*aeron_untethered_subscription_state_change_func_t)(
+        aeron_tetherable_position_t *,
+        int64_t now_ns,
+        aeron_subscription_tether_state_t new_state,
+        int32_t stream_id,
+        int32_t session_id);
+
+void aeron_untethered_subscription_state_change(
+        aeron_tetherable_position_t *tetherable_position,
+        int64_t now_ns,
+        aeron_subscription_tether_state_t new_state,
+        int32_t stream_id,
+        int32_t session_id);
+
 typedef struct aeron_subscribable_stct
 {
     size_t length;

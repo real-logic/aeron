@@ -180,6 +180,8 @@ typedef struct aeron_driver_context_stct
     aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
     aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
 
+    aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
+
     aeron_driver_termination_validator_func_t termination_validator_func;
     void *termination_validator_state;
 

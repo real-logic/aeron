@@ -55,7 +55,7 @@ pushd build
 cmake -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% --config Release ..
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-cmake --build . --target install
+cmake --build . --config Debug --target install
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 pushd %BUILD_DIR%

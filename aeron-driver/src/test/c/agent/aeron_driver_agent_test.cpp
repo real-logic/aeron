@@ -30,12 +30,6 @@ class DriverAgentTest : public testing::Test
 public:
     DriverAgentTest()
     {
-        agent_is_initialized = AERON_INIT_ONCE_VALUE;
-        mask = 0;
-        rb_buffer = NULL;
-        logfp = NULL;
-        log_reader_running = false;
-
         if (aeron_driver_context_init(&m_context) < 0)
         {
             throw std::runtime_error("could not init context: " + std::string(aeron_errmsg()));
@@ -45,45 +39,8 @@ public:
     ~DriverAgentTest() override
     {
         aeron_driver_context_close(m_context);
-        clear_env(AERON_AGENT_MASK_ENV_VAR);
-
-        log_reader_running = false;
-        int pthread_result = aeron_thread_join(log_reader_thread, NULL);
-        if (0 != pthread_result && ESRCH != pthread_result)
-        {
-            printf("*** [WARNING] Could not stop logger thread: result=%d\n", pthread_result);
-        }
-
-        if (NULL != rb_buffer)
-        {
-            aeron_free(rb_buffer);
-        }
-    }
-
-    static char *to_mask(uint64_t value)
-    {
-        static char buffer[256];
-
-        snprintf(buffer, sizeof(buffer) - 1, "%" PRIu64, value);
-        return buffer;
-    }
-
-    static int set_env(const char *name, const char *value)
-    {
-        #if defined(AERON_COMPILER_MSVC)
-            return _putenv_s(name, value);
-        #else
-            return setenv(name, value, 1);
-        #endif
-    }
-
-    static int clear_env(const char *name)
-    {
-        #if defined(AERON_COMPILER_MSVC)
-            return _putenv_s(name, "");
-        #else
-            return unsetenv(name);
-        #endif
+        free_logging_ring_buffer();
+        set_logging_mask(0);
     }
 
 protected:
@@ -92,18 +49,23 @@ protected:
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
-    EXPECT_EQ(set_env(AERON_AGENT_MASK_ENV_VAR, to_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)), 0);
+    set_logging_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
+    aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
-    aeron_driver_agent_context_init(m_context);
+    init_logging_events_interceptors(m_context);
 
     EXPECT_EQ(m_context->untethered_subscription_state_change_func, &aeron_driver_agent_untethered_subscription_state_change_interceptor);
+    EXPECT_NE(m_context->untethered_subscription_state_change_func, func);
 }
 
 TEST_F(DriverAgentTest, shouldKeepOriginalUntetheredStateChangeFunctionIfEventNotEnabled)
 {
-    aeron_driver_agent_context_init(m_context);
+    aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
-    EXPECT_EQ(m_context->untethered_subscription_state_change_func, &aeron_untethered_subscription_state_change);
+    init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(m_context->untethered_subscription_state_change_func, func);
+    EXPECT_NE(m_context->untethered_subscription_state_change_func, &aeron_driver_agent_untethered_subscription_state_change_interceptor);
 }
 
 TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)

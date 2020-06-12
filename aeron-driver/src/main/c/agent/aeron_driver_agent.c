@@ -53,7 +53,6 @@ static uint8_t *rb_buffer = NULL;
 static uint64_t mask = 0;
 static FILE *logfp = NULL;
 static aeron_thread_t log_reader_thread;
-volatile bool log_reader_running = true;
 
 int64_t aeron_agent_epoch_clock()
 {
@@ -90,16 +89,9 @@ void aeron_agent_format_date(char *str, size_t count, int64_t timestamp)
     snprintf(str, count, "%s%s%s", time_buffer, msec_buffer, tz_buffer);
 }
 
-static bool is_running()
-{
-    bool running;
-    AERON_GET_VOLATILE(running, log_reader_running);
-    return running;
-}
-
 static void *aeron_driver_agent_log_reader(void *arg)
 {
-    while (is_running())
+    while (true)
     {
         aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
         aeron_nano_sleep(1000 * 1000);
@@ -124,6 +116,20 @@ static void init_logging_ring_buffer()
         fprintf(stderr, "could not init logging mpwc_rb. exiting.\n");
         exit(EXIT_FAILURE);
     }
+}
+
+static void free_logging_ring_buffer()
+{
+    if (NULL != rb_buffer)
+    {
+       aeron_free(rb_buffer);
+       rb_buffer = NULL;
+    }
+}
+
+static void set_logging_mask(uint64_t new_mask)
+{
+    mask = new_mask;
 }
 
 static void initialize_agent_logging()
@@ -361,10 +367,8 @@ int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_chan
     return 0;
 }
 
-int aeron_driver_agent_context_init(aeron_driver_context_t *context)
+static int init_logging_events_interceptors(aeron_driver_context_t *context)
 {
-    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
-
     if (mask & AERON_FRAME_IN)
     {
         aeron_udp_channel_interceptor_bindings_t *incoming_bindings = NULL;
@@ -453,6 +457,13 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
     }
 
     return 0;
+}
+
+int aeron_driver_agent_context_init(aeron_driver_context_t *context)
+{
+    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
+
+    return init_logging_events_interceptors(context);
 }
 
 static const char *dissect_msg_type_id(int32_t id)

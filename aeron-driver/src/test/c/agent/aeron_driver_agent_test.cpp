@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 extern "C"
 {

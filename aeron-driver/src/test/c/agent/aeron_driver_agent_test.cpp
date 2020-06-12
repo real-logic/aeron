@@ -35,7 +35,6 @@ public:
         rb_buffer = NULL;
         logfp = NULL;
         log_reader_running = false;
-        log_reader_thread = NULL;
 
         if (aeron_driver_context_init(&m_context) < 0)
         {

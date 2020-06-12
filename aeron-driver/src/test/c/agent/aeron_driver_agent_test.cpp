@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 #include <inttypes.h>
-#include <stdlib.h>
 
 extern "C"
 {
@@ -72,7 +71,7 @@ public:
     static int set_env(const char *name, const char *value)
     {
         #if defined(AERON_COMPILER_MSVC)
-            return _put_env_s(name, value);
+            return _putenv_s(name, value);
         #else
             return setenv(name, value, 1);
         #endif

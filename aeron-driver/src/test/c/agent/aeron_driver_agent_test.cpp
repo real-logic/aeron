@@ -80,7 +80,7 @@ public:
     static int clear_env(const char *name)
     {
         #if defined(AERON_COMPILER_MSVC)
-            return _put_env_s(name, "");
+            return _putenv_s(name, "");
         #else
             return unsetenv(name);
         #endif

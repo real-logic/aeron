@@ -45,7 +45,7 @@ public:
     ~DriverAgentTest() override
     {
         aeron_driver_context_close(m_context);
-        unsetenv(AERON_AGENT_MASK_ENV_VAR);
+        clear_env(AERON_AGENT_MASK_ENV_VAR);
 
         log_reader_running = false;
         int pthread_result = aeron_thread_join(log_reader_thread, NULL);
@@ -68,13 +68,31 @@ public:
         return buffer;
     }
 
+    static int set_env(const char *name, const char *value)
+    {
+        #if defined(AERON_COMPILER_MSVC)
+            return _put_env_s(name, value);
+        #else
+            return setenv(name, value, 1);
+        #endif
+    }
+
+    static int clear_env(const char *name)
+    {
+        #if defined(AERON_COMPILER_MSVC)
+            return _put_env_s(name, "");
+        #else
+            return unsetenv(name);
+        #endif
+    }
+
 protected:
     aeron_driver_context_t *m_context = nullptr;
 };
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
-    setenv(AERON_AGENT_MASK_ENV_VAR, to_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE), 1);
+    EXPECT_EQ(set_env(AERON_AGENT_MASK_ENV_VAR, to_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)), 0);
 
     aeron_driver_agent_context_init(m_context);
 

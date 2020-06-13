@@ -253,6 +253,23 @@ bool aeron_subscription_is_connected(aeron_subscription_t *subscription)
     return result;
 }
 
+int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subscription_constants_t *constants)
+{
+    if (NULL == subscription || NULL == constants)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    constants->channel = subscription->channel;
+    constants->registration_id = subscription->registration_id;
+    constants->stream_id = subscription->stream_id;
+    constants->on_available_image = subscription->on_available_image;
+    constants->on_unavailable_image = subscription->on_unavailable_image;
+    return 0;
+}
+
 int aeron_subscription_image_count(aeron_subscription_t *subscription)
 {
     volatile aeron_image_list_t *image_list;

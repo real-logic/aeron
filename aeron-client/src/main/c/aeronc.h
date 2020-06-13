@@ -698,7 +698,7 @@ typedef struct aeron_publication_constants_stct
     size_t max_payload_length;
 
     /**
-     * Session id of the publication.
+     * Stream id of the publication.
      */
     int32_t stream_id;
 
@@ -1106,6 +1106,40 @@ typedef void (*aeron_block_handler_t)(
 int32_t aeron_header_session_id(aeron_header_t *header);
 
 /**
+ * Configuration for a subscription that does not change during it's lifetime.
+ */
+typedef struct aeron_subscription_constants_stct
+{
+    /**
+     * Media address for delivery to the channel.
+     *
+     * This returns a pointer only valid for the lifetime of the subscription.
+     */
+    const char *channel;
+
+    /**
+     * Return the registration id used to register this Subscription with the media driver.
+     */
+    int64_t registration_id;
+
+    /**
+     * Stream identity for scoping within the channel media address.
+     */
+    int32_t stream_id;
+
+    /**
+     * Callback used to indicate when an Image becomes available under this Subscription.
+     */
+    aeron_on_available_image_t on_available_image;
+
+    /**
+     * Callback used to indicate when an Image goes unavailable under this Subscription.
+     */
+    aeron_on_unavailable_image_t on_unavailable_image;
+}
+aeron_subscription_constants_t;
+
+/**
  * Poll the images under the subscription for available message fragments.
  * <p>
  * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
@@ -1159,6 +1193,15 @@ long aeron_subscription_block_poll(
  * @return true if this subscription connected by having at least one open publication image.
  */
 bool aeron_subscription_is_connected(aeron_subscription_t *subscription);
+
+/**
+ * Fill in a structure with the constants in use by a subscription.
+ *
+ * @param subscription to get the constants for.
+ * @param constants structure to fill in with the constants
+ * @return 0 for succes and -1 for error.
+ */
+int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subscription_constants_t *constants);
 
 /**
  * Count of images associated to this subscription.

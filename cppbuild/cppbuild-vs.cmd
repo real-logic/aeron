@@ -52,17 +52,17 @@ pushd zlib-1.2.11
 md build
 pushd build
 
-cmake -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% --config Debug ..
+cmake -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% --config Release ..
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-cmake --build . --config Debug --target install
+cmake --build . --config Release --target install
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 pushd %BUILD_DIR%
 cmake %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-cmake --build . --config Debug
+cmake --build . --config Release
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 ctest -C Release --output-on-failure

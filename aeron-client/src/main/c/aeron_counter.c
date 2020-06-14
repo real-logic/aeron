@@ -64,6 +64,20 @@ int64_t *aeron_counter_addr(aeron_counter_t *counter)
     return counter->counter_addr;
 }
 
+int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t *constants)
+{
+    if (NULL == counter || NULL == constants)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    constants->registration_id = counter->registration_id;
+    constants->counter_id = counter->counter_id;
+    return 0;
+}
+
 int aeron_counter_close(aeron_counter_t *counter)
 {
     if (NULL != counter)

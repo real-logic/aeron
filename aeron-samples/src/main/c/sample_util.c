@@ -21,21 +21,43 @@
 
 void print_available_image(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
 {
-    printf(
-        "Available image on %s streamId=%" PRId32 " sessionId=%" PRId32 " from %s\n",
-        aeron_subscription_channel(subscription),
-        aeron_subscription_stream_id(subscription),
-        aeron_image_session_id(image),
-        aeron_image_source_identity(image));
+    aeron_subscription_constants_t subscription_constants;
+    aeron_image_constants_t image_constants;
+
+    if (aeron_subscription_constants(subscription, &subscription_constants) < 0 ||
+        aeron_image_constants(image, &image_constants) < 0)
+    {
+        fprintf(stderr, "could not get subscription/image constants: %s\n", aeron_errmsg());
+    }
+    else
+    {
+        printf(
+            "Available image on %s streamId=%" PRId32 " sessionId=%" PRId32 " from %s\n",
+            subscription_constants.channel,
+            subscription_constants.stream_id,
+            image_constants.session_id,
+            image_constants.source_identity);
+    }
 }
 
 void print_unavailable_image(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
 {
-    printf(
-        "Unavailable image on %s streamId=%" PRId32 " sessionId=%" PRId32 "\n",
-        aeron_subscription_channel(subscription),
-        aeron_subscription_stream_id(subscription),
-        aeron_image_session_id(image));
+    aeron_subscription_constants_t subscription_constants;
+    aeron_image_constants_t image_constants;
+
+    if (aeron_subscription_constants(subscription, &subscription_constants) < 0 ||
+        aeron_image_constants(image, &image_constants) < 0)
+    {
+        fprintf(stderr, "could not get subscription/image constants: %s\n", aeron_errmsg());
+    }
+    else
+    {
+        printf(
+            "Unavailable image on %s streamId=%" PRId32 " sessionId=%" PRId32 "\n",
+            subscription_constants.channel,
+            subscription_constants.stream_id,
+            image_constants.session_id);
+    }
 }
 
 void print_rate_report(uint64_t duration_ns, double mps, double bps, uint64_t total_messages, uint64_t total_bytes)

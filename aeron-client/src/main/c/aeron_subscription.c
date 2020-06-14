@@ -408,33 +408,6 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription)
     return AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_NO_ID_ALLOCATED;
 }
 
-const char *aeron_subscription_channel(aeron_subscription_t *subscription)
-{
-    if (NULL == subscription)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_subscription_channel: %s", strerror(EINVAL));
-        return NULL;
-    }
-
-    return subscription->channel;
-}
-
-int32_t aeron_subscription_stream_id(aeron_subscription_t *subscription)
-{
-    if (NULL == subscription)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_subscription_stream_id: %s", strerror(EINVAL));
-        return -1;
-    }
-
-    errno = 0;
-    aeron_set_err(0, "no error");
-
-    return subscription->stream_id;
-}
-
 int aeron_subscription_poll(
     aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit)
 {

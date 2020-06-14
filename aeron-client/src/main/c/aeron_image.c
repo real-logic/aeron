@@ -60,6 +60,7 @@ int aeron_image_create(
     _image->session_id = session_id;
     _image->removal_change_number = INT64_MAX;
     _image->final_position = 0;
+    _image->join_position = *subscriber_position;
     _image->refcnt = 1;
 
     _image->metadata =
@@ -95,31 +96,25 @@ void aeron_image_force_close(aeron_image_t *image)
     AERON_PUT_ORDERED(image->is_closed, true);
 }
 
-int32_t aeron_image_session_id(aeron_image_t *image)
+int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constants)
 {
-    if (NULL == image)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_session_id: %s", strerror(EINVAL));
-        return -1;
-    }
-
-    errno = 0;
-    aeron_set_err(0, "no error");
-
-    return image->session_id;
-}
-
-const char *aeron_image_source_identity(aeron_image_t *image)
-{
-    if (NULL == image)
+    if (NULL == image || NULL == constants)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
-        return NULL;
+        return -1;
     }
 
-    return image->source_identity;
+    constants->subscription = image->subscription;
+    constants->source_identity = image->source_identity;
+    constants->correlation_id = image->correlation_id;
+    constants->join_position = image->join_position;
+    constants->position_bits_to_shift = image->position_bits_to_shift;
+    constants->term_buffer_length = image->term_length_mask + 1;
+    constants->mtu_length = (size_t)image->metadata->mtu_length;
+    constants->session_id = image->session_id;
+    constants->initial_term_id = image->metadata->initial_term_id;
+    return 0;
 }
 
 int64_t aeron_image_position(aeron_image_t *image)

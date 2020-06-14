@@ -63,10 +63,17 @@ inline bool is_running()
 void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_subscription_t *subscription = (aeron_subscription_t *)clientd;
+    aeron_subscription_constants_t subscription_constants;
+
+    if (aeron_subscription_constants(subscription, &subscription_constants) < 0)
+    {
+        fprintf(stderr, "could not get subscription constants: %s\n", aeron_errmsg());
+        return;
+    }
 
     printf(
         "Message to stream %" PRId32 " from session %" PRId32 " (%" PRIu32 " bytes) <<%*s>>\n",
-        aeron_subscription_stream_id(subscription),
+        subscription_constants.stream_id,
         aeron_header_session_id(header),
         (uint32_t)length,
         (int)length,

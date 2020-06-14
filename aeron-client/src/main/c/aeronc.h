@@ -1118,16 +1118,6 @@ typedef struct aeron_subscription_constants_stct
     const char *channel;
 
     /**
-     * Return the registration id used to register this Subscription with the media driver.
-     */
-    int64_t registration_id;
-
-    /**
-     * Stream identity for scoping within the channel media address.
-     */
-    int32_t stream_id;
-
-    /**
      * Callback used to indicate when an Image becomes available under this Subscription.
      */
     aeron_on_available_image_t on_available_image;
@@ -1136,6 +1126,16 @@ typedef struct aeron_subscription_constants_stct
      * Callback used to indicate when an Image goes unavailable under this Subscription.
      */
     aeron_on_unavailable_image_t on_unavailable_image;
+
+    /**
+     * Return the registration id used to register this Subscription with the media driver.
+     */
+    int64_t registration_id;
+
+    /**
+     * Stream identity for scoping within the channel media address.
+     */
+    int32_t stream_id;
 }
 aeron_subscription_constants_t;
 
@@ -1280,22 +1280,6 @@ bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
 
 /**
- * Media address for delivery to the channel.
- *
- * @param subscription to query.
- * @return Media address for delivery to the channel or NULL for error.
- */
-const char *aeron_subscription_channel(aeron_subscription_t *subscription);
-
-/**
- * Stream identity for scoping within the channel media address.
- *
- * @param subscription to query.
- * @return Stream identity for scoping within the channel media address or -1 for error. Check aeron_errcode.
- */
-int32_t aeron_subscription_stream_id(aeron_subscription_t *subscription);
-
-/**
  * Add a destination manually to a multi-destination subscription.
  *
  * @param subscription to add destination to.
@@ -1341,21 +1325,66 @@ int aeron_subscription_close(aeron_subscription_t *subscription);
  */
 
 /**
- * The sessionId for the steam of messages. Sessions are unique within a subscription and unique across
- * all publications from a source identity.
- *
- * @param image to query.
- * @return the sessionId for the steam of messages or -1 for error (Check aeron_errcode).
+ * Configuration for an image that does not change during it's lifetime.
  */
-int32_t aeron_image_session_id(aeron_image_t *image);
+typedef struct aeron_image_constants_stct
+{
+    /**
+     * The subscription to which this image belongs.
+     */
+    aeron_subscription_t *subscription;
+
+    /**
+     * The source identity of the sending publisher as an abstract concept appropriate for the media.
+     */
+    const char *source_identity;
+
+    /**
+     * The correlationId for identification of the image with the media driver.
+     */
+    int64_t correlation_id;
+
+    /**
+     * Get the position the subscriber joined this stream at.
+     */
+    int64_t join_position;
+
+    /**
+     * Number of bits to right shift a position to get a term count for how far the stream has progressed.
+     */
+    size_t position_bits_to_shift;
+
+    /**
+     * Get the length in bytes for each term partition in the log buffer.
+     */
+    size_t term_buffer_length;
+
+    /**
+     * The length in bytes of the MTU (Maximum Transmission Unit) the Sender used for the datagram.
+     */
+    size_t mtu_length;
+
+    /**
+     * The sessionId for the steam of messages. Sessions are unique within a subscription and unique across
+     * all publications from a source identity.
+     */
+    int32_t session_id;
+
+    /**
+     * The initial term at which the stream started for this session.
+     */
+    int32_t initial_term_id;
+}
+aeron_image_constants_t;
 
 /**
- * The source identity of the sending publisher as an abstract concept appropriate for the media.
+ * Fill in a structure with the constants in use by a image.
  *
- * @param image to query.
- * @return source identity of the sending publisher as an abstract concept appropriate for the media or NULL for error.
+ * @param image to get the constants for.
+ * @param constants structure to fill in with the constants
+ * @return 0 for succes and -1 for error.
  */
-const char *aeron_image_source_identity(aeron_image_t *image);
+int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constants);
 
 /**
  * The position this image has been consumed to by the subscriber.
@@ -1661,6 +1690,32 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
  * @return pointer to the counter value.
  */
 int64_t *aeron_counter_addr(aeron_counter_t *counter);
+
+/**
+ * Configuration for a counter that does not change during it's lifetime.
+ */
+typedef struct aeron_counter_constants_stct
+{
+    /**
+     * Return the registration id used to register this counter with the media driver.
+     */
+    int64_t registration_id;
+
+    /**
+     * Identity for the counter within the counters reader and counters manager.
+     */
+    int32_t counter_id;
+}
+aeron_counter_constants_t;
+
+/**
+ * Fill in a structure with the constants in use by a counter.
+ *
+ * @param counter to get the constants for.
+ * @param constants structure to fill in with the constants
+ * @return 0 for succes and -1 for error.
+ */
+int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t *constants);
 
 /**
  * Asynchronously close the counter.

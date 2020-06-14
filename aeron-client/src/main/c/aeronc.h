@@ -553,10 +553,6 @@ void aeron_counters_reader_foreach_counter(
     void *clientd);
 
 /*
- * TLM 2020-05-25: More functions to be added for counters reader. Feel free to send us feedback.
- */
-
-/*
  * Publication functions
  */
 
@@ -606,15 +602,17 @@ typedef int64_t (*aeron_reserved_value_supplier_t)(void *clientd, uint8_t *buffe
 
 /**
  * Structure to hold pointer to a buffer and the buffer length.
- *
- * TLM 2020-05-25: want to make this a typedef of iovec when already defined as an option.
  */
+#if !defined(AERON_IOVEC)
 typedef struct aeron_iovec_stct
 {
     uint8_t *iov_base;
     size_t iov_len;
 }
 aeron_iovec_t;
+#else
+typedef struct iov aeron_iovec_t;
+#endif
 
 /**
  * Structure used to hold information for a try_claim function call.
@@ -851,10 +849,6 @@ int aeron_publication_remove_destination(aeron_publication_t *publication, const
 int aeron_publication_close(aeron_publication_t *publication);
 
 /*
- * TLM 2020-05-25: More functions to be added for publications. Feel free to send us feedback.
- */
-
-/*
  * Exclusive Publication functions
  */
 
@@ -1005,10 +999,6 @@ int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t
  * @return 0 for success or -1 for error.
  */
 int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
-
-/*
- * TLM 2020-05-25: More functions to be added for exclusive publications. Feel free to send us feedback.
- */
 
 /*
  * Subscription functions
@@ -1305,10 +1295,6 @@ int aeron_subscription_remove_destination(aeron_subscription_t *subscription, co
  */
 int aeron_subscription_close(aeron_subscription_t *subscription);
 
-/*
- * TLM 2020-05-25: More functions to be added for subscriptions. Feel free to send us feedback.
- */
-
 /**
  * Image Functions
  *
@@ -1530,10 +1516,6 @@ int64_t aeron_image_controlled_peek(
  */
 int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
-
-/*
- * TLM 2020-05-25: More functions to be added for images. Feel free to send us feedback.
- */
 
 bool aeron_image_is_closed(aeron_image_t *image);
 

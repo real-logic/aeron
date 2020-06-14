@@ -676,6 +676,3 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
     ASSERT_EQ(aeron_subscription_close(subscription), 0);
     doWork();
 }
-
-// TODO: check image available/unavailable handlers
-// TODO: check counter handlers

@@ -1293,7 +1293,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the receiver tag to be value which is in the {@link ChannelUri} which may be null.
+     * Set the group tag (gtag) to be value which is in the {@link ChannelUri} which may be null.
      *
      * @param channelUri to read the value from.
      * @return this for a fluent API.

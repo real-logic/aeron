@@ -1285,8 +1285,9 @@ abstract class ArchiveConductor
             .tags(channelUri)
             .rejoin(channelUri)
             .group(channelUri)
-            .flowControl(channelUri)
             .congestionControl(channelUri)
+            .flowControl(channelUri)
+            .groupTag(channelUri)
             .alias(channelUri);
 
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);

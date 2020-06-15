@@ -317,7 +317,7 @@ class DynamicJoin implements AutoCloseable
         else if (pollForResponse(leaderArchive, correlationId))
         {
             correlationId = NULL_VALUE;
-            final long snapshotStopPosition = (int)leaderArchive.controlResponsePoller().relevantId();
+            final long snapshotStopPosition = leaderArchive.controlResponsePoller().relevantId();
 
             if (NULL_POSITION == snapshotStopPosition)
             {

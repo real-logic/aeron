@@ -538,7 +538,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         }
         else if (pollForResponse(clusterArchive, correlationId))
         {
-            final long snapshotStopPosition = (int)clusterArchive.controlResponsePoller().relevantId();
+            final long snapshotStopPosition = clusterArchive.controlResponsePoller().relevantId();
             correlationId = NULL_VALUE;
 
             if (NULL_POSITION == snapshotStopPosition)

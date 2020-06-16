@@ -118,7 +118,7 @@ static void init_logging_ring_buffer()
     }
 }
 
-static void free_logging_ring_buffer()
+static void aeron_free_logging_ring_buffer()
 {
     if (NULL != rb_buffer)
     {
@@ -127,7 +127,7 @@ static void free_logging_ring_buffer()
     }
 }
 
-static void set_logging_mask(uint64_t new_mask)
+static void aeron_set_logging_mask(uint64_t new_mask)
 {
     mask = new_mask;
 }
@@ -367,7 +367,7 @@ int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_chan
     return 0;
 }
 
-static int init_logging_events_interceptors(aeron_driver_context_t *context)
+static int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
 {
     if (mask & AERON_FRAME_IN)
     {
@@ -463,7 +463,7 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
 {
     (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
-    return init_logging_events_interceptors(context);
+    return aeron_init_logging_events_interceptors(context);
 }
 
 static const char *dissect_msg_type_id(int32_t id)

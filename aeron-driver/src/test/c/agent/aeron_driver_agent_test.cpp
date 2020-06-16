@@ -39,8 +39,8 @@ public:
     ~DriverAgentTest() override
     {
         aeron_driver_context_close(m_context);
-        free_logging_ring_buffer();
-        set_logging_mask(0);
+        aeron_free_logging_ring_buffer();
+        aeron_set_logging_mask(0);
     }
 
 protected:
@@ -49,10 +49,10 @@ protected:
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
-    set_logging_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
+    aeron_set_logging_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
     aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
-    init_logging_events_interceptors(m_context);
+    aeron_init_logging_events_interceptors(m_context);
 
     EXPECT_EQ(m_context->untethered_subscription_state_change_func, &aeron_driver_agent_untethered_subscription_state_change_interceptor);
     EXPECT_NE(m_context->untethered_subscription_state_change_func, func);
@@ -62,7 +62,7 @@ TEST_F(DriverAgentTest, shouldKeepOriginalUntetheredStateChangeFunctionIfEventNo
 {
     aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
-    init_logging_events_interceptors(m_context);
+    aeron_init_logging_events_interceptors(m_context);
 
     EXPECT_EQ(m_context->untethered_subscription_state_change_func, func);
     EXPECT_NE(m_context->untethered_subscription_state_change_func, &aeron_driver_agent_untethered_subscription_state_change_interceptor);

@@ -29,11 +29,11 @@
 #define AERON_CMD_IN (0x01)
 #define AERON_CMD_OUT (0x02)
 #define AERON_FRAME_IN (0x04)
-#define AERON_FRAME_IN_DROPPED (0x05)
-#define AERON_FRAME_OUT (0x08)
-#define AERON_MAP_RAW_LOG_OP (0x10)
-
-#define AERON_MAP_RAW_LOG_OP_CLOSE (0x11)
+#define AERON_FRAME_IN_DROPPED (0x08)
+#define AERON_FRAME_OUT (0x10)
+#define AERON_MAP_RAW_LOG_OP (0x20)
+#define AERON_MAP_RAW_LOG_OP_CLOSE (0x40)
+#define AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE (0x80)
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
@@ -77,6 +77,17 @@ typedef struct aeron_driver_agent_map_raw_log_op_header_stct
 }
 aeron_driver_agent_map_raw_log_op_header_t;
 
+typedef struct aeron_driver_agent_untethered_subscription_state_change_log_header_stct
+{
+    int64_t time_ms;
+    int64_t subscription_id;
+    int32_t stream_id;
+    int32_t session_id;
+    aeron_subscription_tether_state_t old_state;
+    aeron_subscription_tether_state_t new_state;
+}
+aeron_driver_agent_untethered_subscription_state_change_log_header_t;
+
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
@@ -84,5 +95,13 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context);
 const char *dissect_log_start(int64_t time_ms);
 
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
+
+int aeron_init_logging_events_interceptors(aeron_driver_context_t *context);
+
+void aeron_init_logging_ring_buffer();
+
+void aeron_free_logging_ring_buffer();
+
+void aeron_set_logging_mask(uint64_t new_mask);
 
 #endif //AERON_DRIVER_AGENT_H

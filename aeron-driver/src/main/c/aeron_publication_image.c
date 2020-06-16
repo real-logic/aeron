@@ -111,6 +111,7 @@ int aeron_publication_image_create(
         return -1;
     }
     _image->map_raw_log_close_func = context->map_raw_log_close_func;
+    _image->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     _image->nano_clock = context->nano_clock;
     _image->cached_clock = context->cached_clock;
@@ -794,16 +795,24 @@ void aeron_publication_image_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        tetherable_position->state = AERON_SUBSCRIPTION_TETHER_LINGER;
-                        tetherable_position->time_of_last_update_ns = now_ns;
+                        image->untethered_subscription_state_change_func(
+                                tetherable_position,
+                                now_ns,
+                                AERON_SUBSCRIPTION_TETHER_LINGER,
+                                image->stream_id,
+                                image->session_id);
                     }
                     break;
 
                 case AERON_SUBSCRIPTION_TETHER_LINGER:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
-                        tetherable_position->state = AERON_SUBSCRIPTION_TETHER_RESTING;
-                        tetherable_position->time_of_last_update_ns = now_ns;
+                        image->untethered_subscription_state_change_func(
+                                tetherable_position,
+                                now_ns,
+                                AERON_SUBSCRIPTION_TETHER_RESTING,
+                                image->stream_id,
+                                image->session_id);
                     }
                     break;
 
@@ -826,8 +835,13 @@ void aeron_publication_image_check_untethered_subscriptions(
                             tetherable_position->subscription_registration_id,
                             source_identity,
                             (size_t)source_identity_length);
-                        tetherable_position->state = AERON_SUBSCRIPTION_TETHER_ACTIVE;
-                        tetherable_position->time_of_last_update_ns = now_ns;
+
+                        image->untethered_subscription_state_change_func(
+                                tetherable_position,
+                                now_ns,
+                                AERON_SUBSCRIPTION_TETHER_ACTIVE,
+                                image->stream_id,
+                                image->session_id);
                     }
                     break;
             }

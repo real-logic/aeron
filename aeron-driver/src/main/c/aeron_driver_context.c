@@ -998,6 +998,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
 
+    _context->untethered_subscription_state_change_func = aeron_untethered_subscription_state_change;
+
     if ((_context->termination_validator_func = aeron_driver_termination_validator_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR, "deny"))) == NULL)
     {
@@ -2391,4 +2393,3 @@ uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_c
     return NULL != context ?
         context->re_resolution_check_interval_ns : AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
 }
-

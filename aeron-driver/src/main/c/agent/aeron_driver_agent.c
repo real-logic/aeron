@@ -100,6 +100,38 @@ static void *aeron_driver_agent_log_reader(void *arg)
     return NULL;
 }
 
+void aeron_init_logging_ring_buffer()
+{
+    size_t rb_length = RING_BUFFER_LENGTH + AERON_RB_TRAILER_LENGTH;
+
+    if ((rb_buffer = (uint8_t *)malloc(rb_length)) == NULL)
+    {
+        fprintf(stderr, "could not allocate ring buffer buffer. exiting.\n");
+        exit(EXIT_FAILURE);
+    }
+    memset(rb_buffer, 0, rb_length);
+
+    if (aeron_mpsc_rb_init(&logging_mpsc_rb, rb_buffer, rb_length) < 0)
+    {
+        fprintf(stderr, "could not init logging mpwc_rb. exiting.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void aeron_free_logging_ring_buffer()
+{
+    if (NULL != rb_buffer)
+    {
+       aeron_free(rb_buffer);
+       rb_buffer = NULL;
+    }
+}
+
+void aeron_set_logging_mask(uint64_t new_mask)
+{
+    mask = new_mask;
+}
+
 static void initialize_agent_logging()
 {
     char *mask_str = getenv(AERON_AGENT_MASK_ENV_VAR);
@@ -112,8 +144,6 @@ static void initialize_agent_logging()
 
     if (mask != 0)
     {
-        size_t rb_length = RING_BUFFER_LENGTH + AERON_RB_TRAILER_LENGTH;
-
         logfp = stdout;
         if (log_filename)
         {
@@ -127,18 +157,7 @@ static void initialize_agent_logging()
             }
         }
 
-        if ((rb_buffer = (uint8_t *)malloc(rb_length)) == NULL)
-        {
-            fprintf(stderr, "could not allocate ring buffer buffer. exiting.\n");
-            exit(EXIT_FAILURE);
-        }
-        memset(rb_buffer, 0, rb_length);
-
-        if (aeron_mpsc_rb_init(&logging_mpsc_rb, rb_buffer, rb_length) < 0)
-        {
-            fprintf(stderr, "could not init logging mpwc_rb. exiting.\n");
-            exit(EXIT_FAILURE);
-        }
+        aeron_init_logging_ring_buffer();
 
         if (aeron_thread_create(&log_reader_thread, NULL, aeron_driver_agent_log_reader, NULL) != 0)
         {
@@ -316,15 +335,40 @@ void aeron_driver_agent_incoming_msg(
         addr);
 }
 
+void aeron_driver_agent_untethered_subscription_state_change_interceptor(
+    aeron_tetherable_position_t *tetherable_position,
+    int64_t now_ns,
+    aeron_subscription_tether_state_t new_state,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    uint8_t buffer[sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t)];
+    aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
+            (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)buffer;
+
+    hdr->time_ms = aeron_agent_epoch_clock();
+    hdr->subscription_id = tetherable_position->subscription_registration_id;
+    hdr->stream_id = stream_id;
+    hdr->session_id = session_id;
+    hdr->old_state = tetherable_position->state;
+    hdr->new_state = new_state;
+
+    aeron_untethered_subscription_state_change(tetherable_position, now_ns, new_state, stream_id, session_id);
+
+    aeron_mpsc_rb_write(
+            &logging_mpsc_rb,
+            AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
+            buffer,
+            sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+}
+
 int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_channel_transport_affinity_t affinity)
 {
     return 0;
 }
 
-int aeron_driver_agent_context_init(aeron_driver_context_t *context)
+int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
 {
-    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
-
     if (mask & AERON_FRAME_IN)
     {
         aeron_udp_channel_interceptor_bindings_t *incoming_bindings = NULL;
@@ -406,7 +450,20 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
         context->map_raw_log_close_func = aeron_driver_agent_map_raw_log_close_interceptor;
     }
 
+    if (mask & AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)
+    {
+        context->untethered_subscription_state_change_func =
+                aeron_driver_agent_untethered_subscription_state_change_interceptor;
+    }
+
     return 0;
+}
+
+int aeron_driver_agent_context_init(aeron_driver_context_t *context)
+{
+    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
+
+    return aeron_init_logging_events_interceptors(context);
 }
 
 static const char *dissect_msg_type_id(int32_t id)
@@ -954,6 +1011,24 @@ static const char *dissect_frame(const void *message, size_t length)
     return buffer;
 }
 
+static const char *dissect_tether_state(aeron_subscription_tether_state_t state)
+{
+    switch (state)
+    {
+        case AERON_SUBSCRIPTION_TETHER_ACTIVE:
+            return "ACTIVE";
+
+        case AERON_SUBSCRIPTION_TETHER_LINGER:
+            return "LINGER";
+
+        case AERON_SUBSCRIPTION_TETHER_RESTING:
+            return "RESTING";
+
+        default:
+            return "unknown tether state";
+    }
+}
+
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
     switch (msg_type_id)
@@ -1038,6 +1113,23 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 dissect_timestamp(hdr->time_ms),
                 (void *)hdr->map_raw.map_raw_log_close.addr,
                 hdr->map_raw.map_raw_log_close.result);
+            break;
+        }
+
+        case AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE:
+        {
+            aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
+                    (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
+
+            fprintf(
+                logfp,
+                "[%s] UNTETHERED_SUBSCRIPTION_STATE_CHANGE: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
+                dissect_timestamp(hdr->time_ms),
+                hdr->subscription_id,
+                hdr->stream_id,
+                hdr->session_id,
+                dissect_tether_state(hdr->old_state),
+                dissect_tether_state(hdr->new_state));
             break;
         }
 

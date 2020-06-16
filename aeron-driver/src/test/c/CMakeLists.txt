@@ -82,6 +82,7 @@ aeron_driver_test(term_gap_filler_test aeron_term_gap_filler_test.cpp)
 aeron_driver_test(parse_util_test aeron_parse_util_test.cpp)
 aeron_driver_test(properties_test aeron_properties_test.cpp)
 aeron_driver_test(driver_configuration_test aeron_driver_configuration_test.cpp)
+aeron_driver_test(driver_agent_test agent/aeron_driver_agent_test.cpp)
 
 aeron_driver_test(system_test aeron_system_test.cpp)
 set_tests_properties(system_test PROPERTIES TIMEOUT 10)

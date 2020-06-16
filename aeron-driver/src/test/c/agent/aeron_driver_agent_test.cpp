@@ -70,7 +70,7 @@ TEST_F(DriverAgentTest, shouldKeepOriginalUntetheredStateChangeFunctionIfEventNo
 
 TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
 {
-    init_logging_ring_buffer();
+    aeron_init_logging_ring_buffer();
 
     aeron_subscription_tether_state_t old_state = AERON_SUBSCRIPTION_TETHER_RESTING;
     aeron_subscription_tether_state_t new_state = AERON_SUBSCRIPTION_TETHER_ACTIVE;

@@ -100,7 +100,7 @@ static void *aeron_driver_agent_log_reader(void *arg)
     return NULL;
 }
 
-static void init_logging_ring_buffer()
+void aeron_init_logging_ring_buffer()
 {
     size_t rb_length = RING_BUFFER_LENGTH + AERON_RB_TRAILER_LENGTH;
 
@@ -118,7 +118,7 @@ static void init_logging_ring_buffer()
     }
 }
 
-static void aeron_free_logging_ring_buffer()
+void aeron_free_logging_ring_buffer()
 {
     if (NULL != rb_buffer)
     {
@@ -127,7 +127,7 @@ static void aeron_free_logging_ring_buffer()
     }
 }
 
-static void aeron_set_logging_mask(uint64_t new_mask)
+void aeron_set_logging_mask(uint64_t new_mask)
 {
     mask = new_mask;
 }
@@ -157,7 +157,7 @@ static void initialize_agent_logging()
             }
         }
 
-        init_logging_ring_buffer();
+        aeron_init_logging_ring_buffer();
 
         if (aeron_thread_create(&log_reader_thread, NULL, aeron_driver_agent_log_reader, NULL) != 0)
         {
@@ -367,7 +367,7 @@ int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_chan
     return 0;
 }
 
-static int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
+int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
 {
     if (mask & AERON_FRAME_IN)
     {

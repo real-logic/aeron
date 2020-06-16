@@ -96,4 +96,12 @@ const char *dissect_log_start(int64_t time_ms);
 
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
+int aeron_init_logging_events_interceptors(aeron_driver_context_t *context);
+
+void aeron_init_logging_ring_buffer();
+
+void aeron_free_logging_ring_buffer();
+
+void aeron_set_logging_mask(uint64_t new_mask);
+
 #endif //AERON_DRIVER_AGENT_H

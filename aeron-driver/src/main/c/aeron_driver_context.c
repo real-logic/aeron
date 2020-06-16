@@ -2393,14 +2393,3 @@ uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_c
     return NULL != context ?
         context->re_resolution_check_interval_ns : AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
 }
-
-void aeron_untethered_subscription_state_change(
-        aeron_tetherable_position_t *tetherable_position,
-        int64_t now_ns,
-        aeron_subscription_tether_state_t new_state,
-        int32_t stream_id,
-        int32_t session_id)
-{
-    tetherable_position->state = new_state;
-    tetherable_position->time_of_last_update_ns = now_ns;
-}

@@ -23,10 +23,10 @@ import org.agrona.concurrent.status.CountersReader;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Readonly View of an associated {@link io.aeron.Counter}.
+ * Readonly view of an associated {@link io.aeron.Counter}.
  * <p>
  * <b>Note:</b>The user should call {@link #isClosed()} and ensure the result is false to avoid a race on reading a
- * closed counter.
+ * closed {@link io.aeron.Counter}.
  * */
 public class ReadableCounter implements AutoCloseable
 {

@@ -47,9 +47,9 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Single Node Cluster that includes everything needed to run all in one place. Includes a simple service to show
- * event processing. And also includes a cluster client.
+ * event processing, and includes a cluster client.
  * <p>
- * Perfect for playing around with the cluster
+ * Perfect for playing around with the Cluster.
  */
 public class SingleNodeCluster implements AutoCloseable
 {

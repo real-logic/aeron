@@ -723,6 +723,8 @@ project(':aeron-system-tests') {
         systemProperties('java.net.preferIPv4Stack': 'true')
         systemProperties('aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'))
     }
+
+    javadoc.enabled = false
 }
 
 project(':aeron-test-support') {
@@ -731,6 +733,8 @@ project(':aeron-test-support') {
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         implementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     }
+
+    javadoc.enabled = false
 }
 
 project(':aeron-all') {

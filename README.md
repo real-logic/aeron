@@ -20,7 +20,7 @@ storage for later, or real-time, replay.
 Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable
 latency of any messaging system. Aeron integrates with
 [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible performance
-in message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to
+for message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to
 the [Agrona](https://github.com/real-logic/agrona) project.
 
 For details of usage, protocol specification, FAQ, etc. please check out the
@@ -45,7 +45,7 @@ features such as Solarflare ef_vi transport binding for a further 40-60% reducti
 1. [Configuration Options](https://github.com/real-logic/aeron/wiki/Configuration-Options)
 1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
 1. [Aeron Archive (Durable/Persistent Stream Storage)](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
-1. [Aeron Cluster (Fault Toleratant Services)](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
+1. [Aeron Cluster (Fault Tolerant Services)](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
 
 ### How does Aeron work?
 
@@ -101,17 +101,16 @@ You require the following to build the C++ API for Aeron:
     $ sudo apt-get install libz-dev
 ```
 
-__Note__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
-with Visual Studio 2017 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
-Windows builds require 7z to unzip the zlib source archive.
+__Note__: Aeron is supported on Linux, Mac, and Windows. A Windows build requires Visual Studio with 64-bit only.
+Windows builds require [7z](https://www.7-zip.org/download.html) to unzip the `zlib` source archive.
 
-For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
+For convenience, a script is provided that does a clean, build, and test of all targets as a Release build.
 
 ```shell
     $ ./cppbuild/cppbuild
 ```
 
-If you are comfortable with using CMake, then a full clean, build, and test looks like:
+If you are comfortable with using CMake, then a clean, build, and test looks like:
 
 ```shell
     $ mkdir -p cppbuild/Debug
@@ -126,7 +125,7 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 By default, the C Media Driver is built as part of the C++ Build. However, it can be disabled via the CMake
 option `BUILD_AERON_DRIVER` being set to `OFF`.
 
-__Note__: C Media Driver is currently only supported on Mac and Linux (Windows version is experimental).
+__Note__: C Media Driver is only supported on Mac and Linux (Windows version is experimental).
 
 For dependencies and other information, see the
 [README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md).

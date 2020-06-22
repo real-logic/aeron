@@ -242,7 +242,7 @@ TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
     ASSERT_EQ(true, is_eos);
 }
 
-TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHaventBeenActive)
+TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHaveNotBeenActive)
 {
     struct sockaddr_storage addr; // Don't really care what value this is.
     uint8_t data[128];
@@ -384,7 +384,7 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
 }
 
 
-TEST_F(PublicationImageTest, shouldTrackUnderruningTransportsWithLastSmAndReceiverWindowLength)
+TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndReceiverWindowLength)
 {
     struct sockaddr_storage addr; // Don't really care what value this is.
     uint8_t data[128];

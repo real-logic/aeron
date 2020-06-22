@@ -90,8 +90,19 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
 
 int aeron_ftruncate(int fd, off_t length)
 {
-    int error = _chsize_s(fd, length);
-    if (error != 0)
+    HANDLE hFile = (HANDLE)_get_osfhandle(fd);
+
+    LARGE_INTEGER fileSize;
+    int64_t endPos = (int64_t)length;
+    fileSize.u.LowPart = endPos & 0xFFFFFFFF;
+    fileSize.u.HighPart = endPos >> 32;
+
+    if (!SetFilePointerEx(hFile, fileSize, NULL, FILE_BEGIN))
+    {
+        return -1;
+    }
+
+    if (!SetEndOfFile(hFile))
     {
         return -1;
     }
@@ -132,7 +143,7 @@ uint64_t aeron_usable_fs_space(const char *path)
     return (uint64_t)lpAvailableToCaller.QuadPart;
 }
 
-int aeron_create_file(const char* path)
+int aeron_create_file(const char *path)
 {
     int fd;
     int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
@@ -145,7 +156,7 @@ int aeron_create_file(const char* path)
     return fd;
 }
 
-int aeron_delete_directory(const char* dir)
+int aeron_delete_directory(const char *dir)
 {
     SHFILEOPSTRUCT file_op =
     {
@@ -164,7 +175,7 @@ int aeron_delete_directory(const char* dir)
     return SHFileOperation(&file_op);
 }
 
-int aeron_is_directory(const char* path)
+int aeron_is_directory(const char *path)
 {
     const DWORD attributes = GetFileAttributes(path);
     return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
@@ -445,10 +456,7 @@ int aeron_map_raw_log(
     return result;
 }
 
-int aeron_map_existing_log(
-    aeron_mapped_raw_log_t *mapped_raw_log,
-    const char *path,
-    bool pre_touch)
+int aeron_map_existing_log(aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool pre_touch)
 {
     struct stat sb;
     int fd, result = -1;

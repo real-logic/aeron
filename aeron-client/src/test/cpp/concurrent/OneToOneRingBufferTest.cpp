@@ -388,7 +388,7 @@ TEST_F(OneToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
 #define NUM_MESSAGES (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 
-TEST(OneToOneRingBufferConcurrentTest, shouldProvideCcorrelationIds)
+TEST(OneToOneRingBufferConcurrentTest, shouldProvideCorrelationIds)
 {
     AERON_DECL_ALIGNED(buffer_t mpscBuffer, 16);
     mpscBuffer.fill(0);

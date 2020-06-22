@@ -353,7 +353,7 @@ TEST_F(TaggedFlowControlTest, shouldUsePositionAndWindowFromStatusMessageWhenRec
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(m_strategy, 1, 1000, 0));
 }
 
-TEST_F(TaggedFlowControlTest, shouldAlwayUsePositionFromReceiversIfPresent)
+TEST_F(TaggedFlowControlTest, shouldAlwaysUsePositionFromReceiversIfPresent)
 {
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123");
 

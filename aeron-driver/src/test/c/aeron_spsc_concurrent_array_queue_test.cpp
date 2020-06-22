@@ -142,7 +142,7 @@ TEST_F(SpscQueueTest, shouldDrainFullQueue)
     EXPECT_EQ(aeron_spsc_concurrent_array_queue_size(&m_q), 0u);
 }
 
-TEST_F(SpscQueueTest, shouldDraingFullQueueWithLimit)
+TEST_F(SpscQueueTest, shouldDrainingFullQueueWithLimit)
 {
     uint64_t limit = CAPACITY / 2;
     fillQueue();

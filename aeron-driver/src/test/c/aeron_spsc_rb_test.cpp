@@ -371,7 +371,7 @@ TEST_F(SpscRbTest, shouldLimitReadOfMessages)
 #define NUM_MESSAGES (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 
-TEST(SpscRbConcurrentTest, shouldProvideCcorrelationIds)
+TEST(SpscRbConcurrentTest, shouldProvideCorrelationIds)
 {
     AERON_DECL_ALIGNED(buffer_t buffer, 16);
     buffer.fill(0);

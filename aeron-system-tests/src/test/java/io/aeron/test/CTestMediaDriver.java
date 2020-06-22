@@ -19,6 +19,7 @@ import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 
@@ -33,8 +34,7 @@ import static java.util.Collections.emptyMap;
 
 public final class CTestMediaDriver implements TestMediaDriver
 {
-    private static final File NULL_FILE = System.getProperty("os.name").startsWith("Windows") ?
-        new File("NUL") : new File("/dev/null");
+    private static final File NULL_FILE = SystemUtil.isWindows() ? new File("NUL") : new File("/dev/null");
     private static final Map<Class<?>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
         new IdentityHashMap<>();
     private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> C_DRIVER_ADDITIONAL_ENV_VARS =
@@ -84,13 +84,12 @@ public final class CTestMediaDriver implements TestMediaDriver
                 driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
             }
         }
-        catch (final InterruptedException e)
+        catch (final InterruptedException ex)
         {
-            throw new RuntimeException("Interrupted while waiting for shutdown", e);
+            throw new RuntimeException("Interrupted while waiting for shutdown", ex);
         }
 
-        final File aeronDirectory = new File(context.aeronDirectoryName());
-        IoUtil.delete(aeronDirectory, false);
+        IoUtil.delete(new File(context.aeronDirectoryName()), false);
     }
 
     private void terminateDriver()
@@ -102,17 +101,16 @@ public final class CTestMediaDriver implements TestMediaDriver
         final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {
         final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
-        final File f = new File(aeronDirPath);
+        final File aeronBinary = new File(aeronDirPath);
 
-        if (!f.exists())
+        if (!aeronBinary.exists())
         {
-            throw new RuntimeException("Unable to find native media driver binary: " + f.getAbsolutePath());
+            throw new RuntimeException("Unable to find native media driver binary: " + aeronBinary.getAbsolutePath());
         }
 
         IoUtil.ensureDirectoryExists(
             new File(context.aeronDirectoryName()).getParentFile(), "Aeron C Media Driver directory");
 
-        final ProcessBuilder pb = new ProcessBuilder(f.getAbsolutePath());
         final HashMap<String, String> environment = new HashMap<>();
 
         environment.put("AERON_CLIENT_LIVENESS_TIMEOUT", String.valueOf(context.clientLivenessTimeoutNs()));
@@ -163,8 +161,6 @@ public final class CTestMediaDriver implements TestMediaDriver
         setLogging(environment);
         C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(environment::put);
 
-        pb.environment().putAll(environment);
-
         try
         {
             final File stdoutFile;
@@ -184,6 +180,8 @@ public final class CTestMediaDriver implements TestMediaDriver
                 driverOutputConsumer.environmentVariables(context.aeronDirectoryName(), environment);
             }
 
+            final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
+            pb.environment().putAll(environment);
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
 
             return new CTestMediaDriver(pb.start(), context, driverOutputConsumer);

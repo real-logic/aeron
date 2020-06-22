@@ -90,8 +90,10 @@ protected:
 
         aeron_counters_manager_init(
             &m_counters_manager,
-            m_counter_meta_buffer.data(), m_counter_meta_buffer.size(),
-            m_counter_value_buffer.data(), m_counter_value_buffer.size(),
+            m_counter_meta_buffer.data(),
+            m_counter_meta_buffer.size(),
+            m_counter_value_buffer.data(),
+            m_counter_value_buffer.size(),
             aeron_epoch_clock,
             1000);
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
@@ -122,7 +124,8 @@ protected:
 
         m_dispatcher = &m_receive_endpoint->dispatcher;
 
-        m_test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(m_receive_destination->transport.bindings_clientd);
+        m_test_bindings_state =
+            tatic_cast<aeron_test_udp_bindings_state_t *>(m_receive_destination->transport.bindings_clientd);
     };
 
     virtual void TearDown()
@@ -156,8 +159,18 @@ protected:
         hwm_position.value_addr = aeron_counters_manager_addr(&m_counters_manager, hwm_position.counter_id);
 
         m_context->congestion_control_supplier_func(
-            &congestion_control_strategy, 0, 0, 0, 0, 0, TERM_BUFFER_SIZE, MTU,
-            &m_channel->remote_control, &m_channel->remote_data, m_context, &m_counters_manager);
+            &congestion_control_strategy,
+            0,
+            0,
+            0,
+            0,
+            0,
+            TERM_BUFFER_SIZE,
+            MTU,
+            &m_channel->remote_control,
+            &m_channel->remote_data,
+            m_context,
+            &m_counters_manager);
 
         if (1u != m_receive_endpoint->destinations.length)
         {
@@ -165,11 +178,28 @@ protected:
         }
 
         if (aeron_publication_image_create(
-            &image, m_receive_endpoint, m_receive_endpoint->destinations.array[0].destination,
-            m_context, correlation_id, session_id, stream_id, 0, 0, 0,
-            &hwm_position, &pos_position, congestion_control_strategy,
-            &m_channel->remote_control, &m_channel->local_data,
-            TERM_BUFFER_SIZE, MTU, NULL, true, true, false, &m_system_counters) < 0)
+            &image,
+            m_receive_endpoint,
+            m_receive_endpoint->destinations.array[0].destination,
+            m_context,
+            correlation_id,
+            session_id,
+            stream_id,
+            0,
+            0,
+            0,
+            &hwm_position,
+            &pos_position,
+            congestion_control_strategy,
+            &m_channel->remote_control,
+            &m_channel->local_data,
+            TERM_BUFFER_SIZE,
+            MTU,
+            NULL,
+            true,
+            true,
+            false,
+            &m_system_counters) < 0)
         {
             return NULL;
         }
@@ -245,7 +275,13 @@ TEST_F(DataPacketDispatcherTest, shouldInsertDataInputSubscribedPublicationImage
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
 
     int bytes_written = aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
 
     ASSERT_EQ((int)len, bytes_written);
     ASSERT_EQ((int64_t)len, *image->rcv_hwm_position.value_addr);
@@ -275,7 +311,13 @@ TEST_F(DataPacketDispatcherTest, shouldNotInsertDataInputWithNoSubscription)
     int64_t expected_position_after_data = position_before_data;
 
     int bytes_written = aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
 
     ASSERT_EQ(0, bytes_written);
     ASSERT_EQ(expected_position_after_data, *image->rcv_hwm_position.value_addr);
@@ -295,23 +337,47 @@ TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageForSubscriptionWithoutI
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
 
     ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data));
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data));
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data));
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data));
 
     ASSERT_EQ(1, m_test_bindings_state->sm_count);
 
     aeron_data_packet_dispatcher_remove_pending_setup(m_dispatcher, session_id, stream_id);
 
     ASSERT_EQ(0, aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data));
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data));
 
     ASSERT_EQ(2, m_test_bindings_state->sm_count);
 }
 
-TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupOnceForTheSameStreamSessionId)
+TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupOnceForTheSameStreamSessionId)
 {
     AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
 
@@ -323,13 +389,28 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupOnceFo
     aeron_setup_header_t *setup_header = setupPacket(data_buffer, stream_id, session_id);
 
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header,
+        data_buffer.data(),
+        sizeof(*setup_header),
         &m_channel->local_data);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header,
+        data_buffer.data(),
+        sizeof(*setup_header),
         &m_channel->local_data);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header,
+        data_buffer.data(),
+        sizeof(*setup_header),
         &m_channel->local_data);
 
     ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
@@ -339,7 +420,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupOnceFo
         3));
 }
 
-TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupMultipleTimeForDifferentSessionIds)
+TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupMultipleTimeForDifferentSessionIds)
 {
     AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
 
@@ -349,17 +430,32 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponRecevingSetupMultip
 
     aeron_setup_header_t *setup_header_1 = setupPacket(data_buffer, stream_id, 1001);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header_1, data_buffer.data(), sizeof(*setup_header_1),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header_1,
+        data_buffer.data(),
+        sizeof(*setup_header_1),
         &m_channel->local_data);
 
     aeron_setup_header_t *setup_header_2 = setupPacket(data_buffer, stream_id, 1002);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header_2, data_buffer.data(), sizeof(*setup_header_1),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header_2,
+        data_buffer.data(),
+        sizeof(*setup_header_1),
         &m_channel->local_data);
 
     aeron_setup_header_t *setup_header_3 = setupPacket(data_buffer, stream_id, 1003);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header_3, data_buffer.data(), sizeof(*setup_header_1),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header_3,
+        data_buffer.data(),
+        sizeof(*setup_header_1),
         &m_channel->local_data);
 
     ASSERT_EQ(UINT64_C(3), aeron_mpsc_concurrent_array_queue_drain(
@@ -419,10 +515,21 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
     aeron_setup_header_t *setup_header = setupPacket(data_buffer, stream_id, session_id);
 
     aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
     ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_header, data_buffer.data(), sizeof(*setup_header),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_header,
+        data_buffer.data(),
+        sizeof(*setup_header),
         &m_channel->local_data);
 
     ASSERT_EQ(0, m_test_bindings_state->msg_count + m_test_bindings_state->mmsg_count);
@@ -449,9 +556,20 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
     aeron_setup_header_t *setup_header = setupPacket(data_buffer, stream_id, session_id);
 
     aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, setup_header, data_buffer.data(), sizeof(*setup_header),
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        setup_header,
+        data_buffer.data(),
+        sizeof(*setup_header),
         &m_channel->local_data);
 
     ASSERT_EQ(1, m_test_bindings_state->sm_count);
@@ -483,7 +601,13 @@ TEST_F(DataPacketDispatcherTest, shouldNotRemoveNewPublicationImageFromOldRemove
     ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_publication_image(m_dispatcher, image1));
 
     int bytes_written = aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
 
     ASSERT_EQ((int)len, bytes_written);
     ASSERT_EQ((int64_t)len, *image2->rcv_hwm_position.value_addr);
@@ -502,7 +626,12 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription_by_session(m_dispatcher, stream_id, session_id1));
 
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_session1, data_buffer.data(), sizeof(*setup_session1),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_session1,
+        data_buffer.data(),
+        sizeof(*setup_session1),
         &m_channel->local_data);
 
     ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
@@ -515,7 +644,11 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
 
     aeron_setup_header_t *setup_session2_ignored = setupPacket(data_buffer, stream_id, session_id2);
     aeron_data_packet_dispatcher_on_setup(
-        m_dispatcher, m_receive_endpoint, NULL, setup_session2_ignored, data_buffer.data(),
+        m_dispatcher,
+        m_receive_endpoint,
+        NULL,
+        setup_session2_ignored,
+        data_buffer.data(),
         sizeof(*setup_session2_ignored),
         &m_channel->local_data);
 
@@ -541,7 +674,13 @@ TEST_F(DataPacketDispatcherTest, shouldRemoveSessionSpecificSubscriptionAndStill
     ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_subscription_by_session(m_dispatcher, stream_id, session_id));
 
     int bytes_written = aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
 
     ASSERT_EQ((int)len, bytes_written);
     ASSERT_EQ((int64_t)len, *image->rcv_hwm_position.value_addr);
@@ -568,7 +707,13 @@ TEST_F(DataPacketDispatcherTest, shouldNotRemoveStreamInterestOnRemovalOfSession
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
 
     int bytes_written = aeron_data_packet_dispatcher_on_data(
-        m_dispatcher, m_receive_endpoint, m_receive_destination, data_header, data_buffer.data(), len, &m_channel->local_data);
+        m_dispatcher,
+        m_receive_endpoint,
+        m_receive_destination,
+        data_header,
+        data_buffer.data(),
+        len,
+        &m_channel->local_data);
 
     ASSERT_EQ((int)len, bytes_written);
     ASSERT_EQ((int64_t)len, *image->rcv_hwm_position.value_addr);

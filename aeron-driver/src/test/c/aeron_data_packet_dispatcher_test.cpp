@@ -125,7 +125,7 @@ protected:
         m_dispatcher = &m_receive_endpoint->dispatcher;
 
         m_test_bindings_state =
-            tatic_cast<aeron_test_udp_bindings_state_t *>(m_receive_destination->transport.bindings_clientd);
+            static_cast<aeron_test_udp_bindings_state_t *>(m_receive_destination->transport.bindings_clientd);
     };
 
     virtual void TearDown()

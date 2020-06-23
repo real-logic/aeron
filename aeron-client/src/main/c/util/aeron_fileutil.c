@@ -40,7 +40,7 @@
 
 #define PROT_READ  1
 #define PROT_WRITE 2
-#define MAP_FAILED ((void*)-1)
+#define MAP_FAILED ((void *)-1)
 
 #define MAP_SHARED 0x01
 #define S_IRUSR _S_IREAD
@@ -90,19 +90,17 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
 
 int aeron_ftruncate(int fd, off_t length)
 {
-    HANDLE hFile = (HANDLE)_get_osfhandle(fd);
+    HANDLE hfile = (HANDLE)_get_osfhandle(fd);
 
-    LARGE_INTEGER fileSize;
-    int64_t endPos = (int64_t)length;
-    fileSize.u.LowPart = endPos & 0xFFFFFFFF;
-    fileSize.u.HighPart = endPos >> 32;
+    LARGE_INTEGER file_size;
+    file_size.QuadPart = length;
 
-    if (!SetFilePointerEx(hFile, fileSize, NULL, FILE_BEGIN))
+    if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN))
     {
         return -1;
     }
 
-    if (!SetEndOfFile(hFile))
+    if (!SetEndOfFile(hfile))
     {
         return -1;
     }
@@ -386,7 +384,7 @@ size_t aeron_temp_filename(char *filename, size_t length)
 
     return strlen(filename);
 #else
-    char tmpdir[MAX_PATH+1];
+    char tmpdir[MAX_PATH + 1];
     char tmpfile[MAX_PATH];
 
     if (GetTempPath(MAX_PATH, &tmpdir[0]) > 0)

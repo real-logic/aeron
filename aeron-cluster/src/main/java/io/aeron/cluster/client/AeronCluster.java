@@ -1423,7 +1423,6 @@ public final class AeronCluster implements AutoCloseable
         private int leaderMemberId;
         private int step = 0;
         private int messageLength = 0;
-        private boolean isChallenged = false;
 
         private final Context ctx;
         private final NanoClock nanoClock;
@@ -1531,7 +1530,9 @@ public final class AeronCluster implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException("connect timeout, step=" + step, AeronException.Category.ERROR);
+                throw new TimeoutException(
+                    "connect timeout, step=" + step + " egress.isConnected=" + egressSubscription.isConnected(),
+                    AeronException.Category.ERROR);
             }
         }
 
@@ -1576,7 +1577,7 @@ public final class AeronCluster implements AutoCloseable
 
         private void prepareConnectRequest()
         {
-            if (Aeron.NULL_VALUE == correlationId || isChallenged)
+            if (Aeron.NULL_VALUE == correlationId)
             {
                 correlationId = ctx.aeron().nextCorrelationId();
                 final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
@@ -1617,7 +1618,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 if (egressPoller.isChallenged())
                 {
-                    isChallenged = true;
+                    correlationId = Aeron.NULL_VALUE;
                     clusterSessionId = egressPoller.clusterSessionId();
                     prepareChallengeResponse(ctx.credentialsSupplier().onChallenge(egressPoller.encodedChallenge()));
                     step(2);

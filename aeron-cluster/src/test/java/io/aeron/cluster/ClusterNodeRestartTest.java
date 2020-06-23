@@ -25,6 +25,7 @@ import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
@@ -627,8 +628,19 @@ public class ClusterNodeRestartTest
 
     private void connectClient()
     {
-        CloseHelper.close(aeronCluster);
-        aeronCluster = AeronCluster.connect();
+        while (true)
+        {
+            try
+            {
+                CloseHelper.close(aeronCluster);
+                aeronCluster = AeronCluster.connect();
+                return;
+            }
+            catch (final TimeoutException ex)
+            {
+                System.out.println("warning: " + ex.getMessage());
+            }
+        }
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)

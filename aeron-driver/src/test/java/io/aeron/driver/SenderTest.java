@@ -224,7 +224,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(0);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(flowControl.onStatusMessage(msg, rcvAddress, ));
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
         receivedFrames.remove();

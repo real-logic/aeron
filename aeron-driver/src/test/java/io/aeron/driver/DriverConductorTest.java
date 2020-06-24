@@ -158,9 +158,8 @@ public class DriverConductorTest
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
             .driverConductorProxy(driverConductorProxy)
+            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
             .nameResolver(DefaultNameResolver.INSTANCE);
-
-        ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);

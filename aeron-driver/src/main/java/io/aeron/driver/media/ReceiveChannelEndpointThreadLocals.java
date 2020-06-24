@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.driver.MediaDriver;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -44,7 +43,7 @@ public class ReceiveChannelEndpointThreadLocals
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
     private long nextReceiverId;
 
-    public ReceiveChannelEndpointThreadLocals(final MediaDriver.Context context)
+    public ReceiveChannelEndpointThreadLocals()
     {
         final int smLength = StatusMessageFlyweight.HEADER_LENGTH + SIZE_OF_LONG;
         final int bufferLength =

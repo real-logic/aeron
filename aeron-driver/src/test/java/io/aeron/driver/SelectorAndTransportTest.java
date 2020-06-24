@@ -73,7 +73,10 @@ public class SelectorAndTransportTest
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
-    private final MediaDriver.Context context = new MediaDriver.Context();
+    private final MediaDriver.Context context = new MediaDriver.Context()
+        .systemCounters(mockSystemCounters)
+        .cachedNanoClock(new CachedNanoClock())
+        .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals());
 
     @BeforeEach
     public void setup()
@@ -81,11 +84,6 @@ public class SelectorAndTransportTest
         when(mockSystemCounters.get(any())).thenReturn(mockStatusMessagesReceivedCounter);
         when(mockPublication.streamId()).thenReturn(STREAM_ID);
         when(mockPublication.sessionId()).thenReturn(SESSION_ID);
-
-        context
-            .systemCounters(mockSystemCounters)
-            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context))
-            .cachedNanoClock(new CachedNanoClock());
     }
 
     @AfterEach

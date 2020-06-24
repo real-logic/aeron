@@ -3147,7 +3147,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == receiveChannelEndpointThreadLocals)
             {
-                receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals(this);
+                receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals();
             }
 
             if (null == congestionControlSupplier)

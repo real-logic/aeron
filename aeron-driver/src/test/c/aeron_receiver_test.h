@@ -80,6 +80,8 @@ protected:
         m_conductor_proxy.fail_counter = &m_conductor_fail_counter;
         m_conductor_proxy.conductor = NULL;
 
+        m_context->conductor_proxy = &m_conductor_proxy;
+
         aeron_default_name_resolver_supplier(&m_resolver, NULL, NULL);
 
         m_counter_value_buffer.fill(0);
@@ -127,32 +129,48 @@ protected:
         aeron_driver_context_close(m_context);
     }
 
-    aeron_receive_channel_endpoint_t *createEndpoint(aeron_udp_channel_t *channel, aeron_receive_destination_t *destination)
+    aeron_receive_channel_endpoint_t *createEndpoint(aeron_udp_channel_t *channel)
     {
         aeron_atomic_counter_t status_indicator;
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
             &m_counters_manager, channel->uri_length, channel->original_uri);
         status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
+        aeron_receive_destination_t *destination = NULL;
+        if (!channel->is_manual_control_mode)
+        {
+            if (0 != aeron_receive_destination_create(
+                &destination, channel, m_context, &m_counters_manager, status_indicator.counter_id))
+            {
+                return nullptr;
+            }
+        }
+
         aeron_receive_channel_endpoint_t *endpoint = NULL;
-        aeron_receive_channel_endpoint_create(
-            &endpoint, channel, destination, &status_indicator, &m_system_counters, m_context);
+        if (0 != aeron_receive_channel_endpoint_create(
+            &endpoint, channel, destination, &status_indicator, &m_system_counters, m_context))
+        {
+            return nullptr;
+        }
         m_endpoints.push_back(endpoint);
 
         return endpoint;
     }
 
-    aeron_receive_channel_endpoint_t *createEndpoint(const char *uri, aeron_receive_destination_t *destination)
+    aeron_receive_channel_endpoint_t *createEndpoint(const char *uri)
     {
         aeron_udp_channel_t *channel = NULL;
-        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
+        if (0 != aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel))
+        {
+            return nullptr;
+        }
 
-        return createEndpoint(channel, destination);
+        return createEndpoint(channel);
     }
 
     aeron_receive_channel_endpoint_t *createMdsEndpoint()
     {
-        return createEndpoint("aeron:udp?control-mode=manual", NULL);
+        return createEndpoint("aeron:udp?control-mode=manual");
     }
 
     aeron_udp_channel_t *createChannel(const char *uri, std::vector<aeron_udp_channel_t *> *tracker = nullptr)
@@ -208,6 +226,34 @@ protected:
         m_images.push_back(image);
 
         return image;
+    }
+
+    static aeron_data_header_t *dataPacket(
+        buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
+    {
+        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer.data();
+        data_header->frame_header.type = AERON_HDR_TYPE_DATA;
+        data_header->stream_id = stream_id;
+        data_header->session_id = session_id;
+        data_header->term_id = term_id;
+        data_header->term_offset = term_offset;
+
+        return data_header;
+    }
+
+    static aeron_setup_header_t *setupPacket(
+        buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
+    {
+        aeron_setup_header_t *setup_header = (aeron_setup_header_t *)buffer.data();
+        setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
+        setup_header->stream_id = stream_id;
+        setup_header->session_id = session_id;
+        setup_header->initial_term_id = term_id;
+        setup_header->active_term_id = term_id;
+        setup_header->term_offset = term_offset;
+        setup_header->term_length = TERM_BUFFER_SIZE;
+
+        return setup_header;
     }
 
     aeron_udp_channel_transport_bindings_t m_transport_bindings;

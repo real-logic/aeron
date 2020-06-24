@@ -2617,6 +2617,7 @@ class ConsensusModuleAgent implements Agent
         }
 
         idleStrategy.idle();
+        archive.checkForErrorResponse();
     }
 
     private void idle(final int workCount)
@@ -2629,6 +2630,11 @@ class ConsensusModuleAgent implements Agent
         }
 
         idleStrategy.idle(workCount);
+
+        if (0 == workCount)
+        {
+            archive.checkForErrorResponse();
+        }
     }
 
     private static void checkInterruptStatus()

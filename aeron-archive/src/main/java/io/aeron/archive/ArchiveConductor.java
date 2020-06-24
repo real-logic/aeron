@@ -1372,57 +1372,72 @@ abstract class ArchiveConductor
         final Image image,
         final boolean autoStop)
     {
-        final int sessionId = image.sessionId();
-        final int streamId = image.subscription().streamId();
-        final String sourceIdentity = image.sourceIdentity();
-        final int termBufferLength = image.termBufferLength();
-        final int mtuLength = image.mtuLength();
-        final int initialTermId = image.initialTermId();
-        final long startPosition = image.joinPosition();
-        final int segmentFileLength = max(ctx.segmentFileLength(), termBufferLength);
+        final Subscription subscription = image.subscription();
+        try
+        {
+            final int sessionId = image.sessionId();
+            final int streamId = subscription.streamId();
+            final String sourceIdentity = image.sourceIdentity();
+            final int termBufferLength = image.termBufferLength();
+            final int mtuLength = image.mtuLength();
+            final int initialTermId = image.initialTermId();
+            final long startPosition = image.joinPosition();
+            final int segmentFileLength = max(ctx.segmentFileLength(), termBufferLength);
 
-        final long recordingId = catalog.addNewRecording(
-            startPosition,
-            cachedEpochClock.time(),
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity);
+            final long recordingId = catalog.addNewRecording(
+                startPosition,
+                cachedEpochClock.time(),
+                initialTermId,
+                segmentFileLength,
+                termBufferLength,
+                mtuLength,
+                sessionId,
+                streamId,
+                strippedChannel,
+                originalChannel,
+                sourceIdentity);
 
-        final Counter position = RecordingPos.allocate(
-            aeron, counterMetadataBuffer, recordingId, sessionId, streamId, strippedChannel, image.sourceIdentity());
-        position.setOrdered(startPosition);
+            final Counter position = RecordingPos.allocate(
+                aeron, counterMetadataBuffer, recordingId, sessionId, streamId, strippedChannel, sourceIdentity);
+            position.setOrdered(startPosition);
 
-        final RecordingSession session = new RecordingSession(
-            correlationId,
-            recordingId,
-            startPosition,
-            segmentFileLength,
-            originalChannel,
-            recordingEventsProxy,
-            image,
-            position,
-            archiveDirChannel,
-            ctx,
-            controlSession,
-            ctx.recordChecksumBuffer(),
-            ctx.recordChecksum(),
-            autoStop);
+            final RecordingSession session = new RecordingSession(
+                correlationId,
+                recordingId,
+                startPosition,
+                segmentFileLength,
+                originalChannel,
+                recordingEventsProxy,
+                image,
+                position,
+                archiveDirChannel,
+                ctx,
+                controlSession,
+                ctx.recordChecksumBuffer(),
+                ctx.recordChecksum(),
+                autoStop);
 
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
+            recordingSessionByIdMap.put(recordingId, session);
+            recorder.addSession(session);
 
-        controlSession.attemptSignal(
-            correlationId,
-            recordingId,
-            image.subscription().registrationId(),
-            image.joinPosition(),
-            RecordingSignal.START);
+            controlSession.attemptSignal(
+                correlationId,
+                recordingId,
+                subscription.registrationId(),
+                image.joinPosition(),
+                RecordingSignal.START);
+
+        }
+        catch (final Exception ex)
+        {
+            if (autoStop)
+            {
+                removeRecordingSubscription(subscription.registrationId());
+                CloseHelper.close(errorHandler, subscription);
+            }
+
+            throw ex;
+        }
     }
 
     private void extendRecordingSession(
@@ -1434,53 +1449,67 @@ abstract class ArchiveConductor
         final Image image,
         final boolean autoStop)
     {
-        if (recordingSessionByIdMap.containsKey(recordingId))
+        final Subscription subscription = image.subscription();
+        try
         {
-            final String msg = "cannot extend active recording for " + recordingId;
-            controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
+            if (recordingSessionByIdMap.containsKey(recordingId))
+            {
+                final String msg = "cannot extend active recording for " + recordingId;
+                controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+                throw new ArchiveException(msg);
+            }
+
+            catalog.recordingSummary(recordingId, recordingSummary);
+            validateImageForExtendRecording(correlationId, controlSession, image, recordingSummary);
+
+            final Counter position = RecordingPos.allocate(
+                aeron,
+                counterMetadataBuffer,
+                recordingId,
+                image.sessionId(),
+                subscription.streamId(),
+                strippedChannel,
+                image.sourceIdentity());
+
+            position.setOrdered(image.joinPosition());
+
+            final RecordingSession session = new RecordingSession(
+                correlationId,
+                recordingId,
+                recordingSummary.startPosition,
+                recordingSummary.segmentFileLength,
+                originalChannel,
+                recordingEventsProxy,
+                image,
+                position,
+                archiveDirChannel,
+                ctx,
+                controlSession,
+                ctx.recordChecksumBuffer(),
+                ctx.recordChecksum(),
+                autoStop);
+
+            recordingSessionByIdMap.put(recordingId, session);
+            catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
+            recorder.addSession(session);
+
+            controlSession.attemptSignal(
+                correlationId,
+                recordingId,
+                subscription.registrationId(),
+                image.joinPosition(),
+                RecordingSignal.EXTEND);
         }
+        catch (final Exception ex)
+        {
+            if (autoStop)
+            {
+                removeRecordingSubscription(subscription.registrationId());
+                CloseHelper.close(errorHandler, subscription);
+            }
 
-        catalog.recordingSummary(recordingId, recordingSummary);
-        validateImageForExtendRecording(correlationId, controlSession, image, recordingSummary);
-
-        final Counter position = RecordingPos.allocate(
-            aeron,
-            counterMetadataBuffer,
-            recordingId,
-            image.sessionId(),
-            image.subscription().streamId(),
-            strippedChannel,
-            image.sourceIdentity());
-
-        position.setOrdered(image.joinPosition());
-
-        final RecordingSession session = new RecordingSession(
-            correlationId,
-            recordingId,
-            recordingSummary.startPosition,
-            recordingSummary.segmentFileLength,
-            originalChannel,
-            recordingEventsProxy,
-            image,
-            position,
-            archiveDirChannel,
-            ctx,
-            controlSession,
-            ctx.recordChecksumBuffer(),
-            ctx.recordChecksum(),
-            autoStop);
-
-        recordingSessionByIdMap.put(recordingId, session);
-        catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
-        recorder.addSession(session);
-
-        controlSession.attemptSignal(
-            correlationId,
-            recordingId,
-            image.subscription().registrationId(),
-            image.joinPosition(),
-            RecordingSignal.EXTEND);
+            throw ex;
+        }
     }
 
     private ExclusivePublication newReplayPublication(

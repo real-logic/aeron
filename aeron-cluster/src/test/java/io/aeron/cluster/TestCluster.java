@@ -527,11 +527,8 @@ public class TestCluster implements AutoCloseable
 
         client.close();
 
-        final String aeronDirName = CommonContext.getAeronDirectoryName();
-
         client = AeronCluster.connect(
             new AeronCluster.Context()
-                .aeronDirectoryName(aeronDirName)
                 .egressListener(egressMessageListener)
                 .ingressChannel("aeron:udp?term-length=64k")
                 .egressChannel(CLUSTER_EGRESS_CHANNEL)
@@ -542,15 +539,19 @@ public class TestCluster implements AutoCloseable
     {
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 
-        dataCollector.add(Paths.get(aeronDirName));
+        if (null == clientMediaDriver)
+        {
+            dataCollector.add(Paths.get(aeronDirName));
 
-        clientMediaDriver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED)
-                .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(false)
-                .aeronDirectoryName(aeronDirName));
+            clientMediaDriver = MediaDriver.launch(
+                new MediaDriver.Context()
+                    .threadingMode(ThreadingMode.SHARED)
+                    .dirDeleteOnStart(true)
+                    .dirDeleteOnShutdown(false)
+                    .aeronDirectoryName(aeronDirName));
+        }
 
+        CloseHelper.close(client);
         client = AeronCluster.connect(
             new AeronCluster.Context()
                 .aeronDirectoryName(aeronDirName)
@@ -564,7 +565,7 @@ public class TestCluster implements AutoCloseable
 
     void closeClient()
     {
-        CloseHelper.closeAll(client, clientMediaDriver);
+        CloseHelper.close(client);
     }
 
     void sendMessages(final int messageCount)

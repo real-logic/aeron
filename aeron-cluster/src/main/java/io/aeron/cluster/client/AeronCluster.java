@@ -412,7 +412,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Send a keep alive message to the cluster to keep this session open.
      * <p>
-     * <b>Note:</b> keepalives can fail during a leadership transition. The consumer should continue to call
+     * <b>Note:</b> Sending keep-alive can fail during a leadership transition. The application should continue to call
      * {@link #pollEgress()} to ensure a connection to the new leader is established.
      *
      * @return true if successfully sent otherwise false if back pressured.

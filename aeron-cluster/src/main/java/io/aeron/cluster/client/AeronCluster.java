@@ -1508,11 +1508,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 aeronCluster = newInstance();
                 ingressPublication = null;
-                final MemberIngress endpoint = memberByIdMap.get(leaderMemberId);
-                if (null != endpoint)
-                {
-                    endpoint.publication = null;
-                }
+                memberByIdMap.remove(leaderMemberId);
                 CloseHelper.closeAll(memberByIdMap.values());
 
                 step(5);
@@ -1577,22 +1573,19 @@ public final class AeronCluster implements AutoCloseable
 
         private void prepareConnectRequest()
         {
-            if (Aeron.NULL_VALUE == correlationId)
-            {
-                correlationId = ctx.aeron().nextCorrelationId();
-                final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
+            correlationId = ctx.aeron().nextCorrelationId();
+            final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
 
-                final SessionConnectRequestEncoder encoder = new SessionConnectRequestEncoder();
-                encoder
-                    .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .responseStreamId(ctx.egressStreamId())
-                    .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
-                    .responseChannel(ctx.egressChannel())
-                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+            final SessionConnectRequestEncoder encoder = new SessionConnectRequestEncoder();
+            encoder
+                .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId)
+                .responseStreamId(ctx.egressStreamId())
+                .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
+                .responseChannel(ctx.egressChannel())
+                .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
-                messageLength = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
-            }
+            messageLength = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
 
             step(2);
         }

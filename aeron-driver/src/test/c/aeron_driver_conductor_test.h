@@ -380,115 +380,86 @@ public:
 
     int addIpcPublication(int64_t client_id, int64_t correlation_id, int32_t stream_id, bool is_exclusive)
     {
-        int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
-        command::PublicationMessageFlyweight command(m_command, 0);
-
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.streamId(stream_id);
-        command.channel(AERON_IPC_CHANNEL);
-
-        return writeCommand(msg_type_id, command.length());
+        return addNetworkPublication(client_id, correlation_id, AERON_IPC_CHANNEL, stream_id, is_exclusive);
     }
 
     int addIpcPublicationWithChannel(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {
-        int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
-        command::PublicationMessageFlyweight command(m_command, 0);
-
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.streamId(stream_id);
-        command.channel(channel);
-
-        return writeCommand(msg_type_id, command.length());
+        return addNetworkPublication(client_id, correlation_id, channel, stream_id, is_exclusive);
     }
 
     int addNetworkPublication(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {
+        aeron_publication_command_t *cmd = reinterpret_cast<aeron_publication_command_t *>(m_command_buffer);
+
         int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
-        command::PublicationMessageFlyweight command(m_command, 0);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.streamId(stream_id);
-        command.channel(channel);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->stream_id = stream_id;
+        cmd->channel_length = strlen(channel);
+        memcpy(m_command_buffer + sizeof(aeron_publication_command_t), channel, cmd->channel_length);
 
-        return writeCommand(msg_type_id, command.length());
+        return writeCommand(msg_type_id, sizeof(aeron_publication_command_t) + cmd->channel_length);
     }
 
     int removePublication(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
-        command::RemoveMessageFlyweight command(m_command, 0);
+        aeron_remove_command_t *cmd = reinterpret_cast<aeron_remove_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(registration_id);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = registration_id;
 
-        return writeCommand(AERON_COMMAND_REMOVE_PUBLICATION, command.length());
+        return writeCommand(AERON_COMMAND_REMOVE_PUBLICATION, sizeof(aeron_remove_command_t));
     }
 
     int addIpcSubscription(int64_t client_id, int64_t correlation_id, int32_t stream_id, int64_t registration_id)
     {
-        command::SubscriptionMessageFlyweight command(m_command, 0);
-
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.streamId(stream_id);
-        command.registrationCorrelationId(registration_id);
-        command.channel(AERON_IPC_CHANNEL);
-
-        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
+        return addNetworkSubscription(client_id, correlation_id, AERON_IPC_CHANNEL, stream_id);
     }
 
     int addNetworkSubscription(int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id)
     {
-        command::SubscriptionMessageFlyweight command(m_command, 0);
+        aeron_subscription_command_t *cmd = reinterpret_cast<aeron_subscription_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.streamId(stream_id);
-        command.registrationCorrelationId(-1);
-        command.channel(channel);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->stream_id = stream_id;
+        cmd->registration_correlation_id = -1;
+        cmd->channel_length = strlen(channel);
+        memcpy(m_command_buffer + sizeof(aeron_subscription_command_t), channel, cmd->channel_length);
 
-        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
+        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, sizeof(aeron_subscription_command_t) + cmd->channel_length);
     }
 
     int addSpySubscription(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, int64_t registration_id)
     {
-        command::SubscriptionMessageFlyweight command(m_command, 0);
         std::string channel_str(AERON_SPY_PREFIX + std::string(channel));
-
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.streamId(stream_id);
-        command.registrationCorrelationId(registration_id);
-        command.channel(channel_str);
-
-        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
+        return addNetworkSubscription(client_id, correlation_id, channel_str.c_str(), stream_id);
     }
 
     int removeSubscription(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
-        command::RemoveMessageFlyweight command(m_command, 0);
+        aeron_remove_command_t *cmd = reinterpret_cast<aeron_remove_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(registration_id);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = registration_id;
 
-        return writeCommand(AERON_COMMAND_REMOVE_SUBSCRIPTION, command.length());
+        return writeCommand(AERON_COMMAND_REMOVE_SUBSCRIPTION, sizeof(aeron_remove_command_t));
     }
 
     int clientKeepalive(int64_t client_id)
     {
-        command::CorrelatedMessageFlyweight command(m_command, 0);
+        aeron_correlated_command_t *cmd = reinterpret_cast<aeron_correlated_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
+        cmd->client_id = client_id;
 
-        return writeCommand(AERON_COMMAND_CLIENT_KEEPALIVE, command::CORRELATED_MESSAGE_LENGTH);
+        return writeCommand(AERON_COMMAND_CLIENT_KEEPALIVE, sizeof(aeron_correlated_command_t));
     }
 
     int addCounter(
@@ -499,26 +470,38 @@ public:
         size_t key_length,
         std::string &label)
     {
-        command::CounterMessageFlyweight command(m_command, 0);
+        aeron_counter_command_t *cmd = reinterpret_cast<aeron_counter_command_t *>(m_command_buffer);
+        uint8_t *cmd_ptr = reinterpret_cast<uint8_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.typeId(type_id);
-        command.keyBuffer(key, key_length);
-        command.label(label);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->type_id = type_id;
 
-        return writeCommand(AERON_COMMAND_ADD_COUNTER, command.length());
+        uint8_t *cursor = cmd_ptr + sizeof(aeron_counter_command_t);
+        memcpy(cursor, &key_length, sizeof(int32_t));
+        cursor += sizeof(int32_t);
+        memcpy(cursor, key, key_length);
+        cursor += AERON_ALIGN(key_length, sizeof(int32_t));
+
+        size_t label_len = label.length();
+        memcpy(cursor, &label_len, sizeof(int32_t));
+        cursor += sizeof(int32_t);
+        memcpy(cursor, label.c_str(), label_len);
+        cursor += label_len;
+
+        size_t message_len = cursor - cmd_ptr;
+        return writeCommand(AERON_COMMAND_ADD_COUNTER, message_len);
     }
 
     int removeCounter(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
-        command::RemoveMessageFlyweight command(m_command, 0);
+        aeron_remove_command_t *cmd = reinterpret_cast<aeron_remove_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(registration_id);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = registration_id;
 
-        return writeCommand(AERON_COMMAND_REMOVE_COUNTER, command.length());
+        return writeCommand(AERON_COMMAND_REMOVE_COUNTER, sizeof(aeron_remove_command_t));
     }
 
     int32_t expectNextCounterFromConductor(std::int64_t correlationId)
@@ -541,8 +524,6 @@ public:
         return counter_id;
     }
 
-//    template<typename F>
-//    bool findCounter(int32_t counter_id, F &&func)
     bool findCounter(int32_t counter_id, on_counters_metadata_t func)
     {
         aeron_driver_context_t *ctx = m_context.m_context;
@@ -567,18 +548,6 @@ public:
         return found;
     }
 
-    std::function<void(std::int32_t, AtomicBuffer&, util::index_t, util::index_t)> captureCounterId(
-        int64_t correlation_id, int32_t *counter_id)
-    {
-        return [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-        {
-            EXPECT_EQ(AERON_RESPONSE_ON_COUNTER_READY, msgTypeId);
-            const command::CounterUpdateFlyweight response(buffer, offset);
-            EXPECT_EQ(correlation_id, response.correlationId());
-            *counter_id = response.counterId();
-        };
-    }
-
     bool findHeartbeatCounter(int32_t client_counter_id, int64_t client_id)
     {
         auto client_counter_func =
@@ -591,79 +560,58 @@ public:
         return findCounter(client_counter_id, client_counter_func);
     }
 
-    template<typename T>
-    bool findCounter2(int32_t counter_id, testing::MatcherInterface<T>& matcher)
-    {
-        aeron_driver_context_t *ctx = m_context.m_context;
-        AtomicBuffer metadata(
-            ctx->counters_metadata_buffer,
-            static_cast<size_t>(AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length)));
-        AtomicBuffer values(ctx->counters_values_buffer, static_cast<util::index_t>(ctx->counters_values_buffer_length));
-
-        CountersReader reader(metadata, values);
-        bool found = false;
-
-        reader.forEach(
-            [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
-            {
-                if (id == counter_id)
-                {
-                    EXPECT_THAT(std::make_tuple(typeId, label, key.getInt64(0)), matcher);
-                    found = true;
-                }
-            });
-
-        return found;
-    }
-
     int addDestination(
         int64_t client_id, int64_t correlation_id, int64_t publication_registration_id, const char *channel)
     {
-        command::DestinationMessageFlyweight command(m_command, 0);
+        aeron_destination_command_t *cmd = reinterpret_cast<aeron_destination_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(publication_registration_id);
-        command.channel(channel);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = publication_registration_id;
+        cmd->channel_length = strlen(channel);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
-        return writeCommand(AERON_COMMAND_ADD_DESTINATION, command.length());
+        return writeCommand(AERON_COMMAND_ADD_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
 
     int addReceiveDestination(int64_t client_id, int64_t correlation_id, int64_t subscription_id, const char *channel)
     {
-        command::DestinationMessageFlyweight command(m_command, 0);
+        aeron_destination_command_t *cmd = reinterpret_cast<aeron_destination_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(subscription_id);
-        command.channel(channel);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = subscription_id;
+        cmd->channel_length = strlen(channel);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
-        return writeCommand(AERON_COMMAND_ADD_RCV_DESTINATION, command.length());
+        return writeCommand(AERON_COMMAND_ADD_RCV_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
 
     int removeReceiveDestination(int64_t client_id, int64_t correlation_id, int64_t subscription_id, const char *channel)
     {
-        command::DestinationMessageFlyweight command(m_command, 0);
+        aeron_destination_command_t *cmd = reinterpret_cast<aeron_destination_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(subscription_id);
-        command.channel(channel);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = subscription_id;
+        cmd->channel_length = strlen(channel);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
-        return writeCommand(AERON_COMMAND_REMOVE_RCV_DESTINATION, command.length());
+        return writeCommand(AERON_COMMAND_REMOVE_RCV_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
 
     int removeDestination(
         int64_t client_id, int64_t correlation_id, int64_t publication_registration_id, const char *channel)
     {
-        command::DestinationMessageFlyweight command(m_command, 0);
+        aeron_destination_command_t *cmd = reinterpret_cast<aeron_destination_command_t *>(m_command_buffer);
 
-        command.clientId(client_id);
-        command.correlationId(correlation_id);
-        command.registrationId(publication_registration_id);
-        command.channel(channel);
+        cmd->correlated.client_id = client_id;
+        cmd->correlated.correlation_id = correlation_id;
+        cmd->registration_id = publication_registration_id;
+        cmd->channel_length = strlen(channel);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
-        return writeCommand(AERON_COMMAND_REMOVE_DESTINATION, command.length());
+        return writeCommand(AERON_COMMAND_REMOVE_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
 
     int doWork()

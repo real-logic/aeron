@@ -21,11 +21,12 @@
 #include <cstring>
 #include <string>
 #include <array>
-#include <util/Exceptions.h>
-#include <util/StringUtil.h>
-#include <util/Index.h>
 
-#include <util/MacroUtil.h>
+#include "util/Exceptions.h"
+#include "util/StringUtil.h"
+#include "util/Index.h"
+
+#include "util/MacroUtil.h"
 
 #include "Atomic64.h"
 

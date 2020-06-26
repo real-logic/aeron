@@ -16,11 +16,12 @@
 #ifndef AERON_AGENT_INVOKER_H
 #define AERON_AGENT_INVOKER_H
 
-#include <util/Exceptions.h>
 #include <functional>
 #include <thread>
 #include <atomic>
-#include <concurrent/logbuffer/TermReader.h>
+
+#include "util/Exceptions.h"
+#include "concurrent/logbuffer/TermReader.h"
 
 namespace aeron {
 

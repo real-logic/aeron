@@ -20,9 +20,10 @@
 #include <functional>
 #include <thread>
 #include <atomic>
-#include <util/Exceptions.h>
-#include <util/ScopeUtils.h>
-#include <concurrent/logbuffer/TermReader.h>
+
+#include "util/Exceptions.h"
+#include "util/ScopeUtils.h"
+#include "concurrent/logbuffer/TermReader.h"
 
 #if !defined(AERON_COMPILER_MSVC)
 #include <pthread.h>

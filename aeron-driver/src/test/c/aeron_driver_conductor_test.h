@@ -23,6 +23,7 @@
 #include <exception>
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <concurrent/CountersReader.h>
 #include <command/DestinationMessageFlyweight.h>
 
@@ -32,6 +33,7 @@ extern "C"
 #include "util/aeron_error.h"
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
+#include "concurrent/aeron_broadcast_receiver.h"
 }
 
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
@@ -178,6 +180,29 @@ static uint64_t test_uint64_max_usable_fs_space(const char *path)
     return UINT64_MAX;
 }
 
+class DriverCallbacks
+{
+public:
+    virtual ~DriverCallbacks() {};
+    virtual void broadcastToClient(int32_t type_id, uint8_t *buffer, size_t length) = 0;
+};
+
+class MockDriverCallbacks : public DriverCallbacks
+{
+public:
+    MOCK_METHOD3(broadcastToClient, void(int32_t, uint8_t *, size_t));
+};
+
+void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
+{
+    DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
+    callback->broadcastToClient(type_id, buffer, length);
+}
+
+void null_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
+{
+}
+
 struct TestDriverContext
 {
     TestDriverContext()
@@ -286,11 +311,24 @@ public:
             static_cast<util::index_t >(m_context.m_context->to_driver_buffer_length)),
         m_to_driver(m_to_driver_buffer)
     {
+        aeron_broadcast_receiver_init(
+            &m_broadcast_receiver, m_context.m_context->to_clients_buffer, m_context.m_context->to_clients_buffer_length);
+    }
+
+    size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler)
+    {
+        size_t messages = 0;
+        while (0 != aeron_broadcast_receiver_receive(&m_broadcast_receiver, handler, &m_mockCallbacks))
+        {
+            messages++;
+        }
+
+        return messages;
     }
 
     size_t readAllBroadcastsFromConductor(const handler_t &func)
     {
-        return readAllBroadcastsFromConductor(func, m_hideCounterResponses);
+        return readAllBroadcastsFromConductor(func, m_showAllResponses);
     }
 
     size_t readAllBroadcastsFromConductor(const handler_t &func, const std::vector<std::int32_t>& ignored_msg_types)
@@ -503,8 +541,9 @@ public:
         return counter_id;
     }
 
-    template<typename F>
-    bool findCounter(int32_t counter_id, F &&func)
+//    template<typename F>
+//    bool findCounter(int32_t counter_id, F &&func)
+    bool findCounter(int32_t counter_id, on_counters_metadata_t func)
     {
         aeron_driver_context_t *ctx = m_context.m_context;
         AtomicBuffer metadata(
@@ -521,6 +560,55 @@ public:
                 if (id == counter_id)
                 {
                     func(id, typeId, key, label);
+                    found = true;
+                }
+            });
+
+        return found;
+    }
+
+    std::function<void(std::int32_t, AtomicBuffer&, util::index_t, util::index_t)> captureCounterId(
+        int64_t correlation_id, int32_t *counter_id)
+    {
+        return [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            EXPECT_EQ(AERON_RESPONSE_ON_COUNTER_READY, msgTypeId);
+            const command::CounterUpdateFlyweight response(buffer, offset);
+            EXPECT_EQ(correlation_id, response.correlationId());
+            *counter_id = response.counterId();
+        };
+    }
+
+    bool findHeartbeatCounter(int32_t client_counter_id, int64_t client_id)
+    {
+        auto client_counter_func =
+            [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
+            {
+                EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
+                EXPECT_EQ(label, "client-heartbeat: 0");
+                EXPECT_EQ(key.getInt64(0), client_id);
+            };
+        return findCounter(client_counter_id, client_counter_func);
+    }
+
+    template<typename T>
+    bool findCounter2(int32_t counter_id, testing::MatcherInterface<T>& matcher)
+    {
+        aeron_driver_context_t *ctx = m_context.m_context;
+        AtomicBuffer metadata(
+            ctx->counters_metadata_buffer,
+            static_cast<size_t>(AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length)));
+        AtomicBuffer values(ctx->counters_values_buffer, static_cast<util::index_t>(ctx->counters_values_buffer_length));
+
+        CountersReader reader(metadata, values);
+        bool found = false;
+
+        reader.forEach(
+            [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
+            {
+                if (id == counter_id)
+                {
+                    EXPECT_THAT(std::make_tuple(typeId, label, key.getInt64(0)), matcher);
                     found = true;
                 }
             });
@@ -647,16 +735,221 @@ protected:
     AtomicBuffer m_to_clients_buffer;
     BroadcastReceiver m_to_clients_receiver;
     CopyBroadcastReceiver m_to_clients_copy_receiver;
+    aeron_broadcast_receiver_t m_broadcast_receiver;
+    MockDriverCallbacks m_mockCallbacks;
+
 
     AtomicBuffer m_to_driver_buffer;
     ManyToOneRingBuffer m_to_driver;
-    const std::vector<std::int32_t> m_hideCounterResponses
-    {
-        AERON_RESPONSE_ON_COUNTER_READY,
-        AERON_RESPONSE_ON_UNAVAILABLE_COUNTER
-    };
     const std::vector<std::int32_t> m_showAllResponses { };
+    testing::MockFunction<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> broadcast_handler;
 };
+
+void aeron_image_buffers_ready_get_log_file_name(
+    const aeron_image_buffers_ready_t *msg, const char **log_file_name, int32_t* log_file_name_len)
+{
+    uint8_t *log_file_name_ptr = ((uint8_t *) msg) + sizeof(aeron_image_buffers_ready_t);
+    memcpy(log_file_name_len, log_file_name_ptr, sizeof(int32_t));
+    *log_file_name = reinterpret_cast<const char *>(log_file_name_ptr + sizeof(int32_t));
+}
+
+void aeron_image_buffers_ready_get_source_identity(
+    const aeron_image_buffers_ready_t *msg, const char **source_identity, int32_t* source_identity_len)
+{
+    uint8_t *log_file_name_ptr = ((uint8_t *) msg) + sizeof(aeron_image_buffers_ready_t);
+    int32_t log_file_name_len;
+    memcpy(&log_file_name_len, log_file_name_ptr, sizeof(int32_t));
+    int32_t aligned_log_file_name_len = AERON_ALIGN(log_file_name_len, sizeof(int32_t));
+    uint8_t *source_identity_ptr = log_file_name_ptr + sizeof(int32_t) + aligned_log_file_name_len;
+    memcpy(source_identity_len, source_identity_ptr, sizeof(int32_t));
+    *source_identity = reinterpret_cast<const char *>(source_identity_ptr + sizeof(int32_t));
+}
+
+void aeron_image_message_get_channel(
+    const aeron_image_message_t *msg, const char **channel, int32_t* channel_len)
+{
+    uint8_t *channel_ptr = ((uint8_t *) msg) + sizeof(aeron_image_message_t);
+    *channel_len = msg->channel_length;
+    *channel = reinterpret_cast<const char *>(channel_ptr);
+}
+
+MATCHER_P(
+    IsSubscriptionReady,
+    correlation_id,
+    std::string("IsSubscriptionReady: correlationId = ").append(testing::PrintToString(correlation_id)))
+{
+    const aeron_subscription_ready_t *response = reinterpret_cast<aeron_subscription_ready_t *>(std::get<1>(arg));
+    const bool result = response->correlation_id == correlation_id;
+
+    if (!result)
+    {
+        *result_listener << "SubscriptionReadyFlyweight.correlation_id = " << response->correlation_id;
+    }
+
+    return result;
+}
+
+MATCHER_P(
+    IsError,
+    correlation_id,
+    std::string("IsError: correlation_id = ").append(testing::PrintToString(correlation_id)))
+{
+    const aeron_error_response_t *response = reinterpret_cast<aeron_error_response_t *>(std::get<1>(arg));
+    const bool result = response->offending_command_correlation_id == correlation_id;
+
+    if (!result)
+    {
+        *result_listener << "SubscriptionReadyFlyweight.offending_command_correlation_id = " << response->offending_command_correlation_id;
+    }
+
+    return result;
+}
+
+
+MATCHER_P(
+    IsOperationSuccess,
+    correlationId,
+    std::string("IsOperationSuccess: correlationId = ").append(testing::PrintToString(correlationId)))
+{
+    const aeron_operation_succeeded_t *response  = reinterpret_cast<aeron_operation_succeeded_t *>(std::get<1>(arg));
+    const bool result = response->correlation_id == correlationId;
+
+    if (!result)
+    {
+        *result_listener << "OperationSucceededFlyweight.correlationId() = " << response->correlation_id;
+    }
+
+    return result;
+}
+
+MATCHER_P3(
+    IsPublicationReady,
+    correlationId,
+    streamId,
+    sessionId,
+    std::string("IsPublicationReady: correlationId = ").append(testing::PrintToString(correlationId))
+        .append(", streamId = ").append(testing::DescribeMatcher<int32_t>(streamId))
+        .append(", sessionId = ").append(testing::DescribeMatcher<int32_t>(sessionId)))
+{
+    const aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(
+        std::get<1>(arg));
+    bool result = testing::Value(response->stream_id, streamId) &&
+        testing::Value(response->session_id, sessionId) &&
+        testing::Value(response->correlation_id, correlationId) &&
+        0 < response->log_file_length;
+
+    if (!result)
+    {
+        *result_listener << "response.streamId() = " << response->stream_id <<
+                         ", response.correlationId() = " << response->stream_id <<
+                         ", response.logFileName().length() = " << response->log_file_length;
+    }
+
+    return result;
+}
+
+MATCHER_P(
+    IsTimeout,
+    client_id,
+    std::string("IsTimeout: client_id = ").append(testing::PrintToString(client_id)))
+{
+    const aeron_client_timeout_t *response = reinterpret_cast<aeron_client_timeout_t *>(std::get<1>(arg));
+    bool result = testing::Value(response->client_id, client_id);
+
+    if (!result)
+    {
+        *result_listener << "response.client_id = " << response->client_id;
+    }
+
+    return result;
+}
+
+MATCHER_P6(
+    IsAvailableImage,
+    image_registration_id,
+    subscription_registration_id,
+    stream_id,
+    session_id,
+    log_file_name,
+    source_identity,
+    std::string("IsAvailableImage: ")
+        .append("image_registration_id = ").append(testing::PrintToString(image_registration_id))
+        .append(", subscription_registration_id = ").append(testing::PrintToString(subscription_registration_id))
+        .append(", stream_id = ").append(testing::PrintToString(stream_id))
+        .append(", session_id = ").append(testing::PrintToString(session_id))
+        .append(", log_file_name = ").append(testing::PrintToString(log_file_name))
+        .append(", source_identity = ").append(testing::PrintToString(source_identity)))
+{
+    const aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(std::get<1>(arg));
+    bool result = true;
+    result &= response->session_id == session_id;
+    result &= response->stream_id == stream_id;
+    result &= response->correlation_id == image_registration_id;
+    result &= response->subscriber_registration_id == subscription_registration_id;
+
+    int32_t response_log_file_name_length;
+    const char *response_log_file_name;
+    aeron_image_buffers_ready_get_log_file_name(response, &response_log_file_name, &response_log_file_name_length);
+
+    int32_t response_source_identity_length;
+    const char *response_source_identity;
+    aeron_image_buffers_ready_get_source_identity(response, &response_source_identity, &response_source_identity_length);
+    const std::string str_log_file_name = std::string(response_log_file_name, response_log_file_name_length);
+    const std::string str_source_identity = std::string(response_source_identity, response_source_identity_length);
+
+    result &= 0 == std::string(log_file_name).compare(str_log_file_name);
+    result &= 0 == std::string(source_identity).compare(str_source_identity);
+
+    if (!result)
+    {
+        *result_listener <<
+            "response.correlation_id = " << response->correlation_id <<
+            ", response.subscription_registration_id = " << response->subscriber_registration_id <<
+            ", response.stream_id = " << response->stream_id <<
+            ", response.session_id = " << response->session_id <<
+            ", response.log_file_name = " << str_log_file_name <<
+            ", response.source_identity = " << str_source_identity;
+    }
+
+    return result;
+}
+
+MATCHER_P4(
+    IsUnavailableImage,
+    stream_id,
+    correlation_id,
+    subscription_registration_id,
+    channel,
+    std::string("IsAvailableImage: ")
+        .append("stream_id = ").append(testing::PrintToString(stream_id))
+        .append(", correlation_id = ").append(testing::PrintToString(correlation_id))
+        .append(", subscription_registration_id = ").append(testing::PrintToString(subscription_registration_id))
+        .append(", channel = ").append(testing::PrintToString(channel)))
+{
+    const aeron_image_message_t *response = reinterpret_cast<aeron_image_message_t *>(std::get<1>(arg));
+    bool result = true;
+    result &= response->correlation_id == correlation_id;
+    result &= response->stream_id == stream_id;
+    result &= response->subscription_registration_id == subscription_registration_id;
+
+    int32_t response_channel_len;
+    const char *response_channel;
+    aeron_image_message_get_channel(response, &response_channel, &response_channel_len);
+    const std::string str_channel = std::string(response_channel, response_channel_len);
+
+    result &= 0 == std::string(channel).compare(str_channel);
+
+    if (!result)
+    {
+        *result_listener <<
+                         "response.correlation_id = " << response->correlation_id <<
+                         ", response.subscription_registration_id = " << response->subscription_registration_id <<
+                         ", response.stream_id = " << response->stream_id <<
+                         ", response.channel = " << str_channel;
+    }
+
+    return result;
+}
 
 static auto null_handler =
     [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)

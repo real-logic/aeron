@@ -45,6 +45,7 @@ option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
 if (UNIX)
     option(AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS "Enable Ofast for release builds" ${STANDALONE_BUILD})
 endif ()
+option(AERON_CLIENT_STUTTERING_HEADERS "Follow boost stuttering directory structure to avoid header name conflicts" OFF)
 
 unset(STANDALONE_BUILD)
 

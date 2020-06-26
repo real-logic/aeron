@@ -137,13 +137,29 @@ SET(HEADERS
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
 add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
 
-target_include_directories(aeron_client
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+if (AERON_CLIENT_STUTTERING_HEADERS)
+    message("Installing stuttering headers")
+    set(AERON_CLIENT_SOURCE_PREFIX "aeron")
+    file(INSTALL . DESTINATION ${AERON_CLIENT_SOURCE_PREFIX})
+
+    target_include_directories(aeron_client
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${AERON_CLIENT_SOURCE_PREFIX}
+        INTERFACE ${CMAKE_INSTALL_PREFIX}
     )
 
-target_include_directories(aeron_client_shared
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    target_include_directories(aeron_client_shared
+        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/aeron"
+        INTERFACE ${CMAKE_CURRENT_BINARY_DIR}
     )
+else()
+    target_include_directories(aeron_client
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+
+    target_include_directories(aeron_client_shared
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+endif()
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")

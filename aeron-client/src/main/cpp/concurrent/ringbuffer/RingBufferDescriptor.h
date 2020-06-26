@@ -18,10 +18,10 @@
 #define AERON_RING_BUFFER_DESCRIPTOR_H
 
 #include <functional>
-#include <util/Index.h>
-#include <util/BitUtil.h>
-#include <util/Exceptions.h>
-#include <util/StringUtil.h>
+#include "../../util/Index.h"
+#include "../../util/BitUtil.h"
+#include "../../util/Exceptions.h"
+#include "../../util/StringUtil.h"
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 

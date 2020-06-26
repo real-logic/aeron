@@ -18,8 +18,8 @@
 #define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "../../util/Index.h"
+#include "../AtomicBuffer.h"
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 

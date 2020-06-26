@@ -20,10 +20,10 @@
 #include <unordered_map>
 #include <vector>
 #include <mutex>
-#include <concurrent/logbuffer/TermReader.h>
-#include <concurrent/status/UnsafeBufferPosition.h>
-#include <util/LangUtil.h>
-#include <util/ScopeUtils.h>
+#include "concurrent/logbuffer/TermReader.h"
+#include "concurrent/status/UnsafeBufferPosition.h"
+#include "util/LangUtil.h"
+#include "util/ScopeUtils.h"
 #include "Publication.h"
 #include "ExclusivePublication.h"
 #include "Subscription.h"

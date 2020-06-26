@@ -21,7 +21,7 @@
 #include <utility>
 #include <atomic>
 
-#include "concurrent/Atomic64.h"
+#include "Atomic64.h"
 
 namespace aeron
 {

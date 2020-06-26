@@ -22,10 +22,10 @@
 #include <memory>
 #include <string>
 
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/BufferClaim.h>
-#include <concurrent/logbuffer/TermAppender.h>
-#include <concurrent/status/UnsafeBufferPosition.h>
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/logbuffer/BufferClaim.h"
+#include "concurrent/logbuffer/TermAppender.h"
+#include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "LogBuffers.h"
 #include "util/Export.h"

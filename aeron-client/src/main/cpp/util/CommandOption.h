@@ -23,7 +23,7 @@
 #include <map>
 
 #include "Exceptions.h"
-#include "util/Export.h"
+#include "Export.h"
 
 namespace aeron { namespace util
 {

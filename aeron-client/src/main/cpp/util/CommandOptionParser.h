@@ -22,7 +22,7 @@
 #include <iostream>
 
 #include "CommandOption.h"
-#include "util/Export.h"
+#include "Export.h"
 
 namespace aeron { namespace util
 {

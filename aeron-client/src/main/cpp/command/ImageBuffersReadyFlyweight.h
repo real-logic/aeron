@@ -18,9 +18,9 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <util/BitUtil.h>
-#include <util/Exceptions.h>
-#include <util/StringUtil.h>
+#include "../util/BitUtil.h"
+#include "../util/Exceptions.h"
+#include "../util/StringUtil.h"
 #include "Flyweight.h"
 
 namespace aeron { namespace command

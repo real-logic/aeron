@@ -18,8 +18,8 @@
 #define AERON_CONCURRENT_TERM_BLOCK_SCANNER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "../../util/Index.h"
+#include "../AtomicBuffer.h"
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 

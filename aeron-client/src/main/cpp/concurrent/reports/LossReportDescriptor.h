@@ -16,8 +16,8 @@
 #ifndef AERON_LOSS_REPORT_DESCRIPTOR_H
 #define AERON_LOSS_REPORT_DESCRIPTOR_H
 
-#include "util/Index.h"
-#include "util/BitUtil.h"
+#include "../../util/Index.h"
+#include "../../util/BitUtil.h"
 
 namespace aeron { namespace concurrent { namespace reports {
 

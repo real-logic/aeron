@@ -21,7 +21,7 @@
 #include <chrono>
 
 #include "Atomic64.h"
-#include "util/BitUtil.h"
+#include "../util/BitUtil.h"
 
 namespace aeron { namespace concurrent {
 

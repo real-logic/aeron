@@ -15,7 +15,7 @@
  */
 #ifndef AERON_UTIL_EXPORT_FILE_H
 #define AERON_UTIL_EXPORT_FILE_H
-#include <util/Platform.h>
+#include "Platform.h"
 
 #ifdef AERON_COMPILER_MSVC
 #   if defined CLIENT_SHARED

@@ -19,8 +19,8 @@
 
 #include <array>
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "../../util/Index.h"
+#include "../AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 #include "BroadcastReceiver.h"

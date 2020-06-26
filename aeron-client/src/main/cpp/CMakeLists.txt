@@ -139,16 +139,16 @@ add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
 
 if (AERON_CLIENT_STUTTERING_HEADERS)
     message("Installing stuttering headers")
-    set(AERON_CLIENT_SOURCE_PREFIX "aeron")
+    set(AERON_CLIENT_SOURCE_PREFIX "aeron-client")
     file(INSTALL . DESTINATION ${AERON_CLIENT_SOURCE_PREFIX})
 
     target_include_directories(aeron_client
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${AERON_CLIENT_SOURCE_PREFIX}
+        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${AERON_CLIENT_SOURCE_PREFIX}"
         INTERFACE ${CMAKE_INSTALL_PREFIX}
     )
 
     target_include_directories(aeron_client_shared
-        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/aeron"
+        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${AERON_CLIENT_SOURCE_PREFIX}"
         INTERFACE ${CMAKE_CURRENT_BINARY_DIR}
     )
 else()

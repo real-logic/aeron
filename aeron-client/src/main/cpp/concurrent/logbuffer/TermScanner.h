@@ -17,7 +17,7 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_TERM_SCANNER_H
 #define AERON_CONCURRENT_LOGBUFFER_TERM_SCANNER_H
 
-#include <util/BitUtil.h>
+#include "../../util/BitUtil.h"
 #include "FrameDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer

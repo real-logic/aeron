@@ -19,7 +19,7 @@
 #include <cassert>
 #include <cstdint>
 #include <type_traits>
-#include <util/Exceptions.h>
+#include "Exceptions.h"
 
 #if defined(_MSC_VER)
 #include <intrin.h>

@@ -20,8 +20,8 @@
 #include <memory>
 #include <vector>
 
-#include <util/MemoryMappedFile.h>
-#include <concurrent/logbuffer/LogBufferDescriptor.h>
+#include "util/MemoryMappedFile.h"
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
 #include "util/Export.h"
 
 namespace aeron

@@ -23,10 +23,10 @@
 #include <iostream>
 #include <algorithm>
 
-#include <util/Exceptions.h>
-#include <util/StringUtil.h>
-#include <util/Index.h>
-#include <util/BitUtil.h>
+#include "../util/Exceptions.h"
+#include "../util/StringUtil.h"
+#include "../util/Index.h"
+#include "../util/BitUtil.h"
 
 #include "AtomicBuffer.h"
 #include "CountersReader.h"

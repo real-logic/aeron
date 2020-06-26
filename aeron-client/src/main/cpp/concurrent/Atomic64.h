@@ -16,18 +16,18 @@
 #ifndef AERON_CONCURRENT_ATOMIC64_H
 #define AERON_CONCURRENT_ATOMIC64_H
 
-#include <util/Platform.h>
+#include "../util/Platform.h"
 
 #include <cstdint>
 
 #if defined(AERON_COMPILER_GCC)
     #if defined(AERON_CPU_X64)
-        #include <concurrent/atomic/Atomic64_gcc_x86_64.h>
+        #include "atomic/Atomic64_gcc_x86_64.h"
     #else
-        #include <concurrent/atomic/Atomic64_gcc_cpp11.h>
+        #include "atomic/Atomic64_gcc_cpp11.h"
     #endif
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
-    #include <concurrent/atomic/Atomic64_msvc.h>
+    #include "atomic/Atomic64_msvc.h"
 
 #else
     #error Unsupported platform!

@@ -17,7 +17,7 @@
 #define AERON_COMMON_FLYWEIGHT_H
 
 #include <string>
-#include <concurrent/AtomicBuffer.h>
+#include "../concurrent/AtomicBuffer.h"
 
 namespace aeron { namespace command
 {

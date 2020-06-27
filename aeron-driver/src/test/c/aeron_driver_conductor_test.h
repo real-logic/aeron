@@ -789,9 +789,10 @@ MATCHER_P3(
 
     if (!result)
     {
-        *result_listener << "response.streamId() = " << response->stream_id <<
-                         ", response.correlationId() = " << response->stream_id <<
-                         ", response.logFileName().length() = " << response->log_file_length;
+        *result_listener <<
+            "response.streamId() = " << response->stream_id <<
+            ", response.correlationId() = " << response->stream_id <<
+            ", response.logFileName().length() = " << response->log_file_length;
     }
 
     return result;
@@ -898,12 +899,12 @@ MATCHER_P5(
     if (!result)
     {
         *result_listener <<
-                         "response.correlation_id = " << arg->correlation_id <<
-                         ", response.subscription_registration_id = " << arg->subscriber_registration_id <<
-                         ", response.stream_id = " << arg->stream_id <<
-                         ", response.session_id = " << arg->session_id <<
-                         ", response.log_file_name = " << str_log_file_name <<
-                         ", response.source_identity = " << str_source_identity;
+             "response.correlation_id = " << arg->correlation_id <<
+             ", response.subscription_registration_id = " << arg->subscriber_registration_id <<
+             ", response.stream_id = " << arg->stream_id <<
+             ", response.session_id = " << arg->session_id <<
+             ", response.log_file_name = " << str_log_file_name <<
+             ", response.source_identity = " << str_source_identity;
     }
 
     return result;

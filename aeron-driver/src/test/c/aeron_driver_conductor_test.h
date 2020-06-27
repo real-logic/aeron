@@ -195,6 +195,7 @@ public:
 
 void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
 {
+    printf("0x%X\n", type_id);
     DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
     callback->broadcastToClient(type_id, buffer, length);
 }
@@ -731,7 +732,7 @@ MATCHER_P(
 
     if (!result)
     {
-        *result_listener << "SubscriptionReadyFlyweight.correlation_id = " << response->correlation_id;
+        *result_listener << "response.correlation_id = " << response->correlation_id;
     }
 
     return result;
@@ -747,7 +748,7 @@ MATCHER_P(
 
     if (!result)
     {
-        *result_listener << "SubscriptionReadyFlyweight.offending_command_correlation_id = " << response->offending_command_correlation_id;
+        *result_listener << "response.offending_command_correlation_id = " << response->offending_command_correlation_id;
     }
 
     return result;
@@ -764,7 +765,7 @@ MATCHER_P(
 
     if (!result)
     {
-        *result_listener << "OperationSucceededFlyweight.correlationId() = " << response->correlation_id;
+        *result_listener << "response.correlationId() = " << response->correlation_id;
     }
 
     return result;
@@ -832,7 +833,7 @@ MATCHER_P6(
     bool result = true;
     result &= response->session_id == session_id;
     result &= response->stream_id == stream_id;
-    result &= response->correlation_id == image_registration_id;
+    result &= testing::Value(response->correlation_id, image_registration_id);
     result &= response->subscriber_registration_id == subscription_registration_id;
 
     int32_t response_log_file_name_length;
@@ -861,6 +862,53 @@ MATCHER_P6(
 
     return result;
 }
+
+MATCHER_P5(
+    IsImageBuffersReady,
+    subscription_registration_id,
+    stream_id,
+    session_id,
+    log_file_name,
+    source_identity,
+    std::string("IsAvailableImage: ")
+        .append(", subscription_registration_id = ").append(testing::PrintToString(subscription_registration_id))
+        .append(", stream_id = ").append(testing::PrintToString(stream_id))
+        .append(", session_id = ").append(testing::PrintToString(session_id))
+        .append(", log_file_name = ").append(testing::PrintToString(log_file_name))
+        .append(", source_identity = ").append(testing::PrintToString(source_identity)))
+{
+    bool result = true;
+    result &= arg->session_id == session_id;
+    result &= arg->stream_id == stream_id;
+    result &= arg->subscriber_registration_id == subscription_registration_id;
+
+    int32_t response_log_file_name_length;
+    const char *response_log_file_name;
+    aeron_image_buffers_ready_get_log_file_name(arg, &response_log_file_name, &response_log_file_name_length);
+
+    int32_t response_source_identity_length;
+    const char *response_source_identity;
+    aeron_image_buffers_ready_get_source_identity(arg, &response_source_identity, &response_source_identity_length);
+    const std::string str_log_file_name = std::string(response_log_file_name, response_log_file_name_length);
+    const std::string str_source_identity = std::string(response_source_identity, response_source_identity_length);
+
+    result &= 0 == log_file_name.compare(str_log_file_name);
+    result &= 0 == source_identity.compare(str_source_identity);
+
+    if (!result)
+    {
+        *result_listener <<
+                         "response.correlation_id = " << arg->correlation_id <<
+                         ", response.subscription_registration_id = " << arg->subscriber_registration_id <<
+                         ", response.stream_id = " << arg->stream_id <<
+                         ", response.session_id = " << arg->session_id <<
+                         ", response.log_file_name = " << str_log_file_name <<
+                         ", response.source_identity = " << str_source_identity;
+    }
+
+    return result;
+}
+
 
 MATCHER_P4(
     IsUnavailableImage,

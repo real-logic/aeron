@@ -384,12 +384,6 @@ public:
         return addPublication(client_id, correlation_id, AERON_IPC_CHANNEL, stream_id, is_exclusive);
     }
 
-    int addIpcPublicationWithChannel(
-        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
-    {
-        return addPublication(client_id, correlation_id, channel, stream_id, is_exclusive);
-    }
-
     int addPublication(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {

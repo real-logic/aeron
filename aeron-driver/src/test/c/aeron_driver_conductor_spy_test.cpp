@@ -122,7 +122,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -165,7 +165,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionWithTagThenAdd
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_TAG_1001, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -209,7 +209,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     int64_t sub_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
 
@@ -252,7 +252,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     int64_t sub_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_TAG_1001, STREAM_ID_1, -1), 0);
     doWork();
 
@@ -299,7 +299,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addSpySubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -352,8 +352,8 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, true), 0);
     doWork();
 
     aeron_network_publication_t *publication_1 = aeron_driver_conductor_find_network_publication(
@@ -418,8 +418,8 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(

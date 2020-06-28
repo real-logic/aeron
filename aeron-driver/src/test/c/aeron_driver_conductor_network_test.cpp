@@ -409,8 +409,8 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddPublicat
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001", STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, "aeron:udp?tags=1001", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, "aeron:udp?tags=1001", STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
@@ -429,8 +429,8 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddPublicat
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001", STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, "aeron:udp?tags=1001", STREAM_ID_2, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, "aeron:udp?tags=1001", STREAM_ID_2, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
@@ -469,8 +469,8 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingPublicationOnAddPublicationW
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 2u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
@@ -495,7 +495,7 @@ TEST_F(DriverConductorNetworkTest, shouldErrorWithUnknownSessionIdTag)
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002", STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
@@ -507,11 +507,11 @@ TEST_F(DriverConductorNetworkTest, shouldErrorWithInvalidSessionIdTag)
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1 "|tags=1001,1002", STREAM_ID_1, false), 0);
     doWork();
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002a", STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_2 "|session-id=tag:1002a", STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
@@ -525,7 +525,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveDestinationToManual
     int64_t add_destination_id = nextCorrelationId();
     int64_t remove_destination_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_MDC_MANUAL, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);

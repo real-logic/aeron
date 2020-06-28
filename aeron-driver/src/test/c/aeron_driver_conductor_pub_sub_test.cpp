@@ -221,7 +221,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
     int64_t pub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -324,10 +324,10 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleNetworkPublications)
     int64_t pub_id_3 = nextCorrelationId();
     int64_t pub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel, STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel, STREAM_ID_2, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, channel, STREAM_ID_3, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, channel, STREAM_ID_4, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel, STREAM_ID_2, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_3, channel, STREAM_ID_3, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_4, false), 0);
     doWork();
 
     ASSERT_TRUE(GetParam()->sendEndpointExists(&m_conductor.m_conductor, channel));
@@ -363,10 +363,10 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveMultipleNetworkPubli
     int64_t pub_id_4 = nextCorrelationId();
     int64_t remove_correlation_id_1 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel, STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel, STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, channel, STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_3, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_1, false), 0);
     doWork();
 
     ASSERT_TRUE(GetParam()->publicationExists(&m_conductor.m_conductor, pub_id_1));
@@ -400,10 +400,10 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleExclusiveNetworkPubli
     int64_t pub_id_3 = nextCorrelationId();
     int64_t pub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, channel, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_3, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_1, true), 0);
     doWork();
 
     ASSERT_TRUE(GetParam()->sendEndpointExists(&m_conductor.m_conductor, channel));
@@ -430,7 +430,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
     int64_t pub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -463,7 +463,7 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
     int64_t client_id2 = nextCorrelationId();
     int64_t pub_id2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id1, pub_id1, channel, STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
@@ -471,7 +471,7 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
     readAllBroadcastsFromConductor(mock_broadcast_handler);
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
-    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id2, pub_id2, channel, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -494,14 +494,14 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
     int64_t client_id2 = nextCorrelationId();
     int64_t pub_id2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channel1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id1, pub_id1, channel1, STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     readAllBroadcastsFromConductor(mock_broadcast_handler);
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
-    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channel2, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id2, pub_id2, channel2, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -520,14 +520,14 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
     int64_t client_id2 = nextCorrelationId();
     int64_t pub_id2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id1, pub_id1, channel, STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     readAllBroadcastsFromConductor(mock_broadcast_handler);
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
-    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id2, pub_id2, channel, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -549,12 +549,12 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
     int64_t client_id2 = nextCorrelationId();
     int64_t pub_id2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channel1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id1, pub_id1, channel1, STREAM_ID_1, false), 0);
     doWork();
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
-    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channel2, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id2, pub_id2, channel2, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -574,13 +574,13 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddSingleNetworkPublicationThatA
 
     m_conductor.manuallySetNextSessionId(next_session_id);
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, true), 0);
 
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, true), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 2u);
 
@@ -599,13 +599,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateExclusivePublicationWith
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, true), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
     doWork();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, true), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
@@ -623,13 +623,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithDif
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel1, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
     doWork();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel2, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel2, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -644,13 +644,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithExc
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, true), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
     doWork();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
@@ -666,13 +666,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateExclusivePublicationWith
     int64_t pub_id_1 = nextCorrelationId();
     int64_t pub_id_2 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
     doWork();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, true), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
@@ -736,7 +736,7 @@ TEST_F(DriverConductorPubSubTest, shouldErrorOnAddPublicationWithInvalidUri)
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, false), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id));
@@ -762,7 +762,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutNetworkPublication)
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     EXPECT_TRUE(GetParam()->hasSendEndpointCount(&m_conductor.m_conductor, 1u));
@@ -785,7 +785,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToNotTimeoutNetworkPublicationOnKe
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
@@ -861,7 +861,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutSendChannelEndpointWithCl
     int64_t pub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
@@ -921,7 +921,7 @@ TEST_P(DriverConductorPubSubTest, shouldNotAddDynamicSessionIdInReservedRange)
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
 
     doWork();
 
@@ -963,15 +963,15 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
     int64_t pub_id_3 = nextCorrelationId();
     int64_t pub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel1, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel2, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, channel3, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel2, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_3, channel3, STREAM_ID_1, true), 0);
 
     doWork();
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_1, true), 0);
 
     doWork();
 
@@ -1014,16 +1014,16 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
     int64_t pub_id_4 = nextCorrelationId();
     int64_t pub_id_5 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel1, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel2, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, channel3, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, channel4, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, channel1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, channel2, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_3, channel3, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_4, channel4, STREAM_ID_1, true), 0);
 
     doWork();
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_5, channel, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_5, channel, STREAM_ID_1, true), 0);
 
     doWork();
 

@@ -381,16 +381,16 @@ public:
 
     int addIpcPublication(int64_t client_id, int64_t correlation_id, int32_t stream_id, bool is_exclusive)
     {
-        return addNetworkPublication(client_id, correlation_id, AERON_IPC_CHANNEL, stream_id, is_exclusive);
+        return addPublication(client_id, correlation_id, AERON_IPC_CHANNEL, stream_id, is_exclusive);
     }
 
     int addIpcPublicationWithChannel(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {
-        return addNetworkPublication(client_id, correlation_id, channel, stream_id, is_exclusive);
+        return addPublication(client_id, correlation_id, channel, stream_id, is_exclusive);
     }
 
-    int addNetworkPublication(
+    int addPublication(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {
         aeron_publication_command_t *cmd = reinterpret_cast<aeron_publication_command_t *>(m_command_buffer);

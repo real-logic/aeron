@@ -18,7 +18,7 @@
 
 using testing::_;
 
-class DriverConductorSpyTest : public DriverConductorTest
+class DriverConductorSpyTest : public DriverConductorTest, public testing::Test
 {
 };
 

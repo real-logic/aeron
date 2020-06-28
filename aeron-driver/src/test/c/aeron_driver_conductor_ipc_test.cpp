@@ -16,47 +16,11 @@
 
 #include "aeron_driver_conductor_test.h"
 
-class DriverConductorIpcTest : public DriverConductorTest
+using testing::_;
+
+class DriverConductorIpcTest : public DriverConductorTest, public testing::Test
 {
 };
-
-TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublication)
-{
-    int64_t client_id = nextCorrelationId();
-    int64_t pub_id = nextCorrelationId();
-
-    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
-
-    doWork();
-
-    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
-    auto client_counter_func =
-        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
-        {
-            EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-            EXPECT_EQ(label, "client-heartbeat: 0");
-            EXPECT_EQ(key.getInt64(0), client_id);
-        };
-    EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
-
-    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
-
-    ASSERT_NE(publication, (aeron_ipc_publication_t *)NULL);
-
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-
-            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-            EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.correlationId(), pub_id);
-            EXPECT_GT(response.logFileName().length(), 0u);
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
-}
 
 TEST_F(DriverConductorIpcTest, shouldBeAbleToAddAndRemoveSingleIpcPublication)
 {
@@ -67,21 +31,25 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddAndRemoveSingleIpcPublication)
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    ASSERT_NE(publication, (aeron_ipc_publication_t *)NULL);
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .WillOnce([&](std::int32_t msgTypeId, uint8_t *buffer, size_t length)
+        {
+            aeron_counter_update_t* response = reinterpret_cast<aeron_counter_update_t *>(buffer);
+            EXPECT_TRUE(findHeartbeatCounter(response->counter_id, client_id));
+        });
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .With(IsPublicationReady(pub_id, STREAM_ID_1, _));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
     doWork();
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-            const command::OperationSucceededFlyweight response(buffer, offset);
-
-            EXPECT_EQ(response.correlationId(), remove_correlation_id);
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_OPERATION_SUCCESS, _, _))
+        .With(IsOperationSuccess(remove_correlation_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscription)
@@ -125,6 +93,11 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddAndRemoveSingleIpcSubscription)
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id));
+
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);

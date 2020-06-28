@@ -21,7 +21,7 @@
 #define COUNTER_TYPE_ID (102)
 #define COUNTER_KEY_LENGTH (sizeof(int64_t) + 3)
 
-class DriverConductorCounterTest : public DriverConductorTest
+class DriverConductorCounterTest : public DriverConductorTest, public testing::Test
 {
 public:
     DriverConductorCounterTest() :

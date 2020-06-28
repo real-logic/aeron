@@ -295,7 +295,7 @@ struct TestDriverConductor
     aeron_receive_destination_t m_destination;
 };
 
-class DriverConductorTest : public testing::Test
+class DriverConductorTest
 {
 public:
 

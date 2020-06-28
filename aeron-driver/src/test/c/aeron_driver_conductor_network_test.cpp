@@ -29,17 +29,17 @@ using testing::Mock;
 using testing::AnyNumber;
 
 
-class DriverConductorNetworkTest : public DriverConductorTest
+class DriverConductorNetworkTest : public DriverConductorTest, public testing::Test
 {
-public:
-    DriverConductorNetworkTest() : DriverConductorTest()
-    {
-    }
-
-protected:
-    void TearDown() override
-    {
-    }
+//public:
+//    DriverConductorNetworkTest() : DriverConductorTest()
+//    {
+//    }
+//
+//protected:
+//    void TearDown() override
+//    {
+//    }
 };
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkPublication)
@@ -99,9 +99,9 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscr
         &m_conductor.m_conductor, CHANNEL_1);
     ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
 
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
         .With(IsSubscriptionReady(sub_id));
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _));
 
     readAllBroadcastsFromConductor(mock_broadcast_handler);
     testing::Mock::VerifyAndClear(&m_mockCallbacks);

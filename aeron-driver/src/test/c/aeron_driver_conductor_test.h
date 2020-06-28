@@ -25,7 +25,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <concurrent/CountersReader.h>
-#include <command/DestinationMessageFlyweight.h>
 
 extern "C"
 {
@@ -34,20 +33,11 @@ extern "C"
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
 #include "concurrent/aeron_broadcast_receiver.h"
+#include "concurrent/aeron_counters_manager.h"
 }
 
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
 #include "concurrent/broadcast/CopyBroadcastReceiver.h"
-#include "command/PublicationBuffersReadyFlyweight.h"
-#include "command/ImageBuffersReadyFlyweight.h"
-#include "command/CorrelatedMessageFlyweight.h"
-#include "command/PublicationMessageFlyweight.h"
-#include "command/SubscriptionMessageFlyweight.h"
-#include "command/RemoveMessageFlyweight.h"
-#include "command/ImageMessageFlyweight.h"
-#include "command/ErrorResponseFlyweight.h"
-#include "command/OperationSucceededFlyweight.h"
-#include "command/SubscriptionReadyFlyweight.h"
 #include "command/CounterMessageFlyweight.h"
 #include "command/CounterUpdateFlyweight.h"
 #include "command/ClientTimeoutFlyweight.h"
@@ -83,26 +73,10 @@ using namespace aeron;
 #define _MTU_1 4096
 #define _MTU_2 8192
 
-#define _TERM_LENGTH_1 65536
-#define _TERM_LENGTH_2 131072
-
 #define CHANNEL_1_WITH_TAG_1001 "aeron:udp?endpoint=localhost:40001|tags=1001"
 #define CHANNEL_TAG_1001 "aeron:udp?tags=1001"
 
 #define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
-#define CHANNEL_1_WITH_SESSION_ID_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_2)
-#define CHANNEL_1_WITH_SESSION_ID_3 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_3)
-#define CHANNEL_1_WITH_SESSION_ID_4 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_4)
-#define CHANNEL_1_WITH_SESSION_ID_5 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_5)
-
-#define CHANNEL_1_WITH_SESSION_ID_1_MTU_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|mtu=" STR(_MTU_1)
-#define CHANNEL_1_WITH_SESSION_ID_1_MTU_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|mtu=" STR(_MTU_2)
-
-#define CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|term-length=" STR(_TERM_LENGTH_1)
-#define CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|term-length=" STR(_TERM_LENGTH_2)
-
-#define IPC_CHANNEL_WITH_SESSION_ID_1 "aeron:ipc?session-id=" STR(_SESSION_ID_1)
-#define IPC_CHANNEL_WITH_SESSION_ID_2 "aeron:ipc?session-id=" STR(_SESSION_ID_2)
 
 #define SESSION_ID_1 (_SESSION_ID_1)
 #define SESSION_ID_3 (_SESSION_ID_3)
@@ -685,7 +659,6 @@ protected:
     AtomicBuffer m_to_driver_buffer;
     ManyToOneRingBuffer m_to_driver;
     const std::vector<std::int32_t> m_showAllResponses { };
-    testing::MockFunction<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> broadcast_handler;
 };
 
 void aeron_image_buffers_ready_get_log_file_name(
@@ -941,10 +914,5 @@ MATCHER_P4(
 
     return result;
 }
-
-static auto null_handler =
-    [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-    };
 
 #endif //AERON_DRIVER_CONDUCTOR_TEST_H

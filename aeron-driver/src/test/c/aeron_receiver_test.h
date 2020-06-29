@@ -50,6 +50,7 @@ void verify_conductor_cmd_function(void *clientd, volatile void *item)
 {
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;
     ASSERT_EQ(clientd, (void *)cmd->func);
+    aeron_free((void *)item);
 }
 
 class ReceiverTestBase : public testing::Test

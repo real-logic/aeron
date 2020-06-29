@@ -75,4 +75,9 @@ TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
         ASSERT_NE(-1, result);
         aeron_main_do_work(aeron);
     }
+
+    aeron_subscription_close(subscription);
+    aeron_publication_close(publication);
+    aeron_close(aeron);
+    aeron_context_close(aeron_ctx);
 }

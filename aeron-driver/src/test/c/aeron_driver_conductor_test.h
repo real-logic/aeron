@@ -33,15 +33,8 @@ extern "C"
 #include "aeron_driver_receiver.h"
 #include "concurrent/aeron_broadcast_receiver.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "concurrent/aeron_mpsc_rb.h"
 }
-
-#include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
-#include "concurrent/broadcast/CopyBroadcastReceiver.h"
-
-using namespace aeron::concurrent::broadcast;
-using namespace aeron::concurrent::ringbuffer;
-using namespace aeron::concurrent;
-using namespace aeron;
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -285,18 +278,10 @@ class DriverConductorTest
 public:
 
     DriverConductorTest() :
-        m_command(m_command_buffer, sizeof(m_command_buffer)),
-        m_conductor(m_context),
-        m_to_clients_buffer(
-            m_context.m_context->to_clients_buffer,
-            static_cast<util::index_t>(m_context.m_context->to_clients_buffer_length)),
-        m_to_clients_receiver(m_to_clients_buffer),
-        m_to_clients_copy_receiver(m_to_clients_receiver),
-        m_to_driver_buffer(
-            m_context.m_context->to_driver_buffer,
-            static_cast<util::index_t >(m_context.m_context->to_driver_buffer_length)),
-        m_to_driver(m_to_driver_buffer)
+        m_conductor(m_context)
     {
+        aeron_mpsc_rb_init(
+            &m_to_driver, m_context.m_context->to_driver_buffer, m_context.m_context->to_driver_buffer_length);
         aeron_broadcast_receiver_init(
             &m_broadcast_receiver, m_context.m_context->to_clients_buffer, m_context.m_context->to_clients_buffer_length);
     }
@@ -327,12 +312,12 @@ public:
 
     int64_t nextCorrelationId()
     {
-        return m_to_driver.nextCorrelationId();
+        return aeron_mpsc_rb_next_correlation_id(&m_to_driver);
     }
 
-    inline int writeCommand(int32_t msg_type_id, util::index_t length)
+    inline int writeCommand(int32_t msg_type_id, size_t length)
     {
-        return m_to_driver.write(msg_type_id, m_command, 0, length) ? 0 : -1;
+        return aeron_mpsc_rb_write(&m_to_driver, msg_type_id, m_command_buffer, length);
     }
 
     int addIpcPublication(int64_t client_id, int64_t correlation_id, int32_t stream_id, bool is_exclusive)
@@ -571,19 +556,11 @@ public:
 
 protected:
     uint8_t m_command_buffer[AERON_MAX_PATH];
-    AtomicBuffer m_command;
     TestDriverContext m_context;
     TestDriverConductor m_conductor;
-
-    AtomicBuffer m_to_clients_buffer;
-    BroadcastReceiver m_to_clients_receiver;
-    CopyBroadcastReceiver m_to_clients_copy_receiver;
     aeron_broadcast_receiver_t m_broadcast_receiver;
+    aeron_mpsc_rb_t m_to_driver;
     MockDriverCallbacks m_mockCallbacks;
-
-
-    AtomicBuffer m_to_driver_buffer;
-    ManyToOneRingBuffer m_to_driver;
 };
 
 void aeron_image_buffers_ready_get_log_file_name(

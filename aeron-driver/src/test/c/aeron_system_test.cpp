@@ -19,7 +19,10 @@
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"
-#include "Aeron.h"
+extern "C"
+{
+#include "aeronc.h"
+}
 
 using namespace aeron;
 
@@ -42,15 +45,34 @@ protected:
 
 TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
 {
-    std::shared_ptr<Aeron> aeron = Aeron::connect();
+//    std::shared_ptr<Aeron> aeron = Aeron::connect();
 
-    aeron->addSubscription("aeron:udp?endpoint=localhost:24325", 10);
-    const auto pub_reg_id = aeron->addPublication("aeron:udp?endpoint=localhost:24325", 10);
+    aeron_context_t *aeron_ctx;
+    aeron_t *aeron;
+    aeron_publication_t *publication;
+    aeron_async_add_publication_t *add_pub;
+    aeron_subscription_t *subscription;
+    aeron_async_add_subscription_t *add_sub;
+    
+    aeron_context_init(&aeron_ctx);
+    aeron_context_set_use_conductor_agent_invoker(aeron_ctx, true);
 
-    auto pub = aeron->findPublication(pub_reg_id);
-    while (!pub)
+    aeron_init(&aeron, aeron_ctx);
+    ASSERT_EQ(0, aeron_async_add_publication(&add_pub, aeron, "aeron:udp?endpoint=localhost:24325", 10));
+
+    int result;
+    while (1 != (result = aeron_async_add_publication_poll(&publication, add_pub)))
     {
-        std::this_thread::yield();
-        pub = aeron->findPublication(pub_reg_id);
+        ASSERT_NE(-1, result);
+        aeron_main_do_work(aeron);
+    }
+
+    ASSERT_EQ(0, aeron_async_add_subscription(
+        &add_sub, aeron, "aeron:udp?endpoint=localhost:24325", 10, NULL, NULL, NULL, NULL));
+
+    while (1 != (result = aeron_async_add_subscription_poll(&subscription, add_sub)))
+    {
+        ASSERT_NE(-1, result);
+        aeron_main_do_work(aeron);
     }
 }

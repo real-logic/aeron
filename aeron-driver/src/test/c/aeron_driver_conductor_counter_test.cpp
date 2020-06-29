@@ -26,17 +26,16 @@ using testing::_;
 class DriverConductorCounterTest : public DriverConductorTest, public testing::Test
 {
 public:
-    DriverConductorCounterTest() :
-        m_keyBuffer(m_key.data(), m_key.size())
+    DriverConductorCounterTest()
     {
-        m_key.fill(0);
+        memset(m_key, 0, COUNTER_KEY_LENGTH);
     }
 
 protected:
 
     std::string m_label = COUNTER_LABEL;
-    std::array<uint8_t, COUNTER_KEY_LENGTH> m_key;
-    AtomicBuffer m_keyBuffer;
+    uint8_t m_key[COUNTER_KEY_LENGTH];
+    size_t m_key_length = COUNTER_KEY_LENGTH;
 };
 
 TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
@@ -44,8 +43,8 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
 
-    m_keyBuffer.putInt64(0, reg_id);
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    memcpy(m_key, &reg_id, sizeof(reg_id));
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     doWork();
 
     int32_t client_counter_id;
@@ -71,7 +70,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     doWork();
 
     int32_t counter_id;
@@ -100,7 +99,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     doWork();
 
     int32_t counter_id;
@@ -132,8 +131,8 @@ TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
     int64_t reg_id1 = nextCorrelationId();
     int64_t reg_id2 = nextCorrelationId();
 
-    ASSERT_EQ(addCounter(client_id, reg_id1, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
-    ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id1, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     doWork();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(3);
@@ -148,7 +147,7 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     doWork();
 
     int32_t counter_id;

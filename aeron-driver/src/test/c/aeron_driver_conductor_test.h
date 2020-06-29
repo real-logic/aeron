@@ -161,6 +161,7 @@ public:
 
 void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
 {
+//    printf("%d (0x%X)\n", type_id, type_id);
     DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
     callback->broadcastToClient(type_id, buffer, length);
 }
@@ -286,10 +287,10 @@ public:
             &m_broadcast_receiver, m_context.m_context->to_clients_buffer, m_context.m_context->to_clients_buffer_length);
     }
 
-    size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler)
+    size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler, size_t message_limit = SIZE_MAX)
     {
         size_t messages = 0;
-        while (0 != aeron_broadcast_receiver_receive(&m_broadcast_receiver, handler, &m_mockCallbacks))
+        while (messages < message_limit && 0 != aeron_broadcast_receiver_receive(&m_broadcast_receiver, handler, &m_mockCallbacks))
         {
             messages++;
         }
@@ -571,6 +572,13 @@ void aeron_image_buffers_ready_get_log_file_name(
     *log_file_name = reinterpret_cast<const char *>(log_file_name_ptr + sizeof(int32_t));
 }
 
+void aeron_publication_buffers_ready_get_log_file_name(
+    const aeron_publication_buffers_ready_t *msg, const char **log_file_name, int32_t* log_file_name_len)
+{
+    *log_file_name_len = msg->log_file_length;
+    *log_file_name = ((char *) msg) + sizeof(aeron_publication_buffers_ready_t);
+}
+
 void aeron_image_buffers_ready_get_source_identity(
     const aeron_image_buffers_ready_t *msg, const char **source_identity, int32_t* source_identity_len)
 {
@@ -625,11 +633,11 @@ MATCHER_P(
 
 MATCHER_P(
     IsOperationSuccess,
-    correlationId,
-    std::string("IsOperationSuccess: correlationId = ").append(testing::PrintToString(correlationId)))
+    correlation_id,
+    std::string("IsOperationSuccess: correlationId = ").append(testing::PrintToString(correlation_id)))
 {
     const aeron_operation_succeeded_t *response  = reinterpret_cast<aeron_operation_succeeded_t *>(std::get<1>(arg));
-    const bool result = response->correlation_id == correlationId;
+    const bool result = response->correlation_id == correlation_id;
 
     if (!result)
     {
@@ -641,18 +649,18 @@ MATCHER_P(
 
 MATCHER_P3(
     IsPublicationReady,
-    correlationId,
-    streamId,
-    sessionId,
-    std::string("IsPublicationReady: correlationId = ").append(testing::PrintToString(correlationId))
-        .append(", streamId = ").append(testing::DescribeMatcher<int32_t>(streamId))
-        .append(", sessionId = ").append(testing::DescribeMatcher<int32_t>(sessionId)))
+    correlation_id,
+    stream_id,
+    session_id,
+    std::string("IsPublicationReady: correlationId = ").append(testing::PrintToString(correlation_id))
+        .append(", streamId = ").append(testing::DescribeMatcher<int32_t>(stream_id))
+        .append(", sessionId = ").append(testing::DescribeMatcher<int32_t>(session_id)))
 {
     const aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(
         std::get<1>(arg));
-    bool result = testing::Value(response->stream_id, streamId) &&
-        testing::Value(response->session_id, sessionId) &&
-        testing::Value(response->correlation_id, correlationId) &&
+    bool result = testing::Value(response->stream_id, stream_id) &&
+        testing::Value(response->session_id, session_id) &&
+        testing::Value(response->correlation_id, correlation_id) &&
         0 < response->log_file_length;
 
     if (!result)
@@ -664,6 +672,58 @@ MATCHER_P3(
     }
 
     return result;
+}
+
+MATCHER_P5(
+    IsPubReadyWithFile,
+    registration_id,
+    correlation_id,
+    stream_id,
+    session_id,
+    log_file_name,
+    std::string("IsPubReadyWithFile: ")
+        .append("registration_id = ").append(testing::DescribeMatcher<int64_t>(correlation_id))
+        .append(", correlation_id = ").append(testing::DescribeMatcher<int64_t>(correlation_id))
+        .append(", stream_id = ").append(testing::DescribeMatcher<int32_t>(stream_id))
+        .append(", session_id = ").append(testing::DescribeMatcher<int32_t>(session_id))
+        .append(", log_file_name = ").append(testing::DescribeMatcher<std::string>(log_file_name)))
+{
+    const aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(
+        std::get<1>(arg));
+    bool result = true; 
+    result &= testing::Value(response->stream_id, stream_id);
+    result &= testing::Value(response->session_id, session_id);
+    result &= testing::Value(response->correlation_id, correlation_id);
+    result &= testing::Value(response->registration_id, registration_id);
+
+    const char *response_log_file_name;
+    int32_t log_file_name_length;
+    aeron_publication_buffers_ready_get_log_file_name(response, &response_log_file_name, &log_file_name_length);
+    std::string log_file_name_str = std::string(response_log_file_name, log_file_name_length);
+
+    result &= testing::Value(log_file_name_str, log_file_name);
+
+    if (!result)
+    {
+        *result_listener <<
+                         "response.stream_id = " << response->stream_id <<
+                         ", response.session_id = " << response->session_id <<
+                         ", response.correlation_id = " << response->correlation_id <<
+                         ", response.registration_id = " << response->registration_id <<
+                         ", response.log_file_name = " << log_file_name_str;
+    }
+
+    return result;
+}
+
+ACTION_P2(CapturePublicationReady, session_id_out, log_file_name_out)
+{
+    const aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(arg1);
+    *session_id_out = response->session_id;
+    const char *log_file_name;
+    int32_t log_file_name_length;
+    aeron_publication_buffers_ready_get_log_file_name(response, &log_file_name, &log_file_name_length);
+    log_file_name_out->append(log_file_name, log_file_name_length);
 }
 
 MATCHER_P(

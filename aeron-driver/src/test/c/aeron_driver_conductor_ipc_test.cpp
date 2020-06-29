@@ -40,29 +40,19 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
 
     int32_t session_id = 0;
     std::string log_file_name;
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
-    {
-        testing::InSequence s;
+    testing::Sequence sequence;
 
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
-            .With(IsSubscriptionReady(sub_id));
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                    session_id = response->session_id;
-                    log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
-                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
-                });
-    }
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id))
+        .InSequence(sequence);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(sequence)
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
@@ -81,32 +71,21 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingl
         &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
 
-
     int32_t session_id = 0;
     std::string log_file_name;
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
-    {
-        testing::InSequence s;
+    testing::Sequence sequence;
 
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                    session_id = response->session_id;
-                    log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
-            .With(IsSubscriptionReady(sub_id));
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
-                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
-                });
-    }
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(sequence)
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id))
+        .InSequence(sequence);
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
@@ -140,28 +119,16 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
         .InSequence(s2);
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
         .InSequence(s1, s2)
-        .WillOnce(
-            [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-            {
-                aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                session_id = response->session_id;
-                log_file_name
-                    .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-            });
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 4);  // Limit the poll to capture the publication ready.
+
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
-        .Times(2)
-        .InSequence(s1, s2)
-        .WillRepeatedly(
-            [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-            {
-                aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
-                EXPECT_THAT(
-                    response, testing::AnyOf(
-                    IsImageBuffersReady(sub_id_1, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)),
-                    IsImageBuffersReady(sub_id_2, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL))
-                ));
-            });
-    readAllBroadcastsFromConductor(mock_broadcast_handler);}
+        .With(IsAvailableImage(_, sub_id_1, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id_2, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
 
 // TODO: Parameterise
 TEST_F(DriverConductorIpcTest, shouldAddSingleIpcSubscriptionThenAddMultipleExclusiveIpcPublicationsWithSameStreamId)
@@ -187,45 +154,22 @@ TEST_F(DriverConductorIpcTest, shouldAddSingleIpcSubscriptionThenAddMultipleExcl
     int32_t session_id_2 = 0;
     std::string log_file_name_1;
     std::string log_file_name_2;
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
-    {
-        testing::InSequence s;
 
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
-            .With(IsSubscriptionReady(sub_id));
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                    session_id_1 = response->session_id;
-                    log_file_name_1
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
-                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id_1, log_file_name_1, std::string(AERON_IPC_CHANNEL)));
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                    session_id_2 = response->session_id;
-                    log_file_name_2
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
-                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id_2, log_file_name_2, std::string(AERON_IPC_CHANNEL)));
-                });
-    }
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, _, _))
+        .WillOnce(CapturePublicationReady(&session_id_1, &log_file_name_1));
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id_1, log_file_name_1.c_str(), AERON_IPC_CHANNEL));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, _, _))
+        .WillOnce(CapturePublicationReady(&session_id_2, &log_file_name_2));
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 2);
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id_2, log_file_name_2.c_str(), AERON_IPC_CHANNEL));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
@@ -250,42 +194,16 @@ TEST_F(DriverConductorIpcTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     int32_t session_id = 0;
     std::string log_file_name;
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
-    {
-        testing::InSequence s;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);
 
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
-            .With(IsSubscriptionReady(sub_id));
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
-            .With(IsPublicationReady(pub_id_1, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                    session_id = response->session_id;
-                    log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
-                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
-                });
-        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
-            .With(IsPublicationReady(pub_id_2, _, _))
-            .WillOnce(
-                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
-                {
-                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
-                    session_id = response->session_id;
-                    std::string response_log_file_name(
-                        (char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
-                    EXPECT_EQ(pub_id_2, response->correlation_id);
-                    EXPECT_EQ(pub_id_1, response->registration_id);
-                    EXPECT_EQ(log_file_name, response_log_file_name);
-                });
-    }
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .With(IsPubReadyWithFile(pub_id_1, pub_id_2, STREAM_ID_1, session_id, log_file_name));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 

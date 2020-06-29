@@ -48,8 +48,17 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
-    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
-    int32_t counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t client_counter_id;
+    int32_t counter_id;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(client_id, _))
+        .WillOnce(CaptureCounterId(&client_counter_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(reg_id, _))
+        .WillOnce(CaptureCounterId(&counter_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+
+    testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
     auto counter_func =
         [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
@@ -109,8 +118,14 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
-    expectNextCounterFromConductor(client_id);
-    int32_t counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t counter_id;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(reg_id, _))
+        .WillOnce(CaptureCounterId(&counter_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+
+    testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
     doWorkForNs((m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
@@ -119,31 +134,12 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
 
     EXPECT_FALSE(findCounter(counter_id, counter_func));
 
-    size_t response_number = 0;
-    auto timeout_handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_CLIENT_TIMEOUT, _, _))
+        .With(IsTimeout(client_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
+        .With(IsTimeout(client_id));
 
-                const command::ClientTimeoutFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.clientId(), client_id);
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_COUNTER);
-
-                const command::ClientTimeoutFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.clientId(), client_id);
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(timeout_handler, m_showAllResponses), 2u);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
@@ -171,8 +167,12 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
-    expectNextCounterFromConductor(client_id);
-    int32_t counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t counter_id;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(reg_id, _))
+        .WillOnce(CaptureCounterId(&counter_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 
     int64_t timeout = m_context.m_context->client_liveness_timeout_ns * 2;
 

@@ -40,7 +40,6 @@ extern "C"
 #include "concurrent/broadcast/CopyBroadcastReceiver.h"
 #include "command/CounterMessageFlyweight.h"
 #include "command/CounterUpdateFlyweight.h"
-#include "command/ClientTimeoutFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;
@@ -52,7 +51,6 @@ using namespace aeron;
 
 #define CHANNEL_1 "aeron:udp?endpoint=localhost:40001"
 #define CHANNEL_1_UNRELIABLE "aeron:udp?endpoint=localhost:40001|reliable=false"
-#define CHANNEL_1_NOREJOIN "aeron:udp?endpoint=localhost:40001|rejoin=false"
 #define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
 #define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
 #define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
@@ -64,11 +62,7 @@ using namespace aeron;
 #define STREAM_ID_3 (103)
 #define STREAM_ID_4 (104)
 
-#define _SESSION_ID_1 1000
-#define _SESSION_ID_2 1001
-#define _SESSION_ID_3 100000
-#define _SESSION_ID_4 100002
-#define _SESSION_ID_5 100003
+#define SESSION_ID_1_ 1000
 
 #define _MTU_1 4096
 #define _MTU_2 8192
@@ -76,12 +70,12 @@ using namespace aeron;
 #define CHANNEL_1_WITH_TAG_1001 "aeron:udp?endpoint=localhost:40001|tags=1001"
 #define CHANNEL_TAG_1001 "aeron:udp?tags=1001"
 
-#define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
+#define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(SESSION_ID_1_)
 
-#define SESSION_ID_1 (_SESSION_ID_1)
-#define SESSION_ID_3 (_SESSION_ID_3)
-#define SESSION_ID_4 (_SESSION_ID_4)
-#define SESSION_ID_5 (_SESSION_ID_5)
+#define SESSION_ID_1 (SESSION_ID_1_)
+#define SESSION_ID_3 (100000)
+#define SESSION_ID_4 (100002)
+#define SESSION_ID_5 (100003)
 
 #define SESSION_ID (0x5E5510)
 #define INITIAL_TERM_ID (0x3456)
@@ -301,48 +295,6 @@ public:
         return messages;
     }
 
-    size_t readAllBroadcastsFromConductor(const handler_t &func)
-    {
-        return readAllBroadcastsFromConductor(func, m_showAllResponses);
-    }
-
-    size_t readAllBroadcastsFromConductor(const handler_t &func, const std::vector<std::int32_t>& ignored_msg_types)
-    {
-        size_t num_received = 0;
-
-        auto handler =
-            [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-            {
-                const bool msgTypeIgnored = std::end(ignored_msg_types) != std::find(
-                    std::begin(ignored_msg_types), std::end(ignored_msg_types), msgTypeId);
-
-                if (!msgTypeIgnored)
-                {
-                    func(msgTypeId, buffer, offset, length);
-                    num_received++;
-                }
-            };
-
-        while (m_to_clients_copy_receiver.receive(handler) > 0)
-        {
-            // No-op
-        }
-
-        return num_received;
-    }
-
-    size_t readNextBroadcastFromConductor(const handler_t &func)
-    {
-        size_t num_received = 0;
-
-        if (m_to_clients_copy_receiver.receive(func) > 0)
-        {
-            num_received++;
-        }
-
-        return num_received;
-    }
-
     int64_t nextCorrelationId()
     {
         return m_to_driver.nextCorrelationId();
@@ -471,26 +423,6 @@ public:
         cmd->registration_id = registration_id;
 
         return writeCommand(AERON_COMMAND_REMOVE_COUNTER, sizeof(aeron_remove_command_t));
-    }
-
-    int32_t expectNextCounterFromConductor(std::int64_t correlationId)
-    {
-        int32_t counter_id = -1;
-        auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_COUNTER_READY);
-
-            const command::CounterUpdateFlyweight response(buffer, offset);
-
-            EXPECT_EQ(response.correlationId(), correlationId);
-            counter_id = response.counterId();
-            EXPECT_GE(counter_id, 0);
-        };
-
-        size_t read_from_buffer = readNextBroadcastFromConductor(handler);
-        EXPECT_EQ(read_from_buffer, 1u);
-
-        return counter_id;
     }
 
     bool findCounter(int32_t counter_id, on_counters_metadata_t func)
@@ -658,7 +590,6 @@ protected:
 
     AtomicBuffer m_to_driver_buffer;
     ManyToOneRingBuffer m_to_driver;
-    const std::vector<std::int32_t> m_showAllResponses { };
 };
 
 void aeron_image_buffers_ready_get_log_file_name(

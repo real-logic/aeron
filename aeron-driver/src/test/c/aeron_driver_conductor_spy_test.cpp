@@ -31,7 +31,16 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscription)
 
     doWork();
 
-    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
+    int32_t client_counter_id;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(client_id, _))
+        .WillOnce(CaptureCounterId(&client_counter_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+
+    EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
+
     auto client_counter_func =
         [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
         {
@@ -40,14 +49,6 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscription)
             EXPECT_EQ(key.getInt64(0), client_id);
         };
     EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
-
-    EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
-
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
-        .With(IsSubscriptionReady(sub_id));
-
-    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddAndRemoveSingleSubscription)

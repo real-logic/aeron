@@ -168,7 +168,6 @@ public:
 
 void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
 {
-    printf("0x%X\n", type_id);
     DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
     callback->broadcastToClient(type_id, buffer, length);
 }
@@ -186,7 +185,6 @@ void mock_counter_handler(
     size_t label_len,
     void *clientd)
 {
-    printf("0x%X\n", type_id);
     DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
     callback->onCounter(id, type_id, key, key_len, label, label_len);
 }

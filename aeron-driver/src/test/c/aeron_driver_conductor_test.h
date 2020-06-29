@@ -38,8 +38,6 @@ extern "C"
 
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
 #include "concurrent/broadcast/CopyBroadcastReceiver.h"
-#include "command/CounterMessageFlyweight.h"
-#include "command/CounterUpdateFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;

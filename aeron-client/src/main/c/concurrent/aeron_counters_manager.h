@@ -192,8 +192,14 @@ int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t
 
 int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int32_t counter_id);
 
-typedef void (*aeron_counters_reader_foreach_metadata_func_t)
-    (int32_t, int32_t, const uint8_t *, size_t, const uint8_t *, size_t, void *);
+typedef void (*aeron_counters_reader_foreach_metadata_func_t)(
+    int32_t id,
+    int32_t type_id,
+    const uint8_t *key,
+    size_t key_length,
+    const uint8_t *label,
+    size_t label_length,
+    void *clientd);
 
 void aeron_counters_reader_foreach_metadata(
     uint8_t *metadata_buffer,

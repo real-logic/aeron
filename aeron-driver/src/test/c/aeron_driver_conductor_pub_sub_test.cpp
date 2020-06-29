@@ -220,6 +220,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
+    int32_t counter_id;
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
 
@@ -229,16 +230,17 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
     ASSERT_TRUE(GetParam()->publicationExists(&m_conductor.m_conductor, pub_id));
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
-        .WillOnce([&](std::int32_t msgTypeId, uint8_t *buffer, size_t length)
-        {
-            aeron_counter_update_t* response = reinterpret_cast<aeron_counter_update_t *>(buffer);
-            EXPECT_TRUE(findHeartbeatCounter(response->counter_id, client_id));
-        });
+        .WillOnce(CaptureCounterId(&counter_id));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
         .With(IsPublicationReady(pub_id, Eq(STREAM_ID_1), _));
 
     readAllBroadcastsFromConductor(mock_broadcast_handler);
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
+
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, _, _, _, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, onCounter(counter_id, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID, _, _, _, _)).
+        With(IsIdCounter(client_id, std::string("client-heartbeat: 0")));
+    readCounters(mock_counter_handler);
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
     doWork();

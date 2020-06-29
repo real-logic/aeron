@@ -58,27 +58,12 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
         .WillOnce(CaptureCounterId(&counter_id));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 
-    testing::Mock::VerifyAndClear(&m_mockCallbacks);
-
-    auto counter_func =
-        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
-        {
-            EXPECT_EQ(typeId, COUNTER_TYPE_ID);
-            EXPECT_EQ(label, m_label);
-            EXPECT_EQ(key.getInt64(0), reg_id);
-        };
-
-    EXPECT_TRUE(findCounter(counter_id, counter_func));
-
-    auto client_counter_func =
-        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
-        {
-            EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-            EXPECT_EQ(label, "client-heartbeat: 0");
-            EXPECT_EQ(key.getInt64(0), client_id);
-        };
-
-    EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, _, _, _, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, COUNTER_TYPE_ID, _, _, _, _)).
+        With(IsIdCounter(reg_id, m_label));
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID, _, _, _, _)).
+        With(IsIdCounter(client_id, std::string("client-heartbeat: 0")));
+    readCounters(mock_counter_handler);
 }
 
 TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
@@ -130,15 +115,14 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     doWorkForNs((m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
 
-    auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label){};
-
-    EXPECT_FALSE(findCounter(counter_id, counter_func));
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, _, _, _, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, onCounter(counter_id, _, _, _, _, _)).Times(0);
+    readCounters(mock_counter_handler);
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_CLIENT_TIMEOUT, _, _))
         .With(IsTimeout(client_id));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
         .With(IsTimeout(client_id));
-
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
@@ -186,7 +170,7 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
 
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
 
-    auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label){};
-
-    EXPECT_TRUE(findCounter(counter_id, counter_func));
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, _, _, _, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, onCounter(counter_id, _, _, _, _, _)).Times(1);
+    readCounters(mock_counter_handler);
 }

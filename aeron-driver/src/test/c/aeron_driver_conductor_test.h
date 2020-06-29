@@ -24,7 +24,6 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <concurrent/CountersReader.h>
 
 extern "C"
 {
@@ -151,12 +150,20 @@ class DriverCallbacks
 public:
     virtual ~DriverCallbacks() {};
     virtual void broadcastToClient(int32_t type_id, uint8_t *buffer, size_t length) = 0;
+    virtual void onCounter(
+        int32_t id,
+        int32_t type_id,
+        const uint8_t *key,
+        size_t key_len,
+        const uint8_t *label,
+        size_t label_len) = 0;
 };
 
 class MockDriverCallbacks : public DriverCallbacks
 {
 public:
     MOCK_METHOD3(broadcastToClient, void(int32_t, uint8_t *, size_t));
+    MOCK_METHOD6(onCounter, void(int32_t, int32_t, const uint8_t *, size_t, const uint8_t *, size_t));
 };
 
 void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
@@ -168,6 +175,20 @@ void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, voi
 
 void null_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
 {
+}
+
+void mock_counter_handler(
+    int32_t id,
+    int32_t type_id,
+    const uint8_t *key,
+    size_t key_len,
+    const uint8_t *label,
+    size_t label_len,
+    void *clientd)
+{
+    printf("0x%X\n", type_id);
+    DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
+    callback->onCounter(id, type_id, key, key_len, label, label_len);
 }
 
 struct TestDriverContext
@@ -291,6 +312,19 @@ public:
         }
 
         return messages;
+    }
+
+    size_t readCounters(aeron_counters_reader_foreach_metadata_func_t callback)
+    {
+        aeron_driver_context_t *ctx = m_context.m_context;
+        aeron_counters_reader_t reader;
+        aeron_counters_reader_init(
+            &reader,
+            ctx->counters_metadata_buffer, AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length),
+            ctx->counters_values_buffer, ctx->counters_values_buffer_length);
+
+        aeron_counters_reader_foreach_metadata(reader.metadata, reader.metadata_length, callback, &m_mockCallbacks);
+        return 0;
     }
 
     int64_t nextCorrelationId()
@@ -421,42 +455,6 @@ public:
         cmd->registration_id = registration_id;
 
         return writeCommand(AERON_COMMAND_REMOVE_COUNTER, sizeof(aeron_remove_command_t));
-    }
-
-    bool findCounter(int32_t counter_id, on_counters_metadata_t func)
-    {
-        aeron_driver_context_t *ctx = m_context.m_context;
-        AtomicBuffer metadata(
-            ctx->counters_metadata_buffer,
-            static_cast<size_t>(AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length)));
-        AtomicBuffer values(ctx->counters_values_buffer, static_cast<util::index_t>(ctx->counters_values_buffer_length));
-
-        CountersReader reader(metadata, values);
-        bool found = false;
-
-        reader.forEach(
-            [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label)
-            {
-                if (id == counter_id)
-                {
-                    func(id, typeId, key, label);
-                    found = true;
-                }
-            });
-
-        return found;
-    }
-
-    bool findHeartbeatCounter(int32_t client_counter_id, int64_t client_id)
-    {
-        auto client_counter_func =
-            [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
-            {
-                EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-                EXPECT_EQ(label, "client-heartbeat: 0");
-                EXPECT_EQ(key.getInt64(0), client_id);
-            };
-        return findCounter(client_counter_id, client_counter_func);
     }
 
     int addDestination(
@@ -865,6 +863,34 @@ MATCHER_P2(
             ", response.counter_id = " << response->counter_id;
     }
 
+    return result;
+}
+
+MATCHER_P2(
+    IsIdCounter,
+    id,
+    label,
+    std::string("IsIdCounter: ")
+        .append("key = ").append(testing::PrintToString(id))
+        .append(", label = ").append(label)
+    )
+{
+    const uint8_t *key_buffer = std::get<2>(arg);
+    int64_t counter_id;
+    memcpy(&counter_id, key_buffer, sizeof(counter_id));
+    const std::string counter_label = std::string((char *)std::get<4>(arg), std::get<5>(arg));
+
+    bool result = true;
+    result &= testing::Value(counter_id, id);
+    result &= testing::Value(counter_label, label);
+    
+    if (!result)
+    {
+        *result_listener <<
+                         "counter.id = " << counter_id <<
+                         "counter.label = " << counter_label;
+    }
+    
     return result;
 }
 

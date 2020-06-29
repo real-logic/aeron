@@ -721,7 +721,6 @@ MATCHER_P(
     return result;
 }
 
-
 MATCHER_P(
     IsOperationSuccess,
     correlationId,
@@ -906,13 +905,44 @@ MATCHER_P4(
     if (!result)
     {
         *result_listener <<
-                         "response.correlation_id = " << response->correlation_id <<
-                         ", response.subscription_registration_id = " << response->subscription_registration_id <<
-                         ", response.stream_id = " << response->stream_id <<
-                         ", response.channel = " << str_channel;
+            "response.correlation_id = " << response->correlation_id <<
+            ", response.subscription_registration_id = " << response->subscription_registration_id <<
+            ", response.stream_id = " << response->stream_id <<
+            ", response.channel = " << str_channel;
     }
 
     return result;
+}
+
+MATCHER_P2(
+    IsCounterUpdate,
+    correlation_id,
+    counter_id,
+    std::string("IsCounterUnavailable: ")
+        .append("correlation_id = ").append(testing::PrintToString(correlation_id))
+        .append(", counter_id = ").append(testing::PrintToString(counter_id))
+    )
+{
+    const aeron_counter_update_t *response = reinterpret_cast<aeron_counter_update_t *>(std::get<1>(arg));
+
+    bool result = true;
+    result &= testing::Value(response->correlation_id, correlation_id);
+    result &= testing::Value(response->counter_id, counter_id);
+
+    if (!result)
+    {
+        *result_listener <<
+            "response.correlation_id = " << response->correlation_id <<
+            ", response.counter_id = " << response->counter_id;
+    }
+
+    return result;
+}
+
+ACTION_P(CaptureCounterId, counter_id_out)
+{
+    const aeron_counter_update_t *response = reinterpret_cast<aeron_counter_update_t *>(arg1);
+    *counter_id_out = response->counter_id;
 }
 
 #endif //AERON_DRIVER_CONDUCTOR_TEST_H

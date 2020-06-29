@@ -21,6 +21,8 @@
 #define COUNTER_TYPE_ID (102)
 #define COUNTER_KEY_LENGTH (sizeof(int64_t) + 3)
 
+using testing::_;
+
 class DriverConductorCounterTest : public DriverConductorTest, public testing::Test
 {
 public:
@@ -78,44 +80,25 @@ TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
     ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
-    expectNextCounterFromConductor(client_id);
-    int32_t counter_id = expectNextCounterFromConductor(reg_id);
+    int32_t counter_id;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(reg_id, _))
+        .WillOnce(CaptureCounterId(&counter_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+
+    testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
     int64_t remove_correlation_id = nextCorrelationId();
     ASSERT_EQ(removeCounter(client_id, remove_correlation_id, reg_id), 0);
     doWork();
 
-    size_t response_number = 0;
-
-    auto remove_handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
-
-                const command::OperationSucceededFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), remove_correlation_id);
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_COUNTER);
-
-                const command::CounterUpdateFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), reg_id);
-                EXPECT_EQ(response.counterId(), counter_id);
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler, m_showAllResponses), 2u);
-
-    auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label){};
-
-    EXPECT_FALSE(findCounter(counter_id, counter_func));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_OPERATION_SUCCESS, _, _))
+        .With(IsOperationSuccess(remove_correlation_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
+        .With(IsCounterUpdate(reg_id, counter_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
@@ -173,7 +156,8 @@ TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
     ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler, m_showAllResponses), 3u);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(3);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 
     doWorkForNs((m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);

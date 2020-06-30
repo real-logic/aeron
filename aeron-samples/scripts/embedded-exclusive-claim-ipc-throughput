@@ -25,5 +25,5 @@ ${JAVA_HOME}/bin/java \
     -XX:+UseParallelOldGC \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.sample.messageLength=32 \
-    -Daeron.ipc.mtu.length=16K \
+    -Daeron.ipc.mtu.length=8k \
     ${JVM_OPTS} io.aeron.samples.EmbeddedExclusiveBufferClaimIpcThroughput "$@"

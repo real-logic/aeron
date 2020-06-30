@@ -28,7 +28,7 @@ ${JAVA_HOME}/bin/java \
     -Daeron.sample.messageLength=32 \
     -Daeron.sample.messages=500000000 \
     -Daeron.term.buffer.sparse.file=false \
-    -Daeron.mtu.length=16k \
+    -Daeron.mtu.length=8k \
     -Daeron.socket.so_sndbuf=2m \
     -Daeron.socket.so_rcvbuf=2m \
     -Daeron.rcv.initial.window.length=2m \

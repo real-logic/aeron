@@ -892,8 +892,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     uint64_t bits[STATIC_BIT_SET_U64_LEN];
     aeron_bit_set_t session_id_offsets;
     aeron_bit_set_stack_init(
-        conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
-    assert(conductor->network_publications.length < session_id_offsets.bit_set_length);
+        conductor->ipc_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
+    assert(conductor->ipc_publications.length < session_id_offsets.bit_set_length);
 
     bool is_session_id_in_use = false;
 

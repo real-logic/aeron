@@ -16,6 +16,7 @@
 
 set(TEST_HEADERS
     ClientConductorFixture.h
+    EmbeddedMediaDriver.h
     util/TestUtils.h
     concurrent/MockAtomicBuffer.h)
 
@@ -36,7 +37,7 @@ endif ()
 
 function(aeron_client_test name file)
     add_executable(${name} ${file})
-    target_link_libraries(${name} aeron_client aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${name} aeron_client aeron_driver aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
@@ -65,3 +66,4 @@ aeron_client_test(errorLogReaderTest concurrent/ErrorLogReaderTest.cpp)
 aeron_client_test(oneToOneRingBufferTest concurrent/OneToOneRingBufferTest.cpp)
 aeron_client_test(channelUriStringBuilderTest ChannelUriStringBuilderTest.cpp)
 aeron_client_test(channelUriTest ChannelUriTest.cpp)
+aeron_client_test(systemTest SystemTest.cpp)

@@ -16,7 +16,9 @@
 
 #include "aeron_driver_conductor_test.h"
 
-class DriverConductorSpyTest : public DriverConductorTest
+using testing::_;
+
+class DriverConductorSpyTest : public DriverConductorTest, public testing::Test
 {
 };
 
@@ -29,29 +31,20 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscription)
 
     doWork();
 
-    int32_t client_counter_id = expectNextCounterFromConductor(client_id);
-    auto client_counter_func =
-        [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer &key, const std::string &label)
-        {
-            EXPECT_EQ(typeId, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID);
-            EXPECT_EQ(label, "client-heartbeat: 0");
-            EXPECT_EQ(key.getInt64(0), client_id);
-        };
-    EXPECT_TRUE(findCounter(client_counter_id, client_counter_func));
+    int32_t client_counter_id;
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .With(IsCounterUpdate(client_id, _))
+        .WillOnce(CaptureCounterId(&client_counter_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
 
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-
-            const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-            EXPECT_EQ(response.correlationId(), sub_id);
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, _, _, _, _, _)).Times(testing::AnyNumber());
+    EXPECT_CALL(m_mockCallbacks, onCounter(_, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID, _, _, _, _)).
+        With(IsIdCounter(client_id, std::string("client-heartbeat: 0")));
+    readCounters(mock_counter_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddAndRemoveSingleSubscription)
@@ -63,22 +56,16 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddAndRemoveSingleSubscription)
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+    readAllBroadcastsFromConductor(null_broadcast_handler);
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
-
-            const command::OperationSucceededFlyweight response(buffer, offset);
-
-            EXPECT_EQ(response.correlationId(), remove_correlation_id);
-        };
 
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 0u);
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_OPERATION_SUCCESS, _, _))
+        .With(IsOperationSuccess(remove_correlation_id));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionsWithSameChannelSameStreamId)
@@ -98,7 +85,9 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionsWithSameCha
 
     ASSERT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 4u);
 
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _)).Times(4);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionsWithDifferentChannelSameStreamId)
@@ -118,7 +107,9 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionsWithDiffere
 
     ASSERT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 4u);
 
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _)).Times(4);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSinglePublication)
@@ -128,7 +119,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -136,50 +127,32 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
 
-    size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    {
+        testing::InSequence s;
 
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id);
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id);
-                session_id = response.sessionId();
-
-                log_file_name = response.logFileName();
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                const command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.sessionId(), session_id);
-
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-
-                EXPECT_EQ(log_file_name, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+            .With(IsSubscriptionReady(sub_id));
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id = response->session_id;
+                    log_file_name
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
+                });
+    }
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionWithTagThenAddSinglePublication)
@@ -189,7 +162,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionWithTagThenAdd
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_TAG_1001, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -198,50 +171,33 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionWithTagThenAdd
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(
         &m_conductor.m_conductor, CHANNEL_TAG_1001, STREAM_ID_1), 1u);
 
-    size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
 
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    {
+        testing::InSequence s;
 
-                EXPECT_EQ(response.correlationId(), sub_id);
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id);
-                session_id = response.sessionId();
-
-                log_file_name = response.logFileName();
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                const command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.sessionId(), session_id);
-
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-
-                EXPECT_EQ(log_file_name, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+            .With(IsSubscriptionReady(sub_id));
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id = response->session_id;
+                    log_file_name
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
+                });
+    }
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSubscription)
@@ -250,7 +206,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     int64_t sub_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
 
@@ -259,49 +215,32 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
 
-    size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    {
+        testing::InSequence s;
 
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id);
-                session_id = response.sessionId();
-
-                log_file_name = response.logFileName();
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id);
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.sessionId(), session_id);
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-
-                EXPECT_EQ(log_file_name, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id = response->session_id;
+                    log_file_name
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+            .With(IsSubscriptionReady(sub_id));
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
+                });
+    }
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSubscriptionWithTag)
@@ -310,7 +249,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     int64_t sub_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1_WITH_TAG_1001, STREAM_ID_1, false), 0);
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_TAG_1001, STREAM_ID_1, -1), 0);
     doWork();
 
@@ -320,49 +259,32 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(
         &m_conductor.m_conductor, CHANNEL_TAG_1001, STREAM_ID_1), 1u);
 
-    size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    {
+        testing::InSequence s;
 
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id);
-                session_id = response.sessionId();
-
-                log_file_name = response.logFileName();
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id);
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.sessionId(), session_id);
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-
-                EXPECT_EQ(log_file_name, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id = response->session_id;
+                    log_file_name
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+            .With(IsSubscriptionReady(sub_id));
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
+                });
+    }
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStreamIdThenAddSinglePublication)
@@ -374,7 +296,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addSpySubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -382,57 +304,41 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 2u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 2u);
 
-    size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
+    testing::Sequence s1, s2;
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id_1))
+        .InSequence(s1);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id_2))
+        .InSequence(s2);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(s1, s2)
+        .WillOnce(
+            [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
             {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id_1);
-            }
-            else if (1 == response_number)
+                aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                session_id = response->session_id;
+                log_file_name
+                    .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+            });
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .Times(2)
+        .InSequence(s1, s2)
+        .WillRepeatedly(
+            [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
             {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
-
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id_2);
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id);
-                session_id = response.sessionId();
-
-                log_file_name = response.logFileName();
-            }
-            else if (3 == response_number || 4 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                const command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.sessionId(), session_id);
-                EXPECT_TRUE(response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
-
-                EXPECT_EQ(log_file_name, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
+                aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                EXPECT_THAT(
+                    response, testing::AnyOf(
+                        IsImageBuffersReady(sub_id_1, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)),
+                        IsImageBuffersReady(sub_id_2, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL))
+                ));
+            });
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipleExclusivePublicationsWithSameStreamId)
@@ -443,8 +349,8 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, true), 0);
     doWork();
 
     aeron_network_publication_t *publication_1 = aeron_driver_conductor_find_network_publication(
@@ -455,75 +361,50 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication_2), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 2u);
 
-    size_t response_number = 0;
     int32_t session_id_1 = 0;
     int32_t session_id_2 = 0;
     std::string log_file_name_1;
     std::string log_file_name_2;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    {
+        testing::InSequence s;
 
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id);
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id_1);
-                session_id_1 = response.sessionId();
-
-                log_file_name_1 = response.logFileName();
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                const command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-                EXPECT_EQ(response.sessionId(), session_id_1);
-                EXPECT_EQ(response.correlationId(), pub_id_1);
-                EXPECT_EQ(log_file_name_1, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-            else if (3 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id_2);
-                session_id_2 = response.sessionId();
-
-                log_file_name_2 = response.logFileName();
-            }
-            else if (4 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                const command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-                EXPECT_EQ(response.sessionId(), session_id_2);
-                EXPECT_EQ(response.correlationId(), pub_id_2);
-                EXPECT_EQ(log_file_name_2, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+            .With(IsSubscriptionReady(sub_id));
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id_1 = response->session_id;
+                    log_file_name_1
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id_1, log_file_name_1, std::string(AERON_IPC_CHANNEL)));
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id_2 = response->session_id;
+                    log_file_name_2
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id_2, log_file_name_2, std::string(AERON_IPC_CHANNEL)));
+                });
+    }
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFirstAddPublication)
@@ -534,8 +415,8 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
     aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
@@ -543,59 +424,46 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
 
-    size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            if (0 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_SUBSCRIPTION_READY);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    {
+        testing::InSequence s;
 
-                const command::SubscriptionReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), sub_id);
-            }
-            else if (1 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id_1);
-                session_id = response.sessionId();
-
-                log_file_name = response.logFileName();
-            }
-            else if (2 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
-
-                const command::ImageBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.streamId(), STREAM_ID_1);
-                EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
-                EXPECT_EQ(response.sessionId(), session_id);
-                EXPECT_EQ(response.correlationId(), pub_id_1);
-                EXPECT_EQ(log_file_name, response.logFileName());
-                EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
-            }
-            else if (3 == response_number)
-            {
-                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
-
-                const command::PublicationBuffersReadyFlyweight response(buffer, offset);
-
-                EXPECT_EQ(response.correlationId(), pub_id_2);
-                EXPECT_EQ(response.registrationId(), pub_id_1);
-                EXPECT_EQ(response.logFileName(), log_file_name);
-            }
-
-            response_number++;
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 4u);
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+            .With(IsSubscriptionReady(sub_id));
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+            .With(IsPublicationReady(pub_id_1, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id = response->session_id;
+                    log_file_name
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_image_buffers_ready_t *response = reinterpret_cast<aeron_image_buffers_ready_t *>(buffer);
+                    EXPECT_THAT(response, IsImageBuffersReady(sub_id, STREAM_ID_1, session_id, log_file_name, std::string(AERON_IPC_CHANNEL)));
+                });
+        EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+            .With(IsPublicationReady(pub_id_2, _, _))
+            .WillOnce(
+                [&](int32_t msg_type_id, uint8_t *buffer, size_t length)
+                {
+                    aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
+                    session_id = response->session_id;
+                    std::string response_log_file_name(
+                        (char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                    EXPECT_EQ(pub_id_2, response->correlation_id);
+                    EXPECT_EQ(pub_id_1, response->registration_id);
+                    EXPECT_EQ(log_file_name, response_log_file_name);
+                });
+    }
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToTimeoutSubscription)
@@ -606,24 +474,18 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToTimeoutSubscription)
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+    readAllBroadcastsFromConductor(null_broadcast_handler);
 
     doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 0u);
 
-    auto handler =
-        [&](std::int32_t msgTypeId, AtomicBuffer &buffer, util::index_t offset, util::index_t length)
-        {
-            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_CLIENT_TIMEOUT, _, _))
+        .With(IsTimeout(client_id));
 
-            const command::ClientTimeoutFlyweight response(buffer, offset);
-
-            EXPECT_EQ(response.clientId(), client_id);
-        };
-
-    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToNotTimeoutSubscriptionOnKeepalive)
@@ -634,7 +496,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToNotTimeoutSubscriptionOnKeepalive)
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+    readAllBroadcastsFromConductor(null_broadcast_handler);
 
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 

@@ -16,7 +16,7 @@
 
 #include "aeron_driver_conductor_test.h"
 
-class DriverConductorClockTest : public DriverConductorTest
+class DriverConductorClockTest : public DriverConductorTest, public testing::Test
 {
 };
 

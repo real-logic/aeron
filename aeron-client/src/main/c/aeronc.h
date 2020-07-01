@@ -336,7 +336,7 @@ int aeron_async_add_publication(
  *
  * @param publication to set if completed successfully.
  * @param async to check for completion.
- * @return 0 for not cmplete (try again), 1 for completed successfully, or -1 for an error.
+ * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_async_add_publication_t *async);
 

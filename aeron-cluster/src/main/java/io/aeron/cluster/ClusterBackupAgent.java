@@ -96,7 +96,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private long coolDownDeadlineMs = NULL_VALUE;
     private long correlationId = NULL_VALUE;
     private long leaderLogRecordingId = NULL_VALUE;
-    private long liveLogReplaySubscriptionId = NULL_VALUE;
+    private long liveLogRecordingSubscriptionId = NULL_VALUE;
     private long liveLogRecordingId = NULL_VALUE;
     private long liveLogReplayId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
@@ -145,9 +145,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             CloseHelper.closeAll(consensusSubscription, consensusPublication);
         }
 
-        if (NULL_VALUE != liveLogReplaySubscriptionId)
+        if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
-            backupArchive.tryStopRecording(liveLogReplaySubscriptionId);
+            backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
         }
 
         CloseHelper.closeAll(backupArchive, clusterArchiveAsyncConnect, clusterArchive, recordingLog);
@@ -266,16 +266,16 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         this.clusterArchive = null;
         this.clusterArchiveAsyncConnect = null;
 
-        if (NULL_VALUE != liveLogReplaySubscriptionId)
+        if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
-            backupArchive.tryStopRecording(liveLogReplaySubscriptionId);
+            backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
         }
 
         correlationId = NULL_VALUE;
         liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
         liveLogReplayId = NULL_VALUE;
-        liveLogReplaySubscriptionId = NULL_VALUE;
+        liveLogRecordingSubscriptionId = NULL_VALUE;
 
         CloseHelper.closeAll(consensusPublication, clusterArchive, clusterArchiveAsyncConnect);
     }
@@ -682,7 +682,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                     workCount++;
                 }
             }
-            else if (NULL_VALUE != liveLogReplaySubscriptionId && NULL_COUNTER_ID == liveLogRecCounterId)
+            else if (NULL_VALUE != liveLogRecordingSubscriptionId && NULL_COUNTER_ID == liveLogRecCounterId)
             {
                 final CountersReader countersReader = aeron.countersReader();
 
@@ -710,12 +710,12 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
                 if (null == logEntry)
                 {
-                    liveLogReplaySubscriptionId = backupArchive.startRecording(
+                    liveLogRecordingSubscriptionId = backupArchive.startRecording(
                         catchupChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
                 }
                 else
                 {
-                    liveLogReplaySubscriptionId = backupArchive.extendRecording(
+                    liveLogRecordingSubscriptionId = backupArchive.extendRecording(
                         logEntry.recordingId, catchupChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
                 }
             }

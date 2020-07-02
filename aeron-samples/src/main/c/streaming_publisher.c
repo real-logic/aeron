@@ -218,10 +218,16 @@ int main(int argc, char **argv)
     for (uint64_t i = 0; i < messages && is_running(); i++)
     {
         *((uint64_t *)message) = i;
-        if (aeron_publication_offer(
+        while (aeron_publication_offer(
             publication, message, message_length, NULL, NULL) < 0)
         {
             ++back_pressure_count;
+
+            if (!is_running())
+            {
+                break;
+            }
+
             aeron_idle_strategy_busy_spinning_idle(NULL, 0);
         }
 

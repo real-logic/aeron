@@ -266,6 +266,11 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         this.clusterArchive = null;
         this.clusterArchiveAsyncConnect = null;
 
+        if (NULL_VALUE != liveLogReplaySubscriptionId)
+        {
+            backupArchive.tryStopRecording(liveLogReplaySubscriptionId);
+        }
+
         correlationId = NULL_VALUE;
         liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;

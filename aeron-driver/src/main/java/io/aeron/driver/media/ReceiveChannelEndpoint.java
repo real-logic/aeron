@@ -46,11 +46,26 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SHORT_SENDS;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
 
+abstract class ReceiveChannelEndpointHotFields extends UdpChannelTransport
+{
+    protected long timeOfLastActivityNs;
+
+    ReceiveChannelEndpointHotFields(
+        final UdpChannel udpChannel,
+        final InetSocketAddress endPointAddress,
+        final InetSocketAddress bindAddress,
+        final InetSocketAddress connectAddress,
+        final MediaDriver.Context context)
+    {
+        super(udpChannel, endPointAddress, bindAddress, connectAddress, context);
+    }
+}
+
 /**
  * Aggregator of multiple subscriptions onto a single transport channel for receiving of data and setup frames
  * plus sending status and NAK frames.
  */
-public class ReceiveChannelEndpoint extends UdpChannelTransport
+public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
 {
     private static final long DESTINATION_ADDRESS_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
@@ -72,7 +87,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     private final long receiverId;
     private InetSocketAddress currentControlAddress;
-    private long timeOfLastActivityNs;
     private AtomicCounter localSocketAddressIndicator;
 
     public ReceiveChannelEndpoint(

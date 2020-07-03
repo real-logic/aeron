@@ -80,23 +80,7 @@ public final class ClusterBackup implements AutoCloseable
         RESET_BACKUP(6),
         BACKING_UP(7);
 
-        static final State[] STATES;
-
-        static
-        {
-            final State[] states = values();
-            STATES = new State[states.length];
-            for (final State state : states)
-            {
-                final int code = state.code();
-                if (null != STATES[code])
-                {
-                    throw new ClusterException("code already in use: " + code);
-                }
-
-                STATES[code] = state;
-            }
-        }
+        static final State[] STATES = values();
 
         private final int code;
 

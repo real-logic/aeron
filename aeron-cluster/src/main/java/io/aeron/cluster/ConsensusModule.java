@@ -97,23 +97,7 @@ public class ConsensusModule implements AutoCloseable
          */
         CLOSED(6);
 
-        static final State[] STATES;
-
-        static
-        {
-            final State[] states = values();
-            STATES = new State[states.length];
-            for (final State state : states)
-            {
-                final int code = state.code();
-                if (null != STATES[code])
-                {
-                    throw new ClusterException("code already in use: " + code);
-                }
-
-                STATES[code] = state;
-            }
-        }
+        static final State[] STATES = values();
 
         private final int code;
 

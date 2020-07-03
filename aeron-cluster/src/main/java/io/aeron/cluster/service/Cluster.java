@@ -52,23 +52,7 @@ public interface Cluster
          */
         LEADER(2);
 
-        static final Role[] ROLES;
-
-        static
-        {
-            final Role[] roles = values();
-            ROLES = new Role[roles.length];
-            for (final Role role : roles)
-            {
-                final int code = role.code();
-                if (null != ROLES[code])
-                {
-                    throw new ClusterException("code already in use: " + code);
-                }
-
-                ROLES[code] = role;
-            }
-        }
+        static final Role[] ROLES = values();
 
         private final int code;
 

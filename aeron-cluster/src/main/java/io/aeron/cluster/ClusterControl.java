@@ -79,16 +79,7 @@ public class ClusterControl
 
         private final int code;
 
-        private static final ToggleState[] STATES;
-        static
-        {
-            final ToggleState[] toggleStates = values();
-            STATES = new ToggleState[toggleStates.length];
-            for (final ToggleState toggleState : toggleStates)
-            {
-                STATES[toggleState.code()] = toggleState;
-            }
-        }
+        private static final ToggleState[] STATES = values();
 
         ToggleState(final int code)
         {

@@ -127,15 +127,16 @@ class ConsensusModuleAgent implements Agent
         this::leaderServiceSessionMessageSweeper;
     private final ExpandableRingBuffer.MessageConsumer followerServiceSessionMessageSweeper =
         this::followerServiceSessionMessageSweeper;
+    private final UnavailableCounterHandler unavailableCounterHandler = this::onUnavailableCounter;
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
-    private AeronArchive archive;
     private final ConsensusModule.Context ctx;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
     private RecordingLog.RecoveryPlan recoveryPlan;
+    private AeronArchive archive;
     private Election election;
     private DynamicJoin dynamicJoin;
     private ClusterTermination clusterTermination;
@@ -143,7 +144,6 @@ class ConsensusModuleAgent implements Agent
     private String liveLogDestination;
     private String replayLogDestination;
     private String ingressEndpoints;
-    private final UnavailableCounterHandler unavailableCounterHandler = this::onUnavailableCounter;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {

@@ -46,7 +46,6 @@ class ClientConductor implements Agent, DriverEventsListener
 {
     private static final long NO_CORRELATION_ID = Aeron.NULL_VALUE;
 
-    private final long resourceLingerDurationNs;
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
@@ -68,8 +67,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
+    private final ArrayList<LogBuffers> lingeringLogBuffers = new ArrayList<>();
     private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
-    private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final LongHashSet asyncCommandIdSet = new LongHashSet();
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnavailableImageHandler defaultUnavailableImageHandler;
@@ -94,7 +93,6 @@ class ClientConductor implements Agent, DriverEventsListener
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
         keepAliveIntervalNs = ctx.keepAliveIntervalNs();
-        resourceLingerDurationNs = ctx.resourceLingerDurationNs();
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
         interServiceTimeoutNs = ctx.interServiceTimeoutNs();
@@ -156,9 +154,9 @@ class ClientConductor implements Agent, DriverEventsListener
                     isInterrupted = true;
                 }
 
-                for (int i = 0, size = lingeringResources.size(); i < size; i++)
+                for (int i = 0, size = lingeringLogBuffers.size(); i < size; i++)
                 {
-                    deleteResource(lingeringResources.get(i));
+                    CloseHelper.close(ctx.errorHandler(), lingeringLogBuffers.get(i));
                 }
 
                 driverProxy.clientClose();
@@ -898,9 +896,9 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (logBuffers.decRef() == 0)
         {
-            logBuffers.timeOfLastStateChange(nanoClock.nanoTime());
+            logBuffers.lingerDeadlineNs(nanoClock.nanoTime() + ctx.resourceLingerDurationNs());
             logBuffersByIdMap.remove(registrationId);
-            lingeringResources.add(logBuffers);
+            lingeringLogBuffers.add(logBuffers);
         }
     }
 
@@ -1148,14 +1146,13 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         int workCount = 0;
 
-        final ArrayList<ManagedResource> lingeringResources = this.lingeringResources;
-        for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = lingeringLogBuffers.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final ManagedResource resource = lingeringResources.get(i);
-            if ((resource.timeOfLastStateChange() + resourceLingerDurationNs) - nowNs < 0)
+            final LogBuffers logBuffers = lingeringLogBuffers.get(i);
+            if (logBuffers.lingerDeadlineNs() - nowNs < 0)
             {
-                ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
-                deleteResource(resource);
+                ArrayListUtil.fastUnorderedRemove(lingeringLogBuffers, i, lastIndex--);
+                CloseHelper.close(ctx.errorHandler(), logBuffers);
 
                 workCount += 1;
             }
@@ -1188,18 +1185,6 @@ class ClientConductor implements Agent, DriverEventsListener
         }
 
         resourceByRegIdMap.clear();
-    }
-
-    private void deleteResource(final ManagedResource resource)
-    {
-        try
-        {
-            resource.delete();
-        }
-        catch (final Throwable throwable)
-        {
-            handleError(throwable);
-        }
     }
 
     private void notifyUnavailableCounterHandlers(final long registrationId, final int counterId)

@@ -882,7 +882,7 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the stream id for the cluster  snapshot replay channel.
+         * Get the stream id for the cluster snapshot replay channel.
          *
          * @return the stream id for the cluster snapshot replay channel.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME

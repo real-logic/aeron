@@ -601,7 +601,7 @@ public class RecordingLog implements AutoCloseable
                 }
 
                 final int serviceSnapshotIndex = i - (serviceId + 1);
-                if (serviceSnapshotIndex > 0)
+                if (serviceSnapshotIndex >= 0)
                 {
                     final Entry snapshot = entriesCache.get(serviceSnapshotIndex);
                     if (isValidSnapshot(snapshot) && serviceId == snapshot.serviceId)

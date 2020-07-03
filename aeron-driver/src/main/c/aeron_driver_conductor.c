@@ -920,7 +920,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
     int32_t speculated_session_id = 0;
     int session_id_found = aeron_driver_conductor_speculate_next_session_id(
-            conductor, &session_id_offsets, &speculated_session_id);
+        conductor, &session_id_offsets, &speculated_session_id);
     aeron_bit_set_stack_free(&session_id_offsets);
 
     if (session_id_found < 0)
@@ -973,11 +973,11 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_pos_position.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, pub_pos_position.counter_id);
+                    &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_lmt_position.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, pub_lmt_position.counter_id);
+                    &conductor->counters_manager, pub_lmt_position.counter_id);
 
                 if (pub_pos_position.counter_id < 0 || pub_lmt_position.counter_id < 0)
                 {
@@ -1212,7 +1212,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         conductor->context->spies_simulate_connection,
                         &conductor->system_counters) >= 0)
                 {
-                    endpoint->conductor_fields.managed_resource.incref(endpoint->conductor_fields.managed_resource.clientd);
+                    endpoint->conductor_fields.managed_resource.incref(
+                        endpoint->conductor_fields.managed_resource.clientd);
                     aeron_driver_sender_proxy_on_add_publication(conductor->context->sender_proxy, publication);
 
                     aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
@@ -1235,7 +1236,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             link->registration_id = registration_id;
             client->publication_links.length++;
 
-            publication->conductor_fields.managed_resource.incref(publication->conductor_fields.managed_resource.clientd);
+            publication->conductor_fields.managed_resource.incref(
+                publication->conductor_fields.managed_resource.clientd);
         }
     }
 
@@ -2333,10 +2335,8 @@ int aeron_driver_conductor_on_add_network_publication(
     for (size_t i = 0; i < conductor->spy_subscriptions.length; i++)
     {
         aeron_subscription_link_t *subscription_link = &conductor->spy_subscriptions.array[i];
-        bool is_same_channel_tag =
-            subscription_link->spy_channel->tag_id != AERON_URI_INVALID_TAG ?
-            subscription_link->spy_channel->tag_id == tag_id :
-            false;
+        bool is_same_channel_tag = subscription_link->spy_channel->tag_id != AERON_URI_INVALID_TAG ?
+            subscription_link->spy_channel->tag_id == tag_id : false;
 
         if (command->stream_id == subscription_link->stream_id &&
             (0 == strncmp(

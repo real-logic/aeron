@@ -35,11 +35,6 @@ import static io.aeron.cluster.ClusterMember.compareLog;
  */
 class Election
 {
-    /**
-     * The type id of the {@link Counter} used for the election state.
-     */
-    static final int ELECTION_STATE_TYPE_ID = 207;
-
     enum State
     {
         INIT(0),
@@ -95,7 +90,7 @@ class Election
         {
             if (code < 0 || code > (STATES.length - 1))
             {
-                throw new ClusterException("invalid state counter code: " + code);
+                throw new ClusterException("invalid election state counter code: " + code);
             }
 
             return STATES[code];

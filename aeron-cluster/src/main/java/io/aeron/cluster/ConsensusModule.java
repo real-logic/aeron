@@ -472,7 +472,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Type id for election state counter.
          */
-        public static final int ELECTION_STATE_TYPE_ID = Election.ELECTION_STATE_TYPE_ID;
+        public static final int ELECTION_STATE_TYPE_ID = 207;
 
         /**
          * Counter type id for the consensus module error count.
@@ -1225,7 +1225,7 @@ public class ConsensusModule implements AutoCloseable
             if (null == commitPosition)
             {
                 commitPosition = ClusterCounters.allocate(
-                    aeron, "cluster-commit-pos:", COMMIT_POSITION_TYPE_ID, clusterId);
+                    aeron, "Cluster commit-pos:", COMMIT_POSITION_TYPE_ID, clusterId);
             }
 
             if (null == controlToggle)

@@ -495,11 +495,11 @@ public class DriverConductor implements Agent
 
     void cleanupPublication(final NetworkPublication publication)
     {
-        final String channel = publication.channelEndpoint().udpChannel().canonicalForm();
+        final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
+        final String channel = channelEndpoint.udpChannel().canonicalForm();
         activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), channel));
         senderProxy.removeNetworkPublication(publication);
 
-        final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
         if (channelEndpoint.shouldBeClosed())
         {
             channelEndpoint.closeStatusIndicator();

@@ -561,6 +561,8 @@ public class DriverConductor implements Agent
 
     void transitionToLinger(final IpcPublication publication)
     {
+        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), IPC_MEDIA));
+
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink link = subscriptionLinks.get(i);
@@ -585,8 +587,6 @@ public class DriverConductor implements Agent
 
     void cleanupIpcPublication(final IpcPublication publication)
     {
-        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), IPC_MEDIA));
-
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             subscriptionLinks.get(i).unlink(publication);

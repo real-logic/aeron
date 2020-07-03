@@ -27,6 +27,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import org.agrona.ErrorHandler;
+import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import java.io.File;
@@ -142,6 +143,7 @@ public class BasicAuctionClusteredServiceNode
 
         // tag::archive_client[]
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
+            .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(archiveContext.controlChannel())
             .controlRequestStreamId(archiveContext.controlStreamId())
             .controlResponseChannel(udpChannel(nodeId, "localhost", ARCHIVE_CONTROL_RESPONSE_PORT_OFFSET))

@@ -27,8 +27,7 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -113,6 +112,7 @@ public class ClusterLoggingAgentTest
             .threadingMode(ThreadingMode.SHARED);
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
+            .lock(NoOpLock.INSTANCE)
             .aeronDirectoryName(aeronDirectoryName)
             .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
             .controlRequestStreamId(100)

@@ -703,8 +703,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
             archiveContext
                 .aeron(aeron)
                 .ownsAeronClient(false)
-                .errorHandler(countedErrorHandler)
-                .lock(NoOpLock.INSTANCE);
+                .lock(NoOpLock.INSTANCE)
+                .errorHandler(countedErrorHandler);
 
             if (null == shutdownSignalBarrier)
             {

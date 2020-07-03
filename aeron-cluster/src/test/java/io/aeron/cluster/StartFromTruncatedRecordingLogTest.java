@@ -36,6 +36,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -312,6 +313,7 @@ public class StartFromTruncatedRecordingLogTest
         final String aeronDirName = aeronDirName(index);
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+            .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
             .controlRequestStreamId(100 + index)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))

@@ -77,14 +77,14 @@ public interface Cluster
          * @param code for the {@link Role}.
          * @return the {@link Role} of the cluster node.
          */
-        public static Role get(final int code)
+        public static Role get(final long code)
         {
             if (code < 0 || code > (ROLES.length - 1))
             {
                 throw new IllegalStateException("Invalid role counter code: " + code);
             }
 
-            return ROLES[code];
+            return ROLES[(int)code];
         }
 
         /**
@@ -96,7 +96,7 @@ public interface Cluster
          */
         public static Role get(final AtomicCounter counter)
         {
-            return get((int)counter.get());
+            return get(counter.get());
         }
     }
 

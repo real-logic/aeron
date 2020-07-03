@@ -72,7 +72,7 @@ public class TestBackupNode implements AutoCloseable
             return null;
         }
 
-        return ClusterBackup.State.get((int)counter.get());
+        return ClusterBackup.State.get(counter.get());
     }
 
     long liveLogPosition()

@@ -144,7 +144,7 @@ public class TestCluster implements AutoCloseable
 
     static void awaitElectionClosed(final TestNode follower)
     {
-        while (follower.electionState() != Election.State.CLOSED)
+        while (follower.electionState() != ElectionState.CLOSED)
         {
             Tests.sleep(10);
         }
@@ -674,7 +674,7 @@ public class TestCluster implements AutoCloseable
                 continue;
             }
 
-            if (node.isLeader() && Election.State.CLOSED == node.electionState())
+            if (node.isLeader() && ElectionState.CLOSED == node.electionState())
             {
                 return node;
             }

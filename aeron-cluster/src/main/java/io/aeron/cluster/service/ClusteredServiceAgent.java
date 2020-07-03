@@ -609,13 +609,13 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         logPosition = Math.max(logAdapter.image().position(), logPosition);
         CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
-        role(Role.get((int)roleCounter.get()));
+        role(Role.get(roleCounter.get()));
     }
 
     private void joinActiveLog(final ActiveLogEvent activeLog)
     {
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
-        role(Role.get((int)roleCounter.get()));
+        role(Role.get(roleCounter.get()));
 
         final long id = ackId++;
         idleStrategy.reset();

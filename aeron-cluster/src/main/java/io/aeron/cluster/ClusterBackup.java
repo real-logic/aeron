@@ -94,14 +94,14 @@ public final class ClusterBackup implements AutoCloseable
             return code;
         }
 
-        public static State get(final int code)
+        public static State get(final long code)
         {
             if (code < 0 || code > (STATES.length - 1))
             {
                 throw new ClusterException("invalid state counter code: " + code);
             }
 
-            return STATES[code];
+            return STATES[(int)code];
         }
     }
 

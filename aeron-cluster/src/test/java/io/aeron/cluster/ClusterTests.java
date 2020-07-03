@@ -117,7 +117,7 @@ class ClusterTests
         }
     }
 
-    public static void awaitElectionState(final Counter electionStateCounter, final Election.State state)
+    public static void awaitElectionState(final Counter electionStateCounter, final ElectionState state)
     {
         while (electionStateCounter.get() != state.code())
         {

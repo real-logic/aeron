@@ -858,7 +858,7 @@ public final class ClusterMember
     }
 
     /**
-     * Has sufficient votes being counted for a majority for all members observed during {@link Election.State#CANVASS}?
+     * Has sufficient votes being counted for a majority for all members observed during {@link ElectionState#CANVASS}?
      *
      * @param members         to check for votes.
      * @param candidateTermId for the vote.

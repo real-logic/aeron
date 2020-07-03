@@ -152,8 +152,8 @@ public class StartFromTruncatedRecordingLogTest
         final Counter electionStateFollowerB = clusteredMediaDrivers[followerMemberIdB]
             .consensusModule().context().electionStateCounter();
 
-        ClusterTests.awaitElectionState(electionStateFollowerA, Election.State.CLOSED);
-        ClusterTests.awaitElectionState(electionStateFollowerB, Election.State.CLOSED);
+        ClusterTests.awaitElectionState(electionStateFollowerA, ElectionState.CLOSED);
+        ClusterTests.awaitElectionState(electionStateFollowerB, ElectionState.CLOSED);
 
         takeSnapshot(leaderMemberId);
         awaitSnapshotCount(1);
@@ -481,7 +481,7 @@ public class StartFromTruncatedRecordingLogTest
             final Cluster.Role role = Cluster.Role.get(driver.consensusModule().context().clusterNodeRoleCounter());
             final Counter electionStateCounter = driver.consensusModule().context().electionStateCounter();
 
-            if (Cluster.Role.LEADER == role && Election.State.CLOSED.code() == electionStateCounter.get())
+            if (Cluster.Role.LEADER == role && ElectionState.CLOSED.code() == electionStateCounter.get())
             {
                 leaderMemberId = driver.consensusModule().context().clusterMemberId();
             }

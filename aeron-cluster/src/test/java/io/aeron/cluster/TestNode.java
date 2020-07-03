@@ -178,15 +178,15 @@ class TestNode implements AutoCloseable
         return Cluster.Role.get(counter);
     }
 
-    Election.State electionState()
+    ElectionState electionState()
     {
         final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
         if (counter.isClosed())
         {
-            return Election.State.CLOSED;
+            return ElectionState.CLOSED;
         }
 
-        return Election.State.get(counter);
+        return ElectionState.get(counter);
     }
 
     ConsensusModule.State moduleState()

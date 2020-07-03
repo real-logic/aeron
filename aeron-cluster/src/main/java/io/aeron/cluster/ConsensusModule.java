@@ -121,7 +121,7 @@ public class ConsensusModule implements AutoCloseable
         public static State get(final AtomicCounter counter)
         {
             final long code = counter.get();
-            return get((int)code);
+            return get(code);
         }
 
         /**
@@ -131,14 +131,14 @@ public class ConsensusModule implements AutoCloseable
          * @return the {@link State} corresponding to the provided code.
          * @throws ClusterException if the code does not correspond to a valid State.
          */
-        public static State get(final int code)
+        public static State get(final long code)
         {
             if (code < 0 || code > (STATES.length - 1))
             {
                 throw new ClusterException("invalid state counter code: " + code);
             }
 
-            return STATES[code];
+            return STATES[(int)code];
         }
 
         /**
@@ -153,7 +153,7 @@ public class ConsensusModule implements AutoCloseable
             final int counterId = ClusterCounters.find(counters, CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             if (Aeron.NULL_VALUE != counterId)
             {
-                return State.get((int)counters.getCounterValue(counterId));
+                return State.get(counters.getCounterValue(counterId));
             }
 
             return null;
@@ -2470,7 +2470,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the counter for the current state of an election
          *
          * @return the counter for the current state of an election.
-         * @see Election.State
+         * @see ElectionState
          */
         public Counter electionStateCounter()
         {
@@ -2482,7 +2482,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param electionStateCounter for the current state of an election.
          * @return this for a fluent API.
-         * @see Election.State
+         * @see ElectionState
          */
         public Context electionStateCounter(final Counter electionStateCounter)
         {

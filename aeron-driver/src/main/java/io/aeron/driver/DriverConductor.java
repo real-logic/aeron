@@ -1664,14 +1664,7 @@ public class DriverConductor implements Agent
                 if (resource.free())
                 {
                     fastUnorderedRemove(list, i, lastIndex--);
-                    try
-                    {
-                        resource.close();
-                    }
-                    catch (final Exception ex)
-                    {
-                        ctx.errorHandler().onError(ex);
-                    }
+                    CloseHelper.close(ctx.errorHandler(), resource);
                 }
                 else
                 {

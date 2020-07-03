@@ -502,9 +502,9 @@ public class DriverConductor implements Agent
 
         if (channelEndpoint.shouldBeClosed())
         {
+            senderProxy.closeSendChannelEndpoint(channelEndpoint);
             channelEndpoint.closeStatusIndicator();
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-            senderProxy.closeSendChannelEndpoint(channelEndpoint);
         }
     }
 

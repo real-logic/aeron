@@ -111,8 +111,8 @@ class RecordingSession implements Session
             CloseHelper.close(countedErrorHandler, subscription);
             controlSession.archiveConductor().removeRecordingSubscription(subscription.registrationId());
         }
-        CloseHelper.close(countedErrorHandler, recordingWriter);
         CloseHelper.close(countedErrorHandler, position);
+        recordingWriter.close();
     }
 
     public void abortClose()

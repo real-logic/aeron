@@ -83,6 +83,11 @@ public class ClusterControl
 
         ToggleState(final int code)
         {
+            if (code != ordinal())
+            {
+                throw new IllegalArgumentException(name() + " - code must equal ordinal value: code=" + code);
+            }
+
             this.code = code;
         }
 

@@ -50,9 +50,9 @@ final class SharedModeArchiveConductor extends ArchiveConductor
         return new SharedModeReplayer(errorHandler);
     }
 
-    protected int preWork()
+    public int doWork()
     {
-        return super.preWork() +
+        return super.doWork() +
             replayerAgentInvoker.invoke() +
             invokeAeronInvoker() +
             invokeDriverConductor() +

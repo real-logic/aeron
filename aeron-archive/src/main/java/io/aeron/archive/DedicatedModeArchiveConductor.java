@@ -57,9 +57,9 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         return new DedicatedModeReplayer(errorHandler, ctx.errorCounter(), closeQueue, ctx.abortLatch());
     }
 
-    protected int preWork()
+    public int doWork()
     {
-        return super.preWork() + processCloseQueue();
+        return processCloseQueue() + super.doWork();
     }
 
     protected void closeSessionWorkers()
@@ -127,14 +127,14 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             isAbort = true;
         }
 
-        protected int preWork()
+        public int doWork()
         {
             if (isAbort)
             {
                 throw new AgentTerminationException();
             }
 
-            return drainSessionsQueue();
+            return drainSessionsQueue() + super.doWork();
         }
 
         protected void preSessionsClose()
@@ -236,14 +236,14 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             send(session);
         }
 
-        protected int preWork()
+        public int doWork()
         {
             if (isAbort)
             {
                 throw new AgentTerminationException();
             }
 
-            return drainSessionQueue();
+            return drainSessionQueue() + super.doWork();
         }
 
         protected void preSessionsClose()

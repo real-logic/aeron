@@ -45,9 +45,9 @@ class SessionWorker<T extends Session> implements Agent
         return roleName;
     }
 
-    public final int doWork()
+    public int doWork()
     {
-        int workDone = preWork();
+        int workCount = 0;
 
         final ArrayList<T> sessions = this.sessions;
         for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
@@ -55,7 +55,7 @@ class SessionWorker<T extends Session> implements Agent
             final T session = sessions.get(i);
             try
             {
-                workDone += session.doWork();
+                workCount += session.doWork();
             }
             catch (final Exception ex)
             {
@@ -69,7 +69,7 @@ class SessionWorker<T extends Session> implements Agent
             }
         }
 
-        return workDone;
+        return workCount;
     }
 
     public final void onClose()
@@ -114,22 +114,12 @@ class SessionWorker<T extends Session> implements Agent
         }
     }
 
-    protected int preWork()
-    {
-        return 0;
-    }
-
     protected void postSessionsClose()
     {
     }
 
     protected void preSessionsClose()
     {
-    }
-
-    boolean isClosed()
-    {
-        return isClosed;
     }
 
     protected void addSession(final T session)

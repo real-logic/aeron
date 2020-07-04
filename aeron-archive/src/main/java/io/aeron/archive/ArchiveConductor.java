@@ -234,7 +234,7 @@ abstract class ArchiveConductor
         }
     }
 
-    protected int preWork()
+    public int doWork()
     {
         int workCount = 0;
 
@@ -259,7 +259,7 @@ abstract class ArchiveConductor
         workCount += invokeDriverConductor();
         workCount += runTasks(taskQueue);
 
-        return workCount;
+        return workCount + super.doWork();
     }
 
     final int invokeAeronInvoker()

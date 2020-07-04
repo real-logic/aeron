@@ -68,6 +68,12 @@ public enum ElectionState
         return STATES[(int)code];
     }
 
+    /**
+     * Get the {@link ElectionState} value based on the value stored in an {@link AtomicCounter}.
+     *
+     * @param counter to read the value for matching against {@link #code()}.
+     * @return the {@link ElectionState} value based on the value stored in an {@link AtomicCounter}.
+     */
     public static ElectionState get(final AtomicCounter counter)
     {
         return get(counter.get());

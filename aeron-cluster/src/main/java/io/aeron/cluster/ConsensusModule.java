@@ -111,6 +111,11 @@ public class ConsensusModule implements AutoCloseable
             this.code = code;
         }
 
+        /**
+         * Code to be stored in an {@link AtomicCounter} for the enum value.
+         *
+         * @return code to be stored in an {@link AtomicCounter} for the enum value.
+         */
         public final int code()
         {
             return code;

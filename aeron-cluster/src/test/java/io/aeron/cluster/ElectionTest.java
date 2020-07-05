@@ -34,7 +34,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("MethodLength")
 public class ElectionTest
 {
     private static final long RECORDING_ID = 1L;

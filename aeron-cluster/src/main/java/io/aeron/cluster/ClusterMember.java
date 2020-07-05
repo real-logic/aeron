@@ -633,25 +633,11 @@ public final class ClusterMember
     {
         for (final ClusterMember member : members)
         {
-            if (member != exclude)
+            if (member.id != exclude.id)
             {
                 channelUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
                 member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
             }
-        }
-    }
-
-    /**
-     * Close the publications associated with members of the cluster used for the consensus protocol.
-     *
-     * @param errorHandler   to capture errors during close.
-     * @param clusterMembers to close the publications for.
-     */
-    public static void closeConsensusPublications(final ErrorHandler errorHandler, final ClusterMember[] clusterMembers)
-    {
-        for (final ClusterMember member : clusterMembers)
-        {
-            member.closePublication(errorHandler);
         }
     }
 
@@ -668,6 +654,20 @@ public final class ClusterMember
     {
         channelUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
         member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
+    }
+
+    /**
+     * Close the publications associated with members of the cluster used for the consensus protocol.
+     *
+     * @param errorHandler   to capture errors during close.
+     * @param clusterMembers to close the publications for.
+     */
+    public static void closeConsensusPublications(final ErrorHandler errorHandler, final ClusterMember[] clusterMembers)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            member.closePublication(errorHandler);
+        }
     }
 
     /**

@@ -1062,23 +1062,23 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     {
         aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
 
-        if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
+        if (endpoint == pub_entry->endpoint && stream_id == pub_entry->stream_id)
         {
-            if (endpoint == pub_entry->endpoint && stream_id == pub_entry->stream_id)
+            if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
             {
                 if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
                 {
                     publication = pub_entry;
                 }
-
-                if (params->has_session_id && pub_entry->session_id == params->session_id)
-                {
-                    is_session_id_in_use = true;
-                }
             }
 
-            aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
+            if (params->has_session_id && pub_entry->session_id == params->session_id)
+            {
+                is_session_id_in_use = true;
+            }
         }
+
+        aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
     }
 
     int32_t speculated_session_id = 0;

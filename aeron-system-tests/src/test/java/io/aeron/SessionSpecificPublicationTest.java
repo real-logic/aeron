@@ -24,7 +24,10 @@ import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,8 +36,7 @@ import java.util.stream.Stream;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificPublicationTest
@@ -154,5 +156,40 @@ public class SessionSpecificPublicationTest
                 fail("Exception should have been thrown due using different session ids");
             }
         });
+    }
+
+    @Test
+    @Timeout(10)
+    void shouldNotAddPublicationWithSameSessionUntilLingerCompletes()
+    {
+        final String channel = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA)
+            .endpoint(ENDPOINT)
+            .sessionId(SESSION_ID_1)
+            .build();
+
+        final Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+        final int channelStatusId = publication1.channelStatusId();
+        assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(channelStatusId));
+
+        publication1.close();
+
+        assertThrows(RegistrationException.class, () ->
+        {
+            try (final Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+            {
+                fail("Exception should have been thrown due lingering publication keeping session id active");
+            }
+        });
+
+        while (CountersReader.RECORD_ALLOCATED == aeron.countersReader().getCounterState(channelStatusId))
+        {
+            Tests.yieldingWait("Publication never cleaned up");
+        }
+
+        try (final Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+        {
+            // No action required.
+        }
     }
 }

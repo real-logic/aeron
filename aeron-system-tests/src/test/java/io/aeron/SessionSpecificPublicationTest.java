@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.MediaDriverTestWatcher;
+import io.aeron.test.SlowTest;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -160,6 +161,7 @@ public class SessionSpecificPublicationTest
 
     @Test
     @Timeout(10)
+    @SlowTest
     void shouldNotAddPublicationWithSameSessionUntilLingerCompletes()
     {
         final String channel = new ChannelUriStringBuilder()
@@ -169,8 +171,8 @@ public class SessionSpecificPublicationTest
             .build();
 
         final Publication publication1 = aeron.addPublication(channel, STREAM_ID);
-        final int channelStatusId = publication1.channelStatusId();
-        assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(channelStatusId));
+        final int positionLimitId = publication1.positionLimitId();
+        assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(positionLimitId));
 
         publication1.close();
 
@@ -182,7 +184,7 @@ public class SessionSpecificPublicationTest
             }
         });
 
-        while (CountersReader.RECORD_ALLOCATED == aeron.countersReader().getCounterState(channelStatusId))
+        while (CountersReader.RECORD_ALLOCATED == aeron.countersReader().getCounterState(positionLimitId))
         {
             Tests.yieldingWait("Publication never cleaned up");
         }

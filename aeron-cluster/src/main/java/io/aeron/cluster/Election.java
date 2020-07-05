@@ -413,7 +413,7 @@ class Election
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
 
-        if (clusterMembers.length == 1 && thisMember == clusterMembers[0])
+        if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
         {
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             leadershipTermId = candidateTermId;
@@ -437,7 +437,7 @@ class Election
             timeOfLastUpdateNs = nowNs;
             for (final ClusterMember member : clusterMembers)
             {
-                if (member != thisMember)
+                if (member.id() != thisMember.id())
                 {
                     consensusPublisher.canvassPosition(
                         member.publication(), leadershipTermId, appendPosition, thisMember.id());
@@ -570,7 +570,7 @@ class Election
 
                 for (final ClusterMember member : clusterMembers)
                 {
-                    if (member != thisMember)
+                    if (member.id() != thisMember.id())
                     {
                         publishNewLeadershipTerm(member.publication(), leadershipTermId, timestamp);
                     }
@@ -627,7 +627,7 @@ class Election
 
             for (final ClusterMember member : clusterMembers)
             {
-                if (member != thisMember)
+                if (member.id() != thisMember.id())
                 {
                     publishNewLeadershipTerm(member.publication(), leadershipTermId, timestamp);
                 }

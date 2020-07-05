@@ -21,8 +21,8 @@ import io.aeron.archive.codecs.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.LongArrayList;
-import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NoOpLock;
 
 import java.util.ArrayList;
@@ -98,10 +98,8 @@ class DynamicJoin implements AutoCloseable
 
     public void close()
     {
-        final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();
-        CloseHelper.close(countedErrorHandler, consensusPublication);
-        CloseHelper.close(countedErrorHandler, leaderArchive);
-        CloseHelper.close(countedErrorHandler, leaderArchiveAsyncConnect);
+        final ErrorHandler countedErrorHandler = ctx.countedErrorHandler();
+        CloseHelper.closeAll(countedErrorHandler, consensusPublication, leaderArchive, leaderArchiveAsyncConnect);
     }
 
     ClusterMember[] clusterMembers()

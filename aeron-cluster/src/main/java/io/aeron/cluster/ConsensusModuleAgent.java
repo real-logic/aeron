@@ -480,7 +480,7 @@ class ConsensusModuleAgent implements Agent
                         leadershipTermId,
                         appendPosition,
                         termEntry.timestamp,
-                        thisMember.id(),
+                        memberId,
                         logPublisher.sessionId(),
                         false);
                 }
@@ -632,7 +632,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (null == election && Cluster.Role.LEADER == role)
         {
-            if (ClusterMember.isNotDuplicateEndpoint(passiveMembers, memberEndpoints))
+            if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints))
             {
                 final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
 
@@ -801,7 +801,7 @@ class ConsensusModuleAgent implements Agent
                     final long position = logPublisher.appendMembershipChangeEvent(
                         leadershipTermId,
                         now,
-                        thisMember.id(),
+                        this.memberId,
                         clusterMembers.length,
                         ChangeType.QUIT,
                         memberId,
@@ -1670,9 +1670,9 @@ class ConsensusModuleAgent implements Agent
             if (appendPosition != lastAppendPosition)
             {
                 commitPosition.setOrdered(appendPosition);
-                final ClusterMember leader = election.leader();
-                final ExclusivePublication publication = leader.publication();
-                if (consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+                final ExclusivePublication publication = election.leader().publication();
+                if (null != publication &&
+                    consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
                 {
                     lastAppendPosition = appendPosition;
                     timeOfLastAppendPositionNs = nowNs;
@@ -2169,7 +2169,7 @@ class ConsensusModuleAgent implements Agent
                 if (logPublisher.appendMembershipChangeEvent(
                     leadershipTermId,
                     now,
-                    thisMember.id(),
+                    leaderMember.id(),
                     newMembers.length,
                     ChangeType.JOIN,
                     member.id(),
@@ -2453,7 +2453,7 @@ class ConsensusModuleAgent implements Agent
         {
             if (member.hasRequestedRemove() && member.removalPosition() <= commitPosition)
             {
-                if (member == thisMember)
+                if (member.id() == memberId)
                 {
                     state(ConsensusModule.State.QUITTING);
                 }
@@ -2484,7 +2484,7 @@ class ConsensusModuleAgent implements Agent
         {
             for (final ClusterMember member : clusterMembers)
             {
-                if (member != thisMember)
+                if (member.id() != memberId)
                 {
                     final ExclusivePublication publication = member.publication();
                     consensusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
@@ -2775,7 +2775,7 @@ class ConsensusModuleAgent implements Agent
         {
             for (final ClusterMember member : clusterMembers)
             {
-                if (member != thisMember)
+                if (member.id() != memberId)
                 {
                     publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
                 }

@@ -112,7 +112,6 @@ public class ClusterLoggingAgentTest
             .threadingMode(ThreadingMode.SHARED);
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-            .lock(NoOpLock.INSTANCE)
             .aeronDirectoryName(aeronDirectoryName)
             .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
             .controlRequestStreamId(100)

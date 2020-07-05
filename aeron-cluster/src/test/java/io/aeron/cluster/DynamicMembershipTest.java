@@ -268,5 +268,4 @@ public class DynamicMembershipTest
             awaitMembershipSize(initialLeader, 2);
         }
     }
-
 }

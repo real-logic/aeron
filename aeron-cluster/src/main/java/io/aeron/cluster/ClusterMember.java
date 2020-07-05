@@ -1073,7 +1073,7 @@ public final class ClusterMember
      * @param endpoints to check for duplicates.
      * @return true if no duplicate is found otherwise false.
      */
-    public static boolean isNotDuplicateEndpoint(final ClusterMember[] members, final String endpoints)
+    public static boolean notDuplicateEndpoint(final ClusterMember[] members, final String endpoints)
     {
         for (final ClusterMember member : members)
         {

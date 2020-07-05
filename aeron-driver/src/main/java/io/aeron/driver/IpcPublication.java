@@ -42,7 +42,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 {
     enum State
     {
-        ACTIVE, INACTIVE, LINGER
+        ACTIVE, DRAINING, LINGER
     }
 
     private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
@@ -244,7 +244,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 break;
             }
 
-            case INACTIVE:
+            case DRAINING:
             {
                 final long producerPosition = producerPosition();
                 publisherPos.setOrdered(producerPosition);
@@ -281,7 +281,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     {
         if (0 == --refCount)
         {
-            state = State.INACTIVE;
+            state = State.DRAINING;
             final long producerPosition = producerPosition();
             publisherLimit.setOrdered(producerPosition);
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition);

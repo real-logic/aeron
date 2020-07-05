@@ -103,7 +103,7 @@ public class PublicationImage
 {
     enum State
     {
-        INIT, ACTIVE, INACTIVE, LINGER, DONE
+        INIT, ACTIVE, DRAINING, LINGER, DONE
     }
 
     private volatile long beginSmChange = Aeron.NULL_VALUE;
@@ -431,7 +431,7 @@ public class PublicationImage
     }
 
     /**
-     * Deactivate image by setting state to {@link State#INACTIVE} if currently {@link State#ACTIVE} from the
+     * Deactivate image by setting state to {@link State#DRAINING} if currently {@link State#ACTIVE} from the
      * {@link Receiver}.
      */
     void deactivate()
@@ -439,7 +439,7 @@ public class PublicationImage
         if (State.ACTIVE == state)
         {
             isRebuilding = false;
-            state(State.INACTIVE);
+            state(State.DRAINING);
         }
     }
 
@@ -782,7 +782,7 @@ public class PublicationImage
                 checkUntetheredSubscriptions(timeNs, conductor);
                 break;
 
-            case INACTIVE:
+            case DRAINING:
                 if (isDrained())
                 {
                     state = State.LINGER;

@@ -176,7 +176,7 @@ public class SessionSpecificPublicationTest
 
         assertThrows(RegistrationException.class, () ->
         {
-            try (final Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+            try (Publication publication2 = aeron.addPublication(channel, STREAM_ID))
             {
                 fail("Exception should have been thrown due lingering publication keeping session id active");
             }
@@ -187,7 +187,7 @@ public class SessionSpecificPublicationTest
             Tests.yieldingWait("Publication never cleaned up");
         }
 
-        try (final Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+        try (Publication publication2 = aeron.addPublication(channel, STREAM_ID))
         {
             // No action required.
         }

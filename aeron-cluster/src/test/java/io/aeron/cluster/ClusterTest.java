@@ -34,6 +34,8 @@ import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -582,7 +584,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(40)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos(
         final TestInfo testInfo)
     {
@@ -613,6 +615,13 @@ public class ClusterTest
             followerB = cluster.startStaticNode(followerB.index(), false);
 
             cluster.awaitLeader();
+
+            assertThat(followerA.commitPosition(), lessThan(targetPosition));
+            assertThat(followerB.commitPosition(), lessThan(targetPosition));
+
+            awaitElectionClosed(followerA);
+            awaitElectionClosed(followerB);
+
             cluster.connectClient();
 
             final int messageLength = 128;

@@ -194,4 +194,16 @@ public class SessionSpecificPublicationTest
             // No action required.
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    void shouldAllowTheSameSessionIdOnDifferentStreamIds(final ChannelUriStringBuilder channelBuilder)
+    {
+        final String channel = channelBuilder.sessionId(SESSION_ID_1).build();
+
+        try (final Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+            final Publication publication2 = aeron.addPublication(channel, STREAM_ID + 1)) {
+            // No-op
+        }
+    }
 }

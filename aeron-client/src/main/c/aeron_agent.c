@@ -308,30 +308,23 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     if (strncmp(idle_strategy_name, "sleep-ns", sizeof("sleep-ns")) == 0 ||
         strncmp(idle_strategy_name, "sleeping", sizeof("sleeping")) == 0)
     {
-        return aeron_idle_strategy_load(
-            "aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load("aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "yield", sizeof("yield")) == 0 ||
-        strncmp(idle_strategy_name, "yielding", sizeof("yielding")) == 0)
+    else if (strncmp(idle_strategy_name, "yield", sizeof("yield")) == 0)
     {
-        return aeron_idle_strategy_load(
-            "aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load("aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "spin", sizeof("spin")) == 0 ||
-        strncmp(idle_strategy_name, "spinning", sizeof("spinning")) == 0)
+    else if (strncmp(idle_strategy_name, "spin", sizeof("spin")) == 0)
     {
-        return aeron_idle_strategy_load(
-            "aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load("aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "noop", sizeof("noop")) == 0)
     {
-        return aeron_idle_strategy_load(
-            "aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load("aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "backoff", sizeof("backoff")) == 0)
     {
-        return aeron_idle_strategy_load(
-            "aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
+        return aeron_idle_strategy_load("aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
     }
     else
     {

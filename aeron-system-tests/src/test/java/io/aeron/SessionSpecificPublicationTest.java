@@ -201,8 +201,9 @@ public class SessionSpecificPublicationTest
     {
         final String channel = channelBuilder.sessionId(SESSION_ID_1).build();
 
-        try (final Publication publication1 = aeron.addPublication(channel, STREAM_ID);
-            final Publication publication2 = aeron.addPublication(channel, STREAM_ID + 1)) {
+        try (Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+            Publication publication2 = aeron.addPublication(channel, STREAM_ID + 1))
+        {
             // No-op
         }
     }

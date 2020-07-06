@@ -27,14 +27,15 @@ For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/aeron/wiki).
 
 For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from
-StrangeLoop 2014. Things have advanced quite a bit with performance and features but the basic design still applies.
+StrangeLoop 2014. Things have advanced quite a bit with performance and features, but the basic design still applies.
 
 For the latest version information and changes see the [Change Log](https://github.com/real-logic/aeron/wiki/Change-Log)
 with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
 
 Commercial support, training, and development on Aeron is available from
-[sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Commercial support is required to access Aeron premium
-features such as Solarflare ef_vi transport binding for a further 40-60% reduction in latency over the UDP sockets binding.
+[sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Commercial support is required to access Aeron
+premium features such as Solarflare ef_vi transport binding for a further 40-60% reduction in latency over the UDP
+sockets binding.
 
 ### How do I use Aeron?
 

@@ -338,7 +338,8 @@ public final class ClusterBackup implements AutoCloseable
 
         private String consensusChannel = Configuration.CONSENSUS_CHANNEL_DEFAULT;
         private int consensusStreamId = ConsensusModule.Configuration.consensusStreamId();
-        private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
+        private int consensusModuleSnapshotStreamId = ConsensusModule.Configuration.snapshotStreamId();
+        private int serviceSnapshotStreamId = ClusteredServiceContainer.Configuration.snapshotStreamId();
         private int logStreamId = ConsensusModule.Configuration.logStreamId();
         private String catchupEndpoint = Configuration.CATCHUP_ENDPOINT_DEFAULT;
 
@@ -874,27 +875,51 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the stream id for the cluster snapshot replay channel.
+         * Set the stream id for the consensus module snapshot replay.
          *
-         * @param streamId for the cluster log replay channel.
+         * @param streamId for the consensus module snapshot replay channel.
          * @return this for a fluent API
-         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.ConsensusModule.Context#snapshotStreamId()
          */
-        public Context replayStreamId(final int streamId)
+        public Context consensusModuleSnapshotStreamId(final int streamId)
         {
-            replayStreamId = streamId;
+            consensusModuleSnapshotStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the cluster snapshot replay channel.
+         * Get the stream id for the consensus module snapshot replay channel.
          *
-         * @return the stream id for the cluster snapshot replay channel.
-         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         * @return the stream id for the consensus module snapshot replay channel.
+         * @see io.aeron.cluster.ConsensusModule.Context#snapshotStreamId()
          */
-        public int replayStreamId()
+        public int consensusModuleSnapshotStreamId()
         {
-            return replayStreamId;
+            return consensusModuleSnapshotStreamId;
+        }
+
+        /**
+         * Set the stream id for the clustered service snapshot replay.
+         *
+         * @param streamId for the clustered service snapshot replay channel.
+         * @return this for a fluent API
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Context#snapshotStreamId()
+         */
+        public Context serviceSnapshotStreamId(final int streamId)
+        {
+            serviceSnapshotStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the clustered service snapshot replay channel.
+         *
+         * @return the stream id for the clustered service snapshot replay channel.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Context#snapshotStreamId()
+         */
+        public int serviceSnapshotStreamId()
+        {
+            return serviceSnapshotStreamId;
         }
 
         /**

@@ -606,35 +606,39 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         }
         else if (NULL_VALUE == correlationId)
         {
-            final long replayId = ctx.aeron().nextCorrelationId();
+            final long replayCorrelationId = ctx.aeron().nextCorrelationId();
+            final String channel = "aeron:udp?endpoint=" + ctx.catchupEndpoint();
             final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
-            final String catchupChannel = "aeron:udp?endpoint=" + ctx.catchupEndpoint();
+            final int streamId = snapshot.serviceId == ConsensusModule.Configuration.SERVICE_ID ?
+                ctx.consensusModuleSnapshotStreamId() : ctx.serviceSnapshotStreamId();
 
             if (clusterArchive.archiveProxy().replay(
                 snapshot.recordingId,
                 0,
                 NULL_LENGTH,
-                catchupChannel,
-                ctx.replayStreamId(),
-                replayId,
+                channel,
+                streamId,
+                replayCorrelationId,
                 clusterArchive.controlSessionId()))
             {
-                correlationId = replayId;
+                correlationId = replayCorrelationId;
                 timeOfLastProgressMs = nowMs;
                 workCount++;
             }
         }
         else if (pollForResponse(clusterArchive, correlationId))
         {
-            final int replaySessionId = (int)clusterArchive.controlResponsePoller().relevantId();
-            final String catchupChannel =
-                "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + replaySessionId;
-
             snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengths.get(snapshotCursor));
 
+            final int replaySessionId = (int)clusterArchive.controlResponsePoller().relevantId();
+            final String channel = "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + replaySessionId;
+            final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
+            final int streamId = snapshot.serviceId == ConsensusModule.Configuration.SERVICE_ID ?
+                ctx.consensusModuleSnapshotStreamId() : ctx.serviceSnapshotStreamId();
+
             backupArchive.archiveProxy().startRecording(
-                catchupChannel,
-                ctx.replayStreamId(),
+                channel,
+                streamId,
                 SourceLocation.REMOTE,
                 true,
                 backupArchive.context().aeron().nextCorrelationId(),

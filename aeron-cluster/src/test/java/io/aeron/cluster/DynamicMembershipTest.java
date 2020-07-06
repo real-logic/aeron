@@ -257,6 +257,47 @@ public class DynamicMembershipTest
 
     @Test
     @Timeout(30)
+    public void shouldRemoveLeaderAfterDynamicNodeJoinedThenRestartCluster()
+    {
+        try (TestCluster cluster = startCluster(3, 1))
+        {
+            final TestNode initialLeader = cluster.awaitLeader();
+            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+
+            awaitElectionClosed(dynamicMember);
+            awaitMembershipSize(initialLeader, 4);
+
+            final int initialLeaderIndex = initialLeader.index();
+            initialLeader.terminationExpected(true);
+            initialLeader.removeMember(initialLeaderIndex, false);
+
+            cluster.awaitNodeTermination(initialLeader);
+            cluster.stopNode(initialLeader);
+
+            final TestNode newLeader = cluster.awaitLeader(initialLeaderIndex);
+            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
+
+            assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
+            assertNotEquals(initialLeaderIndex, clusterMembership.leaderMemberId);
+
+            cluster.stopAllNodes();
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (initialLeaderIndex != i)
+                {
+                    cluster.startStaticNode(i, false);
+                }
+            }
+
+            cluster.awaitLeader();
+            assertEquals(1, cluster.followers().size());
+            awaitElectionClosed(cluster.followers().get(0));
+        }
+    }
+
+    @Test
+    @Timeout(30)
     public void shouldJoinDynamicNodeToSingleStaticLeader()
     {
         try (TestCluster cluster = startCluster(1, 1))

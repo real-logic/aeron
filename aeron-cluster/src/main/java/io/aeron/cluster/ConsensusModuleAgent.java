@@ -497,8 +497,7 @@ class ConsensusModuleAgent implements Agent
         }
         else if (candidateTermId > leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterException(
-                "unexpected vote request", AeronException.Category.WARN));
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request", WARN));
             enterElection(clusterClock.timeNanos());
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
@@ -550,8 +549,7 @@ class ConsensusModuleAgent implements Agent
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterException(
-                "unexpected new leadership term", AeronException.Category.WARN));
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected new leadership term", WARN));
             enterElection(clusterClock.timeNanos());
         }
     }
@@ -588,9 +586,9 @@ class ConsensusModuleAgent implements Agent
             timeOfLastLogUpdateNs = clusterClock.timeNanos();
             notifiedCommitPosition = logPosition;
         }
-        else if (leadershipTermId > this.leadershipTermId)
+        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
-            ctx.countedErrorHandler().onError(new ClusterException("unexpected commit position from new leader"));
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected commit position", WARN));
             enterElection(clusterClock.timeNanos());
         }
     }
@@ -1212,15 +1210,19 @@ class ConsensusModuleAgent implements Agent
                 }
                 else
                 {
-                    final boolean hasCurrentLeaderSteppedDown = leaderMemberId == memberId;
                     clusterMemberQuit(memberId);
 
-                    if (hasCurrentLeaderSteppedDown)
+                    if (leaderMemberId == memberId && null == election)
                     {
                         commitPosition.proposeMaxOrdered(logPosition);
                         enterElection(clusterClock.timeNanos());
                     }
                 }
+            }
+
+            if (null != election)
+            {
+                election.onMembershipChange(this.clusterMembers, changeType, memberId, logPosition);
             }
         }
     }
@@ -1813,8 +1815,7 @@ class ConsensusModuleAgent implements Agent
 
                     if (!ClusterMember.hasActiveQuorum(clusterMembers, nowNs, leaderHeartbeatTimeoutNs))
                     {
-                        ctx.countedErrorHandler().onError(new ClusterException(
-                            "inactive follower quorum", AeronException.Category.WARN));
+                        ctx.countedErrorHandler().onError(new ClusterException("inactive follower quorum", WARN));
                         enterElection(nowNs);
                         workCount += 1;
                     }
@@ -1838,8 +1839,7 @@ class ConsensusModuleAgent implements Agent
 
                 if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs))
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException(
-                        "leader heartbeat timeout", AeronException.Category.WARN));
+                    ctx.countedErrorHandler().onError(new ClusterException("leader heartbeat timeout", WARN));
                     enterElection(nowNs);
                     workCount += 1;
                 }
@@ -1872,8 +1872,7 @@ class ConsensusModuleAgent implements Agent
                             member.catchupReplayCorrelationId(NULL_VALUE);
 
                             ctx.countedErrorHandler().onError(new ClusterException(
-                                "catchup replay failed - " + controlResponsePoller.errorMessage(),
-                                AeronException.Category.WARN));
+                                "catchup replay failed - " + controlResponsePoller.errorMessage(), WARN));
                             return;
                         }
                     }
@@ -1915,7 +1914,7 @@ class ConsensusModuleAgent implements Agent
                         " commitPosition=" + commitPosition.getWeak() +
                         " leadershipTermId=" + leadershipTermId +
                         " leaderId=" + leaderMember.id(),
-                        AeronException.Category.WARN));
+                        WARN));
 
                     enterElection(nowNs);
                     return 1;
@@ -2595,7 +2594,7 @@ class ConsensusModuleAgent implements Agent
             false,
             leadershipTermId,
             commitPosition.getWeak(),
-            appendPosition.get(),
+            null != appendPosition ? appendPosition.get() : recoveryPlan.appendedLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,

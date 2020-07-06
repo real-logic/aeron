@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
+import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.AgentTerminationException;
@@ -52,7 +53,7 @@ class Election
     private Subscription logSubscription;
     private String liveLogDestination;
     private LogReplay logReplay = null;
-    private final ClusterMember[] clusterMembers;
+    private ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
     private final ConsensusAdapter consensusAdapter;
@@ -179,10 +180,23 @@ class Election
         {
             ctx.countedErrorHandler().onError(ex);
             logPosition = ctx.commitPositionCounter().getWeak();
-            state(ElectionState.INIT, nowNs);
+            state(INIT, nowNs);
         }
 
         return workCount;
+    }
+
+    void onMembershipChange(
+        final ClusterMember[] clusterMembers, final ChangeType changeType, final int memberId, final long logPosition)
+    {
+        ClusterMember.copyVotes(this.clusterMembers, clusterMembers);
+        this.clusterMembers = clusterMembers;
+
+        if (ChangeType.QUIT == changeType && FOLLOWER_CATCHUP == state && leaderMember.id() == memberId)
+        {
+            this.logPosition = logPosition;
+            state(INIT, ctx.clusterClock().timeNanos());
+        }
     }
 
     void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
@@ -208,8 +222,7 @@ class Election
                     logSessionId,
                     isLeaderStartup);
             }
-            else if ((LEADER_TRANSITION == state || LEADER_REPLAY == state) &&
-                logLeadershipTermId < leadershipTermId)
+            else if ((LEADER_TRANSITION == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
             {
                 final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
                 consensusPublisher.newLeadershipTerm(
@@ -751,7 +764,7 @@ class Election
             ctx.recordingLog().force(ctx.fileSyncLevel());
         }
 
-        state(ElectionState.FOLLOWER_READY, nowNs);
+        state(FOLLOWER_READY, nowNs);
 
         return 1;
     }
@@ -841,7 +854,6 @@ class Election
         channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
 
         final String logChannel = channelUri.toString();
-
         logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
         consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
     }

@@ -616,6 +616,24 @@ public final class ClusterMember
     }
 
     /**
+     * Copy votes from one array of members to another where the {@link #id()}s match.
+     *
+     * @param srcMembers to copy the votes from.
+     * @param dstMembers to copy the votes to.
+     */
+    public static void copyVotes(final ClusterMember[] srcMembers, final ClusterMember[] dstMembers)
+    {
+        for (final ClusterMember srcMember : srcMembers)
+        {
+            final ClusterMember dstMember = findMember(dstMembers, srcMember.id);
+            if (null != dstMember)
+            {
+                dstMember.vote = srcMember.vote;
+            }
+        }
+    }
+
+    /**
      * Add the publications for sending status messages to the other members of the cluster.
      *
      * @param members    of the cluster.

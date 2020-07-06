@@ -309,4 +309,38 @@ public class DynamicMembershipTest
             awaitMembershipSize(initialLeader, 2);
         }
     }
+
+    @Test
+    @Timeout(30)
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsAndRestartDynamicNode() throws Exception
+    {
+        try (TestCluster cluster = startCluster(3, 1))
+        {
+            final TestNode leader = cluster.awaitLeader();
+            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+
+            awaitElectionClosed(dynamicMember);
+            assertEquals(FOLLOWER, dynamicMember.role());
+
+            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
+
+            assertEquals(leader.index(), clusterMembership.leaderMemberId);
+            assertEquals("", clusterMembership.passiveMembersStr);
+
+            cluster.connectClient();
+
+            cluster.sendMessages(10);
+            cluster.awaitResponseMessageCount(10);
+            cluster.awaitServiceMessageCount(cluster.node(0), 10);
+            cluster.awaitServiceMessageCount(cluster.node(1), 10);
+            cluster.awaitServiceMessageCount(cluster.node(2), 10);
+            cluster.awaitServiceMessageCount(cluster.node(3), 10);
+
+            cluster.stopNode(dynamicMember);
+            final TestNode staticMember = cluster.startStaticNodeFromDynamicNode(3);
+
+            awaitElectionClosed(staticMember);
+            cluster.awaitServiceMessageCount(cluster.node(3), 10);
+        }
+    }
 }

@@ -362,6 +362,74 @@ public class TestCluster implements AutoCloseable
         return nodes[index];
     }
 
+    TestNode startStaticNodeFromDynamicNode(final int index)
+    {
+        return startStaticNodeFromDynamicNode(index, TestNode.TestService::new);
+    }
+
+    TestNode startStaticNodeFromDynamicNode(
+        final int index, final Supplier<? extends TestNode.TestService> serviceSupplier)
+    {
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
+
+        context.aeronArchiveContext
+            .lock(NoOpLock.INSTANCE)
+            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
+            .controlRequestStreamId(100)
+            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseStreamId(110 + index)
+            .aeronDirectoryName(baseDirName);
+
+        context.mediaDriverContext
+            .aeronDirectoryName(aeronDirName)
+            .threadingMode(ThreadingMode.SHARED)
+            .termBufferSparseFile(true)
+            .errorHandler(ClusterTests.errorHandler(index))
+            .dirDeleteOnShutdown(false)
+            .dirDeleteOnStart(true);
+
+        context.archiveContext
+            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .archiveDir(new File(baseDirName, "archive"))
+            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
+            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
+            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .recordingEventsEnabled(false)
+            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
+            .recordingEventsEnabled(false)
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .deleteArchiveOnStart(false);
+
+        context.consensusModuleContext
+            .errorHandler(ClusterTests.errorHandler(index))
+            .clusterMemberId(index)
+            .clusterMembers(clusterMembers(0, staticMemberCount + 1))
+            .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
+            .appointedLeaderId(appointedLeaderId)
+            .clusterDir(new File(baseDirName, "consensus-module"))
+            .ingressChannel("aeron:udp?term-length=64k")
+            .logChannel(LOG_CHANNEL)
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
+                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+            .deleteDirOnStart(false);
+
+        context.serviceContainerContext
+            .aeronDirectoryName(aeronDirName)
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
+                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+            .clusterDir(new File(baseDirName, "service"))
+            .clusteredService(context.service)
+            .errorHandler(ClusterTests.errorHandler(index));
+
+        nodes[index] = new TestNode(context, dataCollector);
+
+        return nodes[index];
+    }
+
     TestBackupNode startClusterBackupNode(final boolean cleanStart)
     {
         final int index = staticMemberCount + dynamicMemberCount;

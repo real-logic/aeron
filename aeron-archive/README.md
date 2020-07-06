@@ -18,7 +18,7 @@ Features:
 - **Extend:** service can extend an existing recording by appending.
 
 - **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular `length`
- which can be `Aeron.NULL_VALUE` for an open ended replay. An open ended replay will stop when it reaches the stop
+ which can be `Aeron.NULL_VALUE` for an open-ended replay. An open-ended replay will stop when it reaches the stop
  position of a recording.
 
 - **Query:** the catalog for existing recordings and the recorded position of an active recording.
@@ -68,7 +68,8 @@ replicate, and live merge.
 
 Recording Durability
 ----
-An archive can be instructed to record streams, i.e. `<channel, streamId>` pairs. These streams are recorded with the file sync level the archive has been launched with. Progress is reported on the recording events stream.
+An archive can be instructed to record streams, i.e. `<channel, streamId>` pairs. These streams are recorded with the
+file sync level the archive has been launched with. Progress is reported on the recording events stream.
 
 - `aeron.archive.file.sync.level=0`: for normal writes to the OS page cache for background writing to disk.
 - `aeron.archive.file.sync.level=1`: for forcing the dirty data pages to disk. 
@@ -77,7 +78,8 @@ An archive can be instructed to record streams, i.e. `<channel, streamId>` pairs
 When setting file sync level greater than zero it is also important to sync the archive catalog with the
  `aeron.archive.catalog.file.sync.level` to the same value.
 
-Recordings will be assigned a `recordingId` and a full description of the stream is captured in the Archive Catalog. The Catalog chronicles the contents of an archive as `RecordingDescriptor`s which can be queried.
+Recordings will be assigned a `recordingId` and a full description of the stream is captured in the Archive Catalog.
+The Catalog chronicles the contents of an archive as `RecordingDescriptor`s which can be queried.
 
 The progress of active recordings can be tracked using `AeronStat` to view the `rec-pos` counter for each stream.
 

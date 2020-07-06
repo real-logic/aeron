@@ -7,7 +7,7 @@ systems tests [here](https://github.com/real-logic/aeron/tree/master/aeron-syste
 ## Embedded Throughput Samples
 
 Suitable for measuring IO performance of your system. The samples will default to creating
-an archive directory on the the temporary file system. It is recommended that a properties file is provided
+an archive directory on the temporary file system. It is recommended that a properties file is provided
 by passing it as argument to the script. The `aeron.archive.dir` property should be located on fast storage.
 
 ### Recording Throughput
@@ -57,7 +57,7 @@ It is worth playing with different messages lengths and threading configurations
     $ replay-basic-subscriber <config properties file>
 ```
 
-5. Optionally run AeronStat an observe status, look out for the `rec-pos` counter for the recorded stream. 
+5. Optionally run AeronStat and observe status, look out for the `rec-pos` counter for the recorded stream. 
   
 ```
     $ aeron-stat

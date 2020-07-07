@@ -29,7 +29,6 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -165,9 +164,9 @@ public class SessionSpecificPublicationTest
     @MethodSource("data")
     @Timeout(10)
     @SlowTest
-    void shouldNotAddPublicationWithSameSessionUntilLingerCompletes(ChannelUriStringBuilder builder)
+    void shouldNotAddPublicationWithSameSessionUntilLingerCompletes(final ChannelUriStringBuilder builder)
     {
-        DirectBuffer msg = new UnsafeBuffer(new byte[8]);
+        final DirectBuffer msg = new UnsafeBuffer(new byte[8]);
         final String channel = builder.sessionId(SESSION_ID_1).build();
 
         final String subscriptionChannel = "ipc".equals(builder.media()) ? channel : SPY_PREFIX + channel;

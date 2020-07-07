@@ -910,7 +910,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             }
 
             if (AERON_IPC_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state ||
-                AERON_IPC_PUBLICATION_STATE_INACTIVE == pub_entry->conductor_fields.state)
+                AERON_IPC_PUBLICATION_STATE_DRAINING == pub_entry->conductor_fields.state)
             {
                 if (params->has_session_id && pub_entry->session_id == params->session_id)
                 {

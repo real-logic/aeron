@@ -292,7 +292,7 @@ TEST_F(DataPacketDispatcherTest, DISABLED_shouldSetImageInactiveOnRemoveSubscrip
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_subscription(m_dispatcher, stream_id));
 
-    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_INACTIVE, image->conductor_fields.state);
+    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_DRAINING, image->conductor_fields.state);
 }
 
 TEST_F(DataPacketDispatcherTest, DISABLED_shouldSetImageInactiveOnRemoveImage)
@@ -307,7 +307,7 @@ TEST_F(DataPacketDispatcherTest, DISABLED_shouldSetImageInactiveOnRemoveImage)
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_publication_image(m_dispatcher, image));
 
-    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_INACTIVE, image->conductor_fields.state);
+    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_DRAINING, image->conductor_fields.state);
 }
 
 TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)

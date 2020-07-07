@@ -28,7 +28,7 @@
 typedef enum aeron_ipc_publication_state_enum
 {
     AERON_IPC_PUBLICATION_STATE_ACTIVE,
-    AERON_IPC_PUBLICATION_STATE_INACTIVE,
+    AERON_IPC_PUBLICATION_STATE_DRAINING,
     AERON_IPC_PUBLICATION_STATE_LINGER
 }
 aeron_ipc_publication_state_t;

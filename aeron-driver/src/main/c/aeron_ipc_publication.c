@@ -359,7 +359,7 @@ void aeron_ipc_publication_on_time_event(
             }
             break;
 
-        case AERON_IPC_PUBLICATION_STATE_INACTIVE:
+        case AERON_IPC_PUBLICATION_STATE_DRAINING:
             if (aeron_ipc_publication_is_drained(publication))
             {
                 publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_LINGER;
@@ -412,7 +412,7 @@ void aeron_ipc_publication_decref(void *clientd)
 
     if (0 == ref_count)
     {
-        publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_INACTIVE;
+        publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_DRAINING;
         int64_t producer_position = aeron_ipc_publication_producer_position(publication);
 
         if (aeron_counter_get(publication->pub_lmt_position.value_addr) > producer_position)

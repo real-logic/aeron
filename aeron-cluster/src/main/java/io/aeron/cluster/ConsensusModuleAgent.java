@@ -709,17 +709,19 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void onTerminationPosition(final long logPosition)
+    void onTerminationPosition(final long leadershipTermId, final long logPosition)
     {
-        if (Cluster.Role.FOLLOWER == role)
+        if (leadershipTermId == this.leadershipTermId && Cluster.Role.FOLLOWER == role)
         {
             terminationPosition = logPosition;
         }
     }
 
-    void onTerminationAck(final long logPosition, final int memberId)
+    void onTerminationAck(final long leadershipTermId, final long logPosition, final int memberId)
     {
-        if (Cluster.Role.LEADER == role && logPosition == terminationPosition)
+        if (Cluster.Role.LEADER == role &&
+            leadershipTermId == this.leadershipTermId &&
+            logPosition == terminationPosition)
         {
             final ClusterMember member = clusterMemberByIdMap.get(memberId);
             if (null != member)
@@ -1048,7 +1050,8 @@ class ConsensusModuleAgent implements Agent
                 final boolean canTerminate;
                 if (null == clusterTermination)
                 {
-                    consensusPublisher.terminationAck(leaderMember.publication(), logPosition, memberId);
+                    consensusPublisher.terminationAck(
+                        leaderMember.publication(), leadershipTermId, logPosition, memberId);
                     canTerminate = true;
                 }
                 else
@@ -1970,7 +1973,8 @@ class ConsensusModuleAgent implements Agent
                 {
                     final long position = logPublisher.position();
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
-                    clusterTermination.terminationPosition(consensusPublisher, clusterMembers, thisMember, position);
+                    clusterTermination.terminationPosition(
+                        consensusPublisher, clusterMembers, thisMember, leadershipTermId, position);
                     terminationPosition = position;
                     state(ConsensusModule.State.SNAPSHOT);
                 }
@@ -1981,7 +1985,8 @@ class ConsensusModuleAgent implements Agent
                 {
                     final long position = logPublisher.position();
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
-                    clusterTermination.terminationPosition(consensusPublisher, clusterMembers, thisMember, position);
+                    clusterTermination.terminationPosition(
+                        consensusPublisher, clusterMembers, thisMember, leadershipTermId, position);
                     terminationPosition = position;
                     serviceProxy.terminationPosition(terminationPosition);
                     state(ConsensusModule.State.TERMINATING);

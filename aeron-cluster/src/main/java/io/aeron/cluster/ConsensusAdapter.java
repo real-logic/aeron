@@ -263,7 +263,9 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onTerminationPosition(terminationPositionDecoder.logPosition());
+                consensusModuleAgent.onTerminationPosition(
+                    terminationPositionDecoder.leadershipTermId(),
+                    terminationPositionDecoder.logPosition());
                 break;
 
             case TerminationAckDecoder.TEMPLATE_ID:
@@ -274,7 +276,9 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onTerminationAck(
-                    terminationAckDecoder.logPosition(), terminationAckDecoder.memberId());
+                    terminationAckDecoder.leadershipTermId(),
+                    terminationAckDecoder.logPosition(),
+                    terminationAckDecoder.memberId());
                 break;
 
             case BackupQueryDecoder.TEMPLATE_ID:

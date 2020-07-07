@@ -477,7 +477,8 @@ class ConsensusPublisher
         return false;
     }
 
-    boolean terminationPosition(final ExclusivePublication publication, final long logPosition)
+    boolean terminationPosition(
+        final ExclusivePublication publication, final long leadershipTermId, final long logPosition)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationPositionEncoder.BLOCK_LENGTH;
 
@@ -489,6 +490,7 @@ class ConsensusPublisher
             {
                 terminationPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition);
 
                 bufferClaim.commit();
@@ -503,7 +505,8 @@ class ConsensusPublisher
         return false;
     }
 
-    boolean terminationAck(final ExclusivePublication publication, final long logPosition, final int memberId)
+    boolean terminationAck(
+        final ExclusivePublication publication, final long leadershipTermId, final long logPosition, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationAckEncoder.BLOCK_LENGTH;
 
@@ -515,6 +518,7 @@ class ConsensusPublisher
             {
                 terminationAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .memberId(memberId);
 

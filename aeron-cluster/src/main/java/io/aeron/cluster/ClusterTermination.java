@@ -49,6 +49,7 @@ class ClusterTermination
         final ConsensusPublisher consensusPublisher,
         final ClusterMember[] members,
         final ClusterMember thisMember,
+        final long leadershipTermId,
         final long position)
     {
         for (final ClusterMember member : members)
@@ -57,7 +58,7 @@ class ClusterTermination
 
             if (member != thisMember)
             {
-                consensusPublisher.terminationPosition(member.publication(), position);
+                consensusPublisher.terminationPosition(member.publication(), leadershipTermId, position);
             }
         }
     }

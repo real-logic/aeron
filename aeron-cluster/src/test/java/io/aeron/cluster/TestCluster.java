@@ -761,7 +761,7 @@ public class TestCluster implements AutoCloseable
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         return leaderNode;

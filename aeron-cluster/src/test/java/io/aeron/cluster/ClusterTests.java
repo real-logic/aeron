@@ -37,7 +37,7 @@ class ClusterTests
     static final String NO_OP_MSG = "No op!           ";
     static final String REGISTER_TIMER_MSG = "Register a timer!";
     static final String ECHO_IPC_INGRESS_MSG = "Echo as IPC ingress";
-    static final String UNEXPECTED_MSG = "Should never get this message!";
+    static final String UNEXPECTED_MSG = "Should never get this message because it is not going to be committed!";
 
     private static final AtomicReference<Throwable> CLUSTER_ERROR = new AtomicReference<>();
 

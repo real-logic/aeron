@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -46,10 +47,7 @@ public class ClusterTest
     @AfterEach
     void after()
     {
-        if (null != cluster)
-        {
-            cluster.close();
-        }
+        CloseHelper.close(cluster);
     }
 
     @Test
@@ -584,7 +582,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @Timeout(60)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos(
         final TestInfo testInfo)
     {
@@ -600,7 +598,7 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            cluster.sendUnexpectedMessages(10);
+            cluster.sendUnexpectedMessages(30);
 
             while (leader.appendPosition() <= leader.commitPosition())
             {
@@ -608,8 +606,8 @@ public class ClusterTest
             }
 
             final long targetPosition = leader.appendPosition();
-            cluster.closeClient();
             cluster.stopNode(leader);
+            cluster.closeClient();
 
             followerA = cluster.startStaticNode(followerA.index(), false);
             followerB = cluster.startStaticNode(followerB.index(), false);
@@ -671,8 +669,8 @@ public class ClusterTest
                 Tests.yield();
             }
 
-            cluster.closeClient();
             cluster.stopNode(leader);
+            cluster.closeClient();
 
             followerA = cluster.startStaticNode(followerA.index(), false);
             followerB = cluster.startStaticNode(followerB.index(), false);

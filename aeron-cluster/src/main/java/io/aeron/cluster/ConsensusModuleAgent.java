@@ -495,7 +495,7 @@ class ConsensusModuleAgent implements Agent
         {
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
-        else if (candidateTermId > leadershipTermId)
+        else if (candidateTermId > leadershipTermId && null == dynamicJoin)
         {
             ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request", WARN));
             enterElection(clusterClock.timeNanos());
@@ -547,7 +547,7 @@ class ConsensusModuleAgent implements Agent
             timeOfLastLogUpdateNs = clusterClock.timeNanos();
             notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
         }
-        else if (leadershipTermId > this.leadershipTermId)
+        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
             ctx.countedErrorHandler().onError(new ClusterException("unexpected new leadership term", WARN));
             enterElection(clusterClock.timeNanos());
@@ -628,25 +628,28 @@ class ConsensusModuleAgent implements Agent
 
     void onAddPassiveMember(final long correlationId, final String memberEndpoints)
     {
-        if (null == election && Cluster.Role.LEADER == role)
+        if (null == election && null == dynamicJoin)
         {
-            if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints))
+            if (Cluster.Role.LEADER == role)
             {
-                final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
+                if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints))
+                {
+                    final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
 
-                newMember.correlationId(correlationId);
-                passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
-                clusterMemberByIdMap.put(newMember.id(), newMember);
+                    newMember.correlationId(correlationId);
+                    passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
+                    clusterMemberByIdMap.put(newMember.id(), newMember);
 
-                ClusterMember.addConsensusPublication(
-                    newMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
+                    ClusterMember.addConsensusPublication(
+                        newMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
 
-                logPublisher.addPassiveFollower(newMember.logEndpoint());
+                    logPublisher.addPassiveFollower(newMember.logEndpoint());
+                }
             }
-        }
-        else if (null == election && Cluster.Role.FOLLOWER == role)
-        {
-            consensusPublisher.addPassiveMember(leaderMember.publication(), correlationId, memberEndpoints);
+            else if (Cluster.Role.FOLLOWER == role)
+            {
+                consensusPublisher.addPassiveMember(leaderMember.publication(), correlationId, memberEndpoints);
+            }
         }
     }
 
@@ -739,40 +742,43 @@ class ConsensusModuleAgent implements Agent
         final String responseChannel,
         final byte[] encodedCredentials)
     {
-        if (Cluster.Role.LEADER != role && null == election)
+        if (null == election && null == dynamicJoin)
         {
-            consensusPublisher.backupQuery(
-                leaderMember.publication(),
-                correlationId,
-                responseStreamId,
-                version,
-                responseChannel,
-                encodedCredentials);
-        }
-        else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
-        {
-            final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
-            final long now = clusterClock.time();
-            session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
-            session.markAsBackupSession();
-            session.connect(aeron);
+            if (Cluster.Role.LEADER != role)
+            {
+                consensusPublisher.backupQuery(
+                    leaderMember.publication(),
+                    correlationId,
+                    responseStreamId,
+                    version,
+                    responseChannel,
+                    encodedCredentials);
+            }
+            else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
+            {
+                final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
+                final long now = clusterClock.time();
+                session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+                session.markAsBackupSession();
+                session.connect(aeron);
 
-            if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
-            {
-                final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION);
-                session.reject(EventCode.ERROR, detail);
-                rejectedSessions.add(session);
-            }
-            else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
-            {
-                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
-                rejectedSessions.add(session);
-            }
-            else
-            {
-                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
-                pendingSessions.add(session);
+                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
+                {
+                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                        ", cluster=" + SemanticVersion.toString(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION);
+                    session.reject(EventCode.ERROR, detail);
+                    rejectedSessions.add(session);
+                }
+                else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+                {
+                    session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                    rejectedSessions.add(session);
+                }
+                else
+                {
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                    pendingSessions.add(session);
+                }
             }
         }
     }

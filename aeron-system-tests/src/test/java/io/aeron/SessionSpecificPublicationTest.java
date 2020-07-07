@@ -20,21 +20,24 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.MediaDriverTestWatcher;
+import io.aeron.test.SlowTest;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static io.aeron.CommonContext.IPC_MEDIA;
-import static io.aeron.CommonContext.UDP_MEDIA;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static io.aeron.CommonContext.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificPublicationTest
@@ -62,6 +65,7 @@ public class SessionSpecificPublicationTest
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
         .errorHandler(mockErrorHandler)
         .dirDeleteOnStart(true)
+        .spiesSimulateConnection(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED);
 
@@ -154,5 +158,66 @@ public class SessionSpecificPublicationTest
                 fail("Exception should have been thrown due using different session ids");
             }
         });
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    @Timeout(10)
+    @SlowTest
+    void shouldNotAddPublicationWithSameSessionUntilLingerCompletes(final ChannelUriStringBuilder builder)
+    {
+        final DirectBuffer msg = new UnsafeBuffer(new byte[8]);
+        final String channel = builder.sessionId(SESSION_ID_1).build();
+
+        final String subscriptionChannel = "ipc".equals(builder.media()) ? channel : SPY_PREFIX + channel;
+
+        final Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+        final Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
+        final int positionLimitId = publication1.positionLimitId();
+        assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(positionLimitId));
+
+        while (publication1.offer(msg) < 0)
+        {
+            Tests.yieldingWait("Failed to offer message");
+        }
+
+        publication1.close();
+
+        assertThrows(RegistrationException.class, () ->
+        {
+            try (Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+            {
+                fail("Exception should have been thrown due lingering publication keeping session id active");
+            }
+        });
+
+        while (subscription.poll((buffer, offset, length, header) -> {}, 10) <= 0)
+        {
+            Tests.yieldingWait("Failed to drain message");
+        }
+        subscription.close();
+
+        while (CountersReader.RECORD_ALLOCATED == aeron.countersReader().getCounterState(positionLimitId))
+        {
+            Tests.yieldingWait("Publication never cleaned up");
+        }
+
+        try (Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+        {
+            // No action required.
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    void shouldAllowTheSameSessionIdOnDifferentStreamIds(final ChannelUriStringBuilder channelBuilder)
+    {
+        final String channel = channelBuilder.sessionId(SESSION_ID_1).build();
+
+        try (Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+            Publication publication2 = aeron.addPublication(channel, STREAM_ID + 1))
+        {
+            // No-op
+        }
     }
 }

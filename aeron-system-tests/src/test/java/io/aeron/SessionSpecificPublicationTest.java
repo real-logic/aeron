@@ -24,7 +24,9 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -35,8 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static io.aeron.CommonContext.IPC_MEDIA;
-import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.CommonContext.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
@@ -65,6 +66,7 @@ public class SessionSpecificPublicationTest
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
         .errorHandler(mockErrorHandler)
         .dirDeleteOnStart(true)
+        .spiesSimulateConnection(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED);
 
@@ -159,20 +161,26 @@ public class SessionSpecificPublicationTest
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("data")
     @Timeout(10)
     @SlowTest
-    void shouldNotAddPublicationWithSameSessionUntilLingerCompletes()
+    void shouldNotAddPublicationWithSameSessionUntilLingerCompletes(ChannelUriStringBuilder builder)
     {
-        final String channel = new ChannelUriStringBuilder()
-            .media(UDP_MEDIA)
-            .endpoint(ENDPOINT)
-            .sessionId(SESSION_ID_1)
-            .build();
+        DirectBuffer msg = new UnsafeBuffer(new byte[8]);
+        final String channel = builder.sessionId(SESSION_ID_1).build();
+
+        final String subscriptionChannel = "ipc".equals(builder.media()) ? channel : SPY_PREFIX + channel;
 
         final Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+        final Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
         final int positionLimitId = publication1.positionLimitId();
         assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(positionLimitId));
+
+        while (publication1.offer(msg) < 0)
+        {
+            Tests.yieldingWait("Failed to offer message");
+        }
 
         publication1.close();
 
@@ -183,6 +191,12 @@ public class SessionSpecificPublicationTest
                 fail("Exception should have been thrown due lingering publication keeping session id active");
             }
         });
+
+        while (subscription.poll((buffer, offset, length, header) -> {}, 10) <= 0)
+        {
+            Tests.yieldingWait("Failed to drain message");
+        }
+        subscription.close();
 
         while (CountersReader.RECORD_ALLOCATED == aeron.countersReader().getCounterState(positionLimitId))
         {

@@ -22,7 +22,7 @@
 extern "C"
 {
 #include "aeron_driver_context.h"
-#include "agent/aeron_driver_agent.c"
+#include "agent/aeron_driver_agent.h"
 }
 
 class DriverAgentTest : public testing::Test
@@ -109,7 +109,7 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
     };
 
     size_t timesCalled = 0;
-    const size_t messagesRead = aeron_mpsc_rb_read(&logging_mpsc_rb, message_handler, &timesCalled, 1);
+    const size_t messagesRead = aeron_driver_logging_ring_buffer_read(message_handler, &timesCalled, 1);
 
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);

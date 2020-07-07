@@ -104,4 +104,16 @@ void aeron_free_logging_ring_buffer();
 
 void aeron_set_logging_mask(uint64_t new_mask);
 
+void aeron_driver_agent_untethered_subscription_state_change_interceptor(
+        aeron_tetherable_position_t *tetherable_position,
+        int64_t now_ns,
+        aeron_subscription_tether_state_t new_state,
+        int32_t stream_id,
+        int32_t session_id);
+
+size_t aeron_driver_logging_ring_buffer_read(
+        aeron_rb_handler_t handler,
+        void *clientd,
+        size_t message_count_limit);
+
 #endif //AERON_DRIVER_AGENT_H

@@ -93,11 +93,19 @@ static void *aeron_driver_agent_log_reader(void *arg)
 {
     while (true)
     {
-        aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
+        aeron_driver_logging_ring_buffer_read(aeron_driver_agent_log_dissector, NULL, 10);
         aeron_nano_sleep(1000 * 1000);
     }
 
     return NULL;
+}
+
+size_t aeron_driver_logging_ring_buffer_read(
+        aeron_rb_handler_t handler,
+        void *clientd,
+        size_t message_count_limit)
+{
+    return aeron_mpsc_rb_read(&logging_mpsc_rb, handler, clientd, message_count_limit);
 }
 
 void aeron_init_logging_ring_buffer()

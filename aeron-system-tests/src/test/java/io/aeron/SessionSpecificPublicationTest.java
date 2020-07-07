@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.SlowTest;
@@ -162,7 +163,7 @@ public class SessionSpecificPublicationTest
 
     @ParameterizedTest
     @MethodSource("data")
-    @Timeout(10)
+    @Timeout(20)
     @SlowTest
     void shouldNotAddPublicationWithSameSessionUntilLingerCompletes(final ChannelUriStringBuilder builder)
     {
@@ -185,13 +186,14 @@ public class SessionSpecificPublicationTest
 
         assertThrows(RegistrationException.class, () ->
         {
-            try (Publication publication2 = aeron.addPublication(channel, STREAM_ID))
+            try (Publication ignore = aeron.addPublication(channel, STREAM_ID))
             {
                 fail("Exception should have been thrown due lingering publication keeping session id active");
             }
         });
 
-        while (subscription.poll((buffer, offset, length, header) -> {}, 10) <= 0)
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
+        while (subscription.poll(fragmentHandler, 10) <= 0)
         {
             Tests.yieldingWait("Failed to drain message");
         }
@@ -202,10 +204,7 @@ public class SessionSpecificPublicationTest
             Tests.yieldingWait("Publication never cleaned up");
         }
 
-        try (Publication publication2 = aeron.addPublication(channel, STREAM_ID))
-        {
-            // No action required.
-        }
+        aeron.addPublication(channel, STREAM_ID);
     }
 
     @ParameterizedTest
@@ -214,10 +213,7 @@ public class SessionSpecificPublicationTest
     {
         final String channel = channelBuilder.sessionId(SESSION_ID_1).build();
 
-        try (Publication publication1 = aeron.addPublication(channel, STREAM_ID);
-            Publication publication2 = aeron.addPublication(channel, STREAM_ID + 1))
-        {
-            // No-op
-        }
+        aeron.addPublication(channel, STREAM_ID);
+        aeron.addPublication(channel, STREAM_ID + 1);
     }
 }

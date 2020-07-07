@@ -772,7 +772,7 @@ public final class AeronCluster implements AutoCloseable
     public static class Configuration
     {
         public static final int PROTOCOL_MAJOR_VERSION = 0;
-        public static final int PROTOCOL_MINOR_VERSION = 0;
+        public static final int PROTOCOL_MINOR_VERSION = 1;
         public static final int PROTOCOL_PATCH_VERSION = 1;
         public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
             PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);
@@ -804,8 +804,8 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Channel for sending messages to a cluster. Ideally this will be a multicast address otherwise unicast will
-         * be required and the {@link #INGRESS_ENDPOINTS_PROP_NAME} is used to substitute the endpoints from
-         * the {@link #INGRESS_ENDPOINTS_PROP_NAME} list.
+         * be required and the {@link #INGRESS_ENDPOINTS_PROP_NAME} is used to substitute the endpoints from the
+         * {@link #INGRESS_ENDPOINTS_PROP_NAME} list.
          */
         public static final String INGRESS_CHANNEL_PROP_NAME = "aeron.cluster.ingress.channel";
 

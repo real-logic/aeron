@@ -294,11 +294,11 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL_LEN);
 
                         publication->untethered_subscription_state_change_func(
-                                tetherable_position,
-                                now_ns,
-                                AERON_SUBSCRIPTION_TETHER_LINGER,
-                                publication->stream_id,
-                                publication->session_id);
+                            tetherable_position,
+                            now_ns,
+                            AERON_SUBSCRIPTION_TETHER_LINGER,
+                            publication->stream_id,
+                            publication->session_id);
                     }
                     break;
 
@@ -306,11 +306,11 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                     if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
                         publication->untethered_subscription_state_change_func(
-                                tetherable_position,
-                                now_ns,
-                                AERON_SUBSCRIPTION_TETHER_RESTING,
-                                publication->stream_id,
-                                publication->session_id);
+                            tetherable_position,
+                            now_ns,
+                            AERON_SUBSCRIPTION_TETHER_RESTING,
+                            publication->stream_id,
+                            publication->session_id);
                     }
                     break;
 
@@ -331,11 +331,11 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL_LEN);
 
                         publication->untethered_subscription_state_change_func(
-                                tetherable_position,
-                                now_ns,
-                                AERON_SUBSCRIPTION_TETHER_ACTIVE,
-                                publication->stream_id,
-                                publication->session_id);
+                            tetherable_position,
+                            now_ns,
+                            AERON_SUBSCRIPTION_TETHER_ACTIVE,
+                            publication->stream_id,
+                            publication->session_id);
                     }
                     break;
             }

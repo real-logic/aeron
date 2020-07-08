@@ -16,7 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.cluster.client.ClusterClock;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;

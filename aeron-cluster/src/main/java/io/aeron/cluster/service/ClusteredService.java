@@ -91,7 +91,7 @@ public interface ClusteredService
      * <b>Note:</b> As this is a potentially long running operation the implementation should use
      * {@link Cluster#idleStrategy()} and then occasional call {@link org.agrona.concurrent.IdleStrategy#idle()} or
      * {@link org.agrona.concurrent.IdleStrategy#idle(int)},
-     * especially when polling the snapshot {@link ExclusivePublication} returns {@link Publication#BACK_PRESSURED}.
+     * especially when the snapshot {@link ExclusivePublication} returns {@link Publication#BACK_PRESSURED}.
      *
      * @param snapshotPublication to which the state should be recorded.
      */

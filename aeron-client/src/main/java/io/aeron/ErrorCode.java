@@ -68,7 +68,7 @@ public enum ErrorCode
     NOT_SUPPORTED(8),
 
     /**
-     * Attempted to send a command that had a host name the could be resolved.
+     * Attempted to send a command that had a host name that could not be resolved.
      */
     UNKNOWN_HOST(9),
 

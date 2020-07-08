@@ -335,6 +335,17 @@ void aeron_driver_agent_incoming_msg(
         addr);
 }
 
+void aeron_untethered_subscription_state_change(
+    aeron_tetherable_position_t *tetherable_position,
+    int64_t now_ns,
+    aeron_subscription_tether_state_t new_state,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    tetherable_position->state = new_state;
+    tetherable_position->time_of_last_update_ns = now_ns;
+}
+
 void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     aeron_tetherable_position_t *tetherable_position,
     int64_t now_ns,
@@ -344,7 +355,7 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
 {
     uint8_t buffer[sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t)];
     aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
-            (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)buffer;
+        (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)buffer;
 
     hdr->time_ms = aeron_agent_epoch_clock();
     hdr->subscription_id = tetherable_position->subscription_registration_id;
@@ -356,10 +367,10 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     aeron_untethered_subscription_state_change(tetherable_position, now_ns, new_state, stream_id, session_id);
 
     aeron_mpsc_rb_write(
-            &logging_mpsc_rb,
-            AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
-            buffer,
-            sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+        &logging_mpsc_rb,
+        AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
+        buffer,
+        sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
 }
 
 int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_channel_transport_affinity_t affinity)
@@ -453,7 +464,7 @@ int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
     if (mask & AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)
     {
         context->untethered_subscription_state_change_func =
-                aeron_driver_agent_untethered_subscription_state_change_interceptor;
+            aeron_driver_agent_untethered_subscription_state_change_interceptor;
     }
 
     return 0;
@@ -971,6 +982,7 @@ static const char *dissect_frame(const void *message, size_t length)
                         name = &message_bytes[message_offset + sizeof(aeron_resolution_header_ipv6_t)];
                         break;
                     }
+
                     case AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD:
                     {
                         aeron_resolution_header_ipv4_t *res_ipv4 = (aeron_resolution_header_ipv4_t *)res;
@@ -1119,7 +1131,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         case AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE:
         {
             aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
-                    (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
+                (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
 
             fprintf(
                 logfp,

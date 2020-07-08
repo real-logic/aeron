@@ -113,13 +113,11 @@ static int test_malloc_map_raw_log(
 
     for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
     {
-        log->term_buffers[i].addr =
-            (uint8_t *)log->mapped_file.addr + (i * term_length);
+        log->term_buffers[i].addr = (uint8_t *)log->mapped_file.addr + (i * term_length);
         log->term_buffers[i].length = term_length;
     }
 
-    log->log_meta_data.addr =
-        (uint8_t *)log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+    log->log_meta_data.addr = (uint8_t *)log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
     log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
 
     log->term_length = term_length;
@@ -142,7 +140,9 @@ class DriverCallbacks
 {
 public:
     virtual ~DriverCallbacks() {};
+
     virtual void broadcastToClient(int32_t type_id, uint8_t *buffer, size_t length) = 0;
+
     virtual void onCounter(
         int32_t id,
         int32_t type_id,
@@ -284,7 +284,9 @@ public:
         aeron_mpsc_rb_init(
             &m_to_driver, m_context.m_context->to_driver_buffer, m_context.m_context->to_driver_buffer_length);
         aeron_broadcast_receiver_init(
-            &m_broadcast_receiver, m_context.m_context->to_clients_buffer, m_context.m_context->to_clients_buffer_length);
+            &m_broadcast_receiver,
+            m_context.m_context->to_clients_buffer,
+            m_context.m_context->to_clients_buffer_length);
     }
 
     size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler, size_t message_limit = SIZE_MAX)
@@ -336,7 +338,7 @@ public:
         cmd->correlated.client_id = client_id;
         cmd->correlated.correlation_id = correlation_id;
         cmd->stream_id = stream_id;
-        cmd->channel_length = strlen(channel);
+        cmd->channel_length = (int32_t)strlen(channel);
         memcpy(m_command_buffer + sizeof(aeron_publication_command_t), channel, cmd->channel_length);
 
         return writeCommand(msg_type_id, sizeof(aeron_publication_command_t) + cmd->channel_length);
@@ -366,7 +368,7 @@ public:
         cmd->correlated.correlation_id = correlation_id;
         cmd->stream_id = stream_id;
         cmd->registration_correlation_id = -1;
-        cmd->channel_length = strlen(channel);
+        cmd->channel_length = (int32_t)strlen(channel);
         memcpy(m_command_buffer + sizeof(aeron_subscription_command_t), channel, cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, sizeof(aeron_subscription_command_t) + cmd->channel_length);
@@ -449,7 +451,7 @@ public:
         cmd->correlated.client_id = client_id;
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = publication_registration_id;
-        cmd->channel_length = strlen(channel);
+        cmd->channel_length = (int32_t)strlen(channel);
         memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_ADD_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
@@ -462,7 +464,7 @@ public:
         cmd->correlated.client_id = client_id;
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = subscription_id;
-        cmd->channel_length = strlen(channel);
+        cmd->channel_length = (int32_t)strlen(channel);
         memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_ADD_RCV_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
@@ -475,7 +477,7 @@ public:
         cmd->correlated.client_id = client_id;
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = subscription_id;
-        cmd->channel_length = strlen(channel);
+        cmd->channel_length = (int32_t)strlen(channel);
         memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_REMOVE_RCV_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
@@ -489,7 +491,7 @@ public:
         cmd->correlated.client_id = client_id;
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = publication_registration_id;
-        cmd->channel_length = strlen(channel);
+        cmd->channel_length = (int32_t)strlen(channel);
         memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_REMOVE_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
@@ -565,7 +567,7 @@ protected:
 };
 
 void aeron_image_buffers_ready_get_log_file_name(
-    const aeron_image_buffers_ready_t *msg, const char **log_file_name, int32_t* log_file_name_len)
+    const aeron_image_buffers_ready_t *msg, const char **log_file_name, int32_t *log_file_name_len)
 {
     uint8_t *log_file_name_ptr = ((uint8_t *) msg) + sizeof(aeron_image_buffers_ready_t);
     memcpy(log_file_name_len, log_file_name_ptr, sizeof(int32_t));
@@ -573,14 +575,14 @@ void aeron_image_buffers_ready_get_log_file_name(
 }
 
 void aeron_publication_buffers_ready_get_log_file_name(
-    const aeron_publication_buffers_ready_t *msg, const char **log_file_name, int32_t* log_file_name_len)
+    const aeron_publication_buffers_ready_t *msg, const char **log_file_name, int32_t *log_file_name_len)
 {
     *log_file_name_len = msg->log_file_length;
     *log_file_name = ((char *) msg) + sizeof(aeron_publication_buffers_ready_t);
 }
 
 void aeron_image_buffers_ready_get_source_identity(
-    const aeron_image_buffers_ready_t *msg, const char **source_identity, int32_t* source_identity_len)
+    const aeron_image_buffers_ready_t *msg, const char **source_identity, int32_t *source_identity_len)
 {
     uint8_t *log_file_name_ptr = ((uint8_t *) msg) + sizeof(aeron_image_buffers_ready_t);
     int32_t log_file_name_len;
@@ -592,7 +594,7 @@ void aeron_image_buffers_ready_get_source_identity(
 }
 
 void aeron_image_message_get_channel(
-    const aeron_image_message_t *msg, const char **channel, int32_t* channel_len)
+    const aeron_image_message_t *msg, const char **channel, int32_t *channel_len)
 {
     uint8_t *channel_ptr = ((uint8_t *) msg) + sizeof(aeron_image_message_t);
     *channel_len = msg->channel_length;
@@ -706,11 +708,11 @@ MATCHER_P5(
     if (!result)
     {
         *result_listener <<
-                         "response.stream_id = " << response->stream_id <<
-                         ", response.session_id = " << response->session_id <<
-                         ", response.correlation_id = " << response->correlation_id <<
-                         ", response.registration_id = " << response->registration_id <<
-                         ", response.log_file_name = " << log_file_name_str;
+             "response.stream_id = " << response->stream_id <<
+             ", response.session_id = " << response->session_id <<
+             ", response.correlation_id = " << response->correlation_id <<
+             ", response.registration_id = " << response->registration_id <<
+             ", response.log_file_name = " << log_file_name_str;
     }
 
     return result;
@@ -922,8 +924,8 @@ MATCHER_P2(
     if (!result)
     {
         *result_listener <<
-                         "counter.id = " << counter_id <<
-                         "counter.label = " << counter_label;
+            "counter.id = " << counter_id <<
+            "counter.label = " << counter_label;
     }
     
     return result;

@@ -54,6 +54,11 @@ static uint64_t mask = 0;
 static FILE *logfp = NULL;
 static aeron_thread_t log_reader_thread;
 
+aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb()
+{
+    return &logging_mpsc_rb;
+}
+
 int64_t aeron_agent_epoch_clock()
 {
     struct timespec ts;

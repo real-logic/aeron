@@ -88,6 +88,8 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
+aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
+
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
@@ -103,5 +105,12 @@ void aeron_init_logging_ring_buffer();
 void aeron_free_logging_ring_buffer();
 
 void aeron_set_logging_mask(uint64_t new_mask);
+
+void aeron_driver_agent_untethered_subscription_state_change_interceptor(
+    aeron_tetherable_position_t *tetherable_position,
+    int64_t now_ns,
+    aeron_subscription_tether_state_t new_state,
+    int32_t stream_id,
+    int32_t session_id);
 
 #endif //AERON_DRIVER_AGENT_H

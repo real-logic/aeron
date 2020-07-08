@@ -22,7 +22,7 @@
 extern "C"
 {
 #include "aeron_driver_context.h"
-#include "agent/aeron_driver_agent.c"
+#include "agent/aeron_driver_agent.h"
 }
 
 class DriverAgentTest : public testing::Test
@@ -49,12 +49,11 @@ protected:
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
-    aeron_set_logging_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
     aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
+    aeron_set_logging_mask(AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
     aeron_init_logging_events_interceptors(m_context);
 
-    EXPECT_EQ(m_context->untethered_subscription_state_change_func, &aeron_driver_agent_untethered_subscription_state_change_interceptor);
     EXPECT_NE(m_context->untethered_subscription_state_change_func, func);
 }
 
@@ -65,7 +64,6 @@ TEST_F(DriverAgentTest, shouldKeepOriginalUntetheredStateChangeFunctionIfEventNo
     aeron_init_logging_events_interceptors(m_context);
 
     EXPECT_EQ(m_context->untethered_subscription_state_change_func, func);
-    EXPECT_NE(m_context->untethered_subscription_state_change_func, &aeron_driver_agent_untethered_subscription_state_change_interceptor);
 }
 
 TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
@@ -74,7 +72,7 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
 
     aeron_subscription_tether_state_t old_state = AERON_SUBSCRIPTION_TETHER_RESTING;
     aeron_subscription_tether_state_t new_state = AERON_SUBSCRIPTION_TETHER_ACTIVE;
-    int64_t now_ns = -432482364273648;
+    int64_t now_ns = -432482364273648LL;
     int32_t stream_id = 777;
     int32_t session_id = 21;
     int64_t subscription_id = 56;
@@ -83,33 +81,34 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
     tetherable_position.subscription_registration_id = subscription_id;
 
     aeron_driver_agent_untethered_subscription_state_change_interceptor(
-            &tetherable_position,
-            now_ns,
-            new_state,
-            stream_id,
-            session_id);
+        &tetherable_position,
+        now_ns,
+        new_state,
+        stream_id,
+        session_id);
 
     EXPECT_EQ(tetherable_position.state, new_state);
     EXPECT_EQ(tetherable_position.time_of_last_update_ns, now_ns);
 
-    auto message_handler = [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
-    {
-        size_t *count = (size_t *)clientd;
-        (*count)++;
+    auto message_handler =
+        [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+        {
+            size_t *count = (size_t *)clientd;
+            (*count)++;
 
-        EXPECT_EQ(msg_type_id, AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
+            EXPECT_EQ(msg_type_id, AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
 
-        aeron_driver_agent_untethered_subscription_state_change_log_header_t *data =
+            aeron_driver_agent_untethered_subscription_state_change_log_header_t *data =
                 (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)msg;
-        EXPECT_EQ(data->new_state, AERON_SUBSCRIPTION_TETHER_ACTIVE);
-        EXPECT_EQ(data->old_state, AERON_SUBSCRIPTION_TETHER_RESTING);
-        EXPECT_EQ(data->subscription_id, 56);
-        EXPECT_EQ(data->stream_id, 777);
-        EXPECT_EQ(data->session_id, 21);
-    };
+            EXPECT_EQ(data->new_state, AERON_SUBSCRIPTION_TETHER_ACTIVE);
+            EXPECT_EQ(data->old_state, AERON_SUBSCRIPTION_TETHER_RESTING);
+            EXPECT_EQ(data->subscription_id, 56);
+            EXPECT_EQ(data->stream_id, 777);
+            EXPECT_EQ(data->session_id, 21);
+        };
 
     size_t timesCalled = 0;
-    const size_t messagesRead = aeron_mpsc_rb_read(&logging_mpsc_rb, message_handler, &timesCalled, 1);
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
 
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);

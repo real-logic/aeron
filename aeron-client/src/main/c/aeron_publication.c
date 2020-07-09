@@ -477,3 +477,18 @@ extern int64_t aeron_publication_new_position(
 
 extern int64_t aeron_publication_back_pressure_status(
     aeron_publication_t *publication, int64_t current_position, int32_t message_length);
+
+const char *aeron_publication_channel(aeron_publication_t *publication)
+{
+    return publication->channel;
+}
+
+int32_t aeron_publication_stream_id(aeron_publication_t *publication)
+{
+    return publication->stream_id;
+}
+
+int32_t aeron_publication_session_id(aeron_publication_t *publication)
+{
+    return publication->session_id;
+}

@@ -18,6 +18,7 @@
 #include <thread>
 #include <cinttypes>
 #include <csignal>
+#include <climits>
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"

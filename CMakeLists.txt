@@ -237,6 +237,8 @@ endif ()
 
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp")
 
+set(AERON_CLIENT_WRAPPER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp_wrapper")
+
 set(AERON_C_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/c")
 
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/main/c")
@@ -267,6 +269,8 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 add_subdirectory(${AERON_C_CLIENT_SOURCE_PATH})
 
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
+add_subdirectory(${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+
 if (AERON_TESTS)
     add_subdirectory(${AERON_CLIENT_TEST_PATH})
     add_subdirectory(${AERON_C_CLIENT_TEST_PATH})

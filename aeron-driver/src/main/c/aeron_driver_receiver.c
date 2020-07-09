@@ -338,8 +338,6 @@ void aeron_driver_receiver_on_add_subscription_by_session(void *clientd, void *i
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_subscription: %s", aeron_errmsg());
     }
-
-    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
 void aeron_driver_receiver_on_remove_subscription_by_session(void *clientd, void *item)
@@ -352,8 +350,6 @@ void aeron_driver_receiver_on_remove_subscription_by_session(void *clientd, void
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_subscription: %s", aeron_errmsg());
     }
-
-    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
 void aeron_driver_receiver_on_add_destination(void *clientd, void *item)

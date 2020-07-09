@@ -1460,7 +1460,7 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Indicates which step in the connect process has reached.
+         * Indicates which step in the connect process has been reached.
          *
          * @return which step in the connect process has reached.
          */

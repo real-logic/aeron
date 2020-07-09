@@ -17,7 +17,6 @@ package io.aeron.cluster.service;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SnapshotMark;
 import io.aeron.cluster.codecs.SnapshotMarkerEncoder;

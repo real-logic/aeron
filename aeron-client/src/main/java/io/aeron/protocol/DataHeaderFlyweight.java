@@ -133,7 +133,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Get the session-id field from the header.
      *
-     * @param termBuffer  container the header.
+     * @param termBuffer  containing the header.
      * @param frameOffset in the buffer where the header starts.
      * @return the session-id field from the header.
      */
@@ -168,7 +168,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Get the stream-id field from the header.
      *
-     * @param termBuffer  container the header.
+     * @param termBuffer  containing the header.
      * @param frameOffset in the buffer where the header starts.
      * @return the stream-id field from the header.
      */
@@ -178,7 +178,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Set the session-id field in the header.
+     * Set the stream-id field in the header.
      *
      * @param streamId value to set.
      * @return this for a fluent API.
@@ -203,7 +203,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Get the term-id field from the header.
      *
-     * @param termBuffer  container the header.
+     * @param termBuffer  containing the header.
      * @param frameOffset in the buffer where the header starts.
      * @return the term-id field from the header.
      */
@@ -238,7 +238,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Get the term-offset field from the header.
      *
-     * @param termBuffer  container the header.
+     * @param termBuffer  containing the header.
      * @param frameOffset in the buffer where the header starts.
      * @return the term-offset field from the header.
      */
@@ -273,7 +273,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Get the reserved value field from the header.
      *
-     * @param termBuffer  container the header.
+     * @param termBuffer  containing the header.
      * @param frameOffset in the buffer where the header starts.
      * @return the reserved value field from the header.
      */

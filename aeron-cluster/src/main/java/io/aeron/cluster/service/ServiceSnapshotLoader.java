@@ -17,7 +17,6 @@ package io.aeron.cluster.service;
 
 import io.aeron.Image;
 import io.aeron.ImageControlledFragmentAssembler;
-import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;

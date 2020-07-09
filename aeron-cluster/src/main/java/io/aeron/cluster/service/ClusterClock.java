@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.client;
+package io.aeron.cluster.service;
 
 import io.aeron.cluster.codecs.ClusterTimeUnit;
 

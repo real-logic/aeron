@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.client.ClusterClock;
+import io.aeron.cluster.service.ClusterClock;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 

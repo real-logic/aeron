@@ -189,6 +189,23 @@ int aeron_parse_duration_ns(const char *str, uint64_t *result)
     return 0;
 }
 
+bool aeron_parse_bool(const char *str, bool def)
+{
+    if (NULL != str)
+    {
+        if (strncmp(str, "1", 1) == 0 || strncmp(str, "on", 2) == 0 || strncmp(str, "true", 4) == 0)
+        {
+            return true;
+        }
+
+        if (strncmp(str, "0", 1) == 0 || strncmp(str, "off", 3) == 0 || strncmp(str, "false", 5) == 0)
+        {
+            return false;
+        }
+    }
+
+    return def;
+}
 
 int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_address)
 {

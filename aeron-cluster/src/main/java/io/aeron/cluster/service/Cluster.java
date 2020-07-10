@@ -17,6 +17,8 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
+import io.aeron.ExclusivePublication;
+import io.aeron.Image;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
@@ -32,6 +34,13 @@ import java.util.function.Consumer;
 
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
+ * <p>
+ * This object should only be used to send messages to the cluster or schedule timers in response to other messages
+ * and timers. Sending messages and timers should not happen from cluster lifecycle methods like
+ * {@link ClusteredService#onStart(Cluster, Image)}, {@link ClusteredService#onRoleChange(Cluster.Role)} or
+ * {@link ClusteredService#onTakeSnapshot(ExclusivePublication)}, or {@link ClusteredService#onTerminate(Cluster)},
+ * with the exception of the session lifecycle methods {@link ClusteredService#onSessionOpen(ClientSession, long)} and
+ * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
  */
 public interface Cluster
 {

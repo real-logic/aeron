@@ -125,24 +125,6 @@ void aeron_config_prop_warning(const char *name, const char *str)
     fprintf(stderr, "%s", buffer);
 }
 
-bool aeron_config_parse_bool(const char *str, bool def)
-{
-    if (NULL != str)
-    {
-        if (strncmp(str, "1", 1) == 0 || strncmp(str, "on", 2) == 0 || strncmp(str, "true", 4) == 0)
-        {
-            return true;
-        }
-
-        if (strncmp(str, "0", 1) == 0 || strncmp(str, "off", 3) == 0 || strncmp(str, "false", 5) == 0)
-        {
-            return false;
-        }
-    }
-
-    return def;
-}
-
 uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {
     uint64_t result = def;
@@ -591,45 +573,35 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->resolver_bootstrap_neighbor = getenv(AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR_ENV_VAR);
     _context->name_resolver_init_args = getenv(AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
 
-    _context->dirs_delete_on_start = aeron_config_parse_bool(
-        getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),
-        _context->dirs_delete_on_start);
+    _context->dirs_delete_on_start = aeron_parse_bool(
+        getenv(AERON_DIR_DELETE_ON_START_ENV_VAR), _context->dirs_delete_on_start);
 
-    _context->dirs_delete_on_shutdown = aeron_config_parse_bool(
-        getenv(AERON_DIR_DELETE_ON_SHUTDOWN_ENV_VAR),
-        _context->dirs_delete_on_shutdown);
+    _context->dirs_delete_on_shutdown = aeron_parse_bool(
+        getenv(AERON_DIR_DELETE_ON_SHUTDOWN_ENV_VAR), _context->dirs_delete_on_shutdown);
 
-    _context->warn_if_dirs_exist = aeron_config_parse_bool(
-        getenv(AERON_DIR_WARN_IF_EXISTS_ENV_VAR),
-        _context->warn_if_dirs_exist);
+    _context->warn_if_dirs_exist = aeron_parse_bool(
+        getenv(AERON_DIR_WARN_IF_EXISTS_ENV_VAR), _context->warn_if_dirs_exist);
 
-    _context->term_buffer_sparse_file = aeron_config_parse_bool(
-        getenv(AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR),
-        _context->term_buffer_sparse_file);
+    _context->term_buffer_sparse_file = aeron_parse_bool(
+        getenv(AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR), _context->term_buffer_sparse_file);
 
-    _context->perform_storage_checks = aeron_config_parse_bool(
-        getenv(AERON_PERFORM_STORAGE_CHECKS_ENV_VAR),
-        _context->perform_storage_checks);
+    _context->perform_storage_checks = aeron_parse_bool(
+        getenv(AERON_PERFORM_STORAGE_CHECKS_ENV_VAR), _context->perform_storage_checks);
 
-    _context->spies_simulate_connection = aeron_config_parse_bool(
-        getenv(AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR),
-        _context->spies_simulate_connection);
+    _context->spies_simulate_connection = aeron_parse_bool(
+        getenv(AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR), _context->spies_simulate_connection);
 
-    _context->print_configuration_on_start = aeron_config_parse_bool(
-        getenv(AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR),
-        _context->print_configuration_on_start);
+    _context->print_configuration_on_start = aeron_parse_bool(
+        getenv(AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR), _context->print_configuration_on_start);
 
-    _context->reliable_stream = aeron_config_parse_bool(
-        getenv(AERON_RELIABLE_STREAM_ENV_VAR),
-        _context->reliable_stream);
+    _context->reliable_stream = aeron_parse_bool(
+        getenv(AERON_RELIABLE_STREAM_ENV_VAR), _context->reliable_stream);
 
-    _context->tether_subscriptions = aeron_config_parse_bool(
-        getenv(AERON_TETHER_SUBSCRIPTIONS_ENV_VAR),
-        _context->tether_subscriptions);
+    _context->tether_subscriptions = aeron_parse_bool(
+        getenv(AERON_TETHER_SUBSCRIPTIONS_ENV_VAR), _context->tether_subscriptions);
 
-    _context->rejoin_stream = aeron_config_parse_bool(
-        getenv(AERON_REJOIN_STREAM_ENV_VAR),
-        _context->rejoin_stream);
+    _context->rejoin_stream = aeron_parse_bool(
+        getenv(AERON_REJOIN_STREAM_ENV_VAR), _context->rejoin_stream);
 
     _context->to_driver_buffer_length = aeron_config_parse_size64(
         AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR,

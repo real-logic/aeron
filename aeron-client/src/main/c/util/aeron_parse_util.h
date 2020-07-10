@@ -18,6 +18,7 @@
 #define AERON_PARSE_UTIL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define AERON_MAX_HOST_LENGTH (384)
 #define AERON_MAX_PORT_LENGTH (8)
@@ -43,6 +44,8 @@ aeron_parsed_interface_t;
 int aeron_parse_size64(const char *str, uint64_t *result);
 
 int aeron_parse_duration_ns(const char *str, uint64_t *result);
+
+bool aeron_parse_bool(const char *str, bool def);
 
 int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_address);
 

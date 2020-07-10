@@ -76,6 +76,11 @@ uint64_t aeron_context_get_keepalive_interval_ns(aeron_context_t *context);
 int aeron_context_set_resource_linger_duration_ns(aeron_context_t *context, uint64_t value);
 uint64_t aeron_context_get_resource_linger_duration_ns(aeron_context_t *context);
 
+#define AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR "AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY"
+
+int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool value);
+bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context);
+
 /**
  * The error handler to be called when an error occurs.
  */

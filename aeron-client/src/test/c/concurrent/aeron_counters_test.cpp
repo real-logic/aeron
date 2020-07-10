@@ -48,6 +48,11 @@ public:
             &m_reader, m_metadataBuffer.data(), m_metadataBuffer.size(), m_valuesBuffer.data(), m_valuesBuffer.size());
     }
 
+    virtual ~CountersTest()
+    {
+        aeron_counters_manager_close(&m_manager);
+    }
+
 protected:
     values_buffer_t m_valuesBuffer;
     metadata_buffer_t m_metadataBuffer;

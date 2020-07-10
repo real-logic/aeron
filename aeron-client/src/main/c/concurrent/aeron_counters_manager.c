@@ -282,7 +282,7 @@ int aeron_counters_reader_counter_label(
     int32_t label_length;
     AERON_GET_VOLATILE(label_length, metadata->label_length);
 
-    size_t copy_length = (size_t)label_length < buffer_length ? label_length : buffer_length;
+    size_t copy_length = (size_t)label_length < buffer_length ? (size_t)label_length : buffer_length;
     memcpy(buffer, metadata->label, copy_length);
 
     return (int)copy_length;

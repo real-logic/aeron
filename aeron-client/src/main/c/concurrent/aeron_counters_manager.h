@@ -220,6 +220,14 @@ inline int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_rea
     return (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(counter_id));
 }
 
+int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state);
+
+int aeron_counters_reader_counter_label(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length);
+
+int aeron_counters_reader_free_to_reuse_deadline_ms(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms);
+
 inline int aeron_counters_reader_init(
     volatile aeron_counters_reader_t *reader,
     uint8_t *metadata_buffer,

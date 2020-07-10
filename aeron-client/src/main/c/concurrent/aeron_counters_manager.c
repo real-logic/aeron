@@ -254,6 +254,56 @@ extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *manager, i
 
 extern int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id);
 
+int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state)
+{
+    if (counter_id < 0 || counters_reader->max_counter_id <= (size_t)counter_id)
+    {
+        return -1;
+    }
+
+    aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)(
+        counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id));
+
+    AERON_GET_VOLATILE(*state, metadata->state);
+    return 0;
+}
+
+int aeron_counters_reader_counter_label(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length)
+{
+    if (counter_id < 0 || counters_reader->max_counter_id <= (size_t)counter_id)
+    {
+        return -1;
+    }
+
+    aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)(
+        counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id));
+
+    int32_t label_length;
+    AERON_GET_VOLATILE(label_length, metadata->label_length);
+
+    size_t copy_length = (size_t)label_length < buffer_length ? label_length : buffer_length;
+    memcpy(buffer, metadata->label, copy_length);
+
+    return (int)copy_length;
+}
+
+int aeron_counters_reader_free_to_reuse_deadline_ms(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms)
+{
+    if (counter_id < 0 || counters_reader->max_counter_id <= (size_t)counter_id)
+    {
+        return -1;
+    }
+
+    aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)(
+        counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id));
+
+    AERON_GET_VOLATILE(*deadline_ms, metadata->free_to_reuse_deadline);
+    return 0;
+}
+
+
 extern int aeron_counters_reader_init(
     volatile aeron_counters_reader_t *reader,
     uint8_t *metadata_buffer,

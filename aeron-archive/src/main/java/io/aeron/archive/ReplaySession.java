@@ -175,8 +175,8 @@ class ReplaySession implements Session, AutoCloseable
     public void close()
     {
         final CountedErrorHandler errorHandler = controlSession.archiveConductor().context().countedErrorHandler();
-        CloseHelper.close(errorHandler, fileChannel);
         CloseHelper.close(errorHandler, publication);
+        CloseHelper.close(errorHandler, fileChannel);
     }
 
     public long sessionId()
@@ -358,7 +358,7 @@ class ReplaySession implements Session, AutoCloseable
             final int frameLength = frameLength(replayBuffer, batchOffset);
             if (frameLength <= 0)
             {
-                raiseError(bytesRead, batchOffset, remaining);
+                raiseError(frameLength, bytesRead, batchOffset, remaining);
             }
 
             final int frameType = frameType(replayBuffer, batchOffset);
@@ -413,12 +413,15 @@ class ReplaySession implements Session, AutoCloseable
         return workCount;
     }
 
-    private void raiseError(final int bytesRead, final int batchOffset, final long remaining)
+    private void raiseError(final int frameLength, final int bytesRead, final int batchOffset, final long remaining)
     {
-        throw new IllegalStateException(
-            "unexpected end of recording " + recordingId + " at replayPosition=" + replayPosition +
-            " remaining=" + remaining + " limitPosition=" + limitPosition +
-            " batchOffset=" + batchOffset + " bytesRead=" + bytesRead);
+        throw new IllegalStateException("unexpected end of recording " + recordingId +
+            " frameLength=" + frameLength +
+            " replayPosition=" + replayPosition +
+            " remaining=" + remaining +
+            " limitPosition=" + limitPosition +
+            " batchOffset=" + batchOffset +
+            " bytesRead=" + bytesRead);
     }
 
     private boolean hasPublicationAdvanced(final long position, final int alignedLength)
@@ -486,8 +489,8 @@ class ReplaySession implements Session, AutoCloseable
 
     private void onError(final String errorMessage)
     {
-        state(State.INACTIVE);
         this.errorMessage = errorMessage;
+        state(State.INACTIVE);
     }
 
     private boolean noNewData(final long replayPosition, final long oldStopPosition)

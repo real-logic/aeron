@@ -803,6 +803,7 @@ public class ClusterTest
 
             Tests.sleep(NANOSECONDS.toMillis(context.sessionTimeoutNs()));
 
+            cluster.shouldPrintClientCloseReason(false);
             while (!client.isClosed())
             {
                 Tests.sleep(1);

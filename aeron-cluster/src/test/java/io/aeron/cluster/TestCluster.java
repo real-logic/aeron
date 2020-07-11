@@ -97,6 +97,10 @@ public class TestCluster implements AutoCloseable
             {
                 throw new ClusterException(detail);
             }
+            else if (EventCode.CLOSED == code && shouldPrintClientCloseReason)
+            {
+                System.out.println("session closed due to " + detail);
+            }
         }
 
         public void onNewLeader(
@@ -118,6 +122,7 @@ public class TestCluster implements AutoCloseable
     private final int dynamicMemberCount;
     private final int appointedLeaderId;
     private final int backupNodeIndex;
+    private boolean shouldPrintClientCloseReason = true;
 
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
@@ -569,6 +574,11 @@ public class TestCluster implements AutoCloseable
         {
             startStaticNode(i, cleanStart);
         }
+    }
+
+    void shouldPrintClientCloseReason(final boolean shouldPrintClientCloseReason)
+    {
+        this.shouldPrintClientCloseReason = shouldPrintClientCloseReason;
     }
 
     String staticClusterMembers()

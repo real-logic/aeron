@@ -490,6 +490,19 @@ bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *public
     return is_closed;
 }
 
+bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication)
+{
+    if (NULL != publication && !aeron_exclusive_publication_is_closed(publication))
+    {
+        int32_t is_connected;
+
+        AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+        return 1 == is_connected;
+    }
+
+    return false;
+}
+
 int aeron_exclusive_publication_constants(
     aeron_exclusive_publication_t *publication, aeron_publication_constants_t *constants)
 {

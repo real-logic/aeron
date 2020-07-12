@@ -1013,6 +1013,22 @@ int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t
  */
 int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
 
+/**
+ * Has the exclusive publication closed?
+ *
+ * @param publication to check
+ * @return true if this publication is closed.
+ */
+bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *publication);
+
+/**
+ * Has the exclusive publication seen an active Subscriber recently?
+ *
+ * @param publication to check.
+ * @return true if this publication has recently seen an active subscriber otherwise false.
+ */
+bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication);
+
 /*
  * Subscription functions
  *

@@ -793,6 +793,14 @@ int64_t aeron_publication_try_claim(
 int64_t aeron_publication_channel_status(aeron_publication_t *publication);
 
 /**
+ * Has the publication closed?
+ *
+ * @param publication to check
+ * @return true if this publication is closed.
+ */
+bool aeron_publication_is_closed(aeron_publication_t *publication);
+
+/**
  * Has the publication seen an active Subscriber recently?
  *
  * @param publication to check.

@@ -840,18 +840,18 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication);
  *
  * @param publication to add destination to.
  * @param uri for the destination to add.
- * @return 0 for success or -1 for error.
+ * @return correlation id (>=0) for success and -1 for error.
  */
-int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri);
+int64_t aeron_publication_add_destination(aeron_publication_t *publication, const char *uri);
 
 /**
  * Remove a previously added destination manually from a multi-destination-cast publication.
  *
  * @param publication to remove destination from.
  * @param uri for the destination to remove.
- * @return 0 for success or -1 for error.
+ * @return correlation id (>=0) for success and -1 for error.
  */
-int aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri);
+int64_t aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri);
 
 /**
  * Asynchronously close the publication.
@@ -992,18 +992,18 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
  *
  * @param publication to add destination to.
  * @param uri for the destination to add.
- * @return 0 for success or -1 for error.
+ * @return correlation id (>=0) for success and -1 for error.
  */
-int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
+int64_t aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
 
 /**
  * Remove a previously added destination manually from a multi-destination-cast publication.
  *
  * @param publication to remove destination from.
  * @param uri for the destination to remove.
- * @return 0 for success or -1 for error.
+ * @return correlation id (>=0) for success and -1 for error.
  */
-int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
+int64_t aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
 
 /**
  * Asynchronously close the publication.
@@ -1303,18 +1303,18 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
  *
  * @param subscription to add destination to.
  * @param uri for the destination to add.
- * @return 0 for success and -1 for error.
+ * @return correlation id (>=0) for success and -1 for error.
  */
-int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri);
+int64_t aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri);
 
 /**
  * Remove a previously added destination from a multi-destination subscription.
  *
  * @param subscription to remove destination from.
  * @param uri for the destination to remove.
- * @return 0 for success and -1 for error.
+ * @return correlation id (>=0) for success and -1 for error.
  */
-int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri);
+int64_t aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri);
 
 /**
  * Asynchronously close the subscription.

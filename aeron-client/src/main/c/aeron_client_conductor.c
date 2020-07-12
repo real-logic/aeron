@@ -2085,7 +2085,7 @@ int aeron_client_conductor_offer_remove_command(
     return 0;
 }
 
-int aeron_client_conductor_offer_destination_command(
+int64_t aeron_client_conductor_offer_destination_command(
     aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type, const char *uri)
 {
     size_t uri_length = strlen(uri);
@@ -2093,7 +2093,8 @@ int aeron_client_conductor_offer_destination_command(
     aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
     int rb_offer_fail_count = 0;
 
-    command->correlated.correlation_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    int64_t correlation_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    command->correlated.correlation_id = correlation_id;
     command->correlated.client_id = conductor->client_id;
     command->registration_id = registration_id;
     command->channel_length = (int32_t)uri_length;
@@ -2116,7 +2117,7 @@ int aeron_client_conductor_offer_destination_command(
         sched_yield();
     }
 
-    return 0;
+    return correlation_id;
 }
 
 extern int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(

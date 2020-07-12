@@ -466,7 +466,7 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication)
     return aeron_counter_get_volatile(publication->position_limit);
 }
 
-int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri)
+int64_t aeron_publication_add_destination(aeron_publication_t *publication, const char *uri)
 {
     if (NULL == publication || uri == NULL)
     {
@@ -479,7 +479,7 @@ int aeron_publication_add_destination(aeron_publication_t *publication, const ch
         publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri);
 }
 
-int aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri)
+int64_t aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri)
 {
     if (NULL == publication || uri == NULL)
     {

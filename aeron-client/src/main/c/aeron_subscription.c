@@ -491,7 +491,7 @@ long aeron_subscription_block_poll(
     return bytes_consumed;
 }
 
-int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri)
+int64_t aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri)
 {
     if (NULL == subscription || uri == NULL)
     {
@@ -504,7 +504,7 @@ int aeron_subscription_add_destination(aeron_subscription_t *subscription, const
         subscription->conductor, subscription->registration_id, AERON_COMMAND_ADD_RCV_DESTINATION, uri);
 }
 
-int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri)
+int64_t aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri)
 {
     if (NULL == subscription || uri == NULL)
     {

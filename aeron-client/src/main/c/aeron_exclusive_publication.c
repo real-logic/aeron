@@ -580,9 +580,9 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
     return aeron_counter_get_volatile(publication->position_limit);
 }
 
-int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *publication, const char *uri)
+int64_t aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *exclusive, const char *uri)
 {
-    if (NULL == publication || uri == NULL)
+    if (NULL == exclusive || uri == NULL)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
@@ -590,12 +590,12 @@ int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *p
     }
 
     return aeron_client_conductor_offer_destination_command(
-        publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri);
+        exclusive->conductor, exclusive->registration_id, AERON_COMMAND_ADD_DESTINATION, uri);
 }
 
-int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *publication, const char *uri)
+int64_t aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *exclusive, const char *uri)
 {
-    if (NULL == publication || uri == NULL)
+    if (NULL == exclusive || uri == NULL)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
@@ -603,7 +603,7 @@ int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t
     }
 
     return aeron_client_conductor_offer_destination_command(
-        publication->conductor, publication->registration_id, AERON_COMMAND_REMOVE_DESTINATION, uri);
+        exclusive->conductor, exclusive->registration_id, AERON_COMMAND_REMOVE_DESTINATION, uri);
 }
 
 extern void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication);

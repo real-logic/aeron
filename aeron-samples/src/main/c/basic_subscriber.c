@@ -71,10 +71,13 @@ void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_hea
         return;
     }
 
+    int32_t session_id;
+    aeron_header_session_id(header, &session_id);
+
     printf(
         "Message to stream %" PRId32 " from session %" PRId32 " (%" PRIu32 " bytes) <<%*s>>\n",
         subscription_constants.stream_id,
-        aeron_header_session_id(header),
+        session_id,
         (uint32_t)length,
         (int)length,
         buffer);

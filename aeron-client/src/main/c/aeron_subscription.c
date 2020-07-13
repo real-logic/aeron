@@ -517,7 +517,7 @@ int64_t aeron_subscription_remove_destination(aeron_subscription_t *subscription
         subscription->conductor, subscription->registration_id, AERON_COMMAND_REMOVE_RCV_DESTINATION, uri);
 }
 
-int32_t aeron_header_session_id(aeron_header_t *header)
+int aeron_header_session_id(aeron_header_t *header, int32_t *session_id)
 {
     if (NULL == header)
     {
@@ -528,7 +528,113 @@ int32_t aeron_header_session_id(aeron_header_t *header)
 
     errno = 0;
     aeron_set_err(0, "no error");
-    return header->frame->session_id;
+    *session_id = header->frame->session_id;
+    return 0;
+}
+
+int aeron_header_stream_id(aeron_header_t *header, int32_t *stream_id)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *stream_id = header->frame->stream_id;
+    return 0;
+}
+
+int aeron_header_term_id(aeron_header_t *header, int32_t *term_id)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *term_id = header->frame->term_id;
+    return 0;
+}
+
+int aeron_header_term_offset(aeron_header_t *header, int32_t *term_offset)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *term_offset = header->frame->term_offset;
+    return 0;
+}
+
+int aeron_header_type(aeron_header_t *header, uint16_t *type)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *type = header->frame->frame_header.type;
+    return 0;
+}
+
+int aeron_header_flags(aeron_header_t *header, uint8_t *flags)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *flags = header->frame->frame_header.flags;
+    return 0;
+}
+
+int aeron_header_frame_length(aeron_header_t *header, int32_t *frame_length)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *frame_length = header->frame->frame_header.frame_length;
+    return 0;
+}
+
+int aeron_header_reserved_value(aeron_header_t *header, int64_t *reserved_value)
+{
+    if (NULL == header)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    errno = 0;
+    aeron_set_err(0, "no error");
+    *reserved_value = header->frame->reserved_value;
+    return 0;
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);

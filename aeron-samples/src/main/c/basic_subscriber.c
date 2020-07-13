@@ -64,6 +64,7 @@ void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_hea
 {
     aeron_subscription_t *subscription = (aeron_subscription_t *)clientd;
     aeron_subscription_constants_t subscription_constants;
+    aeron_header_values_t header_values;
 
     if (aeron_subscription_constants(subscription, &subscription_constants) < 0)
     {
@@ -71,13 +72,12 @@ void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_hea
         return;
     }
 
-    int32_t session_id;
-    aeron_header_session_id(header, &session_id);
+    aeron_header_values(header, &header_values);
 
     printf(
         "Message to stream %" PRId32 " from session %" PRId32 " (%" PRIu32 " bytes) <<%*s>>\n",
         subscription_constants.stream_id,
-        session_id,
+        header_values.session_id,
         (uint32_t)length,
         (int)length,
         buffer);

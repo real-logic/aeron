@@ -34,6 +34,20 @@ typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
 typedef struct aeron_publication_stct aeron_publication_t;
 typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_header_stct aeron_header_t;
+typedef struct aeron_header_values_stct
+{
+    int32_t frame_length;
+    int8_t version;
+    uint8_t flags;
+    int16_t type;
+    int32_t term_offset;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t term_id;
+    int64_t reserved_value;
+}
+aeron_header_values_t;
+
 typedef struct aeron_subscription_stct aeron_subscription_t;
 typedef struct aeron_image_stct aeron_image_t;
 typedef struct aeron_counter_stct aeron_counter_t;
@@ -1117,78 +1131,14 @@ typedef void (*aeron_block_handler_t)(
     void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
 
 /**
- * Get session id field from the message header.
+ * Get all of the field values from the header.  This will do a memcpy into the supplied
+ * header_values_t pointer.
  *
- * @param header to query.
- * @param session_id pointer to session id to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
+ * @param header to read values from.
+ * @param values to copy values to, must not be null
+ * @return 0 on success, -1 on failure.
  */
-int aeron_header_session_id(aeron_header_t *header, int32_t *session_id);
-
-/**
- * Get stream id field from the message header.
- *
- * @param header to query.
- * @param stream_id pointer to stream id to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_stream_id(aeron_header_t *header, int32_t *stream_id);
-
-/**
- * Get term id field from the message header.
- *
- * @param header to query.
- * @param term_id pointer to term id to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_term_id(aeron_header_t *header, int32_t *term_id);
-
-/**
- * Get term offset field from the message header.
- *
- * @param header to query.
- * @param term_offset pointer to term offset to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_term_offset(aeron_header_t *header, int32_t *term_offset);
-
-/**
- * The type of the the frame which should always be {@link DataFrameHeader::HDR_TYPE_DATA}
- *
- * @param header to query.
- * @param type pointer to type to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_type(aeron_header_t *header, uint16_t *type);
-
-/**
- * The flags for this frame. Valid flags are {@link DataFrameHeader::BEGIN_FLAG}
- * and {@link DataFrameHeader::END_FLAG}. A convenience flag {@link DataFrameHeader::BEGIN_AND_END_FLAGS}
- * can be used for both flags.
- *
- * @param header to query.
- * @param flags pointer to the flags to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_flags(aeron_header_t *header, uint8_t *flags);
-
-/**
- * The total length of the frame including the header.
- *
- * @param header to query.
- * @param frame_length pointer to the frame length to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_frame_length(aeron_header_t *header, int32_t *frame_length);
-
-/**
- * Get the value stored in the reserve space at the end of a data frame header.
- *
- * @param header to query.
- * @param reserved_value pointer to the reserved value to fill in.
- * @return 0 for success -1 for error (Check aeron_errcode).
- */
-int aeron_header_reserved_value(aeron_header_t *header, int64_t *reserved_value);
+int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values);
 
 typedef struct aeron_subscription_constants_stct
 {

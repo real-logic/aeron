@@ -186,7 +186,7 @@ public class BacklogStat
                 }
                 else
                 {
-                    builder.append("\n└─no sender yet...");
+                    builder.append("\n└─no sender");
                 }
             }
 

@@ -15,10 +15,10 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
+final class ClusterControlAdapter implements AutoCloseable
 {
     interface Listener
     {
@@ -44,6 +44,7 @@ final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
 
     private final Subscription subscription;
     private final Listener listener;
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ClusterMembersResponseDecoder clusterMembersResponseDecoder = new ClusterMembersResponseDecoder();
@@ -63,11 +64,11 @@ final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
 
     int poll()
     {
-        return subscription.poll(this, 1);
+        return subscription.poll(fragmentAssembler, 1);
     }
 
     @SuppressWarnings("MethodLength")
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -123,7 +124,7 @@ final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
                     catchupEndpoint,
                     archiveEndpoint);
 
-                final ClusterMember member = new ClusterMember(
+                activeMembers.add(new ClusterMember(
                     id,
                     ingressEndpoint,
                     consensusEndpoint,
@@ -133,9 +134,7 @@ final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
                     endpoints)
                     .leadershipTermId(activeMembersDecoder.leadershipTermId())
                     .logPosition(activeMembersDecoder.logPosition())
-                    .timeOfLastAppendPositionNs(activeMembersDecoder.timeOfLastAppendNs());
-
-                activeMembers.add(member);
+                    .timeOfLastAppendPositionNs(activeMembersDecoder.timeOfLastAppendNs()));
             }
 
             final ArrayList<ClusterMember> passiveMembers = new ArrayList<>();
@@ -156,7 +155,7 @@ final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
                     catchupEndpoint,
                     archiveEndpoint);
 
-                final ClusterMember member = new ClusterMember(
+                passiveMembers.add(new ClusterMember(
                     id,
                     ingressEndpoint,
                     consensusEndpoint,
@@ -166,9 +165,7 @@ final class ClusterControlAdapter implements FragmentHandler, AutoCloseable
                     endpoints)
                     .leadershipTermId(passiveMembersDecoder.leadershipTermId())
                     .logPosition(passiveMembersDecoder.logPosition())
-                    .timeOfLastAppendPositionNs(passiveMembersDecoder.timeOfLastAppendNs());
-
-                passiveMembers.add(member);
+                    .timeOfLastAppendPositionNs(passiveMembersDecoder.timeOfLastAppendNs()));
             }
 
             listener.onClusterMembersExtendedResponse(

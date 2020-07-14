@@ -15,18 +15,19 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-final class ServiceAdapter implements FragmentHandler, AutoCloseable
+final class ServiceAdapter implements AutoCloseable
 {
     private final Subscription subscription;
     private final ClusteredServiceAgent clusteredServiceAgent;
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
@@ -46,10 +47,10 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
 
     public int poll()
     {
-        return subscription.poll(this, 1);
+        return subscription.poll(fragmentAssembler, 10);
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

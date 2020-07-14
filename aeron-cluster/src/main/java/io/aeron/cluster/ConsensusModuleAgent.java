@@ -940,28 +940,6 @@ class ConsensusModuleAgent implements Agent
         appendPosition = appendPositionCounter;
     }
 
-    void clearSessionsAfter(final long logPosition)
-    {
-        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
-        {
-            final ClusterSession session = i.next();
-            if (session.openedLogPosition() > logPosition)
-            {
-                i.remove();
-                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
-                session.close(ctx.countedErrorHandler());
-            }
-        }
-
-        for (final ClusterSession session : pendingSessions)
-        {
-            egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
-            session.close(ctx.countedErrorHandler());
-        }
-
-        pendingSessions.clear();
-    }
-
     void onServiceCloseSession(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
@@ -2531,6 +2509,28 @@ class ConsensusModuleAgent implements Agent
         }
 
         return 0;
+    }
+
+    private void clearSessionsAfter(final long logPosition)
+    {
+        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
+        {
+            final ClusterSession session = i.next();
+            if (session.openedLogPosition() > logPosition)
+            {
+                i.remove();
+                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
+                session.close(ctx.countedErrorHandler());
+            }
+        }
+
+        for (final ClusterSession session : pendingSessions)
+        {
+            egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
+            session.close(ctx.countedErrorHandler());
+        }
+
+        pendingSessions.clear();
     }
 
     private void clearUncommittedEntriesTo(final long commitPosition)

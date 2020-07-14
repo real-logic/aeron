@@ -676,6 +676,11 @@ public class TestCluster implements AutoCloseable
                 return;
             }
 
+            if (Publication.ADMIN_ACTION == result)
+            {
+                continue;
+            }
+
             if (Publication.CLOSED == result)
             {
                 throw new ClusterException("client publication is closed");

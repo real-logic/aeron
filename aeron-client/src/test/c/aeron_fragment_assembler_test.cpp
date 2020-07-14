@@ -133,9 +133,9 @@ TEST_F(CFragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
     {
         called = true;
         EXPECT_EQ(length, msgLength);
-        int32_t session_id;
-        EXPECT_EQ(0, aeron_header_session_id(header, &session_id));
-        EXPECT_EQ(SESSION_ID, session_id);
+        aeron_header_values_t header_values;
+        EXPECT_EQ(0, aeron_header_values(header, &header_values));
+        EXPECT_EQ(SESSION_ID, header_values.session_id);
         verifyPayload(buffer, length);
     };
 
@@ -151,9 +151,9 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
     {
         called = true;
         EXPECT_EQ(length, msgLength * 2);
-        int32_t session_id;
-        EXPECT_EQ(0, aeron_header_session_id(header, &session_id));
-        EXPECT_EQ(SESSION_ID, session_id);
+        aeron_header_values_t header_values;
+        EXPECT_EQ(0, aeron_header_values(header, &header_values));
+        EXPECT_EQ(SESSION_ID, header_values.session_id);
         verifyPayload(buffer, length);
     };
 
@@ -174,9 +174,9 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
     {
         called = true;
         EXPECT_EQ(length, msgLength * 3);
-        int32_t session_id;
-        EXPECT_EQ(0, aeron_header_session_id(header, &session_id));
-        EXPECT_EQ(SESSION_ID, session_id);
+        aeron_header_values_t header_values;
+        EXPECT_EQ(0, aeron_header_values(header, &header_values));
+        EXPECT_EQ(SESSION_ID, header_values.session_id);
         verifyPayload(buffer, length);
     };
 

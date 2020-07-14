@@ -47,6 +47,8 @@ int aeron_properties_parse_line(
     aeron_properties_file_handler_func_t handler,
     void *clientd);
 
+int aeron_properties_parse_file(const char *filename, aeron_properties_file_handler_func_t handler, void *clientd);
+
 int aeron_properties_setenv(const char *name, const char *value);
 
 #define AERON_HTTP_PROPERTIES_TIMEOUT_NS (10 * 1000 * 1000 * 1000LL)

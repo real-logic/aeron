@@ -189,6 +189,11 @@ int aeron_properties_setenv_property(void *clientd, const char *name, const char
 
 int aeron_properties_file_load(const char *filename)
 {
+    return aeron_properties_parse_file(filename, aeron_properties_setenv_property, NULL);
+}
+
+int aeron_properties_parse_file(const char *filename, aeron_properties_file_handler_func_t handler, void *clientd)
+{
     FILE *fpin;
     int result = -1, lineno = 1;
     char line[AERON_PROPERTIES_MAX_LENGTH];
@@ -217,7 +222,7 @@ int aeron_properties_file_load(const char *filename)
                 length--;
             }
 
-            if (aeron_properties_parse_line(&state, line, length, aeron_properties_setenv_property, NULL) < 0)
+            if (aeron_properties_parse_line(&state, line, length, handler, clientd) < 0)
             {
                 aeron_set_err(EINVAL, "properties file line %" PRId32 " malformed", lineno);
                 goto cleanup;

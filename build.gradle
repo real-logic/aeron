@@ -382,15 +382,14 @@ project(':aeron-archive') {
 
     def generatedDir = file("${buildDir}/generated-src")
     sourceSets {
-        generated.java.srcDir generatedDir
+        generated {
+            java.srcDir generatedDir
+            compileClasspath += configurations.codecGeneration
+        }
     }
 
     compileJava.dependsOn 'compileGeneratedJava'
-
-    compileGeneratedJava {
-        dependsOn 'generateCodecs'
-        classpath += configurations.codecGeneration
-    }
+    compileGeneratedJava.dependsOn 'generateCodecs'
 
     task generateCodecs(type: JavaExec) {
         def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
@@ -501,15 +500,14 @@ project(':aeron-cluster') {
 
     def generatedDir = file("${buildDir}/generated-src")
     sourceSets {
-        generated.java.srcDir generatedDir
+        generated {
+            java.srcDir generatedDir
+            compileClasspath += configurations.codecGeneration
+        }
     }
 
     compileJava.dependsOn 'compileGeneratedJava'
-
-    compileGeneratedJava {
-        dependsOn 'generateCodecs'
-        classpath += configurations.codecGeneration
-    }
+    compileGeneratedJava.dependsOn 'generateCodecs'
 
     task generateCodecs(type: JavaExec) {
         def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'

@@ -22,6 +22,10 @@
 #include "aeron_log_buffer.h"
 #include "aeron_subscription.h"
 
+#ifdef _MSC_VER
+#define _Static_assert static_assert
+#endif
+
 _Static_assert(
     sizeof(aeron_header_values_t) == sizeof(aeron_data_header_t),
     "sizeof(aeron_header_values_t) must match sizeof(aeron_data_header_t)");

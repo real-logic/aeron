@@ -215,7 +215,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Default channel for communications between the local consensus module and services. This should be IPC.
          */
-        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k|mtu=8k";
+        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=128k";
 
         /**
          * Stream id within the control channel for communications from the consensus module to the services.

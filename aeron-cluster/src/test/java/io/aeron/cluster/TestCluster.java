@@ -59,14 +59,14 @@ public class TestCluster implements AutoCloseable
 {
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long MAX_CATALOG_ENTRIES = 128;
-    private static final String LOG_CHANNEL = "aeron:udp?term-length=256k";
+    private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
-    private static final String CLUSTER_EGRESS_CHANNEL =
-        "aeron:udp?term-length=64k|endpoint=localhost:9020";
-    private static final String SMALL_TERM_IPC_CHANNEL = "aeron:ipc?term-length=64k";
+    private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
+    private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:9020";
+    private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -264,7 +264,7 @@ public class TestCluster implements AutoCloseable
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
@@ -278,18 +278,18 @@ public class TestCluster implements AutoCloseable
             .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
             .appointedLeaderId(appointedLeaderId)
             .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel("aeron:udp?term-length=64k")
+            .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .deleteDirOnStart(cleanStart);
 
         context.serviceContainerContext
             .aeronDirectoryName(aeronDirName)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(context.service)
             .errorHandler(ClusterTests.errorHandler(index));
@@ -333,7 +333,7 @@ public class TestCluster implements AutoCloseable
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
@@ -346,18 +346,18 @@ public class TestCluster implements AutoCloseable
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel("aeron:udp?term-length=64k")
+            .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .deleteDirOnStart(cleanStart);
 
         context.serviceContainerContext
             .aeronDirectoryName(aeronDirName)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(context.service)
             .errorHandler(ClusterTests.errorHandler(index));
@@ -400,7 +400,7 @@ public class TestCluster implements AutoCloseable
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
@@ -414,18 +414,18 @@ public class TestCluster implements AutoCloseable
             .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
             .appointedLeaderId(appointedLeaderId)
             .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel("aeron:udp?term-length=64k")
+            .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .deleteDirOnStart(false);
 
         context.serviceContainerContext
             .aeronDirectoryName(aeronDirName)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(context.service)
             .errorHandler(ClusterTests.errorHandler(index));
@@ -463,7 +463,7 @@ public class TestCluster implements AutoCloseable
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
@@ -523,7 +523,7 @@ public class TestCluster implements AutoCloseable
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
@@ -535,18 +535,18 @@ public class TestCluster implements AutoCloseable
             .clusterMembers(singleNodeClusterMember(0, backupNodeIndex))
             .appointedLeaderId(backupNodeIndex)
             .clusterDir(new File(baseDirName, "cluster-backup"))
-            .ingressChannel("aeron:udp?term-length=64k")
+            .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .deleteDirOnStart(false);
 
         context.serviceContainerContext
             .aeronDirectoryName(aeronDirName)
             .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(SMALL_TERM_IPC_CHANNEL)
-                .controlResponseChannel(SMALL_TERM_IPC_CHANNEL))
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(context.service)
             .errorHandler(ClusterTests.errorHandler(backupNodeIndex));
@@ -608,8 +608,8 @@ public class TestCluster implements AutoCloseable
         client = AeronCluster.connect(
             new AeronCluster.Context()
                 .egressListener(egressMessageListener)
-                .ingressChannel("aeron:udp?term-length=64k")
-                .egressChannel(CLUSTER_EGRESS_CHANNEL)
+                .ingressChannel(INGRESS_CHANNEL)
+                .egressChannel(EGRESS_CHANNEL)
                 .ingressEndpoints(staticClusterMemberEndpoints));
     }
 
@@ -634,8 +634,8 @@ public class TestCluster implements AutoCloseable
             new AeronCluster.Context()
                 .aeronDirectoryName(aeronDirName)
                 .egressListener(egressMessageListener)
-                .ingressChannel("aeron:udp?term-length=64k")
-                .egressChannel(CLUSTER_EGRESS_CHANNEL)
+                .ingressChannel(INGRESS_CHANNEL)
+                .egressChannel(EGRESS_CHANNEL)
                 .ingressEndpoints(staticClusterMemberEndpoints));
 
         return client;
@@ -686,7 +686,7 @@ public class TestCluster implements AutoCloseable
                 throw new ClusterException("max position exceeded");
             }
 
-            Tests.yield();
+            Tests.sleep(1);
         }
     }
 
@@ -1123,7 +1123,7 @@ public class TestCluster implements AutoCloseable
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
             .controlStreamId(100)
-            .localControlChannel(SMALL_TERM_IPC_CHANNEL)
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .localControlStreamId(100)
             .threadingMode(ArchiveThreadingMode.SHARED)

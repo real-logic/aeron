@@ -346,6 +346,7 @@ int aeron_receive_channel_endpoint_send_rttm(
 
 void aeron_receive_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,
@@ -668,12 +669,40 @@ int aeron_receive_channel_endpoint_on_remove_subscription_by_session(
 int aeron_receive_channel_endpoint_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image)
 {
+    for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
+    {
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+
+        if (aeron_udp_channel_interceptors_image_notifications(
+            destination->data_paths,
+            &destination->transport,
+            image,
+            AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
+        {
+            return -1;
+        }
+    }
+
     return aeron_data_packet_dispatcher_add_publication_image(&endpoint->dispatcher, image);
 }
 
 int aeron_receive_channel_endpoint_on_remove_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image)
 {
+    for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
+    {
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+
+        if (aeron_udp_channel_interceptors_image_notifications(
+            destination->data_paths,
+            &destination->transport,
+            image,
+            AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
+        {
+            return -1;
+        }
+    }
+
     return aeron_data_packet_dispatcher_remove_publication_image(&endpoint->dispatcher, image);
 }
 
@@ -770,6 +799,13 @@ int aeron_receive_channel_endpoint_add_poll_transports(
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+
+        if (aeron_udp_channel_interceptors_transport_notifications(
+            destination->data_paths, &destination->transport, AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
+        {
+            return -1;
+        }
+
         if (endpoint->transport_bindings->poller_add_func(poller, &destination->transport))
         {
             return -1;
@@ -785,6 +821,13 @@ int aeron_receive_channel_endpoint_remove_poll_transports(
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+
+        if (aeron_udp_channel_interceptors_transport_notifications(
+            destination->data_paths, &destination->transport, AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
+        {
+            return -1;
+        }
+
         if (endpoint->transport_bindings->poller_remove_func(poller, &destination->transport))
         {
             return -1;

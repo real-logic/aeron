@@ -64,6 +64,11 @@ int aeron_udp_channel_transport_init(
 
     transport->fd = -1;
     transport->bindings_clientd = NULL;
+    for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
+    {
+        transport->interceptor_clientds[i] = NULL;
+    }
+
     if ((transport->fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)
     {
         goto error;
@@ -262,6 +267,7 @@ int aeron_udp_channel_transport_recvmmsg(
         {
             recv_func(
                 transport->data_paths,
+                transport,
                 clientd,
                 transport->dispatch_clientd,
                 transport->destination_clientd,
@@ -301,6 +307,7 @@ int aeron_udp_channel_transport_recvmmsg(
         msgvec[i].msg_len = (unsigned int)result;
         recv_func(
             transport->data_paths,
+            transport,
             clientd,
             transport->dispatch_clientd,
             transport->destination_clientd,
@@ -398,3 +405,12 @@ int aeron_udp_channel_transport_bind_addr_and_port(
 
     return aeron_format_source_identity(buffer, length, &addr);
 }
+
+extern void *aeron_udp_channel_transport_get_interceptor_clientd(
+    aeron_udp_channel_transport_t *transport,
+    int interceptor_index);
+
+extern void aeron_udp_channel_transport_set_interceptor_clientd(
+    aeron_udp_channel_transport_t *transport,
+    int interceptor_index,
+    void *clientd);

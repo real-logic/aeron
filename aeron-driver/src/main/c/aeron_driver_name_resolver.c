@@ -113,6 +113,7 @@ aeron_driver_name_resolver_t;
 
 void aeron_driver_name_resolver_receive(
     aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,
@@ -489,6 +490,7 @@ static void aeron_name_resolver_log_and_clear_error(aeron_driver_name_resolver_t
 
 void aeron_driver_name_resolver_receive(
     aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,

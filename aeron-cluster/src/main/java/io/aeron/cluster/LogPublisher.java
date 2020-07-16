@@ -68,6 +68,16 @@ class LogPublisher
         }
     }
 
+    boolean isConnected()
+    {
+        if (null == publication)
+        {
+            return false;
+        }
+
+        return publication.isConnected();
+    }
+
     long position()
     {
         if (null == publication)

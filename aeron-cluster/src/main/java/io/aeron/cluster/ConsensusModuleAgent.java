@@ -1526,7 +1526,7 @@ class ConsensusModuleAgent implements Agent
 
         if (Cluster.Role.LEADER == role)
         {
-            if (!logPublisher.appendNewLeadershipTermEvent(
+            if (!logPublisher.isConnected() || !logPublisher.appendNewLeadershipTermEvent(
                 leadershipTermId,
                 now,
                 termBaseLogPosition,

@@ -322,8 +322,12 @@ int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aer
 int aeron_client_conductor_offer_remove_command(
     aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type);
 
-int64_t aeron_client_conductor_offer_destination_command(
-    aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type, const char *uri);
+int aeron_client_conductor_offer_destination_command(
+    aeron_client_conductor_t* conductor,
+    int64_t registration_id,
+    int32_t command_type,
+    const char* uri,
+    int64_t* correlation_id);
 
 inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id)

@@ -34,6 +34,8 @@ typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
 typedef struct aeron_publication_stct aeron_publication_t;
 typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_header_stct aeron_header_t;
+#pragma pack(push)
+#pragma pack(4)
 typedef struct aeron_header_values_stct
 {
     int32_t frame_length;
@@ -47,6 +49,7 @@ typedef struct aeron_header_values_stct
     int64_t reserved_value;
 }
 aeron_header_values_t;
+#pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
 typedef struct aeron_image_stct aeron_image_t;

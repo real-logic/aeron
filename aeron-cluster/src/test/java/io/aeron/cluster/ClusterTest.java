@@ -35,8 +35,6 @@ import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -567,8 +565,8 @@ public class ClusterTest
             assertEquals(FOLLOWER, followerB.role());
 
             cluster.connectClient();
-            final int messageCount = 10;
 
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
             cluster.awaitServiceMessageCount(followerA, messageCount);
@@ -598,9 +596,10 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            cluster.sendUnexpectedMessages(30);
+            cluster.sendUnexpectedMessages(10);
 
-            while (leader.appendPosition() <= leader.commitPosition())
+            final long commitPosition = leader.commitPosition();
+            while (leader.appendPosition() <= commitPosition)
             {
                 Tests.yield();
             }
@@ -613,9 +612,6 @@ public class ClusterTest
             followerB = cluster.startStaticNode(followerB.index(), false);
 
             cluster.awaitLeader();
-
-            assertThat(followerA.commitPosition(), lessThan(targetPosition));
-            assertThat(followerB.commitPosition(), lessThan(targetPosition));
 
             awaitElectionClosed(followerA);
             awaitElectionClosed(followerB);
@@ -664,7 +660,8 @@ public class ClusterTest
             final int messageCount = 10;
             cluster.sendUnexpectedMessages(messageCount);
 
-            while (leader.appendPosition() <= leader.commitPosition())
+            final long commitPosition = leader.commitPosition();
+            while (leader.appendPosition() <= commitPosition)
             {
                 Tests.yield();
             }
@@ -681,7 +678,6 @@ public class ClusterTest
             awaitElectionClosed(oldLeader);
 
             cluster.connectClient();
-
             cluster.sendMessages(messageCount);
 
             cluster.awaitResponseMessageCount(messageCount);

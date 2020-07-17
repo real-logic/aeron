@@ -42,10 +42,19 @@ public:
         m_valuesBuffer.fill(0);
         m_metadataBuffer.fill(0);
         aeron_counters_manager_init(
-            &m_manager, m_metadataBuffer.data(), m_metadataBuffer.size(), m_valuesBuffer.data(), m_valuesBuffer.size(),
-            aeron_epoch_clock, REUSE_TIMEOUT);
+            &m_manager,
+            m_metadataBuffer.data(),
+            m_metadataBuffer.size(),
+            m_valuesBuffer.data(),
+            m_valuesBuffer.size(),
+            aeron_epoch_clock,
+            REUSE_TIMEOUT);
         aeron_counters_reader_init(
-            &m_reader, m_metadataBuffer.data(), m_metadataBuffer.size(), m_valuesBuffer.data(), m_valuesBuffer.size());
+            &m_reader,
+            m_metadataBuffer.data(),
+            m_metadataBuffer.size(),
+            m_valuesBuffer.data(),
+            m_valuesBuffer.size());
     }
 
     virtual ~CountersTest()
@@ -77,7 +86,7 @@ TEST_F(CountersTest, shouldReadCounterState)
     EXPECT_EQ(0, aeron_counters_reader_counter_state(&m_reader, id, &state));
     EXPECT_EQ(AERON_COUNTER_RECORD_RECLAIMED, state);
 
-    EXPECT_EQ(-1, aeron_counters_reader_counter_state(&m_reader, m_reader.max_counter_id, &state));
+    EXPECT_EQ(-1, aeron_counters_reader_counter_state(&m_reader, (int32_t)m_reader.max_counter_id, &state));
     EXPECT_EQ(-1, aeron_counters_reader_counter_state(&m_reader, -1, &state));
 }
 
@@ -103,7 +112,7 @@ TEST_F(CountersTest, shouldReadCounterLabel)
 
     EXPECT_EQ(-1, aeron_counters_reader_counter_label(&m_reader, -1, buffer, AERON_COUNTERS_MANAGER_METADATA_LENGTH));
     EXPECT_EQ(-1, aeron_counters_reader_counter_label(
-        &m_reader, m_reader.max_counter_id, buffer, AERON_COUNTERS_MANAGER_METADATA_LENGTH));
+        &m_reader, (int32_t)m_reader.max_counter_id, buffer, AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 }
 
 TEST_F(CountersTest, shouldReadTimeToReuse)
@@ -122,7 +131,7 @@ TEST_F(CountersTest, shouldReadTimeToReuse)
     EXPECT_EQ(0, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, id, &deadline));
     EXPECT_LE(current_time_ms + REUSE_TIMEOUT, deadline);
 
-    EXPECT_EQ(-1, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, m_reader.max_counter_id, &deadline));
+    EXPECT_EQ(
+        -1, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, (int32_t)m_reader.max_counter_id, &deadline));
     EXPECT_EQ(-1, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, -1, &deadline));
 }
-

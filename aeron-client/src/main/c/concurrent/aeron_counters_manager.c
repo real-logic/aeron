@@ -256,7 +256,7 @@ extern int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_rea
 
 int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state)
 {
-    if (counter_id < 0 || counters_reader->max_counter_id <= (size_t)counter_id)
+    if (counter_id < 0 || counters_reader->max_counter_id <= counter_id)
     {
         return -1;
     }
@@ -271,7 +271,7 @@ int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader
 int aeron_counters_reader_counter_label(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length)
 {
-    if (counter_id < 0 || counters_reader->max_counter_id <= (size_t)counter_id)
+    if (counter_id < 0 || counters_reader->max_counter_id <= counter_id)
     {
         return -1;
     }
@@ -291,7 +291,7 @@ int aeron_counters_reader_counter_label(
 int aeron_counters_reader_free_to_reuse_deadline_ms(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms)
 {
-    if (counter_id < 0 || counters_reader->max_counter_id <= (size_t)counter_id)
+    if (counter_id < 0 || counters_reader->max_counter_id <= counter_id)
     {
         return -1;
     }

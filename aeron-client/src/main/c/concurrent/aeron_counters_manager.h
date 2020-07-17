@@ -160,7 +160,7 @@ typedef struct aeron_counters_reader_stct
     uint8_t *metadata;
     size_t values_length;
     size_t metadata_length;
-    size_t max_counter_id;
+    int32_t max_counter_id;
 }
 aeron_counters_reader_t;
 
@@ -239,7 +239,7 @@ inline int aeron_counters_reader_init(
     reader->metadata_length = metadata_length;
     reader->values = values_buffer;
     reader->values_length = values_length;
-    reader->max_counter_id = values_length / AERON_COUNTERS_MANAGER_VALUE_LENGTH;
+    reader->max_counter_id = (int32_t)(values_length / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
 
     return 0;
 }

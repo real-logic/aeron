@@ -277,8 +277,7 @@ int aeron_client_conductor_async_add_counter(
     size_t key_buffer_length,
     const char *label_buffer,
     size_t label_buffer_length);
-int aeron_client_conductor_async_close_counter(
-    aeron_client_conductor_t *conductor, aeron_counter_t *counter);
+int aeron_client_conductor_async_close_counter(aeron_client_conductor_t *conductor, aeron_counter_t *counter);
 
 int aeron_client_conductor_async_handler(aeron_client_conductor_t *conductor, aeron_client_handler_cmd_t *cmd);
 
@@ -323,11 +322,11 @@ int aeron_client_conductor_offer_remove_command(
     aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type);
 
 int aeron_client_conductor_offer_destination_command(
-    aeron_client_conductor_t* conductor,
+    aeron_client_conductor_t *conductor,
     int64_t registration_id,
     int32_t command_type,
-    const char* uri,
-    int64_t* correlation_id);
+    const char *uri,
+    int64_t *correlation_id);
 
 inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id)

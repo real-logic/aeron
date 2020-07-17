@@ -441,7 +441,9 @@ int aeron_subscription_poll(
 }
 
 int aeron_subscription_controlled_poll(
-    aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, size_t fragment_limit)
+    aeron_subscription_t *subscription,
+    aeron_controlled_fragment_handler_t handler,
+    void *clientd, size_t fragment_limit)
 {
     volatile aeron_image_list_t *image_list;
 
@@ -491,7 +493,7 @@ long aeron_subscription_block_poll(
     return bytes_consumed;
 }
 
-int aeron_subscription_add_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id)
+int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id)
 {
     if (NULL == subscription || uri == NULL)
     {
@@ -504,7 +506,7 @@ int aeron_subscription_add_destination(aeron_subscription_t* subscription, const
         subscription->conductor, subscription->registration_id, AERON_COMMAND_ADD_RCV_DESTINATION, uri, correlation_id);
 }
 
-int aeron_subscription_remove_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id)
+int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id)
 {
     if (NULL == subscription || uri == NULL)
     {

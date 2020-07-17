@@ -145,7 +145,7 @@ void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *co
  *
  * @param clientd to be returned in the call
  * @param async associated with the original aeron_add_async_subscription call
- * @param channel of the subscirption
+ * @param channel of the subscription
  * @param stream_id within the channel of the subscription
  * @param session_id of the subscription
  * @param correlation_id used by the subscription
@@ -177,7 +177,7 @@ typedef void (*aeron_on_available_image_t)(void *clientd, aeron_subscription_t *
  *
  * @param clientd to be returned in the call.
  * @param subscription that image is part of.
- * @param image that has become unavailble.
+ * @param image that has become unavailable.
  */
 typedef void (*aeron_on_unavailable_image_t)(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image);
 
@@ -380,7 +380,7 @@ int aeron_async_add_exclusive_publication(
  *
  * @param publication to set if completed successfully.
  * @param async to check for completion.
- * @return 0 for not cmplete (try again), 1 for completed successfully, or -1 for an error.
+ * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_exclusive_publication_poll(
     aeron_exclusive_publication_t **publication, aeron_async_add_exclusive_publication_t *async);
@@ -396,7 +396,7 @@ int aeron_async_add_exclusive_publication_poll(
  * @param on_available_image_handler to be called when images become available on the subscription.
  * @param on_available_image_clientd to be passed when images become available on the subscription.
  * @param on_unavailable_image_handler to be called when images go unavailable on the subscription.
- * @param on_available_image_clientd to be pacced when images go unavailable on the subscription.
+ * @param on_available_image_clientd to be called when images go unavailable on the subscription.
  * @return 0 for success or -1 for an error.
  */
 int aeron_async_add_subscription(
@@ -414,7 +414,7 @@ int aeron_async_add_subscription(
  *
  * @param subscription to set if completed successfully.
  * @param async to check for completion.
- * @return 0 for not cmplete (try again), 1 for completed successfully, or -1 for an error.
+ * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron_async_add_subscription_t *async);
 
@@ -455,7 +455,7 @@ int aeron_async_add_counter(
  *
  * @param counter to set if completed successfully.
  * @param async to check for completion.
- * @return 0 for not cmplete (try again), 1 for completed successfully, or -1 for an error.
+ * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
 
@@ -487,7 +487,7 @@ aeron_on_close_client_pair_t;
  *
  * @param client for the counter
  * @param pair holding the handler to call and a clientd to pass when called.
- * @return 0 for succes and -1 for error
+ * @return 0 for success and -1 for error
  */
 int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair);
 
@@ -498,7 +498,7 @@ int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_coun
  *
  * @param client for the counter
  * @param pair holding the handler to call and a clientd to pass when called.
- * @return 0 for succes and -1 for error
+ * @return 0 for success and -1 for error
  */
 int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair);
 
@@ -509,7 +509,7 @@ int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_c
  *
  * @param client for the counter
  * @param pair holding the handler to call and a clientd to pass when called.
- * @return 0 for succes and -1 for error
+ * @return 0 for success and -1 for error
  */
 int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair);
 
@@ -520,7 +520,7 @@ int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_
  *
  * @param client for the counter
  * @param pair holding the handler to call and a clientd to pass when called.
- * @return 0 for succes and -1 for error
+ * @return 0 for success and -1 for error
  */
 int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair);
 
@@ -531,7 +531,7 @@ int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailab
  *
  * @param client for the counter
  * @param pair holding the handler to call and a clientd to pass when called.
- * @return 0 for succes and -1 for error
+ * @return 0 for success and -1 for error
  */
 int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
 
@@ -542,7 +542,7 @@ int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
  *
  * @param client for the counter
  * @param pair holding the handler to call and a clientd to pass when called.
- * @return 0 for succes and -1 for error
+ * @return 0 for success and -1 for error
  */
 int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
 
@@ -563,7 +563,7 @@ typedef void (*aeron_counters_reader_foreach_counter_func_t)(
     int64_t value, int32_t id, const char *label, size_t label_length, void *clientd);
 
 /**
- * Iterate over the coounters in the counters_reader and call the given function for each counter.
+ * Iterate over the counters in the counters_reader and call the given function for each counter.
  *
  * @param counters_reader to iterate over.
  * @param func to call for each counter.
@@ -618,7 +618,7 @@ void aeron_counters_reader_foreach_counter(
  *
  * @param clientd passed to the offer function.
  * @param buffer of the entire frame, including Aeron data header.
- * @param frame_length of the enture frame.
+ * @param frame_length of the entire frame.
  */
 typedef int64_t (*aeron_reserved_value_supplier_t)(void *clientd, uint8_t *buffer, size_t frame_length);
 
@@ -741,7 +741,7 @@ aeron_publication_constants_t;
  * @param publication to publish on.
  * @param buffer to publish.
  * @param length of the buffer.
- * @param reserved_value_supplier to use for setting the reserved fvalue field or NULL.
+ * @param reserved_value_supplier to use for setting the reserved value field or NULL.
  * @param clientd to pass to the reserved_value_supplier.
  * @return the new stream position otherwise a negative error value.
  */
@@ -758,7 +758,7 @@ int64_t aeron_publication_offer(
  * @param publication to publish on.
  * @param iov array for the vectors
  * @param iovcnt of the number of vectors
- * @param reserved_value_supplier to use for setting the reserved fvalue field or NULL.
+ * @param reserved_value_supplier to use for setting the reserved value field or NULL.
  * @param clientd to pass to the reserved_value_supplier.
  * @return the new stream position otherwise a negative error value.
  */
@@ -830,7 +830,7 @@ bool aeron_publication_is_connected(aeron_publication_t *publication);
  *
  * @param publication to get the constants for.
  * @param constants structure to fill in with the constants
- * @return 0 for succes and -1 for error.
+ * @return 0 for success and -1 for error.
  */
 int aeron_publication_constants(aeron_publication_t *publication, aeron_publication_constants_t *constants);
 
@@ -890,7 +890,7 @@ int aeron_publication_close(aeron_publication_t *publication);
  * @param publication to publish on.
  * @param buffer to publish.
  * @param length of the buffer.
- * @param reserved_value_supplier to use for setting the reserved fvalue field or NULL.
+ * @param reserved_value_supplier to use for setting the reserved value field or NULL.
  * @param clientd to pass to the reserved_value_supplier.
  * @return the new stream position otherwise a negative error value.
  */
@@ -907,7 +907,7 @@ int64_t aeron_exclusive_publication_offer(
  * @param publication to publish on.
  * @param iov array for the vectors
  * @param iovcnt of the number of vectors
- * @param reserved_value_supplier to use for setting the reserved fvalue field or NULL.
+ * @param reserved_value_supplier to use for setting the reserved value field or NULL.
  * @param clientd to pass to the reserved_value_supplier.
  * @return the new stream position otherwise a negative error value.
  */
@@ -1015,7 +1015,7 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
  * @return 0 for success and -1 for error.
  */
 int aeron_exclusive_publication_add_destination(
-    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id);
+    aeron_exclusive_publication_t *publication, const char *uri, int64_t *correlation_id);
 
 /**
  * Remove a previously added destination manually from a multi-destination-cast publication.
@@ -1026,7 +1026,7 @@ int aeron_exclusive_publication_add_destination(
  * @return 0 for success and -1 for error.
  */
 int aeron_exclusive_publication_remove_destination(
-    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id);
+    aeron_exclusive_publication_t *publication, const char *uri, int64_t *correlation_id);
 
 /**
  * Asynchronously close the publication.
@@ -1140,7 +1140,7 @@ typedef void (*aeron_block_handler_t)(
     void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
 
 /**
- * Get all of the field values from the header.  This will do a memcpy into the supplied
+ * Get all of the field values from the header. This will do a memcpy into the supplied
  * header_values_t pointer.
  *
  * @param header to read values from.
@@ -1240,7 +1240,7 @@ bool aeron_subscription_is_connected(aeron_subscription_t *subscription);
  *
  * @param subscription to get the constants for.
  * @param constants structure to fill in with the constants
- * @return 0 for succes and -1 for error.
+ * @return 0 for success and -1 for error.
  */
 int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subscription_constants_t *constants);
 
@@ -1304,7 +1304,7 @@ int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_im
  *
  * @param subscription that image is part of.
  * @param image to release
- * @return 0 for succes and -1 for error.
+ * @return 0 for success and -1 for error.
  */
 int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_image_t *image);
 
@@ -1328,7 +1328,7 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
  * @param correlation_id that can be used to track the addition of the destination.
  * @return 0 for success and -1 for error.
  */
-int aeron_subscription_add_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id);
+int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id);
 
 /**
  * Remove a previously added destination from a multi-destination subscription.
@@ -1338,7 +1338,7 @@ int aeron_subscription_add_destination(aeron_subscription_t* subscription, const
  * @param correlation_id that can be used to track the removal of the destination.
  * @return 0 for success and -1 for error.
  */
-int aeron_subscription_remove_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id);
+int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id);
 
 /**
  * Asynchronously close the subscription.
@@ -1421,7 +1421,7 @@ aeron_image_constants_t;
  *
  * @param image to get the constants for.
  * @param constants structure to fill in with the constants
- * @return 0 for succes and -1 for error.
+ * @return 0 for success and -1 for error.
  */
 int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constants);
 
@@ -1748,7 +1748,7 @@ aeron_counter_constants_t;
  *
  * @param counter to get the constants for.
  * @param constants structure to fill in with the constants
- * @return 0 for succes and -1 for error.
+ * @return 0 for success and -1 for error.
  */
 int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t *constants);
 

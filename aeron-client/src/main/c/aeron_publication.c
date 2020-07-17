@@ -335,13 +335,13 @@ int64_t aeron_publication_try_claim(
         if (position < limit)
         {
             int32_t resulting_offset = aeron_term_appender_claim(
-                    &publication->log_buffer->mapped_raw_log.term_buffers[index],
-                    &publication->log_meta_data->term_tail_counters[index],
-                    length,
-                    buffer_claim,
-                    term_id,
-                    publication->session_id,
-                    publication->stream_id);
+                &publication->log_buffer->mapped_raw_log.term_buffers[index],
+                &publication->log_meta_data->term_tail_counters[index],
+                length,
+                buffer_claim,
+                term_id,
+                publication->session_id,
+                publication->stream_id);
 
             new_position = aeron_publication_new_position(
                 publication, term_count, (int32_t)term_offset, term_id, position, resulting_offset);
@@ -466,7 +466,7 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication)
     return aeron_counter_get_volatile(publication->position_limit);
 }
 
-int aeron_publication_add_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id)
+int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri, int64_t *correlation_id)
 {
     if (NULL == publication || uri == NULL)
     {
@@ -479,7 +479,7 @@ int aeron_publication_add_destination(aeron_publication_t* publication, const ch
         publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri, correlation_id);
 }
 
-int aeron_publication_remove_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id)
+int aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri, int64_t *correlation_id)
 {
     if (NULL == publication || uri == NULL)
     {

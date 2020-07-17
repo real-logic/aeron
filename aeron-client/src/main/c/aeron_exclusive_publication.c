@@ -581,7 +581,7 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
 }
 
 int aeron_exclusive_publication_add_destination(
-    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id)
+    aeron_exclusive_publication_t *publication, const char *uri, int64_t *correlation_id)
 {
     if (NULL == publication || uri == NULL)
     {
@@ -595,7 +595,7 @@ int aeron_exclusive_publication_add_destination(
 }
 
 int aeron_exclusive_publication_remove_destination(
-    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id)
+    aeron_exclusive_publication_t *publication, const char *uri, int64_t *correlation_id)
 {
     if (NULL == publication || uri == NULL)
     {
@@ -611,8 +611,7 @@ int aeron_exclusive_publication_remove_destination(
 extern void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication);
 
 extern int64_t aeron_exclusive_publication_new_position(
-    aeron_exclusive_publication_t *publication,
-    int32_t resulting_offset);
+    aeron_exclusive_publication_t *publication, int32_t resulting_offset);
 
 extern int64_t aeron_exclusive_publication_back_pressure_status(
     aeron_exclusive_publication_t *publication, int64_t current_position, int32_t message_length);

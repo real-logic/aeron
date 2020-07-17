@@ -143,8 +143,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     if (NULL != context->on_close_client)
     {
         int result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(
-            result, conductor->close_handlers, aeron_on_close_client_pair_t);
+        AERON_ARRAY_ENSURE_CAPACITY(result, conductor->close_handlers, aeron_on_close_client_pair_t);
         if (result < 0)
         {
             int errcode = errno;
@@ -721,8 +720,7 @@ int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aer
 {
     int ensure_capacity_result = 0;
 
-    AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->lingering_resources, aeron_client_managed_resource_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_client_managed_resource_t);
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -2086,11 +2084,11 @@ int aeron_client_conductor_offer_remove_command(
 }
 
 int aeron_client_conductor_offer_destination_command(
-    aeron_client_conductor_t* conductor,
+    aeron_client_conductor_t *conductor,
     int64_t registration_id,
     int32_t command_type,
-    const char* uri,
-    int64_t* correlation_id)
+    const char *uri,
+    int64_t *correlation_id)
 {
     size_t uri_length = strlen(uri);
     char buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];

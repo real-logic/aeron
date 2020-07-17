@@ -491,7 +491,7 @@ long aeron_subscription_block_poll(
     return bytes_consumed;
 }
 
-int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri)
+int aeron_subscription_add_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id)
 {
     if (NULL == subscription || uri == NULL)
     {
@@ -501,10 +501,10 @@ int aeron_subscription_add_destination(aeron_subscription_t *subscription, const
     }
 
     return aeron_client_conductor_offer_destination_command(
-        subscription->conductor, subscription->registration_id, AERON_COMMAND_ADD_RCV_DESTINATION, uri);
+        subscription->conductor, subscription->registration_id, AERON_COMMAND_ADD_RCV_DESTINATION, uri, correlation_id);
 }
 
-int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri)
+int aeron_subscription_remove_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id)
 {
     if (NULL == subscription || uri == NULL)
     {
@@ -514,21 +514,24 @@ int aeron_subscription_remove_destination(aeron_subscription_t *subscription, co
     }
 
     return aeron_client_conductor_offer_destination_command(
-        subscription->conductor, subscription->registration_id, AERON_COMMAND_REMOVE_RCV_DESTINATION, uri);
+        subscription->conductor,
+        subscription->registration_id,
+        AERON_COMMAND_REMOVE_RCV_DESTINATION,
+        uri,
+        correlation_id);
 }
 
-int32_t aeron_header_session_id(aeron_header_t *header)
+int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
 {
-    if (NULL == header)
+    if (NULL == header || NULL == values)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return -1;
     }
 
-    errno = 0;
-    aeron_set_err(0, "no error");
-    return header->frame->session_id;
+    memcpy(values, header->frame, sizeof(aeron_header_values_t));
+    return 0;
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);

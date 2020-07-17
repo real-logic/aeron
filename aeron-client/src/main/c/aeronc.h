@@ -34,6 +34,23 @@ typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
 typedef struct aeron_publication_stct aeron_publication_t;
 typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_header_stct aeron_header_t;
+#pragma pack(push)
+#pragma pack(4)
+typedef struct aeron_header_values_stct
+{
+    int32_t frame_length;
+    int8_t version;
+    uint8_t flags;
+    int16_t type;
+    int32_t term_offset;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t term_id;
+    int64_t reserved_value;
+}
+aeron_header_values_t;
+#pragma pack(pop)
+
 typedef struct aeron_subscription_stct aeron_subscription_t;
 typedef struct aeron_image_stct aeron_image_t;
 typedef struct aeron_counter_stct aeron_counter_t;
@@ -840,18 +857,20 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication);
  *
  * @param publication to add destination to.
  * @param uri for the destination to add.
- * @return 0 for success or -1 for error.
+ * @param correlation_id that can be used to track the addition of the destination.
+ * @return 0 for success and -1 for error.
  */
-int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri);
+int aeron_publication_add_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id);
 
 /**
  * Remove a previously added destination manually from a multi-destination-cast publication.
  *
  * @param publication to remove destination from.
  * @param uri for the destination to remove.
- * @return 0 for success or -1 for error.
+ * @param correlation_id that can be used to track the removal of the destination.
+ * @return 0 for success and -1 for error.
  */
-int aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri);
+int aeron_publication_remove_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id);
 
 /**
  * Asynchronously close the publication.
@@ -992,18 +1011,22 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
  *
  * @param publication to add destination to.
  * @param uri for the destination to add.
- * @return 0 for success or -1 for error.
+ * @param correlation_id that can be used to track the addition of the destination.
+ * @return 0 for success and -1 for error.
  */
-int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
+int aeron_exclusive_publication_add_destination(
+    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id);
 
 /**
  * Remove a previously added destination manually from a multi-destination-cast publication.
  *
  * @param publication to remove destination from.
  * @param uri for the destination to remove.
- * @return 0 for success or -1 for error.
+ * @param correlation_id that can be used to track the removal of the destination.
+ * @return 0 for success and -1 for error.
  */
-int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *exclusive, const char *uri);
+int aeron_exclusive_publication_remove_destination(
+    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id);
 
 /**
  * Asynchronously close the publication.
@@ -1012,6 +1035,22 @@ int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t
  * @return 0 for success or -1 for error.
  */
 int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
+
+/**
+ * Has the exclusive publication closed?
+ *
+ * @param publication to check
+ * @return true if this publication is closed.
+ */
+bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *publication);
+
+/**
+ * Has the exclusive publication seen an active Subscriber recently?
+ *
+ * @param publication to check.
+ * @return true if this publication has recently seen an active subscriber otherwise false.
+ */
+bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication);
 
 /*
  * Subscription functions
@@ -1101,16 +1140,15 @@ typedef void (*aeron_block_handler_t)(
     void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
 
 /**
- * Get session id field from the message header.
+ * Get all of the field values from the header.  This will do a memcpy into the supplied
+ * header_values_t pointer.
  *
- * @param header to query.
- * @return session id field or -1 for error (Check aeron_errcode).
+ * @param header to read values from.
+ * @param values to copy values to, must not be null
+ * @return 0 on success, -1 on failure.
  */
-int32_t aeron_header_session_id(aeron_header_t *header);
+int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values);
 
-/**
- * Configuration for a subscription that does not change during it's lifetime.
- */
 typedef struct aeron_subscription_constants_stct
 {
     /**
@@ -1287,18 +1325,20 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
  *
  * @param subscription to add destination to.
  * @param uri for the destination to add.
+ * @param correlation_id that can be used to track the addition of the destination.
  * @return 0 for success and -1 for error.
  */
-int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri);
+int aeron_subscription_add_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id);
 
 /**
  * Remove a previously added destination from a multi-destination subscription.
  *
  * @param subscription to remove destination from.
  * @param uri for the destination to remove.
+ * @param correlation_id that can be used to track the removal of the destination.
  * @return 0 for success and -1 for error.
  */
-int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri);
+int aeron_subscription_remove_destination(aeron_subscription_t* subscription, const char* uri, int64_t* correlation_id);
 
 /**
  * Asynchronously close the subscription.

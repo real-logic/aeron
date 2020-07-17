@@ -2086,7 +2086,11 @@ int aeron_client_conductor_offer_remove_command(
 }
 
 int aeron_client_conductor_offer_destination_command(
-    aeron_client_conductor_t *conductor, int64_t registration_id, int32_t command_type, const char *uri)
+    aeron_client_conductor_t* conductor,
+    int64_t registration_id,
+    int32_t command_type,
+    const char* uri,
+    int64_t* correlation_id)
 {
     size_t uri_length = strlen(uri);
     char buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
@@ -2116,6 +2120,10 @@ int aeron_client_conductor_offer_destination_command(
         sched_yield();
     }
 
+    if (NULL != correlation_id)
+    {
+        *correlation_id = command->correlated.correlation_id;
+    }
     return 0;
 }
 

@@ -22,6 +22,41 @@
 #include "aeron_log_buffer.h"
 #include "aeron_subscription.h"
 
+#ifdef _MSC_VER
+#define _Static_assert static_assert
+#endif
+
+_Static_assert(
+    sizeof(aeron_header_values_t) == sizeof(aeron_data_header_t),
+    "sizeof(aeron_header_values_t) must match sizeof(aeron_data_header_t)");
+_Static_assert(
+    offsetof(aeron_header_values_t, frame_length) == offsetof(aeron_frame_header_t, frame_length),
+    "offsetof(aeron_header_values_t, frame_length) must match offsetof(aeron_frame_header_t, frame_length)");
+_Static_assert(
+    offsetof(aeron_header_values_t, version) == offsetof(aeron_frame_header_t, version),
+    "offsetof(aeron_header_values_t, version) must match offsetof(aeron_frame_header_t, version)");
+_Static_assert(
+    offsetof(aeron_header_values_t, flags) == offsetof(aeron_frame_header_t, flags),
+    "offsetof(aeron_header_values_t, flags) == offsetof(aeron_frame_header_t, flags)");
+_Static_assert(
+    offsetof(aeron_header_values_t, type) == offsetof(aeron_frame_header_t, type),
+    "offsetof(aeron_header_values_t, type) == offsetof(aeron_frame_header_t, type)");
+_Static_assert(
+    offsetof(aeron_header_values_t, term_offset) == offsetof(aeron_data_header_t, term_offset),
+    "offsetof(aeron_header_values_t, term_offset) == offsetof(aeron_data_header_t, term_offset)");
+_Static_assert(
+    offsetof(aeron_header_values_t, session_id) == offsetof(aeron_data_header_t, session_id),
+    "offsetof(aeron_header_values_t, session_id) == offsetof(aeron_data_header_t, session_id)");
+_Static_assert(
+    offsetof(aeron_header_values_t, stream_id) == offsetof(aeron_data_header_t, stream_id),
+    "offsetof(aeron_header_values_t, stream_id) == offsetof(aeron_data_header_t, stream_id)");
+_Static_assert(
+    offsetof(aeron_header_values_t, term_id) == offsetof(aeron_data_header_t, term_id),
+    "offsetof(aeron_header_values_t, term_id) == offsetof(aeron_data_header_t, term_id)");
+_Static_assert(
+    offsetof(aeron_header_values_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value),
+    "offsetof(aeron_header_values_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value)");
+
 int aeron_image_create(
     aeron_image_t **image,
     aeron_subscription_t *subscription,

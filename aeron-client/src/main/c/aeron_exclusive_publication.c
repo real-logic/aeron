@@ -490,6 +490,19 @@ bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *public
     return is_closed;
 }
 
+bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication)
+{
+    if (NULL != publication && !aeron_exclusive_publication_is_closed(publication))
+    {
+        int32_t is_connected;
+
+        AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+        return 1 == is_connected;
+    }
+
+    return false;
+}
+
 int aeron_exclusive_publication_constants(
     aeron_exclusive_publication_t *publication, aeron_publication_constants_t *constants)
 {
@@ -567,7 +580,8 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
     return aeron_counter_get_volatile(publication->position_limit);
 }
 
-int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *publication, const char *uri)
+int aeron_exclusive_publication_add_destination(
+    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id)
 {
     if (NULL == publication || uri == NULL)
     {
@@ -577,10 +591,11 @@ int aeron_exclusive_publication_add_destination(aeron_exclusive_publication_t *p
     }
 
     return aeron_client_conductor_offer_destination_command(
-        publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri);
+        publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri, correlation_id);
 }
 
-int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t *publication, const char *uri)
+int aeron_exclusive_publication_remove_destination(
+    aeron_exclusive_publication_t* publication, const char* uri, int64_t* correlation_id)
 {
     if (NULL == publication || uri == NULL)
     {
@@ -590,7 +605,7 @@ int aeron_exclusive_publication_remove_destination(aeron_exclusive_publication_t
     }
 
     return aeron_client_conductor_offer_destination_command(
-        publication->conductor, publication->registration_id, AERON_COMMAND_REMOVE_DESTINATION, uri);
+        publication->conductor, publication->registration_id, AERON_COMMAND_REMOVE_DESTINATION, uri, correlation_id);
 }
 
 extern void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication);

@@ -2757,19 +2757,22 @@ class ConsensusModuleAgent implements Agent
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
 
-        if (!isMulticast && channelUri.isUdp())
-        {
-            channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
-        }
-
         channelUri.put(ALIAS_PARAM_NAME, "log");
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
-        if (channelUri.isUdp() && !channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
+        if (channelUri.isUdp())
         {
-            final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() >> 1), 2L);
-            final String fc = "min,t:" + timeout + "s";
-            channelUri.put(FLOW_CONTROL_PARAM_NAME, fc);
+            if (!channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
+            {
+                final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() >> 1), 2L);
+                final String fc = "min,t:" + timeout + "s";
+                channelUri.put(FLOW_CONTROL_PARAM_NAME, fc);
+            }
+
+            if (!isMulticast)
+            {
+                channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
+            }
         }
 
         if (null != plan.log)

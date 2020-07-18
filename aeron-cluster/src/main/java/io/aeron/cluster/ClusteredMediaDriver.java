@@ -86,8 +86,7 @@ public class ClusteredMediaDriver implements AutoCloseable
 
         try
         {
-            driver = MediaDriver.launch(driverCtx
-                .spiesSimulateConnection(true));
+            driver = MediaDriver.launch(driverCtx);
 
             final int errorCounterId = SystemCounterDescriptor.ERRORS.id();
             final AtomicCounter errorCounter = null == archiveCtx.errorCounter() ?

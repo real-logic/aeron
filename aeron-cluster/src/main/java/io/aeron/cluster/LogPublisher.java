@@ -363,9 +363,7 @@ class LogPublisher
 
     private static void checkResult(final long result)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
         {
             throw new AeronException("unexpected publication state: " + result);
         }

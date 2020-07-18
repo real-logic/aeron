@@ -2773,6 +2773,8 @@ class ConsensusModuleAgent implements Agent
             {
                 channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
             }
+
+            channelUri.put(SPIES_SIMULATE_CONNECTION_PARAM_NAME, Boolean.toString(clusterMembers.length == 1));
         }
 
         if (null != plan.log)

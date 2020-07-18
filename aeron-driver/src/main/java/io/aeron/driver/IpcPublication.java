@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import org.agrona.CloseHelper;
@@ -80,6 +79,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public IpcPublication(
         final long registrationId,
+        final MediaDriver.Context ctx,
         final long tag,
         final int sessionId,
         final int streamId,
@@ -87,13 +87,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherLimit,
         final RawLog rawLog,
         final int termWindowLength,
-        final long unblockTimeoutNs,
-        final long untetheredWindowLimitTimeoutNs,
-        final long untetheredRestingTimeoutNs,
-        final long nowNs,
-        final SystemCounters systemCounters,
-        final boolean isExclusive,
-        final ErrorHandler errorHandler)
+        final boolean isExclusive)
     {
         this.registrationId = registrationId;
         this.tag = tag;
@@ -102,7 +96,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
         this.initialTermId = initialTermId(rawLog.metaData());
-        this.errorHandler = errorHandler;
+        this.errorHandler = ctx.errorHandler();
 
         final int termLength = rawLog.termLength();
         this.termBufferLength = termLength;
@@ -112,16 +106,16 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.publisherPos = publisherPos;
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
-        this.unblockTimeoutNs = unblockTimeoutNs;
-        this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
-        this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
-        this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
+        this.unblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
+        this.untetheredWindowLimitTimeoutNs = ctx.untetheredWindowLimitTimeoutNs();
+        this.untetheredRestingTimeoutNs = ctx.untetheredRestingTimeoutNs();
+        this.unblockedPublications = ctx.systemCounters().get(UNBLOCKED_PUBLICATIONS);
         this.metaDataBuffer = rawLog.metaData();
 
         consumerPosition = producerPosition();
         lastConsumerPosition = consumerPosition;
         cleanPosition = consumerPosition;
-        timeOfLastConsumerPositionUpdateNs = nowNs;
+        timeOfLastConsumerPositionUpdateNs = ctx.cachedNanoClock().nanoTime();
     }
 
     public int sessionId()

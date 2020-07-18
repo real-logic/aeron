@@ -20,7 +20,7 @@ import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.agrona.ErrorHandler;
+import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,14 +44,20 @@ public class UntetheredSubscriptionTest
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
     private final AtomicLongPosition publisherLimit = new AtomicLongPosition();
-    private final ErrorHandler errorHandler = mock(ErrorHandler.class);
+    private final MediaDriver.Context ctx = new MediaDriver.Context()
+        .cachedNanoClock(new CachedNanoClock())
+        .systemCounters(mock(SystemCounters.class));
+
     private IpcPublication ipcPublication;
 
     @BeforeEach
     public void before()
     {
+        ctx.cachedNanoClock().update(TIME_NS);
+
         ipcPublication = new IpcPublication(
             REGISTRATION_ID,
+            ctx,
             TAG_ID,
             SESSION_ID,
             STREAM_ID,
@@ -59,13 +65,7 @@ public class UntetheredSubscriptionTest
             publisherLimit,
             rawLog,
             TERM_WINDOW_LENGTH,
-            Configuration.publicationUnblockTimeoutNs(),
-            UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-            UNTETHERED_RESTING_TIMEOUT_NS,
-            TIME_NS,
-            mock(SystemCounters.class),
-            true,
-            errorHandler);
+            true);
     }
 
     @Test

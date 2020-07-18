@@ -1528,6 +1528,7 @@ public class DriverConductor implements Agent
 
         final IpcPublication publication = new IpcPublication(
             registrationId,
+            ctx,
             params.entityTag,
             sessionId,
             streamId,
@@ -1535,13 +1536,7 @@ public class DriverConductor implements Agent
             publisherLimit,
             rawLog,
             Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
-            ctx.publicationUnblockTimeoutNs(),
-            ctx.untetheredWindowLimitTimeoutNs(),
-            ctx.untetheredRestingTimeoutNs(),
-            cachedNanoClock.nanoTime(),
-            ctx.systemCounters(),
-            isExclusive,
-            ctx.errorHandler());
+            isExclusive);
 
         ipcPublications.add(publication);
         activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));

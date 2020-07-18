@@ -914,27 +914,6 @@ class ConsensusModuleAgent implements Agent
         return appendPosition;
     }
 
-    void stopLogRecording()
-    {
-        if (NULL_VALUE != logSubscriptionId)
-        {
-            archive.tryStopRecording(logSubscriptionId);
-            logSubscriptionId = NULL_VALUE;
-        }
-
-        if (null != replayLogDestination)
-        {
-            logAdapter.asyncRemoveDestination(replayLogDestination);
-            replayLogDestination = null;
-        }
-
-        if (null != liveLogDestination)
-        {
-            logAdapter.asyncRemoveDestination(liveLogDestination);
-            liveLogDestination = null;
-        }
-    }
-
     void appendPositionCounter(final ReadableCounter appendPositionCounter)
     {
         appendPosition = appendPositionCounter;
@@ -1369,36 +1348,6 @@ class ConsensusModuleAgent implements Agent
         startLogRecording(logChannel, SourceLocation.REMOTE);
 
         return subscription;
-    }
-
-    void appendDynamicJoinTermAndSnapshots()
-    {
-        if (!dynamicJoinSnapshots.isEmpty())
-        {
-            final long logRecordingId = logRecordingId();
-            final RecordingLog.Snapshot lastSnapshot = dynamicJoinSnapshots.get(dynamicJoinSnapshots.size() - 1);
-
-            recordingLog.appendTerm(
-                logRecordingId,
-                lastSnapshot.leadershipTermId,
-                lastSnapshot.termBaseLogPosition,
-                lastSnapshot.timestamp);
-
-            for (int i = dynamicJoinSnapshots.size() - 1; i >= 0; i--)
-            {
-                final RecordingLog.Snapshot snapshot = dynamicJoinSnapshots.get(i);
-
-                recordingLog.appendSnapshot(
-                    snapshot.recordingId,
-                    snapshot.leadershipTermId,
-                    snapshot.termBaseLogPosition,
-                    snapshot.logPosition,
-                    snapshot.timestamp,
-                    snapshot.serviceId);
-            }
-
-            dynamicJoinSnapshots.clear();
-        }
     }
 
     void awaitFollowerLogImage(final Subscription subscription, final int logSessionId)
@@ -2957,6 +2906,27 @@ class ConsensusModuleAgent implements Agent
         ctx.terminationHook().run();
     }
 
+    private void stopLogRecording()
+    {
+        if (NULL_VALUE != logSubscriptionId)
+        {
+            archive.tryStopRecording(logSubscriptionId);
+            logSubscriptionId = NULL_VALUE;
+        }
+
+        if (null != replayLogDestination)
+        {
+            logAdapter.asyncRemoveDestination(replayLogDestination);
+            replayLogDestination = null;
+        }
+
+        if (null != liveLogDestination)
+        {
+            logAdapter.asyncRemoveDestination(liveLogDestination);
+            liveLogDestination = null;
+        }
+    }
+
     private void asyncStopLogRecording()
     {
         if (NULL_VALUE != logSubscriptionId)
@@ -2972,6 +2942,36 @@ class ConsensusModuleAgent implements Agent
             }
 
             logSubscriptionId = NULL_VALUE;
+        }
+    }
+
+    private void appendDynamicJoinTermAndSnapshots()
+    {
+        if (!dynamicJoinSnapshots.isEmpty())
+        {
+            final long logRecordingId = logRecordingId();
+            final RecordingLog.Snapshot lastSnapshot = dynamicJoinSnapshots.get(dynamicJoinSnapshots.size() - 1);
+
+            recordingLog.appendTerm(
+                logRecordingId,
+                lastSnapshot.leadershipTermId,
+                lastSnapshot.termBaseLogPosition,
+                lastSnapshot.timestamp);
+
+            for (int i = dynamicJoinSnapshots.size() - 1; i >= 0; i--)
+            {
+                final RecordingLog.Snapshot snapshot = dynamicJoinSnapshots.get(i);
+
+                recordingLog.appendSnapshot(
+                    snapshot.recordingId,
+                    snapshot.leadershipTermId,
+                    snapshot.termBaseLogPosition,
+                    snapshot.logPosition,
+                    snapshot.timestamp,
+                    snapshot.serviceId);
+            }
+
+            dynamicJoinSnapshots.clear();
         }
     }
 }

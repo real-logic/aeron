@@ -268,9 +268,7 @@ public class DriverConductor implements Agent
 
             final PublicationImage image = new PublicationImage(
                 registrationId,
-                ctx.imageLivenessTimeoutNs(),
-                ctx.untetheredWindowLimitTimeoutNs(),
-                ctx.untetheredRestingTimeoutNs(),
+                ctx,
                 channelEndpoint,
                 transportIndex,
                 controlAddress,
@@ -284,14 +282,8 @@ public class DriverConductor implements Agent
                 subscriberPositions,
                 ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
-                nanoClock,
-                cachedNanoClock,
-                cachedEpochClock,
-                ctx.systemCounters(),
                 sourceAddress,
-                congestionControl,
-                ctx.lossReport(),
-                ctx.errorHandler());
+                congestionControl);
 
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);

@@ -58,9 +58,6 @@ public class ReceiverTest
     private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
     private static final String URI = "aeron:udp?endpoint=localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
-    private static final long IMAGE_LIVENESS_TIMEOUT_NS = Configuration.imageLivenessTimeoutNs();
-    private static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
-    private static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
     private static final long CORRELATION_ID = 20;
     private static final int STREAM_ID = 1010;
     private static final int INITIAL_TERM_ID = 3;
@@ -97,7 +94,7 @@ public class ReceiverTest
 
     private final CachedNanoClock nanoClock = new CachedNanoClock();
     private final CachedEpochClock epochClock = new CachedEpochClock();
-    private final LossReport lossReport = mock(LossReport.class);
+    private final LossReport mockLossReport = mock(LossReport.class);
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
 
@@ -111,6 +108,13 @@ public class ReceiverTest
     private final ManyToOneConcurrentArrayQueue<Runnable> toConductorQueue =
         new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
     private final CongestionControl congestionControl = mock(CongestionControl.class);
+    private final MediaDriver.Context ctx = new MediaDriver.Context()
+        .systemCounters(mockSystemCounters)
+        .errorHandler(mockErrorHandler)
+        .nanoClock(nanoClock)
+        .epochClock(epochClock)
+        .cachedNanoClock(nanoClock)
+        .lossReport(mockLossReport);
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
@@ -190,9 +194,7 @@ public class ReceiverTest
 
         final PublicationImage image = new PublicationImage(
             CORRELATION_ID,
-            IMAGE_LIVENESS_TIMEOUT_NS,
-            UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-            UNTETHERED_RESTING_TIMEOUT_NS,
+            ctx,
             receiveChannelEndpoint,
             0,
             senderAddress,
@@ -206,14 +208,8 @@ public class ReceiverTest
             POSITIONS,
             mockHighestReceivedPosition,
             mockRebuildPosition,
-            nanoClock,
-            nanoClock,
-            epochClock,
-            mockSystemCounters,
             SOURCE_ADDRESS,
-            congestionControl,
-            lossReport,
-            mockErrorHandler);
+            congestionControl);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -265,9 +261,7 @@ public class ReceiverTest
             {
                 final PublicationImage image = new PublicationImage(
                     CORRELATION_ID,
-                    IMAGE_LIVENESS_TIMEOUT_NS,
-                    UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-                    UNTETHERED_RESTING_TIMEOUT_NS,
+                    ctx,
                     receiveChannelEndpoint,
                     0,
                     senderAddress,
@@ -281,14 +275,8 @@ public class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    nanoClock,
-                    nanoClock,
-                    epochClock,
-                    mockSystemCounters,
                     SOURCE_ADDRESS,
-                    congestionControl,
-                    lossReport,
-                    mockErrorHandler);
+                    congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
@@ -337,9 +325,7 @@ public class ReceiverTest
             {
                 final PublicationImage image = new PublicationImage(
                     CORRELATION_ID,
-                    IMAGE_LIVENESS_TIMEOUT_NS,
-                    UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-                    UNTETHERED_RESTING_TIMEOUT_NS,
+                    ctx,
                     receiveChannelEndpoint,
                     0,
                     senderAddress,
@@ -353,14 +339,8 @@ public class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    nanoClock,
-                    nanoClock,
-                    epochClock,
-                    mockSystemCounters,
                     SOURCE_ADDRESS,
-                    congestionControl,
-                    lossReport,
-                    mockErrorHandler);
+                    congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
@@ -412,9 +392,7 @@ public class ReceiverTest
             {
                 final PublicationImage image = new PublicationImage(
                     CORRELATION_ID,
-                    IMAGE_LIVENESS_TIMEOUT_NS,
-                    UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-                    UNTETHERED_RESTING_TIMEOUT_NS,
+                    ctx,
                     receiveChannelEndpoint,
                     0,
                     senderAddress,
@@ -428,14 +406,8 @@ public class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    nanoClock,
-                    nanoClock,
-                    epochClock,
-                    mockSystemCounters,
                     SOURCE_ADDRESS,
-                    congestionControl,
-                    lossReport,
-                    mockErrorHandler);
+                    congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
@@ -491,9 +463,7 @@ public class ReceiverTest
             {
                 final PublicationImage image = new PublicationImage(
                     CORRELATION_ID,
-                    IMAGE_LIVENESS_TIMEOUT_NS,
-                    UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-                    UNTETHERED_RESTING_TIMEOUT_NS,
+                    ctx,
                     receiveChannelEndpoint,
                     0,
                     senderAddress,
@@ -507,14 +477,8 @@ public class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    nanoClock,
-                    nanoClock,
-                    epochClock,
-                    mockSystemCounters,
                     SOURCE_ADDRESS,
-                    congestionControl,
-                    lossReport,
-                    mockErrorHandler);
+                    congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });

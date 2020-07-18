@@ -160,9 +160,7 @@ public class PublicationImage
 
     public PublicationImage(
         final long correlationId,
-        final long imageLivenessTimeoutNs,
-        final long untetheredWindowLimitTimeoutNs,
-        final long untetheredRestingTimeoutNs,
+        final MediaDriver.Context ctx,
         final ReceiveChannelEndpoint channelEndpoint,
         final int transportIndex,
         final InetSocketAddress controlAddress,
@@ -176,19 +174,13 @@ public class PublicationImage
         final ArrayList<SubscriberPosition> subscriberPositions,
         final Position hwmPosition,
         final Position rebuildPosition,
-        final NanoClock nanoClock,
-        final CachedNanoClock cachedNanoClock,
-        final CachedEpochClock cachedEpochClock,
-        final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
-        final CongestionControl congestionControl,
-        final LossReport lossReport,
-        final ErrorHandler errorHandler)
+        final CongestionControl congestionControl)
     {
         this.correlationId = correlationId;
-        this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
-        this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
-        this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
+        this.imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
+        this.untetheredWindowLimitTimeoutNs = ctx.untetheredWindowLimitTimeoutNs();
+        this.untetheredRestingTimeoutNs = ctx.untetheredRestingTimeoutNs();
         this.channelEndpoint = channelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -198,12 +190,12 @@ public class PublicationImage
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
-        this.errorHandler = errorHandler;
-        this.lossReport = lossReport;
+        this.errorHandler = ctx.errorHandler();
+        this.lossReport = ctx.lossReport();
 
-        this.nanoClock = nanoClock;
-        this.cachedNanoClock = cachedNanoClock;
-        this.cachedEpochClock = cachedEpochClock;
+        this.nanoClock = ctx.nanoClock();
+        this.cachedNanoClock = ctx.cachedNanoClock();
+        this.cachedEpochClock = ctx.cachedEpochClock();
 
         final long nowNs = cachedNanoClock.nanoTime();
         this.timeOfLastStateChangeNs = nowNs;
@@ -212,6 +204,7 @@ public class PublicationImage
         this.subscriberPositions = positionArray(subscriberPositions, nowNs);
         this.isReliable = subscriberPositions.get(0).subscription().isReliable();
 
+        final SystemCounters systemCounters = ctx.systemCounters();
         heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
         statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
         nakMessagesSent = systemCounters.get(NAK_MESSAGES_SENT);

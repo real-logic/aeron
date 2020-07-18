@@ -2506,13 +2506,25 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * {@link LossReport}for identifying loss issues on specific connections.
+         * {@link LossReport} for identifying loss issues on specific connections.
          *
          * @return {@link LossReport} for identifying loss issues on specific connections.
          */
         LossReport lossReport()
         {
             return lossReport;
+        }
+
+        /**
+         * {@link LossReport} for identifying loss issues on specific connections.
+         *
+         * @param lossReport for identifying loss issues on specific connections.
+         * @return this for a fluent API.
+         */
+        Context lossReport(final LossReport lossReport)
+        {
+            this.lossReport = lossReport;
+            return this;
         }
 
         /**
@@ -3238,8 +3250,11 @@ public final class MediaDriver implements AutoCloseable
                     aeronDirectoryName(), filePageSize, performStorageChecks, lowStorageWarningThreshold, errorHandler);
             }
 
-            lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
-            lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+            if (null == lossReport)
+            {
+                lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
+                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+            }
         }
 
         private void concludeCounters()

@@ -90,7 +90,7 @@ public class SpySimulatedConnectionTest
     public void after()
     {
         CloseHelper.closeAll(client, driver);
-        driver.context().deleteDirectory();
+        driverContext.deleteDirectory();
     }
 
     @ParameterizedTest

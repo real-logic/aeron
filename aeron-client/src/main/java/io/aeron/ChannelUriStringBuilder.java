@@ -61,6 +61,7 @@ public class ChannelUriStringBuilder
     private Boolean tether;
     private Boolean group;
     private Boolean rejoin;
+    private Boolean ssc;
     private boolean isSessionIdTagged;
 
     /**
@@ -1105,7 +1106,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the alias for a URI. Alias's are not interpreted by Aeron and are to be used by the application
+     * Set the alias for a URI. Alias's are not interpreted by Aeron and are to be used by the application.
      *
      * @param alias for the URI.
      * @return this for a fluent API.
@@ -1141,7 +1142,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the congestion control algorithm to be used on a channel.
+     * Set the congestion control algorithm to be used on a stream.
      *
      * @param congestionControl for the URI.
      * @return this for a fluent API.
@@ -1166,7 +1167,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the congestion control algorithm to be used on a channel.
+     * Get the congestion control algorithm to be used on a stream.
      *
      * @return congestion control strategy for the channel.
      * @see CommonContext#CONGESTION_CONTROL_PARAM_NAME
@@ -1177,7 +1178,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the flow control strategy to be used on a channel.
+     * Set the flow control strategy to be used on a stream.
      *
      * @param flowControl for the URI.
      * @return this for a fluent API.
@@ -1190,10 +1191,10 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set tagged flow control settings to be used on channel.  All specified values may be null and the default
+     * Set tagged flow control settings to be used on stream. All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
-     * @param groupTag  receiver tag for this channel.
+     * @param groupTag     receiver tag for this stream.
      * @param minGroupSize group size required to allow publications for this channel to be move to connected status.
      * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
@@ -1228,12 +1229,11 @@ public class ChannelUriStringBuilder
         return flowControl(flowControlValue);
     }
 
-
     /**
-     * Set min flow control settings to be used on channel.  All specified values may be null and the default
+     * Set min flow control settings to be used on stream. All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
-     * @param minGroupSize group size required to allow publications for this channel to be move to connected status.
+     * @param minGroupSize group size required to allow publications for this stream to be move to connected status.
      * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
      */
@@ -1269,9 +1269,9 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the flow control strategy to be used on a channel.
+     * Get the flow control strategy to be used on a stream.
      *
-     * @return flow control strategy for the channel.
+     * @return flow control strategy for the stream.
      * @see CommonContext#FLOW_CONTROL_PARAM_NAME
      */
     public String flowControl()
@@ -1280,7 +1280,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the group tag (gtag) to be sent in SMs.
+     * Set the group tag (gtag) to be sent in SMs (Status Messages).
      *
      * @param groupTag to be sent in SMs
      * @return this for fluent API.
@@ -1314,7 +1314,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the group tag (gtag) to be sent in SMs.
+     * Get the group tag (gtag) to be sent in SMs (Status Messages).
      *
      * @return receiver tag to be sent in SMs.
      * @see CommonContext#GROUP_TAG_PARAM_NAME
@@ -1367,6 +1367,52 @@ public class ChannelUriStringBuilder
     public Boolean rejoin()
     {
         return rejoin;
+    }
+
+    /**
+     * Set the publication semantics for if the presence of spy subscriptions simulate a connection.
+     *
+     * @param spiesSimulateConnection true if the presence of spy subscriptions simulate a connection.
+     * @return this for a fluent API.
+     * @see CommonContext#SPIES_SIMULATE_CONNECTION_PARAM_NAME
+     */
+    public ChannelUriStringBuilder spiesSimulateConnection(final Boolean spiesSimulateConnection)
+    {
+        this.ssc = spiesSimulateConnection;
+        return this;
+    }
+
+    /**
+     * Set the publication semantics for if the presence of spy subscriptions simulate a connection to be what is in
+     * the {@link ChannelUri} which may be null.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#SPIES_SIMULATE_CONNECTION_PARAM_NAME
+     */
+    public ChannelUriStringBuilder spiesSimulateConnection(final ChannelUri channelUri)
+    {
+        final String sscValue = channelUri.get(SPIES_SIMULATE_CONNECTION_PARAM_NAME);
+        if (null == sscValue)
+        {
+            ssc = null;
+            return this;
+        }
+        else
+        {
+            return spiesSimulateConnection(Boolean.valueOf(sscValue));
+        }
+    }
+
+    /**
+     * Get the publication semantics for if the presence of spy subscriptions simulate a connection.
+     *
+     * @return true if the presence of spy subscriptions simulate a connection, otherwise false.
+     * @see CommonContext#SPIES_SIMULATE_CONNECTION_PARAM_NAME
+     */
+    public Boolean spiesSimulateConnection()
+    {
+        return ssc;
     }
 
     /**
@@ -1524,6 +1570,11 @@ public class ChannelUriStringBuilder
         if (null != rejoin)
         {
             sb.append(REJOIN_PARAM_NAME).append('=').append(rejoin).append('|');
+        }
+
+        if (null != ssc)
+        {
+            sb.append(SPIES_SIMULATE_CONNECTION_PARAM_NAME).append('=').append(ssc).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

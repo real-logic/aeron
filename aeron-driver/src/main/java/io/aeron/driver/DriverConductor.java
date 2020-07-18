@@ -419,7 +419,7 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final ChannelUri channelUri = udpChannel.channelUri();
-        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, false);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, false);
         validateMtuForMaxMessage(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -443,6 +443,7 @@ public class DriverConductor implements Agent
         else
         {
             confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId());
+            validateSpiesSimulateConnection(params, publication.spiesSimulateConnection());
         }
 
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
@@ -1484,7 +1485,7 @@ public class DriverConductor implements Agent
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, true);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, true);
 
         if (!isExclusive)
         {

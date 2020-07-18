@@ -98,6 +98,7 @@ public class SpySimulatedConnectionTest
     @Timeout(10)
     public void shouldNotSimulateConnectionWhenNotConfigured(final String channel)
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
         launch();
 
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
@@ -106,6 +107,20 @@ public class SpySimulatedConnectionTest
         Tests.awaitConnected(spy);
 
         assertFalse(publication.isConnected());
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldSimulateConnectionWhenOnChannel(final String channel)
+    {
+        launch();
+
+        spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
+        publication = client.addPublication(channel + "|ssc=true", STREAM_ID);
+
+        Tests.awaitConnected(spy);
+        Tests.awaitConnected(publication);
     }
 
     @ParameterizedTest

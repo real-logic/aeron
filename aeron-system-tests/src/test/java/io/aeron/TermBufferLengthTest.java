@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TermBufferLengthTest
 {
     public static final int TEST_TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH * 2;
-
     public static final int STREAM_ID = 1001;
 
     @RegisterExtension

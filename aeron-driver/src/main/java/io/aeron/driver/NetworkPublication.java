@@ -199,9 +199,9 @@ public class NetworkPublication
         this.initialTermId = initialTermId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.spiesSimulateConnection = ctx.spiesSimulateConnection();
-        this.isExclusive = isExclusive;
+        this.spiesSimulateConnection = params.spiesSimulateConnection;
         this.signalEos = params.signalEos;
+        this.isExclusive = isExclusive;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -289,6 +289,11 @@ public class NetworkPublication
     public boolean isExclusive()
     {
         return isExclusive;
+    }
+
+    public boolean spiesSimulateConnection()
+    {
+        return spiesSimulateConnection;
     }
 
     public final int send(final long nowNs)

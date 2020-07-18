@@ -283,6 +283,11 @@ public class CommonContext implements Cloneable
     public static final String GROUP_TAG_PARAM_NAME = "gtag";
 
     /**
+     * Parameter name for Publication URI param to indicate if spy subscriptions should simulate a connection.
+     */
+    public static final String SPIES_SIMULATE_CONNECTION_PARAM_NAME = "ssc";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

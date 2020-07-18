@@ -39,19 +39,20 @@ final class PublicationParams
     boolean isSessionIdTagged = false;
     boolean isSparse;
     boolean signalEos = true;
+    boolean spiesSimulateConnection = false;
 
     PublicationParams()
     {
     }
 
     static PublicationParams getPublicationParams(
-        final MediaDriver.Context context,
         final ChannelUri channelUri,
+        final MediaDriver.Context ctx,
         final DriverConductor driverConductor,
         final boolean isExclusive,
         final boolean isIpc)
     {
-        final PublicationParams params = new PublicationParams(context, isIpc);
+        final PublicationParams params = new PublicationParams(ctx, isIpc);
 
         params.getEntityTag(channelUri, driverConductor);
         params.getSessionId(channelUri, driverConductor);
@@ -60,6 +61,7 @@ final class PublicationParams
         params.getLingerTimeoutNs(channelUri);
         params.getSparse(channelUri);
         params.getEos(channelUri);
+        params.getSpiesSimulateConnection(channelUri, ctx);
 
         int count = 0;
 
@@ -220,6 +222,16 @@ final class PublicationParams
         }
     }
 
+    static void validateSpiesSimulateConnection(
+        final PublicationParams params, final boolean existingSpiesSimulateConnection)
+    {
+        if (params.spiesSimulateConnection != existingSpiesSimulateConnection)
+        {
+            throw new IllegalStateException("existing publication has different spiesSimulateConnection: existing=" +
+                existingSpiesSimulateConnection + " requested=" + params.spiesSimulateConnection);
+        }
+    }
+
     private void getLingerTimeoutNs(final ChannelUri channelUri)
     {
         final String lingerParam = channelUri.get(LINGER_PARAM_NAME);
@@ -278,6 +290,19 @@ final class PublicationParams
         }
     }
 
+    private void getSpiesSimulateConnection(final ChannelUri channelUri, final MediaDriver.Context ctx)
+    {
+        final String sscStr = channelUri.get(SPIES_SIMULATE_CONNECTION_PARAM_NAME);
+        if (null != sscStr)
+        {
+            spiesSimulateConnection = "true".equals(sscStr);
+        }
+        else
+        {
+            spiesSimulateConnection = ctx.spiesSimulateConnection();
+        }
+    }
+
     private static void validateEntityTag(final long entityTag, final DriverConductor driverConductor)
     {
         if (INVALID_TAG == entityTag)
@@ -308,6 +333,7 @@ final class PublicationParams
             ", isSessionIdTagged=" + isSessionIdTagged +
             ", isSparse=" + isSparse +
             ", signalEos=" + signalEos +
+            ", spiesSimulateConnection=" + spiesSimulateConnection +
             '}';
     }
 }

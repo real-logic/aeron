@@ -35,7 +35,6 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.Position;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -116,15 +115,15 @@ public class SenderTest
         when(mockSendChannelEndpoint.send(any())).thenAnswer(saveByteBufferAnswer);
         when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
 
-        sender = new Sender(
-            new MediaDriver.Context()
-                .cachedEpochClock(new CachedEpochClock())
-                .cachedNanoClock(nanoClock)
-                .controlTransportPoller(mockTransportPoller)
-                .systemCounters(mockSystemCounters)
-                .senderCommandQueue(senderCommandQueue)
-                .nanoClock(nanoClock)
-                .errorHandler(errorHandler));
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .cachedEpochClock(new CachedEpochClock())
+            .cachedNanoClock(nanoClock)
+            .controlTransportPoller(mockTransportPoller)
+            .systemCounters(mockSystemCounters)
+            .senderCommandQueue(senderCommandQueue)
+            .nanoClock(nanoClock)
+            .errorHandler(errorHandler);
+        sender = new Sender(ctx);
 
         LogBufferDescriptor.initialiseTailWithTermId(rawLog.metaData(), 0, INITIAL_TERM_ID);
 
@@ -142,30 +141,23 @@ public class SenderTest
 
         publication = new NetworkPublication(
             1,
+            ctx,
             params,
             mockSendChannelEndpoint,
-            nanoClock,
             rawLog,
             Configuration.producerWindowLength(TERM_BUFFER_LENGTH, Configuration.publicationTermWindowLength()),
-            mock(Position.class),
-            mock(Position.class),
+            new AtomicLongPosition(),
+            new AtomicLongPosition(),
             new AtomicLongPosition(),
             new AtomicLongPosition(),
             mock(AtomicCounter.class),
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,
-            mockSystemCounters,
             flowControl,
             mockRetransmitHandler,
             new NetworkPublicationThreadLocals(),
-            Configuration.publicationUnblockTimeoutNs(),
-            Configuration.publicationConnectionTimeoutNs(),
-            Configuration.untetheredWindowLimitTimeoutNs(),
-            Configuration.untetheredRestingTimeoutNs(),
-            false,
-            false,
-            errorHandler);
+            false);
 
         senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
     }

@@ -161,9 +161,9 @@ public class NetworkPublication
 
     public NetworkPublication(
         final long registrationId,
+        final MediaDriver.Context ctx,
         final PublicationParams params,
         final SendChannelEndpoint channelEndpoint,
-        final CachedNanoClock nanoClock,
         final RawLog rawLog,
         final int termWindowLength,
         final Position publisherPos,
@@ -174,28 +174,21 @@ public class NetworkPublication
         final int sessionId,
         final int streamId,
         final int initialTermId,
-        final SystemCounters systemCounters,
         final FlowControl flowControl,
         final RetransmitHandler retransmitHandler,
         final NetworkPublicationThreadLocals threadLocals,
-        final long unblockTimeoutNs,
-        final long connectionTimeoutNs,
-        final long untetheredWindowLimitTimeoutNs,
-        final long untetheredRestingTimeoutNs,
-        final boolean spiesSimulateConnection,
-        final boolean isExclusive,
-        final ErrorHandler errorHandler)
+        final boolean isExclusive)
     {
         this.registrationId = registrationId;
-        this.unblockTimeoutNs = unblockTimeoutNs;
-        this.connectionTimeoutNs = connectionTimeoutNs;
+        this.unblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
+        this.connectionTimeoutNs = ctx.publicationConnectionTimeoutNs();
         this.lingerTimeoutNs = params.lingerTimeoutNs;
-        this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
-        this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
+        this.untetheredWindowLimitTimeoutNs = ctx.untetheredWindowLimitTimeoutNs();
+        this.untetheredRestingTimeoutNs = ctx.untetheredRestingTimeoutNs();
         this.tag = params.entityTag;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
-        this.nanoClock = nanoClock;
+        this.nanoClock = ctx.cachedNanoClock();
         this.senderPosition = senderPosition;
         this.senderLimit = senderLimit;
         this.flowControl = flowControl;
@@ -206,7 +199,7 @@ public class NetworkPublication
         this.initialTermId = initialTermId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.spiesSimulateConnection = spiesSimulateConnection;
+        this.spiesSimulateConnection = ctx.spiesSimulateConnection();
         this.isExclusive = isExclusive;
         this.signalEos = params.signalEos;
 
@@ -218,6 +211,7 @@ public class NetworkPublication
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementHeader = threadLocals.rttMeasurementHeader();
 
+        final SystemCounters systemCounters = ctx.systemCounters();
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
         shortSends = systemCounters.get(SHORT_SENDS);
         retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
@@ -227,7 +221,7 @@ public class NetworkPublication
 
         termBuffers = rawLog.termBuffers();
         sendBuffers = rawLog.sliceTerms();
-        this.errorHandler = errorHandler;
+        errorHandler = ctx.errorHandler();
 
         final int termLength = rawLog.termLength();
         termBufferLength = termLength;

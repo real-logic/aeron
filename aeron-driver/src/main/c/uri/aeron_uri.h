@@ -62,12 +62,14 @@ aeron_uri_params_t;
 #define AERON_URI_FC_KEY "fc"
 #define AERON_URI_GTAG_KEY "gtag"
 #define AERON_URI_CC_KEY "cc"
+#define AERON_URI_SPIES_SIMULATE_CONNECTION_KEY "ssc"
 
 typedef struct aeron_uri_publication_params_stct
 {
     bool has_position;
     bool is_sparse;
     bool signal_eos;
+    bool spies_simulate_connection;
     size_t mtu_length;
     size_t term_length;
     size_t term_offset;

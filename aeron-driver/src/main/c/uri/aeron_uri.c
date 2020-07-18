@@ -463,6 +463,29 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     return 1;
 }
 
+int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *retval)
+{
+    const char *value_str = aeron_uri_find_param_value(uri_params, key);
+    if (value_str != NULL)
+    {
+        if (strncmp("true", value_str, strlen("true")) == 0)
+        {
+            *retval = true;
+        }
+        else if (strncmp("false", value_str, strlen("false")) == 0)
+        {
+            *retval = false;
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "could not parse %s as bool, for key %s in URI", value_str, key);
+            return -1;
+        }
+    }
+
+    return 1;
+}
+
 int aeron_uri_publication_session_id_param(
     aeron_uri_params_t *uri_params,
     aeron_driver_conductor_t *conductor,
@@ -471,7 +494,7 @@ int aeron_uri_publication_session_id_param(
     const char *session_id_str = aeron_uri_find_param_value(uri_params, AERON_URI_SESSION_ID_KEY);
     if (NULL != session_id_str)
     {
-        if (0 == strncmp("tag:", session_id_str, 4))
+        if (0 == strncmp("tag:", session_id_str, strlen("tag:")))
         {
             char *end_ptr;
             errno = 0;
@@ -537,6 +560,7 @@ int aeron_uri_publication_params(
     params->has_position = false;
     params->is_sparse = context->term_buffer_sparse_file;
     params->signal_eos = true;
+    params->spies_simulate_connection = context->spies_simulate_connection;
     params->has_session_id = false;
     params->session_id = 0;
     params->entity_tag = AERON_URI_INVALID_TAG;
@@ -670,18 +694,19 @@ int aeron_uri_publication_params(
         params->has_position = true;
     }
 
-    const char *value_str;
-
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL &&
-        strncmp("true", value_str, strlen("true")) == 0)
+    if (aeron_uri_get_bool(uri_params, AERON_URI_SPARSE_TERM_KEY, &params->is_sparse) < 0)
     {
-        params->is_sparse = true;
+        return -1;
     }
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_EOS_KEY)) != NULL &&
-        strncmp("false", value_str, strlen("false")) == 0)
+    if (aeron_uri_get_bool(uri_params, AERON_URI_EOS_KEY, &params->signal_eos) < 0)
     {
-        params->signal_eos = false;
+        return -1;
+    }
+
+    if (aeron_uri_get_bool(uri_params, AERON_URI_SPIES_SIMULATE_CONNECTION_KEY, &params->spies_simulate_connection) < 0)
+    {
+        return -1;
     }
 
     return 0;
@@ -697,36 +722,31 @@ int aeron_uri_subscription_params(
     params->is_tether = context->tether_subscriptions;
     params->is_rejoin = context->rejoin_stream;
 
-    const char *value_str;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_UDP_CHANNEL_RELIABLE_KEY)) != NULL &&
-        strncmp("false", value_str, strlen("false")) == 0)
+    if (aeron_uri_get_bool(uri_params, AERON_UDP_CHANNEL_RELIABLE_KEY, &params->is_reliable) < 0)
     {
-        params->is_reliable = false;
+        return -1;
     }
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL &&
-        strncmp("true", value_str, strlen("true")) == 0)
+    if (aeron_uri_get_bool(uri_params, AERON_URI_SPARSE_TERM_KEY, &params->is_sparse) < 0)
     {
-        params->is_sparse = true;
+        return -1;
     }
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TETHER_KEY)) != NULL &&
-        strncmp("false", value_str, strlen("false")) == 0)
+    if (aeron_uri_get_bool(uri_params, AERON_URI_TETHER_KEY, &params->is_tether) < 0)
     {
-        params->is_tether = false;
+        return -1;
+    }
+
+    if (aeron_uri_get_bool(uri_params, AERON_URI_REJOIN_KEY, &params->is_rejoin) < 0)
+    {
+        return -1;
     }
 
     params->group = aeron_config_parse_inferable_boolean(
         aeron_uri_find_param_value(uri_params, AERON_URI_GROUP_KEY), context->receiver_group_consideration);
-
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_REJOIN_KEY)) != NULL &&
-        strncmp("false", value_str, strlen("false")) == 0)
-    {
-        params->is_rejoin = false;
-    }
 
     if (aeron_uri_subscription_session_id_param(uri_params, params) < 0)
     {

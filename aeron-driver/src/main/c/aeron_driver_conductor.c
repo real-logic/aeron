@@ -1106,6 +1106,16 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
     if (!is_exclusive && NULL != publication)
     {
+        if (publication->spies_simulate_connection != params->spies_simulate_connection)
+        {
+            aeron_set_err(
+                EINVAL,
+                "existing publication has different spies simulate connection: requested=%s",
+                params->spies_simulate_connection ? "true" : "false");
+
+            return NULL;
+        }
+
         if (0 != aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data))
         {
             return NULL;
@@ -1211,7 +1221,6 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         flow_control_strategy,
                         params,
                         is_exclusive,
-                        conductor->context->spies_simulate_connection,
                         &conductor->system_counters) >= 0)
                 {
                     endpoint->conductor_fields.managed_resource.incref(

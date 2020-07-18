@@ -128,7 +128,6 @@ int aeron_network_publication_create(
     aeron_flow_control_strategy_t *flow_control_strategy,
     aeron_uri_publication_params_t *params,
     bool is_exclusive,
-    bool spies_simulate_connection,
     aeron_system_counters_t *system_counters);
 
 void aeron_network_publication_close(

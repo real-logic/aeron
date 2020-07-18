@@ -55,7 +55,6 @@ int aeron_network_publication_create(
     aeron_flow_control_strategy_t *flow_control_strategy,
     aeron_uri_publication_params_t *params,
     bool is_exclusive,
-    bool spies_simulate_connection,
     aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
@@ -203,10 +202,10 @@ int aeron_network_publication_create(
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
     _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
     _pub->time_of_last_setup_ns = now_ns - AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS - 1;
-    _pub->status_message_deadline_ns = spies_simulate_connection ?
+    _pub->status_message_deadline_ns = params->spies_simulate_connection ?
         now_ns : now_ns + (int64_t)context->publication_connection_timeout_ns;
     _pub->is_exclusive = is_exclusive;
-    _pub->spies_simulate_connection = spies_simulate_connection;
+    _pub->spies_simulate_connection = params->spies_simulate_connection;
     _pub->signal_eos = params->signal_eos;
     _pub->should_send_setup_frame = true;
     _pub->has_receivers = false;

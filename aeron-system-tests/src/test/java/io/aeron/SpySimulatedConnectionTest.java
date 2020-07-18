@@ -113,7 +113,6 @@ public class SpySimulatedConnectionTest
     @Timeout(10)
     public void shouldSimulateConnectionWhenOnChannel(final String channel)
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
         launch();
 
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);

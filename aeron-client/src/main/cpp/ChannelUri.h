@@ -59,6 +59,7 @@ constexpr const char REJOIN_PARAM_NAME[] = "rejoin";
 constexpr const char CONGESTION_CONTROL_PARAM_NAME[] = "cc";
 constexpr const char FLOW_CONTROL_PARAM_NAME[] = "fc";
 constexpr const char GROUP_TAG_PARAM_NAME[] = "gtag";
+constexpr const char SPIES_SIMULATE_CONNECTION_PARAM_NAME[] = "ssc";
 
 using namespace aeron::util;
 
@@ -276,7 +277,7 @@ public:
                         if (c == '|')
                         {
                             throw IllegalStateException(
-                                "invalid en of key at index " + std::to_string(i) + " in " + uri, SOURCEINFO);
+                                "invalid end of key at index " + std::to_string(i) + " in " + uri, SOURCEINFO);
                         }
 
                         builder += c;

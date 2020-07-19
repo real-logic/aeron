@@ -69,7 +69,7 @@ public class ArchiveDeleteAndRestartTest
     private Archive.Context archiveContext;
 
     @BeforeEach
-    private void before()
+    public void before()
     {
         rnd.setSeed(seed);
 

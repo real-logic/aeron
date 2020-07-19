@@ -329,6 +329,12 @@ public:
     }
 
     int addPublication(
+        int64_t client_id, int64_t correlation_id, std::string & channel, int32_t stream_id, bool is_exclusive)
+    {
+        return addPublication(client_id, correlation_id, channel.c_str(), stream_id, is_exclusive);
+    }
+
+    int addPublication(
         int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {
         aeron_publication_command_t *cmd = reinterpret_cast<aeron_publication_command_t *>(m_command_buffer);
@@ -358,6 +364,12 @@ public:
     int addIpcSubscription(int64_t client_id, int64_t correlation_id, int32_t stream_id, int64_t registration_id)
     {
         return addNetworkSubscription(client_id, correlation_id, AERON_IPC_CHANNEL, stream_id);
+    }
+
+    int addSubscription(
+        int64_t client_id, int64_t correlation_id, std::string &channel, int32_t stream_id, int64_t registration_id)
+    {
+        return addNetworkSubscription(client_id, correlation_id, channel.c_str(), stream_id);
     }
 
     int addNetworkSubscription(int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id)

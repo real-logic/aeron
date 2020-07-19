@@ -2233,7 +2233,8 @@ int aeron_driver_conductor_on_add_ipc_publication(
         aeron_subscription_link_t *subscription_link = &conductor->ipc_subscriptions.array[i];
 
         if (command->stream_id == subscription_link->stream_id &&
-            !aeron_driver_conductor_is_subscribable_linked(subscription_link, subscribable))
+            !aeron_driver_conductor_is_subscribable_linked(subscription_link, subscribable) &&
+            (!subscription_link->has_session_id || (subscription_link->session_id == publication->session_id)))
         {
             if (aeron_driver_conductor_link_subscribable(
                 conductor,
@@ -2354,6 +2355,7 @@ int aeron_driver_conductor_on_add_network_publication(
                 subscription_link->spy_channel->canonical_form,
                 endpoint_udp_channel->canonical_form,
                 subscription_link->spy_channel->canonical_length) || is_same_channel_tag) &&
+            (!subscription_link->has_session_id || (subscription_link->session_id == publication->session_id)) &&
             !aeron_driver_conductor_is_subscribable_linked(subscription_link, subscribable))
         {
             if (aeron_driver_conductor_link_subscribable(
@@ -2444,6 +2446,8 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     link->endpoint = NULL;
     link->spy_channel = NULL;
     link->stream_id = command->stream_id;
+    link->has_session_id = params.has_session_id;
+    link->session_id = params.session_id;
     link->client_id = command->correlated.client_id;
     link->registration_id = command->correlated.correlation_id;
     link->is_reliable = true;
@@ -2466,7 +2470,8 @@ int aeron_driver_conductor_on_add_ipc_subscription(
         aeron_ipc_publication_t *publication = publication_entry->publication;
 
         if (command->stream_id == publication_entry->publication->stream_id &&
-            AERON_IPC_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
+            AERON_IPC_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state &&
+            (!link->has_session_id || (link->session_id == publication->session_id)))
         {
             if (aeron_driver_conductor_link_subscribable(
                 conductor,
@@ -2535,6 +2540,8 @@ int aeron_driver_conductor_on_add_spy_subscription(
     link->endpoint = NULL;
     link->spy_channel = udp_channel;
     link->stream_id = command->stream_id;
+    link->has_session_id = params.has_session_id;
+    link->session_id = params.session_id;
     link->client_id = command->correlated.client_id;
     link->registration_id = command->correlated.correlation_id;
     link->is_reliable = params.is_reliable;
@@ -2555,8 +2562,10 @@ int aeron_driver_conductor_on_add_spy_subscription(
     {
         aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
 
-        if (command->stream_id == publication->stream_id && endpoint == publication->endpoint &&
-            AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
+        if (command->stream_id == publication->stream_id &&
+            endpoint == publication->endpoint &&
+            AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state &&
+            (!link->has_session_id || (link->session_id == publication->session_id)))
         {
             if (aeron_driver_conductor_link_subscribable(
                 conductor,

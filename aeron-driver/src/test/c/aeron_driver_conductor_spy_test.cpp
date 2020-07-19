@@ -511,3 +511,163 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToNotTimeoutSubscriptionOnKeepalive)
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
 }
+
+TEST_F(DriverConductorSpyTest, shouldAddNetworkPublicationThenSingleSpyWithSameSessionId)
+{
+    const int64_t client_id = nextCorrelationId();
+    const int64_t pub_id = nextCorrelationId();
+    const int64_t sub_id = nextCorrelationId();
+    const int32_t ipc_session_id = -4097;
+    std::string pub_channel =
+        std::string(CHANNEL_1) + "|" +
+        std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(ipc_session_id);
+    std::string sub_channel =
+        std::string(AERON_SPY_PREFIX) + std::string(CHANNEL_1) + "|" +
+        std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(ipc_session_id);
+
+    ASSERT_EQ(addPublication(client_id, pub_id, pub_channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addSubscription(client_id, sub_id, sub_channel, STREAM_ID_1, false), 0);
+    doWork();
+
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
+
+    int32_t session_id = 0;
+    std::string log_file_name;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(sequence)
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id))
+        .InSequence(sequence);
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
+
+TEST_F(DriverConductorSpyTest, shouldAddSingleSpyThenNetworkPublicationWithSameSessionId)
+{
+    const int64_t client_id = nextCorrelationId();
+    const int64_t pub_id = nextCorrelationId();
+    const int64_t sub_id = nextCorrelationId();
+    const int32_t ipc_session_id = -4097;
+    std::string pub_channel =
+        std::string(CHANNEL_1) + "|" +
+            std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(ipc_session_id);
+    std::string sub_channel =
+        std::string(AERON_SPY_PREFIX) + std::string(CHANNEL_1) + "|" +
+            std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(ipc_session_id);
+
+    ASSERT_EQ(addSubscription(client_id, sub_id, sub_channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, pub_channel, STREAM_ID_1, false), 0);
+    doWork();
+
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
+
+    int32_t session_id = 0;
+    std::string log_file_name;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id))
+        .InSequence(sequence);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(sequence)
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, session_id, log_file_name.c_str(), AERON_IPC_CHANNEL));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
+
+TEST_F(DriverConductorSpyTest, shouldNotAddNetworkPublicationThenSingleSpyWithDifferentSessionId)
+{
+    const int64_t client_id = nextCorrelationId();
+    const int64_t pub_id = nextCorrelationId();
+    const int64_t sub_id = nextCorrelationId();
+    const int32_t pub_session_id = -4097;
+    const int32_t sub_session_id = -4098;
+    std::string pub_channel =
+        std::string(CHANNEL_1) + "|" +
+        std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(pub_session_id);
+    std::string sub_channel =
+        std::string(AERON_SPY_PREFIX) + std::string(CHANNEL_1) + "|" +
+        std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(sub_session_id);
+
+    ASSERT_EQ(addPublication(client_id, pub_id, pub_channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addSubscription(client_id, sub_id, sub_channel, STREAM_ID_1, false), 0);
+    doWork();
+
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 0u);
+
+    int32_t session_id = 0;
+    std::string log_file_name;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(sequence)
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id))
+        .InSequence(sequence);
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, pub_session_id, log_file_name.c_str(), AERON_IPC_CHANNEL))
+        .Times(0);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
+
+TEST_F(DriverConductorSpyTest, shouldNotAddSingleSpyThenNetworkPublicationWithDifferentSessionId)
+{
+    const int64_t client_id = nextCorrelationId();
+    const int64_t pub_id = nextCorrelationId();
+    const int64_t sub_id = nextCorrelationId();
+    const int32_t pub_session_id = -4097;
+    const int32_t sub_session_id = -4098;
+    std::string pub_channel =
+        std::string(CHANNEL_1) + "|" +
+        std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(pub_session_id);
+    std::string sub_channel =
+        std::string(AERON_SPY_PREFIX) + std::string(CHANNEL_1) + "|" +
+        std::string(AERON_URI_SESSION_ID_KEY) + "=" + std::to_string(sub_session_id);
+
+    ASSERT_EQ(addSubscription(client_id, sub_id, sub_channel, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addPublication(client_id, pub_id, pub_channel, STREAM_ID_1, false), 0);
+    doWork();
+
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 0u);
+
+    int32_t session_id = 0;
+    std::string log_file_name;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
+        .With(IsSubscriptionReady(sub_id))
+        .InSequence(sequence);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
+        .InSequence(sequence)
+        .WillOnce(CapturePublicationReady(&session_id, &log_file_name));
+    readAllBroadcastsFromConductor(mock_broadcast_handler, 3);  // Limit the poll to capture the publication ready.
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
+        .With(IsAvailableImage(_, sub_id, STREAM_ID_1, pub_session_id, log_file_name.c_str(), AERON_IPC_CHANNEL))
+        .Times(0);
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}

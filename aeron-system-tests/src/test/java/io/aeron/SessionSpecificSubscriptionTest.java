@@ -24,11 +24,14 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
+import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,12 +50,12 @@ public class SessionSpecificSubscriptionTest
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
-    private final String channelUriWithoutSessionId = new ChannelUriStringBuilder()
-        .endpoint(ENDPOINT).media(UDP_MEDIA).build();
-    private final String channelUriWithSessionIdOne = new ChannelUriStringBuilder()
-        .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_1).build();
-    private final String channelUriWithSessionIdTwo = new ChannelUriStringBuilder()
-        .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_2).build();
+    private static Stream<ChannelUriStringBuilder> data()
+    {
+        return Stream.of(
+            new ChannelUriStringBuilder().media(UDP_MEDIA).endpoint(ENDPOINT),
+            new ChannelUriStringBuilder().media(IPC_MEDIA));
+    }
 
     private final FragmentHandler handlerSessionIdOne =
         (buffer, offset, length, header) -> assertEquals(SESSION_ID_1, header.sessionId());
@@ -74,10 +77,15 @@ public class SessionSpecificSubscriptionTest
         driver.context().deleteDirectory();
     }
 
-    @Test
     @Timeout(10)
-    public void shouldSubscribeToSpecificSessionIdsAndWildcard()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void shouldSubscribeToSpecificSessionIdsAndWildcard(final ChannelUriStringBuilder channelBuilder)
     {
+        final String channelUriWithoutSessionId = channelBuilder.build();
+        final String channelUriWithSessionIdOne = channelBuilder.sessionId(SESSION_ID_1).build();
+        final String channelUriWithSessionIdTwo = channelBuilder.sessionId(SESSION_ID_2).build();
+
         try (Subscription subscriptionOne = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
             Subscription subscriptionTwo = aeron.addSubscription(channelUriWithSessionIdTwo, STREAM_ID);
             Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
@@ -123,9 +131,14 @@ public class SessionSpecificSubscriptionTest
         }
     }
 
-    @Test
-    public void shouldNotSubscribeWithoutSpecificSession()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void shouldNotSubscribeWithoutSpecificSession(final ChannelUriStringBuilder channelBuilder)
     {
+        final String channelUriWithoutSessionId = channelBuilder.build();
+        final String channelUriWithSessionIdOne = channelBuilder.sessionId(SESSION_ID_1).build();
+        final String channelUriWithSessionIdTwo = channelBuilder.sessionId(SESSION_ID_2).build();
+
         try (Subscription subscription = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
             Publication publication = aeron.addExclusivePublication(channelUriWithSessionIdOne, STREAM_ID);
             Publication publicationWildcard = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID);

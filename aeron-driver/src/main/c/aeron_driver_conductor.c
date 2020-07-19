@@ -2463,11 +2463,11 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     for (size_t i = 0; i < conductor->ipc_publications.length; i++)
     {
         aeron_ipc_publication_entry_t *publication_entry = &conductor->ipc_publications.array[i];
+        aeron_ipc_publication_t *publication = publication_entry->publication;
 
-        if (command->stream_id == publication_entry->publication->stream_id)
+        if (command->stream_id == publication_entry->publication->stream_id &&
+            AERON_IPC_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
         {
-            aeron_ipc_publication_t *publication = publication_entry->publication;
-
             if (aeron_driver_conductor_link_subscribable(
                 conductor,
                 link,

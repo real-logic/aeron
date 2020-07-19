@@ -48,7 +48,7 @@ public class SessionSpecificSubscriptionTest
     private static final int EXPECTED_NUMBER_OF_MESSAGES = 10;
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
-    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
 
     private static Stream<ChannelUriStringBuilder> data()
     {

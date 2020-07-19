@@ -138,7 +138,6 @@ public class ArchiveDeleteAndRestartTest
         }
 
         final long position1 = recordedPublication1.position();
-
         final RecordingDescriptorLoader loader = new RecordingDescriptorLoader();
 
         while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, loader) < 1)
@@ -158,8 +157,6 @@ public class ArchiveDeleteAndRestartTest
             Tests.yieldingWait("Failed to stop recording");
         }
 
-        loader.descriptors.forEach(System.out::println);
-
         final File file = archive.context().archiveDir();
 
         aeronArchive.close();
@@ -175,7 +172,7 @@ public class ArchiveDeleteAndRestartTest
                 aeronArchive = AeronArchive.connect(new AeronArchive.Context().aeron(client));
                 break;
             }
-            catch (final Exception e)
+            catch (final Exception ignore)
             {
                 Tests.sleep(1000);
             }
@@ -203,12 +200,12 @@ public class ArchiveDeleteAndRestartTest
         assertEquals(1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, loader), loader.descriptors::toString);
     }
 
-    private static final class RecordingDescriptor
+    static final class RecordingDescriptor
     {
-        private final long recordingId;
-        private final String channel;
-        private final int streamId;
-        private final int sessionId;
+        final long recordingId;
+        final String channel;
+        final int streamId;
+        final int sessionId;
 
         private RecordingDescriptor(
             final long recordingId,
@@ -225,17 +222,17 @@ public class ArchiveDeleteAndRestartTest
         public String toString()
         {
             return "RecordingDescriptor{" +
-                   "recordingId=" + recordingId +
-                   ", channel='" + channel + '\'' +
-                   ", streamId=" + streamId +
-                   ", sessionId=" + sessionId +
-                   '}';
+                "recordingId=" + recordingId +
+                ", channel='" + channel + '\'' +
+                ", streamId=" + streamId +
+                ", sessionId=" + sessionId +
+                '}';
         }
     }
 
-    private static final class RecordingDescriptorLoader implements RecordingDescriptorConsumer
+    static final class RecordingDescriptorLoader implements RecordingDescriptorConsumer
     {
-        private final List<RecordingDescriptor> descriptors = new ArrayList<>();
+        final List<RecordingDescriptor> descriptors = new ArrayList<>();
 
         public void onRecordingDescriptor(
             final long controlSessionId,

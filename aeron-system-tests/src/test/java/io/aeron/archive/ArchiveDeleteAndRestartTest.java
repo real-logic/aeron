@@ -137,7 +137,7 @@ public class ArchiveDeleteAndRestartTest
             }
         }
 
-        long position1 = recordedPublication1.position();
+        final long position1 = recordedPublication1.position();
 
         final RecordingDescriptorLoader loader = new RecordingDescriptorLoader();
 
@@ -175,7 +175,7 @@ public class ArchiveDeleteAndRestartTest
                 aeronArchive = AeronArchive.connect(new AeronArchive.Context().aeron(client));
                 break;
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 Tests.sleep(1000);
             }
@@ -203,7 +203,7 @@ public class ArchiveDeleteAndRestartTest
         assertEquals(1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, loader), loader.descriptors::toString);
     }
 
-    private static class RecordingDescriptor
+    private static final class RecordingDescriptor
     {
         private final long recordingId;
         private final String channel;
@@ -233,7 +233,7 @@ public class ArchiveDeleteAndRestartTest
         }
     }
 
-    private static class RecordingDescriptorLoader implements RecordingDescriptorConsumer
+    private static final class RecordingDescriptorLoader implements RecordingDescriptorConsumer
     {
         private final List<RecordingDescriptor> descriptors = new ArrayList<>();
 

@@ -26,7 +26,7 @@ import static java.lang.invoke.MethodType.methodType;
 /**
  * Implementation of the {@link Checksum} interface that computes CRC-32C checksum.
  * <p>
- * <em>Note: Available only JDK 9+.</em>
+ * <em>Note: Available only on JDK 9+.</em>
  * </p>
  */
 final class Crc32c implements Checksum
@@ -49,7 +49,7 @@ final class Crc32c implements Checksum
                 Crc32c.class, "bitwiseComplement", methodType(int.class, int.class));
             // Always invoke with the 0xFFFFFFFF as first argument, i.e. empty CRC value
             methodHandle = insertArguments(methodHandle, 0, 0xFFFFFFFF);
-            // Always compute bitwise complete on the result value
+            // Always compute bitwise complement on the result value
             methodHandle = filterReturnValue(methodHandle, bitwiseComplement);
         }
         catch (final ClassNotFoundException ex)

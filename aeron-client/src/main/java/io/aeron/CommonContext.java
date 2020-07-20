@@ -70,12 +70,12 @@ public class CommonContext implements Cloneable
 
         public static InferableBoolean parse(final String value)
         {
-            if (null == value || "infer".equalsIgnoreCase(value))
+            if (null == value || "infer".equals(value))
             {
                 return INFER;
             }
 
-            return "true".equalsIgnoreCase(value) ? FORCE_TRUE : FORCE_FALSE;
+            return "true".equals(value) ? FORCE_TRUE : FORCE_FALSE;
         }
     }
 

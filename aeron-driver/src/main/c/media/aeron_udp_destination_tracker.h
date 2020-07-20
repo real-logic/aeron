@@ -25,12 +25,14 @@
 
 typedef struct aeron_udp_destination_entry_stct
 {
+    uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
     int64_t time_of_last_activity_ns;
     int64_t destination_timeout_ns;
     int64_t receiver_id;
     bool is_receiver_id_valid;
     aeron_uri_t *uri;
     struct sockaddr_storage addr;
+    uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_udp_destination_entry_t;
 

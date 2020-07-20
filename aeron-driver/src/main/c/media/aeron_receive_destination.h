@@ -37,8 +37,9 @@ typedef struct aeron_receive_destination_stct
     aeron_atomic_counter_t local_sockaddr_indicator;
     struct sockaddr_storage current_control_addr;
     size_t so_rcvbuf;
-    int64_t time_of_last_activity_ns;
     bool has_control_addr;
+    int64_t time_of_last_activity_ns;
+    uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_receive_destination_t;
 

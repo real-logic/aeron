@@ -350,7 +350,6 @@ TEST_F(UriTest, shouldParseSubscriptionParamReliableDefault)
     EXPECT_EQ(params.is_reliable, true);
 }
 
-
 TEST_F(UriTest, shouldParseSubscriptionSessionId)
 {
     aeron_uri_subscription_params_t params;

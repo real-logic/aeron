@@ -87,7 +87,7 @@ const char *aeron_errmsg()
     return result;
 }
 
-static aeron_per_thread_error_t* get_required_error_state()
+static aeron_per_thread_error_t *get_required_error_state()
 {
     initialize_error();
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);

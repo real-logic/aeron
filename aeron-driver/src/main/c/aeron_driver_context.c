@@ -289,11 +289,11 @@ aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
 
     if (NULL != inferable_boolean)
     {
-        if (strncmp(inferable_boolean, "TRUE", sizeof("TRUE")) == 0)
+        if (strncmp(inferable_boolean, "true", sizeof("true")) == 0)
         {
             result = AERON_FORCE_TRUE;
         }
-        else if (strncmp(inferable_boolean, "INFER", sizeof("INFER")) == 0)
+        else if (strncmp(inferable_boolean, "infer", sizeof("infer")) == 0)
         {
             result = AERON_INFER;
         }

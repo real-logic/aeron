@@ -346,7 +346,7 @@ int aeron_uri_get_term_length_param(aeron_uri_params_t *uri_params, aeron_uri_pu
 
         if (-1 == aeron_parse_size64(value_str, &value))
         {
-            aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_LENGTH_KEY);
+            aeron_set_err(EINVAL, "could not parse %s=%s in URI", AERON_URI_TERM_LENGTH_KEY, value_str);
             return -1;
         }
 
@@ -371,7 +371,7 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_uri_pub
 
         if (-1 == aeron_parse_size64(value_str, &value))
         {
-            aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_MTU_LENGTH_KEY);
+            aeron_set_err(EINVAL, "could not parse %s=%s in URI", AERON_URI_MTU_LENGTH_KEY, value_str);
             return -1;
         }
 
@@ -396,7 +396,7 @@ int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_pub
 
         if (-1 == aeron_parse_duration_ns(value_str, &value))
         {
-            aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_LINGER_TIMEOUT_KEY);
+            aeron_set_err(EINVAL, "could not parse %s=%s in URI", AERON_URI_LINGER_TIMEOUT_KEY, value_str);
             return -1;
         }
 
@@ -421,15 +421,14 @@ int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t
 
     if (0 != errno || '\0' != *end_ptr)
     {
-        aeron_set_err(EINVAL, "could not parse %s as int32_t, for key %s in URI: %s", value_str, key, strerror(errno));
+        aeron_set_err(EINVAL, "could not parse %s=%s as int32_t in URI: %s", key, value_str, strerror(errno));
         return -1;
     }
     else if (value < INT32_MIN || INT32_MAX < value)
     {
         aeron_set_err(
             EINVAL,
-            "could not parse %s as int32_t, for key %s in URI: Numerical result out of range",
-            value_str, key);
+            "could not parse %s=%s as int32_t in URI: Numerical result out of range", key, value_str);
         return -1;
     }
 
@@ -454,7 +453,7 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     value = strtoll(value_str, &end_ptr, 0);
     if (0 != errno || '\0' != *end_ptr)
     {
-        aeron_set_err(EINVAL, "could not parse %s as int64_t, for key %s in URI: ", value_str, key, strerror(errno));
+        aeron_set_err(EINVAL, "could not parse %s=%s as int64_t in URI: ", key, value_str, strerror(errno));
         return -1;
     }
 
@@ -478,7 +477,7 @@ int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *re
         }
         else
         {
-            aeron_set_err(EINVAL, "could not parse %s as bool, for key %s in URI", value_str, key);
+            aeron_set_err(EINVAL, "could not parse %s=%s as bool from URI", key, value_str);
             return -1;
         }
     }
@@ -504,8 +503,8 @@ int aeron_uri_publication_session_id_param(
             {
                 aeron_set_err(
                     EINVAL,
-                    "could not parse %s as int64_t, for key %s in URI: ",
-                    session_id_str, "session-id", strerror(errno));
+                    "could not parse %s=%s as int64_t in URI: ",
+                    AERON_URI_SESSION_ID_KEY, session_id_str, strerror(errno));
                 return -1;
             }
 
@@ -514,7 +513,8 @@ int aeron_uri_publication_session_id_param(
 
             if (NULL == publication)
             {
-                aeron_set_err(EINVAL, "%s=%s must reference a network publication", "session-id", session_id_str);
+                aeron_set_err(
+                    EINVAL, "%s=%s must reference a network publication", AERON_URI_SESSION_ID_KEY, session_id_str);
                 return -1;
             }
 
@@ -640,8 +640,8 @@ int aeron_uri_publication_params(
         if (count < 3)
         {
             aeron_set_err(
-                EINVAL, "params must be used as a complete set: %s %s %s", AERON_URI_INITIAL_TERM_ID_KEY,
-                AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
+                EINVAL, "params must be used as a complete set: %s %s %s",
+                AERON_URI_INITIAL_TERM_ID_KEY, AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
             return -1;
         }
 
@@ -650,7 +650,9 @@ int aeron_uri_publication_params(
         uint64_t term_offset = strtoull(term_offset_str, &end_ptr, 0);
         if ((term_offset == 0 && 0 != errno) || end_ptr == term_offset_str)
         {
-            aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_OFFSET_KEY);
+            aeron_set_err(
+                EINVAL,
+                "could not parse %s=%s in URI: %s", AERON_URI_TERM_OFFSET_KEY, term_offset_str, strerror(errno));
             return -1;
         }
 

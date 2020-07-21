@@ -1188,6 +1188,8 @@ public class Aeron implements AutoCloseable
 
         /**
          * Set the timeout between service calls the to {@link ClientConductor} duty cycles in nanoseconds.
+         * <p>
+         * <b>Note:</b> the method is used for testing only.
          *
          * @param interServiceTimeout the timeout (ns) between service calls the to {@link ClientConductor} duty cycle.
          * @return this for a fluent API.
@@ -1201,11 +1203,11 @@ public class Aeron implements AutoCloseable
         /**
          * Return the timeout between service calls to the duty cycle for the client.
          * <p>
-         * When exceeded, {@link #errorHandler()} will be called and the active {@link Publication}s and {@link Image}s
-         * closed.
+         * When exceeded, {@link #errorHandler()} will be called and the active {@link Publication}s, {@link Image}s,
+         * and {@link Counter}s will be closed.
          * <p>
          * This value is controlled by the driver and included in the CnC file. It can be configured by adjusting
-         * the {@code aeron.client.liveness.timeout} property on the media driver.
+         * the {@code aeron.client.liveness.timeout} property set on the media driver.
          *
          * @return the timeout in nanoseconds between service calls as an allowed maximum.
          */

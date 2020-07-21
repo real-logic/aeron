@@ -1382,6 +1382,8 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Does a spy subscription simulate a connection to a network publication.
+         * <p>
+         * If true then this will override the min group size of the min and tagged flow control strategies.
          *
          * @return true if a spy subscription should simulate a connection to a network publication.
          * @see Configuration#SPIES_SIMULATE_CONNECTION_PROP_NAME
@@ -1393,6 +1395,8 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Does a spy subscription simulate a connection to a network publication.
+         * <p>
+         * If true then this will override the min group size of the min and tagged flow control strategies.
          *
          * @param spiesSimulateConnection true if a spy subscription simulates a connection to a network publication.
          * @return this for a fluent API.

@@ -292,6 +292,9 @@ public class CommonContext implements Cloneable
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(
         CommonContext.class, "isConcluded");
+
+    private static final Map<String, Boolean> DEBUG_FIELDS_SEEN = new ConcurrentHashMap<>();
+
     private volatile int isConcluded;
 
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
@@ -529,7 +532,6 @@ public class CommonContext implements Cloneable
         return checkDebugTimeout(driverTimeoutMs, TimeUnit.MILLISECONDS);
     }
 
-    private static final Map<String, Boolean> DEBUG_FIELDS_SEEN = new ConcurrentHashMap<>();
     /**
      * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
      *

@@ -328,7 +328,9 @@ public class Configuration
     public static final long PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
-     * Property name for if spy subscriptions simulate a connection.
+     * Property name for if spy subscriptions simulate a connection to a network publication.
+     * <p>
+     * If true then this will override the min group size of the min and tagged flow control strategies.
      */
     public static final String SPIES_SIMULATE_CONNECTION_PROP_NAME = "aeron.spies.simulate.connection";
 

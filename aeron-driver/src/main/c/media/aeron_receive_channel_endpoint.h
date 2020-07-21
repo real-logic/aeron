@@ -125,6 +125,7 @@ int aeron_receive_channel_endpoint_send_rttm(
 
 void aeron_receive_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,

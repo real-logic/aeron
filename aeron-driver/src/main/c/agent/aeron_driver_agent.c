@@ -308,6 +308,7 @@ int aeron_driver_agent_outgoing_msg(
 void aeron_driver_agent_incoming_msg(
     void *interceptor_state,
     aeron_udp_channel_incoming_interceptor_t *delegate,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,
@@ -332,6 +333,7 @@ void aeron_driver_agent_incoming_msg(
     delegate->incoming_func(
         delegate->interceptor_state,
         delegate->next_interceptor,
+        transport,
         receiver_clientd,
         endpoint_clientd,
         destination_clientd,
@@ -402,6 +404,12 @@ int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
         incoming_bindings->incoming_init_func = aeron_driver_agent_interceptor_init;
         incoming_bindings->incoming_close_func = NULL;
         incoming_bindings->incoming_func = aeron_driver_agent_incoming_msg;
+        incoming_bindings->outgoing_transport_notification_func = NULL;
+        incoming_bindings->outgoing_publication_notification_func = NULL;
+        incoming_bindings->outgoing_image_notification_func = NULL;
+        incoming_bindings->incoming_transport_notification_func = NULL;
+        incoming_bindings->incoming_publication_notification_func = NULL;
+        incoming_bindings->incoming_image_notification_func = NULL;
 
         incoming_bindings->meta_info.name = "logging";
         incoming_bindings->meta_info.type = "interceptor";
@@ -441,6 +449,12 @@ int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
         outgoing_bindings->incoming_init_func = NULL;
         outgoing_bindings->incoming_close_func = NULL;
         outgoing_bindings->incoming_func = NULL;
+        outgoing_bindings->outgoing_transport_notification_func = NULL;
+        outgoing_bindings->outgoing_publication_notification_func = NULL;
+        outgoing_bindings->outgoing_image_notification_func = NULL;
+        outgoing_bindings->incoming_transport_notification_func = NULL;
+        outgoing_bindings->incoming_publication_notification_func = NULL;
+        outgoing_bindings->incoming_image_notification_func = NULL;
 
         outgoing_bindings->meta_info.name = "logging";
         outgoing_bindings->meta_info.type = "interceptor";

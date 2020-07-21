@@ -219,6 +219,9 @@ int aeron_udp_channel_data_paths_init(
             interceptor->outgoing_mmsg_func = binding->outgoing_mmsg_func;
             interceptor->outgoing_msg_func = binding->outgoing_msg_func;
             interceptor->close_func = binding->outgoing_close_func;
+            interceptor->outgoing_transport_notification_func = binding->outgoing_transport_notification_func;
+            interceptor->outgoing_publication_notification_func = binding->outgoing_publication_notification_func;
+            interceptor->outgoing_image_notification_func = binding->outgoing_image_notification_func;
             interceptor->next_interceptor = NULL;
 
             if (binding->outgoing_init_func(&interceptor->interceptor_state, affinity) < 0)
@@ -286,6 +289,9 @@ int aeron_udp_channel_data_paths_init(
             interceptor->interceptor_state = NULL;
             interceptor->incoming_func = binding->incoming_func;
             interceptor->close_func = binding->incoming_close_func;
+            interceptor->incoming_transport_notification_func = binding->incoming_transport_notification_func;
+            interceptor->incoming_publication_notification_func = binding->incoming_publication_notification_func;
+            interceptor->incoming_image_notification_func = binding->incoming_image_notification_func;
             interceptor->next_interceptor = NULL;
 
             if (binding->incoming_init_func(&interceptor->interceptor_state, affinity) < 0)
@@ -393,6 +399,7 @@ extern int aeron_udp_channel_outgoing_interceptor_msg_to_transport(
 
 extern void aeron_udp_channel_incoming_interceptor_recv_func(
     aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,
@@ -403,9 +410,27 @@ extern void aeron_udp_channel_incoming_interceptor_recv_func(
 extern void aeron_udp_channel_incoming_interceptor_to_endpoint(
     void *interceptor_state,
     aeron_udp_channel_incoming_interceptor_t *delegate,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr);
+
+extern int aeron_udp_channel_interceptors_transport_notifications(
+    aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
+    aeron_udp_channnel_interceptor_notification_type_t type);
+
+extern int aeron_udp_channel_interceptors_publication_notifications(
+    aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
+    aeron_network_publication_t *publication,
+    aeron_udp_channnel_interceptor_notification_type_t type);
+
+extern int aeron_udp_channel_interceptors_image_notifications(
+    aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
+    aeron_publication_image_t *image,
+    aeron_udp_channnel_interceptor_notification_type_t type);

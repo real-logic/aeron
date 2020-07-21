@@ -66,6 +66,12 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_loa
     interceptor_bindings->incoming_func = aeron_udp_channel_interceptor_loss_incoming;
     interceptor_bindings->outgoing_close_func = NULL;
     interceptor_bindings->incoming_close_func = NULL;
+    interceptor_bindings->outgoing_transport_notification_func = NULL;
+    interceptor_bindings->outgoing_publication_notification_func = NULL;
+    interceptor_bindings->outgoing_image_notification_func = NULL;
+    interceptor_bindings->incoming_transport_notification_func = NULL;
+    interceptor_bindings->incoming_publication_notification_func = NULL;
+    interceptor_bindings->incoming_image_notification_func = NULL;
 
     interceptor_bindings->meta_info.name = "loss";
     interceptor_bindings->meta_info.type = "interceptor";
@@ -135,6 +141,7 @@ static bool aeron_udp_channel_interceptor_loss_should_drop_frame(
 void aeron_udp_channel_interceptor_loss_incoming(
     void *interceptor_state,
     aeron_udp_channel_incoming_interceptor_t *delegate,
+    aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
     void *endpoint_clientd,
     void *destination_clientd,
@@ -149,6 +156,7 @@ void aeron_udp_channel_interceptor_loss_incoming(
         delegate->incoming_func(
             delegate->interceptor_state,
             delegate->next_interceptor,
+            transport,
             receiver_clientd,
             endpoint_clientd,
             destination_clientd,

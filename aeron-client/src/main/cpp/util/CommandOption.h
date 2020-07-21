@@ -90,11 +90,11 @@ public:
 
     int getParamAsInt(size_t index) const;
 
-    long getParamAsLong(size_t index) const;
+    long long getParamAsLong(size_t index) const;
 
     int getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue) const;
 
-    long getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue) const;
+    long long getParamAsLong(size_t index, long long minValue, long long maxValue, long long defaultValue) const;
 };
 
 }}

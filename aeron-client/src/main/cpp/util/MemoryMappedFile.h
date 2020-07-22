@@ -21,10 +21,8 @@
 #include "util/Export.h"
 
 #ifdef _WIN32
-    #ifndef NOMINMAX
-        #define NOMINMAX
-    #endif // !NOMINMAX
-    #include <windows.h>
+    #include <stddef.h>
+    typedef void* HANDLE;
 #else
     #include <sys/types.h>
 #endif

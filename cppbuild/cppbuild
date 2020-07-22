@@ -16,8 +16,9 @@ case "`uname`" in
     ;;
 esac
 
-for option in "$@"
+while [[ $# -gt 0 ]]
 do
+  option="$1"
   case ${option} in
     --c-warnings-as-errors)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DC_WARNINGS_AS_ERRORS=ON"

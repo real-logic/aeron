@@ -20,6 +20,10 @@
     #include <fcntl.h>
     #include <unistd.h>
 #else
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif // !NOMINMAX
+    #include <Windows.h>
     #include "StringUtil.h"
 #endif
 

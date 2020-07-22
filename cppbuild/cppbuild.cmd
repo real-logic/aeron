@@ -35,6 +35,10 @@ for %%o in (%*) do (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DBUILD_AERON_ARCHIVE_API=ON"
     )
 
+    if "%%o"=="--slow-system-tests" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON -DAERON_SYSTEM_TESTS=OFF"
+    )
+
     if "%%o"=="--no-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SYSTEM_TESTS=OFF"
     )
@@ -46,7 +50,7 @@ for %%o in (%*) do (
     )
 )
 
-call %DIR%\vs-helper.cmd
+call "%DIR%\vs-helper.cmd"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%

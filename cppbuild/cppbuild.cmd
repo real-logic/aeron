@@ -6,8 +6,6 @@ set "SOURCE_DIR=%DIR%\.."
 set "BUILD_DIR=%DIR%\Release"
 set "BUILD_CONFIG=Release"
 set "ZLIB_ZIP=%DIR%\zlib1211.zip"
-set "ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build"
-set "ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64"
 set "EXTRA_CMAKE_ARGS="
 
 for %%o in (%*) do (
@@ -52,6 +50,9 @@ call %DIR%\vs-helper.cmd
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
+
+set "ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build"
+set "ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64"
 
 md %BUILD_DIR%
 pushd %BUILD_DIR%

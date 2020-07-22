@@ -191,7 +191,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '11.4' ]
+        version: [ '11.5' ]
     env:
       CC: clang
       CXX: clang++

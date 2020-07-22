@@ -26,14 +26,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
@@ -71,14 +71,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
@@ -101,14 +101,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
@@ -129,14 +129,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
@@ -164,14 +164,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
@@ -199,14 +199,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
@@ -228,14 +228,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}

@@ -38,10 +38,10 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #define RTLD_DEFAULT ((HMODULE)-123)
 #define RTLD_NEXT ((HMODULE)-124)
 
-void* aeron_dlsym(HMODULE module, LPCSTR name);
+void *aeron_dlsym(HMODULE module, LPCSTR name);
 HMODULE aeron_dlopen(LPCSTR filename);
-char* aeron_dlerror();
-const char *aeron_dlinfo(const void* addr, char* buffer, size_t max_buffer_length);
+char *aeron_dlerror();
+const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
 
 #else
 #error Unsupported platform!

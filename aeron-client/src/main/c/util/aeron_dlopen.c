@@ -43,12 +43,12 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #include "concurrent/aeron_counters_manager.h"
 #include "aeronc.h"
 
-void* aeron_dlsym_fallback(LPCSTR name)
+void *aeron_dlsym_fallback(LPCSTR name)
 {
     return NULL;
 }
 
-static HMODULE* modules = NULL;
+static HMODULE *modules = NULL;
 static size_t modules_size = 0;
 static size_t modules_capacity = 10;
 
@@ -65,7 +65,7 @@ HMODULE GetCurrentModule()
 
 void aeron_init_dlopen_support()
 {
-    if (modules == NULL)
+    if (NULL == modules)
     {
         modules = (HMODULE*)malloc(sizeof(HMODULE) * modules_capacity);
         memset(modules, 0, sizeof(HMODULE) * modules_capacity);
@@ -74,16 +74,16 @@ void aeron_init_dlopen_support()
     }
 }
 
-void* aeron_dlsym(HMODULE module, LPCSTR name)
+void *aeron_dlsym(HMODULE module, LPCSTR name)
 {
     aeron_init_dlopen_support();
 
-    if (module == RTLD_DEFAULT)
+    if (RTLD_DEFAULT == module)
     {
         for (size_t i = 1; i <= modules_size; i++)
         {
-            void* res = aeron_dlsym(modules[modules_size - i], name);
-            if (res != NULL)
+            void *res = aeron_dlsym(modules[modules_size - i], name);
+            if (NULL != res)
             {
                 return res;
             }
@@ -92,18 +92,18 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
         return aeron_dlsym_fallback(name);
     }
 
-    if (module == RTLD_NEXT)
+    if (RTLD_NEXT == module)
     {
         BOOL firstFound = FALSE;
         for (size_t i = 1; i <= modules_size; i++)
         {
-            void* res = aeron_dlsym(modules[modules_size - i], name);
-            if (res != NULL && firstFound)
+            void *res = aeron_dlsym(modules[modules_size - i], name);
+            if (NULL != res && firstFound)
             {
                 return res;
             }
 
-            if (res != NULL && !firstFound)
+            if (NULL != res && !firstFound)
             {
                 firstFound = TRUE;
             }
@@ -132,7 +132,7 @@ HMODULE aeron_dlopen(LPCSTR filename)
     return module;
 }
 
-char* aeron_dlerror()
+char *aeron_dlerror()
 {
     DWORD errorMessageID = GetLastError();
     LPSTR messageBuffer = NULL;
@@ -150,7 +150,7 @@ char* aeron_dlerror()
     return messageBuffer;
 }
 
-const char *aeron_dlinfo(const void *addr, char* buffer, size_t max_buffer_length)
+const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length)
 {
     buffer[0] = '\0';
     return buffer;

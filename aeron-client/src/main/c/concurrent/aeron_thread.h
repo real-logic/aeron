@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-void aeron_thread_set_name(const char* role_name);
+void aeron_thread_set_name(const char *role_name);
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -55,10 +55,11 @@ void aeron_thread_set_name(const char* role_name);
     typedef struct
     {
         HANDLE handle;
-        void* (*callback)(void*);
-        void* arg0;
-        void* result;
-    } aeron_thread_t;
+        void *(*callback)(void*);
+        void *arg0;
+        void *result;
+    }
+    aeron_thread_t;
 
     typedef INIT_ONCE AERON_INIT_ONCE;
 
@@ -67,20 +68,20 @@ void aeron_thread_set_name(const char* role_name);
 
     #define AERON_INIT_ONCE_VALUE INIT_ONCE_STATIC_INIT;
 
-    void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback);
+    void aeron_thread_once(AERON_INIT_ONCE *s_init_once, void *callback);
 
-    int aeron_mutex_init(aeron_mutex_t* mutex, void* attr);
-    int aeron_mutex_destroy(aeron_mutex_t* mutex);
-    int aeron_mutex_lock(aeron_mutex_t* mutex);
-    int aeron_mutex_unlock(aeron_mutex_t* mutex);
+    int aeron_mutex_init(aeron_mutex_t *mutex, void *attr);
+    int aeron_mutex_destroy(aeron_mutex_t *mutex);
+    int aeron_mutex_lock(aeron_mutex_t *mutex);
+    int aeron_mutex_unlock(aeron_mutex_t *mutex);
 
-    int aeron_thread_attr_init(pthread_attr_t* attr);
+    int aeron_thread_attr_init(pthread_attr_t *attr);
 
-    int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), void* arg0);
+    int aeron_thread_create(aeron_thread_t *thread, void *attr, void*(*callback)(void*), void *arg0);
 
     int aeron_thread_join(aeron_thread_t thread, void **value_ptr);
 
-    int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *));
+    int aeron_thread_key_create(pthread_key_t *key, void(*destr_function)(void *));
 
     int aeron_thread_key_delete(pthread_key_t key);
 

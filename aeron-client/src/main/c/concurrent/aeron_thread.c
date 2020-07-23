@@ -57,7 +57,7 @@ void aeron_nano_sleep(uint64_t nanoseconds)
 
 #if defined(AERON_COMPILER_GCC)
 
-void aeron_thread_set_name(const char* role_name)
+void aeron_thread_set_name(const char *role_name)
 {
 #if defined(Darwin)
     pthread_setname_np(role_name);
@@ -68,34 +68,34 @@ void aeron_thread_set_name(const char* role_name)
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-static BOOL aeron_thread_once_callback(PINIT_ONCE init_once, void (*callback)(void), void** context)
+static BOOL aeron_thread_once_callback(PINIT_ONCE init_once, void (*callback)(void), void **context)
 {
     callback();
     return TRUE;
 }
 
-void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback)
+void aeron_thread_once(AERON_INIT_ONCE *s_init_once, void *callback)
 {
     InitOnceExecuteOnce(s_init_once, aeron_thread_once_callback, callback, NULL);
 }
 
-int aeron_mutex_init(aeron_mutex_t* mutex, void* attr)
+int aeron_mutex_init(aeron_mutex_t *mutex, void *attr)
 {
     *mutex = CreateMutexA(NULL, FALSE, NULL);
     return *mutex ? 0 : -1;
 }
 
-int aeron_mutex_lock(aeron_mutex_t* mutex)
+int aeron_mutex_lock(aeron_mutex_t *mutex)
 {
     return WaitForSingleObject(*mutex, INFINITE) == WAIT_OBJECT_0 ? 0 : EINVAL;
 }
 
-int aeron_mutex_unlock(aeron_mutex_t* mutex)
+int aeron_mutex_unlock(aeron_mutex_t *mutex)
 {
     return ReleaseMutex(*mutex) ? 0 : EINVAL;
 }
 
-int aeron_mutex_destroy(aeron_mutex_t* mutex)
+int aeron_mutex_destroy(aeron_mutex_t *mutex)
 {
     if (*mutex)
     {
@@ -107,19 +107,19 @@ int aeron_mutex_destroy(aeron_mutex_t* mutex)
     return EINVAL;
 }
 
-int aeron_thread_attr_init(pthread_attr_t* attr)
+int aeron_thread_attr_init(pthread_attr_t *attr)
 {
     return 0;
 }
 
 static DWORD WINAPI aeron_thread_proc(LPVOID parameter)
 {
-    aeron_thread_t* thread = (aeron_thread_t*)parameter;
+    aeron_thread_t *thread = (aeron_thread_t*)parameter;
     thread->result = thread->callback(thread->arg0);
     return 0;
 }
 
-int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), void* arg0)
+int aeron_thread_create(aeron_thread_t *thread, void *attr, void*(*callback)(void*), void *arg0)
 {
     thread->callback = callback;
     thread->arg0 = arg0;
@@ -136,10 +136,10 @@ int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(voi
     return thread->handle ? 0 : -1;
 }
 
-void aeron_thread_set_name(const char* role_name)
+void aeron_thread_set_name(const char *role_name)
 {
     size_t wn = mbstowcs(NULL, role_name, 0);
-    wchar_t * buf = malloc(sizeof(wchar_t) * (wn + 1));  // value-initialize to 0 (see below)
+    wchar_t *buf = malloc(sizeof(wchar_t) * (wn + 1));  // value-initialize to 0 (see below)
     if (!buf)
     {
         return;
@@ -171,7 +171,7 @@ int aeron_thread_join(aeron_thread_t thread, void **value_ptr)
     return 0;
 }
 
-int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *))
+int aeron_thread_key_create(pthread_key_t *key, void(*destr_function)(void *))
 {
     DWORD dkey = TlsAlloc();
     if (dkey != TLS_OUT_OF_INDEXES)
@@ -209,7 +209,7 @@ int aeron_thread_set_specific(pthread_key_t key, const void *pointer)
     }
 }
 
-void * aeron_thread_get_specific(pthread_key_t key)
+void *aeron_thread_get_specific(pthread_key_t key)
 {
     return TlsGetValue(key);
 }

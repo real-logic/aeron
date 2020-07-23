@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <csignal>
 #include <thread>
+#include <cinttypes>
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"
@@ -72,7 +73,7 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 void printRate(double messagesPerSec, double bytesPerSec, std::int64_t totalFragments, std::int64_t totalBytes)
 {
     std::printf(
-        "%.04g msgs/sec, %.04g bytes/sec, totals %lld messages %lld MB payloads\n",
+        "%.04g msgs/sec, %.04g bytes/sec, totals %" PRId64 " messages %" PRId64 " MB payloads\n",
         messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
 }
 

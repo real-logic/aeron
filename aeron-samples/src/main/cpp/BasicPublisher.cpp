@@ -19,6 +19,8 @@
 #include <thread>
 #include <array>
 #include <csignal>
+#include <cinttypes>
+
 #include "util/CommandOptionParser.h"
 #include "Configuration.h"
 #include "Aeron.h"
@@ -28,7 +30,7 @@ using namespace aeron;
 
 std::atomic<bool> running(true);
 
-void sigIntHandler(int param)
+void sigIntHandler(int)
 {
     running = false;
 }
@@ -129,9 +131,9 @@ int main(int argc, char **argv)
         for (std::int64_t i = 0; i < settings.numberOfMessages && running; i++)
         {
 #if _MSC_VER
-            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %lld", i);
+            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %" PRId64, i);
 #else
-            const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %lld", i);
+            const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %" PRId64, i);
 #endif
 
             srcBuffer.putBytes(0, reinterpret_cast<std::uint8_t *>(message), messageLen);

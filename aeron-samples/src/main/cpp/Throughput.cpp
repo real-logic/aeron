@@ -91,7 +91,7 @@ void printRate(double messagesPerSec, double bytesPerSec, std::int64_t totalFrag
     if (printingActive)
     {
         std::printf(
-            "%.04g msgs/sec, %.04g bytes/sec, totals %lld messages %lld MB payloads\n",
+            "%.04g msgs/sec, %.04g bytes/sec, totals %" PRId64 " messages %" PRId64 " MB payloads\n",
             messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
     }
 }

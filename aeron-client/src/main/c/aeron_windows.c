@@ -178,7 +178,7 @@ BOOL aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *i
     return aeron_uint128_equals(aeron_uint128_bitwise_and(addr1, netmask), aeron_uint128_bitwise_and(addr2, netmask));
 }
 
-void aeron_srand48(UINT64 aeron_nano_clock)
+void aeron_srand48(uint64_t aeron_nano_clock)
 {
     srand((unsigned int)aeron_nano_clock);
 }
@@ -196,57 +196,6 @@ double aeron_erand48(unsigned short xsubi[3])
 void localtime_r(const time_t *timep, struct tm *result)
 {
     localtime_s(result, timep);
-}
-
-#define MS_PER_SEC      1000ULL     // MS = milliseconds
-#define US_PER_MS       1000ULL     // US = microseconds
-#define HNS_PER_US      10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
-#define NS_PER_US       1000ULL
-
-#define HNS_PER_SEC     (MS_PER_SEC * US_PER_MS * HNS_PER_US)
-#define NS_PER_HNS      (100ULL)    // NS = nanoseconds
-#define NS_PER_SEC      (MS_PER_SEC * US_PER_MS * NS_PER_US)
-
-int aeron_clock_gettime_monotonic(struct timespec *tv)
-{
-    static LARGE_INTEGER ticksPerSec;
-    LARGE_INTEGER ticks;
-
-    if (!ticksPerSec.QuadPart)
-    {
-        QueryPerformanceFrequency(&ticksPerSec);
-        if (!ticksPerSec.QuadPart)
-        {
-            errno = ENOTSUP;
-            return -1;
-        }
-    }
-
-    QueryPerformanceCounter(&ticks);
-
-    double seconds = (double)ticks.QuadPart / (double)ticksPerSec.QuadPart;
-    tv->tv_sec = (time_t)seconds;
-    tv->tv_nsec = (long)((ULONGLONG)(seconds * NS_PER_SEC) % NS_PER_SEC);
-
-    return 0;
-}
-
-int aeron_clock_gettime_realtime(struct timespec *tv)
-{
-    FILETIME ft;
-    ULARGE_INTEGER hnsTime;
-
-    GetSystemTimeAsFileTime(&ft);
-
-    hnsTime.LowPart = ft.dwLowDateTime;
-    hnsTime.HighPart = ft.dwHighDateTime;
-
-    hnsTime.QuadPart -= (11644473600ULL * HNS_PER_SEC);
-
-    tv->tv_nsec = (long)((hnsTime.QuadPart % HNS_PER_SEC) * NS_PER_HNS);
-    tv->tv_sec = (long)(hnsTime.QuadPart / HNS_PER_SEC);
-
-    return 0;
 }
 
 char *aeron_strndup(const char *value, size_t length)

@@ -126,12 +126,12 @@ int main(int argc, char **argv)
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
         char message[256];
 
-        for (long i = 0; i < settings.numberOfMessages && running; i++)
+        for (std::int64_t i = 0; i < settings.numberOfMessages && running; i++)
         {
 #if _MSC_VER
-            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %ld", i);
+            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %lld", i);
 #else
-            const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %ld", i);
+            const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %lld", i);
 #endif
 
             srcBuffer.putBytes(0, reinterpret_cast<std::uint8_t *>(message), messageLen);

@@ -87,12 +87,12 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 
 std::atomic<bool> printingActive;
 
-void printRate(double messagesPerSec, double bytesPerSec, long totalFragments, long totalBytes)
+void printRate(double messagesPerSec, double bytesPerSec, std::int64_t totalFragments, std::int64_t totalBytes)
 {
     if (printingActive)
     {
         std::printf(
-            "%.04g msgs/sec, %.04g bytes/sec, totals %ld messages %ld MB payloads\n",
+            "%.04g msgs/sec, %.04g bytes/sec, totals %lld messages %lld MB payloads\n",
             messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
     }
 }
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
                 rateReporter.reset();
             }
 
-            for (long i = 0; i < settings.numberOfMessages && isRunning(); i++)
+            for (std::int64_t i = 0; i < settings.numberOfMessages && isRunning(); i++)
             {
                 while (publicationPtr->tryClaim(settings.messageLength, bufferClaim) < 0L)
                 {

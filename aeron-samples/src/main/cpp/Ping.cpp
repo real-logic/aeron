@@ -103,7 +103,7 @@ void sendPingAndReceivePong(
     std::shared_ptr<Image> imageSharedPtr = subscription.imageByIndex(0);
     Image &image = *imageSharedPtr;
 
-    for (long i = 0; i < settings.numberOfMessages; i++)
+    for (std::int64_t i = 0; i < settings.numberOfMessages; i++)
     {
         std::int64_t position;
 

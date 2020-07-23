@@ -29,12 +29,21 @@
 
 #if defined(AERON_COMPILER_GCC)
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 #include <intrin.h>
 #define __builtin_bswap32 _byteswap_ulong
 #define __builtin_bswap64 _byteswap_uint64
 #define __builtin_popcount __popcnt
+
+#if defined(AERON_CPU_X64)
 #define __builtin_popcountll __popcnt64
+#else
+__inline DWORD64 __builtin_popcountll (DWORD64 operand)
+{
+    return __popcnt((DWORD)(operand >> 32)) + __popcnt((DWORD)(operand & UINT32_MAX));
+}
+#endif
+
 #else
 #error Unsupported platform!
 #endif

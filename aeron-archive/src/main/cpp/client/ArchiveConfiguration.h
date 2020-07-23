@@ -108,7 +108,7 @@ constexpr const std::int32_t ARCHIVE_SEMANTIC_VERSION = aeron::util::semanticVer
     ARCHIVE_MAJOR_VERSION, ARCHIVE_MINOR_VERSION, ARCHIVE_PATCH_VERSION);
 
 /// Timeout when waiting on a message to be sent or received.
-constexpr const long long MESSAGE_TIMEOUT_NS_DEFAULT = 5 * 1000 * 1000 * 1000L;
+constexpr const long long MESSAGE_TIMEOUT_NS_DEFAULT = 5 * 1000 * 1000 * 1000LL;
 
 /// Channel for sending control messages to an archive.
 constexpr const char CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8010";

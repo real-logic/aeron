@@ -61,8 +61,8 @@ struct Settings
     std::string pongChannel = samples::configuration::DEFAULT_PONG_CHANNEL;
     std::int32_t pingStreamId = samples::configuration::DEFAULT_PING_STREAM_ID;
     std::int32_t pongStreamId = samples::configuration::DEFAULT_PONG_STREAM_ID;
-    long numberOfWarmupMessages = samples::configuration::DEFAULT_NUMBER_OF_WARM_UP_MESSAGES;
-    long numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
+    long long numberOfWarmupMessages = samples::configuration::DEFAULT_NUMBER_OF_WARM_UP_MESSAGES;
+    long long numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
     int messageLength = samples::configuration::DEFAULT_MESSAGE_LENGTH;
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
 };
@@ -83,10 +83,10 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
     s.pongChannel = cp.getOption(optPongChannel).getParam(0, s.pongChannel);
     s.pingStreamId = cp.getOption(optPingStreamId).getParamAsInt(0, 1, INT32_MAX, s.pingStreamId);
     s.pongStreamId = cp.getOption(optPongStreamId).getParamAsInt(0, 1, INT32_MAX, s.pongStreamId);
-    s.numberOfMessages = cp.getOption(optMessages).getParamAsLong(0, 0, LONG_MAX, s.numberOfMessages);
+    s.numberOfMessages = cp.getOption(optMessages).getParamAsLong(0, 0, INT64_MAX, s.numberOfMessages);
     s.messageLength = cp.getOption(optLength).getParamAsInt(0, sizeof(std::int64_t), INT32_MAX, s.messageLength);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
-    s.numberOfWarmupMessages = cp.getOption(optWarmupMessages).getParamAsLong(0, 0, LONG_MAX, s.numberOfWarmupMessages);
+    s.numberOfWarmupMessages = cp.getOption(optWarmupMessages).getParamAsLong(0, 0, INT64_MAX, s.numberOfWarmupMessages);
 
     return s;
 }

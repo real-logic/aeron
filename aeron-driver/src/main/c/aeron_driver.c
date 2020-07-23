@@ -141,13 +141,15 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epoch_clock());
         while (true)
         {
-            char* invalid_win_symbol = strstr(datestamp, ":");
+            char *invalid_win_symbol = strstr(datestamp, ":");
             if (invalid_win_symbol == NULL)
             {
                 break;
             }
+
             *invalid_win_symbol = '-';
         }
+
         snprintf(buffer, sizeof(buffer) - 1, "%s-%s-error.log", aeron_dir, datestamp);
 
         if ((saved_errors_file = fopen(buffer, "w")) != NULL)

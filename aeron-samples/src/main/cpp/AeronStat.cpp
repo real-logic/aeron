@@ -37,7 +37,7 @@ using namespace std::chrono;
 
 std::atomic<bool> running(true);
 
-void sigIntHandler(int param)
+void sigIntHandler(int)
 {
     running = false;
 }
@@ -110,7 +110,7 @@ int main (int argc, char** argv)
             char currentTime[80];
 
             ::time(&rawtime);
-            struct tm localTm;
+            struct tm localTm{};
 
 #ifdef _MSC_VER
             localtime_s(&localTm, &rawtime);

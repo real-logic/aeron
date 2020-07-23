@@ -69,7 +69,7 @@ std::string formatDate(std::int64_t millisecondsSinceEpoch)
     char timeBuffer[80];
     char msecBuffer[8];
     char tzBuffer[8];
-    struct tm localTm;
+    struct tm localTm{};
 
 #ifdef _MSC_VER
     localtime_s(&localTm, &tm);

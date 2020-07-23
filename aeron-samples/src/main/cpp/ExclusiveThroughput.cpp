@@ -35,7 +35,7 @@ using namespace aeron;
 
 std::atomic<bool> running(true);
 
-void sigIntHandler(int param)
+void sigIntHandler(int)
 {
     running = false;
 }
@@ -268,10 +268,10 @@ int main(int argc, char **argv)
 
             std::cout << "Done streaming." << std::endl;
             std::cout << "Publication back pressure ratio ";
-            std::cout << ((double)backPressureCount / settings.numberOfMessages) << std::endl;
+            std::cout << ((double)backPressureCount / (double)settings.numberOfMessages) << std::endl;
 
             std::cout << "Subscription failure ratio ";
-            std::cout << ((double)failedPolls / (failedPolls + successfulPolls)) << std::endl;
+            std::cout << ((double)failedPolls / (double)(failedPolls + successfulPolls)) << std::endl;
 
             if (isRunning() && settings.lingerTimeoutMs > 0)
             {

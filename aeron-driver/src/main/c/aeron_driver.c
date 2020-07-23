@@ -330,7 +330,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     size_t default_rcvbuf = 0;
     len = sizeof(default_rcvbuf);
-    if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
+    if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &default_rcvbuf, &len) < 0)
     {
         aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
         goto cleanup;

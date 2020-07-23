@@ -21,6 +21,7 @@
 extern "C"
 {
 #include <util/aeron_fileutil.h>
+#include <util/aeron_dlopen.h>
 #include <concurrent/aeron_atomic.h>
 #include <concurrent/aeron_distinct_error_log.h>
 #include <aeron_publication_image.h>
@@ -41,12 +42,7 @@ typedef std::array<std::uint8_t, 2 * CAPACITY> buffer_2x_t;
 
 void *get_on_publication_image_fptr()
 {
-#if defined(AERON_COMPILER_MSVC)
-    HMODULE module = GetModuleHandleA("aeron_driver");
-    return (void *)GetProcAddress(module, "aeron_driver_conductor_on_create_publication_image");
-#else
-    return (void *)aeron_driver_conductor_on_create_publication_image;
-#endif
+    return aeron_dlsym(RTLD_DEFAULT, "aeron_driver_conductor_on_create_publication_image");
 }
 
 class DataPacketDispatcherTest : public ReceiverTestBase

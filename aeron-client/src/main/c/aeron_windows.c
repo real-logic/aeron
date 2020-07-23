@@ -58,11 +58,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     return TRUE;
 }
 
-void aeron_micro_sleep(size_t microseconds)
-{
-    aeron_nano_sleep(1000 * microseconds);
-}
-
 typedef struct { UINT64 q[2]; } aeron_uint128_t;
 
 aeron_uint128_t make_aeron_uint128_t(UINT64 x)

@@ -17,6 +17,8 @@
 #ifndef AERON_AERON_CLOCK_H
 #define AERON_AERON_CLOCK_H
 
+#include <stdint.h>
+
 /**
  * Opaque reference to a cached clock instance.
  */

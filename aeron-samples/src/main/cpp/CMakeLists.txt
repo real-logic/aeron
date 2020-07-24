@@ -17,12 +17,10 @@
 set(CLIENT_LINK_LIB "aeron_client")
 set(CLIENT_WRAPPER_LINK_LIB "aeron_client_wrapper")
 set(C_CLIENT_LINK_LIB "aeron")
-#if (LINK_SAMPLES_CLIENT_SHARED)
-#    set(CLIENT_LINK_LIB "aeron_client_shared")
-#    add_definitions(-DCLIENT_SHARED)
-#endif ()
-
-#include_directories(${AERON_CLIENT_SOURCE_PATH})
+if (LINK_SAMPLES_CLIENT_SHARED)
+    set(CLIENT_LINK_LIB "aeron_client_shared")
+    add_definitions(-DCLIENT_SHARED)
+endif ()
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 

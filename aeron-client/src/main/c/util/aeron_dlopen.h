@@ -32,14 +32,11 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-#include <WinSock2.h>
-#include <windows.h>
+#define RTLD_DEFAULT ((void*)-123)
+#define RTLD_NEXT ((void*)-124)
 
-#define RTLD_DEFAULT ((HMODULE)-123)
-#define RTLD_NEXT ((HMODULE)-124)
-
-void *aeron_dlsym(HMODULE module, LPCSTR name);
-HMODULE aeron_dlopen(LPCSTR filename);
+void *aeron_dlsym(void *module, const char *name);
+void *aeron_dlopen(const char *filename);
 char *aeron_dlerror();
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
 

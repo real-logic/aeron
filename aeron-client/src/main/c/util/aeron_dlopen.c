@@ -42,6 +42,7 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 
 #include "concurrent/aeron_counters_manager.h"
 #include "aeronc.h"
+#include <Windows.h>
 
 void *aeron_dlsym_fallback(LPCSTR name)
 {
@@ -74,7 +75,7 @@ void aeron_init_dlopen_support()
     }
 }
 
-void *aeron_dlsym(HMODULE module, LPCSTR name)
+void *aeron_dlsym(HMODULE module, const char *name)
 {
     aeron_init_dlopen_support();
 
@@ -115,7 +116,7 @@ void *aeron_dlsym(HMODULE module, LPCSTR name)
     return GetProcAddress(module, name);
 }
 
-HMODULE aeron_dlopen(LPCSTR filename)
+void *aeron_dlopen(const char *filename)
 {
     aeron_init_dlopen_support();
 

@@ -749,6 +749,11 @@ int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_contex
 uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context);
 
 /**
+ * Set the list of filenames to dynamic libraries to load upon context init.
+ */
+#define AERON_DRIVER_DYNAMIC_LIBRARIES_ENV_VAR "AERON_DRIVER_DYNAMIC_LIBRARIES"
+
+/**
  * Return full version and build string.
  *
  * @return full version and build string.

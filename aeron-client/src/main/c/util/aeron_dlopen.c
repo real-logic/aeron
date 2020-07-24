@@ -20,7 +20,14 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <inttypes.h>
+
 #include "aeron_dlopen.h"
+#include "aeron_error.h"
+#include "aeron_strutil.h"
+#include "aeron_alloc.h"
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -160,3 +167,87 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #else
 #error Unsupported platform!
 #endif
+
+#define AERON_MAX_DL_LIBS_LEN (4094)
+#define AERON_MAX_DL_LIB_NAMES (10)
+
+int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
+{
+    char libs_dup[AERON_MAX_DL_LIBS_LEN];
+    char *lib_names[AERON_MAX_DL_LIB_NAMES];
+    aeron_dl_loaded_libs_state_t *_state;
+    const size_t libs_length = strlen(libs);
+
+    *state = NULL;
+
+    if (libs_length >= (size_t)AERON_MAX_DL_LIBS_LEN)
+    {
+        aeron_set_err(
+            EINVAL,
+            "dl libs list too long, must have: %" PRIu32 " < %d",
+            (uint32_t)libs_length, AERON_MAX_DL_LIBS_LEN);
+        return -1;
+    }
+
+    strcpy(libs_dup, libs);
+
+    const int num_libs = aeron_tokenise(libs_dup, ',', AERON_MAX_DL_LIB_NAMES, lib_names);
+
+    if (-ERANGE == num_libs)
+    {
+        aeron_set_err(EINVAL, "Too many dl libs defined, limit %d: %s", AERON_MAX_DL_LIB_NAMES, libs);
+        return -1;
+    }
+    else if (num_libs < 0)
+    {
+        aeron_set_err(EINVAL, "Failed to parse dl libs: %s", libs != NULL ? libs : "(null)");
+        return -1;
+    }
+
+    if (aeron_alloc((void **)&_state, sizeof(aeron_dl_loaded_libs_state_t)) < 0 ||
+        aeron_alloc((void **)&_state->libs, sizeof(aeron_dl_loaded_lib_state_t) * num_libs) < 0)
+    {
+        aeron_set_err(aeron_errcode(), "could not allocate dl_loaded_libs: %s", aeron_errmsg());
+        return -1;
+    }
+    _state->num_libs = num_libs;
+
+    for (int i = 0; i < num_libs; i++)
+    {
+        const char *lib_name = lib_names[i];
+        aeron_dl_loaded_lib_state_t *lib = &_state->libs[i];
+
+        if (NULL == (lib->handle = aeron_dlopen(lib_name)))
+        {
+            aeron_set_err(EINVAL, "failed to load dl_lib %s: %s", lib_name, aeron_dlerror());
+            return -1;
+        }
+    }
+
+    *state = _state;
+    return 0;
+}
+
+int aeron_dl_load_libs_delete(aeron_dl_loaded_libs_state_t *state)
+{
+    if (NULL != state)
+    {
+        for (size_t i = 0; i < state->num_libs; i++)
+        {
+            aeron_dl_loaded_lib_state_t *lib = &state->libs[i];
+
+#if defined(AERON_COMPILER_GCC)
+            dlclose(lib->handle);
+#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+            FreeLibrary(lib->handle);
+#else
+#error Unsupported platform!
+#endif
+        }
+
+        aeron_free(state->libs);
+        aeron_free(state);
+    }
+
+    return 0;
+}

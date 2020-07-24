@@ -44,4 +44,20 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #error Unsupported platform!
 #endif
 
+typedef struct aeron_dl_loaded_lib_state_stct
+{
+    void *handle;
+}
+aeron_dl_loaded_lib_state_t;
+
+typedef struct aeron_dl_loaded_libs_state_stct
+{
+    aeron_dl_loaded_lib_state_t *libs;
+    size_t num_libs;
+}
+aeron_dl_loaded_libs_state_t;
+
+int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs);
+int aeron_dl_load_libs_delete(aeron_dl_loaded_libs_state_t *state);
+
 #endif //AERON_DLOPEN_H

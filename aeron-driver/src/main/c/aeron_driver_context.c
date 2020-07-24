@@ -54,6 +54,7 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_termination_validator.h"
 #include "agent/aeron_driver_agent.h"
+#include "util/aeron_dlopen.h"
 
 #if defined(__clang__)
     #pragma clang diagnostic push
@@ -405,6 +406,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->error_log = NULL;
     _context->udp_channel_outgoing_interceptor_bindings = NULL;
     _context->udp_channel_incoming_interceptor_bindings = NULL;
+    _context->dynamic_libs = NULL;
 
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
     {
@@ -522,6 +524,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
 
     char *value = NULL;
+
+    if ((value = getenv(AERON_DRIVER_DYNAMIC_LIBRARIES_ENV_VAR)))
+    {
+        if (aeron_dl_load_libs(&_context->dynamic_libs, value) < 0)
+        {
+            return -1;
+        }
+    }
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
@@ -1083,6 +1093,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free((void *)context->shared_idle_strategy_init_args);
     aeron_free((void *)context->shared_network_idle_strategy_init_args);
     aeron_clock_cache_free(context->cached_clock);
+    aeron_dl_load_libs_delete(context->dynamic_libs);
     aeron_free(context);
 
     return 0;

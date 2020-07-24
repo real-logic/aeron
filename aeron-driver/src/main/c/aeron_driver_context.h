@@ -17,8 +17,8 @@
 #ifndef AERON_DRIVER_CONTEXT_H
 #define AERON_DRIVER_CONTEXT_H
 
-#include <concurrent/aeron_distinct_error_log.h>
-#include <media/aeron_udp_channel_transport_bindings.h>
+#include "concurrent/aeron_distinct_error_log.h"
+#include "media/aeron_udp_channel_transport_bindings.h"
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
@@ -42,6 +42,7 @@ typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 typedef struct aeron_driver_conductor_proxy_stct aeron_driver_conductor_proxy_t;
 typedef struct aeron_driver_sender_proxy_stct aeron_driver_sender_proxy_t;
 typedef struct aeron_driver_receiver_proxy_stct aeron_driver_receiver_proxy_t;
+typedef struct aeron_dl_loaded_libs_state_stct aeron_dl_loaded_libs_state_t;
 
 typedef aeron_rb_handler_t aeron_driver_conductor_to_driver_interceptor_func_t;
 typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
@@ -202,6 +203,8 @@ typedef struct aeron_driver_context_stct
     const char *resolver_bootstrap_neighbor;
     aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
     const char *name_resolver_init_args;
+
+    aeron_dl_loaded_libs_state_t *dynamic_libs;
 }
 aeron_driver_context_t;
 

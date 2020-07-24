@@ -73,6 +73,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         {
             aeron_set_err(
                 EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
+            return NULL;
         }
         bindings->meta_info.next_binding = NULL; // Make sure it is not some random data.
         bindings->meta_info.source_symbol = bindings;

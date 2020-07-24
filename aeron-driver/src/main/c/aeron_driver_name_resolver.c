@@ -198,6 +198,7 @@ int aeron_driver_name_resolver_init(
         context->udp_channel_incoming_interceptor_bindings,
         _driver_resolver->transport_bindings,
         aeron_driver_name_resolver_receive,
+        context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_CONDUCTOR) < 0)
     {
         goto error_cleanup;

@@ -187,6 +187,7 @@ int aeron_udp_channel_data_paths_init(
     aeron_udp_channel_interceptor_bindings_t *incoming_interceptor_bindings,
     aeron_udp_channel_transport_bindings_t *media_bindings,
     aeron_udp_transport_recv_func_t recv_func,
+    aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity)
 {
     data_paths->outgoing_interceptors = NULL;
@@ -225,7 +226,7 @@ int aeron_udp_channel_data_paths_init(
             interceptor->outgoing_image_notification_func = binding->outgoing_image_notification_func;
             interceptor->next_interceptor = NULL;
 
-            if (binding->outgoing_init_func(&interceptor->interceptor_state, affinity) < 0)
+            if (binding->outgoing_init_func(&interceptor->interceptor_state, context, affinity) < 0)
             {
                 return -1;
             }
@@ -295,7 +296,7 @@ int aeron_udp_channel_data_paths_init(
             interceptor->incoming_image_notification_func = binding->incoming_image_notification_func;
             interceptor->next_interceptor = NULL;
 
-            if (binding->incoming_init_func(&interceptor->interceptor_state, affinity) < 0)
+            if (binding->incoming_init_func(&interceptor->interceptor_state, context, affinity) < 0)
             {
                 return -1;
             }

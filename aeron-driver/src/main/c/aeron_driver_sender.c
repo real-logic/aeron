@@ -70,6 +70,7 @@ int aeron_driver_sender_init(
         context->udp_channel_incoming_interceptor_bindings,
         context->udp_channel_transport_bindings,
         aeron_send_channel_endpoint_dispatch,
+        context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {
         return -1;

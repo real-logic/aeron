@@ -380,7 +380,8 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
         sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
 }
 
-int aeron_driver_agent_interceptor_init(void **interceptor_state, aeron_udp_channel_transport_affinity_t affinity)
+int aeron_driver_agent_interceptor_init(
+    void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity)
 {
     return 0;
 }

@@ -180,6 +180,7 @@ typedef void (*aeron_udp_channel_interceptor_incoming_func_t)(
 
 typedef int (*aeron_udp_channel_interceptor_init_func_t)(
     void **interceptor_state,
+    aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
 typedef int (*aeron_udp_channel_interceptor_close_func_t)(
@@ -362,6 +363,7 @@ int aeron_udp_channel_data_paths_init(
     aeron_udp_channel_interceptor_bindings_t *incoming_interceptor_bindings,
     aeron_udp_channel_transport_bindings_t *media_bindings,
     aeron_udp_transport_recv_func_t recv_func,
+    aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
 int aeron_udp_channel_data_paths_delete(aeron_udp_channel_data_paths_t *data_paths);

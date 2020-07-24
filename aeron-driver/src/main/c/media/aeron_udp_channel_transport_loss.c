@@ -48,6 +48,7 @@ static unsigned short data_loss_xsubi[3];
 
 int aeron_udp_channel_interceptor_loss_init_incoming(
     void **interceptor_state,
+    aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
 aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_load(
@@ -112,7 +113,7 @@ void aeron_udp_channel_transport_loss_load_env()
 }
 
 int aeron_udp_channel_interceptor_loss_init_incoming(
-    void **interceptor_state, aeron_udp_channel_transport_affinity_t affinity)
+    void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity)
 {
     (void)aeron_thread_once(&env_is_initialized, aeron_udp_channel_transport_loss_load_env);
 

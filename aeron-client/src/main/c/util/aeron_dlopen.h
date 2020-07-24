@@ -25,7 +25,7 @@
 #include <stddef.h>
 
 #define aeron_dlsym dlsym
-#define aeron_dlopen(x) dlopen(x, RTLD_LAZY)
+#define aeron_dlopen(x) dlopen(x, RTLD_LAZY | RTLD_GLOBAL)
 #define aeron_dlerror dlerror
 
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);

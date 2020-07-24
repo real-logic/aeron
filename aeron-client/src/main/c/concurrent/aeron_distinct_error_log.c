@@ -196,10 +196,7 @@ int aeron_distinct_error_log_record(
 
             aeron_format_date(buffer, sizeof(buffer), timestamp);
             fprintf(stderr, "%s - unrecordable error %d: %s %s\n", buffer, error_code, description, message);
-            errno = ENOMEM;
-#if defined(AERON_COMPILER_MSVC)
-            SetLastError(ERROR_OUTOFMEMORY);
-#endif
+            aeron_set_errno(ENOMEM);
             return -1;
         }
     }

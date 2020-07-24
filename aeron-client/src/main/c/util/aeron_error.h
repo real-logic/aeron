@@ -29,6 +29,7 @@ aeron_per_thread_error_t;
 int aeron_errcode();
 const char *aeron_errmsg();
 void aeron_set_err(int errcode, const char *format, ...);
+void aeron_set_errno(int errcode);
 void aeron_set_err_from_last_err_code(const char* format, ...);
 
 const char *aeron_error_code_str(int errcode);

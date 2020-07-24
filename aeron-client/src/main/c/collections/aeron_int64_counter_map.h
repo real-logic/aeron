@@ -24,12 +24,6 @@
 
 #include "util/aeron_platform.h"
 #include "collections/aeron_map.h"
-
-#if defined(AERON_COMPILER_MSVC)
-#include <WinSock2.h>
-#include <windows.h>
-#endif
-
 #include "util/aeron_bitutil.h"
 #include "aeron_alloc.h"
 

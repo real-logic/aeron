@@ -129,19 +129,21 @@ void aeron_set_errno(int errcode)
 #if defined(AERON_COMPILER_MSVC)
     switch (errcode)
     {
-    default:
-        break;
-    case EINVAL:
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        break;
-    case ENOMEM:
-        SetLastError(ERROR_OUTOFMEMORY);
-        break;
+        case EINVAL:
+            SetLastError(ERROR_BAD_ARGUMENTS);
+            break;
+
+        case ENOMEM:
+            SetLastError(ERROR_OUTOFMEMORY);
+            break;
+
+        default:
+            break;
     }
 #endif
 }
 
-void aeron_set_err_from_last_err_code(const char* format, ...)
+void aeron_set_err_from_last_err_code(const char *format, ...)
 {
 #if defined(AERON_COMPILER_MSVC)
     int errcode = GetLastError();
@@ -149,7 +151,7 @@ void aeron_set_err_from_last_err_code(const char* format, ...)
     int errcode = errno;
 #endif
 
-    aeron_per_thread_error_t* error_state = get_required_error_state();
+    aeron_per_thread_error_t *error_state = get_required_error_state();
 
     error_state->errcode = errcode;
     va_list args;
@@ -244,6 +246,7 @@ bool aeron_error_dll_process_attach()
     }
 
     error_key = TlsAlloc();
+
     return error_key != TLS_OUT_OF_INDEXES;
 }
 
@@ -254,7 +257,7 @@ void aeron_error_dll_thread_detach()
         return;
     }
 
-    aeron_per_thread_error_t* error_state = aeron_thread_get_specific(error_key);
+    aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
 
     if (NULL != error_state)
     {

@@ -59,8 +59,8 @@ public:
         steady_clock::time_point timestamp = steady_clock::now();
 
         const double timeSpanSec = duration<double, std::ratio<1, 1>>(timestamp - m_lastTimestamp).count();
-        const double messagesPerSec = (totalMessages - m_lastTotalMessages) / timeSpanSec;
-        const double bytesPerSec = (totalBytes - m_lastTotalBytes) / timeSpanSec;
+        const double messagesPerSec = static_cast<double>(totalMessages - m_lastTotalMessages) / timeSpanSec;
+        const double bytesPerSec = static_cast<double>(totalBytes - m_lastTotalBytes) / timeSpanSec;
 
         m_onReport(messagesPerSec, bytesPerSec, totalMessages, totalBytes);
 

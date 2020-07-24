@@ -17,9 +17,6 @@
 #include <cstdio>
 #include <csignal>
 #include <thread>
-
-#define __STDC_FORMAT_MACROS
-
 #include <cinttypes>
 
 #include "util/CommandOptionParser.h"
@@ -28,7 +25,6 @@
 #include "Configuration.h"
 #include "RateReporter.h"
 #include "FragmentAssembler.h"
-
 
 using namespace aeron::util;
 using namespace aeron;

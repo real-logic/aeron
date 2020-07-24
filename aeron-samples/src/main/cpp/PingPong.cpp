@@ -19,8 +19,6 @@
 #include <thread>
 #include <csignal>
 
-#define __STDC_FORMAT_MACROS
-
 extern "C"
 {
 #include <hdr_histogram.h>

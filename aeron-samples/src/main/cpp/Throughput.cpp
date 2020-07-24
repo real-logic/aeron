@@ -17,9 +17,6 @@
 #include <cstdio>
 #include <csignal>
 #include <thread>
-
-#define __STDC_FORMAT_MACROS
-
 #include <cinttypes>
 
 #include "util/CommandOptionParser.h"
@@ -34,7 +31,7 @@ using namespace aeron;
 
 std::atomic<bool> running(true);
 
-void sigIntHandler(int param)
+void sigIntHandler(int)
 {
     running = false;
 }

@@ -23,9 +23,6 @@
 #include <thread>
 #include <cstdio>
 #include <csignal>
-
-#define __STDC_FORMAT_MACROS
-
 #include <cinttypes>
 
 #include "Context.h"

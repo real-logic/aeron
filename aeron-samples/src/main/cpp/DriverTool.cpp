@@ -18,9 +18,6 @@
 #include <thread>
 #include <Context.h>
 #include <cstdlib>
-
-#define __STDC_FORMAT_MACROS
-
 #include <cinttypes>
 
 #include "util/MemoryMappedFile.h"

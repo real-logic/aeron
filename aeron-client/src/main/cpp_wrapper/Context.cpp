@@ -25,5 +25,5 @@ using namespace aeron::util;
 void Context::requestDriverTermination(
     const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
 {
-    throw new UnsupportedOperationException("How to request termination??", SOURCEINFO);
+    throw UnsupportedOperationException("How to request termination??", SOURCEINFO);
 }

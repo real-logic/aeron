@@ -670,7 +670,7 @@ public:
      */
     inline AgentInvoker<ClientConductor> &conductorAgentInvoker()
     {
-        throw new UnsupportedOperationException("How to manage this??", SOURCEINFO);
+        throw UnsupportedOperationException("How to manage this??", SOURCEINFO);
     }
 
     /**

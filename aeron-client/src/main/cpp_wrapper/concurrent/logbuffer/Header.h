@@ -68,13 +68,13 @@ public:
      */
     inline util::index_t offset() const
     {
-        throw new UnsupportedOperationException("No raw buffer support", SOURCEINFO);
+        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
 //        return m_offset;
     }
 
     inline void offset(util::index_t offset)
     {
-        throw new UnsupportedOperationException("No raw buffer support", SOURCEINFO);
+        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
 //        m_offset = offset;
     }
 
@@ -85,13 +85,13 @@ public:
      */
     inline AtomicBuffer& buffer()
     {
-        throw new UnsupportedOperationException("No raw buffer support", SOURCEINFO);
+        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
 //        return m_buffer;
     }
 
     inline void buffer(AtomicBuffer& buffer)
     {
-        throw new UnsupportedOperationException("No raw buffer support", SOURCEINFO);
+        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
 //        if (&buffer != &m_buffer)
 //        {
 //            m_buffer.wrap(buffer);

@@ -66,9 +66,8 @@ void RecordingEventsAdapter::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
-    switch (templateId)
     {
-        case RecordingStarted::sbeTemplateId():
+        if (RecordingStarted::sbeTemplateId() == templateId)
         {
             RecordingStarted event(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -83,10 +82,8 @@ void RecordingEventsAdapter::onFragment(
                 event.streamId(),
                 event.channel(),
                 event.sourceIdentity());
-            break;
         }
-
-        case RecordingProgress::sbeTemplateId():
+        else if (RecordingProgress::sbeTemplateId() == templateId)
         {
             RecordingProgress event(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -98,10 +95,8 @@ void RecordingEventsAdapter::onFragment(
                 event.recordingId(),
                 event.startPosition(),
                 event.position());
-            break;
         }
-
-        case RecordingStopped::sbeTemplateId():
+        else if (RecordingStopped::sbeTemplateId() == templateId)
         {
             RecordingStopped event(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -113,10 +108,6 @@ void RecordingEventsAdapter::onFragment(
                 event.recordingId(),
                 event.startPosition(),
                 event.stopPosition());
-            break;
         }
-
-        default:
-            break;
     }
 }

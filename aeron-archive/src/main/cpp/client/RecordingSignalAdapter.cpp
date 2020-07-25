@@ -71,9 +71,8 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
-    switch (templateId)
     {
-        case ControlResponse::sbeTemplateId():
+        if (ControlResponse::sbeTemplateId() == templateId)
         {
             ControlResponse response(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -90,10 +89,8 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
                     response.code(),
                     response.errorMessage());
             }
-            break;
         }
-
-        case RecordingSignalEvent::sbeTemplateId():
+        else if (RecordingSignalEvent::sbeTemplateId() == templateId)
         {
             RecordingSignalEvent recordingSignalEvent(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -113,9 +110,7 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
                 m_isAbort = true;
                 return ControlledPollAction::BREAK;
             }
-            break;
         }
     }
-
     return ControlledPollAction::CONTINUE;
 }

@@ -57,9 +57,8 @@ void RecordingEventsPoller::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
-    switch (templateId)
     {
-        case RecordingStarted::sbeTemplateId():
+        if (RecordingStarted::sbeTemplateId() == templateId)
         {
             RecordingStarted event(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -73,10 +72,8 @@ void RecordingEventsPoller::onFragment(
             m_recordingPosition = m_recordingStartPosition;
             m_recordingStopPosition = aeron::NULL_VALUE;
             m_pollComplete = true;
-            break;
         }
-
-        case RecordingProgress::sbeTemplateId():
+        else if (RecordingProgress::sbeTemplateId() == templateId)
         {
             RecordingProgress event(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -90,10 +87,8 @@ void RecordingEventsPoller::onFragment(
             m_recordingPosition = event.position();
             m_recordingStopPosition = aeron::NULL_VALUE;
             m_pollComplete = true;
-            break;
         }
-
-        case RecordingStopped::sbeTemplateId():
+        else if (RecordingStopped::sbeTemplateId() == templateId)
         {
             RecordingStopped event(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -107,10 +102,6 @@ void RecordingEventsPoller::onFragment(
             m_recordingPosition = event.stopPosition();
             m_recordingStopPosition = m_recordingPosition;
             m_pollComplete = true;
-            break;
         }
-
-        default:
-            break;
     }
 }

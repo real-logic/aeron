@@ -61,7 +61,7 @@ public:
         return 0;
     }
 
-    static int deleteDir(const std::string& dirname)
+    static int deleteDir(const std::string &dirname)
     {
         return nftw(dirname.c_str(), unlink_func, 64, FTW_DEPTH | FTW_PHYS);
     }
@@ -114,7 +114,7 @@ public:
                 std::memcpy(arr, credentials.data(), credentials.length());
                 arr[credentials.length()] = '\0';
 
-                return { arr, credentials.length() };
+                return { arr, (std::uint32_t)credentials.length() };
             };
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
@@ -129,7 +129,7 @@ public:
             m_stream << "Shutting down PID " << m_pid << std::endl;
             aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0);
 
-            ::wait(NULL);
+            ::wait(nullptr);
 
             m_stream << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
             deleteDir(aeron::Context::defaultAeronPath());
@@ -138,7 +138,7 @@ public:
         }
     }
 
-    std::shared_ptr<Publication> addPublication(Aeron& aeron, const std::string& channel, std::int32_t streamId)
+    std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string& channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(publicationId);
@@ -152,7 +152,7 @@ public:
         return publication;
     }
 
-    std::shared_ptr<Subscription> addSubscription(Aeron& aeron, const std::string& channel, std::int32_t streamId)
+    std::shared_ptr<Subscription> addSubscription(Aeron &aeron, const std::string &channel, std::int32_t streamId)
     {
         std::int64_t subscriptionId = aeron.addSubscription(channel, streamId);
         std::shared_ptr<Subscription> subscription = aeron.findSubscription(subscriptionId);
@@ -166,7 +166,7 @@ public:
         return subscription;
     }
 
-    std::int32_t getRecordingCounterId(std::int32_t sessionId, CountersReader& countersReader)
+    std::int32_t getRecordingCounterId(std::int32_t sessionId, CountersReader &countersReader)
     {
         std::int32_t counterId;
         while (CountersReader::NULL_COUNTER_ID ==
@@ -178,7 +178,7 @@ public:
         return counterId;
     }
 
-    void offerMessages(Publication& publication, std::size_t messageCount, const std::string& messagePrefix)
+    void offerMessages(Publication &publication, std::size_t messageCount, const std::string &messagePrefix)
     {
         BufferClaim bufferClaim;
         aeron::concurrent::YieldingIdleStrategy idle;
@@ -196,13 +196,13 @@ public:
         }
     }
 
-    void consumeMessages(Subscription& subscription, std::size_t messageCount, const std::string& messagePrefix)
+    void consumeMessages(Subscription &subscription, std::size_t messageCount, const std::string &messagePrefix)
     {
         std::size_t received = 0;
         aeron::concurrent::YieldingIdleStrategy idle;
 
         fragment_handler_t handler =
-            [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+            [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
             {
                 const std::string expected = messagePrefix + std::to_string(received);
                 const std::string actual = buffer.getStringWithoutLength(offset, static_cast<std::size_t>(length));
@@ -292,7 +292,7 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
         sessionId = publication->sessionId();
 
-        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
         const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
         recordingIdFromCounter = RecordingPos::getRecordingId(countersReader, counterId);
 
@@ -334,9 +334,9 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
             std::int32_t mtuLength,
             std::int32_t sessionId1,
             std::int32_t streamId,
-            const std::string& strippedChannel,
-            const std::string& originalChannel,
-            const std::string& sourceIdentity)
+            const std::string &strippedChannel,
+            const std::string &originalChannel,
+            const std::string &sourceIdentity)
         {
             EXPECT_EQ(recordingId, recordingId1);
             EXPECT_EQ(streamId, m_recordingStreamId);
@@ -366,7 +366,7 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
 
         sessionId = publication->sessionId();
 
-        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
         const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
         recordingIdFromCounter = RecordingPos::getRecordingId(countersReader, counterId);
 
@@ -423,7 +423,7 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 
         sessionId = publication->sessionId();
 
-        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
         const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
         recordingIdFromCounter = RecordingPos::getRecordingId(countersReader, counterId);
 
@@ -478,9 +478,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
             std::int32_t mtuLength,
             std::int32_t sessionId1,
             std::int32_t streamId,
-            const std::string& strippedChannel,
-            const std::string& originalChannel,
-            const std::string& sourceIdentity)
+            const std::string &strippedChannel,
+            const std::string &originalChannel,
+            const std::string &sourceIdentity)
         {
             EXPECT_EQ(startPosition, newStopPosition);
         });
@@ -503,7 +503,7 @@ TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
         std::shared_ptr<Publication> publication = aeronArchive->addRecordedPublication(
             m_recordingChannel, m_recordingStreamId);
 
-        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
         const std::int32_t counterId = getRecordingCounterId(publication->sessionId(), countersReader);
         recordingId = RecordingPos::getRecordingId(countersReader, counterId);
 
@@ -553,7 +553,7 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
         std::shared_ptr<Subscription> subscription = addSubscription(
             *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
 
-        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
         const std::int32_t counterId = getRecordingCounterId(publication->sessionId(), countersReader);
         const std::int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
 
@@ -597,7 +597,7 @@ struct SubscriptionDescriptor
         std::int64_t correlationId,
         std::int64_t subscriptionId,
         std::int32_t streamId,
-        const std::string& strippedChannel) :
+        const std::string &strippedChannel) :
         m_controlSessionId(controlSessionId),
         m_correlationId(correlationId),
         m_subscriptionId(subscriptionId),
@@ -615,7 +615,7 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
             std::int64_t correlationId,
             std::int64_t subscriptionId,
             std::int32_t streamId,
-            const std::string& strippedChannel)
+            const std::string &strippedChannel)
         {
             descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId, strippedChannel);
         };
@@ -730,7 +730,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::int64_t recordingSubscriptionId = aeronArchive->startRecording(
         recordingChannel.build(), m_recordingStreamId, AeronArchive::SourceLocation::REMOTE);
 
-    CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+    CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
     const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
     const std::int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
 
@@ -755,7 +755,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 
         std::size_t received = 0;
         fragment_handler_t handler =
-            [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+            [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
             {
                 const std::string expected = messagePrefix + std::to_string(received);
                 const std::string actual = buffer.getStringWithoutLength(offset, static_cast<std::size_t>(length));
@@ -809,7 +809,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
             std::memcpy(arr, credentials.data(), credentials.length());
             arr[credentials.length()] = '\0';
 
-            return { arr, credentials.length() };
+            return { arr, (std::uint32_t)credentials.length() };
         };
 
     m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
@@ -832,7 +832,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
             std::memcpy(arr, credentials.data(), credentials.length());
             arr[credentials.length()] = '\0';
 
-            return { arr, credentials.length() };
+            return { arr, (std::uint32_t)credentials.length() };
         };
 
     auto onChallenge =
@@ -844,7 +844,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
             std::memcpy(arr, credentials.data(), credentials.length());
             arr[credentials.length()] = '\0';
 
-            return { arr, credentials.length() };
+            return { arr, (std::uint32_t)credentials.length() };
         };
 
     m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials, onChallenge));
@@ -866,7 +866,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
             std::memcpy(arr, credentials.data(), credentials.length());
             arr[credentials.length()] = '\0';
 
-            return { arr, credentials.length() };
+            return { arr, (std::uint32_t)credentials.length() };
         };
 
     auto onChallenge =
@@ -878,7 +878,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
             std::memcpy(arr, credentials.data(), credentials.length());
             arr[credentials.length()] = '\0';
 
-            return { arr, credentials.length() };
+            return { arr, (std::uint32_t)credentials.length() };
         };
 
     m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials, onChallenge));

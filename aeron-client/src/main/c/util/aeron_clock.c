@@ -23,52 +23,106 @@
 #include <time.h>
 #include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
+#include "util/aeron_clock.h"
 #include "concurrent/aeron_atomic.h"
-#include "aeron_windows.h"
+
+#include "util/aeron_platform.h"
+
+#if defined(AERON_COMPILER_MSVC)
+#include <Windows.h>
+#endif
+
+#if defined(AERON_COMPILER_MSVC)
+#define MS_PER_SEC      1000ULL     // MS = milliseconds
+#define US_PER_MS       1000ULL     // US = microseconds
+#define HNS_PER_US      10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
+#define NS_PER_US       1000ULL
+
+#define HNS_PER_SEC     (MS_PER_SEC * US_PER_MS * HNS_PER_US)
+#define NS_PER_HNS      (100ULL)    // NS = nanoseconds
+#define NS_PER_SEC      (MS_PER_SEC * US_PER_MS * NS_PER_US)
+
+int aeron_clock_gettime_monotonic(struct timespec *tv)
+{
+    static LARGE_INTEGER ticksPerSec;
+    LARGE_INTEGER ticks;
+
+    if (!ticksPerSec.QuadPart)
+    {
+        QueryPerformanceFrequency(&ticksPerSec);
+        if (!ticksPerSec.QuadPart)
+        {
+            errno = ENOTSUP;
+            return -1;
+        }
+    }
+
+    QueryPerformanceCounter(&ticks);
+
+    double seconds = (double)ticks.QuadPart / (double)ticksPerSec.QuadPart;
+    tv->tv_sec = (time_t)seconds;
+    tv->tv_nsec = (long)((ULONGLONG)(seconds * NS_PER_SEC) % NS_PER_SEC);
+
+    return 0;
+}
+
+int aeron_clock_gettime_realtime(struct timespec *tv)
+{
+    FILETIME ft;
+    ULARGE_INTEGER hnsTime;
+
+    GetSystemTimeAsFileTime(&ft);
+
+    hnsTime.LowPart = ft.dwLowDateTime;
+    hnsTime.HighPart = ft.dwHighDateTime;
+
+    hnsTime.QuadPart -= (11644473600ULL * HNS_PER_SEC);
+
+    tv->tv_nsec = (long)((hnsTime.QuadPart % HNS_PER_SEC) * NS_PER_HNS);
+    tv->tv_sec = (long)(hnsTime.QuadPart / HNS_PER_SEC);
+
+    return 0;
+}
+
+#else
+
+int aeron_clock_gettime_monotonic(struct timespec *tp)
+{
+#if defined(__CYGWIN__) || defined(__linux__)
+    return clock_gettime(CLOCK_MONOTONIC, tp);
+#else
+    return clock_gettime(CLOCK_MONOTONIC_RAW, tp);
+#endif
+}
+
+int aeron_clock_gettime_realtime(struct timespec *tp)
+{
+#if defined(CLOCK_REALTIME_COARSE)
+    return clock_gettime(CLOCK_REALTIME_COARSE, tp);
+#else
+    return clock_gettime(CLOCK_REALTIME, tp);
+#endif
+}
+#endif
 
 int64_t aeron_nano_clock()
 {
     struct timespec ts;
-#if defined(__CYGWIN__) || defined(__linux__)
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
-    {
-        return -1;
-    }
-#elif defined(AERON_COMPILER_MSVC)
     if (aeron_clock_gettime_monotonic(&ts) < 0)
     {
         return -1;
     }
-#else
-    if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0)
-    {
-        return -1;
-    }
-#endif
-
-    return (ts.tv_sec * 1000000000) + ts.tv_nsec;
+    return ((int64_t)ts.tv_sec * 1000000000) + ts.tv_nsec;
 }
 
 int64_t aeron_epoch_clock()
 {
     struct timespec ts;
-#if defined(AERON_COMPILER_MSVC)
     if (aeron_clock_gettime_realtime(&ts) < 0)
     {
         return -1;
     }
-#else
-#if defined(CLOCK_REALTIME_COARSE)
-    if (clock_gettime(CLOCK_REALTIME_COARSE, &ts) < 0)
-#else
-    if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
-#endif
-    {
-        return -1;
-    }
-#endif
-
-    return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
+    return ((int64_t)ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
 
 typedef struct aeron_clock_cache_stct

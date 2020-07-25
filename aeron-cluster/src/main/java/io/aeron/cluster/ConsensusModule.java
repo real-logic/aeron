@@ -21,7 +21,6 @@ import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.service.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;

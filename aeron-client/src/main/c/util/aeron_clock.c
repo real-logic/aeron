@@ -19,7 +19,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdint.h>
 #include <time.h>
 #include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
@@ -112,6 +111,7 @@ int64_t aeron_nano_clock()
     {
         return -1;
     }
+
     return ((int64_t)ts.tv_sec * 1000000000) + ts.tv_nsec;
 }
 
@@ -122,6 +122,7 @@ int64_t aeron_epoch_clock()
     {
         return -1;
     }
+
     return ((int64_t)ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
 
@@ -134,20 +135,20 @@ typedef struct aeron_clock_cache_stct
 }
 aeron_clock_cache_t;
 
-void aeron_clock_update_cached_time(aeron_clock_cache_t* cached_time, int64_t epoch_time, int64_t nano_time)
+void aeron_clock_update_cached_time(aeron_clock_cache_t *cached_time, int64_t epoch_time, int64_t nano_time)
 {
     AERON_PUT_ORDERED(cached_time->cached_epoch_time, epoch_time);
     AERON_PUT_ORDERED(cached_time->cached_nano_time, nano_time);
 }
 
-int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time)
+int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cached_time)
 {
     int64_t epoch_time;
     AERON_GET_VOLATILE(epoch_time, cached_time->cached_epoch_time);
     return epoch_time;
 }
 
-int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t* cached_time)
+int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cached_time)
 {
     int64_t nano_time;
     AERON_GET_VOLATILE(nano_time, cached_time->cached_nano_time);

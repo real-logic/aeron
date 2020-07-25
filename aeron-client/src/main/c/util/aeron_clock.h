@@ -31,21 +31,21 @@ typedef struct aeron_clock_cache_stct aeron_clock_cache_t;
  * @param epoch_time current ms since epoch.
  * @param nano_time current ns time.
  */
-void aeron_clock_update_cached_time(aeron_clock_cache_t* cached_time, int64_t epoch_time, int64_t nano_time);
+void aeron_clock_update_cached_time(aeron_clock_cache_t *cached_time, int64_t epoch_time, int64_t nano_time);
 
 /**
  * Retrieves the cached epoch time from supplied cached clock.
  * @param cached_time 'this'
  * @return The current cached value for the epoch time.
  */
-int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time);
+int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cached_time);
 
 /**
  * Retrieves the cached nano time from supplied cached clock.
  * @param cached_time 'this'
  * @return The current cached value for the nano time.
  */
-int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t* cached_time);
+int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cached_time);
 
 /**
  * Allocate a cached clock

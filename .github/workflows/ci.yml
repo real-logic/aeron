@@ -240,4 +240,4 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: cppbuild/cppbuild
+        run: cppbuild/cppbuild --build-archive-api

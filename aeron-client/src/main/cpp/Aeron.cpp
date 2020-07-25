@@ -28,11 +28,13 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 
 static const char *AGENT_NAME = "client-conductor";
 
+MemoryMappedFile::ptr_t mapCncFile(const std::string cncFileName, long mediaDriverTimeoutMs);
+
 Aeron::Aeron(Context &context) :
     m_randomEngine(m_randomDevice()),
     m_sessionIdDistribution(-INT_MAX, INT_MAX),
     m_context(context.conclude()),
-    m_cncBuffer(mapCncFile(m_context)),
+    m_cncBuffer(mapCncFile(m_context.cncFileName(), m_context.mediaDriverTimeout())),
     m_toDriverAtomicBuffer(CncFileDescriptor::createToDriverBuffer(m_cncBuffer)),
     m_toClientsAtomicBuffer(CncFileDescriptor::createToClientsBuffer(m_cncBuffer)),
     m_countersMetadataBuffer(CncFileDescriptor::createCounterMetadataBuffer(m_cncBuffer)),
@@ -86,36 +88,49 @@ Aeron::~Aeron()
     // memory mapped files should be free'd by the destructor of the shared_ptr
 }
 
-inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
+MemoryMappedFile::ptr_t mapCncFile(const std::string cncFileName, long mediaDriverTimeoutMs)
 {
     const long long startMs = currentTimeMillis();
     MemoryMappedFile::ptr_t cncBuffer;
+    bool heartBeatReaded = false;
+    std::int64_t heartbeatTime = 0;
 
-    while (true)
+    while (cncBuffer == nullptr)
     {
-        while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) <= 0)
+        if (currentTimeMillis() > (startMs + mediaDriverTimeoutMs))
         {
-            if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
-            {
-                throw DriverTimeoutException("CnC file not created: " + context.cncFileName(), SOURCEINFO);
-            }
-
-            std::this_thread::sleep_for(IDLE_SLEEP_MS_16);
+            throw DriverTimeoutException("CnC file not map properly: " + cncFileName, SOURCEINFO);
         }
 
-        cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
+        if (MemoryMappedFile::getFileSize(cncFileName.c_str())
+            <= static_cast<std::int64_t>(CncFileDescriptor::META_DATA_LENGTH))
+        {
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_16);
+            continue;
+        }
+
+        try
+        {
+            cncBuffer = MemoryMappedFile::mapExisting(cncFileName.c_str());
+        }
+        catch (IOException&)
+        {
+            cncBuffer = nullptr;
+        }
+        if (cncBuffer == nullptr || cncBuffer->getMemoryPtr() == nullptr)
+        {
+            cncBuffer = nullptr;
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+            continue;
+        }
 
         std::int32_t cncVersion = 0;
 
-        while (0 == (cncVersion = CncFileDescriptor::cncVersionVolatile(cncBuffer)))
+        if (0 == (cncVersion = CncFileDescriptor::cncVersionVolatile(cncBuffer)))
         {
-            if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
-            {
-                throw DriverTimeoutException(
-                    "CnC file is created but not initialised: " + context.cncFileName(), SOURCEINFO);
-            }
-
+            cncBuffer = nullptr;
             std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+            continue;
         }
 
         if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
@@ -126,34 +141,46 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
                 SOURCEINFO);
         }
 
+        AtomicBuffer metaDataBuffer(cncBuffer->getMemoryPtr(), convertSizeToIndex(cncBuffer->getMemorySize()));
+
+        const CncFileDescriptor::MetaDataDefn &metaData = metaDataBuffer.overlayStruct<CncFileDescriptor::MetaDataDefn>(0);
+
+        /* make sure the cnc.dat have valid file length before init mpsc */
+        size_t totalLengthOfBuffers = (size_t)(metaData.toDriverBufferLength +
+            metaData.toClientsBufferLength +
+            metaData.counterValuesBufferLength +
+            metaData.counterMetadataBufferLength +
+            metaData.errorLogBufferLength);
+        size_t cncFileSize = BitUtil::align(
+            CncFileDescriptor::META_DATA_LENGTH + totalLengthOfBuffers,
+            static_cast<size_t>(LogBufferDescriptor::AERON_PAGE_MIN_SIZE));
+        if (cncBuffer->getMemorySize() < cncFileSize)
+        {
+            cncBuffer = nullptr;
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+            continue;
+        }
+
         AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncBuffer));
         ManyToOneRingBuffer ringBuffer(toDriverBuffer);
 
-        while (0 == ringBuffer.consumerHeartbeatTime())
+        if (!heartBeatReaded)
         {
-            if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
-            {
-                throw DriverTimeoutException(std::string("no driver heartbeat detected"), SOURCEINFO);
-            }
-
+            heartBeatReaded = true;
+            heartbeatTime = ringBuffer.consumerHeartbeatTime();
             std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
         }
 
         const long long timeMs = currentTimeMillis();
-        if (ringBuffer.consumerHeartbeatTime() < (timeMs - context.m_mediaDriverTimeout))
+        std::int64_t heartbeatTimeCurrent = ringBuffer.consumerHeartbeatTime();
+
+        if (heartbeatTimeCurrent == 0 ||
+            heartbeatTime == heartbeatTimeCurrent ||
+            heartbeatTimeCurrent < (timeMs - mediaDriverTimeoutMs))
         {
-            if (timeMs > (startMs + context.m_mediaDriverTimeout))
-            {
-                throw DriverTimeoutException(std::string("no driver heartbeat detected"), SOURCEINFO);
-            }
-
             cncBuffer = nullptr;
-
-            std::this_thread::sleep_for(IDLE_SLEEP_MS_100);
-            continue;
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
         }
-
-        break;
     }
 
     return cncBuffer;

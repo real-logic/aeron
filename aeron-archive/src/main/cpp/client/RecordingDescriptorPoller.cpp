@@ -69,9 +69,8 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
-    switch (templateId)
     {
-        case ControlResponse::sbeTemplateId():
+        if (ControlResponse::sbeTemplateId() == templateId)
         {
             ControlResponse response(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -109,10 +108,8 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
                     }
                 }
             }
-            break;
         }
-
-        case RecordingDescriptor::sbeTemplateId():
+        else if (RecordingDescriptor::sbeTemplateId() == templateId)
         {
             RecordingDescriptor descriptor(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -147,11 +144,7 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
                     return ControlledPollAction::BREAK;
                 }
             }
-            break;
         }
-
-        default:
-            break;
     }
 
     return ControlledPollAction::CONTINUE;

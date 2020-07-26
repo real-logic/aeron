@@ -63,9 +63,8 @@ void ControlResponseAdapter::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
-    switch (templateId)
     {
-        case ControlResponse::sbeTemplateId():
+        if (ControlResponse::sbeTemplateId() == templateId)
         {
             ControlResponse response(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -79,10 +78,8 @@ void ControlResponseAdapter::onFragment(
                 response.relevantId(),
                 response.code(),
                 response.errorMessage());
-            break;
         }
-
-        case RecordingDescriptor::sbeTemplateId():
+        else if (RecordingDescriptor::sbeTemplateId() == templateId)
         {
             RecordingDescriptor descriptor(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -107,10 +104,6 @@ void ControlResponseAdapter::onFragment(
                 descriptor.strippedChannel(),
                 descriptor.originalChannel(),
                 descriptor.sourceIdentity());
-            break;
         }
-
-        default:
-            break;
     }
 }

@@ -12,7 +12,7 @@ set "AERON_SKIP_RMDIR="
 for %%o in (%*) do (
 
     if "%%o"=="--help" (
-        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--no-system-tests] [--debug-build] [--help]
+        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--help]
         exit /b
     )
 

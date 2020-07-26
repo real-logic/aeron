@@ -32,6 +32,7 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 endif ()
 
 set(SOURCE
+    collections/aeron_array_to_ptr_hash_map.c
     collections/aeron_bit_set.c
     collections/aeron_int64_counter_map.c
     collections/aeron_int64_to_ptr_hash_map.c
@@ -90,6 +91,7 @@ set(SOURCE
     )
 
 set(HEADERS
+    collections/aeron_array_to_ptr_hash_map.h
     collections/aeron_bit_set.h
     collections/aeron_int64_counter_map.h
     collections/aeron_int64_to_ptr_hash_map.h

@@ -113,6 +113,7 @@ if (FALLOCATE_PROTOTYPE_EXISTS)
 endif ()
 
 SET(C_CLIENT_SOURCE
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_array_to_ptr_hash_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.c
@@ -170,6 +171,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.c)
 
 set(C_CLIENT_HEADERS
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_array_to_ptr_hash_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_bit_set.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.h

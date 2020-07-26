@@ -114,6 +114,7 @@ void aeron_set_err(int errcode, const char *format, ...)
     aeron_per_thread_error_t *error_state = get_required_error_state();
 
     error_state->errcode = errcode;
+    aeron_set_errno(errcode);
     va_list args;
     char stack_message[sizeof(error_state->errmsg)];
 
@@ -129,6 +130,9 @@ void aeron_set_errno(int errcode)
 #if defined(AERON_COMPILER_MSVC)
     switch (errcode)
     {
+        case 0:
+            SetLastError(ERROR_SUCCESS);
+            break;
         case EINVAL:
             SetLastError(ERROR_BAD_ARGUMENTS);
             break;

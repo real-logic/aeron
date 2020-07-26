@@ -325,7 +325,7 @@ aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscript
 }
 
 void aeron_subscription_for_each_image(
-    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image))
+    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image, void *clientd), void *clientd)
 {
     volatile aeron_image_list_t *image_list;
 
@@ -336,7 +336,7 @@ void aeron_subscription_for_each_image(
         aeron_image_t *image = image_list->array[i];
 
         aeron_image_incr_refcnt(image);
-        handler(image_list->array[i]);
+        handler(image_list->array[i], clientd);
         aeron_image_decr_refcnt(image);
     }
 

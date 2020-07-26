@@ -1283,7 +1283,7 @@ aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscript
  * @param handler to be called for each image.
  */
 void aeron_subscription_for_each_image(
-    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image));
+    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image, void *clientd), void *clientd);
 
 /**
  * Retain the given image for access in the application.

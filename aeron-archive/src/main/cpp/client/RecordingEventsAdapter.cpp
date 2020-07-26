@@ -66,48 +66,46 @@ void RecordingEventsAdapter::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
+    if (RecordingStarted::sbeTemplateId() == templateId)
     {
-        if (RecordingStarted::sbeTemplateId() == templateId)
-        {
-            RecordingStarted event(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
+        RecordingStarted event(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
 
-            m_onStart(
-                event.recordingId(),
-                event.startPosition(),
-                event.sessionId(),
-                event.streamId(),
-                event.channel(),
-                event.sourceIdentity());
-        }
-        else if (RecordingProgress::sbeTemplateId() == templateId)
-        {
-            RecordingProgress event(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
+        m_onStart(
+            event.recordingId(),
+            event.startPosition(),
+            event.sessionId(),
+            event.streamId(),
+            event.channel(),
+            event.sourceIdentity());
+    }
+    else if (RecordingProgress::sbeTemplateId() == templateId)
+    {
+        RecordingProgress event(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
 
-            m_onProgress(
-                event.recordingId(),
-                event.startPosition(),
-                event.position());
-        }
-        else if (RecordingStopped::sbeTemplateId() == templateId)
-        {
-            RecordingStopped event(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
+        m_onProgress(
+            event.recordingId(),
+            event.startPosition(),
+            event.position());
+    }
+    else if (RecordingStopped::sbeTemplateId() == templateId)
+    {
+        RecordingStopped event(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
 
-            m_onStop(
-                event.recordingId(),
-                event.startPosition(),
-                event.stopPosition());
-        }
+        m_onStop(
+            event.recordingId(),
+            event.startPosition(),
+            event.stopPosition());
     }
 }

@@ -69,69 +69,67 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
+    if (ControlResponse::sbeTemplateId() == templateId)
     {
-        if (ControlResponse::sbeTemplateId() == templateId)
+        ControlResponse response(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
+
+        if (response.controlSessionId() == m_controlSessionId)
         {
-            ControlResponse response(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
+            const ControlResponseCode::Value code = response.code();
+            const std::int64_t correlationId = response.correlationId();
 
-            if (response.controlSessionId() == m_controlSessionId)
+            if (ControlResponseCode::Value::SUBSCRIPTION_UNKNOWN == code && correlationId == m_correlationId)
             {
-                const ControlResponseCode::Value code = response.code();
-                const std::int64_t correlationId = response.correlationId();
+                m_isDispatchComplete = true;
+                return ControlledPollAction::BREAK;
+            }
 
-                if (ControlResponseCode::Value::SUBSCRIPTION_UNKNOWN == code && correlationId == m_correlationId)
+            if (ControlResponseCode::Value::ERROR == code)
+            {
+                ArchiveException ex(
+                    static_cast<std::int32_t>(response.relevantId()),
+                    correlationId,
+                    "response for correlationId=" + std::to_string(m_correlationId) +
+                        ", error: " + response.errorMessage(),
+                    SOURCEINFO);
+
+                if (correlationId == m_correlationId)
                 {
-                    m_isDispatchComplete = true;
-                    return ControlledPollAction::BREAK;
+                    throw ArchiveException(ex);
                 }
-
-                if (ControlResponseCode::Value::ERROR == code)
+                else if (nullptr != m_errorHandler)
                 {
-                    ArchiveException ex(
-                        static_cast<std::int32_t>(response.relevantId()),
-                        correlationId,
-                        "response for correlationId=" + std::to_string(m_correlationId) +
-                            ", error: " + response.errorMessage(),
-                        SOURCEINFO);
-
-                    if (correlationId == m_correlationId)
-                    {
-                        throw ArchiveException(ex);
-                    }
-                    else if (nullptr != m_errorHandler)
-                    {
-                        m_errorHandler(ex);
-                    }
+                    m_errorHandler(ex);
                 }
             }
         }
-        else if (RecordingSubscriptionDescriptor::sbeTemplateId() == templateId)
+    }
+    else if (RecordingSubscriptionDescriptor::sbeTemplateId() == templateId)
+    {
+        RecordingSubscriptionDescriptor descriptor(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
+
+        const std::int64_t correlationId = descriptor.correlationId();
+        if (descriptor.controlSessionId() == m_controlSessionId && correlationId == m_correlationId)
         {
-            RecordingSubscriptionDescriptor descriptor(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
+            m_consumer(
+                m_controlSessionId,
+                correlationId,
+                descriptor.subscriptionId(),
+                descriptor.streamId(),
+                descriptor.strippedChannel());
 
-            const std::int64_t correlationId = descriptor.correlationId();
-            if (descriptor.controlSessionId() == m_controlSessionId && correlationId == m_correlationId)
+            if (0 == --m_remainingSubscriptionCount)
             {
-                m_consumer(
-                    m_controlSessionId,
-                    correlationId,
-                    descriptor.subscriptionId(),
-                    descriptor.streamId(),
-                    descriptor.strippedChannel());
-
-                if (0 == --m_remainingSubscriptionCount)
-                {
-                    m_isDispatchComplete = true;
-                    return ControlledPollAction::BREAK;
-                }
+                m_isDispatchComplete = true;
+                return ControlledPollAction::BREAK;
             }
         }
     }

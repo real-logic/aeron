@@ -71,46 +71,45 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
     }
 
     const std::uint16_t templateId = msgHeader.templateId();
+    if (ControlResponse::sbeTemplateId() == templateId)
     {
-        if (ControlResponse::sbeTemplateId() == templateId)
+        ControlResponse response(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
+
+        if (response.controlSessionId() == m_controlSessionId)
         {
-            ControlResponse response(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
-
-            if (response.controlSessionId() == m_controlSessionId)
-            {
-                m_onResponse(
-                    response.controlSessionId(),
-                    response.correlationId(),
-                    response.relevantId(),
-                    response.code(),
-                    response.errorMessage());
-            }
-        }
-        else if (RecordingSignalEvent::sbeTemplateId() == templateId)
-        {
-            RecordingSignalEvent recordingSignalEvent(
-                buffer.sbeData() + offset + MessageHeader::encodedLength(),
-                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-                msgHeader.blockLength(),
-                msgHeader.version());
-
-            if (recordingSignalEvent.controlSessionId() == m_controlSessionId)
-            {
-                m_onRecordingSignal(
-                    recordingSignalEvent.controlSessionId(),
-                    recordingSignalEvent.recordingId(),
-                    recordingSignalEvent.subscriptionId(),
-                    recordingSignalEvent.position(),
-                    recordingSignalEvent.signal());
-
-                m_isAbort = true;
-                return ControlledPollAction::BREAK;
-            }
+            m_onResponse(
+                response.controlSessionId(),
+                response.correlationId(),
+                response.relevantId(),
+                response.code(),
+                response.errorMessage());
         }
     }
+    else if (RecordingSignalEvent::sbeTemplateId() == templateId)
+    {
+        RecordingSignalEvent recordingSignalEvent(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
+
+        if (recordingSignalEvent.controlSessionId() == m_controlSessionId)
+        {
+            m_onRecordingSignal(
+                recordingSignalEvent.controlSessionId(),
+                recordingSignalEvent.recordingId(),
+                recordingSignalEvent.subscriptionId(),
+                recordingSignalEvent.position(),
+                recordingSignalEvent.signal());
+
+            m_isAbort = true;
+            return ControlledPollAction::BREAK;
+        }
+    }
+
     return ControlledPollAction::CONTINUE;
 }

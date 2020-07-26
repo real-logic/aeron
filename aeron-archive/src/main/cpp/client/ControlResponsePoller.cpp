@@ -62,7 +62,8 @@ ControlledPollAction ControlResponsePoller::onFragment(
             SOURCEINFO);
     }
 
-    if (ControlResponse::sbeTemplateId() == msgHeader.templateId())
+    const uint16_t templateId = msgHeader.templateId();
+    if (ControlResponse::sbeTemplateId() == templateId)
     {
         ControlResponse response(
             buffer.sbeData() + offset + MessageHeader::encodedLength(),
@@ -87,7 +88,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
 
         return ControlledPollAction::BREAK;
     }
-    else if (Challenge::sbeTemplateId() == msgHeader.templateId())
+    else if (Challenge::sbeTemplateId() == templateId)
     {
         Challenge response(
             buffer.sbeData() + offset + MessageHeader::encodedLength(),

@@ -98,6 +98,7 @@ int ReplayMerge::getRecordingPosition(long long nowMs)
     {
         m_nextTargetPosition = m_archive->controlResponsePoller().relevantId();
         m_activeCorrelationId = aeron::NULL_VALUE;
+
         if (NULL_POSITION == m_nextTargetPosition)
         {
             const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
@@ -212,6 +213,7 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
     {
         m_nextTargetPosition = m_archive->controlResponsePoller().relevantId();
         m_activeCorrelationId = aeron::NULL_VALUE;
+
         if (NULL_POSITION == m_nextTargetPosition)
         {
             const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();

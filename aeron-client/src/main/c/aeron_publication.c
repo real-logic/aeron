@@ -33,7 +33,9 @@ int aeron_publication_create(
     const char *channel,
     int32_t stream_id,
     int32_t session_id,
+    int32_t position_limit_counter_id,
     int64_t *position_limit_addr,
+    int32_t channel_status_indicator_id,
     int64_t *channel_status_addr,
     aeron_log_buffer_t *log_buffer,
     int64_t original_registration_id,
@@ -55,7 +57,9 @@ int aeron_publication_create(
     _publication->log_buffer = log_buffer;
     _publication->log_meta_data = (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
 
+    _publication->position_limit_counter_id = position_limit_counter_id;
     _publication->position_limit = position_limit_addr;
+    _publication->channel_status_indicator_id = channel_status_indicator_id;
     _publication->channel_status_indicator = channel_status_addr;
 
     _publication->conductor = conductor;
@@ -400,6 +404,8 @@ int aeron_publication_constants(aeron_publication_t *publication, aeron_publicat
     constants->stream_id = publication->stream_id;
     constants->session_id = publication->session_id;
     constants->initial_term_id = publication->initial_term_id;
+    constants->publication_limit_counter_id = publication->position_limit_counter_id;
+    constants->channel_status_indicator_id = publication->channel_status_indicator_id;
     return 0;
 }
 

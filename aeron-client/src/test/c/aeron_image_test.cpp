@@ -35,6 +35,7 @@ extern "C"
 #define STREAM_ID (101)
 #define SESSION_ID (110)
 #define REGISTRATION_ID (27)
+#define SUBSCRIBER_POSITION_ID (49)
 
 #define INITIAL_TERM_ID (1234)
 
@@ -72,8 +73,8 @@ public:
         }
 
         if (aeron_image_create(
-            &image, nullptr, nullptr, log_buffer, &m_sub_pos, m_correlationId, (int32_t)m_correlationId,
-            "none", strlen("none")) < 0)
+            &image, nullptr, nullptr, log_buffer, SUBSCRIBER_POSITION_ID, &m_sub_pos, m_correlationId,
+            (int32_t)m_correlationId, "none", strlen("none")) < 0)
         {
             throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
         }
@@ -139,29 +140,29 @@ public:
         return AERON_ACTION_CONTINUE;
     }
 
-    template <typename F>
-    int imagePoll(F&& handler, size_t fragment_limit)
+    template<typename F>
+    int imagePoll(F &&handler, size_t fragment_limit)
     {
         m_handler = handler;
         return aeron_image_poll(m_image, fragment_handler, this, fragment_limit);
     }
 
-    template <typename F>
-    int imageControlledPoll(F&& handler, size_t fragment_limit)
+    template<typename F>
+    int imageControlledPoll(F &&handler, size_t fragment_limit)
     {
         m_controlled_handler = handler;
         return aeron_image_controlled_poll(m_image, controlled_fragment_handler, this, fragment_limit);
     }
 
-    template <typename F>
-    int imageBoundedPoll(F&& handler, int64_t max_position, size_t fragment_limit)
+    template<typename F>
+    int imageBoundedPoll(F &&handler, int64_t max_position, size_t fragment_limit)
     {
         m_handler = handler;
         return aeron_image_bounded_poll(m_image, fragment_handler, this, max_position, fragment_limit);
     }
 
-    template <typename F>
-    int imageBoundedControlledPoll(F&& handler, int64_t max_position, size_t fragment_limit)
+    template<typename F>
+    int imageBoundedControlledPoll(F &&handler, int64_t max_position, size_t fragment_limit)
     {
         m_controlled_handler = handler;
         return aeron_image_bounded_controlled_poll(
@@ -259,7 +260,7 @@ TEST_F(ImageTest, shouldReadMultipleMessages)
         handlerCallCount++;
     };
 
-    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()),2);
+    EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 2);
     EXPECT_EQ(handlerCallCount, 2u);
     EXPECT_EQ(m_sub_pos, alignedMessageLength * 2);
 }

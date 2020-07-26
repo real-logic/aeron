@@ -62,6 +62,7 @@ int aeron_image_create(
     aeron_subscription_t *subscription,
     aeron_client_conductor_t *conductor,
     aeron_log_buffer_t *log_buffer,
+    int32_t subscriber_position_id,
     int64_t *subscriber_position,
     int64_t correlation_id,
     int32_t session_id,
@@ -149,6 +150,7 @@ int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constan
     constants->mtu_length = (size_t)image->metadata->mtu_length;
     constants->session_id = image->session_id;
     constants->initial_term_id = image->metadata->initial_term_id;
+    constants->subscriber_position_id = image->subscriber_position_id;
     return 0;
 }
 

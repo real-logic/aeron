@@ -46,6 +46,8 @@ typedef struct aeron_image_stct
     int32_t session_id;
     int32_t term_length_mask;
 
+    int32_t subscriber_position_id;
+
     size_t position_bits_to_shift;
 
     bool is_closed;
@@ -65,6 +67,7 @@ int aeron_image_create(
     aeron_subscription_t *subscription,
     aeron_client_conductor_t *conductor,
     aeron_log_buffer_t *log_buffer,
+    int32_t subscriber_position_id,
     int64_t *subscriber_position,
     int64_t correlation_id,
     int32_t session_id,

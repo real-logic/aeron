@@ -732,6 +732,16 @@ typedef struct aeron_publication_constants_stct
      * terms have passed since creation.
      */
     int32_t initial_term_id;
+
+    /**
+     * Counter id for the publication limit.
+     */
+    int32_t publication_limit_counter_id;
+
+    /**
+     * Counter id for the channel status indicator
+     */
+    int32_t channel_status_indicator_id;
 }
 aeron_publication_constants_t;
 
@@ -1177,6 +1187,11 @@ typedef struct aeron_subscription_constants_stct
      * Stream identity for scoping within the channel media address.
      */
     int32_t stream_id;
+
+    /**
+     * Counter id for the channel status indicator
+     */
+    int32_t channel_status_indicator_id;
 }
 aeron_subscription_constants_t;
 
@@ -1413,6 +1428,11 @@ typedef struct aeron_image_constants_stct
      * The initial term at which the stream started for this session.
      */
     int32_t initial_term_id;
+
+    /**
+     * Counter id that refers to the subsriber position for this image.
+     */
+    int32_t subscriber_position_id;
 }
 aeron_image_constants_t;
 

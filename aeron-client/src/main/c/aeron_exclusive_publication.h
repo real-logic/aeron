@@ -46,6 +46,9 @@ typedef struct aeron_exclusive_publication_stct
     int32_t initial_term_id;
     int32_t term_buffer_length;
 
+    int32_t position_limit_counter_id;
+    int32_t channel_status_indicator_id;
+
     bool is_closed;
 
     uint8_t pre_fields_padding[AERON_CACHE_LINE_LENGTH];
@@ -63,7 +66,9 @@ int aeron_exclusive_publication_create(
     const char *channel,
     int32_t stream_id,
     int32_t session_id,
+    int32_t position_limit_counter_id,
     int64_t *position_limit_addr,
+    int32_t channel_status_indicator_id,
     int64_t *channel_status_addr,
     aeron_log_buffer_t *log_buffer,
     int64_t original_registration_id,

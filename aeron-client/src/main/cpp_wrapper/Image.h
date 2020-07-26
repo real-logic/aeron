@@ -411,7 +411,7 @@ public:
     {
         ControlledPollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
         int numFragments = aeron_image_bounded_controlled_poll(
-            m_image, ControlledPollWrapper<F>::poll, &wrapper, fragmentLimit);
+            m_image, ControlledPollWrapper<F>::poll, &wrapper, limitPosition, fragmentLimit);
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -436,7 +436,8 @@ public:
     inline std::int64_t controlledPeek(std::int64_t initialPosition, F &&fragmentHandler, std::int64_t limitPosition)
     {
         ControlledPollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
-        int64_t position = aeron_image_controlled_peek(m_image, ControlledPollWrapper<F>::poll, &wrapper, limitPosition);
+        int64_t position = aeron_image_controlled_peek(
+            m_image, initialPosition, ControlledPollWrapper<F>::poll, &wrapper, limitPosition);
         if (position < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

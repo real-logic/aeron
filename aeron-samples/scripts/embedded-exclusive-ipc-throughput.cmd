@@ -21,6 +21,7 @@ set /p VERSION=<..\..\version.txt
     -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
     -XX:+UnlockExperimentalVMOptions ^
     -XX:+TrustFinalNonStaticFields ^
+    -XX:+UseBiasedLocking ^
     -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UseParallelOldGC ^
     -Dagrona.disable.bounds.checks=true ^

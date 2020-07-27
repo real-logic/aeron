@@ -23,6 +23,7 @@ set /p VERSION=<..\..\version.txt
     -XX:+TrustFinalNonStaticFields ^
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
+    -XX:+UseBiasedLocking ^
     -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UseParallelOldGC ^
     -Djava.net.preferIPv4Stack=true ^

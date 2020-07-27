@@ -732,7 +732,7 @@ bool aeron_image_is_closed(aeron_image_t *image)
 }
 
 extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
-extern bool aeron_image_is_in_use_by_subcription(aeron_image_t *image, int64_t last_change_number);
+extern bool aeron_image_is_in_use_by_subscription(aeron_image_t *image, int64_t last_change_number);
 extern int aeron_image_validate_position(aeron_image_t *image, int64_t position);
 extern int64_t aeron_image_incr_refcnt(aeron_image_t *image);
 extern int64_t aeron_image_decr_refcnt(aeron_image_t *image);

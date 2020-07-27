@@ -82,7 +82,7 @@ inline int64_t aeron_image_removal_change_number(aeron_image_t *image)
     return image->removal_change_number;
 }
 
-inline bool aeron_image_is_in_use_by_subcription(aeron_image_t *image, int64_t last_change_number)
+inline bool aeron_image_is_in_use_by_subscription(aeron_image_t *image, int64_t last_change_number)
 {
     return image->removal_change_number > last_change_number;
 }

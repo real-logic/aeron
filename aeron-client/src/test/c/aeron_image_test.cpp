@@ -73,8 +73,16 @@ public:
         }
 
         if (aeron_image_create(
-            &image, nullptr, nullptr, log_buffer, SUBSCRIBER_POSITION_ID, &m_sub_pos, m_correlationId,
-            (int32_t)m_correlationId, "none", strlen("none")) < 0)
+            &image,
+            nullptr,
+            nullptr,
+            log_buffer,
+            SUBSCRIBER_POSITION_ID,
+            &m_sub_pos,
+            m_correlationId,
+            (int32_t)m_correlationId,
+            "none",
+            strlen("none")) < 0)
         {
             throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
         }
@@ -116,8 +124,7 @@ public:
             STREAM_ID);
     }
 
-    static void fragment_handler(
-        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    static void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         auto image = reinterpret_cast<ImageTest *>(clientd);
 
@@ -236,9 +243,7 @@ TEST_F(ImageTest, shouldReadOneLimitedMessage)
     appendMessage(m_sub_pos, messageLength);
     appendMessage(m_sub_pos + alignedMessageLength, messageLength);
 
-    auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
-    {
-    };
+    auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header) {};
 
     EXPECT_EQ(imagePoll(null_handler, 1), 1);
 }
@@ -345,9 +350,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
 
     appendMessage(m_sub_pos, messageLength);
 
-    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
-    {
-    };
+    auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header) {};
 
     EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 1);
     EXPECT_EQ(m_sub_pos, alignedMessageLength);
@@ -728,9 +731,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionBefo
     appendMessage(initialPosition, messageLength);
     appendMessage(initialPosition + alignedMessageLength, messageLength);
 
-    auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
-    {
-    };
+    auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header) {};
 
     EXPECT_EQ(imageBoundedPoll(null_handler, maxPosition, std::numeric_limits<size_t>::max()), 1);
     EXPECT_EQ(m_sub_pos, initialPosition + alignedMessageLength);

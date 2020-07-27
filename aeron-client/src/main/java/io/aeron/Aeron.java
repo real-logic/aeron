@@ -1317,8 +1317,7 @@ public class Aeron implements AutoCloseable
 
         private void connectToDriver()
         {
-            final long startTimeMs = epochClock.time();
-            final long deadlineMs = startTimeMs + driverTimeoutMs();
+            final long deadlineMs = epochClock.time() + driverTimeoutMs();
             final File cncFile = cncFile();
 
             while (null == toDriverBuffer)

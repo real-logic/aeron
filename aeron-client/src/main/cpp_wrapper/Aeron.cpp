@@ -39,6 +39,7 @@ Aeron::Aeron(Context &context) :
     m_aeron(init_aeron(context.m_context)),
     m_countersReader(aeron_counters_reader(m_aeron))
 {
+    m_context.attachCallbacksToContext();
     aeron_start(m_aeron);
 }
 

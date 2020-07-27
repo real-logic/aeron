@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-#set(TEST_HEADERS
-#    EmbeddedMediaDriver.h)
+set(TEST_HEADERS
+    EmbeddedMediaDriver.h)
 #
 #set(TEST_SOURCE)
 
@@ -38,8 +38,8 @@ function(aeron_client_wrapper_test name file)
     add_test(NAME ${name} COMMAND ${name})
 
     set(wrapper_name "${name}W")
-    add_executable(${wrapper_name} ${file})
-    target_link_libraries(${wrapper_name} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    add_executable(${wrapper_name} ${file} ${TEST_HEADERS})
+    target_link_libraries(${wrapper_name} aeron_client_wrapper aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_dependencies(${wrapper_name} gmock)
     add_test(NAME ${wrapper_name} COMMAND ${wrapper_name})

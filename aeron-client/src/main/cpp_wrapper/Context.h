@@ -212,14 +212,6 @@ public:
     Context()
     {
         aeron_context_init(&m_context);
-        errorHandler(defaultErrorHandler);
-        newPublicationHandler(defaultOnNewPublicationHandler);
-        newExclusivePublicationHandler(defaultOnNewPublicationHandler);
-        availableImageHandler(defaultOnAvailableImageHandler);
-        unavailableImageHandler(defaultOnUnavailableImageHandler);
-        availableCounterHandler(defaultOnAvailableCounterHandler);
-        unavailableCounterHandler(defaultOnUnavailableCounterHandler);
-        closeClientHandler(defaultOnCloseClientHandler);
     }
 
     /// @cond HIDDEN_SYMBOLS
@@ -269,12 +261,6 @@ public:
     inline this_t &errorHandler(const exception_handler_t &handler)
     {
         m_exceptionHandler = handler;
-        
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_exceptionHandler));
-        if (aeron_context_set_error_handler(m_context, errorHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -287,12 +273,6 @@ public:
     inline this_t &newPublicationHandler(const on_new_publication_t &handler)
     {
         m_onNewPublicationHandler = handler;
-        
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_onNewPublicationHandler));
-        if (aeron_context_set_on_new_publication(m_context, newPublicationHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -308,12 +288,6 @@ public:
     {
         m_onNewExclusivePublicationHandler = handler;
         m_isOnNewExclusivePublicationHandlerSet = true;
-        
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_onNewExclusivePublicationHandler));
-        if (aeron_context_set_on_new_exclusive_publication(m_context, newPublicationHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -326,12 +300,6 @@ public:
     inline this_t &newSubscriptionHandler(const on_new_subscription_t &handler)
     {
         m_onNewSubscriptionHandler = handler;
-        
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_onNewSubscriptionHandler));
-        if (aeron_context_set_on_new_subscription(m_context, newSubscriptionHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -368,12 +336,6 @@ public:
     inline this_t &availableCounterHandler(const on_available_counter_t &handler)
     {
         m_onAvailableCounterHandler = handler;
-        
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_onAvailableCounterHandler));
-        if (aeron_context_set_on_available_counter(m_context, availableCounterHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -386,12 +348,6 @@ public:
     inline this_t &unavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
         m_onUnavailableCounterHandler = handler;
-
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_onUnavailableCounterHandler));
-        if (aeron_context_set_on_unavailable_counter(m_context, availableCounterHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -404,12 +360,6 @@ public:
     inline this_t &closeClientHandler(const on_close_client_t &handler)
     {
         m_onCloseClientHandler = handler;
-
-        void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&m_onCloseClientHandler));
-        if (aeron_context_set_on_close_client(m_context, closeClientHandlerCallback, clientd) < 0)
-        {
-            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
-        }
         return *this;
     }
 
@@ -575,6 +525,65 @@ private:
     bool m_useConductorAgentInvoker = false;
     bool m_preTouchMappedMemory = false;
     // ...end
+
+    void attachCallbacksToContext()
+    {
+        if (aeron_context_set_error_handler(
+            m_context,
+            errorHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_exceptionHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+
+        if (aeron_context_set_on_new_publication(
+            m_context,
+            newPublicationHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onNewPublicationHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+
+        if (aeron_context_set_on_new_exclusive_publication(
+            m_context,
+            newPublicationHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onNewExclusivePublicationHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+
+        if (aeron_context_set_on_available_counter(
+            m_context,
+            availableCounterHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onAvailableCounterHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+
+        if (aeron_context_set_on_unavailable_counter(
+            m_context,
+            availableCounterHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onUnavailableCounterHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+
+        if (aeron_context_set_on_close_client(
+            m_context,
+            closeClientHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onCloseClientHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+
+        if (aeron_context_set_on_new_subscription(
+            m_context,
+            newSubscriptionHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onNewSubscriptionHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+    }
 
     static void errorHandlerCallback(void *clientd, int errcode, const char *message)
     {

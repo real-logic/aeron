@@ -79,7 +79,7 @@ public:
             nullptr,
             nullptr) < 0)
         {
-            throw std::runtime_error("could not create subscription: %s" + std::string(aeron_errmsg()));
+            throw std::runtime_error("could not create subscription: " + std::string(aeron_errmsg()));
         }
 
         return subscription;

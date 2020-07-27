@@ -24,7 +24,6 @@
 #include <unordered_map>
 #include <mutex>
 #include "concurrent/logbuffer/TermReader.h"
-#include "util/MemoryMappedFile.h"
 #include "concurrent/broadcast/CopyBroadcastReceiver.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"

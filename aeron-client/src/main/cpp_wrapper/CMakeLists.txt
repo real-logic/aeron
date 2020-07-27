@@ -25,7 +25,6 @@ SET(SOURCE
     Aeron.cpp
     Counter.cpp
     Context.cpp
-    util/MemoryMappedFile.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp)
 
@@ -93,7 +92,6 @@ SET(HEADERS
     concurrent/reports/LossReportDescriptor.h
     concurrent/reports/LossReportReader.h
     concurrent/AtomicArrayUpdater.h
-    util/MemoryMappedFile.h
     util/CommandOption.h
     util/CommandOptionParser.h
     util/StringUtil.h

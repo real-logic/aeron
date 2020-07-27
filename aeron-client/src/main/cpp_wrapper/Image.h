@@ -146,7 +146,7 @@ public:
      */
     inline std::int32_t termBufferLength() const
     {
-        return m_constants.term_buffer_length;
+        return static_cast<std::int32_t>(m_constants.term_buffer_length);
     }
 
     /**
@@ -156,7 +156,7 @@ public:
      */
     inline std::int32_t positionBitsToShift() const
     {
-        return m_constants.position_bits_to_shift;
+        return static_cast<std::int32_t>(m_constants.position_bits_to_shift);
     }
 
     /**

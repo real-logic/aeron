@@ -97,6 +97,8 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 #error Unsupported platform!
 #endif
 
+#define AERON_ADDR_LEN(a) (AF_INET6 == (a)->ss_family ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))
+
 int set_socket_non_blocking(aeron_socket_t fd);
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol);

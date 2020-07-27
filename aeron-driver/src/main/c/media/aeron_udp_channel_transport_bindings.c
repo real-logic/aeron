@@ -162,6 +162,11 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
         aeron_udp_channel_interceptor_bindings_load_func_t *interceptor_load_func =
             aeron_udp_channel_interceptor_bindings_load_interceptor(interceptor_name);
 
+        if (NULL == interceptor_load_func)
+        {
+            return NULL;
+        }
+
         current_bindings = interceptor_load_func(current_bindings);
         if (NULL == current_bindings)
         {

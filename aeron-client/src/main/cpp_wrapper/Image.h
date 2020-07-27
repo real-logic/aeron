@@ -77,7 +77,7 @@ template<typename H>
 static void doPoll(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     H &handler = *reinterpret_cast<H *>(clientd);
-    AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
+    AtomicBuffer atomicBuffer(const_cast<uint8_t *>(buffer), length);
     Header headerWrapper(header, nullptr);
     handler(atomicBuffer, 0, static_cast<int32_t>(length), headerWrapper);
 }
@@ -87,7 +87,7 @@ static aeron_controlled_fragment_handler_action_t doControlledPoll(
     void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     H &handler = *reinterpret_cast<H *>(clientd);
-    AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
+    AtomicBuffer atomicBuffer(const_cast<uint8_t *>(buffer), length);
     Header headerWrapper(header, nullptr);
     ControlledPollAction action = handler(atomicBuffer, 0, static_cast<int32_t>(length), header);
     switch (action)
@@ -109,7 +109,7 @@ template<typename H>
 static void doBlockPoll(void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id)
 {
     H &handler = *reinterpret_cast<H *>(clientd);
-    AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
+    AtomicBuffer atomicBuffer(const_cast<uint8_t *>(buffer), length);
     handler(atomicBuffer, 0, static_cast<int32_t>(length), session_id, term_id);
 }
 

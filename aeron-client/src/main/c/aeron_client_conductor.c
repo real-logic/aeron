@@ -38,7 +38,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)context->cnc_map.addr;
 
     if (aeron_broadcast_receiver_init(
-        &conductor->to_client_buffer, aeron_cnc_to_clients_buffer(metadata), metadata->to_clients_buffer_length) < 0)
+        &conductor->to_client_buffer, aeron_cnc_to_clients_buffer(metadata), (size_t)metadata->to_clients_buffer_length) < 0)
     {
         int errcode = errno;
 
@@ -47,7 +47,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     }
 
     if (aeron_mpsc_rb_init(
-        &conductor->to_driver_buffer, aeron_cnc_to_driver_buffer(metadata), metadata->to_driver_buffer_length) < 0)
+        &conductor->to_driver_buffer, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) < 0)
     {
         int errcode = errno;
 
@@ -58,9 +58,9 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     if (aeron_counters_reader_init(
         &conductor->counters_reader,
         aeron_cnc_counters_metadata_buffer(metadata),
-        metadata->counter_metadata_buffer_length,
+        (size_t)metadata->counter_metadata_buffer_length,
         aeron_cnc_counters_values_buffer(metadata),
-        metadata->counter_values_buffer_length) < 0)
+        (size_t)metadata->counter_values_buffer_length) < 0)
     {
         int errcode = errno;
 
@@ -188,7 +188,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
 
     conductor->driver_timeout_ms = context->driver_timeout_ms;
     conductor->driver_timeout_ns = context->driver_timeout_ms * 1000000;
-    conductor->inter_service_timeout_ns = metadata->client_liveness_timeout;
+    conductor->inter_service_timeout_ns = (uint64_t)metadata->client_liveness_timeout;
     conductor->keepalive_interval_ns = context->keepalive_interval_ns;
     conductor->resource_linger_duration_ns = context->resource_linger_duration_ns;
 
@@ -806,7 +806,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
     command->channel_length = async->uri_length;
-    memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, async->uri_length);
+    memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, (size_t)async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
         &conductor->to_driver_buffer,
@@ -865,7 +865,7 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
     command->channel_length = async->uri_length;
-    memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, async->uri_length);
+    memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, (size_t)async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
         &conductor->to_driver_buffer,
@@ -925,7 +925,7 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
     command->channel_length = async->uri_length;
-    memcpy(buffer + sizeof(aeron_subscription_command_t), async->uri, async->uri_length);
+    memcpy(buffer + sizeof(aeron_subscription_command_t), async->uri, (size_t)async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
         &conductor->to_driver_buffer,
@@ -988,11 +988,11 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
 
     memcpy(cursor, &async->counter.key_buffer_length, sizeof(int32_t));
     cursor += sizeof(int32_t);
-    memcpy(cursor, async->counter.key_buffer, async->counter.key_buffer_length);
+    memcpy(cursor, async->counter.key_buffer, (size_t)async->counter.key_buffer_length);
     cursor += AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t));
     memcpy(cursor, &async->counter.label_buffer_length, sizeof(int32_t));
     cursor += sizeof(int32_t);
-    memcpy(cursor, async->counter.label_buffer, async->counter.label_buffer_length);
+    memcpy(cursor, async->counter.label_buffer, (size_t)async->counter.label_buffer_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
         &conductor->to_driver_buffer,
@@ -1000,7 +1000,7 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
         buffer,
         sizeof(aeron_counter_command_t) +
         sizeof(int32_t) + AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t)) +
-        sizeof(int32_t) + async->counter.label_buffer_length))
+        sizeof(int32_t) + (size_t)async->counter.label_buffer_length))
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
@@ -1560,7 +1560,7 @@ int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_e
             resource->error_message_length = response->error_message_length;
             resource->error_code = response->error_code;
 
-            if (aeron_alloc((void **)&resource->error_message, response->error_message_length + 1) < 0)
+            if (aeron_alloc((void **)&resource->error_message, (size_t)response->error_message_length + 1) < 0)
             {
                 int errcode = errno;
 
@@ -1571,7 +1571,7 @@ int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_e
             memcpy(
                 resource->error_message,
                 (const char *)response + sizeof(aeron_error_response_t),
-                resource->error_message_length);
+                (size_t)resource->error_message_length);
             resource->error_message[resource->error_message_length] = '\0';
 
             aeron_array_fast_unordered_remove(
@@ -1651,7 +1651,7 @@ int aeron_client_conductor_on_publication_ready(
             memcpy(
                 log_file,
                 (const char *)response + sizeof(aeron_publication_buffers_ready_t),
-                response->log_file_length);
+                (size_t)response->log_file_length);
             log_file[response->log_file_length] = '\0';
 
             aeron_log_buffer_t *log_buffer;
@@ -1873,9 +1873,9 @@ int aeron_client_conductor_on_available_image(
     {
         char log_file_str[AERON_MAX_PATH], source_identity_str[AERON_MAX_PATH];
 
-        memcpy(log_file_str, log_file, log_file_length);
+        memcpy(log_file_str, log_file, (size_t)log_file_length);
         log_file_str[log_file_length] = '\0';
-        memcpy(source_identity_str, source_identity, source_identity_length);
+        memcpy(source_identity_str, source_identity, (size_t)source_identity_length);
         source_identity_str[source_identity_length] = '\0';
 
         aeron_log_buffer_t *log_buffer;

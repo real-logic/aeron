@@ -276,7 +276,7 @@ int aeron_properties_buffer_load(const char *buffer)
                 line_length--;
             }
 
-            if (aeron_properties_parse_line(&state, line, line_length, aeron_properties_setenv_property, NULL) < 0)
+            if (aeron_properties_parse_line(&state, line, (size_t)line_length, aeron_properties_setenv_property, NULL) < 0)
             {
                 aeron_set_err(EINVAL, "properties buffer line %" PRId32 " malformed", lineno);
                 return -1;

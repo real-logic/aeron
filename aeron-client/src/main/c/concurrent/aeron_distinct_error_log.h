@@ -110,7 +110,8 @@ inline int aeron_distinct_error_log_observation_list_alloc(
 {
     *list = NULL;
     size_t alloc_length =
-        sizeof(aeron_distinct_error_log_observation_list_t) + (num_observations * sizeof(aeron_distinct_observation_t));
+        sizeof(aeron_distinct_error_log_observation_list_t) +
+        ((size_t)num_observations * sizeof(aeron_distinct_observation_t));
 
     int result = aeron_alloc((void **)list, alloc_length);
     if (result >= 0)

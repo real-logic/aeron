@@ -55,7 +55,7 @@ static void initialize_error()
     }
 #endif
 
-    (void) aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
+    aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
 }
 
 int aeron_errcode()

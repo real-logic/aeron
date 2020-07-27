@@ -310,7 +310,7 @@ int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool val
 
 bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context)
 {
-    return (NULL == context) ? AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT : context->pre_touch_mapped_memory;
+    return NULL == context ? AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT : context->pre_touch_mapped_memory;
 }
 
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd)

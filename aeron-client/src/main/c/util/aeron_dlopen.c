@@ -210,7 +210,7 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
         aeron_set_err(aeron_errcode(), "could not allocate dl_loaded_libs: %s", aeron_errmsg());
         return -1;
     }
-    _state->num_libs = num_libs;
+    _state->num_libs = (size_t)num_libs;
 
     for (int i = 0; i < num_libs; i++)
     {

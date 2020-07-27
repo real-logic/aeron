@@ -65,7 +65,7 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
 {
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     aeron_distinct_observation_t *observations = list->observations;
-    size_t num_observations = list->num_observations;
+    size_t num_observations = (size_t)list->num_observations;
 
     for (size_t i = 0; i < num_observations; i++)
     {
@@ -103,7 +103,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     const char *message)
 {
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
-    size_t num_observations = list->num_observations;
+    size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;
     aeron_distinct_observation_t *observation = NULL;
 
@@ -177,7 +177,7 @@ int aeron_distinct_error_log_record(
 
     timestamp = log->clock();
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
-    size_t num_observations = list->num_observations;
+    size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;
 
     if ((observation = aeron_distinct_error_log_find_observation(
@@ -268,7 +268,7 @@ size_t aeron_error_log_read(
 size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log)
 {
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
-    return list->num_observations;
+    return (size_t)list->num_observations;
 }
 
 extern int aeron_distinct_error_log_observation_list_alloc(

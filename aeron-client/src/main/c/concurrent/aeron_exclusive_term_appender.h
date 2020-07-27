@@ -69,7 +69,7 @@ inline int32_t aeron_exclusive_term_appender_handle_end_of_log_condition(
         aeron_data_header_t *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
 
         aeron_exclusive_term_appender_header_write(
-            term_buffer, term_offset, padding_length, term_id, session_id, stream_id);
+            term_buffer, term_offset, (size_t)padding_length, term_id, session_id, stream_id);
         header->frame_header.type = AERON_HDR_TYPE_PAD;
         AERON_PUT_ORDERED(header->frame_header.frame_length, padding_length);
     }
@@ -371,7 +371,7 @@ inline int32_t aeron_exclusive_term_appender_append_fragmented_messagev(
                 int32_t current_buffer_remaining = (int32_t)iov[i].iov_len - current_buffer_offset;
                 int32_t num_bytes = (bytes_to_write - bytes_written) < current_buffer_remaining ?
                     (bytes_to_write - bytes_written) : current_buffer_remaining;
-                memcpy(term_buffer->addr + payload_offset, iov[i].iov_base + current_buffer_offset, num_bytes);
+                memcpy(term_buffer->addr + payload_offset, iov[i].iov_base + current_buffer_offset, (size_t)num_bytes);
 
                 bytes_written += num_bytes;
                 payload_offset += num_bytes;

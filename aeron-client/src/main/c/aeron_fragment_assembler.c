@@ -88,13 +88,13 @@ int aeron_buffer_builder_ensure_capacity(aeron_buffer_builder_t *buffer_builder,
             return -1;
         }
 
-        if (aeron_alloc((void **)&buffer_builder->buffer, suitable_capacity) < 0)
+        if (aeron_alloc((void **)&buffer_builder->buffer, (size_t)suitable_capacity) < 0)
         {
             aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
             return -1;
         }
 
-        buffer_builder->buffer_length = suitable_capacity;
+        buffer_builder->buffer_length = (size_t)suitable_capacity;
     }
 
     return 0;

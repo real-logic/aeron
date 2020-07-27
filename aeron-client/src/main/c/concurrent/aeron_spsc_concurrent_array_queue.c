@@ -22,7 +22,7 @@ int aeron_spsc_concurrent_array_queue_init(
 {
     length = (uint64_t)aeron_find_next_power_of_two((int32_t)length);
 
-    if (aeron_alloc((void **)&queue->buffer, sizeof(void *) * length) < 0)
+    if (aeron_alloc((void **)&queue->buffer, sizeof(void *) * (size_t)length) < 0)
     {
         return -1;
     }

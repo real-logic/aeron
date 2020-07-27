@@ -135,7 +135,7 @@ int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t 
 {
     if (new_capacity > response->capacity)
     {
-        new_capacity = aeron_find_next_power_of_two((int32_t)new_capacity);
+        new_capacity = (size_t)aeron_find_next_power_of_two((int32_t)new_capacity);
 
         if (aeron_array_ensure_capacity((uint8_t **)&response->buffer, 1, response->capacity, new_capacity) < 0)
         {
@@ -180,8 +180,8 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
                 }
 
                 response->status_code = (size_t)code;
-                response->cursor = line_result;
-                response->headers_offset = line_result;
+                response->cursor = (size_t)line_result;
+                response->headers_offset = (size_t)line_result;
             }
             else
             {

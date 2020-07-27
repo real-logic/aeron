@@ -146,7 +146,7 @@ int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constan
     constants->correlation_id = image->correlation_id;
     constants->join_position = image->join_position;
     constants->position_bits_to_shift = image->position_bits_to_shift;
-    constants->term_buffer_length = image->term_length_mask + 1;
+    constants->term_buffer_length = (size_t)image->term_length_mask + 1;
     constants->mtu_length = (size_t)image->metadata->mtu_length;
     constants->session_id = image->session_id;
     constants->initial_term_id = image->metadata->initial_term_id;
@@ -709,7 +709,7 @@ int aeron_image_block_poll(
         handler(
             clientd,
             term_buffer + offset,
-            length,
+            (size_t)length,
             image->session_id,
             term_id);
     }

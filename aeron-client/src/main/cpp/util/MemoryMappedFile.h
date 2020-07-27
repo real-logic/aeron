@@ -21,7 +21,7 @@
 #include "util/Export.h"
 
 #ifdef _WIN32
-    #include <stddef.h>
+    #include <cstddef>
     typedef void* HANDLE;
 #else
     #include <sys/types.h>
@@ -51,7 +51,7 @@ public:
         return mapExisting(filename, 0, 0, true);
     }
 
-    ~MemoryMappedFile ();
+    ~MemoryMappedFile();
 
     uint8_t* getMemoryPtr() const;
     size_t getMemorySize() const;
@@ -78,9 +78,9 @@ private:
     MemoryMappedFile(FileHandle fd, off_t offset, size_t length, bool readOnly);
 #endif
 
-    uint8_t* doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly);
+    uint8_t *doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly);
 
-    std::uint8_t* m_memory = 0;
+    std::uint8_t *m_memory = 0;
     size_t m_memorySize = 0;
     static size_t m_page_size;
     static bool fill(FileHandle fd, size_t sz, std::uint8_t);

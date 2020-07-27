@@ -130,8 +130,7 @@ public:
      */
     inline std::int32_t channelStatusId() const
     {
-        // TODO: Float this through the C API.
-        return -1;
+        return m_constants.channel_status_indicator_id;
     }
 
     /**

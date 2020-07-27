@@ -254,8 +254,7 @@ public:
      */
     inline std::int32_t publicationLimitId() const
     {
-        // TODO: Feed through the C API...
-        return 0;
+        return m_constants.publication_limit_counter_id;
     }
 
     /**
@@ -277,8 +276,7 @@ public:
      */
     inline std::int32_t channelStatusId() const
     {
-        // TODO: Need to feed this through the C API...
-        return 0;
+        return m_constants.channel_status_indicator_id;
     }
 
     /**

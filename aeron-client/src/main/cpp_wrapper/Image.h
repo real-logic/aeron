@@ -253,7 +253,7 @@ public:
      */
     inline std::int32_t subscriberPositionId() const
     {
-        throw UnsupportedOperationException("Need to float through from the C API", SOURCEINFO);
+        return m_constants.subscriber_position_id;
     }
 
     /**

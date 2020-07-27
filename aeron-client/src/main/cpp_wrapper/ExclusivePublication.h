@@ -247,7 +247,7 @@ public:
      */
     inline std::int32_t publicationLimitId() const
     {
-        throw UnsupportedOperationException("Need to flow this through the C API", SOURCEINFO);
+        return m_constants.publication_limit_counter_id;
     }
 
     /**
@@ -269,7 +269,7 @@ public:
      */
     inline std::int32_t channelStatusId() const
     {
-        throw UnsupportedOperationException("Need to flow this through the C API", SOURCEINFO);
+        return m_constants.channel_status_indicator_id;
     }
 
     /**

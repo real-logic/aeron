@@ -108,6 +108,7 @@ static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_int
             aeron_set_err(
                 EINVAL, "could not find interceptor bindings %s: dlsym - %s", interceptor_name,
                 aeron_dlerror());
+            return NULL;
         }
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop

@@ -115,6 +115,7 @@ void aeron_set_err(int errcode, const char *format, ...)
 
     error_state->errcode = errcode;
     aeron_set_errno(errcode);
+
     va_list args;
     char stack_message[sizeof(error_state->errmsg)];
 
@@ -133,6 +134,7 @@ void aeron_set_errno(int errcode)
         case 0:
             SetLastError(ERROR_SUCCESS);
             break;
+
         case EINVAL:
             SetLastError(ERROR_BAD_ARGUMENTS);
             break;

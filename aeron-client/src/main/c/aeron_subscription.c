@@ -27,6 +27,7 @@ int aeron_subscription_create(
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
+    int32_t channel_status_indicator_id,
     int64_t *channel_status_indicator_addr,
     aeron_on_available_image_t on_available_image,
     void *on_available_image_clientd,
@@ -55,6 +56,7 @@ int aeron_subscription_create(
         return -1;
     }
 
+    _subscription->channel_status_indicator_id = channel_status_indicator_id;
     _subscription->channel_status_indicator = channel_status_indicator_addr;
 
     _subscription->conductor = conductor;
@@ -267,6 +269,7 @@ int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subsc
     constants->stream_id = subscription->stream_id;
     constants->on_available_image = subscription->on_available_image;
     constants->on_unavailable_image = subscription->on_unavailable_image;
+    constants->channel_status_indicator_id = subscription->channel_status_indicator_id;
     return 0;
 }
 
@@ -325,7 +328,7 @@ aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscript
 }
 
 void aeron_subscription_for_each_image(
-    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image))
+    aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image, void *clientd), void *clientd)
 {
     volatile aeron_image_list_t *image_list;
 
@@ -336,7 +339,7 @@ void aeron_subscription_for_each_image(
         aeron_image_t *image = image_list->array[i];
 
         aeron_image_incr_refcnt(image);
-        handler(image_list->array[i]);
+        handler(image_list->array[i], clientd);
         aeron_image_decr_refcnt(image);
     }
 

@@ -59,6 +59,7 @@ typedef struct aeron_subscription_stct
 
     int64_t registration_id;
     int32_t stream_id;
+    int32_t channel_status_indicator_id;
     size_t round_robin_index;
     bool is_closed;
 
@@ -72,6 +73,7 @@ int aeron_subscription_create(
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
+    int32_t channel_status_indicator_id,
     int64_t *channel_status_indicator_addr,
     aeron_on_available_image_t on_available_image,
     void *on_available_image_clientd,

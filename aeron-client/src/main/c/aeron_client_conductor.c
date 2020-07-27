@@ -802,7 +802,6 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
-    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
@@ -862,7 +861,6 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
-    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
@@ -923,7 +921,6 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     aeron_subscription_command_t *command = (aeron_subscription_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
-    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->stream_id = async->stream_id;
@@ -985,7 +982,6 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
     char *cursor = buffer + sizeof(aeron_counter_command_t);
 
-    async->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     command->correlated.correlation_id = async->registration_id;
     command->correlated.client_id = conductor->client_id;
     command->type_id = async->counter.type_id;
@@ -1215,7 +1211,7 @@ int aeron_client_conductor_async_add_publication(
     cmd->uri = uri_copy;
     cmd->uri_length = (int32_t)uri_length;
     cmd->stream_id = stream_id;
-    cmd->registration_id = -1;
+    cmd->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
     cmd->type = AERON_CLIENT_TYPE_PUBLICATION;
 
@@ -1294,7 +1290,7 @@ int aeron_client_conductor_async_add_exclusive_publication(
     cmd->uri = uri_copy;
     cmd->uri_length = (int32_t)uri_length;
     cmd->stream_id = stream_id;
-    cmd->registration_id = -1;
+    cmd->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
     cmd->type = AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION;
 
@@ -1380,7 +1376,7 @@ int aeron_client_conductor_async_add_subscription(
     cmd->uri = uri_copy;
     cmd->uri_length = (int32_t)uri_length;
     cmd->stream_id = stream_id;
-    cmd->registration_id = -1;
+    cmd->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     cmd->on_available_image = on_available_image_handler;
     cmd->on_available_image_clientd = on_available_image_clientd;
     cmd->on_unavailable_image = on_unavailable_image_handler;
@@ -1482,7 +1478,7 @@ int aeron_client_conductor_async_add_counter(
     cmd->counter.key_buffer_length = key_buffer_length;
     cmd->counter.label_buffer_length = label_buffer_length;
     cmd->counter.type_id = type_id;
-    cmd->registration_id = -1;
+    cmd->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
     cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
     cmd->type = AERON_CLIENT_TYPE_COUNTER;
 
@@ -1680,7 +1676,9 @@ int aeron_client_conductor_on_publication_ready(
                     resource->uri,
                     resource->stream_id,
                     response->session_id,
+                    response->position_limit_counter_id,
                     position_limit_addr,
+                    response->channel_status_indicator_id,
                     channel_status_indicator_addr,
                     log_buffer,
                     response->registration_id,
@@ -1716,7 +1714,9 @@ int aeron_client_conductor_on_publication_ready(
                     resource->uri,
                     resource->stream_id,
                     response->session_id,
+                    response->position_limit_counter_id,
                     position_limit_addr,
+                    response->channel_status_indicator_id,
                     channel_status_indicator_addr,
                     log_buffer,
                     response->registration_id,
@@ -1796,6 +1796,7 @@ int aeron_client_conductor_on_subscription_ready(
                 resource->uri,
                 stream_id,
                 resource->registration_id,
+                response->channel_status_indicator_id,
                 channel_status_indicator_addr,
                 resource->on_available_image,
                 resource->on_available_image_clientd,
@@ -1894,6 +1895,7 @@ int aeron_client_conductor_on_available_image(
             subscription,
             conductor,
             log_buffer,
+            response->subscriber_position_id,
             subscriber_position,
             response->correlation_id,
             response->session_id,

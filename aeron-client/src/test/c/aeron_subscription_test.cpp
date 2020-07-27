@@ -34,6 +34,8 @@ extern "C"
 #define STREAM_ID (101)
 #define SESSION_ID (110)
 #define REGISTRATION_ID (27)
+#define CHANNEL_STATUS_INDICATOR_ID (45)
+#define SUBSCRIBER_POSITION_ID (49)
 
 using namespace aeron::test;
 
@@ -65,16 +67,8 @@ public:
         aeron_subscription_t *subscription = nullptr;
 
         if (aeron_subscription_create(
-            &subscription,
-            conductor,
-            ::strdup(SUB_URI),
-            STREAM_ID,
-            REGISTRATION_ID,
-            channel_status,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr) < 0)
+            &subscription, conductor, ::strdup(SUB_URI), STREAM_ID, REGISTRATION_ID, CHANNEL_STATUS_INDICATOR_ID,
+            channel_status, nullptr, nullptr, nullptr, nullptr) < 0)
         {
             throw std::runtime_error("could not create subscription: %s" + std::string(aeron_errmsg()));
         }
@@ -96,7 +90,14 @@ public:
         }
 
         if (aeron_image_create(
-            &image, nullptr, m_conductor, log_buffer, sub_pos, m_correlationId, (int32_t)m_correlationId,
+            &image,
+            nullptr,
+            m_conductor,
+            log_buffer,
+            SUBSCRIBER_POSITION_ID,
+            sub_pos,
+            m_correlationId,
+            (int32_t)m_correlationId,
             "none", strlen("none")) < 0)
         {
             throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
@@ -182,4 +183,11 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollBetween)
 
     aeron_log_buffer_delete(image->log_buffer);
     aeron_image_delete(image);
+}
+
+TEST_F(SubscriptionTest, shouldFetchConstants)
+{
+    aeron_subscription_constants_t constants;
+    ASSERT_EQ(0, aeron_subscription_constants(m_subscription, &constants));
+    ASSERT_NE(0, constants.channel_status_indicator_id);
 }

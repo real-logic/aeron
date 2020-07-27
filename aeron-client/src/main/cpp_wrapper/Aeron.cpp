@@ -47,6 +47,47 @@ Aeron::~Aeron()
     aeron_close(m_aeron);
 }
 
+std::int64_t Aeron::addPublication(const std::string &channel, std::int32_t streamId)
+{
+    AsyncAddPublication *addPublication = addPublicationAsync(channel, streamId);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    m_pendingPublications[addPublication->registration_id] = addPublication;
+    return addPublication->registration_id;
+}
+
+std::int64_t Aeron::addExclusivePublication(const std::string &channel, std::int32_t streamId)
+{
+    AsyncAddExclusivePublication *addExclusivePublication = addExclusivePublicationAsync(channel, streamId);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    m_pendingExclusivePublications[addExclusivePublication->registration_id] = addExclusivePublication;
+    return addExclusivePublication->registration_id;
+}
+
+std::int64_t Aeron::addSubscription(
+    const std::string &channel,
+    std::int32_t streamId,
+    const on_available_image_t &onAvailableImageHandler,
+    const on_unavailable_image_t &onUnavailableImageHandler)
+{
+    AsyncAddSubscription *addSubscription = addSubscriptionAsync(
+        channel, streamId, onAvailableImageHandler, onUnavailableImageHandler);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    m_pendingSubscriptions[addSubscription->m_async->registration_id] = addSubscription;
+    return addSubscription->m_async->registration_id;
+}
+
+std::int64_t Aeron::addCounter(
+    std::int32_t typeId,
+    const std::uint8_t *keyBuffer,
+    std::size_t keyLength,
+    const std::string &label)
+{
+    AsyncAddCounter *addCounter = addCounterAsync(typeId, keyBuffer, keyLength, label);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    m_pendingCounters[addCounter->registration_id] = addCounter;
+    return addCounter->registration_id;
+}
+
 std::string Aeron::version()
 {
     return std::string(aeron_version_full());

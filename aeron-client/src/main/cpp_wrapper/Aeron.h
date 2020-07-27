@@ -54,11 +54,6 @@ using AsyncAddPublication = aeron_async_add_publication_t;
 using AsyncAddExclusivePublication = aeron_async_add_exclusive_publication_t;
 using AsyncAddCounter = aeron_async_add_counter_t;
 
-static_assert(sizeof(AsyncAddPublication *) == sizeof(std::int64_t), "int64 must hold space for pointer");
-static_assert(sizeof(AsyncAddExclusivePublication *) == sizeof(std::int64_t), "int64 must hold space for pointer");
-static_assert(sizeof(AsyncAddSubscription *) == sizeof(std::int64_t), "int64 must hold space for pointer");
-static_assert(sizeof(AsyncAddCounter *) == sizeof(std::int64_t), "int64 must hold space for pointer");
-
 /**
  * @example BasicPublisher.cpp
  * An example of a basic publishing application
@@ -134,11 +129,7 @@ public:
      * @param streamId within the channel scope.
      * @return id to resolve the AsyncAddPublication for the publication
      */
-    inline std::int64_t addPublication(const std::string &channel, std::int32_t streamId)
-    {
-        const AsyncAddPublication *addPublication = addPublicationAsync(channel, streamId);
-        return reinterpret_cast<std::int64_t>(addPublication);
-    }
+    std::int64_t addPublication(const std::string &channel, std::int32_t streamId);
 
     /**
      * Retrieve the Publication associated with the given registrationId.
@@ -159,7 +150,22 @@ public:
      */
     inline std::shared_ptr<Publication> findPublication(std::int64_t registrationId)
     {
-        return findPublication(reinterpret_cast<AsyncAddPublication *>(registrationId));
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto search = m_pendingPublications.find(registrationId);
+        if (search == m_pendingPublications.end())
+        {
+            throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
+        }
+
+        const std::shared_ptr<Publication> publication = findPublication(search->second);
+
+        if (nullptr != publication)
+        {
+            m_pendingPublications.erase(registrationId);
+        }
+
+        return publication;
     }
 
     /**
@@ -224,11 +230,7 @@ public:
      * @param streamId within the channel scope.
      * @return id to resolve AsyncAddExclusivePublication for the publication
      */
-    std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId)
-    {
-        const AsyncAddExclusivePublication *addExclusivePublication = addExclusivePublicationAsync(channel, streamId);
-        return reinterpret_cast<std::int64_t>(addExclusivePublication);
-    }
+    std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId);
 
     /**
      * Retrieve the ExclusivePublication associated with the given registrationId.
@@ -249,7 +251,22 @@ public:
      */
     inline std::shared_ptr<ExclusivePublication> findExclusivePublication(std::int64_t registrationId)
     {
-        return findExclusivePublication(reinterpret_cast<AsyncAddExclusivePublication *>(registrationId));
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto search = m_pendingExclusivePublications.find(registrationId);
+        if (search == m_pendingExclusivePublications.end())
+        {
+            throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
+        }
+
+        const std::shared_ptr<ExclusivePublication> publication = findExclusivePublication(search->second);
+
+        if (nullptr != publication)
+        {
+            m_pendingExclusivePublications.erase(registrationId);
+        }
+
+        return publication;
     }
 
     /**
@@ -338,12 +355,7 @@ public:
         const std::string &channel,
         std::int32_t streamId,
         const on_available_image_t &onAvailableImageHandler,
-        const on_unavailable_image_t &onUnavailableImageHandler)
-    {
-        const AsyncAddSubscription *addSubscription = addSubscriptionAsync(
-            channel, streamId, onAvailableImageHandler, onUnavailableImageHandler);
-        return reinterpret_cast<std::int64_t>(addSubscription);
-    }
+        const on_unavailable_image_t &onUnavailableImageHandler);
 
     /**
      * Retrieve the Subscription associated with the given registrationId.
@@ -364,7 +376,22 @@ public:
      */
     inline std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId)
     {
-        return findSubscription(reinterpret_cast<AsyncAddSubscription *>(registrationId));
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto search = m_pendingSubscriptions.find(registrationId);
+        if (search == m_pendingSubscriptions.end())
+        {
+            throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
+        }
+
+        const std::shared_ptr<Subscription> subscription = findSubscription(search->second);
+
+        if (nullptr != subscription)
+        {
+            m_pendingSubscriptions.erase(registrationId);
+        }
+
+        return subscription;
     }
 
     /**
@@ -482,11 +509,7 @@ public:
         std::int32_t typeId,
         const std::uint8_t *keyBuffer,
         std::size_t keyLength,
-        const std::string &label)
-    {
-        const AsyncAddCounter *addCounter = addCounterAsync(typeId, keyBuffer, keyLength, label);
-        return reinterpret_cast<std::int64_t>(addCounter);
-    }
+        const std::string &label);
 
     /**
      * Retrieve the Counter associated with the given registrationId.
@@ -507,7 +530,22 @@ public:
      */
     inline std::shared_ptr<Counter> findCounter(std::int64_t registrationId)
     {
-        return findCounter(reinterpret_cast<AsyncAddCounter *>(registrationId));
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto search = m_pendingCounters.find(registrationId);
+        if (search == m_pendingCounters.end())
+        {
+            throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
+        }
+
+        const std::shared_ptr<Counter> counter = findCounter(search->second);
+
+        if (nullptr != counter)
+        {
+            m_pendingCounters.erase(registrationId);
+        }
+
+        return counter;
     }
 
     /**
@@ -729,6 +767,11 @@ private:
     Context m_context;
     aeron_t* m_aeron;
     CountersReader m_countersReader;
+    std::unordered_map<std::int64_t, AsyncAddPublication *> m_pendingPublications;
+    std::unordered_map<std::int64_t, AsyncAddExclusivePublication *> m_pendingExclusivePublications;
+    std::unordered_map<std::int64_t, AsyncAddSubscription *> m_pendingSubscriptions;
+    std::unordered_map<std::int64_t, AsyncAddCounter *> m_pendingCounters;
+    std::recursive_mutex m_adminLock;
 
     static void onAvailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {

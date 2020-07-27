@@ -28,32 +28,38 @@
 using namespace aeron;
 using namespace aeron::util;
 
-void Context::requestDriverTermination(
+bool Context::requestDriverTermination(
     const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
 {
+    auto minLength = static_cast<std::int64_t>(CncFileDescriptor::META_DATA_LENGTH);
     const std::string cncFilename = directory + AERON_PATH_SEP + CncFileDescriptor::CNC_FILE;
 
-    if (MemoryMappedFile::getFileSize(cncFilename.c_str()) > 0)
+    if (MemoryMappedFile::getFileSize(cncFilename.c_str()) > minLength)
     {
         MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(cncFilename.c_str());
-
-        const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
-
-        if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
+        if (cncFile->getMemorySize() > minLength)
         {
-            throw AeronException(
-                "Aeron CnC version does not match:"
-                " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
-                " file=" + semanticVersionToString(cncVersion),
-                SOURCEINFO);
+            const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
+            if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
+            {
+                throw AeronException(
+                    "Aeron CnC version does not match:"
+                    " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
+                    " file=" + semanticVersionToString(cncVersion),
+                    SOURCEINFO);
+            }
+
+            AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));
+            ManyToOneRingBuffer ringBuffer(toDriverBuffer);
+            DriverProxy driverProxy(ringBuffer);
+
+            driverProxy.terminateDriver(tokenBuffer, tokenLength);
+
+            return true;
         }
-
-        AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));
-        ManyToOneRingBuffer ringBuffer(toDriverBuffer);
-        DriverProxy driverProxy(ringBuffer);
-
-        driverProxy.terminateDriver(tokenBuffer, tokenLength);
     }
+
+    return false;
 }
 
 #if !defined(__linux__)

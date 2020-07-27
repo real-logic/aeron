@@ -103,18 +103,18 @@ public:
 
     inline std::string channel() const
     {
-        return stringGet(offsetof(ImageMessageDefn, channelLength));
+        return stringGet(static_cast<util::index_t>(offsetof(ImageMessageDefn, channelLength)));
     }
 
     inline this_t &channel(const std::string &value)
     {
-        stringPut(offsetof(ImageMessageDefn, channelLength), value);
+        stringPut(static_cast<util::index_t>(offsetof(ImageMessageDefn, channelLength)), value);
         return *this;
     }
 
-    inline std::int32_t length() const
+    inline util::index_t length() const
     {
-        return offsetof(ImageMessageDefn, channelData) + m_struct.channelLength;
+        return static_cast<util::index_t>(offsetof(ImageMessageDefn, channelData) + m_struct.channelLength);
     }
 };
 

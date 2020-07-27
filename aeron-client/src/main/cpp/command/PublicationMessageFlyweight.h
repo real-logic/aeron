@@ -84,18 +84,18 @@ public:
 
     inline std::string channel() const
     {
-        return stringGet(offsetof(PublicationMessageDefn, channelLength));
+        return stringGet(static_cast<util::index_t>(offsetof(PublicationMessageDefn, channelLength)));
     }
 
     inline this_t &channel(const std::string &value)
     {
-        stringPut(offsetof(PublicationMessageDefn, channelLength), value);
+        stringPut(static_cast<util::index_t>(offsetof(PublicationMessageDefn, channelLength)), value);
         return *this;
     }
 
-    util::index_t length()
+    inline util::index_t length() const
     {
-        return offsetof(PublicationMessageDefn, channelData) + m_struct.channelLength;
+        return static_cast<util::index_t>(offsetof(PublicationMessageDefn, channelData) + m_struct.channelLength);
     }
 
 private:

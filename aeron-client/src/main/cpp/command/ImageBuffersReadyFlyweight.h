@@ -159,7 +159,7 @@ public:
         return *this;
     }
 
-    inline std::int32_t length()
+    inline util::index_t length() const
     {
         const util::index_t startOfSourceIdentity = sourceIdentityOffset();
 

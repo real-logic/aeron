@@ -145,18 +145,18 @@ public:
 
     inline std::string logFileName() const
     {
-        return stringGet(offsetof(PublicationBuffersReadyDefn, logFileLength));
+        return stringGet(static_cast<util::index_t>(offsetof(PublicationBuffersReadyDefn, logFileLength)));
     }
 
     inline this_t &logFileName(const std::string &value)
     {
-        stringPut(offsetof(PublicationBuffersReadyDefn, logFileLength), value);
+        stringPut(static_cast<util::index_t>(offsetof(PublicationBuffersReadyDefn, logFileLength)), value);
         return *this;
     }
 
-    std::int32_t length() const
+    inline util::index_t length() const
     {
-        return offsetof(PublicationBuffersReadyDefn, logFileData) + m_struct.logFileLength;
+        return static_cast<util::index_t>(offsetof(PublicationBuffersReadyDefn, logFileData) + m_struct.logFileLength);
     }
 };
 

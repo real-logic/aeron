@@ -90,12 +90,12 @@ public:
 
     inline std::string errorMessage() const
     {
-        return stringGet(offsetof(ErrorResponseDefn, errorMessageLength));
+        return stringGet(static_cast<util::index_t>(offsetof(ErrorResponseDefn, errorMessageLength)));
     }
 
     inline util::index_t length() const
     {
-        return offsetof(ErrorResponseDefn, errorMessageData) + m_struct.errorMessageLength;
+        return static_cast<util::index_t>(offsetof(ErrorResponseDefn, errorMessageData) + m_struct.errorMessageLength);
     }
 };
 

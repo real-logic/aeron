@@ -87,7 +87,7 @@ public:
 
     inline util::index_t length() const
     {
-        return sizeof(TerminateDriverDefn) + m_struct.tokenLength;
+        return static_cast<util::index_t>(sizeof(TerminateDriverDefn) + m_struct.tokenLength);
     }
 
 private:

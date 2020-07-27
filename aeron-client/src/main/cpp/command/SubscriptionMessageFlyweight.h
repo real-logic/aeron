@@ -95,18 +95,18 @@ public:
 
     inline std::string channel() const
     {
-        return stringGet(offsetof(SubscriptionMessageDefn, channelLength));
+        return stringGet(static_cast<util::index_t>(offsetof(SubscriptionMessageDefn, channelLength)));
     }
 
     inline this_t &channel(const std::string &value)
     {
-        stringPut(offsetof(SubscriptionMessageDefn, channelLength), value);
+        stringPut(static_cast<util::index_t>(offsetof(SubscriptionMessageDefn, channelLength)), value);
         return *this;
     }
 
-    util::index_t length()
+    inline util::index_t length() const
     {
-        return offsetof(SubscriptionMessageDefn, channelData) + m_struct.channelLength;
+        return static_cast<util::index_t>(offsetof(SubscriptionMessageDefn, channelData) + m_struct.channelLength);
     }
 
 private:

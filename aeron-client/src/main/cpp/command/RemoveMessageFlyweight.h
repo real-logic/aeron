@@ -70,9 +70,9 @@ public:
         return *this;
     }
 
-    inline static std::int32_t length()
+    inline static util::index_t length()
     {
-        return (std::int32_t)sizeof(RemoveMessageDefn);
+        return static_cast<util::index_t>(sizeof(RemoveMessageDefn));
     }
 
 private:

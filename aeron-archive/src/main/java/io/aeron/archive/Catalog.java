@@ -197,7 +197,7 @@ class Catalog implements AutoCloseable
             }
             else
             {
-                forceWrites(archiveDirChannel, forceWrites, forceMetadata);
+                forceWrites(archiveDirChannel);
                 recordLength = DEFAULT_RECORD_LENGTH;
 
                 new CatalogHeaderEncoder()
@@ -376,7 +376,7 @@ class Catalog implements AutoCloseable
             .length(descriptorEncoder.encodedLength())
             .valid(VALID);
 
-        forceWrites(catalogChannel, forceWrites, forceMetadata);
+        forceWrites(catalogChannel);
 
         return recordingId;
     }
@@ -573,7 +573,7 @@ class Catalog implements AutoCloseable
 
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestampMs, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
-        forceWrites(catalogChannel, forceWrites, forceMetadata);
+        forceWrites(catalogChannel);
     }
 
     void stopPosition(final long recordingId, final long position)
@@ -582,7 +582,7 @@ class Catalog implements AutoCloseable
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
 
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
-        forceWrites(catalogChannel, forceWrites, forceMetadata);
+        forceWrites(catalogChannel);
     }
 
     void extendRecording(
@@ -596,7 +596,7 @@ class Catalog implements AutoCloseable
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP, BYTE_ORDER);
         fieldAccessBuffer.putInt(offset + sessionIdEncodingOffset(), sessionId, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
-        forceWrites(catalogChannel, forceWrites, forceMetadata);
+        forceWrites(catalogChannel);
     }
 
     long startPosition(final long recordingId)
@@ -617,7 +617,7 @@ class Catalog implements AutoCloseable
             startPositionEncodingOffset();
 
         fieldAccessBuffer.putLong(offset, position, BYTE_ORDER);
-        forceWrites(catalogChannel, forceWrites, forceMetadata);
+        forceWrites(catalogChannel);
     }
 
     long stopPosition(final long recordingId)
@@ -754,7 +754,7 @@ class Catalog implements AutoCloseable
         nextRecordingId = recordingId + 1;
     }
 
-    private void forceWrites(final FileChannel channel, final boolean forceWrites, final boolean forceMetadata)
+    private void forceWrites(final FileChannel channel)
     {
         if (null != channel && forceWrites)
         {

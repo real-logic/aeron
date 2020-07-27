@@ -189,6 +189,7 @@ typedef int (*aeron_udp_channel_interceptor_close_func_t)(
 typedef int (*aeron_udp_channel_interceptor_transport_notification_func_t)(
     void *interceptor_state,
     aeron_udp_channel_transport_t *transport,
+    const aeron_udp_channel_t *udp_channel,
     aeron_udp_channnel_interceptor_notification_type_t type);
 
 typedef int (*aeron_udp_channel_interceptor_publication_notification_func_t)(
@@ -371,6 +372,7 @@ int aeron_udp_channel_data_paths_delete(aeron_udp_channel_data_paths_t *data_pat
 inline int aeron_udp_channel_interceptors_transport_notifications(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
+    const aeron_udp_channel_t *udp_channel,
     aeron_udp_channnel_interceptor_notification_type_t type)
 {
     for (
@@ -381,7 +383,7 @@ inline int aeron_udp_channel_interceptors_transport_notifications(
         if (NULL != interceptor->incoming_transport_notification_func)
         {
             if (interceptor->incoming_transport_notification_func(
-                interceptor->interceptor_state, transport, type) < 0)
+                interceptor->interceptor_state, transport, udp_channel, type) < 0)
             {
                 return -1;
             }
@@ -396,7 +398,7 @@ inline int aeron_udp_channel_interceptors_transport_notifications(
         if (NULL != interceptor->outgoing_transport_notification_func)
         {
             if (interceptor->outgoing_transport_notification_func(
-                interceptor->interceptor_state, transport, type) < 0)
+                interceptor->interceptor_state, transport, udp_channel, type) < 0)
             {
                 return -1;
             }

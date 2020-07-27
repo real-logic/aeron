@@ -367,7 +367,10 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
     }
 
     if (aeron_udp_channel_interceptors_transport_notifications(
-        destination->data_paths, &destination->transport, AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
+        destination->data_paths,
+        &destination->transport,
+        destination->conductor_fields.udp_channel,
+        AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(
             receiver, "on_add_destination, interceptors transport notifications: %s", aeron_errmsg());
@@ -419,7 +422,10 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
     if (0 < aeron_receive_channel_endpoint_remove_destination(endpoint, channel, &destination) && NULL != destination)
     {
         if (aeron_udp_channel_interceptors_transport_notifications(
-            destination->data_paths, &destination->transport, AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
+            destination->data_paths,
+            &destination->transport,
+            destination->conductor_fields.udp_channel,
+            AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
         {
             AERON_DRIVER_RECEIVER_ERROR(
                 receiver, "on_add_destination, interceptors transport notifications: %s", aeron_errmsg());

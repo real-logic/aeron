@@ -17,7 +17,6 @@
 #define _DISABLE_EXTENDED_ALIGNED_STORAGE
 
 #include "Aeron.h"
-#include "CncFileDescriptor.h"
 
 #if defined (_WIN32)
     #ifndef NOMINMAX

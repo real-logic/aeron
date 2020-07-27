@@ -134,7 +134,7 @@ public:
         return *this;
     }
 
-    inline static std::int32_t headerLength()
+    inline static constexpr std::int32_t headerLength()
     {
         return sizeof(SetupDefn);
     }

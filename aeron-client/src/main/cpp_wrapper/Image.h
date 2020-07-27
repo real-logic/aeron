@@ -72,71 +72,46 @@ typedef std::function<ControlledPollAction(
     util::index_t length,
     concurrent::logbuffer::Header &header)> controlled_poll_fragment_handler_t;
 
-template<typename C>
-class PollWrapper
+
+template<typename H>
+static void doPoll(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
-public:
-    PollWrapper(C &callback) : m_callback(callback)
-    {}
+    H &handler = *reinterpret_cast<H *>(clientd);
+    AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
+    Header headerWrapper(header, nullptr);
+    handler(atomicBuffer, 0, static_cast<int32_t>(length), headerWrapper);
+}
 
-    static void poll(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
-    {
-        PollWrapper<C> *wrapper = static_cast<PollWrapper<C> *>(clientd);
-        AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
-        Header headerWrapper(header, nullptr);
-        wrapper->m_callback(atomicBuffer, 0, length, headerWrapper);
-    }
-private:
-    C &m_callback;
-};
-
-template<typename C>
-class ControlledPollWrapper
+template<typename H>
+static aeron_controlled_fragment_handler_action_t doControlledPoll(
+    void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
-public:
-    ControlledPollWrapper(C &callback) : m_callback(callback)
-    {}
-
-    static aeron_controlled_fragment_handler_action_t poll(
-        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    H &handler = *reinterpret_cast<H *>(clientd);
+    AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
+    Header headerWrapper(header, nullptr);
+    ControlledPollAction action = handler(atomicBuffer, 0, static_cast<int32_t>(length), header);
+    switch (action)
     {
-        ControlledPollWrapper<C> *wrapper = static_cast<ControlledPollWrapper<C> *>(clientd);
-        AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
-        ControlledPollAction action = wrapper->m_callback(atomicBuffer, 0, length, header);
-        switch (action)
-        {
-            case ControlledPollAction::ABORT:
-                return AERON_ACTION_ABORT;
-            case ControlledPollAction::BREAK:
-                return AERON_ACTION_BREAK;
-            case ControlledPollAction::COMMIT:
-                return AERON_ACTION_COMMIT;
-            case ControlledPollAction::CONTINUE:
-                return AERON_ACTION_CONTINUE;
-            default:
-                throw IllegalStateException("Invalid action", SOURCEINFO);
-        }
+        case ControlledPollAction::ABORT:
+            return AERON_ACTION_ABORT;
+        case ControlledPollAction::BREAK:
+            return AERON_ACTION_BREAK;
+        case ControlledPollAction::COMMIT:
+            return AERON_ACTION_COMMIT;
+        case ControlledPollAction::CONTINUE:
+            return AERON_ACTION_CONTINUE;
+        default:
+            throw IllegalStateException("Invalid action", SOURCEINFO);
     }
-private:
-    C &m_callback;
-};
+}
 
-template<typename C>
-class BlockPollWrapper
+template<typename H>
+static void doBlockPoll(void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id)
 {
-public:
-    BlockPollWrapper(C &callback) : m_callback(callback)
-    {}
-
-    static void poll(void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id)
-    {
-        BlockPollWrapper<C> *wrapper = static_cast<BlockPollWrapper<C> *>(clientd);
-        AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
-        wrapper->m_callback(atomicBuffer, 0, length, session_id, term_id);
-    }
-private:
-    C &m_callback;
-};
+    H &handler = *reinterpret_cast<H *>(clientd);
+    AtomicBuffer atomicBuffer((uint8_t *)buffer, length);
+    handler(atomicBuffer, 0, static_cast<int32_t>(length), session_id, term_id);
+}
 
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
@@ -335,8 +310,10 @@ public:
     template<typename F>
     inline int poll(F &&fragmentHandler, int fragmentLimit)
     {
-        PollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
-        int numFragments = aeron_image_poll(m_image, PollWrapper<F>::poll, &wrapper, fragmentLimit);
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_image_poll(m_image, doPoll<handler_type>, handler_ptr, fragmentLimit);
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -359,8 +336,11 @@ public:
     template<typename F>
     inline int boundedPoll(F &&fragmentHandler, std::int64_t limitPosition, int fragmentLimit)
     {
-        PollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
-        int numFragments = aeron_image_bounded_poll(m_image, PollWrapper<F>::poll, &wrapper, limitPosition, fragmentLimit);
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_image_bounded_poll(
+            m_subscription, doPoll<handler_type>, handler_ptr, limitPosition, fragmentLimit);
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -383,9 +363,11 @@ public:
     template<typename F>
     inline int controlledPoll(F &&fragmentHandler, int fragmentLimit)
     {
-        ControlledPollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_image_controlled_poll(
-            m_image, ControlledPollWrapper<F>::poll, &wrapper, fragmentLimit);
+            m_subscription, doControlledPoll<handler_type>, handler_ptr, fragmentLimit);
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -409,9 +391,11 @@ public:
     template<typename F>
     inline int boundedControlledPoll(F &&fragmentHandler, std::int64_t limitPosition, int fragmentLimit)
     {
-        ControlledPollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_image_bounded_controlled_poll(
-            m_image, ControlledPollWrapper<F>::poll, &wrapper, limitPosition, fragmentLimit);
+            m_subscription, doControlledPoll<handler_type>, handler_ptr, limitPosition, fragmentLimit);
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -435,14 +419,16 @@ public:
     template<typename F>
     inline std::int64_t controlledPeek(std::int64_t initialPosition, F &&fragmentHandler, std::int64_t limitPosition)
     {
-        ControlledPollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
-        int64_t position = aeron_image_controlled_peek(
-            m_image, initialPosition, ControlledPollWrapper<F>::poll, &wrapper, limitPosition);
-        if (position < 0)
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_image_controlled_peek(
+            m_subscription, doControlledPoll<handler_type>, handler_ptr, limitPosition);
+        if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        return position;
+        return numFragments;
     }
 
     /**
@@ -465,8 +451,11 @@ public:
     template<typename F>
     inline int blockPoll(F &&blockHandler, int blockLengthLimit)
     {
-        BlockPollWrapper<F> wrapper(std::forward<F>(blockHandler));
-        int numFragments = aeron_image_block_poll(m_image, BlockPollWrapper<F>::poll, &wrapper, blockLengthLimit);
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = blockHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_image_block_poll(
+            m_subscription, doBlockPoll<handler_type>, handler_ptr, blockLengthLimit);
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

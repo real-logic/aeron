@@ -216,8 +216,15 @@ public:
     template<typename F>
     inline int poll(F &&fragmentHandler, int fragmentLimit)
     {
-        PollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
-        return aeron_subscription_poll(m_subscription, PollWrapper<F>::poll, &wrapper, fragmentLimit);
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_subscription_poll(m_subscription, doPoll<handler_type>, handler_ptr, fragmentLimit);
+        if (numFragments < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+        return numFragments;
     }
 
     /**
@@ -238,9 +245,15 @@ public:
     template<typename F>
     inline int controlledPoll(F &&fragmentHandler, int fragmentLimit)
     {
-        ControlledPollWrapper<F> wrapper(std::forward<F>(fragmentHandler));
-        return aeron_subscription_controlled_poll(
-            m_subscription, ControlledPollWrapper<F>::controlledPoll, &wrapper, fragmentLimit);
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = fragmentHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_subscription_controlled_poll(
+            m_subscription, doControlledPoll<handler_type>, handler_ptr, fragmentLimit);
+        if (numFragments < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
     }
 
     /**
@@ -253,9 +266,16 @@ public:
     template<typename F>
     inline long blockPoll(F &&blockHandler, int blockLengthLimit)
     {
-        BlockPollWrapper<F> wrapper(std::forward<F>(blockHandler));
-        return aeron_subscription_block_poll(
-            m_subscription, BlockPollWrapper<F>::blockPoll, &wrapper, blockLengthLimit);
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = blockHandler;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+        int numFragments = aeron_subscription_block_poll(
+            m_subscription, doBlockPoll<handler_type>, handler_ptr, blockLengthLimit);
+        if (numFragments < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+        return numFragments;
     }
 
     /**

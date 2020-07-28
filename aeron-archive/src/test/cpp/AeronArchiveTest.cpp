@@ -18,6 +18,12 @@
 #include <unistd.h>
 #include <ftw.h>
 #include <cstdio>
+#include <spawn.h>
+#include <pthread.h>
+#elif defined(_WIN32)
+#include <process.h>
+#include <Windows.h>
+typedef intptr_t pid_t;
 #else
 #error "must spawn Java archive per test"
 #endif
@@ -40,6 +46,45 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
+#ifdef _WIN32
+int aeron_delete_directory(const char *dir)
+{
+    SHFILEOPSTRUCT file_op =
+    {
+        nullptr,
+        FO_DELETE,
+        dir,
+        "",
+        FOF_NOCONFIRMATION |
+        FOF_NOERRORUI |
+        FOF_SILENT,
+        false,
+        0,
+        ""
+    };
+
+    return SHFileOperation(&file_op);
+}
+
+#else
+
+static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
+{
+    if (remove(path) != 0)
+    {
+        perror("remove");
+    }
+
+    return 0;
+}
+
+int aeron_delete_directory(const char *dirname)
+{
+    return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
+}
+
+#endif
+
 class AeronArchiveTest : public testing::Test
 {
 public:
@@ -51,28 +96,15 @@ public:
         }
     }
 
-    static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
-    {
-        if (remove(path) != 0)
-        {
-            perror("remove");
-        }
-
-        return 0;
-    }
-
     static int deleteDir(const std::string &dirname)
     {
-        return nftw(dirname.c_str(), unlink_func, 64, FTW_DEPTH | FTW_PHYS);
+        return aeron_delete_directory(dirname.c_str());
     }
 
     void SetUp() final
     {
-        m_pid = ::fork();
-        if (0 == m_pid)
-        {
-            if (::execl(
-                m_java.c_str(),
+        std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
+        char const * const argv[] = {
                 "java",
 #if JAVA_MAJOR_VERSION >= 9
                 "--add-opens",
@@ -94,15 +126,23 @@ public:
                 "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
                 "-Daeron.term.buffer.length=64k",
                 "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-                ("-Daeron.archive.dir=" + m_archiveDir).c_str(),
+                archiveDirArg.c_str(),
                 "-cp",
                 m_aeronAllJar.c_str(),
                 "io.aeron.archive.ArchivingMediaDriver",
-                NULL) < 0)
-            {
-                perror("execl");
-                ::exit(EXIT_FAILURE);
-            }
+                nullptr
+        };
+ 
+        #if defined(_WIN32)
+        m_pid = spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
+        #else
+        m_pid = -1;
+        posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char* const*)&argv[0], nullptr);
+        #endif
+        if (m_pid < 0)
+        {
+            perror("spawn");
+            ::exit(EXIT_FAILURE);
         }
 
         auto onEncodedCredentials =
@@ -130,8 +170,13 @@ public:
 
             if (aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0))
             {
+                int termstat;
                 m_stream << "Waiting for driver termination" << std::endl;
-                ::wait(nullptr);
+                #if defined(_WIN32)
+                ::cwait(&termstat, m_pid, WAIT_CHILD);
+                #else
+                ::wait(&termstat);
+                #endif
             }
             else
             {

@@ -127,9 +127,17 @@ public:
         if (0 != m_pid)
         {
             m_stream << "Shutting down PID " << m_pid << std::endl;
-            aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0);
 
-            ::wait(nullptr);
+            if (aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0))
+            {
+                m_stream << "Waiting for driver termination" << std::endl;
+                ::wait(nullptr);
+            }
+            else
+            {
+                std::cout << "Failed to send driver terminate command" << std::endl;
+                m_stream << "Failed to send driver terminate command" << std::endl;
+            }
 
             m_stream << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
             deleteDir(aeron::Context::defaultAeronPath());

@@ -46,7 +46,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.AsciiEncoding.parseLongAscii;
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
@@ -104,7 +105,8 @@ class Catalog implements AutoCloseable
 
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
-    static final long MAX_ENTRIES = calculateMaxEntries(Integer.MAX_VALUE, DEFAULT_RECORD_LENGTH);
+    static final long MAX_CATALOG_LENGTH = Integer.MAX_VALUE;
+    static final long MAX_ENTRIES = calculateMaxEntries(MAX_CATALOG_LENGTH, DEFAULT_RECORD_LENGTH);
     static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final byte VALID = 1;
     static final byte INVALID = 0;
@@ -115,19 +117,21 @@ class Catalog implements AutoCloseable
     private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
 
-    private final MappedByteBuffer catalogByteBuffer;
-    private final UnsafeBuffer catalogBuffer;
-    private final UnsafeBuffer fieldAccessBuffer;
 
     private final int recordLength;
     private final int maxDescriptorStringsCombinedLength;
-    private final int maxRecordingId;
     private final boolean forceWrites;
     private final boolean forceMetadata;
     private boolean isClosed;
+    private final File catalogFile;
     private final File archiveDir;
     private final EpochClock epochClock;
-    private final FileChannel catalogChannel;
+
+    private FileChannel catalogChannel;
+    private MappedByteBuffer catalogByteBuffer;
+    private UnsafeBuffer catalogBuffer;
+    private UnsafeBuffer fieldAccessBuffer;
+    private int maxRecordingId;
     private long nextRecordingId = 0;
 
     Catalog(
@@ -146,13 +150,13 @@ class Catalog implements AutoCloseable
 
         validateMaxEntries(maxNumEntries);
 
+        catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
         try
         {
-            final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
-            final MappedByteBuffer catalogMappedByteBuffer;
+            MappedByteBuffer catalogMappedByteBuffer = null;
             FileChannel catalogFileChannel = null;
-            final long catalogLength;
+            long catalogLength = -1;
 
             try
             {
@@ -171,7 +175,7 @@ class Catalog implements AutoCloseable
             catch (final Exception ex)
             {
                 CloseHelper.close(catalogFileChannel);
-                throw new RuntimeException(ex);
+                LangUtil.rethrowUnchecked(ex);
             }
 
             catalogChannel = catalogFileChannel;
@@ -231,12 +235,12 @@ class Catalog implements AutoCloseable
         this.forceMetadata = false;
         this.epochClock = epochClock;
         this.catalogChannel = null;
+        catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
 
         try
         {
-            final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
-            final MappedByteBuffer catalogMappedByteBuffer;
-            final long catalogLength;
+            MappedByteBuffer catalogMappedByteBuffer = null;
+            long catalogLength = -1;
 
             final StandardOpenOption[] openOptions = writable ?
                 new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
@@ -247,7 +251,7 @@ class Catalog implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                throw new RuntimeException(ex);
+                LangUtil.rethrowUnchecked(ex);
             }
 
             catalogByteBuffer = catalogMappedByteBuffer;
@@ -339,7 +343,7 @@ class Catalog implements AutoCloseable
     {
         if (nextRecordingId > maxRecordingId)
         {
-            throw new ArchiveException("catalog is full, max recordings reached: " + maxEntries());
+            growCatalog(MAX_CATALOG_LENGTH);
         }
 
         final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
@@ -660,14 +664,14 @@ class Catalog implements AutoCloseable
 
     static long calculateCatalogLength(final long maxEntries)
     {
-        return min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, Integer.MAX_VALUE);
+        return min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, MAX_CATALOG_LENGTH);
     }
 
     static long calculateMaxEntries(final long catalogLength, final long recordLength)
     {
-        if (Integer.MAX_VALUE == catalogLength)
+        if (MAX_CATALOG_LENGTH == catalogLength)
         {
-            return (Integer.MAX_VALUE - (recordLength - 1)) / recordLength;
+            return (MAX_CATALOG_LENGTH - (recordLength - 1)) / recordLength;
         }
 
         return (catalogLength / recordLength) - 1;
@@ -685,6 +689,45 @@ class Catalog implements AutoCloseable
             throw new ArchiveException(
                 "Catalog max entries must be between 1 and " + MAX_ENTRIES + ": maxEntries=" + maxEntries);
         }
+    }
+
+    void growCatalog(final long maxCatalogLength)
+    {
+        final long catalogLength = catalogByteBuffer.capacity();
+        final long newCatalogLength = Math.min(catalogLength + (catalogLength >> 1), maxCatalogLength);
+        if ((newCatalogLength - catalogLength) < recordLength)
+        {
+            throw new ArchiveException("catalog is full, max length reached: " + maxCatalogLength);
+        }
+
+        try
+        {
+            catalogChannel.close();
+            catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
+            catalogByteBuffer = catalogChannel.map(READ_WRITE, 0, newCatalogLength);
+        }
+        catch (final Exception ex)
+        {
+            close();
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
+        fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
+
+        final int oldMaxEntries = maxEntries();
+        final int newMaxEntries = (int)calculateMaxEntries(newCatalogLength, recordLength);
+        maxRecordingId = newMaxEntries - 1;
+
+        catalogSizeChanged(oldMaxEntries, catalogLength, newMaxEntries, newCatalogLength);
+    }
+
+    @SuppressWarnings("unused")
+    void catalogSizeChanged(
+        final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
+    {
+//        System.out.println("Catalog size changed: " + maxEntries + " entries (" + catalogLength + " bytes) => " +
+//            newMaxEntries + " entries ( " + newCatalogLength + " bytes)");
     }
 
     /**

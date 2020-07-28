@@ -38,8 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.PAGE_SIZE;
-import static io.aeron.archive.Catalog.fragmentStraddlesPageBoundary;
+import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -410,9 +409,55 @@ class CatalogTest
             }
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             assertEquals(maxEntries, catalog.countEntries());
+        }
+    }
+
+    @Test
+    void shouldGrowCatalogWhenMaxEntriesReached()
+    {
+        after();
+        final File archiveDir = ArchiveTests.makeTestDirectory();
+        final long maxEntries = 10;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock, null, null))
+        {
+            for (int i = 0; i < maxEntries + 3; i++)
+            {
+                recordingOneId = catalog.addNewRecording(
+                    0L,
+                    0L,
+                    0,
+                    SEGMENT_LENGTH,
+                    TERM_LENGTH,
+                    MTU_LENGTH,
+                    6,
+                    1,
+                    "channelG",
+                    "channelG?tag=f",
+                    "sourceA");
+            }
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, clock))
+        {
+            assertEquals(maxEntries + 3, catalog.countEntries());
+            assertEquals(maxEntries + (maxEntries >> 1), catalog.maxEntries());
+        }
+    }
+
+    @Test
+    void growCatalogThrowsExceptionIfCannotGrowToAccommodateAtLeastOneRecord()
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
+        {
+            final long maxCatalogLength = calculateCatalogLength(MAX_ENTRIES) + 1;
+
+            final ArchiveException exception =
+                assertThrows(ArchiveException.class, () -> catalog.growCatalog(maxCatalogLength));
+            assertEquals("catalog is full, max length reached: " + maxCatalogLength, exception.getMessage());
         }
     }
 

@@ -150,7 +150,10 @@ public class CounterTest
             Tests.sleep(1);
         }
 
-        assertFalse(clientA.hasActiveCommands());
+        while (clientA.hasActiveCommands())
+        {
+            Tests.sleep(1);
+        }
     }
 
     private void createReadableCounter(final CountersReader counters, final long registrationId, final int counterId)

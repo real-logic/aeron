@@ -296,8 +296,7 @@ class Catalog implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.quietClose(catalogChannel); // Ignore error so that the rest can be closed
-            IoUtil.unmap(catalogByteBuffer);
+            closeAndUnmapBuffer();
         }
     }
 
@@ -702,7 +701,7 @@ class Catalog implements AutoCloseable
 
         try
         {
-            catalogChannel.close();
+            closeAndUnmapBuffer();
             catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
             catalogByteBuffer = catalogChannel.map(READ_WRITE, 0, newCatalogLength);
         }
@@ -895,6 +894,12 @@ class Catalog implements AutoCloseable
     static boolean fragmentStraddlesPageBoundary(final int fragmentOffset, final int fragmentLength)
     {
         return fragmentOffset / PAGE_SIZE != (fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE;
+    }
+
+    private void closeAndUnmapBuffer()
+    {
+        CloseHelper.quietClose(catalogChannel); // Ignore error so that the rest can be closed
+        IoUtil.unmap(catalogByteBuffer);
     }
 
     private static int recoverStopOffset(

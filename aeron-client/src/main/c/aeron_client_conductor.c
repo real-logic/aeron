@@ -994,7 +994,7 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
     cursor += sizeof(int32_t);
     memcpy(cursor, async->counter.label_buffer, (size_t)async->counter.label_buffer_length);
 
-    uint64_t length =
+    size_t length =
         sizeof(aeron_counter_command_t) +
         sizeof(int32_t) +
         (size_t)(AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t))) +

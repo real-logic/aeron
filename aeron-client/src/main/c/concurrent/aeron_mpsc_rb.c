@@ -70,17 +70,17 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *rin
         }
 
         padding = 0;
-        tail_index = (int32_t)(tail & mask);
+        tail_index = (size_t)(tail & mask);
         to_buffer_end_length = ring_buffer->capacity - tail_index;
 
         if (required_capacity > to_buffer_end_length)
         {
-            size_t head_index = (int32_t)(head & mask);
+            size_t head_index = (size_t)(head & mask);
 
             if (required_capacity > head_index)
             {
                 AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
-                head_index = (int32_t)(head & mask);
+                head_index = (size_t)(head & mask);
 
                 if (required_capacity > head_index)
                 {
@@ -151,7 +151,7 @@ size_t aeron_mpsc_rb_read(
     size_t message_count_limit)
 {
     const int64_t head = ring_buffer->descriptor->head_position;
-    const size_t head_index = (int32_t)(head & (ring_buffer->capacity - 1));
+    const size_t head_index = (size_t)(head & (ring_buffer->capacity - 1));
     const size_t contiguous_block_length = ring_buffer->capacity - head_index;
     size_t messages_read = 0;
     size_t bytes_read = 0;
@@ -250,8 +250,8 @@ bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
     AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
     AERON_GET_VOLATILE(tail, ring_buffer->descriptor->tail_position);
 
-    consumer_index = (int32_t)(head & mask);
-    producer_index = (int32_t)(tail & mask);
+    consumer_index = (size_t)(head & mask);
+    producer_index = (size_t)(tail & mask);
 
     if (head == tail)
     {

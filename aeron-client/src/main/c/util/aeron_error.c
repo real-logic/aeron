@@ -152,7 +152,7 @@ void aeron_set_errno(int errcode)
 void aeron_set_err_from_last_err_code(const char *format, ...)
 {
 #if defined(AERON_COMPILER_MSVC)
-    int errcode = GetLastError();
+    int errcode = (int)GetLastError();
 #else
     int errcode = errno;
 #endif
@@ -176,7 +176,7 @@ void aeron_set_err_from_last_err_code(const char *format, ...)
     strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
 
 #if defined(AERON_COMPILER_MSVC)
-    const int length = FormatMessageA(
+    int length = (int)FormatMessageA(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         errcode,

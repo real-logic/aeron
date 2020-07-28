@@ -23,7 +23,6 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
 
@@ -39,7 +38,7 @@
 int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_t *context)
 {
     long long start_ms = context->epoch_clock();
-    long long deadline_ms = start_ms + context->driver_timeout_ms;
+    long long deadline_ms = start_ms + (long long)context->driver_timeout_ms;
     char filename[AERON_MAX_PATH];
 
 #if defined(_MSC_VER)

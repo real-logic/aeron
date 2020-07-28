@@ -76,6 +76,7 @@ int aeron_res_header_entry_length(void *res, size_t remaining)
             }
             break;
         }
+
         case AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD:
         {
             if (sizeof(aeron_resolution_header_ipv4_t) <= remaining)
@@ -86,6 +87,9 @@ int aeron_res_header_entry_length(void *res, size_t remaining)
             }
             break;
         }
+
+        default:
+            break;
     }
 
     return result;

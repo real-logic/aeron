@@ -779,7 +779,7 @@ int64_t aeron_publication_offerv(
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd);
 
-/*
+/**
  * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
  * Once the message has been written then aeron_buffer_claim_commit should be called thus making it available.
  * A claim length cannot be greater than max payload length.
@@ -809,7 +809,7 @@ int64_t aeron_publication_try_claim(
     size_t length,
     aeron_buffer_claim_t *buffer_claim);
 
-/*
+/**
  * Get the status of the media channel for this publication.
  * <p>
  * The status will be ERRORED (-1) if a socket exception occurs on setup and ACTIVE (1) if all is well.
@@ -928,7 +928,7 @@ int64_t aeron_exclusive_publication_offerv(
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd);
 
-/*
+/**
  * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
  * Once the message has been written then aeron_buffer_claim_commit should be called thus making it available.
  * A claim length cannot be greater than max payload length.
@@ -978,7 +978,7 @@ int64_t aeron_exclusive_publication_offer_block(
     const uint8_t *buffer,
     size_t length);
 
-/*
+/**
  * Get the status of the media channel for this publication.
  * <p>
  * The status will be ERRORED (-1) if a socket exception occurs on setup and ACTIVE (1) if all is well.
@@ -1154,7 +1154,7 @@ typedef void (*aeron_block_handler_t)(
  * header_values_t pointer.
  *
  * @param header to read values from.
- * @param values to copy values to, must not be null
+ * @param values to copy values to, must not be null.
  * @return 0 on success, -1 on failure.
  */
 int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values);
@@ -1201,7 +1201,7 @@ aeron_subscription_constants_t;
  * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
  * as a series of fragments ordered within a session.
  * <p>
- * To assemble messages that span multiple fragments then use aeron_fragment_asssembler_t.
+ * To assemble messages that span multiple fragments then use aeron_fragment_assembler_t.
  *
  * @param subscription to poll.
  * @param handler for handling each message fragment as it is read.
@@ -1227,7 +1227,10 @@ int aeron_subscription_poll(
  * @return the number of fragments received or -1 for error.
  */
 int aeron_subscription_controlled_poll(
-    aeron_subscription_t *subscription, aeron_controlled_fragment_handler_t handler, void *clientd, size_t fragment_limit);
+    aeron_subscription_t *subscription,
+    aeron_controlled_fragment_handler_t handler,
+    void *clientd,
+    size_t fragment_limit);
 
 /**
  * Poll the images under the subscription for available message fragments in blocks.
@@ -1325,7 +1328,7 @@ int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_i
 
 bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 
-/*
+/**
  * Get the status of the media channel for this subscription.
  * <p>
  * The status will be ERRORED (-1) if a socket exception occurs on setup and ACTIVE (1) if all is well.
@@ -1430,7 +1433,7 @@ typedef struct aeron_image_constants_stct
     int32_t initial_term_id;
 
     /**
-     * Counter id that refers to the subsriber position for this image.
+     * Counter id that refers to the subscriber position for this image.
      */
     int32_t subscriber_position_id;
 }
@@ -1608,7 +1611,7 @@ bool aeron_image_is_closed(aeron_image_t *image);
  * Create an image fragment assembler for use with a single image.
  *
  * @param assembler to be set when created successfully.
- * @param delegate to call on completed
+ * @param delegate to call on completed.
  * @param delegate_clientd to pass to delegate handler.
  * @return 0 for success and -1 for error.
  */
@@ -1767,7 +1770,7 @@ aeron_counter_constants_t;
  * Fill in a structure with the constants in use by a counter.
  *
  * @param counter to get the constants for.
- * @param constants structure to fill in with the constants
+ * @param constants structure to fill in with the constants.
  * @return 0 for success and -1 for error.
  */
 int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t *constants);
@@ -1775,7 +1778,7 @@ int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t 
 /**
  * Asynchronously close the counter.
  *
- * @param counter to close
+ * @param counter to close.
  * @return 0 for success or -1 for error.
  */
 int aeron_counter_close(aeron_counter_t *counter);

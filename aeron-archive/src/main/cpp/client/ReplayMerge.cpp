@@ -16,6 +16,7 @@
 
 #include "ReplayMerge.h"
 
+using namespace aeron;
 using namespace aeron::archive::client;
 
 ReplayMerge::ReplayMerge(

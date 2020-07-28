@@ -17,6 +17,7 @@
 #include "AeronArchive.h"
 #include "ArchiveException.h"
 
+using namespace aeron;
 using namespace aeron::archive::client;
 
 AeronArchive::AsyncConnect::AsyncConnect(

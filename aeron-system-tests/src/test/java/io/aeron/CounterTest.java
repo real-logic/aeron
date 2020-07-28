@@ -149,6 +149,8 @@ public class CounterTest
         {
             Tests.sleep(1);
         }
+
+        assertFalse(clientA.hasActiveCommands());
     }
 
     private void createReadableCounter(final CountersReader counters, final long registrationId, final int counterId)

@@ -701,6 +701,26 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
+    boolean hasActiveCommands()
+    {
+        clientLock.lock();
+        try
+        {
+            if (isClosed)
+            {
+                return false;
+            }
+
+            ensureActive();
+
+            return !asyncCommandIdSet.isEmpty();
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     Counter addCounter(
         final int typeId,
         final DirectBuffer keyBuffer,

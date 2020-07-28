@@ -217,6 +217,7 @@ public class Aeron implements AutoCloseable
      * @return true in the command is still in active processing or false if completed successfully or errored.
      * @see Publication#asyncAddDestination(String)
      * @see Subscription#asyncAddDestination(String)
+     * @see #hasActiveCommands()
      */
     public boolean isCommandActive(final long correlationId)
     {
@@ -224,11 +225,25 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Does the client have any active asynchronous commands?
+     * <p>
+     * When close operations are performed on {@link Publication}s, {@link Subscription}s, and {@link Counter}s the
+     * commands are sent asynchronously to the driver. The client tracks active commands in case errors need to be
+     * reported. If you wish to wait for acknowledgement of close operations then wait for this method to return false.
+     *
+     * @return true if any commands are currently active otherwise false.
+     */
+    public boolean hasActiveCommands()
+    {
+        return conductor.hasActiveCommands();
+    }
+
+    /**
      * Clean up and release all Aeron client resources and shutdown conductor thread if not using
      * {@link Context#useConductorAgentInvoker(boolean)}.
      * <p>
      * This will close all currently open {@link Publication}s, {@link Subscription}s, and {@link Counter}s created
-     * from this client.
+     * from this client. To check for the command being acknowledged by the driver
      */
     public void close()
     {

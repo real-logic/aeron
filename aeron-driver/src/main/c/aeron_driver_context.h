@@ -37,6 +37,13 @@
 
 #define AERON_COMMAND_QUEUE_CAPACITY (256)
 
+#define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (2)
+
+#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
+
+#define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
+#define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
+
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 typedef struct aeron_driver_conductor_proxy_stct aeron_driver_conductor_proxy_t;

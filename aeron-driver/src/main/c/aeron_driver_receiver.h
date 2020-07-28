@@ -24,9 +24,6 @@
 #include "aeron_system_counters.h"
 #include "media/aeron_udp_channel.h"
 
-#define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
-#define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
-
 #define AERON_DRIVER_RECEIVER_PENDING_SETUP_TIMEOUT_NS (1000 * 1000 * 1000LL)
 
 typedef struct aeron_driver_receiver_image_entry_stct

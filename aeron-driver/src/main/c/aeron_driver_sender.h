@@ -31,8 +31,6 @@ typedef struct aeron_driver_sender_network_publication_entry_stct
 }
 aeron_driver_sender_network_publication_entry_t;
 
-#define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (2)
-
 typedef struct aeron_driver_sender_stct
 {
     aeron_driver_sender_proxy_t sender_proxy;

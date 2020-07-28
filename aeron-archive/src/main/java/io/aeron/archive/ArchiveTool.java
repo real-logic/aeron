@@ -143,7 +143,7 @@ public class ArchiveTool
                     archiveDir,
                     emptySet(),
                     null,
-                    ArchiveTool::truncateFileOnPageStraddle);
+                    ArchiveTool::truncateOnPageStraddle);
             }
             else if (args.length == 3)
             {
@@ -154,7 +154,7 @@ public class ArchiveTool
                         archiveDir,
                         EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
                         null,
-                        ArchiveTool::truncateFileOnPageStraddle);
+                        ArchiveTool::truncateOnPageStraddle);
                 }
                 else
                 {
@@ -164,7 +164,7 @@ public class ArchiveTool
                         Long.parseLong(args[2]),
                         emptySet(),
                         null,
-                        ArchiveTool::truncateFileOnPageStraddle);
+                        ArchiveTool::truncateOnPageStraddle);
                 }
             }
             else if (args.length == 4)
@@ -176,7 +176,7 @@ public class ArchiveTool
                         archiveDir,
                         EnumSet.of(APPLY_CHECKSUM),
                         validateChecksumClass(args[3]),
-                        ArchiveTool::truncateFileOnPageStraddle);
+                        ArchiveTool::truncateOnPageStraddle);
                 }
                 else
                 {
@@ -186,7 +186,7 @@ public class ArchiveTool
                         Long.parseLong(args[2]),
                         EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
                         null,
-                        ArchiveTool::truncateFileOnPageStraddle);
+                        ArchiveTool::truncateOnPageStraddle);
                 }
             }
             else if (args.length == 5)
@@ -198,7 +198,7 @@ public class ArchiveTool
                         archiveDir,
                         EnumSet.allOf(VerifyOption.class),
                         validateChecksumClass(args[4]),
-                        ArchiveTool::truncateFileOnPageStraddle);
+                        ArchiveTool::truncateOnPageStraddle);
                 }
                 else
                 {
@@ -208,7 +208,7 @@ public class ArchiveTool
                         Long.parseLong(args[2]),
                         EnumSet.of(APPLY_CHECKSUM),
                         validateChecksumClass(args[4]),
-                        ArchiveTool::truncateFileOnPageStraddle);
+                        ArchiveTool::truncateOnPageStraddle);
                 }
             }
             else
@@ -219,7 +219,7 @@ public class ArchiveTool
                     Long.parseLong(args[2]),
                     EnumSet.allOf(VerifyOption.class),
                     validateChecksumClass(args[5]),
-                    ArchiveTool::truncateFileOnPageStraddle);
+                    ArchiveTool::truncateOnPageStraddle);
             }
 
             if (hasErrors)
@@ -455,25 +455,25 @@ public class ArchiveTool
      * <p>
      * Faulty entries are marked as unusable.
      *
-     * @param out                        stream to print results and errors to.
-     * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
-     * @param options                    set of options that control verification behavior.
-     * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
-     *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
-     *                                   will be deleted), if {@code false} the fragment is considered complete.
-     * @param checksumClassName          (optional) fully qualified class name of the {@link Checksum} implementation.
+     * @param out                    stream to print results and errors to.
+     * @param archiveDir             that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
+     * @param options                set of options that control verification behavior.
+     * @param truncateOnPageStraddle action to perform if last fragment in the max segment file straddles the page
+     *                               boundary, i.e. if {@code true} the file will be truncated (last fragment
+     *                               will be deleted), if {@code false} the fragment is considered complete.
+     * @param checksumClassName      (optional) fully qualified class name of the {@link Checksum} implementation.
      * @return {@code true} if no errors have been encountered, {@code false} otherwise (faulty entries are marked
-     *  as unusable if {@code false} is returned)
+     * as unusable if {@code false} is returned)
      */
     public static boolean verify(
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
         final String checksumClassName,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final ActionConfirmation<File> truncateOnPageStraddle)
     {
         final Checksum checksum = createChecksum(options, checksumClassName);
-        return verify(out, archiveDir, options, checksum, INSTANCE, truncateFileOnPageStraddle);
+        return verify(out, archiveDir, options, checksum, INSTANCE, truncateOnPageStraddle);
     }
 
     /**
@@ -481,17 +481,17 @@ public class ArchiveTool
      * <p>
      * Faulty entries are marked as unusable.
      *
-     * @param out                        stream to print results and errors to.
-     * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
-     * @param recordingId                to verify.
-     * @param options                    set of options that control verification behavior.
-     * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
-     *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
-     *                                   will be deleted), if {@code false} the fragment if considered complete.
-     * @param checksumClassName          (optional) fully qualified class name of the {@link Checksum} implementation.
-     * @throws AeronException if there is no recording with {@code recordingId} in the archive
+     * @param out                    stream to print results and errors to.
+     * @param archiveDir             that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
+     * @param recordingId            to verify.
+     * @param options                set of options that control verification behavior.
+     * @param truncateOnPageStraddle action to perform if last fragment in the max segment file straddles the page
+     *                               boundary, i.e. if {@code true} the file will be truncated (last fragment
+     *                               will be deleted), if {@code false} the fragment if considered complete.
+     * @param checksumClassName      (optional) fully qualified class name of the {@link Checksum} implementation.
      * @return {@code true} if no errors have been encountered, {@code false} otherwise (the recording is marked
-     *  as unusable if {@code false} is returned)
+     * as unusable if {@code false} is returned)
+     * @throws AeronException if there is no recording with {@code recordingId} in the archive
      **/
     public static boolean verifyRecording(
         final PrintStream out,
@@ -499,7 +499,7 @@ public class ArchiveTool
         final long recordingId,
         final Set<VerifyOption> options,
         final String checksumClassName,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final ActionConfirmation<File> truncateOnPageStraddle)
     {
         return verifyRecording(
             out,
@@ -508,7 +508,7 @@ public class ArchiveTool
             options,
             createChecksum(options, checksumClassName),
             INSTANCE,
-            truncateFileOnPageStraddle);
+            truncateOnPageStraddle);
     }
 
     /**
@@ -583,13 +583,13 @@ public class ArchiveTool
         final Set<VerifyOption> options,
         final Checksum checksum,
         final EpochClock epochClock,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final ActionConfirmation<File> truncateOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
             final MutableInteger errorCount = new MutableInteger();
             catalog.forEach(createVerifyEntryProcessor(
-                out, archiveDir, options, checksum, epochClock, errorCount, truncateFileOnPageStraddle));
+                out, archiveDir, options, checksum, epochClock, errorCount, truncateOnPageStraddle));
 
             return errorCount.get() == 0;
         }
@@ -602,13 +602,13 @@ public class ArchiveTool
         final Set<VerifyOption> options,
         final Checksum checksum,
         final EpochClock epochClock,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final ActionConfirmation<File> truncateOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
             final MutableInteger errorCount = new MutableInteger();
             if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
-                out, archiveDir, options, checksum, epochClock, errorCount, truncateFileOnPageStraddle)))
+                out, archiveDir, options, checksum, epochClock, errorCount, truncateOnPageStraddle)))
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
@@ -661,7 +661,7 @@ public class ArchiveTool
         final Checksum checksum,
         final EpochClock epochClock,
         final MutableInteger errorCount,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final ActionConfirmation<File> truncateOnPageStraddle)
     {
         final ByteBuffer buffer = BufferUtil.allocateDirectAligned(FILE_IO_MAX_LENGTH_DEFAULT, CACHE_LINE_LENGTH);
         buffer.order(LITTLE_ENDIAN);
@@ -674,14 +674,14 @@ public class ArchiveTool
             checksum,
             epochClock,
             errorCount,
-            truncateFileOnPageStraddle,
+            truncateOnPageStraddle,
             headerFlyweight,
             headerEncoder,
             descriptorEncoder,
             descriptorDecoder);
     }
 
-    private static boolean truncateFileOnPageStraddle(final File maxSegmentFile)
+    private static boolean truncateOnPageStraddle(final File maxSegmentFile)
     {
         return readContinueAnswer(String.format(
             "Last fragment in segment file: %s straddles a page boundary,%n" +
@@ -820,7 +820,7 @@ public class ArchiveTool
         final Checksum checksum,
         final EpochClock epochClock,
         final MutableInteger errorCount,
-        final ActionConfirmation<File> truncateFileOnPageStraddle,
+        final ActionConfirmation<File> truncateOnPageStraddle,
         final DataHeaderFlyweight headerFlyweight,
         final RecordingDescriptorHeaderEncoder headerEncoder,
         final RecordingDescriptorEncoder encoder,
@@ -867,7 +867,7 @@ public class ArchiveTool
                 segmentLength,
                 checksum,
                 headerFlyweight,
-                truncateFileOnPageStraddle::confirm);
+                truncateOnPageStraddle::confirm);
         }
         catch (final Exception ex)
         {

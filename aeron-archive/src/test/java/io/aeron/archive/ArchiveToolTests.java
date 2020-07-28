@@ -847,7 +847,7 @@ class ArchiveToolTests
     }
 
     @Test
-    void verifyNoOptionsDoNotTruncateFileOnPageStraddle()
+    void verifyNoOptionsDoNotTruncateOnPageStraddle()
     {
         assertFalse(verify(out, archiveDir, emptySet(), null, epochClock, (file) -> false));
 
@@ -905,7 +905,7 @@ class ArchiveToolTests
     }
 
     @Test
-    void verifyAllOptionsTruncateFileOnPageStraddle()
+    void verifyAllOptionsTruncateOnPageStraddle()
     {
         assertFalse(verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> true));
 

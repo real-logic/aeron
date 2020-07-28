@@ -296,7 +296,7 @@ class Catalog implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            closeAndUnmapBuffer();
+            unmapAndCloseChannel();
         }
     }
 
@@ -525,7 +525,7 @@ class Catalog implements AutoCloseable
     }
 
     //
-    // Methods for access specific record fields by recordingId.
+    // Methods for accessing specific record fields by recordingId.
     // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
 
@@ -701,7 +701,7 @@ class Catalog implements AutoCloseable
 
         try
         {
-            closeAndUnmapBuffer();
+            unmapAndCloseChannel();
             catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
             catalogByteBuffer = catalogChannel.map(READ_WRITE, 0, newCatalogLength);
         }
@@ -872,7 +872,7 @@ class Catalog implements AutoCloseable
         final int segmentLength,
         final Checksum checksum,
         final UnsafeBuffer buffer,
-        final Predicate<File> truncateFileOnPageStraddle)
+        final Predicate<File> truncateOnPageStraddle)
     {
         if (null == maxSegmentFile)
         {
@@ -885,7 +885,7 @@ class Catalog implements AutoCloseable
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
             final int fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
             final int segmentStopOffset = recoverStopOffset(
-                archiveDir, maxSegmentFile, fileOffset, segmentLength, truncateFileOnPageStraddle, checksum, buffer);
+                archiveDir, maxSegmentFile, fileOffset, segmentLength, truncateOnPageStraddle, checksum, buffer);
 
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
@@ -893,13 +893,15 @@ class Catalog implements AutoCloseable
 
     static boolean fragmentStraddlesPageBoundary(final int fragmentOffset, final int fragmentLength)
     {
-        return fragmentOffset / PAGE_SIZE != (fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE;
+        return (fragmentOffset / PAGE_SIZE) != ((fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE);
     }
 
-    private void closeAndUnmapBuffer()
+    private void unmapAndCloseChannel()
     {
-        CloseHelper.quietClose(catalogChannel); // Ignore error so that the rest can be closed
-        IoUtil.unmap(catalogByteBuffer);
+        final MappedByteBuffer buffer = this.catalogByteBuffer;
+        IoUtil.unmap(buffer);
+        this.catalogByteBuffer = null;
+        CloseHelper.close(catalogChannel);
     }
 
     private static int recoverStopOffset(
@@ -907,7 +909,7 @@ class Catalog implements AutoCloseable
         final String segmentFile,
         final int offset,
         final int segmentFileLength,
-        final Predicate<File> truncateFileOnPageStraddle,
+        final Predicate<File> truncateOnPageStraddle,
         final Checksum checksum,
         final UnsafeBuffer buffer)
     {
@@ -944,7 +946,7 @@ class Catalog implements AutoCloseable
             final int lastFragmentOffset = nextFragmentOffset - lastFragmentLength;
             if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFragmentLength) &&
                 !isValidFragment(buffer, bufferOffset - lastFragmentLength, lastFragmentLength, checksum) &&
-                truncateFileOnPageStraddle.test(file))
+                truncateOnPageStraddle.test(file))
             {
                 segment.truncate(lastFragmentOffset);
                 byteBuffer.put(0, (byte)0).limit(1).position(0);

@@ -272,6 +272,36 @@ int aeron_data_packet_dispatcher_remove_publication_image(
     return 0;
 }
 
+bool aeron_data_packet_dispatcher_has_interest(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id)
+{
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id);
+
+    if (NULL == stream_interest)
+    {
+        return false;
+    }
+
+    aeron_publication_image_t *image = NULL;
+    const bool found = aeron_int64_to_tagged_ptr_hash_map_get(
+        &stream_interest->image_by_session_id_map, session_id, NULL, (void **)&image);
+
+    if (NULL != image)
+    {
+        return true;
+    }
+    else if (!found)
+    {
+        if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, session_id))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated_hash_lookups(
     aeron_int64_to_tagged_ptr_hash_map_t *image_by_session_id_map,
     int32_t session_id)

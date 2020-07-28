@@ -38,6 +38,7 @@ typedef struct aeron_network_publication_stct aeron_network_publication_t;
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 typedef struct aeron_udp_transport_poller_stct aeron_udp_transport_poller_t;
 typedef struct aeron_udp_channel_data_paths_stct aeron_udp_channel_data_paths_t;
+typedef struct aeron_data_packet_dispatcher_stct aeron_data_packet_dispatcher_t;
 
 typedef int (*aeron_udp_channel_transport_init_func_t)(
     aeron_udp_channel_transport_t *transport,
@@ -190,6 +191,7 @@ typedef int (*aeron_udp_channel_interceptor_transport_notification_func_t)(
     void *interceptor_state,
     aeron_udp_channel_transport_t *transport,
     const aeron_udp_channel_t *udp_channel,
+    aeron_data_packet_dispatcher_t *data_packet_dispatcher,
     aeron_udp_channnel_interceptor_notification_type_t type);
 
 typedef int (*aeron_udp_channel_interceptor_publication_notification_func_t)(
@@ -373,6 +375,7 @@ inline int aeron_udp_channel_interceptors_transport_notifications(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     const aeron_udp_channel_t *udp_channel,
+    aeron_data_packet_dispatcher_t *data_packet_dispatcher,
     aeron_udp_channnel_interceptor_notification_type_t type)
 {
     for (
@@ -383,7 +386,7 @@ inline int aeron_udp_channel_interceptors_transport_notifications(
         if (NULL != interceptor->incoming_transport_notification_func)
         {
             if (interceptor->incoming_transport_notification_func(
-                interceptor->interceptor_state, transport, udp_channel, type) < 0)
+                interceptor->interceptor_state, transport, udp_channel, data_packet_dispatcher, type) < 0)
             {
                 return -1;
             }
@@ -398,7 +401,7 @@ inline int aeron_udp_channel_interceptors_transport_notifications(
         if (NULL != interceptor->outgoing_transport_notification_func)
         {
             if (interceptor->outgoing_transport_notification_func(
-                interceptor->interceptor_state, transport, udp_channel, type) < 0)
+                interceptor->interceptor_state, transport, udp_channel, data_packet_dispatcher, type) < 0)
             {
                 return -1;
             }

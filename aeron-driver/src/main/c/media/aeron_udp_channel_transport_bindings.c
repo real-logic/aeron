@@ -430,6 +430,7 @@ extern int aeron_udp_channel_interceptors_transport_notifications(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     const aeron_udp_channel_t *udp_channel,
+    aeron_data_packet_dispatcher_t *data_packet_dispatcher,
     aeron_udp_channnel_interceptor_notification_type_t type);
 
 extern int aeron_udp_channel_interceptors_publication_notifications(

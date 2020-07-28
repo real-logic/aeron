@@ -370,6 +370,7 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
         destination->data_paths,
         &destination->transport,
         destination->conductor_fields.udp_channel,
+        &endpoint->dispatcher,
         AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(
@@ -425,6 +426,7 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
             destination->data_paths,
             &destination->transport,
             destination->conductor_fields.udp_channel,
+            &endpoint->dispatcher,
             AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
         {
             AERON_DRIVER_RECEIVER_ERROR(

@@ -215,6 +215,7 @@ void aeron_driver_sender_on_add_endpoint(void *clientd, void *command)
         endpoint->transport.data_paths,
         &endpoint->transport,
         endpoint->conductor_fields.udp_channel,
+        NULL,
         AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
     {
         AERON_DRIVER_SENDER_ERROR(
@@ -237,6 +238,7 @@ void aeron_driver_sender_on_remove_endpoint(void *clientd, void *command)
         endpoint->transport.data_paths,
         &endpoint->transport,
         endpoint->conductor_fields.udp_channel,
+        NULL,
         AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
     {
         AERON_DRIVER_SENDER_ERROR(

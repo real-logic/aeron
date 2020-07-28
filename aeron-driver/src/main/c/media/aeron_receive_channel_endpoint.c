@@ -804,6 +804,7 @@ int aeron_receive_channel_endpoint_add_poll_transports(
             destination->data_paths,
             &destination->transport,
             destination->conductor_fields.udp_channel,
+            &endpoint->dispatcher,
             AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
         {
             return -1;
@@ -829,6 +830,7 @@ int aeron_receive_channel_endpoint_remove_poll_transports(
             destination->data_paths,
             &destination->transport,
             destination->conductor_fields.udp_channel,
+            &endpoint->dispatcher,
             AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
         {
             return -1;

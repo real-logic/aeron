@@ -27,6 +27,7 @@ import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.archive.codecs.ControlResponseCode.NULL_VAL;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -814,6 +815,22 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.6] " + CONTEXT + ": " + REPLAY_SESSION_ERROR.name() + " [6/100]:" +
             " sessionId=-8, recordingId=42, errorMessage=something went wrong",
+            builder.toString());
+    }
+
+    @Test
+    void catalogResize()
+    {
+        internalEncodeLogHeader(buffer, 0, 6, 100, () -> 5_600_000_000L);
+        buffer.putInt(LOG_HEADER_LENGTH, 24, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_INT, 100, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, 777, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, 10_000_000_000L, LITTLE_ENDIAN);
+
+        dissectCatalogResize(buffer, 0, builder);
+
+        assertEquals("[5.6] " + CONTEXT + ": " + CATALOG_RESIZE.name() + " [6/100]:" +
+            " 24 entries (100 bytes) => 777 entries (10000000000 bytes)",
             builder.toString());
     }
 }

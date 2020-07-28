@@ -42,7 +42,11 @@ public final class ArchiveEventLogger
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EVENT_RING_BUFFER);
 
     static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(
-        CMD_OUT_RESPONSE, REPLICATION_SESSION_STATE_CHANGE, CONTROL_SESSION_STATE_CHANGE, REPLAY_SESSION_ERROR));
+        CMD_OUT_RESPONSE,
+        REPLICATION_SESSION_STATE_CHANGE,
+        CONTROL_SESSION_STATE_CHANGE,
+        REPLAY_SESSION_ERROR,
+        CATALOG_RESIZE));
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
@@ -123,6 +127,36 @@ public final class ArchiveEventLogger
                     sessionId,
                     recordingId,
                     errorMessage);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    public void logCatalogResize(
+        final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
+    {
+        final int length = SIZE_OF_LONG * 2 + 2 * SIZE_OF_INT;
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(CATALOG_RESIZE), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeCatalogResize(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    maxEntries,
+                    catalogLength,
+                    newMaxEntries,
+                    newCatalogLength);
             }
             finally
             {

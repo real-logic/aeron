@@ -21,6 +21,7 @@ import org.agrona.MutableDirectBuffer;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ArchiveEventDissector
@@ -459,6 +460,27 @@ final class ArchiveEventDissector
         builder.append(", recordingId=").append(recordingId);
         builder.append(", errorMessage=");
         buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectCatalogResize(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, CATALOG_RESIZE, buffer, absoluteOffset, builder);
+
+        final int maxEntries = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final long catalogLength = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final int newMaxEntries = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final long newCatalogLength = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+
+        builder.append(": ").append(maxEntries);
+        builder.append(" entries (").append(catalogLength).append(" bytes)");
+        builder.append(" => ").append(newMaxEntries);
+        builder.append(" entries (").append(newCatalogLength).append(" bytes)");
     }
 
     private static void appendConnect(final StringBuilder builder)

@@ -298,6 +298,7 @@ public final class EventLogAgent
         tempBuilder = addArchiveReplicationSessionInstrumentation(tempBuilder);
         tempBuilder = addArchiveControlSessionInstrumentation(tempBuilder);
         tempBuilder = addArchiveReplaySessionInstrumentation(tempBuilder);
+        tempBuilder = addArchiveCatalogInstrumentation(tempBuilder);
 
         return tempBuilder;
     }
@@ -370,6 +371,20 @@ public final class EventLogAgent
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ArchiveInterceptor.ReplaySession.class)
                     .on(named("onPendingError")))));
+    }
+
+    private static AgentBuilder addArchiveCatalogInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CATALOG_RESIZE))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("Catalog"))
+            .transform(((builder, typeDescription, classLoader, module) -> builder
+                .visit(to(ArchiveInterceptor.Catalog.class)
+                    .on(named("catalogResized")))));
     }
 
     private static AgentBuilder addClusterInstrumentation(final AgentBuilder agentBuilder)

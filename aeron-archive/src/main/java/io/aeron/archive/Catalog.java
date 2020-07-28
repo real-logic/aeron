@@ -719,11 +719,11 @@ class Catalog implements AutoCloseable
         final int newMaxEntries = (int)calculateMaxEntries(newCatalogLength, recordLength);
         maxRecordingId = newMaxEntries - 1;
 
-        catalogSizeChanged(oldMaxEntries, catalogLength, newMaxEntries, newCatalogLength);
+        catalogResized(oldMaxEntries, catalogLength, newMaxEntries, newCatalogLength);
     }
 
     @SuppressWarnings("unused")
-    void catalogSizeChanged(
+    void catalogResized(
         final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
     {
 //        System.out.println("Catalog size changed: " + maxEntries + " entries (" + catalogLength + " bytes) => " +

@@ -96,6 +96,7 @@ int aeron_send_channel_endpoint_create(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {
+        aeron_set_err(aeron_errcode(), "channel %s : %s", channel->original_uri, aeron_errmsg());
         aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
         return -1;
     }

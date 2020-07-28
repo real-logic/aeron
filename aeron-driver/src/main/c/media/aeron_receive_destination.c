@@ -51,6 +51,7 @@ int aeron_receive_destination_create(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {
+        aeron_set_err(aeron_errcode(), "channel %s : %s", channel->original_uri, aeron_errmsg());
         aeron_receive_destination_delete(_destination, counters_manager);
         return -1;
     }

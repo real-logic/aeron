@@ -215,6 +215,7 @@ int aeron_driver_name_resolver_init(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_CONDUCTOR) < 0)
     {
+        aeron_set_err(aeron_errcode(), "resolver : %s", aeron_errmsg());
         goto error_cleanup;
     }
 

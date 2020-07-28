@@ -205,7 +205,8 @@ void aeron_counters_reader_foreach_metadata(
                 record->key,
                 sizeof(record->key),
                 record->label,
-                (size_t)label_length, clientd);
+                (size_t)label_length,
+                clientd);
         }
 
         id++;

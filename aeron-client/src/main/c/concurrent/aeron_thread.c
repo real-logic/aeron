@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 
-#define SECOND_AS_NANOSECONDS (1000l * 1000l * 1000l)
+#define SECOND_AS_NANOSECONDS (1000 * 1000 * 1000LL)
 
 void aeron_nano_sleep(uint64_t nanoseconds)
 {

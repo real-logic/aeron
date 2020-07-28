@@ -271,7 +271,7 @@ int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value
 
 uint64_t aeron_context_get_driver_timeout_ms(aeron_context_t *context)
 {
-    return (NULL == context) ? AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT : context->driver_timeout_ms;
+    return NULL == context ? AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT : context->driver_timeout_ms;
 }
 
 int aeron_context_set_keepalive_interval_ns(aeron_context_t *context, uint64_t value)
@@ -284,7 +284,7 @@ int aeron_context_set_keepalive_interval_ns(aeron_context_t *context, uint64_t v
 
 uint64_t aeron_context_get_keepalive_interval_ns(aeron_context_t *context)
 {
-    return (NULL == context) ? AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT : context->keepalive_interval_ns;
+    return NULL == context ? AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT : context->keepalive_interval_ns;
 }
 
 int aeron_context_set_resource_linger_duration_ns(aeron_context_t *context, uint64_t value)
@@ -297,7 +297,7 @@ int aeron_context_set_resource_linger_duration_ns(aeron_context_t *context, uint
 
 uint64_t aeron_context_get_resource_linger_duration_ns(aeron_context_t *context)
 {
-    return (NULL == context) ? AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT : context->resource_linger_duration_ns;
+    return NULL == context ? AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT : context->resource_linger_duration_ns;
 }
 
 int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool value)
@@ -310,7 +310,7 @@ int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool val
 
 bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context)
 {
-    return NULL == context ? AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT : context->pre_touch_mapped_memory;
+    return NULL != context ? context->pre_touch_mapped_memory : AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT;
 }
 
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd)

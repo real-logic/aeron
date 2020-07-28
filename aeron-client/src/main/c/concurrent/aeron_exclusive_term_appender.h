@@ -88,7 +88,7 @@ inline int32_t aeron_exclusive_term_appender_claim(
     int32_t stream_id)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t term_length = (int32_t)term_buffer->length;
 
     int32_t resulting_offset = term_offset + aligned_frame_length;
@@ -121,7 +121,7 @@ inline int32_t aeron_exclusive_term_appender_append_padding(
     int32_t stream_id)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t term_length = (int32_t)term_buffer->length;
 
     int32_t resulting_offset = term_offset + aligned_frame_length;
@@ -158,7 +158,7 @@ inline int32_t aeron_exclusive_term_appender_append_unfragmented_message(
     int32_t stream_id)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t term_length = (int32_t)term_buffer->length;
 
     int32_t resulting_offset = term_offset + aligned_frame_length;
@@ -203,7 +203,7 @@ inline int32_t aeron_exclusive_term_appender_append_unfragmented_messagev(
     int32_t stream_id)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t term_length = (int32_t)term_buffer->length;
 
     int32_t resulting_offset = term_offset + aligned_frame_length;

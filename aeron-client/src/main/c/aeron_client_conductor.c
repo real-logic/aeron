@@ -838,7 +838,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
 void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
@@ -898,7 +898,7 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
 void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, void *item)
@@ -958,7 +958,7 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
 void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
@@ -1029,7 +1029,7 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
     }
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ns = conductor->nano_clock() + conductor->driver_timeout_ns;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
 void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)

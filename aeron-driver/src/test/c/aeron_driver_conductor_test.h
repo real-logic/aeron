@@ -161,7 +161,6 @@ public:
 
 void mock_broadcast_handler(int32_t type_id, uint8_t *buffer, size_t length, void *clientd)
 {
-//    printf("%d (0x%X)\n", type_id, type_id);
     DriverCallbacks *callback = static_cast<DriverCallbacks *>(clientd);
     callback->broadcastToClient(type_id, buffer, length);
 }
@@ -292,7 +291,8 @@ public:
     size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler, size_t message_limit = SIZE_MAX)
     {
         size_t messages = 0;
-        while (messages < message_limit && 0 != aeron_broadcast_receiver_receive(&m_broadcast_receiver, handler, &m_mockCallbacks))
+        while (messages < message_limit &&
+            0 != aeron_broadcast_receiver_receive(&m_broadcast_receiver, handler, &m_mockCallbacks))
         {
             messages++;
         }
@@ -306,10 +306,13 @@ public:
         aeron_counters_reader_t reader;
         aeron_counters_reader_init(
             &reader,
-            ctx->counters_metadata_buffer, AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length),
-            ctx->counters_values_buffer, ctx->counters_values_buffer_length);
+            ctx->counters_metadata_buffer,
+            AERON_COUNTERS_METADATA_BUFFER_LENGTH(ctx->counters_values_buffer_length),
+            ctx->counters_values_buffer,
+            ctx->counters_values_buffer_length);
 
-        aeron_counters_reader_foreach_metadata(reader.metadata, reader.metadata_length, callback, &m_mockCallbacks);
+        aeron_counters_reader_foreach_metadata(
+            reader.metadata, reader.metadata_length, callback, &m_mockCallbacks);
         return 0;
     }
 

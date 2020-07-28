@@ -85,7 +85,9 @@ public enum ArchiveEventCode implements EventCode
     CONTROL_SESSION_STATE_CHANGE(35, -1,
         (event, buffer, offset, builder) -> dissectControlSessionStateChange(buffer, offset, builder)),
     REPLAY_SESSION_ERROR(36, -1,
-        (event, buffer, offset, builder) -> dissectReplaySessionError(buffer, offset, builder));
+        (event, buffer, offset, builder) -> dissectReplaySessionError(buffer, offset, builder)),
+    CATALOG_RESIZE(37, -1,
+        (event, buffer, offset, builder) -> dissectCatalogResize(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

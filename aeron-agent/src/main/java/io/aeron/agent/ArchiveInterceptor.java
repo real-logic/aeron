@@ -52,4 +52,14 @@ class ArchiveInterceptor
             LOGGER.logReplaySessionError(sessionId, recordingId, errorMessage);
         }
     }
+
+    static class Catalog
+    {
+        @Advice.OnMethodEnter
+        static void catalogResized(
+            final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
+        {
+            LOGGER.logCatalogResize(maxEntries, catalogLength, newMaxEntries, newCatalogLength);
+        }
+    }
 }

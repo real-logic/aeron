@@ -726,9 +726,9 @@ void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *cond
      */
 
     aeron_int64_to_ptr_hash_map_for_each(
-        &conductor->resource_by_id_map, aeron_client_conductor_force_close_resource, NULL);
-    aeron_int64_to_ptr_hash_map_for_each(
         &conductor->image_by_id_map, aeron_client_conductor_force_close_resource, NULL);
+    aeron_int64_to_ptr_hash_map_for_each(
+        &conductor->resource_by_id_map, aeron_client_conductor_force_close_resource, NULL);
 }
 
 int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aeron_image_t *image)

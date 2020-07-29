@@ -15,17 +15,23 @@
  */
 
 #if defined(__linux__) || defined(Darwin)
+
 #include <unistd.h>
 #include <ftw.h>
 #include <cstdio>
 #include <spawn.h>
 #include <pthread.h>
+
 #elif defined(_WIN32)
+
 #include <process.h>
 #include <Windows.h>
 typedef intptr_t pid_t;
+
 #else
+
 #error "must spawn Java archive per test"
+
 #endif
 
 #include <chrono>
@@ -55,9 +61,7 @@ int aeron_delete_directory(const char *dir)
         FO_DELETE,
         dir,
         "",
-        FOF_NOCONFIRMATION |
-        FOF_NOERRORUI |
-        FOF_SILENT,
+        FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
         false,
         0,
         ""
@@ -140,6 +144,7 @@ public:
         m_pid = -1;
         posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char* const*)&argv[0], nullptr);
         #endif
+
         if (m_pid < 0)
         {
             perror("spawn");
@@ -171,12 +176,13 @@ public:
 
             if (aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0))
             {
-                int termstat;
                 m_stream << "Waiting for driver termination" << std::endl;
+
+                int term_stat;
                 #if defined(_WIN32)
-                ::cwait(&termstat, m_pid, WAIT_CHILD);
+                ::cwait(&term_stat, m_pid, WAIT_CHILD);
                 #else
-                ::wait(&termstat);
+                ::wait(&term_stat);
                 #endif
             }
             else
@@ -187,6 +193,7 @@ public:
 
             m_stream << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
             deleteDir(aeron::Context::defaultAeronPath());
+
             m_stream << "Deleting " << m_archiveDir << std::endl;
             deleteDir(m_archiveDir);
         }

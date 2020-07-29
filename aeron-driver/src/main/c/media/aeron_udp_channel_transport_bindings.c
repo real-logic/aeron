@@ -431,16 +431,16 @@ extern int aeron_udp_channel_interceptors_transport_notifications(
     aeron_udp_channel_transport_t *transport,
     const aeron_udp_channel_t *udp_channel,
     aeron_data_packet_dispatcher_t *data_packet_dispatcher,
-    aeron_udp_channnel_interceptor_notification_type_t type);
+    aeron_udp_channel_interceptor_notification_type_t type);
 
 extern int aeron_udp_channel_interceptors_publication_notifications(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     aeron_network_publication_t *publication,
-    aeron_udp_channnel_interceptor_notification_type_t type);
+    aeron_udp_channel_interceptor_notification_type_t type);
 
 extern int aeron_udp_channel_interceptors_image_notifications(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     aeron_publication_image_t *image,
-    aeron_udp_channnel_interceptor_notification_type_t type);
+    aeron_udp_channel_interceptor_notification_type_t type);

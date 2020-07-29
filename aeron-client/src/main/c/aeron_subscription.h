@@ -56,13 +56,15 @@ typedef struct aeron_subscription_stct
     void *on_available_image_clientd;
     aeron_on_unavailable_image_t on_unavailable_image;
     void *on_unavailable_image_clientd;
+    aeron_notification_t on_close_complete;
+    void *on_close_complete_clientd;
 
     int64_t registration_id;
     int32_t stream_id;
     int32_t channel_status_indicator_id;
     size_t round_robin_index;
-    bool is_closed;
 
+    bool is_closed;
     uint8_t post_fields_padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_subscription_t;

@@ -21,6 +21,11 @@
 #include "EmbeddedMediaDriver.h"
 #include "aeronc.h"
 
+extern "C"
+{
+#include "concurrent/aeron_atomic.h"
+}
+
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"
 #define STREAM_ID (117)
 
@@ -173,6 +178,12 @@ public:
         }
     }
 
+    static void setFlagOnClose(void *clientd)
+    {
+        std::atomic<bool> *flag = static_cast<std::atomic<bool> *>(clientd);
+        flag->store(true);
+    }
+
 protected:
     EmbeddedMediaDriver m_driver;
     aeron_context_t *m_context = nullptr;
@@ -203,6 +214,7 @@ TEST_P(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
 
 TEST_P(CSystemTest, shouldAddAndClosePublication)
 {
+    std::atomic<bool> publicationClosedFlag(false);
     aeron_async_add_publication_t *async;
     aeron_publication_t *publication;
 
@@ -212,11 +224,17 @@ TEST_P(CSystemTest, shouldAddAndClosePublication)
 
     ASSERT_TRUE((publication = awaitPublicationOrError(async))) << aeron_errmsg();
 
-    aeron_publication_close(publication);
+    aeron_publication_close(publication, setFlagOnClose, &publicationClosedFlag);
+
+    while (!publicationClosedFlag)
+    {
+        std::this_thread::yield();
+    }
 }
 
 TEST_P(CSystemTest, shouldAddAndCloseExclusivePublication)
 {
+    std::atomic<bool> publicationClosedFlag(false);
     aeron_async_add_exclusive_publication_t *async;
     aeron_exclusive_publication_t *publication;
 
@@ -226,11 +244,17 @@ TEST_P(CSystemTest, shouldAddAndCloseExclusivePublication)
 
     ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async))) << aeron_errmsg();
 
-    aeron_exclusive_publication_close(publication);
+    aeron_exclusive_publication_close(publication, NULL, NULL);
+
+    if (!publicationClosedFlag)
+    {
+        std::this_thread::yield();
+    }
 }
 
 TEST_P(CSystemTest, shouldAddAndCloseSubscription)
 {
+    std::atomic<bool> subscriptionClosedFlag(false);
     aeron_async_add_subscription_t *async;
     aeron_subscription_t *subscription;
 
@@ -241,11 +265,17 @@ TEST_P(CSystemTest, shouldAddAndCloseSubscription)
 
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
 
-    aeron_subscription_close(subscription);
+    aeron_subscription_close(subscription, setFlagOnClose, &subscriptionClosedFlag);
+
+    while (!subscriptionClosedFlag)
+    {
+        std::this_thread::yield();
+    }
 }
 
 TEST_P(CSystemTest, shouldAddAndCloseCounter)
 {
+    std::atomic<bool> counterClosedFlag(false);
     aeron_async_add_counter_t *async;
     aeron_counter_t *counter;
 
@@ -256,7 +286,12 @@ TEST_P(CSystemTest, shouldAddAndCloseCounter)
 
     ASSERT_TRUE((counter = awaitCounterOrError(async))) << aeron_errmsg();
 
-    aeron_counter_close(counter);
+    aeron_counter_close(counter, setFlagOnClose, &counterClosedFlag);
+
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
 }
 
 TEST_P(CSystemTest, shouldAddPublicationAndSubscription)
@@ -279,8 +314,8 @@ TEST_P(CSystemTest, shouldAddPublicationAndSubscription)
 
     awaitConnected(subscription);
 
-    EXPECT_EQ(aeron_publication_close(publication), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
 }
 
 TEST_P(CSystemTest, shouldOfferAndPollOneMessage)
@@ -320,8 +355,8 @@ TEST_P(CSystemTest, shouldOfferAndPollOneMessage)
     EXPECT_EQ(poll_result, 1) << aeron_errmsg();
     EXPECT_TRUE(called);
 
-    EXPECT_EQ(aeron_publication_close(publication), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
 }
 
 TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
@@ -368,8 +403,8 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
         EXPECT_TRUE(called);
     }
 
-    EXPECT_EQ(aeron_publication_close(publication), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
 }
 
 TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
@@ -422,14 +457,14 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
         EXPECT_TRUE(called);
     }
 
-    EXPECT_EQ(aeron_publication_close(publication), 0);
+    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
 
     while (!on_unavailable_image_called)
     {
         std::this_thread::yield();
     }
 
-    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
 }
 
 TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
@@ -482,7 +517,7 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
         EXPECT_TRUE(called);
     }
 
-    EXPECT_EQ(aeron_publication_close(publication), 0);
+    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
 
     while (!on_unavailable_image_called)
     {
@@ -495,5 +530,6 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
 
     poll(subscription, handler, 1);
 
-    EXPECT_EQ(aeron_subscription_close(subscription), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
 }
+

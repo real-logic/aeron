@@ -103,6 +103,11 @@ bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context);
  */
 typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
 
+/**
+ * Generalised notification callback.
+ */
+typedef void (*aeron_notification_t)(void *clientd);
+
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd);
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
@@ -883,12 +888,16 @@ int aeron_publication_add_destination(aeron_publication_t* publication, const ch
 int aeron_publication_remove_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id);
 
 /**
- * Asynchronously close the publication.
+ * Asynchronously close the publication.  Will callback on the on_complete notification when the subscription is closed.
+ * The callback is optional, use NULL for the on_complete callback if not required.
  *
  * @param publication to close
+ * @param on_close_complete optional callback to execute once the subscription has been closed and freed.  This may happen on a
+ * separate thread, so the caller should ensure that clientd has the appropriate lifetime.
+ * @param on_close_complete_clientd parameter to pass to the on_complete callback.
  * @return 0 for success or -1 for error.
  */
-int aeron_publication_close(aeron_publication_t *publication);
+int aeron_publication_close(aeron_publication_t *publication, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
 /*
  * Exclusive Publication functions
@@ -1044,7 +1053,10 @@ int aeron_exclusive_publication_remove_destination(
  * @param publication to close
  * @return 0 for success or -1 for error.
  */
-int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication);
+int aeron_exclusive_publication_close(
+    aeron_exclusive_publication_t *publication,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd);
 
 /**
  * Has the exclusive publication closed?
@@ -1359,12 +1371,16 @@ int aeron_subscription_add_destination(aeron_subscription_t *subscription, const
 int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id);
 
 /**
- * Asynchronously close the subscription.
+ * Asynchronously close the subscription.  Will callback on the on_complete notification when the subscription is closed.
+ * The callback is optional, use NULL for the on_complete callback if not required.
  *
  * @param subscription to close
+ * @param on_close_complete optional callback to execute once the subscription has been closed and freed.  This may happen on a
+ * separate thread, so the caller should ensure that clientd has the appropriate lifetime.
+ * @param on_close_complete_clientd parameter to pass to the on_complete callback.
  * @return 0 for success or -1 for error.
  */
-int aeron_subscription_close(aeron_subscription_t *subscription);
+int aeron_subscription_close(aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
 /**
  * Image Functions
@@ -1781,7 +1797,10 @@ int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t 
  * @param counter to close.
  * @return 0 for success or -1 for error.
  */
-int aeron_counter_close(aeron_counter_t *counter);
+int aeron_counter_close(
+    aeron_counter_t *counter,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd);
 
 /**
  * Return full version and build string.

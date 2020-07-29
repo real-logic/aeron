@@ -18,7 +18,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include "aeron_client_conductor.h"
 #include "aeron_publication.h"
@@ -1970,7 +1969,6 @@ int aeron_client_conductor_on_available_image(
             return -1;
         }
 
-        size_t size = conductor->image_by_id_map.size;
         if (aeron_int64_to_ptr_hash_map_put(&conductor->image_by_id_map, response->correlation_id, image) < 0)
         {
             int errcode = errno;
@@ -1979,7 +1977,6 @@ int aeron_client_conductor_on_available_image(
                 errcode, strerror(errcode));
             return -1;
         }
-        assert(size < conductor->image_by_id_map.size);
 
         if (aeron_client_conductor_subscription_add_image(subscription, image) < 0)
         {

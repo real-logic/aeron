@@ -49,7 +49,7 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
 
     while (true)
     {
-        while (aeron_file_length(filename) <= AERON_CNC_VERSION_AND_META_DATA_LENGTH)
+        while (aeron_file_length(filename) <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)
         {
             if (context->epoch_clock() > deadline_ms)
             {
@@ -66,7 +66,7 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
             return -1;
         }
 
-        if (cnc_mmap->length <= AERON_CNC_VERSION_AND_META_DATA_LENGTH)
+        if (cnc_mmap->length <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)
         {
             aeron_unmap(cnc_mmap);
             aeron_micro_sleep(1000);

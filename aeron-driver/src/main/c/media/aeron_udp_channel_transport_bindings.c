@@ -133,7 +133,8 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
     if (interceptors_length >= (size_t)AERON_MAX_INTERCEPTORS_LEN)
     {
         aeron_set_err(
-            EINVAL, "Interceptors list too long, must have: %" PRIu32 " < %d", (uint32_t)interceptors_length, AERON_MAX_INTERCEPTORS_LEN);
+            EINVAL, "Interceptors list too long, must have: %" PRIu32 " < %d",
+            (uint32_t)interceptors_length, AERON_MAX_INTERCEPTORS_LEN);
         return NULL;
     }
 
@@ -144,7 +145,8 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
 
     if (-ERANGE == num_interceptors)
     {
-        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", AERON_MAX_INTERCEPTOR_NAMES, interceptors);
+        aeron_set_err(
+            EINVAL, "Too many interceptors defined, limit %d: %s", AERON_MAX_INTERCEPTOR_NAMES, interceptors);
         return NULL;
     }
     else if (num_interceptors < 0)

@@ -45,13 +45,13 @@ int aeron_receive_destination_create(
         &channel->remote_data,
         &channel->local_data,
         channel->interface_index,
-        (0 != channel->multicast_ttl) ? channel->multicast_ttl : context->multicast_ttl,
+        0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
         context->socket_rcvbuf,
         context->socket_sndbuf,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {
-        aeron_set_err(aeron_errcode(), "channel %s : %s", channel->original_uri, aeron_errmsg());
+        aeron_set_err(aeron_errcode(), "%s: uri=%s", aeron_errmsg(), channel->original_uri);
         aeron_receive_destination_delete(_destination, counters_manager);
         return -1;
     }

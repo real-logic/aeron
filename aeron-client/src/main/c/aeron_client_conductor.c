@@ -860,11 +860,18 @@ void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
     aeron_publication_t *publication = (aeron_publication_t *)item;
+    aeron_notification_t on_close_complete = publication->on_close_complete;
+    void *on_close_complete_clientd = publication->on_close_complete_clientd;
 
     aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, publication->registration_id);
 
     aeron_client_conductor_release_log_buffer(conductor, publication->log_buffer);
     aeron_publication_delete(publication);
+
+    if (NULL != on_close_complete)
+    {
+        on_close_complete(on_close_complete_clientd);
+    }
 }
 
 void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void *item)
@@ -920,11 +927,18 @@ void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, vo
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *) clientd;
     aeron_exclusive_publication_t *publication = (aeron_exclusive_publication_t *) item;
+    aeron_notification_t on_close_complete = publication->on_close_complete;
+    void *on_close_complete_clientd = publication->on_close_complete_clientd;
 
     aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, publication->registration_id);
 
     aeron_client_conductor_release_log_buffer(conductor, publication->log_buffer);
     aeron_exclusive_publication_delete(publication);
+
+    if (NULL != on_close_complete)
+    {
+        on_close_complete(on_close_complete_clientd);
+    }
 }
 
 void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
@@ -980,11 +994,18 @@ void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
     aeron_subscription_t *subscription = (aeron_subscription_t *)item;
+    aeron_notification_t on_close_complete = subscription->on_close_complete;
+    void *on_close_complete_clientd = subscription->on_close_complete_clientd;
 
     aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, subscription->registration_id);
 
     aeron_client_conductor_linger_or_delete_all_images(conductor, subscription);
     aeron_subscription_delete(subscription);
+
+    if (NULL != on_close_complete)
+    {
+        on_close_complete(on_close_complete_clientd);
+    }
 }
 
 void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
@@ -1051,10 +1072,17 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
     aeron_counter_t *counter = (aeron_counter_t *)item;
+    aeron_notification_t on_close_complete = counter->on_close_complete;
+    void *on_close_complete_clientd = counter->on_close_complete_clientd;
 
     aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, counter->registration_id);
 
     aeron_counter_delete(counter);
+
+    if (NULL != on_close_complete)
+    {
+        on_close_complete(on_close_complete_clientd);
+    }
 }
 
 #define AERON_ON_HANDLER_ADD(p,c,m,t) \
@@ -1253,10 +1281,15 @@ int aeron_client_conductor_async_add_publication(
 }
 
 int aeron_client_conductor_async_close_publication(
-    aeron_client_conductor_t *conductor, aeron_publication_t *publication)
+    aeron_client_conductor_t *conductor,
+    aeron_publication_t *publication,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd)
 {
     publication->command_base.func = aeron_client_conductor_on_cmd_close_publication;
     publication->command_base.item = NULL;
+    publication->on_close_complete = on_close_complete;
+    publication->on_close_complete_clientd = on_close_complete_clientd;
 
     if (aeron_client_conductor_offer_remove_command(
         conductor, publication->registration_id, AERON_COMMAND_REMOVE_PUBLICATION) < 0)
@@ -1332,10 +1365,15 @@ int aeron_client_conductor_async_add_exclusive_publication(
 }
 
 int aeron_client_conductor_async_close_exclusive_publication(
-    aeron_client_conductor_t *conductor, aeron_exclusive_publication_t *publication)
+    aeron_client_conductor_t *conductor,
+    aeron_exclusive_publication_t *publication,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd)
 {
     publication->command_base.func = aeron_client_conductor_on_cmd_close_exclusive_publication;
     publication->command_base.item = NULL;
+    publication->on_close_complete = on_close_complete;
+    publication->on_close_complete_clientd = on_close_complete_clientd;
 
     if (aeron_client_conductor_offer_remove_command(
         conductor, publication->registration_id, AERON_COMMAND_REMOVE_PUBLICATION) < 0)
@@ -1422,10 +1460,15 @@ int aeron_client_conductor_async_add_subscription(
 }
 
 int aeron_client_conductor_async_close_subscription(
-    aeron_client_conductor_t *conductor, aeron_subscription_t *subscription)
+    aeron_client_conductor_t *conductor,
+    aeron_subscription_t *subscription,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd)
 {
     subscription->command_base.func = aeron_client_conductor_on_cmd_close_subscription;
     subscription->command_base.item = NULL;
+    subscription->on_close_complete = on_close_complete;
+    subscription->on_close_complete_clientd = on_close_complete_clientd;
 
     if (aeron_client_conductor_offer_remove_command(
         conductor, subscription->registration_id, AERON_COMMAND_REMOVE_SUBSCRIPTION) < 0)
@@ -1520,10 +1563,15 @@ int aeron_client_conductor_async_add_counter(
 }
 
 int aeron_client_conductor_async_close_counter(
-    aeron_client_conductor_t *conductor, aeron_counter_t *counter)
+    aeron_client_conductor_t *conductor,
+    aeron_counter_t *counter,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd)
 {
     counter->command_base.func = aeron_client_conductor_on_cmd_close_counter;
     counter->command_base.item = NULL;
+    counter->on_close_complete = on_close_complete;
+    counter->on_close_complete_clientd = on_close_complete_clientd;
 
     if (aeron_client_conductor_offer_remove_command(
         conductor, counter->registration_id, AERON_COMMAND_REMOVE_COUNTER) < 0)

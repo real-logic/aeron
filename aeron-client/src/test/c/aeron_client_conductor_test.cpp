@@ -361,7 +361,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     ASSERT_GT(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
 
-    ASSERT_EQ(aeron_publication_close(publication), 0);
+    ASSERT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
     doWork();
 }
 
@@ -416,7 +416,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfully)
     ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
 
-    ASSERT_EQ(aeron_exclusive_publication_close(publication), 0);
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, NULL, NULL), 0);
     doWork();
 }
 
@@ -471,7 +471,7 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfully)
     ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != subscription);
 
-    ASSERT_EQ(aeron_subscription_close(subscription), 0);
+    ASSERT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
     doWork();
 }
 
@@ -528,7 +528,7 @@ TEST_F(ClientConductorTest, shouldAddCounterSuccessfully)
     ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != counter);
 
-    ASSERT_EQ(aeron_counter_close(counter), 0);
+    ASSERT_EQ(aeron_counter_close(counter, NULL, NULL), 0);
     doWork();
 }
 
@@ -600,7 +600,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationAndHandleOnNewPublication)
     EXPECT_TRUE(was_on_new_publication_called);
 
     // graceful close and reclaim for sanitize
-    ASSERT_EQ(aeron_publication_close(publication), 0);
+    ASSERT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
     doWork();
 }
 
@@ -637,7 +637,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationAndHandleOnNewPublicati
     EXPECT_TRUE(was_on_new_exclusive_publication_called);
 
     // graceful close and reclaim for sanitize
-    ASSERT_EQ(aeron_exclusive_publication_close(publication), 0);
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, NULL, NULL), 0);
     doWork();
 }
 
@@ -673,6 +673,6 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
     EXPECT_TRUE(was_on_new_subscription_called);
 
     // graceful close and reclaim for sanitize
-    ASSERT_EQ(aeron_subscription_close(subscription), 0);
+    ASSERT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
     doWork();
 }

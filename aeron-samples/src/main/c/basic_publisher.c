@@ -239,7 +239,7 @@ int main(int argc, char **argv)
     }
 
     cleanup:
-        aeron_publication_close(publication);
+    aeron_publication_close(publication, NULL, NULL);
         aeron_close(aeron);
         aeron_context_close(context);
 

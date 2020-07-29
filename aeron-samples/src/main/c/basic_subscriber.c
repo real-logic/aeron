@@ -214,7 +214,7 @@ int main(int argc, char **argv)
     status = EXIT_SUCCESS;
 
     cleanup:
-        aeron_subscription_close(subscription);
+        aeron_subscription_close(subscription, NULL, NULL);
         aeron_close(aeron);
         aeron_context_close(context);
         aeron_fragment_assembler_delete(fragment_assembler);

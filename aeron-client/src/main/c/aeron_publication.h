@@ -48,6 +48,9 @@ typedef struct aeron_publication_stct
     int32_t position_limit_counter_id;
     int32_t channel_status_indicator_id;
 
+    aeron_notification_t on_close_complete;
+    void *on_close_complete_clientd;
+
     bool is_closed;
 }
 aeron_publication_t;

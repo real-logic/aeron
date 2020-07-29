@@ -272,7 +272,7 @@ int aeron_data_packet_dispatcher_remove_publication_image(
     return 0;
 }
 
-bool aeron_data_packet_dispatcher_has_interest(
+bool aeron_data_packet_dispatcher_has_interest_in(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id)
 {
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest =

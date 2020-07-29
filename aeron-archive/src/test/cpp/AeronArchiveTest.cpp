@@ -313,7 +313,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 }
 
-TEST_F(AeronArchiveTest, shouldBeAbleToAsyncConnectToArchive
+TEST_F(AeronArchiveTest, shouldBeAbleToAsyncConnectToArchive)
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
     aeron::concurrent::YieldingIdleStrategy idle;

@@ -82,6 +82,26 @@ const char *aeron_errmsg()
 
     if (NULL != error_state)
     {
+        if (error_state->errmsg_version != error_state->error_stack_version)
+        {
+            size_t offset = 0;
+            for (int i = error_state->stack_depth - 1; i >= 0; --i)
+            {
+                size_t len = strlen(error_state->error_stack[i]);
+                size_t remaining = (sizeof(error_state->errmsg) - offset) - 1;
+                size_t to_copy = remaining < len ? remaining : len;
+
+                strncpy(&error_state->errmsg[offset], error_state->error_stack[i], to_copy);
+                error_state->errmsg[offset + to_copy] = '\n';
+
+                offset += (to_copy + 1);
+            }
+
+            if (offset < sizeof(error_state->errmsg))
+            {
+                error_state->errmsg[offset] = '\0';
+            }
+        }
         result = error_state->errmsg;
     }
 
@@ -243,6 +263,28 @@ const char *aeron_error_code_str(int errcode)
         default:
             return "unknown error code";
     }
+}
+
+void aeron_err_append(int errcode, const char *format, ...)
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
+    error_state->errcode = errcode;
+    aeron_set_errno(errcode);
+
+    va_list args;
+    char stack_message[sizeof(error_state->errmsg)];
+
+    va_start(args, format);
+    vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
+    va_end(args);
+
+    int stack_position = error_state->stack_depth < AERON_ERROR_MAX_STACK_DEPTH ?
+        error_state->stack_depth : AERON_ERROR_MAX_STACK_DEPTH - 1;
+    error_state->stack_depth++;
+    error_state->error_stack_version++;
+
+    strncpy(error_state->error_stack[stack_position], stack_message, sizeof(error_state->errmsg));
 }
 
 #if defined(AERON_COMPILER_MSVC)

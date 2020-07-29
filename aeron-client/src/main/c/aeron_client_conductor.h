@@ -156,6 +156,7 @@ typedef struct aeron_client_conductor_stct
 
     aeron_int64_to_ptr_hash_map_t log_buffer_by_id_map;
     aeron_int64_to_ptr_hash_map_t resource_by_id_map;
+    aeron_int64_to_ptr_hash_map_t image_by_id_map;
 
     struct available_counter_handlers_stct
     {

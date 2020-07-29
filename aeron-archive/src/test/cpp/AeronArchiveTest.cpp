@@ -104,7 +104,8 @@ public:
     void SetUp() final
     {
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
-        char const * const argv[] = {
+        char const * const argv[] =
+        {
                 "java",
 #if JAVA_MAJOR_VERSION >= 9
                 "--add-opens",
@@ -191,7 +192,7 @@ public:
         }
     }
 
-    std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string& channel, std::int32_t streamId)
+    static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string& channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(publicationId);
@@ -205,7 +206,8 @@ public:
         return publication;
     }
 
-    std::shared_ptr<Subscription> addSubscription(Aeron &aeron, const std::string &channel, std::int32_t streamId)
+    static std::shared_ptr<Subscription> addSubscription(
+        Aeron &aeron, const std::string &channel, std::int32_t streamId)
     {
         std::int64_t subscriptionId = aeron.addSubscription(channel, streamId);
         std::shared_ptr<Subscription> subscription = aeron.findSubscription(subscriptionId);
@@ -219,7 +221,7 @@ public:
         return subscription;
     }
 
-    std::int32_t getRecordingCounterId(std::int32_t sessionId, CountersReader &countersReader)
+    static std::int32_t getRecordingCounterId(std::int32_t sessionId, CountersReader &countersReader)
     {
         std::int32_t counterId;
         while (CountersReader::NULL_COUNTER_ID ==
@@ -231,7 +233,7 @@ public:
         return counterId;
     }
 
-    void offerMessages(Publication &publication, std::size_t messageCount, const std::string &messagePrefix)
+    static void offerMessages(Publication &publication, std::size_t messageCount, const std::string &messagePrefix)
     {
         BufferClaim bufferClaim;
         aeron::concurrent::YieldingIdleStrategy idle;
@@ -249,7 +251,7 @@ public:
         }
     }
 
-    void consumeMessages(Subscription &subscription, std::size_t messageCount, const std::string &messagePrefix)
+    void consumeMessages(Subscription &subscription, std::size_t messageCount, const std::string &messagePrefix) const
     {
         std::size_t received = 0;
         aeron::concurrent::YieldingIdleStrategy idle;
@@ -311,7 +313,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 }
 
-TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchiveViaAsync)
+TEST_F(AeronArchiveTest, shouldBeAbleToAsyncConnectToArchive
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
     aeron::concurrent::YieldingIdleStrategy idle;

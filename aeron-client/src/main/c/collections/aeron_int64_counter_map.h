@@ -17,8 +17,6 @@
 #ifndef AERON_INT64_COUNTER_MAP_H
 #define AERON_INT64_COUNTER_MAP_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
 

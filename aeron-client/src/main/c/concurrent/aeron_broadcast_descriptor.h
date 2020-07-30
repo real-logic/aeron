@@ -17,8 +17,6 @@
 #ifndef AERON_BROADCAST_DESCRIPTOR_H
 #define AERON_BROADCAST_DESCRIPTOR_H
 
-#include <stdint.h>
-
 #include "util/aeron_bitutil.h"
 
 #pragma pack(push)

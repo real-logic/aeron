@@ -17,7 +17,6 @@
 #ifndef AERON_TERM_UNBLOCKER_H
 #define AERON_TERM_UNBLOCKER_H
 
-#include <stdint.h>
 #include "aeron_logbuffer_descriptor.h"
 
 typedef enum aeron_term_unblocker_status_enum

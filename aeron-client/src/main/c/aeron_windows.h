@@ -17,7 +17,6 @@
 #ifndef AERON_WINDOWS_H
 #define AERON_WINDOWS_H
 
-#include <stdint.h>
 #include "util/aeron_platform.h"
 
 #if defined(AERON_COMPILER_GCC)
@@ -30,6 +29,7 @@
 #elif defined(AERON_COMPILER_MSVC)
 
 #include <stddef.h>
+#include <stdint.h>
 
 double aeron_erand48(unsigned short xsubi[3]);
 void aeron_srand48(uint64_t aeron_nano_clock);

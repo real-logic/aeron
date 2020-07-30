@@ -18,8 +18,6 @@
 #define AERON_AERON_BIT_SET_H
 
 #include <errno.h>
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include "util/aeron_bitutil.h"

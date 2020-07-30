@@ -18,8 +18,6 @@
 #define AERON_FILEUTIL_H
 
 #include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <sys/types.h>
 
 #include "util/aeron_platform.h"

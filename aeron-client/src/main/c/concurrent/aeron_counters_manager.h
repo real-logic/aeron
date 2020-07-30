@@ -17,8 +17,6 @@
 #ifndef AERON_COUNTERS_MANAGER_H
 #define AERON_COUNTERS_MANAGER_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include "aeronc.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_clock.h"

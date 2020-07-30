@@ -18,8 +18,6 @@
 #define AERON_HTTP_UTIL_H
 
 #include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 #include "aeron_socket.h"
 #include "aeron_parse_util.h"

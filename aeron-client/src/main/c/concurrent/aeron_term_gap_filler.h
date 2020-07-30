@@ -18,7 +18,6 @@
 #define AERON_TERM_GAP_FILLER_H
 
 #include <stdbool.h>
-#include <stdint.h>
 #include "aeron_logbuffer_descriptor.h"
 
 bool aeron_term_gap_filler_try_fill_gap(

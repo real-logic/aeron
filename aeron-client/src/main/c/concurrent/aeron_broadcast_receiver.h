@@ -17,10 +17,6 @@
 #ifndef AERON_BROADCAST_RECEIVER_H
 #define AERON_BROADCAST_RECEIVER_H
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
-
 #include "util/aeron_bitutil.h"
 #include "aeron_atomic.h"
 #include "aeron_broadcast_descriptor.h"

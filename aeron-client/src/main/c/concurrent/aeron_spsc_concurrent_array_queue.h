@@ -16,7 +16,6 @@
 #ifndef AERON_SPSC_CONCURRENT_ARRAY_QUEUE_H
 #define AERON_SPSC_CONCURRENT_ARRAY_QUEUE_H
 
-#include <stdint.h>
 #include "util/aeron_bitutil.h"
 #include "aeron_atomic.h"
 #include "aeron_concurrent_array_queue.h"

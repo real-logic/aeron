@@ -17,9 +17,7 @@
 #ifndef AERON_STR_TO_PTR_HASH_MAP_H
 #define AERON_STR_TO_PTR_HASH_MAP_H
 
-#include <stdint.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <string.h>
 
 #include "util/aeron_platform.h"

@@ -17,8 +17,6 @@
 #ifndef AERON_C_CNC_FILE_DESCRIPTOR_H
 #define AERON_C_CNC_FILE_DESCRIPTOR_H
 
-#include <stdint.h>
-
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_atomic.h"
 

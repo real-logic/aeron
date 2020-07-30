@@ -17,9 +17,6 @@
 #ifndef AERON_INT32_TO_PTR_HASH_MAP_H
 #define AERON_INT32_TO_PTR_HASH_MAP_H
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <errno.h>
 
 #include "util/aeron_platform.h"

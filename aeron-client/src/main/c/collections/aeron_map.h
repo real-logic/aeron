@@ -19,6 +19,8 @@
 
 #define AERON_MAP_DEFAULT_LOAD_FACTOR (0.55f)
 
+#include <stdint.h>
+
 inline int64_t aeron_map_compound_key(int32_t high, int32_t low)
 {
     return (int64_t)((uint64_t)high << 32) | (low);

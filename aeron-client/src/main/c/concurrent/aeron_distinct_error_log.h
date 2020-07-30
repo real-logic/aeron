@@ -17,9 +17,6 @@
 #ifndef AERON_DISTINCT_ERROR_LOG_H
 #define AERON_DISTINCT_ERROR_LOG_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include "aeron_alloc.h"
 #include "aeronc.h"
 #include "util/aeron_clock.h"

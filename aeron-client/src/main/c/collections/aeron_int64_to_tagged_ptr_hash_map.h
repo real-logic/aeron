@@ -17,8 +17,6 @@
 #ifndef AERON_INT32_TO_TAGGED_PTR_HASH_MAP_H
 #define AERON_INT32_TO_TAGGED_PTR_HASH_MAP_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <string.h>

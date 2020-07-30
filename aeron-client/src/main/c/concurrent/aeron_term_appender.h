@@ -22,7 +22,6 @@
 
 #include "aeronc.h"
 #include "util/aeron_fileutil.h"
-#include "concurrent/aeron_atomic.h"
 #include "util/aeron_error.h"
 
 #define AERON_TERM_APPENDER_FAILED (-2)

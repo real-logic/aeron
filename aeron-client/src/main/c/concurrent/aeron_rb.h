@@ -17,8 +17,6 @@
 #ifndef AERON_RB_H
 #define AERON_RB_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_atomic.h"

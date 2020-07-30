@@ -17,8 +17,6 @@
 #ifndef AERON_TERM_REBUILDER_H
 #define AERON_TERM_REBUILDER_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include <string.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_atomic.h"

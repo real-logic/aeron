@@ -17,9 +17,6 @@
 #ifndef AERON_BROADCAST_TRANSMITTER_H
 #define AERON_BROADCAST_TRANSMITTER_H
 
-#include <stdint.h>
-#include <stddef.h>
-
 #include "util/aeron_bitutil.h"
 #include "aeron_broadcast_descriptor.h"
 

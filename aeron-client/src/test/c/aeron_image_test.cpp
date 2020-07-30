@@ -185,16 +185,16 @@ protected:
     int64_t m_correlationId = 0;
     int64_t m_sub_pos = 0;
 
-    int32_t m_term_length;
-    int32_t m_initial_term_id;
+    int32_t m_term_length = 0;
+    int32_t m_initial_term_id = 0;
 
-    size_t m_position_bits_to_shift;
+    size_t m_position_bits_to_shift = 0;
 
     std::function<void(const uint8_t *, size_t, aeron_header_t *)> m_handler = nullptr;
     std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, aeron_header_t *)>
         m_controlled_handler = nullptr;
 
-    aeron_image_t *m_image;
+    aeron_image_t *m_image = nullptr;
     std::string m_filename;
 };
 

@@ -117,7 +117,7 @@ public:
 
 protected:
     AERON_DECL_ALIGNED(fragment_buffer_t m_fragment, 16);
-    aeron_header_t m_header;
+    aeron_header_t m_header = {};
     std::function<void(const uint8_t *, size_t, aeron_header_t *)> m_handler = nullptr;
     std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, aeron_header_t *)>
         m_controlled_handler = nullptr;

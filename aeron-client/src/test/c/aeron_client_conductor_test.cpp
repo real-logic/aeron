@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#include <cinttypes>
 #include <array>
 #include <cstdint>
 #include <thread>
-#include <exception>
 #include <functional>
 
 #include <gtest/gtest.h>
@@ -222,7 +220,7 @@ public:
     }
 
     int doWorkForNs(
-        int64_t interval_ns, bool updateDriverHeatbeat= true, int64_t advance_interval_ns = TIME_ADVANCE_INTERVAL_NS)
+        int64_t interval_ns, bool updateDriverHeartbeat= true, int64_t advance_interval_ns = TIME_ADVANCE_INTERVAL_NS)
     {
         int work_count = 0;
         int64_t target_ns = now_ns + interval_ns;
@@ -231,7 +229,7 @@ public:
         {
             now_ns += advance_interval_ns;
             now_ms = now_ns / 1000000LL;
-            work_count += doWork(updateDriverHeatbeat);
+            work_count += doWork(updateDriverHeartbeat);
         }
         while (now_ns < target_ns);
 
@@ -323,10 +321,10 @@ public:
 
 protected:
     aeron_context_t *m_context = nullptr;
-    aeron_client_conductor_t m_conductor;
+    aeron_client_conductor_t m_conductor = {};
     std::unique_ptr<uint8_t[]> m_cnc;
-    aeron_mpsc_rb_t m_to_driver;
-    aeron_broadcast_transmitter_t m_to_clients;
+    aeron_mpsc_rb_t m_to_driver = {};
+    aeron_broadcast_transmitter_t m_to_clients = {};
     std::string m_logFileName;
 
     std::function<void(int32_t, const void *, size_t)> m_to_driver_handler;
@@ -360,7 +358,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     ASSERT_GT(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
 
-    ASSERT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
     doWork();
 }
 
@@ -415,7 +413,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfully)
     ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
 
-    ASSERT_EQ(aeron_exclusive_publication_close(publication, NULL, NULL), 0);
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
     doWork();
 }
 
@@ -470,7 +468,7 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfully)
     ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != subscription);
 
-    ASSERT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
     doWork();
 }
 
@@ -527,7 +525,7 @@ TEST_F(ClientConductorTest, shouldAddCounterSuccessfully)
     ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != counter);
 
-    ASSERT_EQ(aeron_counter_close(counter, NULL, NULL), 0);
+    ASSERT_EQ(aeron_counter_close(counter, nullptr, nullptr), 0);
     doWork();
 }
 
@@ -599,7 +597,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationAndHandleOnNewPublication)
     EXPECT_TRUE(was_on_new_publication_called);
 
     // graceful close and reclaim for sanitize
-    ASSERT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
     doWork();
 }
 
@@ -636,7 +634,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationAndHandleOnNewPublicati
     EXPECT_TRUE(was_on_new_exclusive_publication_called);
 
     // graceful close and reclaim for sanitize
-    ASSERT_EQ(aeron_exclusive_publication_close(publication, NULL, NULL), 0);
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
     doWork();
 }
 
@@ -672,6 +670,6 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
     EXPECT_TRUE(was_on_new_subscription_called);
 
     // graceful close and reclaim for sanitize
-    ASSERT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
     doWork();
 }

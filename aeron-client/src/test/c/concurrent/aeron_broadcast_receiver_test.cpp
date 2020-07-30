@@ -21,7 +21,7 @@
 
 extern "C"
 {
-#include <concurrent/aeron_broadcast_receiver.h>
+#include "concurrent/aeron_broadcast_receiver.h"
 }
 
 #define CAPACITY (1024)
@@ -41,8 +41,8 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    buffer_t m_srcBuffer;
+    buffer_t m_buffer = {};
+    buffer_t m_srcBuffer = {};
 };
 
 TEST_F(BroadcastReceiverTest, shouldCalculateCapacityForBuffer)

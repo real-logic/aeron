@@ -50,7 +50,7 @@ protected:
         aeron_array_to_ptr_hash_map_for_each(&m_map, ArrToPtrHashMapTest::for_each, this);
     }
 
-    aeron_array_to_ptr_hash_map_t m_map;
+    aeron_array_to_ptr_hash_map_t m_map = {};
     std::function<void(const uint8_t *, size_t, void *)> m_for_each;
 };
 

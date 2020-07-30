@@ -63,10 +63,10 @@ public:
     }
 
 protected:
-    values_buffer_t m_valuesBuffer;
-    metadata_buffer_t m_metadataBuffer;
-    aeron_counters_reader_t m_reader;
-    aeron_counters_manager_t m_manager;
+    values_buffer_t m_valuesBuffer = {};
+    metadata_buffer_t m_metadataBuffer = {};
+    aeron_counters_reader_t m_reader = {};
+    aeron_counters_manager_t m_manager = {};
 };
 
 TEST_F(CountersTest, shouldReadCounterState)
@@ -76,7 +76,7 @@ TEST_F(CountersTest, shouldReadCounterState)
     EXPECT_EQ(0, aeron_counters_reader_counter_state(&m_reader, 0, &state));
     EXPECT_EQ(AERON_COUNTER_RECORD_UNUSED, state);
 
-    int32_t id = aeron_counters_manager_allocate(&m_manager, 1234, NULL, 0, NULL, 0);
+    int32_t id = aeron_counters_manager_allocate(&m_manager, 1234, nullptr, 0, nullptr, 0);
 
     EXPECT_EQ(0, aeron_counters_reader_counter_state(&m_reader, id, &state));
     EXPECT_EQ(AERON_COUNTER_RECORD_ALLOCATED, state);
@@ -98,7 +98,7 @@ TEST_F(CountersTest, shouldReadCounterLabel)
 
     EXPECT_EQ(0, aeron_counters_reader_counter_label(&m_reader, 0, buffer, AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
-    int32_t id = aeron_counters_manager_allocate(&m_manager, 1234, NULL, 0, label, strlen(label));
+    int32_t id = aeron_counters_manager_allocate(&m_manager, 1234, nullptr, 0, label, strlen(label));
 
     EXPECT_EQ(
         (int32_t)strlen(label),
@@ -120,7 +120,8 @@ TEST_F(CountersTest, shouldReadTimeToReuse)
     int64_t deadline;
     EXPECT_EQ(0, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, 0, &deadline));
 
-    int32_t id = aeron_counters_manager_allocate(&m_manager, 1234, NULL, 0, NULL, 0);
+    int32_t id;
+    id = aeron_counters_manager_allocate(&m_manager, 1234, nullptr, 0, nullptr, 0);
 
     EXPECT_EQ(0, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, id, &deadline));
     EXPECT_EQ(AERON_COUNTER_NOT_FREE_TO_REUSE, deadline);

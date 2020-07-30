@@ -41,8 +41,9 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    buffer_t m_srcBuffer;
+    buffer_t m_buffer = {};
+    buffer_t m_srcBuffer = {};
+
 };
 
 TEST_F(BroadcastTransmitterTest, shouldCalculateCapacityForBuffer)

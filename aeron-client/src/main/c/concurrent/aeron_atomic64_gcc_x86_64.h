@@ -106,11 +106,10 @@ inline void aeron_acquire()
 
 inline void aeron_release()
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
     volatile int64_t dummy = 0;
+    (void)dummy;
 }
-#pragma GCC diagnostic pop
+
 
 /*-------------------------------------
  *  Alignment

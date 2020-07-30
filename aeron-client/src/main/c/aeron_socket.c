@@ -217,6 +217,9 @@ int getifaddrs(struct ifaddrs **ifap)
                             0xff : (ULONG)((0xffU << (8 - i)) & 0xffU);
                     }
                     break;
+
+                default:
+                    break;
             }
         }
     }

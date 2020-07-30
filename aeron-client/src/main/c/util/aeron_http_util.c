@@ -255,7 +255,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
         return -1;
     }
 
-    bool is_ipv6 = (AF_INET6 == parsed_url.address.ss_family);
+    bool is_ipv6 = AF_INET6 == parsed_url.address.ss_family;
     socklen_t addr_len = is_ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
 
     if (connect(sock, (struct sockaddr *)&parsed_url.address, addr_len) < 0)

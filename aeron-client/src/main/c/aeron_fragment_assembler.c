@@ -55,7 +55,7 @@ int aeron_buffer_builder_find_suitable_capacity(size_t current_capacity, size_t 
 
         if (new_capacity > AERON_BUFFER_BUILDER_MAX_CAPACITY)
         {
-            if (capacity == AERON_BUFFER_BUILDER_MAX_CAPACITY)
+            if (AERON_BUFFER_BUILDER_MAX_CAPACITY == capacity)
             {
                 errno = EINVAL;
                 aeron_set_err(EINVAL, "max capacity reached: %" PRId32, AERON_BUFFER_BUILDER_MAX_CAPACITY);

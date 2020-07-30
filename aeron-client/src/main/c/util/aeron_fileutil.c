@@ -30,13 +30,12 @@
 #include "aeron_fileutil.h"
 
 #if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
-#include <WinSock2.h>
+
 #include <windows.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <io.h>
 #include <direct.h>
-#include <process.h>
 
 #define PROT_READ  1
 #define PROT_WRITE 2
@@ -115,14 +114,18 @@ int aeron_mkdir(const char *path, int permission)
 
 int64_t aeron_file_length(const char *path)
 {
-    WIN32_FILE_ATTRIBUTE_DATA info;
+    WIN32_FILE_ATTRIBUTE_DATA fad;
 
-    if (GetFileAttributesEx(path, GetFileExInfoStandard, &info) == 0)
+    if (GetFileAttributesEx(path, GetFileExInfoStandard, &fad) == 0)
     {
         return -1;
     }
 
-    return ((int64_t)info.nFileSizeHigh << 32) | (info.nFileSizeLow);
+    LARGE_INTEGER file_size;
+    file_size.LowPart = fad.nFileSizeLow;
+    file_size.HighPart = fad.nFileSizeHigh;
+
+    return file_size.QuadPart;
 }
 
 uint64_t aeron_usable_fs_space(const char *path)
@@ -407,10 +410,11 @@ int aeron_map_raw_log(
     uint64_t term_length,
     uint64_t page_size)
 {
-    int fd, result = -1;
+    int result = -1;
     uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) >= 0)
+    int fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    if (fd >= 0)
     {
         if (aeron_ftruncate(fd, (off_t)log_length) >= 0)
         {

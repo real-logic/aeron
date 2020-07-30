@@ -467,7 +467,7 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
         {
             aeron_image_t *image = resource->resource.image;
 
-            if (image->removal_change_number != INT64_MIN)
+            if (INT64_MIN != image->removal_change_number)
             {
                 if (!aeron_image_is_in_use_by_subscription(
                     image, aeron_subscription_last_image_list_change_number(image->subscription)))
@@ -794,7 +794,7 @@ int aeron_client_conductor_linger_or_delete_all_images(
 
             if (subscription == lingering_image->subscription)
             {
-                if (lingering_image->removal_change_number != INT64_MIN)
+                if (INT64_MIN != lingering_image->removal_change_number)
                 {
                     aeron_image_decr_refcnt(lingering_image);
                     lingering_image->subscription = NULL;

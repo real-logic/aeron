@@ -46,15 +46,14 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *rin
     int64_t tail = 0;
     size_t tail_index = 0;
     size_t padding = 0;
-    size_t to_buffer_end_length = 0;
 
     AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_cache_position);
 
     do
     {
-        int32_t available_capacity = 0;
         AERON_GET_VOLATILE(tail, ring_buffer->descriptor->tail_position);
 
+        int32_t available_capacity;
         available_capacity = (int32_t)ring_buffer->capacity - (int32_t)(tail - head);
 
         if ((int32_t)required_capacity > available_capacity)
@@ -71,7 +70,7 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *rin
 
         padding = 0;
         tail_index = (size_t)(tail & mask);
-        to_buffer_end_length = ring_buffer->capacity - tail_index;
+        size_t to_buffer_end_length = ring_buffer->capacity - tail_index;
 
         if (required_capacity > to_buffer_end_length)
         {
@@ -119,7 +118,6 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
 {
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
-    int32_t record_index = 0;
     aeron_rb_write_result_t result = AERON_RB_FULL;
 
     if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
@@ -127,7 +125,7 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
         return AERON_RB_ERROR;
     }
 
-    record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
+    int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
 
     if (-1 != record_index)
     {
@@ -158,12 +156,10 @@ size_t aeron_mpsc_rb_read(
 
     while ((bytes_read < contiguous_block_length) && (messages_read < message_count_limit))
     {
-        aeron_rb_record_descriptor_t *header = NULL;
         const size_t record_index = head_index + bytes_read;
-        int32_t record_length = 0;
-        int32_t msg_type_id = 0;
+        aeron_rb_record_descriptor_t *header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
 
-        header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+        int32_t record_length;
         AERON_GET_VOLATILE(record_length, header->length);
 
         if (record_length <= 0)
@@ -172,7 +168,7 @@ size_t aeron_mpsc_rb_read(
         }
 
         bytes_read += AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
-        msg_type_id = header->msg_type_id;
+        int32_t msg_type_id = header->msg_type_id;
 
         if (AERON_RB_PADDING_MSG_TYPE_ID == msg_type_id)
         {
@@ -199,7 +195,7 @@ size_t aeron_mpsc_rb_read(
 
 int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer)
 {
-    int64_t result = 0;
+    int64_t result;
     AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
     return result;
 }
@@ -211,7 +207,7 @@ void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer
 
 int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(volatile aeron_mpsc_rb_t *ring_buffer)
 {
-    int64_t value = 0;
+    int64_t value;
     AERON_GET_VOLATILE(value, ring_buffer->descriptor->consumer_heartbeat);
     return value;
 }
@@ -240,23 +236,20 @@ inline static bool scan_back_to_confirm_still_zeroed(const uint8_t *buffer, size
 
 bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
 {
-    const size_t mask = ring_buffer->capacity - 1;
     int64_t head;
-    int64_t tail;
-    size_t consumer_index;
-    size_t producer_index;
-    bool unblocked = false;
-
     AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
+    int64_t tail;
     AERON_GET_VOLATILE(tail, ring_buffer->descriptor->tail_position);
-
-    consumer_index = (size_t)(head & mask);
-    producer_index = (size_t)(tail & mask);
 
     if (head == tail)
     {
         return false;
     }
+
+    bool unblocked = false;
+    const size_t mask = ring_buffer->capacity - 1;
+    size_t consumer_index = (size_t)(head & mask);
+    size_t producer_index = (size_t)(tail & mask);
 
     int32_t length;
     aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + consumer_index);

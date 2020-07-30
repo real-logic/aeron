@@ -98,14 +98,12 @@ inline bool aeron_cmpxchg32(volatile int32_t *destination, int32_t expected, int
     return original == expected;
 }
 
-/* loadFence */
 inline void aeron_acquire()
 {
     volatile int64_t *dummy;
     __asm__ volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
 }
 
-/* storeFence */
 inline void aeron_release()
 {
 #pragma GCC diagnostic push
@@ -113,16 +111,6 @@ inline void aeron_release()
     volatile int64_t dummy = 0;
 }
 #pragma GCC diagnostic pop
-
-#define AERON_CMPXCHG32(original, dst, expected, desired) \
-do \
-{ \
-    asm volatile( \
-        "lock; cmpxchgl %2, %1" \
-        : "=a"(original), "+m"(dst) \
-        : "q"(desired), "0"(expected)); \
-} \
-while (false)
 
 /*-------------------------------------
  *  Alignment

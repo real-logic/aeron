@@ -28,7 +28,7 @@
 do \
 { \
     dst = src; \
-    _ReadBarrier(); \
+    _ReadWriteBarrier(); \
 } \
 while (false)
 
@@ -53,20 +53,20 @@ while (false)
 #define AERON_GET_AND_ADD_INT64(original, current, value) \
 do \
 { \
-    original = InterlockedAdd64((long long volatile *)&current, (long long)value) - value; \
+    original = _InlineInterlockedAdd64((long long volatile *)&current, (long long)value) - value; \
 } \
 while (false)
 
 #define AERON_GET_AND_ADD_INT32(original, current, value) \
 do \
 { \
-    original = InterlockedAdd((long volatile *)&current, (long)value) - value; \
+    original = _InlineInterlockedAdd((long volatile *)&current, (long)value) - value; \
 } \
 while (false)
 
 inline bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int64_t desired)
 {
-    int64_t original = InterlockedCompareExchange64(
+    int64_t original = _InterlockedCompareExchange64(
         (long long volatile*)destination, (long long)desired, (long long)expected);
 
     return original == expected;
@@ -74,7 +74,7 @@ inline bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int
 
 inline bool aeron_cmpxchgu64(volatile uint64_t *destination, uint64_t expected, uint64_t desired)
 {
-    uint64_t original = InterlockedCompareExchange64(
+    uint64_t original = _InterlockedCompareExchange64(
         (long long volatile*)destination, (long long)desired, (long long)expected);
 
     return original == expected;
@@ -87,29 +87,15 @@ inline bool aeron_cmpxchg32(volatile int32_t *destination, int32_t expected, int
     return original == expected;
 }
 
-/* loadFence */
 inline void aeron_acquire()
 {
-    volatile LONG dummy;
-    //__asm volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
-    InterlockedDecrementAcquire(&dummy);
+    _ReadWriteBarrier();
 }
 
-/* storeFence */
 inline void aeron_release()
 {
-#pragma warning(push)
-#pragma warning(disable: 4189) // 'dummy': local variable is initialized but not referenced
-    volatile int64_t dummy = 0;
-#pragma warning(pop)
+    _ReadWriteBarrier();
 }
-
-#define AERON_CMPXCHG32(original, dst, expected, desired) \
-do \
-{ \
-    original = InterlockedCompareExchange32(dst, desired, expected); \
-} \
-while (false)
 
 #define AERON_DECL_ALIGNED(declaration, amt) __declspec(align(amt))  declaration
 

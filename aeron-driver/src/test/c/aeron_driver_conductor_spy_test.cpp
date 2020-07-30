@@ -142,7 +142,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id = response->session_id;
                     log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
             .WillOnce(
@@ -187,7 +187,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionWithTagThenAdd
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id = response->session_id;
                     log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
             .WillOnce(
@@ -228,7 +228,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id = response->session_id;
                     log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
             .With(IsSubscriptionReady(sub_id));
@@ -272,7 +272,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id = response->session_id;
                     log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
             .With(IsSubscriptionReady(sub_id));
@@ -323,7 +323,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
                 aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                 session_id = response->session_id;
                 log_file_name
-                    .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                    .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
             });
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
         .Times(2)
@@ -378,7 +378,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id_1 = response->session_id;
                     log_file_name_1
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
             .WillOnce(
@@ -394,7 +394,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id_2 = response->session_id;
                     log_file_name_2
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
             .WillOnce(
@@ -440,7 +440,7 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id = response->session_id;
                     log_file_name
-                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        .append((char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                 });
         EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_AVAILABLE_IMAGE, _, _))
             .WillOnce(
@@ -457,7 +457,7 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
                     aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(buffer);
                     session_id = response->session_id;
                     std::string response_log_file_name(
-                        (char *)buffer + sizeof(aeron_publication_buffers_ready_t), response->log_file_length);
+                        (char *)buffer + sizeof(aeron_publication_buffers_ready_t), (size_t)response->log_file_length);
                     EXPECT_EQ(pub_id_2, response->correlation_id);
                     EXPECT_EQ(pub_id_1, response->registration_id);
                     EXPECT_EQ(log_file_name, response_log_file_name);

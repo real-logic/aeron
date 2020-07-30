@@ -110,6 +110,9 @@ int aeron_test_udp_channel_transport_sendmsg(
         case AERON_HDR_TYPE_RTTM:
             state->rttm_count++;
             break;
+
+        default:
+            break;
     }
 
     return 0;

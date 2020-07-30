@@ -348,7 +348,7 @@ public:
         cmd->correlated.correlation_id = correlation_id;
         cmd->stream_id = stream_id;
         cmd->channel_length = (int32_t)strlen(channel);
-        memcpy(m_command_buffer + sizeof(aeron_publication_command_t), channel, cmd->channel_length);
+        memcpy(m_command_buffer + sizeof(aeron_publication_command_t), channel, (size_t)cmd->channel_length);
 
         return writeCommand(msg_type_id, sizeof(aeron_publication_command_t) + cmd->channel_length);
     }
@@ -384,7 +384,7 @@ public:
         cmd->stream_id = stream_id;
         cmd->registration_correlation_id = -1;
         cmd->channel_length = (int32_t)strlen(channel);
-        memcpy(m_command_buffer + sizeof(aeron_subscription_command_t), channel, cmd->channel_length);
+        memcpy(m_command_buffer + sizeof(aeron_subscription_command_t), channel, (size_t)cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, sizeof(aeron_subscription_command_t) + cmd->channel_length);
     }
@@ -467,7 +467,7 @@ public:
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = publication_registration_id;
         cmd->channel_length = (int32_t)strlen(channel);
-        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, (size_t)cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_ADD_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
@@ -480,7 +480,7 @@ public:
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = subscription_id;
         cmd->channel_length = (int32_t)strlen(channel);
-        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, (size_t)cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_ADD_RCV_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
@@ -493,7 +493,7 @@ public:
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = subscription_id;
         cmd->channel_length = (int32_t)strlen(channel);
-        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, (size_t)cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_REMOVE_RCV_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
@@ -507,7 +507,7 @@ public:
         cmd->correlated.correlation_id = correlation_id;
         cmd->registration_id = publication_registration_id;
         cmd->channel_length = (int32_t)strlen(channel);
-        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, cmd->channel_length);
+        memcpy(m_command_buffer + sizeof(aeron_destination_command_t), channel, (size_t)cmd->channel_length);
 
         return writeCommand(AERON_COMMAND_REMOVE_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
@@ -716,7 +716,7 @@ MATCHER_P5(
     const char *response_log_file_name;
     int32_t log_file_name_length;
     aeron_publication_buffers_ready_get_log_file_name(response, &response_log_file_name, &log_file_name_length);
-    std::string log_file_name_str = std::string(response_log_file_name, log_file_name_length);
+    std::string log_file_name_str = std::string(response_log_file_name, (size_t)log_file_name_length);
 
     result &= testing::Value(log_file_name_str, log_file_name);
 
@@ -789,8 +789,8 @@ MATCHER_P6(
     int32_t response_source_identity_length;
     const char *response_source_identity;
     aeron_image_buffers_ready_get_source_identity(response, &response_source_identity, &response_source_identity_length);
-    const std::string str_log_file_name = std::string(response_log_file_name, response_log_file_name_length);
-    const std::string str_source_identity = std::string(response_source_identity, response_source_identity_length);
+    const std::string str_log_file_name = std::string(response_log_file_name, (size_t)response_log_file_name_length);
+    const std::string str_source_identity = std::string(response_source_identity, (size_t)response_source_identity_length);
 
     result &= 0 == std::string(log_file_name).compare(str_log_file_name);
     result &= 0 == std::string(source_identity).compare(str_source_identity);
@@ -835,8 +835,8 @@ MATCHER_P5(
     int32_t response_source_identity_length;
     const char *response_source_identity;
     aeron_image_buffers_ready_get_source_identity(arg, &response_source_identity, &response_source_identity_length);
-    const std::string str_log_file_name = std::string(response_log_file_name, response_log_file_name_length);
-    const std::string str_source_identity = std::string(response_source_identity, response_source_identity_length);
+    const std::string str_log_file_name = std::string(response_log_file_name, (size_t)response_log_file_name_length);
+    const std::string str_source_identity = std::string(response_source_identity, (size_t)response_source_identity_length);
 
     result &= 0 == log_file_name.compare(str_log_file_name);
     result &= 0 == source_identity.compare(str_source_identity);
@@ -877,7 +877,7 @@ MATCHER_P4(
     int32_t response_channel_len;
     const char *response_channel;
     aeron_image_message_get_channel(response, &response_channel, &response_channel_len);
-    const std::string str_channel = std::string(response_channel, response_channel_len);
+    const std::string str_channel = std::string(response_channel, (size_t)response_channel_len);
 
     result &= 0 == std::string(channel).compare(str_channel);
 

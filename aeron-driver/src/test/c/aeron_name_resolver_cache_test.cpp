@@ -91,6 +91,7 @@ TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
         {
             cache_addr.address[j] = rand();
         }
+
         cache_addr.port = rand();
 
         aeron_name_resolver_cache_add_or_update(&m_cache, name, strlen(name), &cache_addr, now_ms, &m_counter);

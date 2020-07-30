@@ -165,7 +165,7 @@ public:
     int poll(aeron_subscription_t *subscription, poll_handler_t &handler, int fragment_limit)
     {
         m_poll_handler = handler;
-        return aeron_subscription_poll(subscription, poll_handler, this, fragment_limit);
+        return aeron_subscription_poll(subscription, poll_handler, this, (size_t)fragment_limit);
     }
 
     static void onUnavailableImage(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)

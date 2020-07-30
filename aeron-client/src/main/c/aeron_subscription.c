@@ -97,7 +97,8 @@ void aeron_subscription_force_close(aeron_subscription_t *subscription)
     AERON_PUT_ORDERED(subscription->is_closed, true);
 }
 
-int aeron_subscription_close(aeron_subscription_t *subscription)
+int aeron_subscription_close(
+    aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd)
 {
     if (NULL != subscription)
     {
@@ -107,7 +108,8 @@ int aeron_subscription_close(aeron_subscription_t *subscription)
         if (!is_closed)
         {
             AERON_PUT_ORDERED(subscription->is_closed, true);
-            if (aeron_client_conductor_async_close_subscription(subscription->conductor, subscription) < 0)
+            if (aeron_client_conductor_async_close_subscription(
+                subscription->conductor, subscription, on_close_complete, on_close_complete_clientd) < 0)
             {
                 return -1;
             }

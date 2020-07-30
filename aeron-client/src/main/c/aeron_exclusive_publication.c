@@ -105,7 +105,10 @@ void aeron_exclusive_publication_force_close(aeron_exclusive_publication_t *publ
     AERON_PUT_ORDERED(publication->is_closed, true);
 }
 
-int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication)
+int aeron_exclusive_publication_close(
+    aeron_exclusive_publication_t *publication,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd)
 {
     if (NULL != publication)
     {
@@ -115,7 +118,8 @@ int aeron_exclusive_publication_close(aeron_exclusive_publication_t *publication
         if (!is_closed)
         {
             AERON_PUT_ORDERED(publication->is_closed, true);
-            if (aeron_client_conductor_async_close_exclusive_publication(publication->conductor, publication) < 0)
+            if (aeron_client_conductor_async_close_exclusive_publication(
+                publication->conductor, publication, on_close_complete, on_close_complete_clientd) < 0)
             {
                 return -1;
             }

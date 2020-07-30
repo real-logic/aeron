@@ -156,6 +156,7 @@ typedef struct aeron_client_conductor_stct
 
     aeron_int64_to_ptr_hash_map_t log_buffer_by_id_map;
     aeron_int64_to_ptr_hash_map_t resource_by_id_map;
+    aeron_int64_to_ptr_hash_map_t image_by_id_map;
 
     struct available_counter_handlers_stct
     {
@@ -250,12 +251,18 @@ void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item);
 int aeron_client_conductor_async_add_publication(
     aeron_async_add_publication_t **async, aeron_client_conductor_t *conductor, const char *uri, int32_t stream_id);
 int aeron_client_conductor_async_close_publication(
-    aeron_client_conductor_t *conductor, aeron_publication_t *publication);
+    aeron_client_conductor_t *conductor,
+    aeron_publication_t *publication,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd);
 
 int aeron_client_conductor_async_add_exclusive_publication(
     aeron_async_add_exclusive_publication_t **async, aeron_client_conductor_t *conductor, const char *uri, int32_t stream_id);
 int aeron_client_conductor_async_close_exclusive_publication(
-    aeron_client_conductor_t *conductor, aeron_exclusive_publication_t *publication);
+    aeron_client_conductor_t *conductor,
+    aeron_exclusive_publication_t *publication,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd);
 
 int aeron_client_conductor_async_add_subscription(
     aeron_async_add_subscription_t **async,
@@ -267,7 +274,10 @@ int aeron_client_conductor_async_add_subscription(
     aeron_on_unavailable_image_t on_unavailable_image_handler,
     void *on_unavailable_image_clientd);
 int aeron_client_conductor_async_close_subscription(
-    aeron_client_conductor_t *conductor, aeron_subscription_t *subscription);
+    aeron_client_conductor_t *conductor,
+    aeron_subscription_t *subscription,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd);
 
 int aeron_client_conductor_async_add_counter(
     aeron_async_add_counter_t **async,
@@ -277,7 +287,11 @@ int aeron_client_conductor_async_add_counter(
     size_t key_buffer_length,
     const char *label_buffer,
     size_t label_buffer_length);
-int aeron_client_conductor_async_close_counter(aeron_client_conductor_t *conductor, aeron_counter_t *counter);
+int aeron_client_conductor_async_close_counter(
+    aeron_client_conductor_t *conductor,
+    aeron_counter_t *counter,
+    aeron_notification_t on_close_complete,
+    void *on_close_complete_clientd);
 
 int aeron_client_conductor_async_handler(aeron_client_conductor_t *conductor, aeron_client_handler_cmd_t *cmd);
 

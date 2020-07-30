@@ -41,7 +41,7 @@ do \
 { \
     __asm__ volatile("" ::: "memory"); \
     dst = src; \
-    __asm__ volatile("" ::: "memory"); \
+    __asm__ volatile("lock; addl $0, 0(%%rsp)" ::: "cc", "memory"); \
 } \
 while (false)
 

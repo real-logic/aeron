@@ -678,7 +678,6 @@ int aeron_image_block_poll(
         }
 
         aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-        scan_offset += aligned_frame_length;
 
         if (AERON_HDR_TYPE_PAD == frame->frame_header.type)
         {

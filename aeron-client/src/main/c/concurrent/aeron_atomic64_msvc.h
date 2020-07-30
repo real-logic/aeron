@@ -35,7 +35,7 @@ while (false)
 #define AERON_PUT_ORDERED(dst, src) \
 do \
 { \
-    _WriteBarrier(); \
+    _ReadWriteBarrier(); \
     dst = src; \
 } \
 while (false)
@@ -43,7 +43,7 @@ while (false)
 #define AERON_PUT_VOLATILE(dst, src) \
 do \
 { \
-    _WriteBarrier(); \
+    _ReadWriteBarrier(); \
     dst = src; \
     _ReadWriteBarrier(); \
     MemoryBarrier(); \

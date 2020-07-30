@@ -18,10 +18,10 @@
 #define AERON_ATOMIC64_MSVC_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <WinSock2.h>
 #include <windows.h>
 #include <winnt.h>
-#include <stdint.h>
 #include <intrin.h>
 
 #define AERON_GET_VOLATILE(dst, src) \
@@ -53,18 +53,18 @@ while (false)
 #define AERON_GET_AND_ADD_INT64(original, current, value) \
 do \
 { \
-    original = InterlockedAdd64((long long volatile*)&current, (long long)value) - value; \
+    original = InterlockedAdd64((long long volatile *)&current, (long long)value) - value; \
 } \
 while (false)
 
 #define AERON_GET_AND_ADD_INT32(original, current, value) \
 do \
 { \
-    original = InterlockedAdd((long volatile*)&current, (long)value) - value; \
+    original = InterlockedAdd((long volatile *)&current, (long)value) - value; \
 } \
 while (false)
 
-inline bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int64_t desired)
+inline bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int64_t desired)
 {
     int64_t original = InterlockedCompareExchange64(
         (long long volatile*)destination, (long long)desired, (long long)expected);
@@ -72,7 +72,7 @@ inline bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int
     return original == expected;
 }
 
-inline bool aeron_cmpxchgu64(volatile uint64_t* destination, uint64_t expected, uint64_t desired)
+inline bool aeron_cmpxchgu64(volatile uint64_t *destination, uint64_t expected, uint64_t desired)
 {
     uint64_t original = InterlockedCompareExchange64(
         (long long volatile*)destination, (long long)desired, (long long)expected);
@@ -80,10 +80,9 @@ inline bool aeron_cmpxchgu64(volatile uint64_t* destination, uint64_t expected, 
     return original == expected;
 }
 
-inline bool aeron_cmpxchg32(volatile int32_t* destination, int32_t expected, int32_t desired)
+inline bool aeron_cmpxchg32(volatile int32_t *destination, int32_t expected, int32_t desired)
 {
-    int32_t original = _InterlockedCompareExchange(
-        (long volatile*)destination, (long)desired, (long)expected);
+    int32_t original = _InterlockedCompareExchange((long volatile*)destination, (long)desired, (long)expected);
 
     return original == expected;
 }

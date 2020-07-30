@@ -43,7 +43,7 @@ int aeron_broadcast_transmitter_init(volatile aeron_broadcast_transmitter_t *tra
 
 inline static void signal_tail_intent(aeron_broadcast_descriptor_t *descriptor, int64_t new_tail)
 {
-    descriptor->tail_intent_counter = new_tail;
+    AERON_PUT_ORDERED(descriptor->tail_intent_counter, new_tail);
     aeron_release();  /* storeFence */
 }
 

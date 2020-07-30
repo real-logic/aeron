@@ -41,7 +41,7 @@ public:
 
     ~AtomicCounter()
     {
-        aeron_counter_close(m_counter);
+        aeron_counter_close(m_counter, NULL, NULL);
     }
 
     inline std::int32_t id() const

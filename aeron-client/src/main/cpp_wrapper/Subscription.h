@@ -43,9 +43,17 @@ private:
         m_onAvailableImage(onAvailableImage),
         m_onUnavailableImage(onUnavailableImage)
     {}
+
     aeron_async_add_subscription_t *m_async;
     const on_available_image_t m_onAvailableImage;
     const on_unavailable_image_t m_onUnavailableImage;
+
+public:
+    void static remove(void *clientd)
+    {
+        AsyncAddSubscription *addSubscription = static_cast<AsyncAddSubscription *>(clientd);
+        delete addSubscription;
+    }
 };
 
 /**
@@ -86,11 +94,7 @@ public:
     /// @endcond
     ~Subscription()
     {
-        delete m_addSubscription;
-        if (aeron_subscription_close(m_subscription) < 0)
-        {
-            // TODO: What should happen here???
-        }
+        aeron_subscription_close(m_subscription, AsyncAddSubscription::remove, m_addSubscription);
     }
 
     /**
@@ -249,10 +253,13 @@ public:
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_subscription_controlled_poll(
             m_subscription, doControlledPoll<handler_type>, handler_ptr, fragmentLimit);
+
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        return numFragments;
     }
 
     /**
@@ -382,47 +389,6 @@ public:
         }
 
         return hasImage;
-    }
-
-    Image::array_t addImage(std::shared_ptr<Image> image)
-    {
-        throw UnsupportedOperationException("Need to support images", SOURCEINFO);
-//        return m_imageArray.addElement(std::move(image)).first;
-    }
-
-    std::pair<Image::array_t, std::size_t> removeImage(std::int64_t correlationId)
-    {
-        throw UnsupportedOperationException("Need to support images", SOURCEINFO);
-//        auto result = m_imageArray.removeElement(
-//            [&](const std::shared_ptr<Image> &image)
-//            {
-//                if (image->correlationId() == correlationId)
-//                {
-//                    image->close();
-//                    return true;
-//                }
-//
-//                return false;
-//            });
-//
-//        return result;
-    }
-
-    std::pair<Image::array_t, std::size_t> closeAndRemoveImages()
-    {
-        throw UnsupportedOperationException("Need to support images", SOURCEINFO);
-//        aeron_subscription_close(m_subscription);
-//        if (!m_isClosed.exchange(true))
-//        {
-//            std::pair<Image::array_t, std::size_t> imageArrayPair = m_imageArray.load();
-//            m_imageArray.store(new std::shared_ptr<Image>[0], 0);
-//
-//            return imageArrayPair;
-//        }
-//        else
-//        {
-//            return { nullptr, 0 };
-//        }
     }
     /// @endcond
 

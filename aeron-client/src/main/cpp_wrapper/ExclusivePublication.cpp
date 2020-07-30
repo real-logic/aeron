@@ -23,7 +23,7 @@ namespace aeron {
 
 ExclusivePublication::~ExclusivePublication()
 {
-    aeron_exclusive_publication_close(m_publication);
+    aeron_exclusive_publication_close(m_publication, NULL, NULL);
 }
 
 void ExclusivePublication::addDestination(const std::string& endpointChannel)

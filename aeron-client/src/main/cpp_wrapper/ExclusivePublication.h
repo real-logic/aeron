@@ -490,7 +490,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
-        aeron_exclusive_publication_close(m_publication);
+        aeron_exclusive_publication_close(m_publication, NULL, NULL);
     }
     /// @endcond
 

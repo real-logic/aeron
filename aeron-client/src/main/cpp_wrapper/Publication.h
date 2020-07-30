@@ -476,7 +476,13 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        bufferClaim.wrap(temp_claim.data, static_cast<index_t>(temp_claim.length));
+
+        // TODO: Ideally we wouldn't need the DataFrameHeader code, but the C versions are not exposed.
+        // TODO: Figure what the best implementation would be here...
+        // Also this is slight cheat, we are assuming that the frame_header and data pointers index into the same
+        // contiguous block of memory.
+        bufferClaim.wrap(temp_claim.frame_header, DataFrameHeader::LENGTH + length);
+
         return position;
     }
 
@@ -516,13 +522,6 @@ public:
      * @return true for added or false if not.
      */
     bool findDestinationResponse(std::int64_t correlationId);
-
-    /// @cond HIDDEN_SYMBOLS
-    inline void close()
-    {
-        aeron_publication_close(m_publication);
-    }
-    /// @endcond
 
 private:
     aeron_publication_t *m_publication;

@@ -98,6 +98,11 @@ protected:
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
 
+        int64_t hour_in_ms = INT64_C(3600) * 1000;
+        aeron_driver_context_set_driver_timeout_ms(m_context, hour_in_ms);
+        aeron_driver_context_set_client_liveness_timeout_ns(m_context, hour_in_ms * 1000000);
+        aeron_driver_context_set_image_liveness_timeout_ns(m_context, hour_in_ms * 1000000);
+
         if (aeron_driver_init(&m_driver, m_context) < 0)
         {
             fprintf(stderr, "ERROR: driver init (%d) %s\n", aeron_errcode(), aeron_errmsg());

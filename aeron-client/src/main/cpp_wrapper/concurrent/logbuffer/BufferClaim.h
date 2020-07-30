@@ -43,13 +43,6 @@ public:
     }
     /// @endcond
 
-    /// @cond HIDDEN_SYMBOLS
-    inline void wrap(AtomicBuffer& buffer, util::index_t offset, util::index_t length)
-    {
-        m_buffer.wrap(buffer.buffer() + offset, static_cast<size_t>(length));
-    }
-    /// @endcond
-
 
     /**
      * The referenced buffer to be used.

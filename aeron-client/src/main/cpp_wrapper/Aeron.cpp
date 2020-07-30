@@ -24,28 +24,29 @@ extern "C"
 namespace aeron
 {
 
-static aeron_t *init_aeron(aeron_context_t *context)
-{
-    aeron_t *aeron;
-    if (aeron_init(&aeron, context) < 0)
-    {
-        AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-    }
-    return aeron;
-}
-
 Aeron::Aeron(Context &context) :
     m_context(context.conclude()),
-    m_aeron(init_aeron(context.m_context)),
+    m_aeron(init_aeron(m_context)),
     m_countersReader(aeron_counters_reader(m_aeron))
 {
-    m_context.attachCallbacksToContext();
     aeron_start(m_aeron);
 }
 
 Aeron::~Aeron()
 {
     aeron_close(m_aeron);
+    aeron_context_close(m_context.m_context);
+}
+
+aeron_t *Aeron::init_aeron(Context &context)
+{
+    aeron_t *aeron;
+    context.attachCallbacksToContext();
+    if (aeron_init(&aeron, context.m_context) < 0)
+    {
+        AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+    }
+    return aeron;
 }
 
 std::int64_t Aeron::addPublication(const std::string &channel, std::int32_t streamId)

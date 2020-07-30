@@ -476,6 +476,7 @@ public:
         }
         else
         {
+            addSubscription->m_async = nullptr;
             return std::make_shared<Subscription>(subscription, addSubscription, m_countersReader);
         }
     }
@@ -772,6 +773,8 @@ private:
     std::unordered_map<std::int64_t, AsyncAddCounter *> m_pendingCounters;
     std::recursive_mutex m_adminLock;
 
+    static aeron_t *init_aeron(Context &context);
+
     static void onAvailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
         on_available_image_t& callback = *static_cast<on_available_image_t *>(clientd);
@@ -808,7 +811,6 @@ private:
         callback();
     }
 };
-
 }
 
 #endif

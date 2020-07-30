@@ -54,7 +54,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
-        aeron_counter_close(counter());
+        aeron_counter_close(counter(), NULL, NULL);
     }
     /// @endcond
 

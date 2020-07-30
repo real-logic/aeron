@@ -25,9 +25,10 @@ extern "C"
 
 namespace aeron
 {
+
 Publication::~Publication()
 {
-    aeron_publication_close(m_publication);
+    aeron_publication_close(m_publication, NULL, NULL);
     // TODO: How should cleanup occur here?
 }
 

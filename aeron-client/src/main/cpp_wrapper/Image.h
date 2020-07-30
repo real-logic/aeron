@@ -89,7 +89,7 @@ static aeron_controlled_fragment_handler_action_t doControlledPoll(
     H &handler = *reinterpret_cast<H *>(clientd);
     AtomicBuffer atomicBuffer(const_cast<uint8_t *>(buffer), length);
     Header headerWrapper(header, nullptr);
-    ControlledPollAction action = handler(atomicBuffer, 0, static_cast<int32_t>(length), header);
+    ControlledPollAction action = handler(atomicBuffer, 0, static_cast<int32_t>(length), headerWrapper);
     switch (action)
     {
         case ControlledPollAction::ABORT:

@@ -18,7 +18,7 @@
 #define AERON_UDP_PROTOCOL_H
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 #pragma pack(push)
 #pragma pack(4)

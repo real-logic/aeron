@@ -25,7 +25,6 @@
 #include "aeron_windows.h"
 #endif
 
-#include "media/aeron_udp_channel_transport.h"
 #include "aeron_driver_conductor.h"
 
 #define AERON_UDP_TRANSPORT_POLLER_ITERATION_THRESHOLD (5)

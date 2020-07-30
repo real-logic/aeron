@@ -19,7 +19,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
 #include <errno.h>
 #include <inttypes.h>
 #include "protocol/aeron_udp_protocol.h"
@@ -28,10 +27,7 @@
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
-#include "aeronmd.h"
 #include "media/aeron_udp_channel.h"
-#include "uri/aeron_uri.h"
-#include "concurrent/aeron_atomic.h"
 
 typedef struct aeron_min_flow_control_strategy_receiver_stct
 {

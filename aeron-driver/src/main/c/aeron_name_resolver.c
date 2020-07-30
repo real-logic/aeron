@@ -19,14 +19,12 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
 #include <string.h>
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_dlopen.h"
 #include "aeron_name_resolver.h"
-#include "aeron_driver_context.h"
 
 #ifdef _MSC_VER
 #define strdup _strdup

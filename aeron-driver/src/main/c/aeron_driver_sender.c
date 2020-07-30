@@ -33,7 +33,6 @@ struct mmsghdr
 #include "util/aeron_arrayutil.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_sender.h"
-#include "aeron_driver_conductor_proxy.h"
 
 int aeron_driver_sender_init(
     aeron_driver_sender_t *sender,

@@ -23,8 +23,8 @@
 #include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
-#include "aeron_uri.h"
 #include "aeron_alloc.h"
+#include "aeron_uri.h"
 
 typedef enum aeron_uri_parser_state_enum
 {

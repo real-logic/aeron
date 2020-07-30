@@ -15,7 +15,6 @@
  */
 
 #include <inttypes.h>
-#include <string.h>
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
 #include "aeron_driver_receiver.h"

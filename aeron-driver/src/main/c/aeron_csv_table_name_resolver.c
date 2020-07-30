@@ -26,7 +26,6 @@
 #include "util/aeron_strutil.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_name_resolver.h"
-#include "aeron_driver_context.h"
 
 #ifdef _MSC_VER
 #define strdup _strdup

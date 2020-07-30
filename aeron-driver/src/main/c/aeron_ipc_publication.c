@@ -20,10 +20,8 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
 #include "aeron_ipc_publication.h"
-#include "util/aeron_fileutil.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_conductor.h"
-#include "util/aeron_error.h"
 
 int aeron_ipc_publication_create(
     aeron_ipc_publication_t **publication,

@@ -27,7 +27,6 @@
 #include "util/aeron_arrayutil.h"
 #include "aeron_alloc.h"
 #include "media/aeron_udp_transport_poller.h"
-#include "aeron_send_channel_endpoint.h"
 
 int aeron_udp_transport_poller_init(
     aeron_udp_transport_poller_t *poller,

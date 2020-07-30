@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "concurrent/aeron_atomic.h"
 #include "concurrent/aeron_thread.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"

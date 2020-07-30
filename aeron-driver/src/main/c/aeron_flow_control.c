@@ -22,14 +22,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <media/aeron_udp_channel.h>
-#include "protocol/aeron_udp_protocol.h"
-#include "concurrent/aeron_logbuffer_descriptor.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
-#include "aeron_driver_context.h"
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name)
 {

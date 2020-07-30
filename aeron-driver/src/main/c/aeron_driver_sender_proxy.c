@@ -16,7 +16,6 @@
 
 #include "aeron_driver_sender.h"
 #include "aeron_alloc.h"
-#include "concurrent/aeron_thread.h"
 
 void aeron_driver_sender_proxy_offer(aeron_driver_sender_proxy_t *sender_proxy, void *cmd)
 {

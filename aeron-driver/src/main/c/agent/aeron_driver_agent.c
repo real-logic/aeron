@@ -29,14 +29,12 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
-
 #include <time.h>
 #include <inttypes.h>
+
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_dlopen.h"
-#include "concurrent/aeron_thread.h"
 #include "aeron_windows.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)

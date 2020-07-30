@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_arrayutil.h"
-#include "protocol/aeron_udp_protocol.h"
 #include "aeron_name_resolver_cache.h"
 
 int aeron_name_resolver_cache_init(aeron_name_resolver_cache_t *cache, int64_t timeout_ms)

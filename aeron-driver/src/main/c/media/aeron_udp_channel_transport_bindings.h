@@ -19,7 +19,6 @@
 
 #include "uri/aeron_uri.h"
 #include "aeron_socket.h"
-
 #include "aeron_driver_common.h"
 
 #define AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS (2)

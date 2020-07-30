@@ -17,7 +17,6 @@
 #ifndef AERON_SYSTEM_COUNTERS_H
 #define AERON_SYSTEM_COUNTERS_H
 
-#include <stdint.h>
 #include "concurrent/aeron_counters_manager.h"
 
 typedef enum aeron_system_counter_enum_stct

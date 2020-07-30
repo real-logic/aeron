@@ -17,9 +17,6 @@
 #ifndef AERON_LOSS_DETECTOR_H
 #define AERON_LOSS_DETECTOR_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include <math.h>
 #include "aeron_driver_common.h"
 #include "concurrent/aeron_term_gap_scanner.h"

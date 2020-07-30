@@ -17,7 +17,7 @@
 #ifndef AERON_RECEIVE_CHANNEL_ENDPOINT_H
 #define AERON_RECEIVE_CHANNEL_ENDPOINT_H
 
-#include <collections/aeron_int64_counter_map.h>
+#include "collections/aeron_int64_counter_map.h"
 #include "aeron_data_packet_dispatcher.h"
 #include "aeron_udp_channel.h"
 #include "aeron_udp_channel_transport.h"

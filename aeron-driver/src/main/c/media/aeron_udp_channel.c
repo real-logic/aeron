@@ -22,14 +22,10 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
-#include "aeron_socket.h"
 #include <stdio.h>
-#include <uri/aeron_uri.h>
 #include "aeron_alloc.h"
-#include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "media/aeron_udp_channel.h"
-#include "concurrent/aeron_atomic.h"
 #include "command/aeron_control_protocol.h"
 
 int aeron_ipv4_multicast_control_address(struct sockaddr_in *data_addr, struct sockaddr_in *control_addr)

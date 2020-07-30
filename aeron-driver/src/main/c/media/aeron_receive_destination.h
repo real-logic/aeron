@@ -17,7 +17,6 @@
 #ifndef AERON_AERON_RECEIVE_DESTINATION_H
 #define AERON_AERON_RECEIVE_DESTINATION_H
 
-#include <stdlib.h>
 #include "media/aeron_udp_channel_transport.h"
 #include "media/aeron_udp_channel.h"
 #include "media/aeron_receive_channel_endpoint.h"

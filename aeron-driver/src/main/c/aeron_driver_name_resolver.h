@@ -23,6 +23,8 @@
 #define AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID (14)
 #define AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID (15)
 
+#include "protocol/aeron_udp_protocol.h"
+
 int aeron_driver_name_resolver_set_resolution_header(
     aeron_resolution_header_t *resolution_header,
     size_t capacity,

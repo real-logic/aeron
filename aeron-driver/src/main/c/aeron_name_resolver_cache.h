@@ -17,6 +17,8 @@
 #ifndef AERON_AERON_NAME_RESOLVER_CACHE_H
 #define AERON_AERON_NAME_RESOLVER_CACHE_H
 
+#include "protocol/aeron_udp_protocol.h"
+
 typedef struct aeron_name_resolver_cache_addr_stct
 {
     uint8_t address[AERON_RES_HEADER_ADDRESS_LENGTH_IP6];

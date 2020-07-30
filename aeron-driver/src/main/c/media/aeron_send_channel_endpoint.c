@@ -21,14 +21,10 @@
 
 #include <string.h>
 #include "aeron_socket.h"
-#include <uri/aeron_uri.h>
+#include "uri/aeron_uri.h"
 #include "aeron_driver_sender.h"
-#include "util/aeron_netutil.h"
 #include "aeron_driver_context.h"
-#include "concurrent/aeron_counters_manager.h"
-#include "util/aeron_error.h"
 #include "aeron_alloc.h"
-#include "media/aeron_send_channel_endpoint.h"
 #include "aeron_position.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)

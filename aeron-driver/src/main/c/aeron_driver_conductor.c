@@ -19,20 +19,13 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <errno.h>
-#include "media/aeron_receive_channel_endpoint.h"
-#include "util/aeron_netutil.h"
-#include "util/aeron_error.h"
 #include "util/aeron_math.h"
-#include "media/aeron_send_channel_endpoint.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
-#include "aeron_publication_image.h"
 #include "collections/aeron_bit_set.h"
-#include "concurrent/aeron_logbuffer_unblocker.h"
-#include "aeron_name_resolver.h"
 
 #define STATIC_BIT_SET_U64_LEN (512)
 

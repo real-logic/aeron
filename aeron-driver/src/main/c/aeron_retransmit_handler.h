@@ -17,8 +17,6 @@
 #ifndef AERON_RETRANSMIT_HANDLER_H
 #define AERON_RETRANSMIT_HANDLER_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "aeron_driver_common.h"
 #include "aeronmd.h"

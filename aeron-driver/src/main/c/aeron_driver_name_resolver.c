@@ -21,7 +21,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #if defined(AERON_COMPILER_MSVC)
@@ -31,15 +30,12 @@
 #else
 #include <unistd.h>
 #endif
-#include "protocol/aeron_udp_protocol.h"
+
 #include "util/aeron_error.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_name_resolver.h"
-#include "aeron_driver_context.h"
-#include "media/aeron_udp_channel_transport_bindings.h"
 #include "media/aeron_udp_channel_transport.h"
 #include "media/aeron_udp_transport_poller.h"
-#include "util/aeron_netutil.h"
 #include "aeron_name_resolver_cache.h"
 #include "aeron_driver_name_resolver.h"
 

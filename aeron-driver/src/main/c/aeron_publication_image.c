@@ -17,7 +17,6 @@
 #include <inttypes.h>
 #include "util/aeron_netutil.h"
 #include "util/aeron_arrayutil.h"
-#include "util/aeron_error.h"
 #include "concurrent/aeron_term_rebuilder.h"
 #include "aeron_publication_image.h"
 #include "aeron_driver_receiver_proxy.h"

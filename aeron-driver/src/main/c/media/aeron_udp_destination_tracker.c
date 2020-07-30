@@ -19,7 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include <uri/aeron_uri.h>
+#include "uri/aeron_uri.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_arrayutil.h"

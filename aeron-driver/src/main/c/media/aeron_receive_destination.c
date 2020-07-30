@@ -16,8 +16,8 @@
 
 #include "util/aeron_error.h"
 #include "aeron_driver_receiver.h"
-#include "media/aeron_receive_destination.h"
 #include "aeron_position.h"
+#include "media/aeron_receive_destination.h"
 
 int aeron_receive_destination_create(
     aeron_receive_destination_t **destination,

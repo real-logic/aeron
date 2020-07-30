@@ -18,7 +18,6 @@
 #define AERON_UDP_CHANNEL_TRANSPORT_H
 
 #include "aeron_socket.h"
-
 #include "aeron_driver_common.h"
 #include "aeron_udp_channel_transport_bindings.h"
 

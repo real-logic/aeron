@@ -36,9 +36,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <fcntl.h>
+#include <inttypes.h>
 
 #include "aeron_windows.h"
-#include <inttypes.h>
 #include "util/aeron_error.h"
 #include "aeronmd.h"
 #include "aeron_alloc.h"
@@ -47,7 +47,6 @@
 #include "aeron_driver.h"
 #include "aeron_socket.h"
 #include "util/aeron_dlopen.h"
-#include "aeron_driver_context.h"
 
 void aeron_log_func_stderr(const char *str)
 {

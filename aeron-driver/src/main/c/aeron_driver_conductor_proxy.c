@@ -17,7 +17,6 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver_conductor_proxy.h"
 #include "aeron_alloc.h"
-#include "concurrent/aeron_thread.h"
 #include "aeron_driver_conductor.h"
 
 void aeron_driver_conductor_proxy_offer(aeron_driver_conductor_proxy_t *conductor_proxy, void *cmd)

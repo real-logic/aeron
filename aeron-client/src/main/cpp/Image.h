@@ -801,7 +801,7 @@ public:
     template<typename F>
     inline int blockPoll(F &&blockHandler, int blockLengthLimit)
     {
-        if (!isClosed())
+        if (isClosed())
         {
             return 0;
         }

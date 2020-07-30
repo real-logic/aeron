@@ -55,7 +55,7 @@ do                                               \
     std::int64_t t0 = aeron_epoch_clock();       \
     while (!val)                                 \
     {                                            \
-       ASSERT_LT(aeron_epoch_clock() - t0, 5000); \
+       ASSERT_LT(aeron_epoch_clock() - t0, 5000) << "Failed waiting for: "  << #op; \
        std::this_thread::yield();                \
        val = op;                                 \
     }                                            \
@@ -68,7 +68,7 @@ do                                               \
     std::int64_t t0 = aeron_epoch_clock();       \
     while (!(op))                                \
     {                                            \
-       ASSERT_LT(aeron_epoch_clock() - t0, 10000); \
+       ASSERT_LT(aeron_epoch_clock() - t0, 5000) << "Failed waiting for: " << #op; \
        std::this_thread::yield();                \
     }                                            \
 }                                                \

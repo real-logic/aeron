@@ -402,9 +402,8 @@ public class ArchiveTest
         assertSame(context.dataBuffer(), buffer);
     }
 
-
     @ParameterizedTest
-    @ValueSource(strings = { "0.0.0.0:0", "localhost:0", "localhost:8888" })
+    @ValueSource(strings = { "0.0.0.0:0", "0.0.0.0:11111", "localhost:0", "localhost:8888" })
     public void shouldResolveControlResponseEndpointAddress(final String endpoint)
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

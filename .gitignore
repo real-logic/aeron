@@ -31,6 +31,7 @@ build-local.properties
 build
 cmake-build-debug
 cmake-build-release
+cmake-build-debug-coverage
 
 # cpp build linux
 cppbuild/CMakeCache.txt

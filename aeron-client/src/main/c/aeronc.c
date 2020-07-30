@@ -27,7 +27,6 @@
 #include <errno.h>
 
 #include "aeron_common.h"
-#include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
 #include "aeronc.h"
 #include "aeron_context.h"

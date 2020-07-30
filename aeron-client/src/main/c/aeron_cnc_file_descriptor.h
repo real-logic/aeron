@@ -19,6 +19,9 @@
 
 #include <stdint.h>
 
+#include "util/aeron_bitutil.h"
+#include "concurrent/aeron_atomic.h"
+
 #define AERON_CNC_FILE "cnc.dat"
 
 #pragma pack(push)

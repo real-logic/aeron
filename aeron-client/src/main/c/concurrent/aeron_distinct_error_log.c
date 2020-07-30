@@ -26,7 +26,6 @@
 #include "util/aeron_strutil.h"
 #include "aeron_alloc.h"
 #include "aeron_distinct_error_log.h"
-#include "aeron_atomic.h"
 
 int aeron_distinct_error_log_init(
     aeron_distinct_error_log_t *log,

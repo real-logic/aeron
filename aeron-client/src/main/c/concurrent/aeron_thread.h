@@ -17,10 +17,10 @@
 #ifndef AERON_THREAD_H
 #define AERON_THREAD_H
 
-#include <util/aeron_platform.h>
-
 #include <stdint.h>
 #include <stddef.h>
+
+#include "util/aeron_platform.h"
 
 void aeron_thread_set_name(const char *role_name);
 

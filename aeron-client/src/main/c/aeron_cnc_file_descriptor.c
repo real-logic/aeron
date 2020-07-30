@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include "util/aeron_bitutil.h"
-#include "concurrent/aeron_atomic.h"
 #include "aeron_cnc_file_descriptor.h"
 
 int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)

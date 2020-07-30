@@ -17,9 +17,6 @@
 #ifndef AERON_AGENT_H
 #define AERON_AGENT_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #include "concurrent/aeron_thread.h"
 #include "aeron_common.h"
 #include "concurrent/aeron_atomic.h"

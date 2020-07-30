@@ -17,8 +17,8 @@
 #ifndef AERON_WINDOWS_H
 #define AERON_WINDOWS_H
 
-#include "util/aeron_platform.h"
 #include <stdint.h>
+#include "util/aeron_platform.h"
 
 #if defined(AERON_COMPILER_GCC)
 

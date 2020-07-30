@@ -17,7 +17,8 @@
 #ifndef AERON_SPSC_RB_H
 #define AERON_SPSC_RB_H
 
-#include <concurrent/aeron_rb.h>
+#include "concurrent/aeron_rb.h"
+
 #if !defined(_MSC_VER)
 #include <sys/uio.h>
 #else

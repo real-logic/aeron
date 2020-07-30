@@ -17,7 +17,7 @@
 #ifndef AERON_MPSC_RB_H
 #define AERON_MPSC_RB_H
 
-#include <concurrent/aeron_rb.h>
+#include "concurrent/aeron_rb.h"
 
 typedef struct aeron_mpsc_rb_stct
 {

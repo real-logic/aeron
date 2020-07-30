@@ -24,7 +24,6 @@
 #include <io.h>
 #endif
 
-#include "aeron_windows.h"
 #include "aeron_alloc.h"
 #include "aeron_context.h"
 #include "util/aeron_error.h"

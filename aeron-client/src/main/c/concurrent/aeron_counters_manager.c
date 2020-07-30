@@ -16,10 +16,10 @@
 
 #include <string.h>
 #include <math.h>
-#include <aeron_alloc.h>
 #include <errno.h>
+
+#include "aeron_alloc.h"
 #include "concurrent/aeron_counters_manager.h"
-#include "aeron_atomic.h"
 #include "util/aeron_error.h"
 
 int aeron_counters_manager_init(

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
 #include "aeron_math.h"
 
 extern int32_t aeron_add_wrap_i32(int32_t a, int32_t b);

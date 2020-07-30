@@ -17,8 +17,6 @@
 #include <errno.h>
 
 #include "aeron_subscription.h"
-#include "aeron_alloc.h"
-#include "util/aeron_error.h"
 #include "aeron_image.h"
 
 int aeron_subscription_create(

@@ -17,7 +17,6 @@
 #include <string.h>
 #include <errno.h>
 #include "concurrent/aeron_broadcast_receiver.h"
-#include "aeron_atomic.h"
 #include "util/aeron_error.h"
 
 int aeron_broadcast_receiver_init(volatile aeron_broadcast_receiver_t *receiver, void *buffer, size_t length)

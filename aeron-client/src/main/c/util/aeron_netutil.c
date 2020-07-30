@@ -26,7 +26,6 @@
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_socket.h"
-#include "aeron_windows.h"
 
 #if defined(AERON_COMPILER_GCC)
 

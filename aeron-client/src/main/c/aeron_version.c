@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
 #include <stdint.h>
 
 const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;

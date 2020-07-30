@@ -17,9 +17,9 @@
 #ifndef AERON_NETUTIL_H
 #define AERON_NETUTIL_H
 
-#include "aeron_socket.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include "aeron_socket.h"
 #include "aeron_common.h"
 
 #define AERON_NETUTIL_FORMATTED_MAX_LENGTH (INET6_ADDRSTRLEN + 8)

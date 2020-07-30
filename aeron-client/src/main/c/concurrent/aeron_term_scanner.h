@@ -21,7 +21,6 @@
 #include <stddef.h>
 #include "util/aeron_bitutil.h"
 #include "protocol/aeron_udp_protocol.h"
-#include "aeron_atomic.h"
 #include "aeron_logbuffer_descriptor.h"
 
 inline size_t aeron_term_scanner_scan_for_availability(

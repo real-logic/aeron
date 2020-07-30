@@ -18,7 +18,6 @@
 
 #include "aeron_image.h"
 #include "aeron_alloc.h"
-#include "util/aeron_error.h"
 #include "aeron_log_buffer.h"
 #include "aeron_subscription.h"
 

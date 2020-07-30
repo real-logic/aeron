@@ -31,11 +31,6 @@
 
 #include "aeronc.h"
 #include "aeron_client.h"
-#include "util/aeron_error.h"
-#include "aeron_alloc.h"
-#include "aeron_context.h"
-#include "aeron_cnc_file_descriptor.h"
-#include "concurrent/aeron_counters_manager.h"
 
 inline static int aeron_do_work(void *clientd)
 {

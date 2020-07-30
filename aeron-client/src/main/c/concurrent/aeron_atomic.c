@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <concurrent/aeron_atomic.h>
+#include "concurrent/aeron_atomic.h"
 
 extern bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int64_t desired);
 

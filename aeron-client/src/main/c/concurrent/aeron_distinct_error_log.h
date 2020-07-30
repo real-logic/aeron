@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include <aeron_alloc.h>
+#include "aeron_alloc.h"
 #include "aeronc.h"
 #include "util/aeron_clock.h"
 #include "util/aeron_bitutil.h"

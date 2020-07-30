@@ -18,8 +18,6 @@
 #include <inttypes.h>
 
 #include "aeron_fragment_assembler.h"
-#include "aeron_alloc.h"
-#include "util/aeron_error.h"
 #include "aeron_image.h"
 
 #define AERON_BUFFER_BUILDER_MIN_ALLOCATED_CAPACITY (4096)

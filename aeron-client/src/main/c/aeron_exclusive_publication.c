@@ -20,10 +20,6 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 #include "aeron_exclusive_publication.h"
-#include "aeron_alloc.h"
-#include "util/aeron_error.h"
-#include "util/aeron_fileutil.h"
-#include "concurrent/aeron_counters_manager.h"
 #include "concurrent/aeron_exclusive_term_appender.h"
 #include "aeron_log_buffer.h"
 

@@ -34,7 +34,6 @@ extern "C"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_client_conductor.h"
-#include "util/aeron_fileutil.h"
 }
 
 #define CAPACITY (1024)

@@ -19,11 +19,9 @@
 
 #include <inttypes.h>
 
-#include "aeronc.h"
 #include "aeron_agent.h"
 #include "aeron_context.h"
 #include "aeron_client_conductor.h"
-#include "util/aeron_error.h"
 
 typedef struct aeron_image_stct
 {

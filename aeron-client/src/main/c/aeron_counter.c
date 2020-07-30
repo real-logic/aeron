@@ -15,7 +15,6 @@
  */
 
 #include "aeron_counter.h"
-#include "util/aeron_error.h"
 
 int aeron_counter_create(
     aeron_counter_t **counter,

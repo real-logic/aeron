@@ -16,8 +16,15 @@
 package io.aeron;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.List;
+
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class ChannelUriTest
 {
@@ -114,6 +121,80 @@ public class ChannelUriTest
         final ChannelUri uri = ChannelUri.parse(uriString);
 
         assertEquals(uriString, uri.toString());
+    }
+
+    @Test
+    void equalsReturnsTrueWhenTheSameInstance()
+    {
+        final ChannelUri channelUri = ChannelUri
+            .parse("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
+
+        assertTrue(channelUri.equals(channelUri));
+    }
+
+    @Test
+    void equalsReturnsFalseIfComparedWithNull()
+    {
+        final ChannelUri channelUri = ChannelUri
+            .parse("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
+
+        assertFalse(channelUri.equals(null));
+    }
+
+    @Test
+    void equalsReturnsFalseIfComparedAnotherClass()
+    {
+        final ChannelUri channelUri = ChannelUri
+            .parse("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
+
+        assertFalse(channelUri.equals(123));
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalityValues")
+    void equality(final String uri1, final String uri2, final boolean expected)
+    {
+        final ChannelUri parsedUri1 = ChannelUri.parse(uri1);
+        final ChannelUri parsedUri2 = ChannelUri.parse(uri2);
+
+        assertEquals(expected, parsedUri1.equals(parsedUri2));
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalityValues")
+    void hashCode(final String uri1, final String uri2, final boolean expected)
+    {
+        final ChannelUri parsedUri1 = ChannelUri.parse(uri1);
+        final ChannelUri parsedUri2 = ChannelUri.parse(uri2);
+
+        if (expected)
+        {
+            assertEquals(parsedUri1.hashCode(), parsedUri2.hashCode());
+        }
+        else
+        {
+            assertNotEquals(parsedUri1.hashCode(), parsedUri2.hashCode());
+        }
+    }
+
+    private static List<Arguments> equalityValues()
+    {
+        return asList(
+            arguments("aeron:udp?endpoint=224.10.9.8", "aeron:udp?endpoint=224.10.9.8", true),
+            arguments(
+                "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16",
+                "aeron:udp?port=4567|endpoint=224.10.9.8|ttl=16|interface=192.168.0.3",
+                true),
+            arguments(
+                "aeron:udp?endpoint=224.10.9.8|tags=1,2",
+                "aeron:udp?tags=1,2|endpoint=224.10.9.8",
+                true),
+            arguments("aeron:udp?endpoint=224.10.9.8", "aeron-spy:aeron:udp?endpoint=224.10.9.8", false),
+            arguments("aeron:udp?endpoint=224.10.9.8", "aeron:ipc?endpoint=224.10.9.8", false),
+            arguments("aeron:udp?endpoint=224.10.9.9", "aeron:udp?endpoint=224.10.8.8", false),
+            arguments("aeron:udp?endpoint=224.10.9.8|ttl=16", "aeron:ipc?endpoint=224.10.9.8|port=4567", false),
+            arguments("aeron:udp?endpoint=224.10.9.8|tags=2,1", "aeron:udp?endpoint=224.10.9.8|tags=1,2", false)
+        );
     }
 
     private void assertParseWithParams(final String uriStr, final String... params)

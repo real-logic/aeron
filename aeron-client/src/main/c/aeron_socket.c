@@ -120,7 +120,7 @@ int getifaddrs(struct ifaddrs **ifap)
         }
     }
 
-    if (dwRet != ERROR_SUCCESS)
+    if (ERROR_SUCCESS != dwRet)
     {
         if (pAdapterAddresses)
         {
@@ -233,25 +233,22 @@ int getifaddrs(struct ifaddrs **ifap)
 
 void freeifaddrs(struct ifaddrs *current)
 {
-    if (current == NULL)
+    if (NULL != current)
     {
-        return;
-    }
-
-    while (1)
-    {
-        struct ifaddrs *next = current->ifa_next;
-        free(current);
-        current = next;
-
-        if (current == NULL)
+        while (1)
         {
-            break;
+            struct ifaddrs *next = current->ifa_next;
+            free(current);
+            current = next;
+
+            if (NULL == current)
+            {
+                break;
+            }
         }
     }
 }
 
-#include <Mswsock.h>
 #include <winsock2.h>
 #include <ws2ipdef.h>
 #include <iphlpapi.h>

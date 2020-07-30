@@ -114,7 +114,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 
     port = 0 == port ? 80 : port;
 
-    int result = 0;
+    int result;
     if (6  == parsed_address.ip_version_hint)
     {
         result = aeron_ipv6_addr_resolver(parsed_address.host, IPPROTO_TCP, &parsed_url->address);
@@ -153,7 +153,7 @@ int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t 
 bool aeron_http_response_is_complete(aeron_http_response_t *response)
 {
     char line[AERON_HTTP_MAX_HEADER_LENGTH];
-    int line_result = 0;
+    int line_result;
 
     if (0 == response->status_code)
     {
@@ -314,8 +314,8 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
             goto error;
         }
 
-        ssize_t recv_length = 0;
-        if ((recv_length = recv(sock, _response->buffer + _response->length, AERON_HTTP_RESPONSE_RECV_LENGTH, 0)) < 0)
+        ssize_t recv_length = recv(sock, _response->buffer + _response->length, AERON_HTTP_RESPONSE_RECV_LENGTH, 0);
+        if (recv_length < 0)
         {
             int errcode = errno;
 
@@ -360,13 +360,13 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
 int aeron_http_header_get(aeron_http_response_t *response, const char *header_name, char *line, size_t max_length)
 {
-    int line_result = 0;
     size_t header_name_length = strlen(header_name);
     size_t cursor = response->headers_offset;
 
     while (cursor < response->body_offset)
     {
-        if ((line_result = aeron_parse_get_line(line, max_length, response->buffer + cursor)) == -1)
+        int line_result = aeron_parse_get_line(line, max_length, response->buffer + cursor);
+        if (-1 == line_result)
         {
             return -1;
         }

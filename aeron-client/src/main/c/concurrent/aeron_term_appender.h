@@ -29,16 +29,14 @@
 
 inline int64_t aeron_term_appender_get_and_add_raw_tail(volatile int64_t *addr, size_t aligned_length)
 {
-    int64_t result = 0;
-
+    int64_t result;
     AERON_GET_AND_ADD_INT64(result, *addr, aligned_length);
     return result;
 }
 
 inline int64_t aeron_term_appender_raw_tail_volatile(volatile int64_t *addr)
 {
-    int64_t raw_tail = 0;
-
+    int64_t raw_tail;
     AERON_GET_VOLATILE(raw_tail, *addr);
     return raw_tail;
 }

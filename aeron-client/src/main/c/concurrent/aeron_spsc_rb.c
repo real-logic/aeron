@@ -91,12 +91,12 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
 
     if (required_capacity > to_buffer_end_length)
     {
-        size_t head_index = (int32_t)head & mask;
+        size_t head_index = (int32_t)(head & mask);
 
         if (required_capacity > head_index)
         {
             AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
-            head_index = (int32_t)head & mask;
+            head_index = (int32_t)(head & mask);
 
             if (required_capacity > head_index)
             {
@@ -147,7 +147,7 @@ size_t aeron_spsc_rb_read(
     size_t message_count_limit)
 {
     const int64_t head = ring_buffer->descriptor->head_position;
-    const size_t head_index = (int32_t)head & (ring_buffer->capacity - 1);
+    const size_t head_index = (int32_t)(head & (ring_buffer->capacity - 1));
     const size_t contiguous_block_length = ring_buffer->capacity - head_index;
     size_t messages_read = 0;
     size_t bytes_read = 0;
@@ -157,7 +157,6 @@ size_t aeron_spsc_rb_read(
         aeron_rb_record_descriptor_t *header = NULL;
         const size_t record_index = head_index + bytes_read;
         int32_t record_length = 0;
-        int32_t msg_type_id = 0;
 
         header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
         AERON_GET_VOLATILE(record_length, header->length);
@@ -168,7 +167,7 @@ size_t aeron_spsc_rb_read(
         }
 
         bytes_read += AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
-        msg_type_id = header->msg_type_id;
+        int32_t msg_type_id = header->msg_type_id;
 
         if (AERON_RB_PADDING_MSG_TYPE_ID == msg_type_id)
         {

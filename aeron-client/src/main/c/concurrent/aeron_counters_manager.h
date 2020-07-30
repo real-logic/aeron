@@ -257,15 +257,13 @@ inline int64_t aeron_counter_get(volatile int64_t *addr)
 inline int64_t aeron_counter_get_volatile(volatile int64_t *addr)
 {
     int64_t value;
-
     AERON_GET_VOLATILE(value, *addr);
     return value;
 }
 
 inline int64_t aeron_counter_increment(volatile int64_t *addr, int64_t value)
 {
-    int64_t result = 0;
-
+    int64_t result;
     AERON_GET_AND_ADD_INT64(result, *addr, value);
     return result;
 }

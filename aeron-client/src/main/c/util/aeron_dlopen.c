@@ -144,7 +144,7 @@ char *aeron_dlerror()
 {
     DWORD errorMessageID = GetLastError();
     LPSTR messageBuffer = NULL;
-    size_t size = FormatMessageA(
+    FormatMessageA(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         errorMessageID,

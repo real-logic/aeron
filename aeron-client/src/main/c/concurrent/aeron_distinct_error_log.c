@@ -166,16 +166,14 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 int aeron_distinct_error_log_record(
     aeron_distinct_error_log_t *log, int error_code, const char *description, const char *message)
 {
-    int64_t timestamp = 0;
-    aeron_distinct_observation_t *observation = NULL;
-
     if (NULL == log)
     {
         aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
-    timestamp = log->clock();
+    aeron_distinct_observation_t *observation = NULL;
+    int64_t timestamp = log->clock();
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;

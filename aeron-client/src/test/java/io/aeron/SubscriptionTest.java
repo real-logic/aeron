@@ -15,18 +15,24 @@
  */
 package io.aeron;
 
-import io.aeron.logbuffer.LogBufferDescriptor;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.status.LocalSocketAddressStatus;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.ByteBuffer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static io.aeron.status.ChannelEndpointStatus.*;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class SubscriptionTest
@@ -39,7 +45,7 @@ public class SubscriptionTest
     private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
-    private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY));
+    private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(ByteBuffer.allocate(READ_BUFFER_CAPACITY));
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
     private final Image imageOneMock = mock(Image.class);
@@ -49,6 +55,11 @@ public class SubscriptionTest
     private final AvailableImageHandler availableImageHandlerMock = mock(AvailableImageHandler.class);
     private final UnavailableImageHandler unavailableImageHandlerMock = mock(UnavailableImageHandler.class);
 
+    private final UnsafeBuffer valuesBuffer = new UnsafeBuffer(ByteBuffer.allocate(16 * 1024));
+    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocate(64 * 1024));
+    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(ByteBuffer.allocate(1024));
+    private final CountersManager countersManager = new CountersManager(metaDataBuffer, valuesBuffer, US_ASCII);
+
     private Subscription subscription;
 
     @BeforeEach
@@ -56,6 +67,8 @@ public class SubscriptionTest
     {
         when(imageOneMock.correlationId()).thenReturn(1L);
         when(imageTwoMock.correlationId()).thenReturn(2L);
+
+        when(conductor.countersReader()).thenReturn(countersManager);
 
         subscription = new Subscription(
             conductor,
@@ -144,4 +157,89 @@ public class SubscriptionTest
 
         assertEquals(2, subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT));
     }
+
+    @ValueSource(longs = { INITIALIZING, ERRORED, CLOSING })
+    @ParameterizedTest
+    void tryResolveChannelEndpointReturnsNullIfChannelStatusIsNotActive(final long channelStatus)
+    {
+        final int channelStatusId = 555;
+        subscription.channelStatusId(channelStatusId);
+        when(conductor.channelStatus(channelStatusId)).thenReturn(channelStatus);
+
+        assertNull(subscription.tryResolveChannelEndpoint());
+    }
+
+    @Test
+    void tryResolveChannelEndpointReturnsNullIfSubscriptionIsClosed()
+    {
+        subscription.close();
+        assertTrue(subscription.isClosed());
+
+        assertNull(subscription.tryResolveChannelEndpoint());
+    }
+
+    @Test
+    void tryResolveChannelEndpointReturnsOriginalChannelIfNoAddressesFound()
+    {
+        final int channelStatusId = 123;
+        subscription.channelStatusId(channelStatusId);
+        when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
+
+        assertSame(CHANNEL, subscription.tryResolveChannelEndpoint());
+    }
+
+    @Test
+    void tryResolveChannelEndpointReturnsOriginalChannelIfMoreThanOneAddressFound()
+    {
+        final int channelStatusId = 123;
+        subscription.channelStatusId(channelStatusId);
+        when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
+
+        allocateAddressCounter(0, "localhost:5555", channelStatusId, ACTIVE);
+        allocateAddressCounter(1, "localhost:7777", channelStatusId, ACTIVE);
+
+        assertSame(CHANNEL, subscription.tryResolveChannelEndpoint());
+    }
+
+    @Test
+    void tryResolveChannelEndpointReturnsChannelWithAResolvedEndpoint()
+    {
+        final int channelStatusId = 444;
+        final String channel = "aeron:udp?endpoint=localhost:40124|interface=192.168.5.0/24|reliable=false";
+        subscription = new Subscription(
+            conductor,
+            channel,
+            STREAM_ID_1,
+            SUBSCRIPTION_CORRELATION_ID,
+            availableImageHandlerMock,
+            unavailableImageHandlerMock);
+        subscription.channelStatusId(channelStatusId);
+        when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
+
+        allocateAddressCounter(0, "128.0.0.1:19091", channelStatusId, ACTIVE);
+        allocateAddressCounter(1, "localhost:21212", channelStatusId, ERRORED);
+
+        final String channelWithResolvedEndpoint = subscription.tryResolveChannelEndpoint();
+
+        assertEquals(ChannelUri.parse("aeron:udp?endpoint=128.0.0.1:19091|interface=192.168.5.0/24|reliable=false"),
+            ChannelUri.parse(channelWithResolvedEndpoint));
+    }
+
+    private void allocateAddressCounter(
+        final int index,
+        final String address,
+        final int channelStatusId,
+        final long status)
+    {
+        final AtomicCounter counter = LocalSocketAddressStatus.allocate(
+            tempBuffer,
+            countersManager,
+            channelStatusId,
+            "test",
+            LocalSocketAddressStatus.LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID);
+
+        LocalSocketAddressStatus.updateBindAddress(counter, address, (UnsafeBuffer)countersManager.metaDataBuffer());
+        counter.setOrdered(status);
+    }
+
 }

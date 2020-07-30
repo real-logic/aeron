@@ -20,8 +20,8 @@ import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
-import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
@@ -422,7 +422,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Fetches the local socket addresses for this subscription. If the channel is not
      * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then this will return an empty list.
-     *
+     * <p>
      * The format is as follows:
      * <br>
      * <br>
@@ -507,6 +507,37 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
 
         return conductor.asyncRemoveRcvDestination(registrationId, endpointChannel);
+    }
+
+    /**
+     * Resolve channel endpoint and replace it with an actual local socket address.  If the channel is not
+     * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned. If there are no
+     * addresses or if there is more than one then the unchanged {@link #channel()} is returned.
+     *
+     * @return channel URI with an endpoint being resolved to local address.
+     * @see #channelStatus()
+     */
+    public String tryResolveChannelEndpoint()
+    {
+        final long channelStatus = channelStatus();
+
+        if (ChannelEndpointStatus.ACTIVE == channelStatus)
+        {
+            final List<String> localSocketAddresses =
+                LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus, channelStatusId);
+
+            if (1 == localSocketAddresses.size())
+            {
+                final String localAddress = localSocketAddresses.get(0);
+                final ChannelUri uri = ChannelUri.parse(channel());
+                uri.put(CommonContext.ENDPOINT_PARAM_NAME, localAddress);
+                return uri.toString();
+            }
+
+            return channel();
+        }
+
+        return null;
     }
 
     void channelStatusId(final int id)

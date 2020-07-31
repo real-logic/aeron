@@ -34,6 +34,7 @@
 #include "Context.h"
 #include "Counter.h"
 #include "util/Export.h"
+#include "ClientConductor.h"
 
 extern "C"
 {
@@ -715,7 +716,13 @@ public:
      */
     inline AgentInvoker<ClientConductor> &conductorAgentInvoker()
     {
-        throw UnsupportedOperationException("How to manage this??", SOURCEINFO);
+        if (!usesAgentInvoker())
+        {
+            throw IllegalStateException("Not configured to use agent invoker", SOURCEINFO);
+        }
+
+        m_conductorInvoker.start();
+        return m_conductorInvoker;
     }
 
     /**
@@ -725,7 +732,7 @@ public:
      */
     inline bool usesAgentInvoker() const
     {
-        return m_context.m_useConductorAgentInvoker;
+        return aeron_context_get_use_conductor_agent_invoker(m_context.m_context);
     }
 
     /**
@@ -779,6 +786,8 @@ private:
     std::unordered_map<std::int64_t, AsyncAddSubscription *> m_pendingSubscriptions;
     std::unordered_map<std::int64_t, AsyncAddCounter *> m_pendingCounters;
     std::recursive_mutex m_adminLock;
+    ClientConductor m_clientConductor;
+    AgentInvoker<ClientConductor> m_conductorInvoker;
 
     static aeron_t *init_aeron(Context &context);
 

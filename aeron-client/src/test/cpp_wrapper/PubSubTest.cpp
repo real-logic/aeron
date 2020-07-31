@@ -55,7 +55,7 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         std::make_tuple("udp", "localhost:24325"),
         std::make_tuple("ipc", nullptr)
-        ));
+    ));
 
 ChannelUriStringBuilder &setParameters(const char *media, const char *endpoint, ChannelUriStringBuilder &builder)
 {
@@ -82,6 +82,7 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
 
     std::int64_t reservedValue = INT64_C(78923648723465);
     Context ctx;
+    ctx.useConductorAgentInvoker(true);
 
     MockFunction<void(
         const std::string &channel,
@@ -115,37 +116,42 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
     ctx.closeClientHandler(mockClientClose.AsStdFunction());
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
     std::int64_t subId = aeron->addSubscription(channel, streamId);
     std::int64_t pubId = aeron->addPublication(channel, streamId);
 
-    WAIT_FOR_NON_NULL(sub, aeron->findSubscription(subId));
     {
-        WAIT_FOR_NON_NULL(pub, aeron->findPublication(pubId));
-        WAIT_FOR(pub->isConnected() && sub->isConnected());
-
-        on_reserved_value_supplier_t reservedValueSupplier = [=](
-            AtomicBuffer &termBuffer,
-            util::index_t termOffset,
-            util::index_t length)
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
         {
-            return reservedValue;
-        };
+            POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
+            POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
-        std::string message = "hello world!";
-        int32_t length = buffer.putString(0, message);
-        WAIT_FOR(0 < pub->offer(buffer, 0, length, reservedValueSupplier));
-        WAIT_FOR(0 < sub->poll(
-            [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+            on_reserved_value_supplier_t reservedValueSupplier = [=](
+                AtomicBuffer &termBuffer,
+                util::index_t termOffset,
+                util::index_t length)
             {
-                EXPECT_EQ(message, buffer.getString(offset));
-                EXPECT_EQ(reservedValue, header.reservedValue());
-                EXPECT_EQ(sessionId, header.sessionId());
-                EXPECT_EQ(streamId, header.streamId());
-                EXPECT_EQ(length, header.frameLength() - dataHeaderLength);
-            }, 1));
+                return reservedValue;
+            };
+
+            std::string message = "hello world!";
+            int32_t length = buffer.putString(0, message);
+            POLL_FOR(0 < pub->offer(buffer, 0, length, reservedValueSupplier), invoker);
+            POLL_FOR(0 < sub->poll(
+                [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+                {
+                    EXPECT_EQ(message, buffer.getString(offset));
+                    EXPECT_EQ(reservedValue, header.reservedValue());
+                    EXPECT_EQ(sessionId, header.sessionId());
+                    EXPECT_EQ(streamId, header.streamId());
+                    EXPECT_EQ(length, header.frameLength() - dataHeaderLength);
+                }, 1), invoker);
+        }
+
+        POLL_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&imageUnavailable), invoker);
     }
 
-    WAIT_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&imageUnavailable));
+    invoker.invoke();
 }
 
 TEST_P(PubSubTest, shouldSubscribePublishAndReceiveSubscriptionCallbacks)
@@ -169,28 +175,39 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveSubscriptionCallbacks)
             aeron::concurrent::atomic::putInt32Volatile(&imageUnavailable, 1);
         });
 
+    ctx.useConductorAgentInvoker(true);
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
     std::int64_t subId = aeron->addSubscription(
         channel, streamId, mockOnAvailableImage.AsStdFunction(), mockOnUnavailableImage.AsStdFunction());
     std::int64_t pubId = aeron->addPublication(channel, streamId);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
 
-    WAIT_FOR_NON_NULL(sub, aeron->findSubscription(subId));
     {
-        WAIT_FOR_NON_NULL(pub, aeron->findPublication(pubId));
-        WAIT_FOR(pub->isConnected() && sub->isConnected());
+        // Nest to trigger subscription cleanup
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        {
+            // Nest to trigger images becoming unavailable
+            POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
+            POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
-        std::string message = "hello world!";
-        buffer.putString(0, message);
-        WAIT_FOR(0 < pub->offer(buffer));
+            std::string message = "hello world!";
+            buffer.putString(0, message);
+            POLL_FOR(0 < pub->offer(buffer), invoker);
 
-        WAIT_FOR(0 < sub->poll(
-            [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-            {
-                EXPECT_EQ(message, buffer.getString(offset));
-            }, 1));
+            POLL_FOR(
+                0 < sub->poll(
+                    [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+                    {
+                        EXPECT_EQ(message, buffer.getString(offset));
+                    }, 1),
+                invoker);
+        }
+
+        POLL_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&imageUnavailable), invoker);
     }
 
-    WAIT_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&imageUnavailable));
+    // Allow callbacks to fire to complete cleanup and prevent sanitizer errors.
+    invoker.invoke();
 }
 
 TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
@@ -209,21 +226,23 @@ TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
         .build();
 
     Context ctx;
+    ctx.useConductorAgentInvoker(true);
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
     std::int64_t subId = aeron->addSubscription(channel, streamId);
     std::int64_t pubId = aeron->addExclusivePublication(channel, streamId);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
 
-    WAIT_FOR_NON_NULL(sub, aeron->findSubscription(subId));
     {
-        WAIT_FOR_NON_NULL(pub, aeron->findExclusivePublication(pubId));
-        WAIT_FOR(pub->isConnected() && sub->isConnected());
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        POLL_FOR_NON_NULL(pub, aeron->findExclusivePublication(pubId), invoker);
+        POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
         std::string message = "hello world!";
         buffer.putString(0, message);
-        WAIT_FOR(0 < pub->offer(buffer));
+        POLL_FOR(0 < pub->offer(buffer), invoker);
 
-        WAIT_FOR(0 < sub->poll(
+        POLL_FOR(0 < sub->poll(
             [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
             {
                 EXPECT_EQ(message, buffer.getString(offset));
@@ -231,8 +250,10 @@ TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
                 EXPECT_EQ(termOffset, header.termOffset());
                 // TODO: Need to expose initial term id on the header.
 //                EXPECT_EQ(initialTermId, header.initialTermId());
-            }, 1));
+            }, 1), invoker);
     }
+
+    invoker.invoke();
 }
 
 TEST_P(PubSubTest, shouldBlockPollSubscription)
@@ -244,35 +265,43 @@ TEST_P(PubSubTest, shouldBlockPollSubscription)
     const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
 
     Context ctx;
+    ctx.useConductorAgentInvoker(true);
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
     std::int64_t subId = aeron->addSubscription(channel, streamId);
     std::int64_t pubId = aeron->addPublication(channel, streamId);
 
-    WAIT_FOR_NON_NULL(sub, aeron->findSubscription(subId));
-    WAIT_FOR_NON_NULL(pub, aeron->findPublication(pubId));
-    WAIT_FOR(pub->isConnected() && sub->isConnected());
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
+        POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
-    std::string message = "hello world!";
-    buffer.putString(0, message);
-    AtomicBuffer buffers[]{ buffer, buffer, buffer };
-    WAIT_FOR(0 < pub->offer(buffers, 3));
+        std::string message = "hello world!";
+        buffer.putString(0, message);
+        AtomicBuffer buffers[]{buffer, buffer, buffer};
+        POLL_FOR(0 < pub->offer(buffers, 3), invoker);
 
-    std::int64_t bytesReceived = 0;
-    std::int64_t bytesConsumed = 0;
-    WAIT_FOR(pub->position() <= (bytesConsumed += sub->blockPoll(
-        [&](concurrent::AtomicBuffer &buffer,
-            util::index_t offset,
-            util::index_t length,
-            std::int32_t sessionId,
-            std::int32_t termId)
-        {
-            bytesReceived += length;
-            EXPECT_EQ(pub->sessionId(), sessionId);
-        }, 100000)));
+        std::int64_t bytesReceived = 0;
+        std::int64_t bytesConsumed = 0;
+        POLL_FOR(pub->position() <= (
+            bytesConsumed += sub->blockPoll(
+                [&](
+                    concurrent::AtomicBuffer &buffer,
+                    util::index_t offset,
+                    util::index_t length,
+                    std::int32_t sessionId,
+                    std::int32_t termId)
+                {
+                    bytesReceived += length;
+                    EXPECT_EQ(pub->sessionId(), sessionId);
+                }, 100000)), invoker);
 
-    EXPECT_EQ(pub->position(), bytesConsumed);
-    EXPECT_EQ(pub->position(), bytesReceived);
+        EXPECT_EQ(pub->position(), bytesConsumed);
+        EXPECT_EQ(pub->position(), bytesReceived);
+    }
+
+    invoker.invoke();
 }
 
 TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
@@ -284,26 +313,34 @@ TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
     const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
 
     Context ctx;
+    ctx.useConductorAgentInvoker(true);
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
     std::int64_t subId = aeron->addSubscription(channel, streamId);
     std::int64_t pubId = aeron->addPublication(channel, streamId);
 
-    WAIT_FOR_NON_NULL(sub, aeron->findSubscription(subId));
-    WAIT_FOR_NON_NULL(pub, aeron->findPublication(pubId));
-    WAIT_FOR(pub->isConnected() && sub->isConnected());
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
+        POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
-    std::string message = "hello world!";
+        std::string message = "hello world!";
 
-    BufferClaim claim;
-    WAIT_FOR(0 < pub->tryClaim(16, claim));
-    claim.buffer().putString(claim.offset(), message);
-    claim.commit();
+        BufferClaim claim;
+        POLL_FOR(0 < pub->tryClaim(16, claim), invoker);
+        claim.buffer().putString(claim.offset(), message);
+        claim.commit();
 
-    WAIT_FOR(0 < sub->controlledPoll(
-        [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-        {
-            return ControlledPollAction::COMMIT;
-        }, 1));
+        POLL_FOR(
+            0 < sub->controlledPoll(
+                [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+                {
+                    return ControlledPollAction::COMMIT;
+                }, 1),
+            invoker);
+    }
+
+    invoker.invoke();
 }
 

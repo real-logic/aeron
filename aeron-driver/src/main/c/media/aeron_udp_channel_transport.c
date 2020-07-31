@@ -24,9 +24,7 @@
 #if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <io.h>
 #else
-
 #include <unistd.h>
-
 #endif
 
 #include "aeron_socket.h"
@@ -169,7 +167,8 @@ int aeron_udp_channel_transport_init(
                 goto error;
             }
 
-            if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr->sin_addr, sizeof(struct in_addr)) < 0)
+            if (aeron_setsockopt(
+                transport->fd, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr->sin_addr, sizeof(struct in_addr)) < 0)
             {
                 aeron_set_err_from_last_err_code("setsockopt(IP_MULTICAST_IF)");
                 goto error;

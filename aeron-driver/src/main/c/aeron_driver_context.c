@@ -35,9 +35,7 @@
 #include <errno.h>
 
 #ifdef HAVE_UUID_H
-
 #include <uuid/uuid.h>
-
 #endif
 
 #include "aeron_windows.h"
@@ -452,7 +450,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 #if defined(__linux__)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
 #elif defined(_MSC_VER)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\\", username());
+    snprintf(
+        _context->aeron_dir,
+        AERON_MAX_PATH - 1,
+        "%s%saeron-%s",
+        tmp_dir(),
+        has_file_separator_at_end(tmp_dir()) ? "" : "\\",
+        username());
 #else
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
 #endif

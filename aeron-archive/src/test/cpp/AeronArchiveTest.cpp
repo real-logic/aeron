@@ -58,7 +58,7 @@ int aeron_delete_directory(const char *dir)
         "",
         FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
         false,
-        0,
+        nullptr,
         ""
     };
 
@@ -290,7 +290,7 @@ protected:
     AeronArchive::Context_t m_context;
     pid_t m_pid = 0;
     std::ostringstream m_stream;
-    bool m_debug = true;
+    bool m_debug = false;
 };
 
 TEST_F(AeronArchiveTest, shouldConnectToArchive)

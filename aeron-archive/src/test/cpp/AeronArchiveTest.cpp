@@ -326,9 +326,9 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
     {
-        std::shared_ptr<Publication> publication = addPublication(
-            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
         std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
             *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
 
         sessionId = publication->sessionId();
@@ -400,9 +400,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
     {
-        std::shared_ptr<Publication> publication = addPublication(
-            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
         std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
             *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
 
         sessionId = publication->sessionId();
@@ -457,9 +457,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
     {
-        std::shared_ptr<Publication> publication = addPublication(
-            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
         std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
             *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
 
         sessionId = publication->sessionId();
@@ -589,9 +589,9 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
     {
-        std::shared_ptr<Publication> publication = addPublication(
-            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
         std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
             *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
 
         CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();

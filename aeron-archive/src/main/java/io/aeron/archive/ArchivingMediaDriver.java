@@ -48,14 +48,12 @@ public class ArchivingMediaDriver implements AutoCloseable
         loadPropertiesFiles(args);
 
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-
-        ctx.terminationHook(barrier::signal);
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .terminationHook(barrier::signalAll);
 
         try (ArchivingMediaDriver ignore = launch(ctx, new Archive.Context()))
         {
             barrier.await();
-
             System.out.println("Shutdown Archive...");
         }
     }
@@ -89,7 +87,6 @@ public class ArchivingMediaDriver implements AutoCloseable
             final int errorCounterId = SystemCounterDescriptor.ERRORS.id();
             final AtomicCounter errorCounter = null == archiveCtx.errorCounter() ?
                 new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId) : archiveCtx.errorCounter();
-
             final ErrorHandler errorHandler = null == archiveCtx.errorHandler() ?
                 driverCtx.errorHandler() : archiveCtx.errorHandler();
 

@@ -91,7 +91,6 @@ public class ClusteredMediaDriver implements AutoCloseable
             final int errorCounterId = SystemCounterDescriptor.ERRORS.id();
             final AtomicCounter errorCounter = null == archiveCtx.errorCounter() ?
                 new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId) : archiveCtx.errorCounter();
-
             final ErrorHandler errorHandler = null == archiveCtx.errorHandler() ?
                 driverCtx.errorHandler() : archiveCtx.errorHandler();
 

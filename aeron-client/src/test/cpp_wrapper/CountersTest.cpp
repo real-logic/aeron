@@ -86,8 +86,6 @@ TEST_F(CountersTest, shouldAddAndCloseCounterWithCallbacks)
     }
 
     WAIT_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&counterUnavailable));
-
-    aeron->removeUnavailableCounterHandler(mockOnUnavailableCounter.AsStdFunction());
 }
 
 TEST_F(CountersTest, shouldReadCounterChange)

@@ -37,7 +37,8 @@ bool Context::requestDriverTermination(
     if (MemoryMappedFile::getFileSize(cncFilename.c_str()) > minLength)
     {
         MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(cncFilename.c_str());
-        if (cncFile->getMemorySize() > static_cast<size_t>(minLength))
+        size_t fileLength = cncFile->getMemorySize();
+        if (fileLength > static_cast<size_t>(minLength))
         {
             const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
             if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
@@ -47,6 +48,12 @@ bool Context::requestDriverTermination(
                     " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
                     " file=" + semanticVersionToString(cncVersion),
                     SOURCEINFO);
+            }
+            
+            if (!CncFileDescriptor::isCncFileLengthSufficient(cncFile))
+            {
+                throw AeronException(
+                    "Aeron CnC file length not sufficient: length=" + std::to_string(fileLength), SOURCEINFO);
             }
 
             AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));

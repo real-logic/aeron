@@ -198,6 +198,21 @@ inline static std::int64_t pid(MemoryMappedFile::ptr_t cncFile)
     return metaData.pid;
 }
 
+inline static bool isCncFileLengthSufficient(MemoryMappedFile::ptr_t cncFile)
+{
+    AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
+    const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+
+    size_t metadataRequiredLength = META_DATA_LENGTH +
+        (size_t)metaData.toDriverBufferLength +
+        (size_t)metaData.toClientsBufferLength +
+        (size_t)metaData.counterMetadataBufferLength +
+        (size_t)metaData.counterValuesBufferLength +
+        (size_t)metaData.errorLogBufferLength;
+
+    return cncFile->getMemorySize() >= metadataRequiredLength;
+}
+
 }
 
 }

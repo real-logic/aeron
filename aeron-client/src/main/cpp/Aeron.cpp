@@ -133,6 +133,13 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
                 SOURCEINFO);
         }
 
+        if (!CncFileDescriptor::isCncFileLengthSufficient(cncBuffer))
+        {
+            cncBuffer = nullptr;
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+            continue;
+        }
+
         AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncBuffer));
         ManyToOneRingBuffer ringBuffer(toDriverBuffer);
 
@@ -155,7 +162,6 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
             }
 
             cncBuffer = nullptr;
-
             std::this_thread::sleep_for(IDLE_SLEEP_MS_100);
             continue;
         }

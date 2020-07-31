@@ -24,7 +24,6 @@
 
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/BufferClaim.h>
-#include <concurrent/logbuffer/ExclusiveTermAppender.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "Publication.h"

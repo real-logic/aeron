@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <cstddef>
 #include <functional>
-#include "concurrent/aeron_counters_manager.h"
 
 #include "util/BitUtil.h"
 #include "AtomicBuffer.h"
@@ -27,6 +26,7 @@
 extern "C"
 {
 #include "aeronc.h"
+#include "concurrent/aeron_counters_manager.h"
 }
 
 namespace aeron { namespace concurrent {

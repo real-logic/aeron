@@ -618,8 +618,9 @@ private:
     static void availableCounterHandlerCallback(
         void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
     {
-//        on_available_counter_t &handler = *static_cast<on_available_counter_t *>(clientd);
-        // TODO: Make Counters Reader use C api.
+        on_available_counter_t &handler = *reinterpret_cast<on_available_counter_t *>(clientd);
+        CountersReader countersReader(counters_reader);
+        handler(countersReader, registration_id, counter_id);
     }
 
     static void closeClientHandlerCallback(void *clientd)

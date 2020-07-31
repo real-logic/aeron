@@ -15,7 +15,8 @@
 #
 
 set(TEST_HEADERS
-    EmbeddedMediaDriver.h)
+    EmbeddedMediaDriver.h
+    TestUtil.h)
 #
 #set(TEST_SOURCE)
 
@@ -47,3 +48,4 @@ endfunction()
 
 aeron_client_wrapper_test(systemTest SystemTest.cpp)
 aeron_client_wrapper_test(pubSubTest PubSubTest.cpp)
+aeron_client_wrapper_test(countersTest CountersTest.cpp)

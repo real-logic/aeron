@@ -40,7 +40,6 @@ extern "C"
 #include "aeronc.h"
 }
 
-
 /// Top namespace for Aeron C++ API
 namespace aeron
 {
@@ -592,11 +591,19 @@ public:
     inline std::shared_ptr<Counter> findCounter(AsyncAddCounter *addCounter)
     {
         aeron_counter_t *counter;
-        if (aeron_async_add_counter_poll(&counter, addCounter) < 0)
+        int result = aeron_async_add_counter_poll(&counter, addCounter);
+        if (result < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        return std::make_shared<Counter>(counter, m_countersReader);
+        else if (result == 0)
+        {
+            return nullptr;
+        }
+        else
+        {
+            return std::make_shared<Counter>(counter, m_countersReader);
+        }
     }
 
     /**

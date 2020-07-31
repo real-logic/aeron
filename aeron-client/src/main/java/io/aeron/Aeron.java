@@ -1363,6 +1363,16 @@ public class Aeron implements AutoCloseable
 
                 CncFileDescriptor.checkVersion(cncVersion);
 
+                if (!CncFileDescriptor.isCncFileLengthSufficient(cncMetaDataBuffer, cncByteBuffer.capacity()))
+                {
+                    IoUtil.unmap(cncByteBuffer);
+                    cncByteBuffer = null;
+                    cncMetaDataBuffer = null;
+
+                    sleep(Configuration.IDLE_SLEEP_MS);
+                    continue;
+                }
+
                 final ManyToOneRingBuffer ringBuffer = new ManyToOneRingBuffer(
                     CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
 

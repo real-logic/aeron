@@ -21,17 +21,12 @@
 #include <cstdio>
 #include <spawn.h>
 #include <pthread.h>
-
 #elif defined(_WIN32)
-
 #include <process.h>
 #include <Windows.h>
 typedef intptr_t pid_t;
-
 #else
-
 #error "must spawn Java archive per test"
-
 #endif
 
 #include <chrono>
@@ -42,7 +37,7 @@ typedef intptr_t pid_t;
 #include <cstring>
 
 #include <gtest/gtest.h>
-#include <ChannelUriStringBuilder.h>
+#include "ChannelUriStringBuilder.h"
 
 #include "client/AeronArchive.h"
 #include "client/RecordingEventsAdapter.h"

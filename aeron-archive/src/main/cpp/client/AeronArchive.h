@@ -78,7 +78,10 @@ public:
     {
     public:
         AsyncConnect(
-            Context_t &context, std::shared_ptr<Aeron> aeron, std::int64_t subscriptionId, std::int64_t publicationId);
+            Context_t &context,
+            std::shared_ptr<Aeron> aeron,
+            std::int64_t subscriptionId,
+            std::int64_t publicationId);
 
         /**
          * Poll for a complete connection.

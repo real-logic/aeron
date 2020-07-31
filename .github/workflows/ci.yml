@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '14' ]
-        os: ['ubuntu-latest', 'windows-latest']
+        os: [ 'ubuntu-latest', 'windows-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -240,4 +240,4 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: cppbuild/cppbuild
+        run: cppbuild/cppbuild --build-archive-api

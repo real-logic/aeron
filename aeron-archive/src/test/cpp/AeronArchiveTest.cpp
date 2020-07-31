@@ -110,13 +110,12 @@ public:
             "java.base/sun.nio.ch=ALL-UNNAMED",
 #endif
             "-Daeron.dir.delete.on.start=true",
+            "-Daeron.dir.delete.on.shutdown=true",
             "-Daeron.archive.dir.delete.on.start=true",
             "-Daeron.archive.max.catalog.entries=1024",
             "-Daeron.threading.mode=INVOKER",
             "-Daeron.archive.threading.mode=SHARED",
             "-Daeron.archive.recording.events.enabled=false",
-            "-Daeron.spies.simulate.connection=false",
-            "-Daeron.mtu.length=4k",
             "-Daeron.term.buffer.sparse.file=true",
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.term.buffer.length=64k",
@@ -164,31 +163,34 @@ public:
         {
             m_stream << "Shutting down PID " << m_pid << std::endl;
 
-            if (aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0))
+            const std::string cncFilename = m_context.aeron()->context().cncFileName();
+            const std::string aeronPath = aeron::Context::defaultAeronPath();
+            m_context.aeron(nullptr);
+#
+            if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
                 m_stream << "Waiting for driver termination" << std::endl;
 
-                int term_stat;
-                #if defined(_WIN32)
-                ::cwait(&term_stat, m_pid, WAIT_CHILD);
-                #else
-                ::wait(&term_stat);
-                #endif
+                const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
+                while (-1 != MemoryMappedFile::getFileSize(cncFilename.c_str()))
+                {
+                    std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+                }
             }
             else
             {
                 m_stream << "Failed to send driver terminate command" << std::endl;
             }
 
-            m_stream << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
-            aeron_delete_directory(aeron::Context::defaultAeronPath().c_str());
+            m_stream << "Deleting " << aeronPath << std::endl;
+            aeron_delete_directory(aeronPath.c_str());
 
             m_stream << "Deleting " << m_archiveDir << std::endl;
             aeron_delete_directory(m_archiveDir.c_str());
         }
     }
 
-    static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string& channel, std::int32_t streamId)
+    static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(publicationId);

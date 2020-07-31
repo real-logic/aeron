@@ -2095,8 +2095,7 @@ public class AeronArchive implements AutoCloseable
          *
          * <p>
          * Channel's <em>endpoint</em> can be specified explicitly (i.e. by providing IP and port pair) or by using
-         * zero as a port number and/or special <em>any address</em> as an IP address. Here is an example of valid
-         * response channels:
+         * zero as a port number. Here is an example of valid response channels:
          * <ul>
          *     <li>{@code aeron:udp?endpoint=localhost:8020} - listen on port {@code 8020} on localhost.</li>
          *     <li>{@code aeron:udp?endpoint=192.168.10.10:8020} - listen on port {@code 8020} on
@@ -2104,14 +2103,6 @@ public class AeronArchive implements AutoCloseable
          *     <li>{@code aeron:udp?endpoint=localhost:0} - in this case the port is unspecified and the OS
          *     will assign a free port from an
          *     <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral port range</a>.</li>
-         *     <li>{@code aeron:udp?endpoint=0.0.0.0:5555} - special address {@code 0.0.0.0} indicates that
-         *     the underlying socket should listen on all local IPv4 interfaces using port {@code 5555}.</li>
-         *     <li>{@code aeron:udp?endpoint=0.0.0.0:0} - the same as the above but the port should be
-         *     assigned by the OS.</li>
-         *     <li>{@code aeron:udp?endpoint=[::]:5555} - special address {@code [::]} indicates that
-         *     the underlying socket should listen on all local IPv6 interfaces using port {@code 5555}.</li>
-         *     <li>{@code aeron:udp?endpoint=[::]:0} - the same as the above but the port should be
-         *     assigned by the OS.</li>
          * </ul>
          */
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";

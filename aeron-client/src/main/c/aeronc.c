@@ -100,6 +100,13 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
             return -1;
         }
 
+        if (!aeron_cnc_is_file_length_sufficient(cnc_mmap))
+        {
+            aeron_unmap(cnc_mmap);
+            aeron_micro_sleep(1000);
+            continue;
+        }
+
         aeron_mpsc_rb_t rb;
 
         if (aeron_mpsc_rb_init(

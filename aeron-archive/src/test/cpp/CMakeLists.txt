@@ -33,3 +33,4 @@ function(aeron_archive_client_test name file)
 endfunction()
 
 aeron_archive_client_test(archiveTest AeronArchiveTest.cpp)
+set_tests_properties(archiveTest PROPERTIES RUN_SERIAL ON)

@@ -95,11 +95,6 @@ public:
         }
     }
 
-    static int deleteDir(const std::string &dirname)
-    {
-        return aeron_delete_directory(dirname.c_str());
-    }
-
     void SetUp() final
     {
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
@@ -182,15 +177,14 @@ public:
             }
             else
             {
-                std::cout << "Failed to send driver terminate command" << std::endl;
                 m_stream << "Failed to send driver terminate command" << std::endl;
             }
 
             m_stream << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
-            deleteDir(aeron::Context::defaultAeronPath());
+            aeron_delete_directory(aeron::Context::defaultAeronPath().c_str());
 
             m_stream << "Deleting " << m_archiveDir << std::endl;
-            deleteDir(m_archiveDir);
+            aeron_delete_directory(m_archiveDir.c_str());
         }
     }
 

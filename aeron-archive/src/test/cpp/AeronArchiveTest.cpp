@@ -291,13 +291,13 @@ protected:
     bool m_debug = true;
 };
 
-TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
+TEST_F(AeronArchiveTest, shouldConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
     aeronArchive->checkForErrorResponse();
 }
 
-TEST_F(AeronArchiveTest, shouldBeAbleToAsyncConnectToArchive)
+TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
     aeron::concurrent::YieldingIdleStrategy idle;

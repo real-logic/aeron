@@ -48,6 +48,7 @@ typedef std::function<long long()> nano_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
+static const size_t static_handler_token = 0;
 
 class CLIENT_EXPORT ClientConductor
 {
@@ -92,9 +93,9 @@ public:
     {
         static_cast<void>(m_padding);
 
-        m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
-        m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
-        m_onCloseClientHandlers.emplace_back(onCloseClientHandler);
+        m_onAvailableCounterHandlers.emplace_back(std::make_pair(static_handler_token, availableCounterHandler));
+        m_onUnavailableCounterHandlers.emplace_back(std::make_pair(static_handler_token, unavailableCounterHandler));
+        m_onCloseClientHandlers.emplace_back(std::make_pair(static_handler_token, onCloseClientHandler));
     }
 
     ~ClientConductor();
@@ -405,9 +406,9 @@ private:
     on_new_subscription_t m_onNewSubscriptionHandler;
     exception_handler_t m_errorHandler;
 
-    std::vector<on_available_counter_t> m_onAvailableCounterHandlers;
-    std::vector<on_unavailable_counter_t> m_onUnavailableCounterHandlers;
-    std::vector<on_close_client_t> m_onCloseClientHandlers;
+    std::vector<std::pair<size_t, on_available_counter_t>> m_onAvailableCounterHandlers;
+    std::vector<std::pair<size_t, on_unavailable_counter_t>> m_onUnavailableCounterHandlers;
+    std::vector<std::pair<size_t, on_close_client_t>> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
     long m_driverTimeoutMs;

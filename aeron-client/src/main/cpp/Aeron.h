@@ -298,6 +298,7 @@ public:
      */
     inline void addAvailableCounterHandler(const on_available_counter_t &handler)
     {
+
         m_conductor.addAvailableCounterHandler(handler);
     }
 

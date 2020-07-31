@@ -538,24 +538,31 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
 
 void ClientConductor::addAvailableCounterHandler(const on_available_counter_t &handler)
 {
+    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
-    m_onAvailableCounterHandlers.emplace_back(handler);
+    m_onAvailableCounterHandlers.emplace_back(std::make_pair(token, handler));
 }
 
 void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t &handler)
 {
+    size_t token = reinterpret_cast<size_t>(&handler);
+    if (static_handler_token == token)
+    {
+        return;
+    }
+
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onAvailableCounterHandlers;
     auto predicate =
-        [handler](const on_available_counter_t &item)
+        [token](const std::pair<size_t, on_available_counter_t> &item)
         {
-            return getAddress(item) == getAddress(handler);
+            return item.first == token;
         };
 
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
@@ -563,24 +570,31 @@ void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t
 
 void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
 {
+    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
-    m_onUnavailableCounterHandlers.emplace_back(handler);
+    m_onUnavailableCounterHandlers.emplace_back(std::make_pair(token, handler));
 }
 
 void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t &handler)
 {
+    size_t token = reinterpret_cast<size_t>(&handler);
+    if (static_handler_token == token)
+    {
+        return;
+    }
+
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onUnavailableCounterHandlers;
     auto predicate =
-        [handler](const on_unavailable_counter_t &item)
+        [token](const std::pair<size_t, on_unavailable_counter_t> &item)
         {
-            return getAddress(item) == getAddress(handler);
+            return item.first == token;
         };
 
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
@@ -588,24 +602,26 @@ void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_count
 
 void ClientConductor::addCloseClientHandler(const on_close_client_t &handler)
 {
+    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
-    m_onCloseClientHandlers.emplace_back(handler);
+    m_onCloseClientHandlers.emplace_back(std::make_pair(token, handler));
 }
 
 void ClientConductor::removeCloseClientHandler(const on_close_client_t &handler)
 {
+    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onCloseClientHandlers;
     auto predicate =
-        [handler](const on_close_client_t &item)
+        [token](const std::pair<size_t, on_close_client_t> &item)
         {
-            return getAddress(item) == getAddress(handler);
+            return token == item.first;
         };
 
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
@@ -705,7 +721,7 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
     for (auto const &handler: m_onAvailableCounterHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
-        handler(m_countersReader, registrationId, counterId);
+        handler.second(m_countersReader, registrationId, counterId);
     }
 }
 
@@ -716,7 +732,7 @@ void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int
     for (auto const &handler: m_onUnavailableCounterHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
-        handler(m_countersReader, registrationId, counterId);
+        handler.second(m_countersReader, registrationId, counterId);
     }
 }
 
@@ -1016,7 +1032,7 @@ void ClientConductor::closeAllResources(long long nowMs)
             for (auto const &handler: m_onUnavailableCounterHandlers)
             {
                 CallbackGuard callbackGuard(m_isInCallback);
-                handler(m_countersReader, registrationId, counterId);
+                handler.second(m_countersReader, registrationId, counterId);
             }
 
             if (kv.second.m_counterCache)
@@ -1031,7 +1047,7 @@ void ClientConductor::closeAllResources(long long nowMs)
     for (auto const &handler: m_onCloseClientHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
-        handler();
+        handler.second();
     }
 }
 

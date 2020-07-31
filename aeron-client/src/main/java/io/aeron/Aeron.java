@@ -1369,7 +1369,7 @@ public class Aeron implements AutoCloseable
                     cncByteBuffer = null;
                     cncMetaDataBuffer = null;
 
-                    sleep(Configuration.IDLE_SLEEP_MS);
+                    sleep(Configuration.AWAITING_IDLE_SLEEP_MS);
                     continue;
                 }
 

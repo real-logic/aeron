@@ -37,8 +37,8 @@ typedef intptr_t pid_t;
 #include <cstring>
 
 #include <gtest/gtest.h>
-#include "ChannelUriStringBuilder.h"
 
+#include "ChannelUriStringBuilder.h"
 #include "client/AeronArchive.h"
 #include "client/RecordingEventsAdapter.h"
 #include "client/RecordingPos.h"
@@ -87,7 +87,7 @@ int aeron_delete_directory(const char *dirname)
 class AeronArchiveTest : public testing::Test
 {
 public:
-    ~AeronArchiveTest()
+    ~AeronArchiveTest() override
     {
         if (m_debug)
         {
@@ -100,32 +100,32 @@ public:
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
         char const * const argv[] =
         {
-                "java",
+            "java",
 #if JAVA_MAJOR_VERSION >= 9
-                "--add-opens",
-                "java.base/java.lang.reflect=ALL-UNNAMED",
-                "--add-opens",
-                "java.base/java.net=ALL-UNNAMED",
-                "--add-opens",
-                "java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens",
+            "java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens",
+            "java.base/java.net=ALL-UNNAMED",
+            "--add-opens",
+            "java.base/sun.nio.ch=ALL-UNNAMED",
 #endif
-                "-Daeron.dir.delete.on.start=true",
-                "-Daeron.archive.dir.delete.on.start=true",
-                "-Daeron.archive.max.catalog.entries=1024",
-                "-Daeron.threading.mode=INVOKER",
-                "-Daeron.archive.threading.mode=SHARED",
-                "-Daeron.archive.recording.events.enabled=false",
-                "-Daeron.spies.simulate.connection=false",
-                "-Daeron.mtu.length=4k",
-                "-Daeron.term.buffer.sparse.file=true",
-                "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
-                "-Daeron.term.buffer.length=64k",
-                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-                archiveDirArg.c_str(),
-                "-cp",
-                m_aeronAllJar.c_str(),
-                "io.aeron.archive.ArchivingMediaDriver",
-                nullptr
+            "-Daeron.dir.delete.on.start=true",
+            "-Daeron.archive.dir.delete.on.start=true",
+            "-Daeron.archive.max.catalog.entries=1024",
+            "-Daeron.threading.mode=INVOKER",
+            "-Daeron.archive.threading.mode=SHARED",
+            "-Daeron.archive.recording.events.enabled=false",
+            "-Daeron.spies.simulate.connection=false",
+            "-Daeron.mtu.length=4k",
+            "-Daeron.term.buffer.sparse.file=true",
+            "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
+            "-Daeron.term.buffer.length=64k",
+            "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+            archiveDirArg.c_str(),
+            "-cp",
+            m_aeronAllJar.c_str(),
+            "io.aeron.archive.ArchivingMediaDriver",
+            nullptr
         };
  
         #if defined(_WIN32)
@@ -285,28 +285,16 @@ protected:
     const std::int32_t m_replayStreamId = 66;
 
     const int m_fragmentLimit = 10;
-
     AeronArchive::Context_t m_context;
-
     pid_t m_pid = 0;
-
     std::ostringstream m_stream;
     bool m_debug = true;
 };
 
-TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
-{
-    m_stream << "Java " << JAVA_MAJOR_VERSION << "." << JAVA_MINOR_VERSION << std::endl;
-    m_stream << m_java << std::endl;
-    m_stream << m_aeronAllJar << std::endl;
-    m_stream << m_archiveDir << std::endl;
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-}
-
 TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+    aeronArchive->checkForErrorResponse();
 }
 
 TEST_F(AeronArchiveTest, shouldBeAbleToAsyncConnectToArchive)
@@ -320,6 +308,8 @@ TEST_F(AeronArchiveTest, shouldBeAbleToAsyncConnectToArchive)
         idle.idle();
         aeronArchive = asyncConnect->poll();
     }
+
+    aeronArchive->checkForErrorResponse();
 }
 
 TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)

@@ -18,8 +18,7 @@
 #define AERON_CONCURRENT_TERM_BLOCK_SCANNER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "concurrent/AtomicBuffer.h"
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 
@@ -35,7 +34,7 @@ namespace aeron { namespace concurrent { namespace logbuffer {
  * @param termId    of the stream containing this block of message fragments.
  */
 typedef std::function<void(
-    concurrent::AtomicBuffer& buffer,
+    concurrent::AtomicBuffer &buffer,
     util::index_t offset,
     util::index_t length,
     std::int32_t sessionId,
@@ -43,7 +42,7 @@ typedef std::function<void(
 
 namespace TermBlockScanner {
 
-inline std::int32_t scan(const AtomicBuffer& termBuffer, const std::int32_t termOffset, const std::int32_t limitOffset)
+inline std::int32_t scan(const AtomicBuffer &termBuffer, const std::int32_t termOffset, const std::int32_t limitOffset)
 {
     std::int32_t offset = termOffset;
 

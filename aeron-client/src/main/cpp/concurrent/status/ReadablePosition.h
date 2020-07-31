@@ -23,7 +23,7 @@ template <class X>
 class ReadablePosition
 {
 public:
-    explicit ReadablePosition(X& impl) : m_impl(impl)
+    explicit ReadablePosition(X &impl) : m_impl(impl)
     {
     }
 

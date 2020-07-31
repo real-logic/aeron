@@ -20,10 +20,9 @@
 #include <climits>
 #include <functional>
 #include <algorithm>
-#include <util/Index.h>
-#include <util/LangUtil.h>
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/Atomic64.h>
+#include "util/Index.h"
+#include "util/LangUtil.h"
+#include "concurrent/AtomicBuffer.h"
 #include "RingBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
@@ -49,7 +48,7 @@ public:
     }
 
     OneToOneRingBuffer(const OneToOneRingBuffer &) = delete;
-    OneToOneRingBuffer &operator=(const OneToOneRingBuffer &) = delete;
+    OneToOneRingBuffer & operator = (const OneToOneRingBuffer &) = delete;
 
     inline util::index_t capacity() const
     {
@@ -158,7 +157,9 @@ public:
 
             ++messagesRead;
             handler(
-                msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
+                msgTypeId,
+                m_buffer,
+                RecordDescriptor::encodedMsgOffset(recordIndex),
                 recordLength - RecordDescriptor::HEADER_LENGTH);
         }
 

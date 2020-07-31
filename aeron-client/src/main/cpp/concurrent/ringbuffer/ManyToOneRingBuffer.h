@@ -20,10 +20,9 @@
 #include <climits>
 #include <functional>
 #include <algorithm>
-#include <util/Index.h>
-#include <util/LangUtil.h>
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/Atomic64.h>
+#include "util/Index.h"
+#include "util/LangUtil.h"
+#include "concurrent/AtomicBuffer.h"
 #include "RingBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
@@ -32,7 +31,7 @@ namespace aeron { namespace concurrent { namespace ringbuffer {
 class ManyToOneRingBuffer
 {
 public:
-    explicit ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer) :
+    explicit ManyToOneRingBuffer(concurrent::AtomicBuffer &buffer) :
         m_buffer(buffer)
     {
         m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
@@ -48,8 +47,8 @@ public:
         m_consumerHeartbeatIndex = m_capacity + RingBufferDescriptor::CONSUMER_HEARTBEAT_OFFSET;
     }
 
-    ManyToOneRingBuffer(const ManyToOneRingBuffer&) = delete;
-    ManyToOneRingBuffer& operator=(const ManyToOneRingBuffer&) = delete;
+    ManyToOneRingBuffer(const ManyToOneRingBuffer &) = delete;
+    ManyToOneRingBuffer & operator = (const ManyToOneRingBuffer &) = delete;
 
     inline util::index_t capacity() const
     {
@@ -57,7 +56,7 @@ public:
     }
 
     bool write(
-        std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+        std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         bool isSuccessful = false;
 
@@ -80,7 +79,7 @@ public:
         return isSuccessful;
     }
 
-    int read(const handler_t& handler, int messageCountLimit)
+    int read(const handler_t &handler, int messageCountLimit)
     {
         const std::int64_t head = m_buffer.getInt64(m_headPositionIndex);
         const auto headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
@@ -119,7 +118,9 @@ public:
 
             ++messagesRead;
             handler(
-                msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
+                msgTypeId,
+                m_buffer,
+                RecordDescriptor::encodedMsgOffset(recordIndex),
                 recordLength - RecordDescriptor::HEADER_LENGTH);
         }
 

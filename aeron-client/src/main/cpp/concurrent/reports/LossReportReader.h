@@ -17,10 +17,10 @@
 #define AERON_LOSS_REPORT_READER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
-#include <util/BitUtil.h>
-#include <concurrent/reports/LossReportDescriptor.h>
+#include "util/Index.h"
+#include "util/BitUtil.h"
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/reports/LossReportDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace reports {
 
@@ -43,7 +43,7 @@ typedef std::function<void(
  * @param entryConsumer to be called to accept each entry in the report.
  * @return the number of entries read.
  */
-inline static int read(AtomicBuffer& buffer, const loss_report_consumer_t &consumer)
+inline static int read(AtomicBuffer &buffer, const loss_report_consumer_t &consumer)
 {
     int recordsRead = 0;
     util::index_t offset = 0;

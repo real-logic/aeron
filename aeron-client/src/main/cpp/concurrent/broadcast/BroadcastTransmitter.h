@@ -17,7 +17,6 @@
 #ifndef AERON_CONCURRENT_BROADCAST_TRANSMITTER_H
 #define AERON_CONCURRENT_BROADCAST_TRANSMITTER_H
 
-#include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
@@ -27,7 +26,7 @@ namespace aeron { namespace concurrent { namespace broadcast {
 class BroadcastTransmitter
 {
 public:
-    explicit BroadcastTransmitter(AtomicBuffer& buffer) :
+    explicit BroadcastTransmitter(AtomicBuffer &buffer) :
         m_buffer(buffer),
         m_capacity(buffer.capacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
@@ -50,7 +49,7 @@ public:
     }
 
     void transmit(
-        std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+        std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
@@ -86,7 +85,7 @@ public:
     }
 
 private:
-    AtomicBuffer& m_buffer;
+    AtomicBuffer &m_buffer;
     util::index_t m_capacity;
     util::index_t m_mask;
     util::index_t m_maxMsgLength;
@@ -104,13 +103,13 @@ private:
         }
     }
 
-    inline void signalTailIntent(AtomicBuffer& buffer, std::int64_t newTail)
+    inline void signalTailIntent(AtomicBuffer &buffer, std::int64_t newTail)
     {
         buffer.putInt64Ordered(m_tailIntentCounterIndex, newTail);
         atomic::release();
     }
 
-    inline static void insertPaddingRecord(AtomicBuffer& buffer, std::int32_t recordOffset, std::int32_t length)
+    inline static void insertPaddingRecord(AtomicBuffer &buffer, std::int32_t recordOffset, std::int32_t length)
     {
         buffer.putInt32(RecordDescriptor::lengthOffset(recordOffset), length);
         buffer.putInt32(RecordDescriptor::typeOffset(recordOffset), RecordDescriptor::PADDING_MSG_TYPE_ID);

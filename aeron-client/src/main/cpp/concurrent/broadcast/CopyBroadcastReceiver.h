@@ -20,7 +20,6 @@
 #include <array>
 #include <functional>
 
-#include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
@@ -31,18 +30,18 @@ namespace aeron { namespace concurrent { namespace broadcast {
 typedef std::array<std::uint8_t, 4096> scratch_buffer_t;
 
 /** The data handler function signature */
-typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
+typedef std::function<void(std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)> handler_t;
 
 class CopyBroadcastReceiver
 {
 public:
-    explicit CopyBroadcastReceiver(BroadcastReceiver& receiver) :
+    explicit CopyBroadcastReceiver(BroadcastReceiver &receiver) :
         m_receiver(receiver),
         m_scratchBuffer(m_scratch)
     {
     }
 
-    int receive(const handler_t& handler)
+    int receive(const handler_t &handler)
     {
         int messagesReceived = 0;
         const long lastSeenLappedCount = m_receiver.lappedCount();
@@ -80,7 +79,7 @@ public:
 
 private:
     AERON_DECL_ALIGNED(scratch_buffer_t m_scratch, 16);
-    BroadcastReceiver& m_receiver;
+    BroadcastReceiver &m_receiver;
     AtomicBuffer m_scratchBuffer;
 };
 

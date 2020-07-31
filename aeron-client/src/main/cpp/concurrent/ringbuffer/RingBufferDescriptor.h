@@ -18,15 +18,15 @@
 #define AERON_RING_BUFFER_DESCRIPTOR_H
 
 #include <functional>
-#include <util/Index.h>
-#include <util/BitUtil.h>
-#include <util/Exceptions.h>
-#include <util/StringUtil.h>
+#include "util/Index.h"
+#include "util/BitUtil.h"
+#include "util/Exceptions.h"
+#include "util/StringUtil.h"
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 
 /** The read handler function signature */
-typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
+typedef std::function<void(std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)> handler_t;
 
 using namespace aeron::util::BitUtil;
 

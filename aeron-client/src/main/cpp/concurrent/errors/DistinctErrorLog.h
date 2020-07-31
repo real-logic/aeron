@@ -22,9 +22,8 @@
 #include <algorithm>
 #include <mutex>
 #include <atomic>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
-#include <util/BitUtil.h>
+#include "concurrent/AtomicBuffer.h"
+#include "util/BitUtil.h"
 #include "ErrorLogDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace errors {
@@ -34,7 +33,7 @@ class DistinctErrorLog
 public:
     typedef std::function<std::int64_t()> clock_t;
 
-    inline DistinctErrorLog(AtomicBuffer& buffer, clock_t clock) :
+    inline DistinctErrorLog(AtomicBuffer &buffer, clock_t clock) :
         m_buffer(buffer),
         m_clock(clock),
         m_observations(buffer.capacity() / ErrorLogDescriptor::HEADER_LENGTH),
@@ -43,17 +42,17 @@ public:
     {
     }
 
-    inline bool record(std::exception& observation)
+    inline bool record(std::exception &observation)
     {
         return record(typeid(observation).hash_code(), observation.what(), "no message");
     }
 
-    inline bool record(util::SourcedException& observation)
+    inline bool record(util::SourcedException &observation)
     {
         return record(typeid(observation).hash_code(), observation.where(), observation.what());
     }
 
-    bool record(std::size_t errorCode, const std::string& description, const std::string& message)
+    bool record(std::size_t errorCode, const std::string &description, const std::string &message)
     {
         std::int64_t timestamp = m_clock();
         std::size_t originalNumObservations = std::atomic_load(&m_numObservations);
@@ -89,7 +88,7 @@ private:
         util::index_t m_offset;
     };
 
-    AtomicBuffer& m_buffer;
+    AtomicBuffer &m_buffer;
     clock_t m_clock;
     std::recursive_mutex m_lock;
 
@@ -99,16 +98,16 @@ private:
     util::index_t m_nextOffset;
 
     static std::string encodeObservation(
-        std::size_t errorCode, const std::string& description, const std::string& message)
+        std::size_t errorCode, const std::string &description, const std::string &message)
     {
         return description + " " + message;
     }
 
     static std::vector<DistinctObservation>::iterator findObservation(
-        std::vector<DistinctObservation>& observations,
+        std::vector<DistinctObservation> &observations,
         std::size_t numObservations,
         std::size_t errorCode,
-        const std::string& description)
+        const std::string &description)
     {
         auto begin = observations.begin();
         auto end = begin + numObservations;
@@ -126,8 +125,8 @@ private:
         std::size_t existingNumObservations,
         std::int64_t timestamp,
         std::size_t errorCode,
-        const std::string& description,
-        const std::string& message)
+        const std::string &description,
+        const std::string &message)
     {
         std::size_t numObservations = std::atomic_load(&m_numObservations);
 

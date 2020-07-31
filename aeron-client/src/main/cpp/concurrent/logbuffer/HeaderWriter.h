@@ -17,8 +17,7 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_HEADER_WRITER_H
 #define AERON_CONCURRENT_LOGBUFFER_HEADER_WRITER_H
 
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "concurrent/AtomicBuffer.h"
 #include "DataFrameHeader.h"
 #include "FrameDescriptor.h"
 
@@ -36,12 +35,12 @@ public:
     /**
      * Write header in LITTLE_ENDIAN order
      */
-    inline void write(AtomicBuffer& termBuffer, util::index_t offset, util::index_t length, std::int32_t termId) const
+    inline void write(AtomicBuffer &termBuffer, util::index_t offset, util::index_t length, std::int32_t termId) const
     {
         termBuffer.putInt32Ordered(offset, -length);
         atomic::release();
 
-        auto* hdr = (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);
+        auto *hdr = (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);
 
         hdr->version = DataFrameHeader::CURRENT_VERSION;
         hdr->flags = FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG;

@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <string>
 #include <cstddef>
-#include <util/BitUtil.h>
+#include "util/BitUtil.h"
 #include "CorrelatedMessageFlyweight.h"
 
 namespace aeron { namespace command

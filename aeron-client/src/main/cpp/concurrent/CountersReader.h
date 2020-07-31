@@ -74,16 +74,12 @@ namespace aeron { namespace concurrent {
  * </pre>
  */
 
-typedef std::function<void(
-    std::int32_t,
-    std::int32_t,
-    const AtomicBuffer&,
-    const std::string&)> on_counters_metadata_t;
+typedef std::function<void(std::int32_t, std::int32_t, const AtomicBuffer&, const std::string&)> on_counters_metadata_t;
 
 class CountersReader
 {
 public:
-    inline CountersReader(const AtomicBuffer& metadataBuffer, const AtomicBuffer& valuesBuffer) :
+    inline CountersReader(const AtomicBuffer &metadataBuffer, const AtomicBuffer &valuesBuffer) :
         m_metadataBuffer(metadataBuffer),
         m_valuesBuffer(valuesBuffer),
         m_maxCounterId(valuesBuffer.capacity() / COUNTER_LENGTH)
@@ -91,7 +87,7 @@ public:
     }
 
     template <typename F>
-    void forEach(F&& onCountersMetadata) const
+    void forEach(F &&onCountersMetadata) const
     {
         std::int32_t id = 0;
 
@@ -105,7 +101,7 @@ public:
             }
             else if (RECORD_ALLOCATED == recordStatus)
             {
-                const auto& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
+                const auto &record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
 
                 const std::string label = m_metadataBuffer.getString(i + LABEL_LENGTH_OFFSET);
                 const AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));

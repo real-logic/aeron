@@ -19,7 +19,6 @@
 
 #include <atomic>
 
-#include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
@@ -29,7 +28,7 @@ namespace aeron { namespace concurrent { namespace broadcast {
 class BroadcastReceiver
 {
 public:
-    explicit BroadcastReceiver(AtomicBuffer& buffer) :
+    explicit BroadcastReceiver(AtomicBuffer &buffer) :
         m_buffer(buffer),
         m_capacity(buffer.capacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
@@ -45,7 +44,7 @@ public:
 
         m_cursor = m_buffer.getInt64(m_latestCounterIndex);
         m_nextRecord = m_cursor;
-        m_recordOffset = (std::int32_t)m_cursor & m_mask;
+        m_recordOffset = static_cast<std::int32_t>(m_cursor & m_mask);
     }
 
     inline util::index_t capacity() const
@@ -73,7 +72,7 @@ public:
         return m_buffer.getInt32(RecordDescriptor::lengthOffset(m_recordOffset)) - RecordDescriptor::HEADER_LENGTH;
     }
 
-    inline AtomicBuffer& buffer()
+    inline AtomicBuffer &buffer()
     {
         return m_buffer;
     }
@@ -122,7 +121,7 @@ public:
     }
 
 private:
-    AtomicBuffer& m_buffer;
+    AtomicBuffer &m_buffer;
     util::index_t m_capacity;
     util::index_t m_mask;
     util::index_t m_tailIntentCounterIndex;

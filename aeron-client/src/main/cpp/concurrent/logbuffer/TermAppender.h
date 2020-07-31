@@ -18,8 +18,6 @@
 #define AERON_CONCURRENT_LOGBUFFER_TERM_APPENDER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
 #include "HeaderWriter.h"
 #include "LogBufferDescriptor.h"
 #include "BufferClaim.h"
@@ -57,14 +55,14 @@ public:
         std::int32_t termId;
     };
 
-    TermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer, const int partitionIndex) :
+    TermAppender(AtomicBuffer &termBuffer, AtomicBuffer &metaDataBuffer, const int partitionIndex) :
         m_termBuffer(termBuffer),
         m_tailBuffer(metaDataBuffer),
         m_tailOffset(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)))
     {
     }
 
-    inline AtomicBuffer& termBuffer()
+    inline AtomicBuffer &termBuffer()
     {
         return m_termBuffer;
     }
@@ -75,9 +73,9 @@ public:
     }
 
     inline std::int32_t claim(
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         util::index_t length,
-        BufferClaim& bufferClaim,
+        BufferClaim &bufferClaim,
         std::int32_t activeTermId)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
@@ -106,11 +104,11 @@ public:
     }
 
     inline std::int32_t appendUnfragmentedMessage(
-        const HeaderWriter& header,
-        const AtomicBuffer& srcBuffer,
+        const HeaderWriter &header,
+        const AtomicBuffer &srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
-        const on_reserved_value_supplier_t& reservedValueSupplier,
+        const on_reserved_value_supplier_t &reservedValueSupplier,
         std::int32_t activeTermId)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
@@ -144,10 +142,10 @@ public:
     }
 
     template <class BufferIterator> std::int32_t appendUnfragmentedMessage(
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         BufferIterator bufferIt,
         util::index_t length,
-        const on_reserved_value_supplier_t& reservedValueSupplier,
+        const on_reserved_value_supplier_t &reservedValueSupplier,
         std::int32_t activeTermId)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
@@ -189,12 +187,12 @@ public:
     }
 
     std::int32_t appendFragmentedMessage(
-        const HeaderWriter& header,
-        const AtomicBuffer& srcBuffer,
+        const HeaderWriter &header,
+        const AtomicBuffer &srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
         util::index_t maxPayloadLength,
-        const on_reserved_value_supplier_t& reservedValueSupplier,
+        const on_reserved_value_supplier_t &reservedValueSupplier,
         std::int32_t activeTermId)
     {
         const int numMaxPayloads = length / maxPayloadLength;
@@ -259,11 +257,11 @@ public:
     }
 
     template <class BufferIterator> std::int32_t appendFragmentedMessage(
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         BufferIterator bufferIt,
         util::index_t length,
         util::index_t maxPayloadLength,
-        const on_reserved_value_supplier_t& reservedValueSupplier,
+        const on_reserved_value_supplier_t &reservedValueSupplier,
         std::int32_t activeTermId)
     {
         const int numMaxPayloads = length / maxPayloadLength;
@@ -344,8 +342,8 @@ public:
     }
 
 private:
-    AtomicBuffer& m_termBuffer;
-    AtomicBuffer& m_tailBuffer;
+    AtomicBuffer &m_termBuffer;
+    AtomicBuffer &m_tailBuffer;
     const util::index_t m_tailOffset;
 
     inline static void checkTerm(std::int32_t expectedTermId, std::int32_t termId)
@@ -359,7 +357,7 @@ private:
     }
 
     inline static std::int32_t handleEndOfLogCondition(
-        AtomicBuffer& termBuffer,
+        AtomicBuffer &termBuffer,
         std::int64_t termOffset,
         const HeaderWriter& header,
         std::int32_t termLength,

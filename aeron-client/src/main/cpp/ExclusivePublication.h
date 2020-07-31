@@ -22,10 +22,9 @@
 #include <memory>
 #include <string>
 
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/BufferClaim.h>
-#include <concurrent/logbuffer/ExclusiveTermAppender.h>
-#include <concurrent/status/UnsafeBufferPosition.h>
+#include "concurrent/logbuffer/BufferClaim.h"
+#include "concurrent/logbuffer/ExclusiveTermAppender.h"
+#include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "Publication.h"
 #include "LogBuffers.h"
@@ -434,7 +433,7 @@ public:
             {
                 throw aeron::util::IllegalStateException(
                     "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
-                        " > " + std::to_string(length + it->capacity()),
+                    " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 

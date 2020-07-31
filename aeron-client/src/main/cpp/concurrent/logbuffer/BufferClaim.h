@@ -17,9 +17,9 @@
 #ifndef AERON_CONCURRENT_BUFFER_CLAIM_H
 #define AERON_CONCURRENT_BUFFER_CLAIM_H
 
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/DataFrameHeader.h>
+#include "util/Index.h"
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/logbuffer/DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -44,7 +44,7 @@ public:
     /// @endcond
 
     /// @cond HIDDEN_SYMBOLS
-    inline void wrap(AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    inline void wrap(AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
         m_buffer.wrap(buffer.buffer() + offset, static_cast<size_t>(length));
     }
@@ -56,7 +56,7 @@ public:
      *
      * @return the referenced buffer to be used..
      */
-    inline AtomicBuffer& buffer()
+    inline AtomicBuffer &buffer()
     {
         return m_buffer;
     }
@@ -120,7 +120,7 @@ public:
      * @param type value to be set in the header.
      * @return this for a fluent API.
      */
-    inline this_t& headerType(const std::uint16_t type)
+    inline this_t &headerType(const std::uint16_t type)
     {
         m_buffer.putUInt16(DataFrameHeader::TYPE_FIELD_OFFSET, type);
 
@@ -143,7 +143,7 @@ public:
      * @param value to be stored in the reserve space at the end of a data frame header.
      * @return this for fluent API semantics.
      */
-    inline this_t& reservedValue(const std::int64_t value)
+    inline this_t &reservedValue(const std::int64_t value)
     {
         m_buffer.putInt64(DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, value);
         return *this;

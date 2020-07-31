@@ -16,7 +16,7 @@
 #ifndef AERON_CONCURRENT_ATOMIC64_H
 #define AERON_CONCURRENT_ATOMIC64_H
 
-#include <util/Platform.h>
+#include "util/Platform.h"
 
 #include <cstdint>
 

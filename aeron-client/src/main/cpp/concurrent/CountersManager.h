@@ -38,15 +38,15 @@ class CountersManager : public CountersReader
 public:
     using clock_t = std::function<long long()>;
 
-    inline CountersManager(const AtomicBuffer& metadataBuffer, const AtomicBuffer& valuesBuffer) :
+    inline CountersManager(const AtomicBuffer &metadataBuffer, const AtomicBuffer &valuesBuffer) :
         CountersReader(metadataBuffer, valuesBuffer)
     {
     }
 
     inline CountersManager(
-        const AtomicBuffer& metadataBuffer,
-        const AtomicBuffer& valuesBuffer,
-        const clock_t& clock,
+        const AtomicBuffer &metadataBuffer,
+        const AtomicBuffer &valuesBuffer,
+        const clock_t &clock,
         long freeToReuseTimeoutMs) :
         CountersReader(metadataBuffer, valuesBuffer),
         m_clock(clock),
@@ -55,10 +55,7 @@ public:
     }
 
     template <typename F>
-    std::int32_t allocate(
-        const std::string& label,
-        std::int32_t typeId,
-        F&& keyFunc)
+    std::int32_t allocate(const std::string &label, std::int32_t typeId, F &&keyFunc)
     {
         std::int32_t counterId = nextCounterId();
 
@@ -72,7 +69,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
         checkMetaDataCapacity(recordOffset);
 
-        auto& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
+        auto &record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
 
@@ -87,11 +84,7 @@ public:
         return counterId;
     }
 
-    std::int32_t allocate(
-        std::int32_t typeId,
-        const std::uint8_t *key,
-        size_t keyLength,
-        const std::string& label)
+    std::int32_t allocate(std::int32_t typeId, const std::uint8_t *key, size_t keyLength, const std::string &label)
     {
         std::int32_t counterId = nextCounterId();
 
@@ -105,7 +98,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
         checkMetaDataCapacity(recordOffset);
 
-        auto& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
+        auto &record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
         record.freeToReuseDeadline = NOT_FREE_TO_REUSE;
@@ -123,7 +116,7 @@ public:
         return counterId;
     }
 
-    inline std::int32_t allocate(const std::string& label)
+    inline std::int32_t allocate(const std::string &label)
     {
         return allocate(0, nullptr, 0, label);
     }

@@ -24,7 +24,7 @@ namespace aeron { namespace concurrent { namespace logbuffer
 
 namespace TermRebuilder {
 
-inline void insert(AtomicBuffer& termBuffer, std::int32_t termOffset, AtomicBuffer& packet, std::int32_t length)
+inline void insert(AtomicBuffer &termBuffer, std::int32_t termOffset, AtomicBuffer &packet, std::int32_t length)
 {
     if (0 == termBuffer.getInt32(termOffset))
     {

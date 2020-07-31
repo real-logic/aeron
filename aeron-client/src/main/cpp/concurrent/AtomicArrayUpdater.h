@@ -87,13 +87,13 @@ public:
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
             {
-                return {array, length};
+                return { array, length };
             }
         }
         while (true);
     }
 
-    inline void store(E* array, std::size_t length)
+    inline void store(E *array, std::size_t length)
     {
         std::int64_t changeNumber = m_beginChange + 1;
 
@@ -116,7 +116,7 @@ public:
     }
 
     template<typename F>
-    std::pair<E*, std::size_t> removeElement(F&& func)
+    std::pair<E*, std::size_t> removeElement(F &&func)
     {
         std::pair<E*, std::size_t> oldArray = load();
         const std::size_t length = oldArray.second;
@@ -129,7 +129,7 @@ public:
 
                 store(newArray.first, newArray.second);
 
-                return {oldArray.first, i};
+                return { oldArray.first, i };
             }
         }
 
@@ -137,9 +137,9 @@ public:
     }
 
 private:
-    std::atomic<std::int64_t> m_beginChange = {-1};
-    std::atomic<std::int64_t> m_endChange = {-1};
-    std::pair<E*, std::size_t> m_array = {nullptr, 0};
+    std::atomic<std::int64_t> m_beginChange = { -1 };
+    std::atomic<std::int64_t> m_endChange = { -1 };
+    std::pair<E*, std::size_t> m_array = { nullptr, 0 };
 };
 
 }

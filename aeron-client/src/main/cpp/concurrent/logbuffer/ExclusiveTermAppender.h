@@ -18,8 +18,6 @@
 #define AERON_CONCURRENT_EXCLUSIVE_TERM_APPENDER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
 #include "HeaderWriter.h"
 #include "LogBufferDescriptor.h"
 #include "BufferClaim.h"

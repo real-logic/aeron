@@ -17,7 +17,7 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_TERM_SCANNER_H
 #define AERON_CONCURRENT_LOGBUFFER_TERM_SCANNER_H
 
-#include <util/BitUtil.h>
+#include "util/BitUtil.h"
 #include "FrameDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer
@@ -41,7 +41,7 @@ inline std::int32_t padding(std::int64_t scanOutcome)
     return static_cast<std::int32_t>(scanOutcome >> 32);
 }
 
-inline std::int64_t scanForAvailability(AtomicBuffer& termBuffer, std::int32_t offset, std::int32_t maxLength)
+inline std::int64_t scanForAvailability(AtomicBuffer &termBuffer, std::int32_t offset, std::int32_t maxLength)
 {
     maxLength = std::min(maxLength, termBuffer.capacity() - offset);
     std::int32_t available = 0;

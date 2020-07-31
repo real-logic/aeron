@@ -17,9 +17,8 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_FRAME_DESCRIPTOR_H
 #define AERON_CONCURRENT_LOGBUFFER_FRAME_DESCRIPTOR_H
 
-#include <util/Index.h>
-#include <util/StringUtil.h>
-#include <concurrent/AtomicBuffer.h>
+#include "util/StringUtil.h"
+#include "concurrent/AtomicBuffer.h"
 #include "DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
@@ -115,42 +114,42 @@ inline static util::index_t termOffsetOffset(util::index_t frameOffset)
     return frameOffset + DataFrameHeader::TERM_OFFSET_FIELD_OFFSET;
 }
 
-inline static void frameType(AtomicBuffer& logBuffer, util::index_t frameOffset, std::uint16_t type)
+inline static void frameType(AtomicBuffer &logBuffer, util::index_t frameOffset, std::uint16_t type)
 {
     logBuffer.putUInt16(typeOffset(frameOffset), type);
 }
 
-inline static std::uint16_t frameType(const AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static std::uint16_t frameType(const AtomicBuffer &logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getUInt16(frameOffset);
 }
 
-inline static void frameFlags(AtomicBuffer& logBuffer, util::index_t frameOffset, std::uint8_t flags)
+inline static void frameFlags(AtomicBuffer &logBuffer, util::index_t frameOffset, std::uint8_t flags)
 {
     logBuffer.putUInt8(flagsOffset(frameOffset), flags);
 }
 
-inline static void frameTermOffset(AtomicBuffer& logBuffer, util::index_t frameOffset, std::int32_t termOffset)
+inline static void frameTermOffset(AtomicBuffer &logBuffer, util::index_t frameOffset, std::int32_t termOffset)
 {
     logBuffer.putInt32(termOffsetOffset(frameOffset), termOffset);
 }
 
-inline static bool isPaddingFrame(const AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static bool isPaddingFrame(const AtomicBuffer &logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getUInt16(typeOffset(frameOffset)) == DataFrameHeader::HDR_TYPE_PAD;
 }
 
-inline static std::int32_t frameLengthVolatile(const AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static std::int32_t frameLengthVolatile(const AtomicBuffer &logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getInt32Volatile(lengthOffset(frameOffset));
 }
 
-inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t frameOffset, std::int32_t frameLength)
+inline static void frameLengthOrdered(AtomicBuffer &logBuffer, util::index_t frameOffset, std::int32_t frameLength)
 {
     logBuffer.putInt32Ordered(lengthOffset(frameOffset), frameLength);
 }
 
-inline static std::uint8_t frameVersion(const AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static std::uint8_t frameVersion(const AtomicBuffer &logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getUInt8(frameOffset);
 }

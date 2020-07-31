@@ -17,11 +17,10 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_DESCRIPTOR_H
 #define AERON_CONCURRENT_LOGBUFFER_DESCRIPTOR_H
 
-#include <util/Index.h>
-#include <util/StringUtil.h>
-#include <util/BitUtil.h>
-#include <util/Exceptions.h>
-#include <concurrent/AtomicBuffer.h>
+#include "util/StringUtil.h"
+#include "util/BitUtil.h"
+#include "util/Exceptions.h"
+#include "concurrent/AtomicBuffer.h"
 #include "FrameDescriptor.h"
 #include "DataFrameHeader.h"
 
@@ -197,38 +196,38 @@ inline void checkPageSize(std::int32_t pageSize)
     }
 }
 
-inline std::int32_t initialTermId(const AtomicBuffer& logMetaDataBuffer)
+inline std::int32_t initialTermId(const AtomicBuffer &logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_INITIAL_TERM_ID_OFFSET);
 }
 
-inline std::int32_t mtuLength(const AtomicBuffer& logMetaDataBuffer)
+inline std::int32_t mtuLength(const AtomicBuffer &logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
 }
 
-inline std::int32_t termLength(const AtomicBuffer& logMetaDataBuffer)
+inline std::int32_t termLength(const AtomicBuffer &logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_TERM_LENGTH_OFFSET);
 }
 
-inline std::int32_t pageSize(const AtomicBuffer& logMetaDataBuffer)
+inline std::int32_t pageSize(const AtomicBuffer &logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_PAGE_SIZE_OFFSET);
 }
 
-inline std::int32_t activeTermCount(const AtomicBuffer& logMetaDataBuffer)
+inline std::int32_t activeTermCount(const AtomicBuffer &logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32Volatile(LOG_ACTIVE_TERM_COUNT_OFFSET);
 }
 
-inline void activeTermCountOrdered(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
+inline void activeTermCountOrdered(AtomicBuffer &logMetaDataBuffer, std::int32_t activeTermId)
 {
     logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_TERM_COUNT_OFFSET, activeTermId);
 }
 
 inline bool casActiveTermCount(
-    AtomicBuffer& logMetaDataBuffer, std::int32_t expectedTermCount, std::int32_t updateTermCount)
+    AtomicBuffer &logMetaDataBuffer, std::int32_t expectedTermCount, std::int32_t updateTermCount)
 {
     return logMetaDataBuffer.compareAndSetInt32(LOG_ACTIVE_TERM_COUNT_OFFSET, expectedTermCount, updateTermCount);
 }
@@ -289,7 +288,10 @@ inline int indexByPosition(std::int64_t position, std::int32_t positionBitsToShi
 }
 
 inline std::int64_t computePosition(
-    std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId) noexcept
+    std::int32_t activeTermId,
+    std::int32_t termOffset,
+    std::int32_t positionBitsToShift,
+    std::int32_t initialTermId) noexcept
 {
     const std::int64_t termCount = activeTermId - initialTermId;
     return (termCount << positionBitsToShift) + termOffset;
@@ -302,19 +304,19 @@ inline std::int64_t computeTermBeginPosition(
     return termCount << positionBitsToShift;
 }
 
-inline std::int64_t rawTailVolatile(const AtomicBuffer& logMetaDataBuffer)
+inline std::int64_t rawTailVolatile(const AtomicBuffer &logMetaDataBuffer)
 {
     const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
     return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
 
-inline std::int64_t rawTail(const AtomicBuffer& logMetaDataBuffer)
+inline std::int64_t rawTail(const AtomicBuffer &logMetaDataBuffer)
 {
     const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
     return logMetaDataBuffer.getInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
 
-inline std::int64_t rawTail(const AtomicBuffer& logMetaDataBuffer, int partitionIndex)
+inline std::int64_t rawTail(const AtomicBuffer &logMetaDataBuffer, int partitionIndex)
 {
     return logMetaDataBuffer.getInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
@@ -331,19 +333,19 @@ inline std::int32_t termOffset(const std::int64_t rawTail, const std::int64_t te
 }
 
 inline bool casRawTail(
-    AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int64_t expectedRawTail, std::int64_t updateRawTail)
+    AtomicBuffer &logMetaDataBuffer, int partitionIndex, std::int64_t expectedRawTail, std::int64_t updateRawTail)
 {
     return logMetaDataBuffer.compareAndSetInt64(
         TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), expectedRawTail, updateRawTail);
 }
 
-inline AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)
+inline AtomicBuffer defaultFrameHeader(AtomicBuffer &logMetaDataBuffer)
 {
     std::uint8_t *header = logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
     return {header, static_cast<std::size_t>(DataFrameHeader::LENGTH)};
 }
 
-inline void rotateLog(AtomicBuffer& logMetaDataBuffer, std::int32_t currentTermCount, std::int32_t currentTermId)
+inline void rotateLog(AtomicBuffer &logMetaDataBuffer, std::int32_t currentTermCount, std::int32_t currentTermId)
 {
     const std::int32_t nextTermId = currentTermId + 1;
     const std::int32_t nextTermCount = currentTermCount + 1;
@@ -365,7 +367,7 @@ inline void rotateLog(AtomicBuffer& logMetaDataBuffer, std::int32_t currentTermC
     LogBufferDescriptor::casActiveTermCount(logMetaDataBuffer, currentTermCount, nextTermCount);
 }
 
-inline void initializeTailWithTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)
+inline void initializeTailWithTermId(AtomicBuffer &logMetaDataBuffer, int partitionIndex, std::int32_t termId)
 {
     const std::int64_t rawTail = (termId * ((int64_t(1) << 32)));
     logMetaDataBuffer.putInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), rawTail);

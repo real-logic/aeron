@@ -17,7 +17,7 @@
 #ifndef AERON_CONCURRENT_TERM_GAP_SCANNER_H
 #define AERON_CONCURRENT_TERM_GAP_SCANNER_H
 
-#include <util/BitUtil.h>
+#include "util/BitUtil.h"
 #include "FrameDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
@@ -25,11 +25,11 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 namespace TermGapScanner {
 
 inline std::int32_t scanForGap(
-    AtomicBuffer& termBuffer,
+    AtomicBuffer &termBuffer,
     std::int32_t termId,
     util::index_t rebuildOffset,
     std::int32_t hwmOffset,
-    std::function<void(std::int32_t, AtomicBuffer&, std::int32_t, std::int32_t)> handler)
+    std::function<void(std::int32_t, AtomicBuffer &, std::int32_t, std::int32_t)> handler)
 {
     do
     {

@@ -21,7 +21,7 @@
 #include <cstdint>
 #include <string>
 #include <cstddef>
-#include <command/Flyweight.h>
+#include "command/Flyweight.h"
 #include "HeaderFlyweight.h"
 
 namespace aeron { namespace protocol

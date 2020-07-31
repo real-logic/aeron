@@ -18,8 +18,7 @@
 #define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "concurrent/AtomicBuffer.h"
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 
@@ -37,7 +36,7 @@ namespace aeron { namespace concurrent { namespace logbuffer {
  * @param header representing the meta data for the data.
  */
 typedef std::function<void(
-    concurrent::AtomicBuffer& buffer,
+    concurrent::AtomicBuffer &buffer,
     util::index_t offset,
     util::index_t length,
     Header& header)> fragment_handler_t;
@@ -49,7 +48,7 @@ typedef std::function<void(
  *
  * @param exception that has occurred.
  */
-typedef std::function<void(const std::exception& exception)> exception_handler_t;
+typedef std::function<void(const std::exception &exception)> exception_handler_t;
 
 namespace TermReader {
 
@@ -61,13 +60,13 @@ struct ReadOutcome
 
 template <typename F>
 inline void read(
-    ReadOutcome& outcome,
-    AtomicBuffer& termBuffer,
+    ReadOutcome &outcome,
+    AtomicBuffer &termBuffer,
     std::int32_t termOffset,
     F&& handler,
     int fragmentsLimit,
-    Header& header,
-    const exception_handler_t & exceptionHandler)
+    Header &header,
+    const exception_handler_t &exceptionHandler)
 {
     outcome.fragmentsRead = 0;
     outcome.offset = termOffset;
@@ -90,13 +89,16 @@ inline void read(
             {
                 header.buffer(termBuffer);
                 header.offset(fragmentOffset);
-                handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
+                handler(
+                    termBuffer,
+                    fragmentOffset + DataFrameHeader::LENGTH,
+                    frameLength - DataFrameHeader::LENGTH, header);
 
                 ++outcome.fragmentsRead;
             }
         }
     }
-    catch (const std::exception& ex)
+    catch (const std::exception &ex)
     {
         exceptionHandler(ex);
     }

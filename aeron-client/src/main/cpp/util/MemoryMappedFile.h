@@ -37,23 +37,23 @@ public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;
 
 #ifdef _WIN32
-    static ptr_t createNew(const char* filename, size_t offset, size_t length);
-    static ptr_t mapExisting(const char* filename, size_t offset, size_t length, bool readOnly = false);
+    static ptr_t createNew(const char *filename, size_t offset, size_t length);
+    static ptr_t mapExisting(const char *filename, size_t offset, size_t length, bool readOnly = false);
 #else
-    static ptr_t createNew(const char* filename, off_t offset, size_t length);
-    static ptr_t mapExisting(const char* filename, off_t offset, size_t length, bool readOnly = false);
+    static ptr_t createNew(const char *filename, off_t offset, size_t length);
+    static ptr_t mapExisting(const char *filename, off_t offset, size_t length, bool readOnly = false);
 #endif
 
-    static ptr_t mapExisting(const char* filename, bool readOnly = false);
+    static ptr_t mapExisting(const char *filename, bool readOnly = false);
 
-    inline static ptr_t mapExistingReadOnly(const char* filename)
+    inline static ptr_t mapExistingReadOnly(const char *filename)
     {
         return mapExisting(filename, 0, 0, true);
     }
 
     ~MemoryMappedFile();
 
-    uint8_t* getMemoryPtr() const;
+    uint8_t *getMemoryPtr() const;
     size_t getMemorySize() const;
 
     MemoryMappedFile(MemoryMappedFile const &) = delete;
@@ -86,8 +86,8 @@ private:
     static bool fill(FileHandle fd, size_t sz, std::uint8_t);
 
 #ifdef _WIN32
-    HANDLE m_file = NULL;
-    HANDLE m_mapping = NULL;
+    HANDLE m_file = nullptr;
+    HANDLE m_mapping = nullptr;
     void cleanUp();
 #endif
 

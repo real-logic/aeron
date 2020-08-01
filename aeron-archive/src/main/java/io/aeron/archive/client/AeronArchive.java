@@ -2092,13 +2092,25 @@ public class AeronArchive implements AutoCloseable
 
         /**
          * Channel for receiving control response messages from an archive.
+         *
+         * <p>
+         * Channel's <em>endpoint</em> can be specified explicitly (i.e. by providing IP and port pair) or by using
+         * zero as a port number. Here is an example of valid response channels:
+         * <ul>
+         *     <li>{@code aeron:udp?endpoint=localhost:8020} - listen on port {@code 8020} on localhost.</li>
+         *     <li>{@code aeron:udp?endpoint=192.168.10.10:8020} - listen on port {@code 8020} on
+         *     {@code 192.168.10.10}.</li>
+         *     <li>{@code aeron:udp?endpoint=localhost:0} - in this case the port is unspecified and the OS
+         *     will assign a free port from an
+         *     <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral port range</a>.</li>
+         * </ul>
          */
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
 
         /**
-         * Channel for receiving control response messages from an archive.
+         * Default channel for receiving control response messages from an archive.
          */
-        public static final String CONTROL_RESPONSE_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8020";
+        public static final String CONTROL_RESPONSE_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
 
         /**
          * Stream id within a channel for receiving control messages from an archive.
@@ -2929,8 +2941,13 @@ public class AeronArchive implements AutoCloseable
 
             if (2 == step)
             {
-                if (!archiveProxy.tryConnect(
-                    ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId))
+                final String controlResponseChannel = controlResponsePoller.subscription().tryResolveChannelEndpoint();
+                if (null == controlResponseChannel)
+                {
+                    return null;
+                }
+
+                if (!archiveProxy.tryConnect(controlResponseChannel, ctx.controlResponseStreamId(), correlationId))
                 {
                     return null;
                 }

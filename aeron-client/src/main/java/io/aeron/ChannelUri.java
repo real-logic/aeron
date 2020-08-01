@@ -240,7 +240,7 @@ public class ChannelUri
      */
     public String channelTag()
     {
-        return (null != tags && tags.length > CHANNEL_TAG_INDEX) ? tags[CHANNEL_TAG_INDEX] : null;
+        return tags.length > CHANNEL_TAG_INDEX ? tags[CHANNEL_TAG_INDEX] : null;
     }
 
     /**
@@ -252,7 +252,34 @@ public class ChannelUri
      */
     public String entityTag()
     {
-        return (null != tags && tags.length > ENTITY_TAG_INDEX) ? tags[ENTITY_TAG_INDEX] : null;
+        return tags.length > ENTITY_TAG_INDEX ? tags[ENTITY_TAG_INDEX] : null;
+    }
+
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        final ChannelUri that = (ChannelUri)o;
+        return Objects.equals(prefix, that.prefix) &&
+            Objects.equals(media, that.media) &&
+            Objects.equals(params, that.params) &&
+            Arrays.equals(tags, that.tags);
+    }
+
+    public int hashCode()
+    {
+        int result = 19;
+        result = 31 * result + Objects.hashCode(prefix);
+        result = 31 * result + Objects.hashCode(media);
+        result = 31 * result + Objects.hashCode(params);
+        result = 31 * result + Arrays.hashCode(tags);
+        return result;
     }
 
     /**

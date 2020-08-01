@@ -510,12 +510,15 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Resolve channel endpoint and replace it with an actual local socket address. If the channel is not
-     * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned. If there are no
-     * addresses or if there is more than one then the original {@link #channel()} is returned.
+     * Resolve channel endpoint and replace it with assigned local socket address. If there are no addresses, or if
+     * there is more than one, returned from {@link #localSocketAddresses()} then the original {@link #channel()} is
+     * returned.
+     * <p>
+     * If the channel is not {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned.
      *
      * @return channel URI with an endpoint being resolved to the allocated address:port pairing.
      * @see #channelStatus()
+     * @see #localSocketAddresses()
      */
     public String tryResolveChannelEndpoint()
     {
@@ -528,9 +531,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
             if (1 == localSocketAddresses.size())
             {
-                final String localAddress = localSocketAddresses.get(0);
                 final ChannelUri uri = ChannelUri.parse(channel);
-                uri.put(CommonContext.ENDPOINT_PARAM_NAME, localAddress);
+                uri.put(CommonContext.ENDPOINT_PARAM_NAME, localSocketAddresses.get(0));
 
                 return uri.toString();
             }

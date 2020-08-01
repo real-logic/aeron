@@ -862,6 +862,45 @@ static const char *dissect_sockaddr(const struct sockaddr *addr, size_t sockaddr
     return buffer;
 }
 
+static const char *dissect_frame_type(int16_t type)
+{
+    switch (type)
+    {
+        case AERON_HDR_TYPE_DATA:
+            return "DATA";
+
+        case AERON_HDR_TYPE_PAD:
+            return "PAD";
+
+        case AERON_HDR_TYPE_SM:
+            return "SM";
+
+        case AERON_HDR_TYPE_NAK:
+            return "NAK";
+
+        case AERON_HDR_TYPE_SETUP:
+            return "SETUP";
+
+        case AERON_HDR_TYPE_RTTM:
+            return "RTT";
+
+        case AERON_HDR_TYPE_RES:
+            return "RES";
+
+        case AERON_HDR_TYPE_ATS_DATA:
+            return "ATS_DATA";
+
+        case AERON_HDR_TYPE_ATS_SETUP:
+            return "ATS_SETUP";
+
+        case AERON_HDR_TYPE_ATS_SM:
+            return "ATS_SM";
+
+        default:
+            return "unknown command";
+    }
+}
+
 static const char *dissect_frame(const void *message, size_t length)
 {
     static char buffer[256];
@@ -872,11 +911,12 @@ static const char *dissect_frame(const void *message, size_t length)
     {
         case AERON_HDR_TYPE_DATA:
         case AERON_HDR_TYPE_PAD:
+        case AERON_HDR_TYPE_ATS_DATA:
         {
             aeron_data_header_t *data = (aeron_data_header_t *)message;
 
             snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d:%d @%x",
-                hdr->type == AERON_HDR_TYPE_DATA ? "DATA" : "PAD",
+                dissect_frame_type(hdr->type),
                 hdr->flags,
                 hdr->frame_length,
                 data->session_id,
@@ -887,10 +927,12 @@ static const char *dissect_frame(const void *message, size_t length)
         }
 
         case AERON_HDR_TYPE_SM:
+        case AERON_HDR_TYPE_ATS_SM:
         {
             aeron_status_message_header_t *sm = (aeron_status_message_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "SM 0x%x len %d %d:%d:%d @%x %d %" PRId64,
+            snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d:%d @%x %d %" PRId64,
+                dissect_frame_type(hdr->type),
                 hdr->flags,
                 hdr->frame_length,
                 sm->session_id,
@@ -906,7 +948,8 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_nak_header_t *nak = (aeron_nak_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "NAK 0x%x len %d %d:%d:%d @%x %d",
+            snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d:%d @%x %d",
+                dissect_frame_type(hdr->type),
                 hdr->flags,
                 hdr->frame_length,
                 nak->session_id,
@@ -918,10 +961,12 @@ static const char *dissect_frame(const void *message, size_t length)
         }
 
         case AERON_HDR_TYPE_SETUP:
+        case AERON_HDR_TYPE_ATS_SETUP:
         {
             aeron_setup_header_t *setup = (aeron_setup_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "SETUP 0x%x len %d %d:%d:%d %d @%x %d MTU %d TTL %d",
+            snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d:%d %d @%x %d MTU %d TTL %d",
+                dissect_frame_type(hdr->type),
                 hdr->flags,
                 hdr->frame_length,
                 setup->session_id,
@@ -939,7 +984,8 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_rttm_header_t *rttm = (aeron_rttm_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "RTT 0x%x len %d %d:%d %" PRId64 " %" PRId64 " %" PRId64,
+            snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d %" PRId64 " %" PRId64 " %" PRId64,
+                dissect_frame_type(hdr->type),
                 hdr->flags,
                 hdr->frame_length,
                 rttm->session_id,
@@ -957,7 +1003,10 @@ static const char *dissect_frame(const void *message, size_t length)
             const uint8_t *message_bytes = (uint8_t *)message;
             const int buffer_available = sizeof(buffer) - 1;
 
-            int buffer_used = snprintf(buffer, buffer_available, "RES 0x%x len %d", hdr->flags, hdr->frame_length);
+            int buffer_used = snprintf(buffer, buffer_available, "%s 0x%x len %d",
+                dissect_frame_type(hdr->type),
+                hdr->flags,
+                hdr->frame_length);
             size_t message_offset = sizeof(aeron_frame_header_t);
 
             while (message_offset < length && buffer_used < buffer_available)

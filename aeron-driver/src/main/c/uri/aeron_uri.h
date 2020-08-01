@@ -63,6 +63,7 @@ aeron_uri_params_t;
 #define AERON_URI_GTAG_KEY "gtag"
 #define AERON_URI_CC_KEY "cc"
 #define AERON_URI_SPIES_SIMULATE_CONNECTION_KEY "ssc"
+#define AERON_URI_ATS_KEY "ats"
 
 typedef struct aeron_uri_publication_params_stct
 {

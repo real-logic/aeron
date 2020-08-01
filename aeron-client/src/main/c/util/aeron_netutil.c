@@ -39,10 +39,6 @@
 #error Unsupported platform!
 #endif
 
-static aeron_uri_hostname_resolver_func_t aeron_uri_hostname_resolver_func = NULL;
-
-static void *aeron_uri_hostname_resolver_clientd = NULL;
-
 int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint, int protocol)
 {
     aeron_net_init();
@@ -58,16 +54,8 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     int error, result = -1;
     if ((error = getaddrinfo(host, NULL, &hints, &info)) != 0)
     {
-        if (NULL == aeron_uri_hostname_resolver_func)
-        {
-            aeron_set_err(EINVAL, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
-            return -1;
-        }
-        else if (aeron_uri_hostname_resolver_func(aeron_uri_hostname_resolver_clientd, host, &hints, &info) != 0)
-        {
-            aeron_set_err(EINVAL, "Unable to resolve host=(%s): %s", host, aeron_errmsg());
-            return -1;
-        }
+        aeron_set_err(EINVAL, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
+        return -1;
     }
 
     if (info->ai_family == AF_INET)

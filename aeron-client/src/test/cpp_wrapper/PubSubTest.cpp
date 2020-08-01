@@ -57,16 +57,6 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("ipc", nullptr)
     ));
 
-ChannelUriStringBuilder &setParameters(const char *media, const char *endpoint, ChannelUriStringBuilder &builder)
-{
-    builder.media(media);
-    if (endpoint)
-    {
-        builder.endpoint(endpoint);
-    }
-    return builder;
-}
-
 TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
 {
     buffer_t buf;

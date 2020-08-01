@@ -222,7 +222,8 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
-        int numFragments = aeron_subscription_poll(m_subscription, doPoll<handler_type>, handler_ptr, fragmentLimit);
+        int numFragments = aeron_subscription_poll(
+            m_subscription, doPoll<handler_type>, handler_ptr, static_cast<size_t>(fragmentLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -252,7 +253,7 @@ public:
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_subscription_controlled_poll(
-            m_subscription, doControlledPoll<handler_type>, handler_ptr, fragmentLimit);
+            m_subscription, doControlledPoll<handler_type>, handler_ptr, static_cast<size_t>(fragmentLimit));
 
         if (numFragments < 0)
         {
@@ -275,8 +276,8 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = blockHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
-        int numFragments = aeron_subscription_block_poll(
-            m_subscription, doBlockPoll<handler_type>, handler_ptr, blockLengthLimit);
+        long numFragments = aeron_subscription_block_poll(
+            m_subscription, doBlockPoll<handler_type>, handler_ptr, static_cast<size_t>(blockLengthLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -315,8 +316,8 @@ public:
      */
     inline std::shared_ptr<Image> imageBySessionId(std::int32_t sessionId) const
     {
-//        aeron_image_t *image = aeron_subscription_image_by_session_id(m_subscription, sessionId);
-        throw UnsupportedOperationException("Need to support images", SOURCEINFO);
+        aeron_image_t *image = aeron_subscription_image_by_session_id(m_subscription, sessionId);
+        return std::make_shared<Image>(m_subscription, image);
     }
 
     /**
@@ -337,14 +338,17 @@ public:
     /**
      * Get a std::vector of active std::shared_ptr of {@link Image}s that match this subscription.
      *
-     * THis method will create a new std::vector<std::shared_ptr<Image>> populated with the underlying {@link Image}s.
+     * This method will create a new std::vector<std::shared_ptr<Image>> populated with the underlying {@link Image}s.
      *
      * @return a std::vector of active std::shared_ptr of {@link Image}s that match this subscription
      */
     inline std::shared_ptr<std::vector<std::shared_ptr<Image>>> copyOfImageList() const
     {
-        // TODO: need clientd on aeron_subscription_for_each_image
-        throw UnsupportedOperationException("Need to support images", SOURCEINFO);
+        auto images = std::make_shared<std::vector<std::shared_ptr<Image>>>();
+        auto subscriptionAndImages = std::make_pair(m_subscription, images.get());
+        aeron_subscription_for_each_image(
+            m_subscription, Subscription::copyToVector, static_cast<void *>(&subscriptionAndImages));
+        return images;
     }
 
     /**
@@ -398,6 +402,13 @@ private:
     aeron_subscription_constants_t m_constants;
     CountersReader& m_countersReader;
     std::string m_channel;
+
+    static void copyToVector(aeron_image_t *image, void *clientd)
+    {
+        auto subscriptionAndImages =
+            static_cast<std::pair<aeron_subscription_t *, std::vector<std::shared_ptr<Image>> *> *>(clientd);
+        subscriptionAndImages->second->push_back(std::make_shared<Image>(subscriptionAndImages->first, image));
+    }
 };
 
 }

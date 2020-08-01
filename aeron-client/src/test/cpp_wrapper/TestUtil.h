@@ -5,6 +5,10 @@
 #ifndef AERON_TESTUTIL_H
 #define AERON_TESTUTIL_H
 
+#include "ChannelUriStringBuilder.h"
+
+using namespace aeron;
+
 #define WAIT_FOR_NON_NULL(val, op)               \
 auto val = op;                                   \
 do                                               \
@@ -58,5 +62,15 @@ do                                         \
     }                                      \
 }                                          \
 while (0)                                  \
+
+ChannelUriStringBuilder &setParameters(const char *media, const char *endpoint, ChannelUriStringBuilder &builder)
+{
+    builder.media(media);
+    if (endpoint)
+    {
+        builder.endpoint(endpoint);
+    }
+    return builder;
+}
 
 #endif //AERON_TESTUTIL_H

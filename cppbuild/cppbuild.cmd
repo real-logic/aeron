@@ -7,11 +7,12 @@ set "BUILD_DIR=%DIR%\Release"
 set "BUILD_CONFIG=Release"
 set "ZLIB_ZIP=%DIR%\zlib1211.zip"
 set "EXTRA_CMAKE_ARGS="
+set "AERON_SKIP_RMDIR="
 
 for %%o in (%*) do (
 
     if "%%o"=="--help" (
-        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--no-system-tests] [--debug-build] [--help]
+        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--help]
         exit /b
     )
 
@@ -35,6 +36,10 @@ for %%o in (%*) do (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DBUILD_AERON_ARCHIVE_API=ON"
     )
 
+    if "%%o"=="--skip-rmdir" (
+        set "AERON_SKIP_RMDIR=yes"
+    )
+
     if "%%o"=="--slow-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON -DAERON_SYSTEM_TESTS=OFF"
     )
@@ -53,7 +58,9 @@ for %%o in (%*) do (
 call "%DIR%\vs-helper.cmd"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+if "%AERON_SKIP_RMDIR%" equ "yes" goto :start_build
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
+:start_build
 
 set "ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build"
 set "ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64"

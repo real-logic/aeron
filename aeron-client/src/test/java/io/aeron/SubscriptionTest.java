@@ -195,8 +195,8 @@ public class SubscriptionTest
         subscription.channelStatusId(channelStatusId);
         when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
 
-        allocateAddressCounter(0, "localhost:5555", channelStatusId, ACTIVE);
-        allocateAddressCounter(1, "localhost:7777", channelStatusId, ACTIVE);
+        allocateAddressCounter("localhost:5555", channelStatusId, ACTIVE);
+        allocateAddressCounter("localhost:7777", channelStatusId, ACTIVE);
 
         assertSame(CHANNEL, subscription.tryResolveChannelEndpoint());
     }
@@ -216,20 +216,17 @@ public class SubscriptionTest
         subscription.channelStatusId(channelStatusId);
         when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
 
-        allocateAddressCounter(0, "128.0.0.1:19091", channelStatusId, ACTIVE);
-        allocateAddressCounter(1, "localhost:21212", channelStatusId, ERRORED);
+        allocateAddressCounter("128.0.0.1:19091", channelStatusId, ACTIVE);
+        allocateAddressCounter("localhost:21212", channelStatusId, ERRORED);
 
         final String channelWithResolvedEndpoint = subscription.tryResolveChannelEndpoint();
 
-        assertEquals(ChannelUri.parse("aeron:udp?endpoint=128.0.0.1:19091|interface=192.168.5.0/24|reliable=false"),
+        assertEquals(
+            ChannelUri.parse("aeron:udp?endpoint=128.0.0.1:19091|interface=192.168.5.0/24|reliable=false"),
             ChannelUri.parse(channelWithResolvedEndpoint));
     }
 
-    private void allocateAddressCounter(
-        final int index,
-        final String address,
-        final int channelStatusId,
-        final long status)
+    private void allocateAddressCounter(final String address, final int channelStatusId, final long status)
     {
         final AtomicCounter counter = LocalSocketAddressStatus.allocate(
             tempBuffer,
@@ -241,5 +238,4 @@ public class SubscriptionTest
         LocalSocketAddressStatus.updateBindAddress(counter, address, (UnsafeBuffer)countersManager.metaDataBuffer());
         counter.setOrdered(status);
     }
-
 }

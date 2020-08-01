@@ -1751,8 +1751,8 @@ public class AeronArchive implements AutoCloseable
      * Migrate segments from a source recording and attach them to the beginning of a destination recording.
      * <p>
      * The source recording must match the destination recording for segment length, term length, mtu length,
-     * stream id, plus the stop position and term id of the source must join with the start position of the destination
-     * and be on a segment boundary.
+     * stream id, plus the stop position and term id of the source must join with the start position of the
+     * destination and be on a segment boundary.
      * <p>
      * The source recording will be effectively truncated back to its start position after the migration.
      *
@@ -2094,14 +2094,14 @@ public class AeronArchive implements AutoCloseable
          * Channel for receiving control response messages from an archive.
          *
          * <p>
-         * Channel's <em>endpoint</em> can be specified explicitly (i.e. by providing IP and port pair) or by using
-         * zero as a port number. Here is an example of valid response channels:
+         * Channel's <em>endpoint</em> can be specified explicitly (i.e. by providing address and port pair) or
+         * by using zero as a port number. Here is an example of valid response channels:
          * <ul>
          *     <li>{@code aeron:udp?endpoint=localhost:8020} - listen on port {@code 8020} on localhost.</li>
          *     <li>{@code aeron:udp?endpoint=192.168.10.10:8020} - listen on port {@code 8020} on
          *     {@code 192.168.10.10}.</li>
          *     <li>{@code aeron:udp?endpoint=localhost:0} - in this case the port is unspecified and the OS
-         *     will assign a free port from an
+         *     will assign a free port from the
          *     <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral port range</a>.</li>
          * </ul>
          */

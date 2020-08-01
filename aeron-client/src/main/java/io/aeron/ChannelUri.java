@@ -255,23 +255,32 @@ public class ChannelUri
         return tags.length > ENTITY_TAG_INDEX ? tags[ENTITY_TAG_INDEX] : null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(final Object o)
     {
         if (this == o)
         {
             return true;
         }
-        if (o == null || getClass() != o.getClass())
+
+        if (!(o instanceof ChannelUri))
         {
             return false;
         }
+
         final ChannelUri that = (ChannelUri)o;
+
         return Objects.equals(prefix, that.prefix) &&
             Objects.equals(media, that.media) &&
             Objects.equals(params, that.params) &&
             Arrays.equals(tags, that.tags);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode()
     {
         int result = 19;
@@ -279,6 +288,7 @@ public class ChannelUri
         result = 31 * result + Objects.hashCode(media);
         result = 31 * result + Objects.hashCode(params);
         result = 31 * result + Arrays.hashCode(tags);
+
         return result;
     }
 
@@ -515,7 +525,7 @@ public class ChannelUri
         throw new IllegalArgumentException("unknown media: " + media);
     }
 
-    private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)
+    private static boolean startsWith(final CharSequence input, final int position, final String prefix)
     {
         if ((input.length() - position) < prefix.length())
         {

@@ -126,28 +126,28 @@ public class ChannelUriTest
     @Test
     void equalsReturnsTrueWhenTheSameInstance()
     {
-        final ChannelUri channelUri = ChannelUri
-            .parse("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
+        final ChannelUri channelUri = ChannelUri.parse(
+            "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
 
-        assertTrue(channelUri.equals(channelUri));
+        assertEquals(channelUri, channelUri);
     }
 
     @Test
     void equalsReturnsFalseIfComparedWithNull()
     {
-        final ChannelUri channelUri = ChannelUri
-            .parse("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
+        final ChannelUri channelUri = ChannelUri.parse(
+            "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
 
-        assertFalse(channelUri.equals(null));
+        assertNotEquals(channelUri, null);
     }
 
     @Test
     void equalsReturnsFalseIfComparedAnotherClass()
     {
-        final ChannelUri channelUri = ChannelUri
-            .parse("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
+        final ChannelUri channelUri = ChannelUri.parse(
+            "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
 
-        assertFalse(channelUri.equals(123));
+        assertNotEquals(channelUri, 123);
     }
 
     @ParameterizedTest

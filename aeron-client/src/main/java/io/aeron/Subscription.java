@@ -431,9 +431,9 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * IPv6: <code>[ip6 address]:port</code>
      * <br>
      * <br>
-     * This is to match the formatting used in the Aeron URI
+     * This is to match the formatting used in the Aeron URI.
      *
-     * @return local socket address for this subscription.
+     * @return {@link List} of local socket addresses for this subscription.
      * @see #channelStatus()
      */
     public List<String> localSocketAddresses()
@@ -510,11 +510,11 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Resolve channel endpoint and replace it with an actual local socket address.  If the channel is not
+     * Resolve channel endpoint and replace it with an actual local socket address. If the channel is not
      * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned. If there are no
-     * addresses or if there is more than one then the unchanged {@link #channel()} is returned.
+     * addresses or if there is more than one then the original {@link #channel()} is returned.
      *
-     * @return channel URI with an endpoint being resolved to local address.
+     * @return channel URI with an endpoint being resolved to the allocated address:port pairing.
      * @see #channelStatus()
      */
     public String tryResolveChannelEndpoint()
@@ -523,14 +523,15 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         if (ChannelEndpointStatus.ACTIVE == channelStatus)
         {
-            final List<String> localSocketAddresses =
-                LocalSocketAddressStatus.findAddresses(conductor.countersReader(), channelStatus, channelStatusId);
+            final List<String> localSocketAddresses = LocalSocketAddressStatus.findAddresses(
+                conductor.countersReader(), channelStatus, channelStatusId);
 
             if (1 == localSocketAddresses.size())
             {
                 final String localAddress = localSocketAddresses.get(0);
-                final ChannelUri uri = ChannelUri.parse(channel());
+                final ChannelUri uri = ChannelUri.parse(channel);
                 uri.put(CommonContext.ENDPOINT_PARAM_NAME, localAddress);
+
                 return uri.toString();
             }
 
@@ -598,6 +599,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             ", isClosed=" + isClosed +
             ", streamId=" + streamId +
             ", channel='" + channel + '\'' +
+            ", localSocketAddresses=" + localSocketAddresses() +
             ", imageCount=" + imageCount() +
             '}';
     }

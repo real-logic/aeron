@@ -27,7 +27,7 @@ static size_t getAddress(const std::function<T(U...)> &f)
     typedef T(fnType)(U...);
     auto fnPointer = f.template target<fnType *>();
 
-    return (size_t)*fnPointer;
+    return nullptr != fnPointer ? (size_t)*fnPointer : 0;
 }
 
 static ExceptionCategory getCategory(std::int32_t errorCode)
@@ -536,92 +536,136 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
     return result;
 }
 
-void ClientConductor::addAvailableCounterHandler(const on_available_counter_t &handler)
+std::int64_t ClientConductor::addAvailableCounterHandler(const on_available_counter_t &handler)
 {
-    size_t token = reinterpret_cast<size_t>(&handler);
+    const int64_t registrationId = nextHandlerRegistrationId();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
-    m_onAvailableCounterHandlers.emplace_back(std::make_pair(token, handler));
+    m_onAvailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
+    return registrationId;
 }
 
 void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t &handler)
 {
-    size_t token = reinterpret_cast<size_t>(&handler);
-    if (static_handler_token == token)
-    {
-        return;
-    }
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onAvailableCounterHandlers;
     auto predicate =
-        [token](const std::pair<size_t, on_available_counter_t> &item)
+        [handler](const std::pair<std::int64_t, on_available_counter_t> &item)
         {
-            return item.first == token;
+            size_t itemAddress = getAddress(item.second);
+            size_t handlerAddress = getAddress(handler);
+            return itemAddress != 0 && itemAddress == handlerAddress;
         };
 
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
 }
 
-void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
+void ClientConductor::removeAvailableCounterHandler(std::int64_t registrationId)
 {
-    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
-    m_onUnavailableCounterHandlers.emplace_back(std::make_pair(token, handler));
+    auto &v = m_onAvailableCounterHandlers;
+    auto predicate =
+        [registrationId](const std::pair<std::int64_t, on_available_counter_t> &item)
+        {
+            return item.first == registrationId;
+        };
+
+    v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
+}
+
+std::int64_t ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
+{
+    std::int64_t registrationId = nextHandlerRegistrationId();
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
+    ensureOpen();
+
+    m_onUnavailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
+    return registrationId;
 }
 
 void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t &handler)
 {
-    size_t token = reinterpret_cast<size_t>(&handler);
-    if (static_handler_token == token)
-    {
-        return;
-    }
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onUnavailableCounterHandlers;
     auto predicate =
-        [token](const std::pair<size_t, on_unavailable_counter_t> &item)
+        [handler](const std::pair<std::int64_t, on_unavailable_counter_t> &item)
         {
-            return item.first == token;
+            size_t itemAddress = getAddress(item.second);
+            size_t handlerAddress = getAddress(handler);
+            return itemAddress != 0 && itemAddress == handlerAddress;
         };
 
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
 }
 
-void ClientConductor::addCloseClientHandler(const on_close_client_t &handler)
+void ClientConductor::removeUnavailableCounterHandler(std::int64_t registrationId)
 {
-    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
-    m_onCloseClientHandlers.emplace_back(std::make_pair(token, handler));
+    auto &v = m_onUnavailableCounterHandlers;
+    auto predicate =
+        [registrationId](const std::pair<std::int64_t, on_unavailable_counter_t> &item)
+        {
+            return item.first == registrationId;
+        };
+
+    v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
+}
+
+std::int64_t ClientConductor::addCloseClientHandler(const on_close_client_t &handler)
+{
+    std::int64_t registrationId = nextHandlerRegistrationId();
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
+    ensureOpen();
+
+    m_onCloseClientHandlers.emplace_back(std::make_pair(registrationId, handler));
+    return registrationId;
 }
 
 void ClientConductor::removeCloseClientHandler(const on_close_client_t &handler)
 {
-    size_t token = reinterpret_cast<size_t>(&handler);
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onCloseClientHandlers;
     auto predicate =
-        [token](const std::pair<size_t, on_close_client_t> &item)
+        [handler](const std::pair<std::int64_t, on_close_client_t> &item)
         {
-            return token == item.first;
+            size_t itemAddress = getAddress(item.second);
+            size_t handlerAddress = getAddress(handler);
+            return itemAddress != 0 && itemAddress == handlerAddress;
+        };
+
+    v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
+}
+
+void ClientConductor::removeCloseClientHandler(std::int64_t registrationId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
+    ensureOpen();
+
+    auto &v = m_onCloseClientHandlers;
+    auto predicate =
+        [registrationId](const std::pair<std::int64_t, on_close_client_t> &item)
+        {
+            return item.first == registrationId;
         };
 
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());

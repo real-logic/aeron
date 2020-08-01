@@ -295,17 +295,18 @@ public:
      * Add a handler to the list to be called when a counter becomes available.
      *
      * @param handler to be added to the available counters list.
+     * @return registration id to use to remove the handler.
      */
-    inline void addAvailableCounterHandler(const on_available_counter_t &handler)
+    inline int64_t addAvailableCounterHandler(const on_available_counter_t &handler)
     {
-
-        m_conductor.addAvailableCounterHandler(handler);
+        return m_conductor.addAvailableCounterHandler(handler);
     }
 
     /**
      * Remove a handler from the list to be called when a counter becomes available.
      *
-     * @param handler to be removed from the available counters list.
+     * @param handler to be removed from the available counter handlers list.
+     * @deprecated Use Aeron::removeAvailableCounterHandler(int64_t)
      */
     inline void removeAvailableCounterHandler(const on_available_counter_t &handler)
     {
@@ -313,19 +314,31 @@ public:
     }
 
     /**
+     * Remove a handler from the list to be called when a counter becomes available.
+     *
+     * @param registrationId id for the handler to be removed from the available counters list.
+     */
+    inline void removeAvailableCounterHandler(std::int64_t registrationId)
+    {
+        m_conductor.removeAvailableCounterHandler(registrationId);
+    }
+
+    /**
      * Add a handler to the list to be called when a counter becomes unavailable.
      *
      * @param handler to be added to the unavailable counters list.
+     * @return registration id to use to remove the handler.
      */
-    inline void addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
+    inline int64_t addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
-        m_conductor.addUnavailableCounterHandler(handler);
+        return m_conductor.addUnavailableCounterHandler(handler);
     }
 
     /**
      * Remove a handler from the list to be called when a counter becomes unavailable.
      *
      * @param handler to be removed from the unavailable counters list.
+     * @deprecated Use Aeron::removeUnavailableCounterHandler(int64_t)
      */
     inline void removeUnavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
@@ -333,23 +346,45 @@ public:
     }
 
     /**
+     * Remove a handler from the list to be called when a counter becomes unavailable.
+     *
+     * @param registrationId id for the handler to be removed from the unavailable counter handlers list.
+     */
+    inline void removeUnavailableCounterHandler(std::int64_t registrationId)
+    {
+        m_conductor.removeUnavailableCounterHandler(registrationId);
+    }
+
+    /**
      * Add a handler to the list to be called when the client is closed.
      *
      * @param handler to be added to the close client handlers list.
+     * @return registration id to use to remove the handler.
      */
-    inline void addCloseClientHandler(const on_close_client_t &handler)
+    inline std::int64_t addCloseClientHandler(const on_close_client_t &handler)
     {
-        m_conductor.addCloseClientHandler(handler);
+        return m_conductor.addCloseClientHandler(handler);
     }
 
     /**
      * Remove a handler from the list to be called when the client is closed.
      *
      * @param handler to be removed from the close client handlers list.
+     * @deprecated Use Aeron::removeCloseClientHandler(int64_t)
      */
     inline void removeCloseClientHandler(const on_close_client_t &handler)
     {
         m_conductor.removeCloseClientHandler(handler);
+    }
+
+    /**
+     * Remove a handler from the list to be called when the client is closed.
+     *
+     * @param registrationId id for the handler to be removed from the close client handlers list.
+     */
+    inline void removeCloseClientHandler(std::int64_t registrationId)
+    {
+        m_conductor.removeCloseClientHandler(registrationId);
     }
 
     /**

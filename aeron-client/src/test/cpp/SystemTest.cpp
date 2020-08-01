@@ -116,8 +116,8 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
     invoker.start();
 
-    aeron->addAvailableCounterHandler(dynamicAvailableHandler);
-    aeron->addUnavailableCounterHandler(dynamicUnvailableHandler);
+    int64_t availableRegId = aeron->addAvailableCounterHandler(dynamicAvailableHandler);
+    int64_t unavailableRegId = aeron->addUnavailableCounterHandler(dynamicUnvailableHandler);
     invoker.invoke();
 
     ::memcpy(key, &key1, sizeof(key));
@@ -139,8 +139,8 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     }
     ASSERT_EQ(1, dynamicUnavailable);
 
-    aeron->removeAvailableCounterHandler(dynamicAvailableHandler);
-    aeron->removeUnavailableCounterHandler(dynamicUnvailableHandler);
+    aeron->removeAvailableCounterHandler(availableRegId);
+    aeron->removeUnavailableCounterHandler(unavailableRegId);
     invoker.invoke();
 
     ::memcpy(key, &key2, sizeof(key));
@@ -163,21 +163,37 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     ASSERT_EQ(1, dynamicUnavailable);
 }
 
+TEST_F(SystemTest, shouldNotSegfaultWhenRemovedByReference)
+{
+    on_available_counter_t dynamicAvailableHandler =
+        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        {
+        };
+
+    on_available_counter_t dynamicUnvailableHandler =
+        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        {
+        };
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
+    invoker.start();
+
+    aeron->addAvailableCounterHandler(dynamicAvailableHandler);
+    aeron->addUnavailableCounterHandler(dynamicUnvailableHandler);
+    invoker.invoke();
+
+    aeron->removeAvailableCounterHandler(dynamicAvailableHandler);
+    aeron->removeUnavailableCounterHandler(dynamicUnvailableHandler);
+}
+
+
 TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 {
     int closeCount1 = 0;
     int closeCount2 = 0;
-
-    on_close_client_t close1 =
-        [&]()
-        {
-            closeCount1++;
-        };
-    on_close_client_t close2 =
-        [&]()
-        {
-            closeCount2++;
-        };
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -187,11 +203,19 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
         AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
         invoker.start();
 
-        aeron->addCloseClientHandler(close1);
-        aeron->addCloseClientHandler(close2);
+        aeron->addCloseClientHandler(
+            [&]()
+            {
+                closeCount1++;
+            });
+        std::int64_t regId2 = aeron->addCloseClientHandler(
+            [&]()
+            {
+                closeCount2++;
+            });
         invoker.invoke();
 
-        aeron->removeCloseClientHandler(close2);
+        aeron->removeCloseClientHandler(regId2);
     }
 
     EXPECT_EQ(1, closeCount1);

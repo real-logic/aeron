@@ -30,7 +30,7 @@
 
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
 #define RTLD_DEFAULT ((void*)-123)
 #define RTLD_NEXT ((void*)-124)

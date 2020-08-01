@@ -45,7 +45,7 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
     return buffer;
 }
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
 #include "concurrent/aeron_counters_manager.h"
 #include "aeronc.h"

@@ -48,8 +48,6 @@ public:
         aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
     };
 
-    ~FlowControlTest() override = default;
-
     int64_t apply_status_message(
         aeron_flow_control_strategy_t *strategy,
         int64_t receiver_id,
@@ -109,12 +107,12 @@ public:
     aeron_driver_context_t *context{};
     aeron_distinct_error_log_t error_log{};
     buffer_t buffer{};
-    aeron_name_resolver_t m_resolver;
-    aeron_flow_control_strategy_t *m_strategy;
+    aeron_name_resolver_t m_resolver{};
+    aeron_flow_control_strategy_t *m_strategy = nullptr;
     std::vector<aeron_udp_channel_t *> m_channels;
 
 protected:
-    virtual void TearDown()
+    void TearDown() override
     {
         for (auto channel : m_channels)
         {
@@ -130,7 +128,7 @@ protected:
         aeron_distinct_error_log_close(&error_log);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_channel = nullptr;
         m_strategy = nullptr;

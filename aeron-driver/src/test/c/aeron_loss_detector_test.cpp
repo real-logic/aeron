@@ -198,7 +198,7 @@ public:
         t->m_on_gap_detected(term_id, term_offset, length);
     }
 
-    int32_t offset_of_message(int index)
+    static int32_t offset_of_message(int index)
     {
         return index * ALIGNED_FRAME_LENGTH;
     }

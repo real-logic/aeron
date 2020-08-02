@@ -29,12 +29,9 @@ inline void thread_fence()
     std::atomic_thread_fence(std::memory_order_acq_rel);
 }
 
-/**
-* Fence operation that uses locked addl as mfence is sometimes expensive
-*/
 inline void fence()
 {
-    __faststorefence();
+    std::atomic_thread_fence(std::memory_order_seq_cst);
 }
 
 inline void acquire()
@@ -59,7 +56,7 @@ inline void cpu_pause()
 * Returns a 32 bit integer with volatile semantics.
 * On x64 MOV is a SC Atomic a operation.
 */
-inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
+inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
     std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
     acquire();
@@ -70,7 +67,7 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
 /**
 * Put a 32 bit int with ordered semantics
 */
-inline void putInt32Ordered(volatile std::int32_t* source, std::int32_t value)
+inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
 {
     release();
     *reinterpret_cast<volatile std::int32_t *>(source) = value;
@@ -79,7 +76,7 @@ inline void putInt32Ordered(volatile std::int32_t* source, std::int32_t value)
 /**
 * Put a 32 bit int with atomic semantics.
 **/
-inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
+inline void putInt32Atomic(volatile std::int32_t * address, std::int32_t value)
 {
     _InterlockedExchange((volatile long *)address, value);
 }
@@ -88,7 +85,7 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 * Returns a 64 bit integer with volatile semantics.
 * On x64 MOV is a SC Atomic a operation.
 */
-inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
+inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
     acquire();
@@ -99,7 +96,7 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 /**
 * Put a 64 bit int with ordered semantics.
 */
-inline void  putInt64Ordered(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
 {
     release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
@@ -108,27 +105,27 @@ inline void  putInt64Ordered(volatile std::int64_t*  address, std::int64_t value
 /**
 * Put a 64 bit int with atomic semantics.
 **/
-inline void putInt64Atomic(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 {
     _InterlockedExchange64(address, value);
 }
 
-inline std::int64_t getAndAddInt64(volatile std::int64_t* address, std::int64_t value)
+inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t value)
 {
     return _InterlockedExchangeAdd64(address, value);
 }
 
-inline std::int32_t getAndAddInt32(volatile std::int32_t* address, std::int32_t value)
+inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t value)
 {
     return _InterlockedExchangeAdd((volatile long *)address, value);
 }
 
-inline std::int32_t cmpxchg(volatile std::int32_t* destination,  std::int32_t expected, std::int32_t desired)
+inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
 {
     return _InterlockedCompareExchange((volatile long *)destination, desired, expected);
 }
 
-inline std::int64_t cmpxchg(volatile std::int64_t* destination,  std::int64_t expected, std::int64_t desired)
+inline std::int64_t cmpxchg(volatile std::int64_t * destination, std::int64_t expected, std::int64_t desired)
 {
     return _InterlockedCompareExchange64(destination, desired, expected);
 }

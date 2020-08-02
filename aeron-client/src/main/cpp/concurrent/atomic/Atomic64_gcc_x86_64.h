@@ -16,6 +16,8 @@
 #ifndef AERON_CONCURRENT_ATOMIC64_GCC_X86_64_H
 #define AERON_CONCURRENT_ATOMIC64_GCC_X86_64_H
 
+#include <cstdint>
+
 namespace aeron { namespace concurrent { namespace atomic {
 
 /**
@@ -36,19 +38,16 @@ inline void fence()
 
 inline void acquire()
 {
-    volatile std::int64_t* dummy;
+    volatile std::int64_t *dummy;
     asm volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
 }
 
 inline void release()
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
     // Avoid hitting the same cache-line from different threads.
     volatile std::int64_t dummy = 0;
+    (void)dummy;
 }
-// must come after closing brace so that gcc knows it is actually unused
-#pragma GCC diagnostic pop
 
 /**
 * A more jitter friendly alternate to thread:yield in spin waits.
@@ -62,7 +61,7 @@ inline void cpu_pause()
 * Returns a 32 bit integer with volatile semantics.
 * On x64 MOV is a SC Atomic a operation.
 */
-inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
+inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
     std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
     thread_fence();
@@ -72,7 +71,7 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
 /**
 * Put a 32 bit int with volatile semantics
 */
-inline void putInt32Volatile(volatile std::int32_t* source, std::int32_t value)
+inline void putInt32Volatile(volatile std::int32_t *source, std::int32_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int32_t *>(source) = value;
@@ -81,7 +80,7 @@ inline void putInt32Volatile(volatile std::int32_t* source, std::int32_t value)
 /**
 * Put a 32 bit int with ordered semantics
 */
-inline void putInt32Ordered(volatile std::int32_t* source, std::int32_t value)
+inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int32_t *>(source) = value;
@@ -90,7 +89,7 @@ inline void putInt32Ordered(volatile std::int32_t* source, std::int32_t value)
 /**
 * Put a 32 bit int with atomic semantics.
 **/
-inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
+inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 {
     asm volatile(
         "xchgl (%2), %0"
@@ -103,7 +102,7 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 * Returns a 64 bit integer with volatile semantics.
 * On x64 MOV is a SC Atomic a operation.
 */
-inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
+inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
     thread_fence();
@@ -111,7 +110,7 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 }
 
 template<typename T>
-inline volatile T* getValueVolatile(volatile T** source)
+inline volatile T* getValueVolatile(volatile T **source)
 {
     volatile T* t = *reinterpret_cast<volatile T**>(source);
     thread_fence();
@@ -121,14 +120,14 @@ inline volatile T* getValueVolatile(volatile T** source)
 /**
 * Put a 64 bit int with volatile semantics.
 */
-inline void putInt64Volatile(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Volatile(volatile std::int64_t *address, std::int64_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
 template<typename T>
-inline void putValueVolatile(volatile T* address, T value)
+inline void putValueVolatile(volatile T *address, T value)
 {
     static_assert(sizeof(T) <= 8, "Requires size <= 8 bytes");
 
@@ -139,14 +138,14 @@ inline void putValueVolatile(volatile T* address, T value)
 /**
 * Put a 64 bit int with ordered semantics.
 */
-inline void putInt64Ordered(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Ordered(volatile std::int64_t * address, std::int64_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
 template<typename T>
-inline void putValueOrdered(volatile T** address, volatile T* value)
+inline void putValueOrdered(volatile T **address, volatile T *value)
 {
     thread_fence();
     *reinterpret_cast<volatile T**>(address) = value;
@@ -155,7 +154,7 @@ inline void putValueOrdered(volatile T** address, volatile T* value)
 /**
 * Put a 64 bit int with atomic semantics.
 **/
-inline void putInt64Atomic(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 {
     asm volatile(
         "xchgq (%2), %0"
@@ -164,7 +163,7 @@ inline void putInt64Atomic(volatile std::int64_t*  address, std::int64_t value)
         : "memory");
 }
 
-inline std::int64_t getAndAddInt64(volatile std::int64_t* address, std::int64_t value)
+inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t value)
 {
     std::int64_t original;
     asm volatile(
@@ -174,7 +173,7 @@ inline std::int64_t getAndAddInt64(volatile std::int64_t* address, std::int64_t 
     return original;
 }
 
-inline std::int32_t getAndAddInt32(volatile std::int32_t* address, std::int32_t value)
+inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t value)
 {
     std::int32_t original;
     asm volatile(
@@ -184,7 +183,7 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t* address, std::int32_t 
     return original;
 }
 
-inline std::int32_t cmpxchg(volatile std::int32_t* destination,  std::int32_t expected, std::int32_t desired)
+inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
 {
     std::int32_t original;
     asm volatile(
@@ -194,7 +193,7 @@ inline std::int32_t cmpxchg(volatile std::int32_t* destination,  std::int32_t ex
     return original;
 }
 
-inline std::int64_t cmpxchg(volatile std::int64_t* destination,  std::int64_t expected, std::int64_t desired)
+inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
 {
     std::int64_t original;
     asm volatile(

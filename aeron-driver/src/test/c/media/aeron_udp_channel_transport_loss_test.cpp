@@ -15,10 +15,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <media/aeron_udp_channel_transport.h>
 
 extern "C"
 {
+#include <media/aeron_udp_channel_transport.h>
 #include <media/aeron_udp_channel_transport_loss.h>
 #include <uri/aeron_uri.h>
 #include <protocol/aeron_udp_protocol.h>

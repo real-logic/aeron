@@ -80,6 +80,7 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
     acquire();
+
     return sequence;
 }
 
@@ -88,6 +89,7 @@ inline volatile T *getValueVolatile(volatile T **source)
 {
     volatile T *t = *reinterpret_cast<volatile T **>(source);
     acquire();
+
     return t;
 }
 

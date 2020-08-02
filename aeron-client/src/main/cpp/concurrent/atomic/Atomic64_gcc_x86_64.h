@@ -65,6 +65,7 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
     std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
     thread_fence();
+
     return sequence;
 }
 
@@ -106,6 +107,7 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
     thread_fence();
+
     return sequence;
 }
 
@@ -114,6 +116,7 @@ inline volatile T *getValueVolatile(volatile T **source)
 {
     volatile T *t = *reinterpret_cast<volatile T**>(source);
     thread_fence();
+
     return t;
 }
 
@@ -170,6 +173,7 @@ inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t 
         "lock; xaddq %0, %1"
         : "=r"(original), "+m"(*address)
         : "0"(value));
+
     return original;
 }
 
@@ -180,6 +184,7 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t 
         "lock; xaddl %0, %1"
         : "=r"(original), "+m"(*address)
         : "0"(value));
+
     return original;
 }
 
@@ -190,6 +195,7 @@ inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t exp
         "lock; cmpxchgl %2, %1"
         : "=a"(original), "+m"(*destination)
         : "q"(desired), "0"(expected));
+
     return original;
 }
 
@@ -200,6 +206,7 @@ inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t exp
         "lock; cmpxchgq %2, %1"
         : "=a"(original), "+m"(*destination)
         : "q"(desired), "0"(expected));
+
     return original;
 }
 

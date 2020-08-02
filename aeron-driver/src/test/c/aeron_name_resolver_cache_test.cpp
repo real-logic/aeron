@@ -27,18 +27,16 @@ extern "C"
 class NameResolverCacheTest : public testing::Test
 {
 public:
-    NameResolverCacheTest()
-    {
-    }
+    NameResolverCacheTest() = default;
 
 protected:
-    void TearDown() override
+    virtual void TearDown()
     {
         aeron_name_resolver_cache_close(&m_cache);
     }
 
-    aeron_name_resolver_cache_t m_cache;
-    int64_t m_counter;
+    aeron_name_resolver_cache_t m_cache{};
+    int64_t m_counter = 0;
 };
 
 TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)

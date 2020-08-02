@@ -21,7 +21,7 @@
 
 extern "C"
 {
-#include <concurrent/aeron_counters_manager.h>
+#include "concurrent/aeron_counters_manager.h"
 }
 
 #define FREE_TO_REUSE_TIMEOUT_MS (1000L)
@@ -51,7 +51,7 @@ public:
         aeron_counters_manager_close(&m_manager);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_metadata.fill(0);
         m_values.fill(0);
@@ -82,9 +82,9 @@ public:
     }
 
     static const size_t NUM_COUNTERS = 4;
-    std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_METADATA_LENGTH> m_metadata;
-    std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_VALUE_LENGTH> m_values;
-    aeron_counters_manager_t m_manager;
+    std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_METADATA_LENGTH> m_metadata{};
+    std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_VALUE_LENGTH> m_values{};
+    aeron_counters_manager_t m_manager{};
 };
 
 void func_should_never_be_called(

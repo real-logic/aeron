@@ -42,7 +42,7 @@ public:
         aeron_distinct_error_log_close(&m_log);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_buffer.fill(0);
     }
@@ -58,8 +58,8 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
-    aeron_distinct_error_log_t m_log;
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16){};
+    aeron_distinct_error_log_t m_log{};
 
     static int64_t clock_value;
 };

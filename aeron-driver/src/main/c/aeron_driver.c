@@ -710,6 +710,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         goto error;
     }
 
+    if (aeron_driver_context_bindings_clientd_create_entries(context) < 0)
+    {
+        goto error;
+    }
+
     _driver->context = context;
 
     for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)

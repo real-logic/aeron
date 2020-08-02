@@ -399,6 +399,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->udp_channel_outgoing_interceptor_bindings = NULL;
     _context->udp_channel_incoming_interceptor_bindings = NULL;
     _context->dynamic_libs = NULL;
+    _context->bindings_clientd_entries = NULL;
+    _context->num_bindings_clientd_entries = 0;
 
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
     {
@@ -1056,6 +1058,44 @@ static void aeron_driver_context_free_bindings(const aeron_udp_channel_intercept
     }
 }
 
+int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t *context)
+{
+    const aeron_udp_channel_interceptor_bindings_t *interceptor_bindings;
+    aeron_driver_context_bindings_clientd_entry_t *_entries;
+    size_t num_entries = 1;
+
+    interceptor_bindings = context->udp_channel_outgoing_interceptor_bindings;
+    while (NULL != interceptor_bindings)
+    {
+        num_entries++;
+        interceptor_bindings = interceptor_bindings->meta_info.next_interceptor_bindings;
+    }
+
+    interceptor_bindings = context->udp_channel_incoming_interceptor_bindings;
+    while (NULL != interceptor_bindings)
+    {
+        num_entries++;
+        interceptor_bindings = interceptor_bindings->meta_info.next_interceptor_bindings;
+    }
+
+    if (aeron_alloc((void **)&_entries, sizeof(aeron_driver_context_bindings_clientd_entry_t) * num_entries) < 0)
+    {
+        aeron_set_err(
+            aeron_errcode(), "could not allocate context_bindings_clientd_entries: %s", aeron_errmsg());
+        return -1;
+    }
+
+    for (size_t i = 0; i < num_entries; i++)
+    {
+        _entries->name = NULL;
+        _entries->clientd = NULL;
+    }
+
+    context->bindings_clientd_entries = _entries;
+    context->num_bindings_clientd_entries = num_entries;
+    return 0;
+}
+
 int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
@@ -1091,6 +1131,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free((void *)context->receiver_idle_strategy_init_args);
     aeron_free((void *)context->shared_idle_strategy_init_args);
     aeron_free((void *)context->shared_network_idle_strategy_init_args);
+    aeron_free(context->bindings_clientd_entries);
     aeron_clock_cache_free(context->cached_clock);
     aeron_dl_load_libs_delete(context->dynamic_libs);
     aeron_free(context);

@@ -56,6 +56,13 @@ typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
 
 #define AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(m) (AERON_THREADING_MODE_SHARED == m || AERON_THREADING_MODE_INVOKER == m)
 
+typedef struct aeron_driver_context_bindings_clientd_entry_stct
+{
+    const char *name;
+    void *clientd;
+}
+aeron_driver_context_bindings_clientd_entry_t;
+
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                                        /* aeron.dir */
@@ -212,6 +219,8 @@ typedef struct aeron_driver_context_stct
     const char *name_resolver_init_args;
 
     aeron_dl_loaded_libs_state_t *dynamic_libs;
+    aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;
+    size_t num_bindings_clientd_entries;
 }
 aeron_driver_context_t;
 
@@ -225,6 +234,9 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
 int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
 
 size_t aeron_cnc_length(aeron_driver_context_t *context);
+
+int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t *context);
+int aeron_driver_context_bindings_clientd_delete_entries(aeron_driver_context_t *context);
 
 inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version)
 {

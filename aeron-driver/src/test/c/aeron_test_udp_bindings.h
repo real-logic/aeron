@@ -29,7 +29,7 @@ typedef struct aeron_test_udp_bindings_state_stct
     int setup_count;
     int rttm_count;
 }
-    aeron_test_udp_bindings_state_t;
+aeron_test_udp_bindings_state_t;
 
 int aeron_test_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,

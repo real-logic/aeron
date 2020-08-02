@@ -76,9 +76,9 @@ inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
 /**
 * Put a 32 bit int with atomic semantics.
 **/
-inline void putInt32Atomic(volatile std::int32_t * address, std::int32_t value)
+inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 {
-    _InterlockedExchange((volatile long *)address, value);
+    _InterlockedExchange(reinterpret_cast<volatile long *>(address), value);
 }
 
 /**
@@ -125,7 +125,7 @@ inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t exp
     return _InterlockedCompareExchange((volatile long *)destination, desired, expected);
 }
 
-inline std::int64_t cmpxchg(volatile std::int64_t * destination, std::int64_t expected, std::int64_t desired)
+inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
 {
     return _InterlockedCompareExchange64(destination, desired, expected);
 }

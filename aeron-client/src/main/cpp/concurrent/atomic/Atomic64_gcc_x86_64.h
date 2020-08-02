@@ -33,13 +33,13 @@ inline void thread_fence()
 */
 inline void fence()
 {
-    asm volatile("lock; addl $0,0(%%rsp)" : : : "cc", "memory");
+    asm volatile("lock; addl $0, 0(%%rsp)" ::: "cc", "memory");
 }
 
 inline void acquire()
 {
     volatile std::int64_t *dummy;
-    asm volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
+    asm volatile("movq 0(%%rsp), %0" : "=r" (dummy) :: "memory");
 }
 
 inline void release()
@@ -54,7 +54,7 @@ inline void release()
 */
 inline void cpu_pause()
 {
-    asm volatile("pause\n": : :"memory");
+    asm volatile("pause\n" ::: "memory");
 }
 
 /**
@@ -110,9 +110,9 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 }
 
 template<typename T>
-inline volatile T* getValueVolatile(volatile T **source)
+inline volatile T *getValueVolatile(volatile T **source)
 {
-    volatile T* t = *reinterpret_cast<volatile T**>(source);
+    volatile T *t = *reinterpret_cast<volatile T**>(source);
     thread_fence();
     return t;
 }
@@ -148,7 +148,7 @@ template<typename T>
 inline void putValueOrdered(volatile T **address, volatile T *value)
 {
     thread_fence();
-    *reinterpret_cast<volatile T**>(address) = value;
+    *reinterpret_cast<volatile T **>(address) = value;
 }
 
 /**

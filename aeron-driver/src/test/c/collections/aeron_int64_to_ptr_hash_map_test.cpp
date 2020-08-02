@@ -26,7 +26,7 @@ extern "C"
 class Int64ToPtrHashMapTest : public testing::Test
 {
 public:
-    ~Int64ToPtrHashMapTest()
+    ~Int64ToPtrHashMapTest() override
     {
         aeron_int64_to_ptr_hash_map_delete(&m_map);
     }
@@ -129,7 +129,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldRemoveEntry)
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_remove(&m_map, 7), &value);
     EXPECT_EQ(m_map.size, 0u);
-    EXPECT_EQ(aeron_int64_to_ptr_hash_map_get(&m_map, 7), (void *)NULL);
+    EXPECT_EQ(aeron_int64_to_ptr_hash_map_get(&m_map, 7), (void *)nullptr);
 }
 
 TEST_F(Int64ToPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)

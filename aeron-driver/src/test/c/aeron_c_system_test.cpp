@@ -244,7 +244,7 @@ TEST_P(CSystemTest, shouldAddAndCloseExclusivePublication)
 
     ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async))) << aeron_errmsg();
 
-    aeron_exclusive_publication_close(publication, NULL, NULL);
+    aeron_exclusive_publication_close(publication, nullptr, nullptr);
 
     if (!publicationClosedFlag)
     {
@@ -314,8 +314,8 @@ TEST_P(CSystemTest, shouldAddPublicationAndSubscription)
 
     awaitConnected(subscription);
 
-    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
 TEST_P(CSystemTest, shouldOfferAndPollOneMessage)
@@ -355,8 +355,8 @@ TEST_P(CSystemTest, shouldOfferAndPollOneMessage)
     EXPECT_EQ(poll_result, 1) << aeron_errmsg();
     EXPECT_TRUE(called);
 
-    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
 TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
@@ -368,7 +368,7 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
     const char message[1024] = "message";
     size_t num_messages = 64 * 3 + 1;
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, strlen(AERON_IPC_CHANNEL) + 1);
+    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|term-length=64k";
 
     ASSERT_TRUE(connect());
@@ -403,8 +403,8 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
         EXPECT_TRUE(called);
     }
 
-    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
 TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
@@ -417,7 +417,7 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
     size_t num_messages = 11;
     std::atomic<bool> on_unavailable_image_called = { false };
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, strlen(AERON_IPC_CHANNEL) + 1);
+    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|linger=0";
 
     m_onUnavailableImage = [&](aeron_subscription_t *, aeron_image_t *)
@@ -457,14 +457,14 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
         EXPECT_TRUE(called);
     }
 
-    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
 
     while (!on_unavailable_image_called)
     {
         std::this_thread::yield();
     }
 
-    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
 TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
@@ -477,7 +477,7 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
     size_t num_messages = 11;
     std::atomic<bool> on_unavailable_image_called = { false };
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, strlen(AERON_IPC_CHANNEL) + 1);
+    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|linger=0";
 
     m_onUnavailableImage = [&](aeron_subscription_t *, aeron_image_t *)
@@ -517,7 +517,7 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
         EXPECT_TRUE(called);
     }
 
-    EXPECT_EQ(aeron_publication_close(publication, NULL, NULL), 0);
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
 
     while (!on_unavailable_image_called)
     {
@@ -530,6 +530,6 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
 
     poll(subscription, handler, 1);
 
-    EXPECT_EQ(aeron_subscription_close(subscription, NULL, NULL), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 

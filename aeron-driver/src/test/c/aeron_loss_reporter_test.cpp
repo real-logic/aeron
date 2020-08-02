@@ -69,8 +69,8 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    uint8_t *m_ptr;
+    buffer_t m_buffer = {};
+    uint8_t *m_ptr = nullptr;
     aeron_loss_reporter_t m_reporter;
     std::function<void(int64_t, int64_t, int64_t, int64_t, int32_t, int32_t, const char *, int32_t, const char *, int32_t)>
         m_on_loss_entry;

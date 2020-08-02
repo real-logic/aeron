@@ -16,10 +16,6 @@
 
 #include <cinttypes>
 #include "aeron_driver_conductor_test.h"
-extern "C"
-{
-#include <concurrent/aeron_broadcast_receiver.h>
-}
 
 using testing::_;
 using testing::Eq;
@@ -102,9 +98,9 @@ public:
         return &instance;
     }
 
-    virtual bool publicationExists(aeron_driver_conductor_t *conductor, int64_t publication_id) override
+    bool publicationExists(aeron_driver_conductor_t *conductor, int64_t publication_id) override
     {
-        return NULL != aeron_driver_conductor_find_network_publication(conductor, publication_id);
+        return nullptr != aeron_driver_conductor_find_network_publication(conductor, publication_id);
     }
 
     size_t numPublications(aeron_driver_conductor_t *conductor) override
@@ -115,17 +111,17 @@ public:
     bool publicationHasRefCnt(aeron_driver_conductor_t *conductor, int64_t publication_id, int32_t refcnt) override
     {
         aeron_network_publication_t *pub = aeron_driver_conductor_find_network_publication(conductor, publication_id);
-        return NULL != pub && refcnt == pub->conductor_fields.refcnt;
+        return nullptr != pub && refcnt == pub->conductor_fields.refcnt;
     }
 
-    virtual bool sendEndpointExists(aeron_driver_conductor_t *conductor, const char *channel) override
+    bool sendEndpointExists(aeron_driver_conductor_t *conductor, const char *channel) override
     {
-        return NULL != aeron_driver_conductor_find_send_channel_endpoint(conductor, channel);
+        return nullptr != aeron_driver_conductor_find_send_channel_endpoint(conductor, channel);
     }
 
-    virtual bool receiveEndpointExists(aeron_driver_conductor_t *conductor, const char *channel) override
+    bool receiveEndpointExists(aeron_driver_conductor_t *conductor, const char *channel) override
     {
-        return NULL != aeron_driver_conductor_find_receive_channel_endpoint(conductor, channel);
+        return nullptr != aeron_driver_conductor_find_receive_channel_endpoint(conductor, channel);
     }
 
     bool hasReceiveEndpointCount(aeron_driver_conductor_t *conductor, size_t count) override
@@ -133,34 +129,34 @@ public:
         return count == aeron_driver_conductor_num_receive_channel_endpoints(conductor);
     }
 
-    virtual bool receiveEndpointHasRefCnt(
+    bool receiveEndpointHasRefCnt(
         aeron_driver_conductor_t *conductor, const char *channel, int32_t stream_id, int32_t session_id, int32_t refcnt)
         override
     {
         aeron_receive_channel_endpoint_t *receive_endpoint =
             aeron_driver_conductor_find_receive_channel_endpoint(conductor, channel);
 
-        return NULL != receive_endpoint && refcnt == aeron_int64_counter_map_get(
+        return nullptr != receive_endpoint && refcnt == aeron_int64_counter_map_get(
             &receive_endpoint->stream_and_session_id_to_refcnt_map,
             aeron_map_compound_key(STREAM_ID_1, SESSION_ID_1));
     }
 
-    virtual bool receiveEndpointHasStatus(
+    bool receiveEndpointHasStatus(
         aeron_driver_conductor_t *conductor, const char* channel, aeron_receive_channel_endpoint_status_t status)
         override
     {
         aeron_receive_channel_endpoint_t *receive_endpoint =
             aeron_driver_conductor_find_receive_channel_endpoint(conductor, channel);
 
-        return NULL != receive_endpoint && status == receive_endpoint->conductor_fields.status;
+        return nullptr != receive_endpoint && status == receive_endpoint->conductor_fields.status;
     }
 
-    virtual size_t numSubscriptions(aeron_driver_conductor_t* conductor) override
+    size_t numSubscriptions(aeron_driver_conductor_t* conductor) override
     {
         return aeron_driver_conductor_num_network_subscriptions(conductor);
     }
 
-    virtual bool hasSendEndpointCount(aeron_driver_conductor_t *conductor, size_t count) override
+    bool hasSendEndpointCount(aeron_driver_conductor_t *conductor, size_t count) override
     {
         return count == aeron_driver_conductor_num_send_channel_endpoints(conductor);
     }
@@ -177,9 +173,9 @@ public:
         return &instance;
     };
 
-    virtual bool publicationExists(aeron_driver_conductor_t *conductor, int64_t publication_id) override
+    bool publicationExists(aeron_driver_conductor_t *conductor, int64_t publication_id) override
     {
-        return NULL != aeron_driver_conductor_find_ipc_publication(conductor, publication_id);
+        return nullptr != aeron_driver_conductor_find_ipc_publication(conductor, publication_id);
     }
 
     size_t numPublications(aeron_driver_conductor_t *conductor) override
@@ -190,10 +186,10 @@ public:
     bool publicationHasRefCnt(aeron_driver_conductor_t *conductor, int64_t publication_id, int32_t refcnt) override
     {
         aeron_ipc_publication_t *pub = aeron_driver_conductor_find_ipc_publication(conductor, publication_id);
-        return NULL != pub && refcnt == pub->conductor_fields.refcnt;
+        return nullptr != pub && refcnt == pub->conductor_fields.refcnt;
     }
 
-    virtual size_t numSubscriptions(aeron_driver_conductor_t *conductor) override
+    size_t numSubscriptions(aeron_driver_conductor_t *conductor) override
     {
         return aeron_driver_conductor_num_ipc_subscriptions(conductor);
     }

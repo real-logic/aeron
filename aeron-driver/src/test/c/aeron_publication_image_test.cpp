@@ -19,19 +19,9 @@
 
 extern "C"
 {
-#include <util/aeron_fileutil.h>
-#include <concurrent/aeron_atomic.h>
-#include <concurrent/aeron_distinct_error_log.h>
 #include <aeron_publication_image.h>
 #include <aeron_data_packet_dispatcher.h>
 #include <aeron_driver_receiver.h>
-#include <aeron_position.h>
-#include <aeron_publication_image.h>
-#include <media/aeron_receive_channel_endpoint.h>
-#include <media/aeron_receive_destination.h>
-#include <protocol/aeron_udp_protocol.h>
-
-#include "aeron_test_udp_bindings.h"
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 }
@@ -60,7 +50,7 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
     int32_t stream_id = 1001;
     int32_t session_id = 1000001;
-    aeron_receive_destination_t *destination = NULL;
+    aeron_receive_destination_t *destination = nullptr;
 
     aeron_udp_channel_t *channel_1 = createChannel(uri_1);
     aeron_receive_destination_t *dest_1;
@@ -94,12 +84,12 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
 
     aeron_udp_channel_t *channel_not_added = createChannel(uri_3, &m_channels_for_tear_down);
 
-    destination = NULL;
+    destination = nullptr;
     ASSERT_EQ(0, aeron_receive_channel_endpoint_remove_destination(endpoint, channel_not_added, &destination));
     ASSERT_EQ(1u, endpoint->destinations.length);
     ASSERT_EQ(0, aeron_publication_image_remove_destination(image, channel_not_added));
     ASSERT_EQ(1u, image->connections.length);
-    ASSERT_EQ((aeron_receive_destination_t *)NULL, destination);
+    ASSERT_EQ((aeron_receive_destination_t *)nullptr, destination);
 
     aeron_udp_channel_t *remove_channel_2 = createChannel(uri_2, &m_channels_for_tear_down);
 

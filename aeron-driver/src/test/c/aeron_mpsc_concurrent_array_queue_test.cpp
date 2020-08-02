@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <thread>
 #include <atomic>
-#include <exception>
 #include <functional>
 
 #include <gtest/gtest.h>
@@ -41,7 +40,7 @@ public:
         }
     }
 
-    virtual ~MpscQueueTest()
+    ~MpscQueueTest() override
     {
         aeron_mpsc_concurrent_array_queue_close(&m_q);
     }
@@ -73,7 +72,7 @@ TEST_F(MpscQueueTest, shouldGetSizeWhenEmpty)
 
 TEST_F(MpscQueueTest, shouldReturnErrorWhenNullOffered)
 {
-    EXPECT_EQ(aeron_mpsc_concurrent_array_queue_offer(&m_q, NULL), AERON_OFFER_ERROR);
+    EXPECT_EQ(aeron_mpsc_concurrent_array_queue_offer(&m_q, nullptr), AERON_OFFER_ERROR);
 }
 
 TEST_F(MpscQueueTest, shouldOfferAndDrainToEmptyQueue)

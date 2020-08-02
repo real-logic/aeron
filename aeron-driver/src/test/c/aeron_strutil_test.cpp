@@ -18,8 +18,8 @@
 
 extern "C"
 {
-#include <aeron_alloc.h>
-#include <util/aeron_strutil.h>
+#include "aeron_alloc.h"
+#include "util/aeron_strutil.h"
 }
 #undef max
 
@@ -115,7 +115,7 @@ TEST_F(StrUtilTest, shouldHandleNull)
     const int max_tokens = 3;
     char *tokens[max_tokens];
 
-    int num_tokens = aeron_tokenise(NULL, ',', max_tokens, tokens);
+    int num_tokens = aeron_tokenise(nullptr, ',', max_tokens, tokens);
 
     EXPECT_EQ(num_tokens, -EINVAL);
 }

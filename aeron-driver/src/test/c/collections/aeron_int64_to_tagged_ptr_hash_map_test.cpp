@@ -26,7 +26,7 @@ extern "C"
 class Int64ToTaggedPtrHashMapTest : public testing::Test
 {
 public:
-    ~Int64ToTaggedPtrHashMapTest()
+    ~Int64ToTaggedPtrHashMapTest() override
     {
         aeron_int64_to_tagged_ptr_hash_map_delete(&m_map);
     }
@@ -68,7 +68,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
     int value = 42;
     uint32_t tag = 64234;
     uint32_t tag_out = 0;
-    void *value_out = NULL;
+    void *value_out = nullptr;
 
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
@@ -83,13 +83,13 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldAllowNullValues)
 {
     uint32_t tag = 64234;
     uint32_t tag_out = 0;
-    void *value_out = NULL;
+    void *value_out = nullptr;
 
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
-    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 7, tag, NULL), 0);
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 7, tag, nullptr), 0);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_get(&m_map, 7, &tag_out, &value_out), true);
-    EXPECT_EQ(value_out, (void *)NULL);
+    EXPECT_EQ(value_out, (void *)nullptr);
     EXPECT_EQ(tag_out, tag);
     EXPECT_EQ(m_map.size, 1u);
 }
@@ -99,7 +99,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldReplaceExistingValueForTheSameKey)
     int value = 42, new_value = 43;
     uint32_t new_tag = 234;
     uint32_t tag_out = 0;
-    void *value_out = NULL;
+    void *value_out = nullptr;
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
 
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 7, 0, (void *)&value), 0);
@@ -116,7 +116,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldGrowWhenThresholdExceeded)
     uint32_t tag = 982374;
     uint32_t tag_at_16 = tag + 1;
     uint32_t tag_out = 0;
-    void *value_out = NULL;
+    void *value_out = nullptr;
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 32, 0.5f), 0);
 
     for (size_t i = 0; i < 16; i++)
@@ -145,7 +145,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldHandleCollisionAndThenLinearProbe)
     uint32_t tag = 987234, collision_tag = tag + 1;
     int64_t key = 7;
     uint32_t tag_out = 0;
-    void *value_out = NULL;
+    void *value_out = nullptr;
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 32, 0.5f), 0);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, key, tag, &value), 0);
 
@@ -164,23 +164,23 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveEntry)
 {
     int value = 42;
     uint32_t tag_out = 0;
-    void *value_out = NULL;
+    void *value_out = nullptr;
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 8, 0.5f), 0);
 
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 7, 0, (void *)&value), 0);
-    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_remove(&m_map, 7, NULL, &value_out), true);
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_remove(&m_map, 7, nullptr, &value_out), true);
     EXPECT_EQ(value_out, (void *)&value);
     EXPECT_EQ(m_map.size, 0u);
-    value_out = NULL;
+    value_out = nullptr;
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_get(&m_map, 7, &tag_out, &value_out), false);
-    EXPECT_EQ(value_out, (void *)NULL);
+    EXPECT_EQ(value_out, (void *)nullptr);
     EXPECT_EQ(tag_out, 0u);
 }
 
 TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
 {
     int value_12 = 12, value_13 = 13, value_14 = 14, collision_value = 43;
-    void *value_out = NULL;
+    void *value_out = nullptr;
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 8, 0.55f), 0);
 
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 12, 0, (void *)&value_12), 0);
@@ -190,7 +190,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, collision_key, 0, &collision_value), 0);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 14, 0, (void *)&value_14), 0);
 
-    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_remove(&m_map, 12, NULL, &value_out), true);
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_remove(&m_map, 12, nullptr, &value_out), true);
     EXPECT_EQ(value_out, (void *)&value_12);
 }
 

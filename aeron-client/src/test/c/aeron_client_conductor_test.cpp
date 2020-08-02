@@ -180,7 +180,7 @@ public:
         }
     }
 
-    virtual ~ClientConductorTest()
+    virtual ~ClientConductorTest() override
     {
         aeron_client_conductor_on_close(&m_conductor);
         m_context->cnc_map.addr = nullptr;

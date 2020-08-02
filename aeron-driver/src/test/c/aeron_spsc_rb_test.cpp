@@ -15,7 +15,6 @@
  */
 
 #include <array>
-#include <cstdint>
 #include <thread>
 #include <atomic>
 #include <limits>
@@ -24,7 +23,7 @@
 
 extern "C"
 {
-#include <concurrent/aeron_spsc_rb.h>
+#include "concurrent/aeron_spsc_rb.h"
 }
 #undef max
 

@@ -18,7 +18,6 @@
 #include <climits>
 
 #include <gtest/gtest.h>
-#include <aeron_driver_common.h>
 
 extern "C"
 {
@@ -30,7 +29,7 @@ class ParseUtilTest : public testing::Test
 public:
     ParseUtilTest() = default;
 
-    virtual ~ParseUtilTest() = default;
+    ~ParseUtilTest() override = default;
 };
 
 TEST_F(ParseUtilTest, shouldNotParseInvalidNumber)

@@ -44,9 +44,7 @@ using namespace aeron::test;
 class ImageTest : public testing::Test
 {
 public:
-    ImageTest()
-    {
-    }
+    ImageTest() = default;
 
     ~ImageTest() override
     {

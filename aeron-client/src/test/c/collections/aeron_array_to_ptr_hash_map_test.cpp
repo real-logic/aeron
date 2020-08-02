@@ -31,7 +31,7 @@ extern "C"
 class ArrToPtrHashMapTest : public testing::Test
 {
 public:
-    ~ArrToPtrHashMapTest()
+    ~ArrToPtrHashMapTest() override
     {
         aeron_array_to_ptr_hash_map_delete(&m_map);
     }

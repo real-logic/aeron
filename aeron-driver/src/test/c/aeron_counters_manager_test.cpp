@@ -46,7 +46,7 @@ public:
         ms_timestamp = 0;
     }
 
-    ~CountersManagerTest()
+    ~CountersManagerTest() override
     {
         aeron_counters_manager_close(&m_manager);
     }
@@ -120,11 +120,11 @@ TEST_F(CountersManagerTest, shouldErrorOnAllocatingWhenFull)
 {
     ASSERT_EQ(counters_manager_init(), 0);
 
-    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "lab0", 4), 0);
-    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "lab1", 4), 0);
-    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "lab2", 4), 0);
-    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "lab3", 4), 0);
-    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "lab4", 4), -1);
+    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "lab0", 4), 0);
+    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "lab1", 4), 0);
+    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "lab2", 4), 0);
+    EXPECT_GE(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "lab3", 4), 0);
+    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "lab4", 4), -1);
 }
 
 void func_check_and_remove_from_map(
@@ -151,7 +151,7 @@ TEST_F(CountersManagerTest, shouldAllocateIntoEmptyCounters)
 
     for (auto &label: labels)
     {
-        int32_t id = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, label.c_str(), label.length());
+        int32_t id = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, label.c_str(), label.length());
 
         ASSERT_GE(id, 0);
         allocated[id] = label;
@@ -171,51 +171,51 @@ TEST_F(CountersManagerTest, shouldRecycleCounterIdWhenFreed)
 
     for (auto &label: labels)
     {
-        ASSERT_GE(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, label.c_str(), label.length()), 0);
+        ASSERT_GE(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, label.c_str(), label.length()), 0);
     }
 
     ASSERT_EQ(aeron_counters_manager_free(&m_manager, 2), 0);
-    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "newLab2", 7), 2);
+    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "newLab2", 7), 2);
 }
 
 TEST_F(CountersManagerTest, shouldFreeAndReuseCounters)
 {
     ASSERT_EQ(counters_manager_init(), 0);
 
-    aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3);
-    int32_t def = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "def", 3);
-    aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "ghi", 3);
+    aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "abc", 3);
+    int32_t def = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "def", 3);
+    aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "ghi", 3);
 
     ASSERT_EQ(aeron_counters_manager_free(&m_manager, def), 0);
-    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "the next label", 14), def);
+    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "the next label", 14), def);
 }
 
 TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCoolDown)
 {
     ASSERT_EQ(counters_manager_with_cool_down_init(), 0);
 
-    aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3);
-    int32_t def = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "def", 3);
-    int32_t ghi = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "ghi", 3);
+    aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "abc", 3);
+    int32_t def = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "def", 3);
+    int32_t ghi = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "ghi", 3);
 
     ASSERT_EQ(aeron_counters_manager_free(&m_manager, def), 0);
 
     ms_timestamp += FREE_TO_REUSE_TIMEOUT_MS - 1;
-    EXPECT_GT(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "the next label", 14), ghi);
+    EXPECT_GT(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "the next label", 14), ghi);
 }
 
 TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCoolDown)
 {
     ASSERT_EQ(counters_manager_with_cool_down_init(), 0);
 
-    aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3);
-    int32_t def = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "def", 3);
-    aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "ghi", 3);
+    aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "abc", 3);
+    int32_t def = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "def", 3);
+    aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "ghi", 3);
 
     ASSERT_EQ(aeron_counters_manager_free(&m_manager, def), 0);
 
     ms_timestamp += FREE_TO_REUSE_TIMEOUT_MS;
-    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "the next label", 14), def);
+    EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "the next label", 14), def);
 }
 
 TEST_F(CountersManagerTest, shouldStoreAndLoadCounterValue)
@@ -224,7 +224,7 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadCounterValue)
 
     int32_t id;
 
-    ASSERT_GE((id = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3)), 0);
+    ASSERT_GE((id = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "abc", 3)), 0);
 
     const int64_t value = 7L;
     int64_t *addr = aeron_counters_manager_addr(&m_manager, id);

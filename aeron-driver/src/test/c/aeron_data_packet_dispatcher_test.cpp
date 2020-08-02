@@ -20,15 +20,10 @@
 
 extern "C"
 {
-#include <util/aeron_fileutil.h>
-#include <util/aeron_dlopen.h>
-#include <concurrent/aeron_atomic.h>
-#include <concurrent/aeron_distinct_error_log.h>
-#include <aeron_publication_image.h>
-#include <aeron_data_packet_dispatcher.h>
-#include <aeron_driver_receiver.h>
-#include <aeron_position.h>
-#include "aeron_test_udp_bindings.h"
+#include "util/aeron_dlopen.h"
+#include "aeron_publication_image.h"
+#include "aeron_data_packet_dispatcher.h"
+#include "aeron_driver_receiver.h"
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 }
@@ -202,7 +197,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupOnceF
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header,
         data_buffer.data(),
         sizeof(*setup_header),
@@ -210,7 +205,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupOnceF
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header,
         data_buffer.data(),
         sizeof(*setup_header),
@@ -218,7 +213,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupOnceF
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header,
         data_buffer.data(),
         sizeof(*setup_header),
@@ -243,7 +238,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupMulti
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header_1,
         data_buffer.data(),
         sizeof(*setup_header_1),
@@ -253,7 +248,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupMulti
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header_2,
         data_buffer.data(),
         sizeof(*setup_header_1),
@@ -263,7 +258,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupMulti
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header_3,
         data_buffer.data(),
         sizeof(*setup_header_1),
@@ -337,7 +332,7 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_header,
         data_buffer.data(),
         sizeof(*setup_header),
@@ -439,7 +434,7 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_session1,
         data_buffer.data(),
         sizeof(*setup_session1),
@@ -457,7 +452,7 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
-        NULL,
+        nullptr,
         setup_session2_ignored,
         data_buffer.data(),
         sizeof(*setup_session2_ignored),

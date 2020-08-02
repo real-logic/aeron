@@ -37,9 +37,9 @@ class NameResolverTest : public testing::Test
 public:
     NameResolverTest()
     {
-        m_a.context = NULL;
-        m_b.context = NULL;
-        m_c.context = NULL;
+        m_a.context = nullptr;
+        m_b.context = nullptr;
+        m_c.context = nullptr;
     }
 
 protected:
@@ -99,7 +99,7 @@ protected:
             ERROR_LOG_LENGTH,
             aeron_epoch_clock,
             [](void *clientd, uint8_t *resource){},
-            NULL);
+            nullptr);
 
         resolver_fields->context->counters_manager = &resolver_fields->counters;
         resolver_fields->context->system_counters = &resolver_fields->system_counters;
@@ -170,7 +170,7 @@ protected:
 
     static void printCounters(std::ostream &output, const resolver_fields_t *resolver, const char *name)
     {
-        if (NULL != resolver->context)
+        if (nullptr != resolver->context)
         {
             output
                 << " " << name << "(" << shortSends(resolver) << "," << readNeighborCounter(resolver)
@@ -193,7 +193,7 @@ protected:
 private:
     static void close(resolver_fields_t *resolver_fields)
     {
-        if (NULL != resolver_fields->context)
+        if (nullptr != resolver_fields->context)
         {
             resolver_fields->resolver.close_func(&resolver_fields->resolver);
             aeron_system_counters_close(&resolver_fields->system_counters);
@@ -475,5 +475,5 @@ TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking
 
     aeron_env_set(AERON_AGENT_MASK_ENV_VAR, "0xFFFF");
     aeron_driver_agent_context_init(m_a.context);
-    aeron_driver_agent_log_dissector(AERON_FRAME_IN, buffer, res_offset, NULL);
+    aeron_driver_agent_log_dissector(AERON_FRAME_IN, buffer, res_offset, nullptr);
 }

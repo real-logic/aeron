@@ -17,8 +17,8 @@
 #ifndef AERON_AERON_TEST_UDP_BINDINGS_H
 #define AERON_AERON_TEST_UDP_BINDINGS_H
 
-#include <aeronmd.h>
-#include <media/aeron_udp_channel_transport_bindings.h>
+#include "aeronmd.h"
+#include "media/aeron_udp_channel_transport_bindings.h"
 
 typedef struct aeron_test_udp_bindings_state_stct
 {

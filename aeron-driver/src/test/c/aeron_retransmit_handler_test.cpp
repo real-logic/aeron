@@ -45,7 +45,7 @@ public:
     {
     }
 
-    ~RetransmitHandlerTest()
+    ~RetransmitHandlerTest() override
     {
         aeron_retransmit_handler_close(&m_handler);
     }

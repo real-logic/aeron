@@ -18,14 +18,13 @@
 #include <cstdint>
 #include <thread>
 #include <atomic>
-#include <exception>
 #include <functional>
 
 #include <gtest/gtest.h>
 
 extern "C"
 {
-#include <concurrent/aeron_spsc_concurrent_array_queue.h>
+#include "concurrent/aeron_spsc_concurrent_array_queue.h"
 }
 
 #define CAPACITY (8u)
@@ -41,7 +40,7 @@ public:
         }
     }
 
-    virtual ~SpscQueueTest()
+    ~SpscQueueTest() override
     {
         aeron_spsc_concurrent_array_queue_close(&m_q);
     }
@@ -73,7 +72,7 @@ TEST_F(SpscQueueTest, shouldGetSizeWhenEmpty)
 
 TEST_F(SpscQueueTest, shouldReturnErrorWhenNullOffered)
 {
-    EXPECT_EQ(aeron_spsc_concurrent_array_queue_offer(&m_q, NULL), AERON_OFFER_ERROR);
+    EXPECT_EQ(aeron_spsc_concurrent_array_queue_offer(&m_q, nullptr), AERON_OFFER_ERROR);
 }
 
 TEST_F(SpscQueueTest, shouldOfferAndDrainToEmptyQueue)

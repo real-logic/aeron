@@ -22,14 +22,14 @@
 
 extern "C"
 {
-#include <util/aeron_fileutil.h>
-#include <concurrent/aeron_atomic.h>
-#include <concurrent/aeron_distinct_error_log.h>
-#include <aeron_publication_image.h>
-#include <aeron_data_packet_dispatcher.h>
-#include <aeron_driver_receiver.h>
-#include <aeron_position.h>
-#include <aeron_publication_image.h>
+#include "util/aeron_fileutil.h"
+#include "concurrent/aeron_atomic.h"
+#include "concurrent/aeron_distinct_error_log.h"
+#include "aeron_publication_image.h"
+#include "aeron_data_packet_dispatcher.h"
+#include "aeron_driver_receiver.h"
+#include "aeron_position.h"
+#include "aeron_publication_image.h"
 #include "aeron_test_udp_bindings.h"
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
@@ -79,11 +79,11 @@ protected:
         m_conductor_proxy.command_queue = &m_conductor_command_queue;
         m_conductor_proxy.threading_mode = AERON_THREADING_MODE_DEDICATED;
         m_conductor_proxy.fail_counter = &m_conductor_fail_counter;
-        m_conductor_proxy.conductor = NULL;
+        m_conductor_proxy.conductor = nullptr;
 
         m_context->conductor_proxy = &m_conductor_proxy;
 
-        aeron_default_name_resolver_supplier(&m_resolver, NULL, NULL);
+        aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
 
         m_counter_value_buffer.fill(0);
         m_counter_meta_buffer.fill(0);
@@ -98,7 +98,7 @@ protected:
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
 
         aeron_distinct_error_log_init(
-            &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock, stub_linger, NULL);
+            &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock, stub_linger, nullptr);
         aeron_driver_receiver_init(&m_receiver, m_context, &m_system_counters, &m_error_log);
 
         m_receiver_proxy.receiver = &m_receiver;
@@ -137,7 +137,7 @@ protected:
             &m_counters_manager, channel->uri_length, channel->original_uri);
         status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
-        aeron_receive_destination_t *destination = NULL;
+        aeron_receive_destination_t *destination = nullptr;
         if (!channel->is_manual_control_mode)
         {
             if (0 != aeron_receive_destination_create(
@@ -147,7 +147,7 @@ protected:
             }
         }
 
-        aeron_receive_channel_endpoint_t *endpoint = NULL;
+        aeron_receive_channel_endpoint_t *endpoint = nullptr;
         if (0 != aeron_receive_channel_endpoint_create(
             &endpoint, channel, destination, &status_indicator, &m_system_counters, m_context))
         {
@@ -160,7 +160,7 @@ protected:
 
     aeron_receive_channel_endpoint_t *createEndpoint(const char *uri)
     {
-        aeron_udp_channel_t *channel = NULL;
+        aeron_udp_channel_t *channel = nullptr;
         if (0 != aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel))
         {
             return nullptr;
@@ -176,7 +176,7 @@ protected:
 
     aeron_udp_channel_t *createChannel(const char *uri, std::vector<aeron_udp_channel_t *> *tracker = nullptr)
     {
-        aeron_udp_channel_t *channel = NULL;
+        aeron_udp_channel_t *channel = nullptr;
         aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
 
         if (nullptr != tracker)
@@ -219,9 +219,9 @@ protected:
             &image, endpoint, destination, m_context, correlation_id, session_id, stream_id, 0, 0, 0,
             &hwm_position, &pos_position, congestion_control_strategy,
             &channel->remote_control, &channel->local_data,
-            TERM_BUFFER_SIZE, MTU, NULL, true, true, false, &m_system_counters) < 0)
+            TERM_BUFFER_SIZE, MTU, nullptr, true, true, false, &m_system_counters) < 0)
         {
-            return NULL;
+            return nullptr;
         }
 
         m_images.push_back(image);

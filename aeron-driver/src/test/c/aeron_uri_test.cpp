@@ -42,7 +42,7 @@ public:
         m_conductor.context = m_context;
     }
 
-    virtual ~UriTest()
+    ~UriTest() override
     {
         aeron_uri_close(&m_uri);
         aeron_driver_context_close(m_context);
@@ -50,7 +50,7 @@ public:
 
 protected:
     aeron_uri_t m_uri;
-    aeron_driver_context_t *m_context = NULL;
+    aeron_driver_context_t *m_context = nullptr;
     aeron_driver_conductor_t m_conductor;
 };
 
@@ -368,10 +368,10 @@ public:
         addr_in6((struct sockaddr_in6 *)&m_addr),
         m_prefixlen(0)
     {
-        aeron_default_name_resolver_supplier(&m_resolver, NULL, NULL);
+        aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
     }
 
-    bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
+    static bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
     {
         struct sockaddr_in addr1, addr2;
 
@@ -383,7 +383,7 @@ public:
         return aeron_ipv4_does_prefix_match(&addr1.sin_addr, &addr2.sin_addr, prefixlen);
     }
 
-    bool ipv6_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
+    static bool ipv6_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
     {
         struct sockaddr_in6 addr1, addr2;
 
@@ -396,7 +396,7 @@ public:
         return aeron_ipv6_does_prefix_match(&addr1.sin6_addr, &addr2.sin6_addr, prefixlen);
     }
 
-    size_t ipv6_prefixlen(const char *aadr_str)
+    static size_t ipv6_prefixlen(const char *aadr_str)
     {
         struct sockaddr_in6 addr;
 
@@ -408,7 +408,7 @@ public:
         return aeron_ipv6_netmask_to_prefixlen(&addr.sin6_addr);
     }
 
-    size_t ipv4_prefixlen(const char *addr_str)
+    static size_t ipv4_prefixlen(const char *addr_str)
     {
         struct sockaddr_in addr;
 
@@ -618,7 +618,7 @@ TEST_F(UriResolverTest, shouldCalculateIpv6PrefixlenFromNetmask)
  * WARNING: single threaded only due to global lookup func usage
  */
 
-struct ifaddrs *global_ifaddrs = NULL;
+struct ifaddrs *global_ifaddrs = nullptr;
 
 class UriLookupTest : public testing::Test
 {
@@ -672,7 +672,7 @@ public:
 
     static void initialize_ifaddrs()
     {
-        if (NULL == global_ifaddrs)
+        if (nullptr == global_ifaddrs)
         {
             add_ifaddr(AF_INET, "lo0", "127.0.0.1", "255.0.0.0", IFF_MULTICAST | IFF_UP | IFF_LOOPBACK);
             add_ifaddr(AF_INET, "eth0:0", "192.168.0.20", "255.255.255.0", IFF_MULTICAST | IFF_UP);

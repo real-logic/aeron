@@ -18,10 +18,9 @@
 
 extern "C"
 {
-#include <media/aeron_udp_channel_transport.h>
-#include <media/aeron_udp_channel_transport_loss.h>
-#include <uri/aeron_uri.h>
-#include <protocol/aeron_udp_protocol.h>
+#include "media/aeron_udp_channel_transport.h"
+#include "media/aeron_udp_channel_transport_loss.h"
+#include "protocol/aeron_udp_protocol.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
@@ -89,9 +88,9 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
     aeron_udp_channel_interceptor_loss_configure(&params);
 
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, NULL, NULL, data_0, 1024, NULL);
+        nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data_0, 1024, nullptr);
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, NULL, NULL, data_1, 1024, NULL);
+        nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data_1, 1024, nullptr);
 
     EXPECT_EQ(delegate_recv_state.messages_received, 0);
 }
@@ -122,9 +121,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
     aeron_udp_channel_interceptor_loss_configure(&params);
 
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, NULL, NULL, data_0, 1024, NULL);
+        nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data_0, 1024, nullptr);
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, NULL, NULL, data_1, 1024, NULL);
+        nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data_1, 1024, nullptr);
 
     EXPECT_EQ(delegate_recv_state.messages_received, 2);
 }
@@ -154,9 +153,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
     aeron_udp_channel_interceptor_loss_configure(&params);
 
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, NULL, NULL, data_0, 1024, NULL);
+        nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data_0, 1024, nullptr);
     aeron_udp_channel_interceptor_loss_incoming(
-        NULL, &delegate, NULL, NULL, NULL, NULL, data_1, 1024, NULL);
+        nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data_1, 1024, nullptr);
 
     EXPECT_EQ(delegate_recv_state.messages_received, 2);
 }
@@ -187,7 +186,7 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
         frame_header->type = msg_type;
 
         aeron_udp_channel_interceptor_loss_incoming(
-            NULL, &delegate, NULL, NULL, NULL, NULL, data + (i * 1024), 1024, NULL);
+            nullptr, &delegate, nullptr, nullptr, nullptr, nullptr, data + (i * 1024), 1024, nullptr);
     }
 
     EXPECT_LT(delegate_recv_state.messages_received, static_cast<int>(vlen));

@@ -23,7 +23,6 @@ extern "C"
 {
 #include "aeronc.h"
 #include "aeron_image.h"
-#include "concurrent/aeron_logbuffer_descriptor.h"
 }
 
 #define STREAM_ID (10);
@@ -84,8 +83,7 @@ public:
         }
     }
 
-    static void fragment_handler(
-        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    static void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         auto image = reinterpret_cast<CFragmentAssemblerTest *>(clientd);
 

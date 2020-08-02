@@ -21,7 +21,7 @@
 
 extern "C"
 {
-#include <concurrent/aeron_counters_manager.h>
+#include "concurrent/aeron_counters_manager.h"
 }
 
 #define CAPACITY (1024)
@@ -57,7 +57,7 @@ public:
             m_valuesBuffer.size());
     }
 
-    virtual ~CountersTest()
+    virtual ~CountersTest() override
     {
         aeron_counters_manager_close(&m_manager);
     }

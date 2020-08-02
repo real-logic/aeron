@@ -52,8 +52,8 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    uint8_t *m_ptr;
+    buffer_t m_buffer = {};
+    uint8_t *m_ptr = nullptr;
     std::function<void(int32_t, int32_t, size_t)> m_on_gap_detected;
 };
 
@@ -221,11 +221,11 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    uint8_t *m_ptr;
-    int64_t m_time;
-    aeron_loss_detector_t m_detector;
-    aeron_feedback_delay_generator_state_t m_delay_generator_state;
+    buffer_t m_buffer = {};
+    uint8_t *m_ptr = nullptr;
+    int64_t m_time = 0;
+    aeron_loss_detector_t m_detector = {};
+    aeron_feedback_delay_generator_state_t m_delay_generator_state = {};
     std::function<void(int32_t, int32_t, size_t)> m_on_gap_detected;
 };
 

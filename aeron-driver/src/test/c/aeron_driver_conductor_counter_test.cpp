@@ -15,7 +15,6 @@
  */
 
 #include "aeron_driver_conductor_test.h"
-#include <gmock/gmock.h>
 
 #define COUNTER_LABEL "counter label"
 #define COUNTER_TYPE_ID (102)

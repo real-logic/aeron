@@ -139,7 +139,7 @@ static uint64_t test_uint64_max_usable_fs_space(const char *path)
 class DriverCallbacks
 {
 public:
-    virtual ~DriverCallbacks() {};
+    virtual ~DriverCallbacks() = default;
 
     virtual void broadcastToClient(int32_t type_id, uint8_t *buffer, size_t length) = 0;
 
@@ -218,11 +218,11 @@ struct TestDriverContext
 
     virtual ~TestDriverContext()
     {
-        m_context->cnc_map.addr = NULL;
+        m_context->cnc_map.addr = nullptr;
         aeron_driver_context_close(m_context);
     }
 
-    aeron_driver_context_t *m_context = NULL;
+    aeron_driver_context_t *m_context = nullptr;
     std::unique_ptr<uint8_t[]> m_cnc;
 };
 
@@ -536,7 +536,7 @@ public:
         while ((test_nano_clock() - initial_ns) <= duration_ns);
     }
 
-    void fill_sockaddr_ipv4(struct sockaddr_storage *addr, const char *ip, unsigned short int port)
+    static void fill_sockaddr_ipv4(struct sockaddr_storage *addr, const char *ip, unsigned short int port)
     {
         struct sockaddr_in *ipv4addr = (struct sockaddr_in *)addr;
 
@@ -554,7 +554,7 @@ public:
         size_t position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes(TERM_LENGTH);
 
         cmd.base.func = aeron_driver_conductor_on_create_publication_image;
-        cmd.base.item = NULL;
+        cmd.base.item = nullptr;
         cmd.endpoint = endpoint;
         cmd.destination = &m_conductor.m_destination;
         cmd.session_id = SESSION_ID;
@@ -879,7 +879,7 @@ MATCHER_P4(
     aeron_image_message_get_channel(response, &response_channel, &response_channel_len);
     const std::string str_channel = std::string(response_channel, (size_t)response_channel_len);
 
-    result &= 0 == std::string(channel).compare(str_channel);
+    result &= str_channel == std::string(channel);
 
     if (!result)
     {

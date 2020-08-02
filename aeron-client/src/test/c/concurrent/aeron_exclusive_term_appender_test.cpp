@@ -22,7 +22,6 @@
 extern "C"
 {
 #include "concurrent/aeron_exclusive_term_appender.h"
-#include "concurrent/aeron_logbuffer_descriptor.h"
 }
 
 #define TERM_BUFFER_CAPACITY (AERON_LOGBUFFER_TERM_MIN_LENGTH)

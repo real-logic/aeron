@@ -173,7 +173,7 @@ TEST_F(DriverConfigurationTest, shouldParseContinuationWithBlankLine)
 
 TEST_F(DriverConfigurationTest, DISABLED_shouldHttpRetrieve)
 {
-    aeron_http_response_t *response = NULL;
+    aeron_http_response_t *response = nullptr;
     int result = aeron_http_retrieve(&response, "http://localhost:8000/aeron-throughput.properties", -1L);
 
     if (-1 == result)

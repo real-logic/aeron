@@ -238,7 +238,7 @@ TEST_F(BitSetTest, shouldHeapAllocateIfBitsRequiredIsTooLarge)
 
     aeron_bit_set_stack_free(&bit_set);
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, NULL, 0, true, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, nullptr, 0, true, &bit_set), 0);
     EXPECT_NE(bit_set.bits, bit_set.static_array);
 
     aeron_bit_set_stack_free(&bit_set);

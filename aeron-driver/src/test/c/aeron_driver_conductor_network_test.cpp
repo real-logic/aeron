@@ -16,10 +16,6 @@
 
 #include <cinttypes>
 #include "aeron_driver_conductor_test.h"
-extern "C"
-{
-#include <concurrent/aeron_broadcast_receiver.h>
-}
 
 using testing::_;
 using testing::Eq;
@@ -57,10 +53,10 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptions
     aeron_receive_channel_endpoint_t *endpoint_4 = aeron_driver_conductor_find_receive_channel_endpoint(
         &m_conductor.m_conductor, CHANNEL_4);
 
-    ASSERT_NE(endpoint_1, (aeron_receive_channel_endpoint_t *)NULL);
-    ASSERT_NE(endpoint_2, (aeron_receive_channel_endpoint_t *)NULL);
-    ASSERT_NE(endpoint_3, (aeron_receive_channel_endpoint_t *)NULL);
-    ASSERT_NE(endpoint_4, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_1, (aeron_receive_channel_endpoint_t *)nullptr);
+    ASSERT_NE(endpoint_2, (aeron_receive_channel_endpoint_t *)nullptr);
+    ASSERT_NE(endpoint_3, (aeron_receive_channel_endpoint_t *)nullptr);
+    ASSERT_NE(endpoint_4, (aeron_receive_channel_endpoint_t *)nullptr);
     ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 4u);
     ASSERT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 4u);
 
@@ -105,7 +101,7 @@ TEST_F(DriverConductorNetworkTest, shouldKeepSubscriptionMediaEndpointUponRemova
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
         &m_conductor.m_conductor, CHANNEL_1);
 
-    ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)nullptr);
     ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
     ASSERT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
 
@@ -135,7 +131,7 @@ TEST_F(DriverConductorNetworkTest, shouldCreatePublicationImageForActiveNetworkS
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
-    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_NE(image, (aeron_publication_image_t *)nullptr);
     EXPECT_EQ(aeron_publication_image_subscriber_count(image), 1u);
 
     int64_t image_registration_id = aeron_publication_image_registration_id(image);
@@ -185,7 +181,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
     aeron_publication_image_t *image =
         aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
-    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_NE(image, (aeron_publication_image_t *)nullptr);
     EXPECT_EQ(aeron_publication_image_subscriber_count(image), 1u);
 
     int64_t remove_correlation_id = nextCorrelationId();
@@ -219,7 +215,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
-    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_NE(image, (aeron_publication_image_t *)nullptr);
     EXPECT_EQ(aeron_publication_image_subscriber_count(image), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
@@ -296,7 +292,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
-    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_NE(image, (aeron_publication_image_t *)nullptr);
     EXPECT_EQ(aeron_publication_image_subscriber_count(image), 2u);
 
     int64_t image_registration_id = aeron_publication_image_registration_id(image);
@@ -327,7 +323,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
-    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_NE(image, (aeron_publication_image_t *)nullptr);
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1), 0);
     doWork();
@@ -368,7 +364,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
-    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_NE(image, (aeron_publication_image_t *)nullptr);
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1), 0);
     doWork();

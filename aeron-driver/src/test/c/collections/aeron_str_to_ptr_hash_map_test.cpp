@@ -30,7 +30,7 @@ extern "C"
 class StrToPtrHashMapTest : public testing::Test
 {
 public:
-    ~StrToPtrHashMapTest()
+    ~StrToPtrHashMapTest() override
     {
         aeron_str_to_ptr_hash_map_delete(&m_map);
     }
@@ -116,7 +116,7 @@ TEST_F(StrToPtrHashMapTest, shouldRemoveEntry)
     EXPECT_EQ(aeron_str_to_ptr_hash_map_put(&m_map, "key", 3, (void *)&value), 0);
     EXPECT_EQ(aeron_str_to_ptr_hash_map_remove(&m_map, "key", 3), &value);
     EXPECT_EQ(m_map.size, 0u);
-    EXPECT_EQ(aeron_str_to_ptr_hash_map_get(&m_map, "key", 3), (void *)NULL);
+    EXPECT_EQ(aeron_str_to_ptr_hash_map_get(&m_map, "key", 3), (void *)nullptr);
 }
 
 TEST_F(StrToPtrHashMapTest, shouldNotForEachEmptyMap)

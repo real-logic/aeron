@@ -25,14 +25,6 @@
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_receiver.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 int aeron_driver_receiver_init(
     aeron_driver_receiver_t *receiver,
     aeron_driver_context_t *context,
@@ -122,7 +114,7 @@ void aeron_driver_receiver_on_command(void *clientd, volatile void *item)
 
 int aeron_driver_receiver_do_work(void *clientd)
 {
-    struct mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
+    struct aeron_mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
     int64_t bytes_received = 0;
     int work_count = 0;

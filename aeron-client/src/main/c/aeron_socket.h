@@ -97,6 +97,12 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 #error Unsupported platform!
 #endif
 
+struct aeron_mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+
 int set_socket_non_blocking(aeron_socket_t fd);
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol);

@@ -37,14 +37,6 @@
 #include "util/aeron_dlopen.h"
 #include "aeron_windows.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
@@ -254,7 +246,7 @@ int aeron_driver_agent_outgoing_mmsg(
     void *interceptor_state,
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen)
 {
     int result = delegate->outgoing_mmsg_func(

@@ -27,14 +27,6 @@
 #include "aeron_alloc.h"
 #include "aeron_position.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
@@ -212,7 +204,7 @@ void aeron_send_channel_endpoint_decref(void *clientd)
     }
 }
 
-int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
+int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct aeron_mmsghdr *mmsghdr, size_t vlen)
 {
     int result = 0;
 

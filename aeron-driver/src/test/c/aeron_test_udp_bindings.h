@@ -63,7 +63,7 @@ int aeron_test_udp_channel_transport_close(aeron_udp_channel_transport_t *transp
 
 int aeron_test_udp_channel_transport_recvmmsg(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
@@ -75,7 +75,7 @@ int aeron_test_udp_channel_transport_recvmmsg(
 int aeron_test_udp_channel_transport_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen)
 {
     aeron_test_udp_bindings_state_t *state = (aeron_test_udp_bindings_state_t *)transport->bindings_clientd;
@@ -156,7 +156,7 @@ int aeron_test_udp_transport_poller_remove(
 
 int aeron_test_udp_transport_poller_poll(
     aeron_udp_transport_poller_t *poller,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,

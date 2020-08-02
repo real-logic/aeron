@@ -386,7 +386,7 @@ int aeron_udp_channel_data_paths_delete(aeron_udp_channel_data_paths_t *data_pat
 extern int aeron_udp_channel_outgoing_interceptor_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen);
 
 extern int aeron_udp_channel_outgoing_interceptor_sendmsg(
@@ -398,7 +398,7 @@ extern int aeron_udp_channel_outgoing_interceptor_mmsg_to_transport(
     void *interceptor_state,
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen);
 
 extern int aeron_udp_channel_outgoing_interceptor_msg_to_transport(

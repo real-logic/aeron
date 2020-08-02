@@ -60,10 +60,6 @@ check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
 check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)
 check_symbol_exists(epoll_create "sys/epoll.h" EPOLL_PROTOTYPE_EXISTS)
 
-set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
-check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-
 check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(sendmmsg "sys/socket.h" SENDMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
@@ -94,10 +90,6 @@ endif ()
 
 if (NOT POLL_PROTOTYPE_EXISTS AND NOT EPOLL_PROTOTYPE_EXISTS AND NOT WSAPOLL_PROTOTYPE_EXISTS)
     message(FATAL_ERROR "Unsupported configuration: neither POLL nor EPOLL nor WSAPoll found")
-endif ()
-
-if (STRUCT_MMSGHDR_TYPE_EXISTS)
-    add_definitions(-DHAVE_STRUCT_MMSGHDR)
 endif ()
 
 if (RECVMMSG_PROTOTYPE_EXISTS)

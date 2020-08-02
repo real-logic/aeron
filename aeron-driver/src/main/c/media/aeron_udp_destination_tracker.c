@@ -27,14 +27,6 @@
 #include "aeron_driver_conductor.h"
 #include "media/aeron_udp_destination_tracker.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_data_paths_t *data_paths,
@@ -72,7 +64,7 @@ int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker
 int aeron_udp_destination_tracker_sendmmsg(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *mmsghdr, size_t vlen)
+    struct aeron_mmsghdr *mmsghdr, size_t vlen)
 {
     const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
     const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;

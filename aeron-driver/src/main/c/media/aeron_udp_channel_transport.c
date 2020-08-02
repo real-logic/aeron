@@ -37,14 +37,6 @@
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
@@ -234,7 +226,7 @@ int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
 
 int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
@@ -243,7 +235,7 @@ int aeron_udp_channel_transport_recvmmsg(
 #if defined(HAVE_RECVMMSG)
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
 
-    int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
+    int result = recvmmsg(transport->fd, (struct mmsghdr *)msgvec, vlen, 0, &tv);
     if (result < 0)
     {
         int err = errno;
@@ -324,11 +316,11 @@ int aeron_udp_channel_transport_recvmmsg(
 int aeron_udp_channel_transport_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen)
 {
 #if defined(HAVE_SENDMMSG)
-    int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
+    int sendmmsg_result = sendmmsg(transport->fd, (struct mmsghdr *)msgvec, vlen, 0);
     if (sendmmsg_result < 0)
     {
         aeron_set_err_from_last_err_code("sendmmsg");

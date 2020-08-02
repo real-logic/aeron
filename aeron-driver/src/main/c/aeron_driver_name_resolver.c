@@ -39,14 +39,6 @@
 #include "aeron_name_resolver_cache.h"
 #include "aeron_driver_name_resolver.h"
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 // Cater for windows.
 #define AERON_MAX_HOSTNAME_LEN (256)
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
@@ -590,7 +582,7 @@ static int aeron_driver_name_resolver_poll(aeron_driver_name_resolver_t *resolve
 {
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
-    struct mmsghdr mmsghdr[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
+    struct aeron_mmsghdr mmsghdr[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
     struct iovec iov[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
     iov[0].iov_base = aligned_buffer;
     iov[0].iov_len = AERON_MAX_UDP_PAYLOAD_LENGTH;

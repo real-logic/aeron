@@ -22,14 +22,6 @@
 #include <aeron_socket.h>
 #include <stdio.h>
 
-#if !defined(HAVE_STRUCT_MMSGHDR)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
-
 #include "util/aeron_arrayutil.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_sender.h"
@@ -144,7 +136,7 @@ int aeron_driver_sender_do_work(void *clientd)
         ++sender->duty_cycle_counter >= sender->duty_cycle_ratio ||
         now_ns > sender->control_poll_timeout_ns)
     {
-        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+        struct aeron_mmsghdr mmsghdr[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
 
         for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
         {

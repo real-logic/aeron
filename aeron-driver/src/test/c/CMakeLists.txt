@@ -25,10 +25,6 @@ set(TEST_HEADERS
     EmbeddedMediaDriver.h
     aeron_test_udp_bindings.h)
 
-set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
-check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-
 if (POLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_POLL)
 endif ()
@@ -46,9 +42,6 @@ function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     target_link_libraries(${name} aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
-    if (STRUCT_MMSGHDR_TYPE_EXISTS)
-        target_compile_definitions(${name} PUBLIC -DHAVE_STRUCT_MMSGHDR)
-    endif ()
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()

@@ -32,8 +32,6 @@ typedef struct aeron_udp_channel_transport_stct
 }
 aeron_udp_channel_transport_t;
 
-struct mmsghdr;
-
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
@@ -49,7 +47,7 @@ int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport);
 
 int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
@@ -58,7 +56,7 @@ int aeron_udp_channel_transport_recvmmsg(
 int aeron_udp_channel_transport_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
+    struct aeron_mmsghdr *msgvec,
     size_t vlen);
 
 int aeron_udp_channel_transport_sendmsg(

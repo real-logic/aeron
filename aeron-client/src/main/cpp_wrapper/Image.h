@@ -79,7 +79,7 @@ static void doPoll(void *clientd, const uint8_t *buffer, size_t length, aeron_he
     H &handler = *reinterpret_cast<H *>(clientd);
     AtomicBuffer atomicBuffer(const_cast<uint8_t *>(buffer), length);
     Header headerWrapper(header, nullptr);
-    handler(atomicBuffer, 0, static_cast<int32_t>(length), headerWrapper);
+    handler(atomicBuffer, static_cast<util::index_t>(0), static_cast<util::index_t>(length), headerWrapper);
 }
 
 template<typename H>
@@ -100,9 +100,9 @@ static aeron_controlled_fragment_handler_action_t doControlledPoll(
             return AERON_ACTION_COMMIT;
         case ControlledPollAction::CONTINUE:
             return AERON_ACTION_CONTINUE;
-        default:
-            throw IllegalStateException("Invalid action", SOURCEINFO);
     }
+
+    throw IllegalStateException("Invalid action", SOURCEINFO);
 }
 
 template<typename H>
@@ -313,11 +313,14 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
-        int numFragments = aeron_image_poll(m_image, doPoll<handler_type>, handler_ptr, fragmentLimit);
+        int numFragments = aeron_image_poll(
+            m_image, doPoll<handler_type>, handler_ptr, static_cast<size_t>(fragmentLimit));
+
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return numFragments;
     }
 
@@ -340,7 +343,7 @@ public:
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_image_bounded_poll(
-            m_subscription, doPoll<handler_type>, handler_ptr, limitPosition, fragmentLimit);
+            m_image, doPoll<handler_type>, handler_ptr, limitPosition, static_cast<size_t>(fragmentLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -367,7 +370,7 @@ public:
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_image_controlled_poll(
-            m_subscription, doControlledPoll<handler_type>, handler_ptr, fragmentLimit);
+            m_image, doControlledPoll<handler_type>, handler_ptr, static_cast<size_t>(fragmentLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -395,7 +398,7 @@ public:
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_image_bounded_controlled_poll(
-            m_subscription, doControlledPoll<handler_type>, handler_ptr, limitPosition, fragmentLimit);
+            m_image, doControlledPoll<handler_type>, handler_ptr, limitPosition, static_cast<size_t>(fragmentLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -422,13 +425,15 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
-        int numFragments = aeron_image_controlled_peek(
-            m_subscription, doControlledPoll<handler_type>, handler_ptr, limitPosition);
-        if (numFragments < 0)
+        std::int64_t bytesPeeked = aeron_image_controlled_peek(
+            m_image, initialPosition, doControlledPoll<handler_type>, handler_ptr, limitPosition);
+
+        if (bytesPeeked < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        return numFragments;
+
+        return bytesPeeked;
     }
 
     /**
@@ -455,7 +460,7 @@ public:
         handler_type &handler = blockHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
         int numFragments = aeron_image_block_poll(
-            m_subscription, doBlockPoll<handler_type>, handler_ptr, blockLengthLimit);
+            m_image, doBlockPoll<handler_type>, handler_ptr, static_cast<size_t>(blockLengthLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

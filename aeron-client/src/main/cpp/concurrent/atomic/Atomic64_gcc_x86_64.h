@@ -73,19 +73,22 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 /**
 * Put a 32 bit int with volatile semantics
 */
-inline void putInt32Volatile(volatile std::int32_t *source, std::int32_t value)
+inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 {
-    thread_fence();
-    *reinterpret_cast<volatile std::int32_t *>(source) = value;
+    asm volatile(
+        "xchgl (%2), %0"
+        : "=r" (value)
+        : "0" (value), "r" (address)
+        : "memory");
 }
 
 /**
 * Put a 32 bit int with ordered semantics
 */
-inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
+inline void putInt32Ordered(volatile std::int32_t *address, std::int32_t value)
 {
     thread_fence();
-    *reinterpret_cast<volatile std::int32_t *>(source) = value;
+    *reinterpret_cast<volatile std::int32_t *>(address) = value;
 }
 
 /**
@@ -126,8 +129,11 @@ inline volatile T *getValueVolatile(volatile T **source)
 */
 inline void putInt64Volatile(volatile std::int64_t *address, std::int64_t value)
 {
-    thread_fence();
-    *reinterpret_cast<volatile std::int64_t *>(address) = value;
+    asm volatile(
+        "xchgq (%2), %0"
+        : "=r" (value)
+        : "0" (value), "r" (address)
+        : "memory");
 }
 
 template<typename T>
@@ -142,7 +148,7 @@ inline void putValueVolatile(volatile T *address, T value)
 /**
 * Put a 64 bit int with ordered semantics.
 */
-inline void putInt64Ordered(volatile std::int64_t * address, std::int64_t value)
+inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;

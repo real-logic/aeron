@@ -15,7 +15,6 @@
  */
 
 #include "AeronArchive.h"
-#include "ArchiveException.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
@@ -73,13 +72,16 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (2 == m_step)
     {
+        std::string controlResponseChannel = m_subscription->tryResolveChannelEndpoint();
+        if (controlResponseChannel.empty())
+        {
+            return std::shared_ptr<AeronArchive>();
+        }
+
         auto encodedCredentials = m_ctx->credentialsSupplier().m_encodedCredentials();
 
         if (!m_archiveProxy->tryConnect(
-            m_ctx->controlResponseChannel(),
-            m_ctx->controlResponseStreamId(),
-            encodedCredentials,
-            m_correlationId))
+            controlResponseChannel,m_ctx->controlResponseStreamId(), encodedCredentials, m_correlationId))
         {
             m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
             return std::shared_ptr<AeronArchive>();
@@ -92,7 +94,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (3 == m_step && m_controlResponsePoller)
     {
-        if (!m_controlResponsePoller->subscription()->isConnected())
+        if (!m_subscription->isConnected())
         {
             return std::shared_ptr<AeronArchive>();
         }

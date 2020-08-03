@@ -16,8 +16,6 @@
 #ifndef AERON_ARCHIVE_AERON_ARCHIVE_H
 #define AERON_ARCHIVE_AERON_ARCHIVE_H
 
-#include "Aeron.h"
-#include "ChannelUri.h"
 #include "ArchiveConfiguration.h"
 #include "ArchiveProxy.h"
 #include "ControlResponsePoller.h"
@@ -25,7 +23,6 @@
 #include "RecordingSubscriptionDescriptorPoller.h"
 #include "concurrent/BackOffIdleStrategy.h"
 #include "concurrent/YieldingIdleStrategy.h"
-#include "util/ScopeUtils.h"
 #include "ArchiveException.h"
 
 namespace aeron { namespace archive { namespace client
@@ -264,7 +261,7 @@ public:
             }
         }
 
-        return std::string();
+        return {};
     }
 
     /**
@@ -1524,7 +1521,7 @@ private:
     bool m_isClosed = false;
     bool m_isInCallback = false;
 
-    inline void ensureOpen()
+    inline void ensureOpen() const
     {
         if (m_isClosed)
         {
@@ -1532,7 +1529,7 @@ private:
         }
     }
 
-    inline void ensureNotReentrant()
+    inline void ensureNotReentrant() const
     {
         if (m_isInCallback)
         {

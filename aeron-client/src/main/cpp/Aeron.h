@@ -17,10 +17,8 @@
 #ifndef INCLUDED_AERON_H
 #define INCLUDED_AERON_H
 
-#include <iostream>
 #include <thread>
 #include <random>
-#include "util/Exceptions.h"
 #include "concurrent/logbuffer/TermReader.h"
 #include "util/MemoryMappedFile.h"
 #include "concurrent/broadcast/CopyBroadcastReceiver.h"

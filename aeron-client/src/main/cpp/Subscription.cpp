@@ -16,10 +16,11 @@
 
 #include "Subscription.h"
 #include "ClientConductor.h"
+#include "ChannelUri.h"
 #include "concurrent/status/LocalSocketAddressStatus.h"
 
-namespace aeron
-{
+using namespace aeron;
+using namespace aeron::concurrent::status;
 
 Subscription::Subscription(
     ClientConductor &conductor,
@@ -83,8 +84,29 @@ std::int64_t Subscription::channelStatus() const
 
 std::vector<std::string> Subscription::localSocketAddresses() const
 {
-    return aeron::concurrent::status::LocalSocketAddressStatus::findAddresses(
+    return LocalSocketAddressStatus::findAddresses(
         m_conductor.countersReader(), channelStatus(), channelStatusId());
 }
 
+std::string Subscription::tryResolveChannelEndpoint() const
+{
+    const int64_t currentChannelStatus = channelStatus();
+
+    if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus) 
+    {
+        std::vector<std::string> localSocketAddresses = LocalSocketAddressStatus::findAddresses(
+            m_conductor.countersReader(), currentChannelStatus, m_channelStatusId);
+
+        if (1 == localSocketAddresses.size()) 
+        {
+            std::shared_ptr<ChannelUri> channelUriPtr = ChannelUri::parse(m_channel);
+            channelUriPtr->put(ENDPOINT_PARAM_NAME, localSocketAddresses.at(0));
+
+            return channelUriPtr->toString();
+        }
+        
+        return m_channel;
+    }
+    
+    return {};
 }

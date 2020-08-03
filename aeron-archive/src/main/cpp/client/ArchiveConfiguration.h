@@ -16,8 +16,6 @@
 #ifndef AERON_ARCHIVE_CONFIGURATION_H
 #define AERON_ARCHIVE_CONFIGURATION_H
 
-#include <cstdint>
-
 #include "Aeron.h"
 #include "ChannelUri.h"
 #include "util/MacroUtil.h"
@@ -121,7 +119,7 @@ constexpr const char LOCAL_CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:ipc";
 constexpr const std::int32_t LOCAL_CONTROL_REQUEST_STREAM_ID_DEFAULT = 11;
 
 /// Channel for receiving control response messages from an archive.
-constexpr const char CONTROL_RESPONSE_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8020";
+constexpr const char CONTROL_RESPONSE_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:0";
 /// Stream id within a channel for receiving control messages from an archive.
 constexpr const std::int32_t CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
 
@@ -214,7 +212,7 @@ public:
      * @return the message timeout in nanoseconds to wait for sending or receiving a message.
      * @see MESSAGE_TIMEOUT_NS_DEFAULT
      */
-    inline long long messageTimeoutNs()
+    inline long long messageTimeoutNs() const
     {
         return m_messageTimeoutNs;
     }
@@ -237,7 +235,7 @@ public:
      *
      * @return the channel URI on which the recording events publication will publish.
      */
-    inline std::string recordingEventsChannel()
+    inline std::string recordingEventsChannel() const
     {
         return m_recordingEventsChannel;
     }
@@ -263,7 +261,7 @@ public:
      *
      * @return the stream id on which the recording events publication will publish.
      */
-    inline std::int32_t recordingEventsStreamId()
+    inline std::int32_t recordingEventsStreamId() const
     {
         return m_recordingEventsStreamId;
     }
@@ -285,7 +283,7 @@ public:
      *
      * @return the channel parameter for the control response channel.
      */
-    inline std::string controlResponseChannel()
+    inline std::string controlResponseChannel() const
     {
         return m_controlResponseChannel;
     }
@@ -307,7 +305,7 @@ public:
      *
      * @return the stream id for the control response channel.
      */
-    inline std::int32_t controlResponseStreamId()
+    inline std::int32_t controlResponseStreamId() const
     {
         return m_controlResponseStreamId;
     }
@@ -329,7 +327,7 @@ public:
      *
      * @return the channel parameter for the control request channel.
      */
-    inline std::string controlRequestChannel()
+    inline std::string controlRequestChannel() const
     {
         return m_controlRequestChannel;
     }
@@ -351,7 +349,7 @@ public:
      *
      * @return the stream id for the control request channel.
      */
-    inline std::int32_t controlRequestStreamId()
+    inline std::int32_t controlRequestStreamId() const
     {
         return m_controlRequestStreamId;
     }
@@ -373,7 +371,7 @@ public:
      *
      * @return true if the control stream should use sparse file term buffers.
      */
-    inline bool controlTermBufferSparse()
+    inline bool controlTermBufferSparse() const
     {
         return m_controlTermBufferSparse;
     }
@@ -395,7 +393,7 @@ public:
      *
      * @return the term buffer length for the control streams.
      */
-    inline std::int32_t controlTermBufferLength()
+    inline std::int32_t controlTermBufferLength() const
     {
         return m_controlTermBufferLength;
     }
@@ -417,7 +415,7 @@ public:
      *
      * @return the MTU length for the control streams.
      */
-    inline std::int32_t controlMtuLength()
+    inline std::int32_t controlMtuLength() const
     {
         return m_controlMtuLength;
     }
@@ -439,7 +437,7 @@ public:
      *
      * @return The top level Aeron directory.
      */
-    inline std::string aeronDirectoryName()
+    inline std::string aeronDirectoryName() const
     {
         return m_aeronDirectoryName;
     }
@@ -461,7 +459,7 @@ public:
      *
      * @return does this context own the Aeron client and thus takes responsibility for closing it?
      */
-    inline bool ownsAeronClient()
+    inline bool ownsAeronClient() const
     {
         return m_ownsAeronClient;
     }
@@ -483,7 +481,7 @@ public:
      *
      * @return the error handler that will be called for asynchronous errors.
      */
-    inline exception_handler_t errorHandler()
+    inline exception_handler_t errorHandler() const
     {
         return m_errorHandler;
     }

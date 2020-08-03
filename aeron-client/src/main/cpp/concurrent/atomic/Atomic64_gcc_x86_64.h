@@ -17,6 +17,7 @@
 #define AERON_CONCURRENT_ATOMIC64_GCC_X86_64_H
 
 #include <cstdint>
+#include <atomic>
 
 namespace aeron { namespace concurrent { namespace atomic {
 

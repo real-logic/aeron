@@ -537,7 +537,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
                 return uri.toString();
             }
 
-            return channel();
+            return channel;
         }
 
         return null;

@@ -110,6 +110,14 @@ inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
     _InterlockedExchange64(address, value);
 }
 
+/**
+* Put a 64 bit int with volatile semantics.
+**/
+inline void putInt64Volatile(volatile std::int64_t*  address, std::int64_t value)
+{
+    _InterlockedExchange64(address, value);
+}
+
 inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t value)
 {
     return _InterlockedExchangeAdd64(address, value);

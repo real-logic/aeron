@@ -48,6 +48,7 @@ typedef std::function<long long()> nano_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
+static const size_t static_handler_token = 0;
 
 class CLIENT_EXPORT ClientConductor
 {
@@ -92,9 +93,11 @@ public:
     {
         static_cast<void>(m_padding);
 
-        m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
-        m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
-        m_onCloseClientHandlers.emplace_back(onCloseClientHandler);
+        m_onAvailableCounterHandlers.emplace_back(std::make_pair(static_handler_token, availableCounterHandler));
+        m_onUnavailableCounterHandlers.emplace_back(std::make_pair(static_handler_token, unavailableCounterHandler));
+        m_onCloseClientHandlers.emplace_back(std::make_pair(static_handler_token, onCloseClientHandler));
+
+        atomic::putInt64Volatile(&m_nextHandlerRegistrationId, 1);
     }
 
     ~ClientConductor();
@@ -192,17 +195,23 @@ public:
 
     std::int64_t removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
 
-    void addAvailableCounterHandler(const on_available_counter_t &handler);
+    std::int64_t addAvailableCounterHandler(const on_available_counter_t &handler);
 
     void removeAvailableCounterHandler(const on_available_counter_t &handler);
 
-    void addUnavailableCounterHandler(const on_unavailable_counter_t &handler);
+    void removeAvailableCounterHandler(std::int64_t registrationId);
+
+    std::int64_t addUnavailableCounterHandler(const on_unavailable_counter_t &handler);
 
     void removeUnavailableCounterHandler(const on_unavailable_counter_t &handler);
 
-    void addCloseClientHandler(const on_close_client_t &handler);
+    void removeUnavailableCounterHandler(std::int64_t registrationId);
+
+    std::int64_t addCloseClientHandler(const on_close_client_t &handler);
 
     void removeCloseClientHandler(const on_close_client_t &handler);
+
+    void removeCloseClientHandler(std::int64_t registrationId);
 
     inline CountersReader &countersReader()
     {
@@ -405,9 +414,9 @@ private:
     on_new_subscription_t m_onNewSubscriptionHandler;
     exception_handler_t m_errorHandler;
 
-    std::vector<on_available_counter_t> m_onAvailableCounterHandlers;
-    std::vector<on_unavailable_counter_t> m_onUnavailableCounterHandlers;
-    std::vector<on_close_client_t> m_onCloseClientHandlers;
+    std::vector<std::pair<std::int64_t, on_available_counter_t>> m_onAvailableCounterHandlers;
+    std::vector<std::pair<std::int64_t, on_unavailable_counter_t>> m_onUnavailableCounterHandlers;
+    std::vector<std::pair<std::int64_t, on_close_client_t>> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
     long m_driverTimeoutMs;
@@ -419,6 +428,7 @@ private:
     std::atomic<bool> m_isClosed;
     std::recursive_mutex m_adminLock;
     std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
+    std::int64_t m_nextHandlerRegistrationId;
 
     long long m_timeOfLastDoWorkMs;
     long long m_timeOfLastKeepaliveMs;
@@ -541,6 +551,11 @@ private:
             it->second.m_timeOfLastStateChangeMs = LLONG_MAX;
             return it->second.m_logBuffers;
         }
+    }
+
+    inline std::int64_t nextHandlerRegistrationId()
+    {
+        return atomic::getAndAddInt64(&m_nextHandlerRegistrationId, 1);
     }
 
     void onCheckManagedResources(long long nowMs);

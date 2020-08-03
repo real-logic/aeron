@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <cinttypes>
 
-#include "util/MemoryMappedFile.h"
 #include "util/CommandOptionParser.h"
 #include "Aeron.h"
 
@@ -62,7 +61,6 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 std::string formatDate(const char *format, std::int64_t millisecondsSinceEpoch)
 {
     milliseconds msSinceEpoch(millisecondsSinceEpoch);
-    milliseconds msAfterSec(millisecondsSinceEpoch % 1000);
     system_clock::time_point tp(msSinceEpoch);
 
     std::time_t tm = system_clock::to_time_t(tp);

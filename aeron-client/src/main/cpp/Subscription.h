@@ -512,8 +512,8 @@ private:
     ClientConductor &m_conductor;
     const std::string m_channel;
     std::int32_t m_channelStatusId;
-    std::int64_t m_registrationId;
     std::int32_t m_streamId;
+    std::int64_t m_registrationId;
     char m_paddingBefore[util::BitUtil::CACHE_LINE_LENGTH]{};
     std::size_t m_roundRobinIndex = 0;
     AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray;

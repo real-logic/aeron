@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-#include <util/MemoryMappedFile.h>
-#include <concurrent/CountersReader.h>
-#include <util/CommandOptionParser.h>
-
 #include <iostream>
 #include <atomic>
 #include <thread>
@@ -25,6 +21,7 @@
 #include <csignal>
 #include <cinttypes>
 
+#include "util/CommandOptionParser.h"
 #include "Context.h"
 
 using namespace aeron;

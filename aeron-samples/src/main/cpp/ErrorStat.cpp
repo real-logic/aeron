@@ -19,7 +19,6 @@
 #include <cstdio>
 #include <cinttypes>
 
-#include "util/MemoryMappedFile.h"
 #include "util/CommandOptionParser.h"
 #include "concurrent/errors/ErrorLogReader.h"
 #include "Context.h"

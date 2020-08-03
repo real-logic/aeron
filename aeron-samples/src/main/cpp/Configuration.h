@@ -18,6 +18,7 @@
 #define INCLUDED_AERON_SAMPLES_CONFIGURATION__
 
 #include <string>
+#include <cstdint>
 
 namespace aeron { namespace samples { namespace configuration {
 

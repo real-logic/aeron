@@ -110,7 +110,7 @@ public:
         const std::string &sourceIdentity,
         UnsafeBufferPosition &subscriberPosition,
         std::shared_ptr<LogBuffers> logBuffers,
-        const exception_handler_t &exceptionHandler) :
+        const util::exception_handler_t &exceptionHandler) :
         m_sourceIdentity(sourceIdentity),
         m_logBuffers(std::move(logBuffers)),
         m_exceptionHandler(exceptionHandler),
@@ -853,7 +853,7 @@ public:
 private:
     std::string m_sourceIdentity;
     std::shared_ptr<LogBuffers> m_logBuffers;
-    exception_handler_t m_exceptionHandler;
+    util::exception_handler_t m_exceptionHandler;
     std::array<AtomicBuffer, LogBufferDescriptor::PARTITION_COUNT> m_termBuffers;
     Position<UnsafeBufferPosition> m_subscriberPosition;
     Header m_header;

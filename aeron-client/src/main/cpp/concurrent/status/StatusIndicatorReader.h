@@ -17,7 +17,6 @@
 #ifndef AERON_STATUS_INDICATOR_READER_H
 #define AERON_STATUS_INDICATOR_READER_H
 
-#include "concurrent/AtomicBuffer.h"
 #include "concurrent/CountersManager.h"
 
 namespace aeron { namespace concurrent { namespace status {

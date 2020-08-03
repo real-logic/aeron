@@ -17,7 +17,6 @@
 #ifndef AERON_DRIVER_PROXY_H
 #define AERON_DRIVER_PROXY_H
 
-#include <array>
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
 #include "command/PublicationMessageFlyweight.h"
 #include "command/RemoveMessageFlyweight.h"

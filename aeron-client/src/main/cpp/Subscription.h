@@ -18,7 +18,6 @@
 #define AERON_SUBSCRIPTION_H
 
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <iterator>
 #include "concurrent/AtomicArrayUpdater.h"

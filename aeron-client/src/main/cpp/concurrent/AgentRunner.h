@@ -23,7 +23,7 @@
 
 #include "util/Exceptions.h"
 #include "util/ScopeUtils.h"
-#include "concurrent/logbuffer/TermReader.h"
+#include "util/Platform.h"
 
 #if !defined(AERON_COMPILER_MSVC)
 #include <pthread.h>
@@ -37,7 +37,7 @@ template <typename Agent, typename IdleStrategy>
 class AgentRunner
 {
 public:
-    AgentRunner(Agent &agent, IdleStrategy &idleStrategy, logbuffer::exception_handler_t &exceptionHandler) :
+    AgentRunner(Agent &agent, IdleStrategy &idleStrategy, util::exception_handler_t &exceptionHandler) :
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
@@ -51,7 +51,7 @@ public:
     AgentRunner(
         Agent &agent,
         IdleStrategy &idleStrategy,
-        logbuffer::exception_handler_t &exceptionHandler,
+        util::exception_handler_t &exceptionHandler,
         const std::string &name) :
         m_agent(agent),
         m_idleStrategy(idleStrategy),
@@ -201,7 +201,7 @@ public:
 private:
     Agent &m_agent;
     IdleStrategy &m_idleStrategy;
-    logbuffer::exception_handler_t &m_exceptionHandler;
+    util::exception_handler_t &m_exceptionHandler;
     std::atomic<bool> m_isStarted;
     std::atomic<bool> m_isRunning;
     std::atomic<bool> m_isClosed;

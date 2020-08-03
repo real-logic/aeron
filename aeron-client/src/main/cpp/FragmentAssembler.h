@@ -18,7 +18,6 @@
 #define AERON_FRAGMENT_ASSEMBLER_H
 
 #include <unordered_map>
-#include "Aeron.h"
 #include "BufferBuilder.h"
 
 namespace aeron

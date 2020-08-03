@@ -26,7 +26,6 @@
 namespace aeron
 {
 
-using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent;
 

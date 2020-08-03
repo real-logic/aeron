@@ -20,8 +20,6 @@
 #include <functional>
 #include "util/Index.h"
 #include "util/BitUtil.h"
-#include "util/Exceptions.h"
-#include "util/StringUtil.h"
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 

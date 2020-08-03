@@ -20,7 +20,6 @@
 #include <climits>
 #include <functional>
 #include <algorithm>
-#include "util/Index.h"
 #include "util/LangUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "RingBufferDescriptor.h"

@@ -17,7 +17,6 @@
 #define AERON_CONTROLLEDFRAGMENTASSEMBLER_H
 
 #include <unordered_map>
-#include "Aeron.h"
 #include "BufferBuilder.h"
 
 namespace aeron

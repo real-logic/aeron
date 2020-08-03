@@ -17,18 +17,11 @@
 #ifndef INCLUDED_AERON_H
 #define INCLUDED_AERON_H
 
-#include <thread>
 #include <random>
-#include "concurrent/logbuffer/TermReader.h"
-#include "util/MemoryMappedFile.h"
-#include "concurrent/broadcast/CopyBroadcastReceiver.h"
 #include "ClientConductor.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"
 #include "concurrent/AgentInvoker.h"
-#include "Publication.h"
-#include "Subscription.h"
-#include "Context.h"
 #include "util/Export.h"
 
 /// Top namespace for Aeron C++ API

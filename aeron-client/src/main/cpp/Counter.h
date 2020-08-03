@@ -17,11 +17,8 @@
 #ifndef AERON_COUNTER_H
 #define AERON_COUNTER_H
 
-#include <cstdint>
 #include <memory>
-#include <atomic>
 
-#include "util/Index.h"
 #include "concurrent/AtomicCounter.h"
 #include "concurrent/CountersReader.h"
 

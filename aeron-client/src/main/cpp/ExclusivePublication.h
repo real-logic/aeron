@@ -18,16 +18,11 @@
 #define AERON_EXCLUSIVE_PUBLICATION_H
 
 #include <array>
-#include <atomic>
 #include <memory>
 #include <string>
 
-#include "concurrent/logbuffer/BufferClaim.h"
-#include "concurrent/logbuffer/ExclusiveTermAppender.h"
-#include "concurrent/status/UnsafeBufferPosition.h"
-#include "concurrent/status/StatusIndicatorReader.h"
 #include "Publication.h"
-#include "LogBuffers.h"
+#include "concurrent/logbuffer/ExclusiveTermAppender.h"
 
 namespace aeron
 {

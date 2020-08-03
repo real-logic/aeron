@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <string>
 #include <stdexcept>
+#include <functional>
 #include "MacroUtil.h"
 
 namespace aeron { namespace util
@@ -47,6 +48,15 @@ static constexpr const char* past_prefix(const char * const prefix, const char *
 #else
     #define SOURCEINFO  __PRETTY_FUNCTION__,  __SHORT_FILE__, __LINE__
 #endif
+
+/**
+ * Callback to indicate an exception has occurred.
+ *
+ * This handler may be called in a context of noexcept so the handler can not safely throw.
+ *
+ * @param exception that has occurred.
+ */
+typedef std::function<void(const std::exception &exception)> exception_handler_t;
 
 enum class ExceptionCategory : std::int64_t
 {

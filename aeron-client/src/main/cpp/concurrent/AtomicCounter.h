@@ -16,11 +16,8 @@
 #ifndef AERON_CONCURRENT_ATOMIC_COUNTER_H
 #define AERON_CONCURRENT_ATOMIC_COUNTER_H
 
-#include <cstdint>
 #include <memory>
 
-#include "util/Index.h"
-#include "AtomicBuffer.h"
 #include "CountersManager.h"
 
 namespace aeron { namespace concurrent {

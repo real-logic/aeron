@@ -19,7 +19,6 @@
 
 #include <atomic>
 
-#include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 

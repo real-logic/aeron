@@ -18,7 +18,6 @@
 #define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
 #include <functional>
-#include "concurrent/AtomicBuffer.h"
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 
@@ -41,14 +40,6 @@ typedef std::function<void(
     util::index_t length,
     Header& header)> fragment_handler_t;
 
-/**
- * Callback to indicate an exception has occurred.
- *
- * This handler may be called in a context of noexcept so the handler can not safely throw.
- *
- * @param exception that has occurred.
- */
-typedef std::function<void(const std::exception &exception)> exception_handler_t;
 
 namespace TermReader {
 
@@ -66,7 +57,7 @@ inline void read(
     F&& handler,
     int fragmentsLimit,
     Header &header,
-    const exception_handler_t &exceptionHandler)
+    const util::exception_handler_t &exceptionHandler)
 {
     outcome.fragmentsRead = 0;
     outcome.offset = termOffset;

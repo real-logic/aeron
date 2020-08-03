@@ -17,7 +17,6 @@
 #ifndef AERON_CONCURRENT_BUFFER_CLAIM_H
 #define AERON_CONCURRENT_BUFFER_CLAIM_H
 
-#include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/logbuffer/DataFrameHeader.h"
 

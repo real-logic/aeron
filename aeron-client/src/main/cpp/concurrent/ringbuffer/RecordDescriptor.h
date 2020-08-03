@@ -18,7 +18,6 @@
 #define AERON_RING_BUFFER_RECORD_DESCRIPTOR_H
 
 #include "util/Index.h"
-#include "util/StringUtil.h"
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 

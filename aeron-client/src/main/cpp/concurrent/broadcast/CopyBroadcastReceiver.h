@@ -20,7 +20,6 @@
 #include <array>
 #include <functional>
 
-#include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 #include "BroadcastReceiver.h"

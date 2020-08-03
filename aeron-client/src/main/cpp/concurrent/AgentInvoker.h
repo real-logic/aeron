@@ -21,7 +21,6 @@
 #include <atomic>
 
 #include "util/Exceptions.h"
-#include "concurrent/logbuffer/TermReader.h"
 
 namespace aeron {
 
@@ -31,7 +30,7 @@ template<typename Agent>
 class AgentInvoker
 {
 public:
-    AgentInvoker(Agent &agent, logbuffer::exception_handler_t &exceptionHandler) :
+    AgentInvoker(Agent &agent, util::exception_handler_t &exceptionHandler) :
         m_agent(agent),
         m_exceptionHandler(exceptionHandler),
         m_isStarted(false),
@@ -143,7 +142,7 @@ public:
 
 private:
     Agent &m_agent;
-    logbuffer::exception_handler_t &m_exceptionHandler;
+    util::exception_handler_t &m_exceptionHandler;
     bool m_isStarted;
     bool m_isRunning;
     bool m_isClosed;

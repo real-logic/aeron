@@ -16,8 +16,6 @@
 #ifndef AERON_COUNTERS_READER_H
 #define AERON_COUNTERS_READER_H
 
-#include <cstdint>
-#include <cstddef>
 #include <functional>
 
 #include "util/BitUtil.h"

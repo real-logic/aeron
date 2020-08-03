@@ -17,7 +17,6 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_FRAME_DESCRIPTOR_H
 #define AERON_CONCURRENT_LOGBUFFER_FRAME_DESCRIPTOR_H
 
-#include "util/StringUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "DataFrameHeader.h"
 

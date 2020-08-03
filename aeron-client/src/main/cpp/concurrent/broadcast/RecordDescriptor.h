@@ -17,6 +17,8 @@
 #ifndef AERON_CONCURRENT_BROADCAST_RECORD_DESCRIPTOR_H
 #define AERON_CONCURRENT_BROADCAST_RECORD_DESCRIPTOR_H
 
+#include "util/Index.h"
+
 namespace aeron { namespace concurrent { namespace broadcast {
 
 /*

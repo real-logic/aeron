@@ -17,7 +17,6 @@
 #ifndef AERON_IMAGE_FRAGMENT_ASSEMBLER_H
 #define AERON_IMAGE_FRAGMENT_ASSEMBLER_H
 
-#include "Aeron.h"
 #include "BufferBuilder.h"
 
 namespace aeron

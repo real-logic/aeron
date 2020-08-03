@@ -17,6 +17,9 @@
 #ifndef AERON_LOCALSOCKETADDRESSSTATUS_H
 #define AERON_LOCALSOCKETADDRESSSTATUS_H
 
+#include "concurrent/CountersReader.h"
+#include "concurrent/status/StatusIndicatorReader.h"
+
 namespace aeron { namespace concurrent { namespace status {
 
 class LocalSocketAddressStatus

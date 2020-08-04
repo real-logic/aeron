@@ -174,7 +174,7 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
         if (currentStatus != ChannelEndpointStatus.INITIALIZING)
         {
             throw new IllegalStateException(
-                "channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
+                "channel cannot be registered unless INITIALIZING: status=" + status(currentStatus));
         }
 
         statusIndicator.appendToLabel(bindAddressAndPort());

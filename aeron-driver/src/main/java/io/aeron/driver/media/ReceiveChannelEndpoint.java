@@ -189,7 +189,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         if (currentStatus != ChannelEndpointStatus.INITIALIZING)
         {
             throw new AeronException(
-                "channel cannot be registered unless INITIALISING: status=" + status(currentStatus));
+                "channel cannot be registered unless INITIALIZING: status=" + status(currentStatus));
         }
 
         if (null == multiRcvDestination)

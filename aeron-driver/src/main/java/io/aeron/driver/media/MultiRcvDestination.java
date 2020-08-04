@@ -20,32 +20,22 @@ import io.aeron.driver.DriverConductorProxy;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.NanoClock;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.driver.media.ReceiveChannelEndpoint.DESTINATION_ADDRESS_TIMEOUT;
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
 final class MultiRcvDestination
 {
     private static final ReceiveDestinationTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationTransport[0];
 
-    private final long destinationEndpointTimeoutNs;
-    private final ErrorHandler errorHandler;
-    private final NanoClock nanoClock;
-    private ReceiveDestinationTransport[] transports = EMPTY_TRANSPORTS;
     private int numDestinations = 0;
+    private ReceiveDestinationTransport[] transports = EMPTY_TRANSPORTS;
 
-    MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs, final ErrorHandler errorHandler)
-    {
-        this.nanoClock = nanoClock;
-        this.destinationEndpointTimeoutNs = timeoutNs;
-        this.errorHandler = errorHandler;
-    }
-
-    void close(final DataTransportPoller poller)
+    void close(final ErrorHandler errorHandler, final DataTransportPoller poller)
     {
         for (final ReceiveDestinationTransport transport : transports)
         {
@@ -122,7 +112,7 @@ final class MultiRcvDestination
                 final UdpChannel udpChannel = transport.udpChannel();
 
                 if (udpChannel.hasExplicitControl() &&
-                    (transport.timeOfLastActivityNs() + destinationEndpointTimeoutNs) < nowNs)
+                    (transport.timeOfLastActivityNs() + DESTINATION_ADDRESS_TIMEOUT) < nowNs)
                 {
                     conductorProxy.reResolveControl(
                         udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME),
@@ -148,10 +138,10 @@ final class MultiRcvDestination
         }
     }
 
-    int sendToAll(final ImageConnection[] imageConnections, final ByteBuffer buffer, final int bytesToSend)
+    int sendToAll(
+        final ImageConnection[] imageConnections, final ByteBuffer buffer, final int bytesToSend, final long nowNs)
     {
         final ReceiveDestinationTransport[] transports = this.transports;
-        final long nowNs = nanoClock.nanoTime();
         int minBytesSent = bytesToSend;
 
         for (int lastIndex = imageConnections.length - 1, i = lastIndex; i >= 0; i--)
@@ -161,7 +151,7 @@ final class MultiRcvDestination
             if (null != connection)
             {
                 final UdpChannelTransport transport = transports[i];
-                if (null != transport && ((connection.timeOfLastActivityNs + destinationEndpointTimeoutNs) - nowNs > 0))
+                if (null != transport && ((connection.timeOfLastActivityNs + DESTINATION_ADDRESS_TIMEOUT) - nowNs > 0))
                 {
                     buffer.position(0);
                     minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, connection.controlAddress));

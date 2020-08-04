@@ -67,7 +67,7 @@ abstract class ReceiveChannelEndpointHotFields extends UdpChannelTransport
  */
 public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
 {
-    private static final long DESTINATION_ADDRESS_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
+    static final long DESTINATION_ADDRESS_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
     private final DataPacketDispatcher dispatcher;
     private final ByteBuffer smBuffer;
@@ -117,8 +117,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final String groupTagValue = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
         groupTag = null == groupTagValue ? context.receiverGroupTag() : Long.valueOf(groupTagValue);
 
-        multiRcvDestination = udpChannel.isManualControlMode() ?
-            new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
+        multiRcvDestination = udpChannel.isManualControlMode() ? new MultiRcvDestination() : null;
         currentControlAddress = udpChannel.localControl();
     }
 
@@ -229,7 +228,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     {
         if (null != multiRcvDestination)
         {
-            multiRcvDestination.close(poller);
+            multiRcvDestination.close(errorHandler, poller);
         }
     }
 
@@ -662,7 +661,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     {
         final int bytesSent = null == multiRcvDestination ?
             sendTo(buffer, imageConnections[0].controlAddress) :
-            multiRcvDestination.sendToAll(imageConnections, buffer, bytesToSend);
+            multiRcvDestination.sendToAll(imageConnections, buffer, bytesToSend, cachedNanoClock.nanoTime());
 
         if (bytesToSend != bytesSent)
         {

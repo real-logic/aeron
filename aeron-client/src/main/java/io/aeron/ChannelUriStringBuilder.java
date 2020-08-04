@@ -1586,6 +1586,11 @@ public class ChannelUriStringBuilder
         return sb.toString();
     }
 
+    public String toString()
+    {
+        return build();
+    }
+
     private static String prefixTag(final boolean isTagged, final Integer value)
     {
         return isTagged ? TAG_PREFIX + value : value.toString();

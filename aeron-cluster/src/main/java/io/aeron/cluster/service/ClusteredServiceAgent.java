@@ -57,8 +57,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private long cachedTimeMs;
     private long clusterTime;
     private long logPosition = NULL_POSITION;
+    private long closeHandlerRegistrationId;
 
-    private final Runnable abortHandler = this::abort;
     private final IdleStrategy idleStrategy;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
@@ -103,7 +103,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public void onStart()
     {
-        aeron.addCloseHandler(abortHandler);
+        closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
         final CountersReader counters = aeron.countersReader();
         roleCounter = awaitClusterRoleCounter(counters, ctx.clusterId());
         commitPosition = awaitCommitPositionCounter(counters, ctx.clusterId());
@@ -113,7 +113,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public void onClose()
     {
-        aeron.removeCloseHandler(abortHandler);
+        aeron.removeCloseHandler(closeHandlerRegistrationId);
 
         if (isAbort)
         {

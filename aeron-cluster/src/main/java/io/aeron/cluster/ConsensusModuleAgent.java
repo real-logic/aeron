@@ -62,6 +62,7 @@ class ConsensusModuleAgent implements Agent
     private final long sessionTimeoutNs;
     private final long leaderHeartbeatIntervalNs;
     private final long leaderHeartbeatTimeoutNs;
+    private long unavailableCounterHandlerRegistrationId;
     private long nextSessionId = 1;
     private long nextServiceSessionId = Long.MIN_VALUE + 1;
     private long logServiceSessionId = Long.MIN_VALUE;
@@ -127,7 +128,6 @@ class ConsensusModuleAgent implements Agent
         this::leaderServiceSessionMessageSweeper;
     private final ExpandableRingBuffer.MessageConsumer followerServiceSessionMessageSweeper =
         this::followerServiceSessionMessageSweeper;
-    private final UnavailableCounterHandler unavailableCounterHandler = this::onUnavailableCounter;
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
@@ -214,7 +214,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (!aeron.isClosed())
         {
-            aeron.removeUnavailableCounterHandler(unavailableCounterHandler);
+            aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
             asyncStopLogRecording();
 
             if (!ctx.ownsAeronClient())
@@ -287,7 +287,7 @@ class ConsensusModuleAgent implements Agent
                 this);
         }
 
-        aeron.addUnavailableCounterHandler(unavailableCounterHandler);
+        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
     }
 
     public int doWork()

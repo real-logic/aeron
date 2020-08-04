@@ -72,9 +72,10 @@ class ClientConductor implements Agent, DriverEventsListener
     private final LongHashSet asyncCommandIdSet = new LongHashSet();
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnavailableImageHandler defaultUnavailableImageHandler;
-    private final ArrayList<AvailableCounterHandler> availableCounterHandlers = new ArrayList<>();
-    private final ArrayList<UnavailableCounterHandler> unavailableCounterHandlers = new ArrayList<>();
-    private final ArrayList<Runnable> closeHandlers = new ArrayList<>();
+    private final Long2ObjectHashMap<AvailableCounterHandler> availableCounterHandlerById = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<UnavailableCounterHandler> unavailableCounterHandlerById =
+        new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Runnable> closeHandlerByIdMap = new Long2ObjectHashMap<>();
     private final DriverProxy driverProxy;
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
@@ -105,17 +106,17 @@ class ClientConductor implements Agent, DriverEventsListener
 
         if (null != ctx.availableCounterHandler())
         {
-            availableCounterHandlers.add(ctx.availableCounterHandler());
+            availableCounterHandlerById.put(aeron.nextCorrelationId(), ctx.availableCounterHandler());
         }
 
         if (null != ctx.unavailableCounterHandler())
         {
-            unavailableCounterHandlers.add(ctx.unavailableCounterHandler());
+            unavailableCounterHandlerById.put(aeron.nextCorrelationId(), ctx.unavailableCounterHandler());
         }
 
         if (null != ctx.closeHandler())
         {
-            closeHandlers.add(ctx.closeHandler());
+            closeHandlerByIdMap.put(aeron.nextCorrelationId(), ctx.closeHandler());
         }
 
         final long nowNs = nanoClock.nanoTime();
@@ -377,9 +378,8 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onAvailableCounter(final long registrationId, final int counterId)
     {
-        for (int i = 0, size = availableCounterHandlers.size(); i < size; i++)
+        for (final AvailableCounterHandler handler : availableCounterHandlerById.values())
         {
-            final AvailableCounterHandler handler = availableCounterHandlers.get(i);
             notifyCounterAvailable(registrationId, counterId, handler);
         }
     }
@@ -783,19 +783,27 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void addAvailableCounterHandler(final AvailableCounterHandler handler)
+    long addAvailableCounterHandler(final AvailableCounterHandler handler)
     {
         clientLock.lock();
         try
         {
             ensureActive();
             ensureNotReentrant();
-            availableCounterHandlers.add(handler);
+
+            final long registrationId = aeron.nextCorrelationId();
+            availableCounterHandlerById.put(registrationId, handler);
+            return registrationId;
         }
         finally
         {
             clientLock.unlock();
         }
+    }
+
+    boolean removeAvailableCounterHandler(final long registrationId)
+    {
+        return availableCounterHandlerById.remove(registrationId) != null;
     }
 
     boolean removeAvailableCounterHandler(final AvailableCounterHandler handler)
@@ -810,7 +818,18 @@ class ClientConductor implements Agent, DriverEventsListener
 
             ensureNotReentrant();
 
-            return availableCounterHandlers.remove(handler);
+            final Long2ObjectHashMap<AvailableCounterHandler>.ValueIterator iterator =
+                availableCounterHandlerById.values().iterator();
+            while (iterator.hasNext())
+            {
+                if (handler == iterator.next())
+                {
+                    iterator.remove();
+                    return true;
+                }
+            }
+
+            return false;
         }
         finally
         {
@@ -818,19 +837,27 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void addUnavailableCounterHandler(final UnavailableCounterHandler handler)
+    long addUnavailableCounterHandler(final UnavailableCounterHandler handler)
     {
         clientLock.lock();
         try
         {
             ensureActive();
             ensureNotReentrant();
-            unavailableCounterHandlers.add(handler);
+
+            final long registrationId = aeron.nextCorrelationId();
+            unavailableCounterHandlerById.put(registrationId, handler);
+            return registrationId;
         }
         finally
         {
             clientLock.unlock();
         }
+    }
+
+    boolean removeUnavailableCounterHandler(final long registrationId)
+    {
+        return unavailableCounterHandlerById.remove(registrationId) != null;
     }
 
     boolean removeUnavailableCounterHandler(final UnavailableCounterHandler handler)
@@ -845,7 +872,18 @@ class ClientConductor implements Agent, DriverEventsListener
 
             ensureNotReentrant();
 
-            return unavailableCounterHandlers.remove(handler);
+            final Long2ObjectHashMap<UnavailableCounterHandler>.ValueIterator iterator =
+                unavailableCounterHandlerById.values().iterator();
+            while (iterator.hasNext())
+            {
+                if (handler == iterator.next())
+                {
+                    iterator.remove();
+                    return true;
+                }
+            }
+
+            return false;
         }
         finally
         {
@@ -853,19 +891,27 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void addCloseHandler(final Runnable handler)
+    long addCloseHandler(final Runnable handler)
     {
         clientLock.lock();
         try
         {
             ensureActive();
             ensureNotReentrant();
-            closeHandlers.add(handler);
+
+            final long registrationId = aeron.nextCorrelationId();
+            closeHandlerByIdMap.put(registrationId, handler);
+            return registrationId;
         }
         finally
         {
             clientLock.unlock();
         }
+    }
+
+    boolean removeCloseHandler(final long registrationId)
+    {
+        return closeHandlerByIdMap.remove(registrationId) != null;
     }
 
     boolean removeCloseHandler(final Runnable handler)
@@ -880,7 +926,17 @@ class ClientConductor implements Agent, DriverEventsListener
 
             ensureNotReentrant();
 
-            return closeHandlers.remove(handler);
+            final Long2ObjectHashMap<Runnable>.ValueIterator iterator = closeHandlerByIdMap.values().iterator();
+            while (iterator.hasNext())
+            {
+                if (handler == iterator.next())
+                {
+                    iterator.remove();
+                    return true;
+                }
+            }
+
+            return false;
         }
         finally
         {
@@ -1209,9 +1265,8 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void notifyUnavailableCounterHandlers(final long registrationId, final int counterId)
     {
-        for (int i = 0, size = unavailableCounterHandlers.size(); i < size; i++)
+        for (final UnavailableCounterHandler handler : unavailableCounterHandlerById.values())
         {
-            final UnavailableCounterHandler handler = unavailableCounterHandlers.get(i);
             isInCallback = true;
             try
             {
@@ -1265,12 +1320,12 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void notifyCloseHandlers()
     {
-        for (int i = closeHandlers.size() - 1; i >= 0; i--)
+        for (final Runnable closeHandler : closeHandlerByIdMap.values())
         {
             isInCallback = true;
             try
             {
-                closeHandlers.get(i).run();
+                closeHandler.run();
             }
             catch (final Exception ex)
             {

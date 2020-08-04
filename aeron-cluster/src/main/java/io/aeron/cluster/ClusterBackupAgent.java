@@ -48,7 +48,7 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 /**
  * {@link Agent} which backs up a remote cluster by replicating the log and polling for snapshots.
  */
-public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
+public class ClusterBackupAgent implements Agent
 {
     private static final int SLOW_TICK_INTERVAL_MS = 10;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -72,6 +72,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private final long backupQueryIntervalMs;
     private final long backupProgressTimeoutMs;
     private final long coolDownIntervalMs;
+    private final long unavailableCounterHandlerRegistrationId;
 
     private ClusterBackup.State state = INIT;
 
@@ -123,7 +124,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
 
-        aeron.addUnavailableCounterHandler(this);
+        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
 
         consensusSubscription = aeron.addSubscription(ctx.consensusChannel(), ctx.consensusStreamId());
 
@@ -142,6 +143,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
     public void onClose()
     {
+        aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
+
         if (!ctx.ownsAeronClient())
         {
             CloseHelper.closeAll(consensusSubscription, consensusPublication);
@@ -294,7 +297,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         }
     }
 
-    public void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
+    private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
     {
         if (counterId == liveLogRecCounterId)
         {

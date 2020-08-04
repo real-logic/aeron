@@ -407,10 +407,22 @@ public class Aeron implements AutoCloseable
      * Add a handler to the list be called when {@link Counter}s become available.
      *
      * @param handler to be called when {@link Counter}s become available.
+     * @return registration id for the handler which can be used to remove it.
      */
-    public void addAvailableCounterHandler(final AvailableCounterHandler handler)
+    public long addAvailableCounterHandler(final AvailableCounterHandler handler)
     {
-        conductor.addAvailableCounterHandler(handler);
+        return conductor.addAvailableCounterHandler(handler);
+    }
+
+    /**
+     * Remove a previously added handler to the list be called when {@link Counter}s become available.
+     *
+     * @param registrationId to be removed which was returned from add method.
+     * @return true if found and removed otherwise false.
+     */
+    public boolean removeAvailableCounterHandler(final long registrationId)
+    {
+        return conductor.removeAvailableCounterHandler(registrationId);
     }
 
     /**
@@ -418,6 +430,7 @@ public class Aeron implements AutoCloseable
      *
      * @param handler to be removed.
      * @return true if found and removed otherwise false.
+     * @deprecated please use {@link #removeAvailableCounterHandler(long)}.
      */
     public boolean removeAvailableCounterHandler(final AvailableCounterHandler handler)
     {
@@ -428,10 +441,22 @@ public class Aeron implements AutoCloseable
      * Add a handler to the list be called when {@link Counter}s become unavailable.
      *
      * @param handler to be called when {@link Counter}s become unavailable.
+     * @return registration id for the handler which can be used to remove it.
      */
-    public void addUnavailableCounterHandler(final UnavailableCounterHandler handler)
+    public long addUnavailableCounterHandler(final UnavailableCounterHandler handler)
     {
-        conductor.addUnavailableCounterHandler(handler);
+        return conductor.addUnavailableCounterHandler(handler);
+    }
+
+    /**
+     * Remove a previously added handler to the list be called when {@link Counter}s become unavailable.
+     *
+     * @param registrationId to be removed which was returned from add method.
+     * @return true if found and removed otherwise false.
+     */
+    public boolean removeUnavailableCounterHandler(final long registrationId)
+    {
+        return conductor.removeUnavailableCounterHandler(registrationId);
     }
 
     /**
@@ -439,6 +464,7 @@ public class Aeron implements AutoCloseable
      *
      * @param handler to be removed.
      * @return true if found and removed otherwise false.
+     * @deprecated please use {@link #removeUnavailableCounterHandler(long)}.
      */
     public boolean removeUnavailableCounterHandler(final UnavailableCounterHandler handler)
     {
@@ -449,10 +475,22 @@ public class Aeron implements AutoCloseable
      * Add a handler to the list be called when the Aeron client is closed.
      *
      * @param handler to be called when the Aeron client is closed.
+     * @return registration id for the handler which can be used to remove it.
      */
-    public void addCloseHandler(final Runnable handler)
+    public long addCloseHandler(final Runnable handler)
     {
-        conductor.addCloseHandler(handler);
+        return conductor.addCloseHandler(handler);
+    }
+
+    /**
+     * Remove a previously added handler to the list be called when the Aeron client is closed.
+     *
+     * @param registrationId of the handler from when it was added.
+     * @return true if found and removed otherwise false.
+     */
+    public boolean removeCloseHandler(final long registrationId)
+    {
+        return conductor.removeCloseHandler(registrationId);
     }
 
     /**
@@ -460,6 +498,7 @@ public class Aeron implements AutoCloseable
      *
      * @param handler to be removed.
      * @return true if found and removed otherwise false.
+     * @deprecated please use {@link #removeCloseHandler(long)}.
      */
     public boolean removeCloseHandler(final Runnable handler)
     {

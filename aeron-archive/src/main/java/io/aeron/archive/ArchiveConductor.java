@@ -81,7 +81,6 @@ abstract class ArchiveConductor
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
 
-    private final Runnable aeronCloseHandler = this::abort;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
@@ -96,6 +95,8 @@ abstract class ArchiveConductor
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
     private final ControlSessionProxy controlSessionProxy;
+    private long closeHandlerRegistrationId;
+    private long unavailableCounterHandlerRegistrationId;
     private final long connectTimeoutMs;
     private long timeOfLastMarkFileUpdateMs;
     private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
@@ -124,8 +125,8 @@ abstract class ArchiveConductor
         maxConcurrentReplays = ctx.maxConcurrentReplays();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
 
-        aeron.addUnavailableCounterHandler(this);
-        aeron.addCloseHandler(aeronCloseHandler);
+        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this);
+        closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
 
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
@@ -197,11 +198,11 @@ abstract class ArchiveConductor
         }
         else
         {
-            aeron.removeCloseHandler(aeronCloseHandler);
+            aeron.removeCloseHandler(closeHandlerRegistrationId);
 
             if (!ctx.ownsAeronClient())
             {
-                aeron.removeUnavailableCounterHandler(this);
+                aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
 
                 for (final Subscription subscription : recordingSubscriptionMap.values())
                 {

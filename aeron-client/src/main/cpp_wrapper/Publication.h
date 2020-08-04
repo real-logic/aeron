@@ -25,11 +25,11 @@
 
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/BufferClaim.h>
-#include <concurrent/logbuffer/TermAppender.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "util/Exceptions.h"
 #include "util/Export.h"
+#include "concurrent/logbuffer/TermAppender.h"
 
 extern "C"
 {

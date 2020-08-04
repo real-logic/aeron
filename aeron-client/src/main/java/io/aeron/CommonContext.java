@@ -283,7 +283,7 @@ public class CommonContext implements Cloneable
     public static final String GROUP_TAG_PARAM_NAME = "gtag";
 
     /**
-     * Parameter name for Publication URI param to indicate if spy subscriptions should simulate a connection.
+     * Parameter name for Publication URI param to indicate whether spy subscriptions should simulate a connection.
      */
     public static final String SPIES_SIMULATE_CONNECTION_PARAM_NAME = "ssc";
 

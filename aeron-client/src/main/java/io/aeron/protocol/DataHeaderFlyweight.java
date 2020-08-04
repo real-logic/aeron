@@ -88,7 +88,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Get the fragment length field from the header.
      *
-     * @param termBuffer  container the header.
+     * @param termBuffer  containing the header.
      * @param frameOffset in the buffer where the header starts.
      * @return the fragment length field from the header.
      */

@@ -1191,7 +1191,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set tagged flow control settings to be used on stream. All specified values may be null and the default
+     * Set tagged flow control settings to be used on a stream. All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
      * @param groupTag     receiver tag for this stream.
@@ -1293,7 +1293,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the group tag (gtag) to be value which is in the {@link ChannelUri} which may be null.
+     * Set the group tag (gtag) to be the value which is in the {@link ChannelUri} which may be null.
      *
      * @param channelUri to read the value from.
      * @return this for a fluent API.
@@ -1370,7 +1370,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the publication semantics for if the presence of spy subscriptions simulate a connection.
+     * Set the publication semantics for whether the presence of spy subscriptions simulate a connection.
      *
      * @param spiesSimulateConnection true if the presence of spy subscriptions simulate a connection.
      * @return this for a fluent API.
@@ -1383,8 +1383,8 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the publication semantics for if the presence of spy subscriptions simulate a connection to be what is in
-     * the {@link ChannelUri} which may be null.
+     * Set the publication semantics for whether the presence of spy subscriptions simulate a connection to be what is
+     * in the {@link ChannelUri} which may be null.
      *
      * @param channelUri to read the value from.
      * @return this for a fluent API.
@@ -1405,7 +1405,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the publication semantics for if the presence of spy subscriptions simulate a connection.
+     * Get the publication semantics for whether the presence of spy subscriptions simulate a connection.
      *
      * @return true if the presence of spy subscriptions simulate a connection, otherwise false.
      * @see CommonContext#SPIES_SIMULATE_CONNECTION_PARAM_NAME
@@ -1584,6 +1584,11 @@ public class ChannelUriStringBuilder
         }
 
         return sb.toString();
+    }
+
+    public String toString()
+    {
+        return build();
     }
 
     private static String prefixTag(final boolean isTagged, final Integer value)

@@ -507,6 +507,7 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
     switch (state.m_status)
     {
         case RegistrationStatus::AWAITING_MEDIA_DRIVER:
+        {
             if (m_epochClock() > (state.m_timeOfRegistrationMs + m_driverTimeoutMs))
             {
                 m_destinationStateByCorrelationId.erase(it);
@@ -514,6 +515,7 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
                     "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
             }
             break;
+        }
 
         case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
         {
@@ -538,12 +540,13 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
 
 std::int64_t ClientConductor::addAvailableCounterHandler(const on_available_counter_t &handler)
 {
-    const int64_t registrationId = nextHandlerRegistrationId();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
+    const int64_t registrationId = m_driverProxy.nextCorrelationId();
     m_onAvailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
+
     return registrationId;
 }
 
@@ -583,12 +586,13 @@ void ClientConductor::removeAvailableCounterHandler(std::int64_t registrationId)
 
 std::int64_t ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
 {
-    std::int64_t registrationId = nextHandlerRegistrationId();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
+    std::int64_t registrationId = m_driverProxy.nextCorrelationId();
     m_onUnavailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
+
     return registrationId;
 }
 
@@ -628,12 +632,13 @@ void ClientConductor::removeUnavailableCounterHandler(std::int64_t registrationI
 
 std::int64_t ClientConductor::addCloseClientHandler(const on_close_client_t &handler)
 {
-    std::int64_t registrationId = nextHandlerRegistrationId();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
 
+    std::int64_t registrationId = m_driverProxy.nextCorrelationId();
     m_onCloseClientHandlers.emplace_back(std::make_pair(registrationId, handler));
+
     return registrationId;
 }
 
@@ -758,7 +763,8 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_counterId = counterId;
-        state.m_counterCache = std::make_shared<Counter>(this, m_counterValuesBuffer, state.m_registrationId, counterId);
+        state.m_counterCache = std::make_shared<Counter>(
+            this, m_counterValuesBuffer, state.m_registrationId, counterId);
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
     }
 

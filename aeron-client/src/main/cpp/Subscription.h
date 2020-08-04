@@ -21,7 +21,6 @@
 #include <memory>
 #include <iterator>
 #include "concurrent/AtomicArrayUpdater.h"
-#include "concurrent/logbuffer/TermReader.h"
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "Image.h"
 #include "util/Export.h"

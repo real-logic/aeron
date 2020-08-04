@@ -36,9 +36,9 @@ public:
         m_driver.stop();
     }
 
-    int32_t typeId(CountersReader& reader, int32_t counterId)
+    static int32_t typeId(CountersReader& reader, int32_t counterId)
     {
-        const index_t offset = reader.metadataOffset(counterId);
+        const index_t offset = aeron::concurrent::CountersReader::metadataOffset(counterId);
         return reader.metaDataBuffer().getInt32(offset + CountersReader::TYPE_ID_OFFSET);
     }
 
@@ -68,9 +68,9 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     int staticUnavailable = 0;
     int dynamicAvailable = 0;
     int dynamicUnavailable = 0;
-    uint64_t key1 = 982374234;
-    uint64_t key2 = key1 + 1;
-    uint8_t key[8];
+    std::uint64_t key1 = 982374234;
+    std::uint64_t key2 = key1 + 1;
+    std::uint8_t key[8];
 
     on_available_counter_t staticAvailableHandler =
         [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
@@ -81,7 +81,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
             }
         };
 
-    on_available_counter_t staticUnvailableHandler =
+    on_available_counter_t staticUnavailableHandler =
         [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             if (counterTypeId == typeId(countersReader, counterId))
@@ -99,7 +99,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
             }
         };
 
-    on_available_counter_t dynamicUnvailableHandler =
+    on_available_counter_t dynamicUnavailableHandler =
         [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             if (counterTypeId == typeId(countersReader, counterId))
@@ -110,18 +110,18 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
 
     Context ctx;
     ctx.availableCounterHandler(staticAvailableHandler);
-    ctx.unavailableCounterHandler(staticUnvailableHandler);
+    ctx.unavailableCounterHandler(staticUnavailableHandler);
     ctx.useConductorAgentInvoker(true);
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
     AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
     invoker.start();
 
-    int64_t availableRegId = aeron->addAvailableCounterHandler(dynamicAvailableHandler);
-    int64_t unavailableRegId = aeron->addUnavailableCounterHandler(dynamicUnvailableHandler);
+    std::int64_t availableRegId = aeron->addAvailableCounterHandler(dynamicAvailableHandler);
+    std::int64_t unavailableRegId = aeron->addUnavailableCounterHandler(dynamicUnavailableHandler);
     invoker.invoke();
 
     ::memcpy(key, &key1, sizeof(key));
-    const int64_t regId1 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
+    const std::int64_t regId1 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
 
     while (1 != staticAvailable)
     {
@@ -144,7 +144,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     invoker.invoke();
 
     ::memcpy(key, &key2, sizeof(key));
-    const int64_t regId2 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
+    const std::int64_t regId2 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
 
     while (2 != staticAvailable)
     {
@@ -170,7 +170,7 @@ TEST_F(SystemTest, shouldNotSegfaultWhenRemovedByReference)
         {
         };
 
-    on_available_counter_t dynamicUnvailableHandler =
+    on_available_counter_t dynamicUnavailableHandler =
         [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
         };
@@ -182,11 +182,11 @@ TEST_F(SystemTest, shouldNotSegfaultWhenRemovedByReference)
     invoker.start();
 
     aeron->addAvailableCounterHandler(dynamicAvailableHandler);
-    aeron->addUnavailableCounterHandler(dynamicUnvailableHandler);
+    aeron->addUnavailableCounterHandler(dynamicUnavailableHandler);
     invoker.invoke();
 
     aeron->removeAvailableCounterHandler(dynamicAvailableHandler);
-    aeron->removeUnavailableCounterHandler(dynamicUnvailableHandler);
+    aeron->removeUnavailableCounterHandler(dynamicUnavailableHandler);
 }
 
 

@@ -288,7 +288,7 @@ public:
      * @param handler to be added to the available counters list.
      * @return registration id to use to remove the handler.
      */
-    inline int64_t addAvailableCounterHandler(const on_available_counter_t &handler)
+    inline std::int64_t addAvailableCounterHandler(const on_available_counter_t &handler)
     {
         return m_conductor.addAvailableCounterHandler(handler);
     }
@@ -320,7 +320,7 @@ public:
      * @param handler to be added to the unavailable counters list.
      * @return registration id to use to remove the handler.
      */
-    inline int64_t addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
+    inline std::int64_t addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
         return m_conductor.addUnavailableCounterHandler(handler);
     }

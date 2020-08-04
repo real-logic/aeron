@@ -20,7 +20,6 @@
 #include <unordered_map>
 #include <vector>
 #include <mutex>
-#include "concurrent/logbuffer/TermReader.h"
 #include "concurrent/status/UnsafeBufferPosition.h"
 #include "util/LangUtil.h"
 #include "util/ScopeUtils.h"
@@ -96,8 +95,6 @@ public:
         m_onAvailableCounterHandlers.emplace_back(std::make_pair(static_handler_token, availableCounterHandler));
         m_onUnavailableCounterHandlers.emplace_back(std::make_pair(static_handler_token, unavailableCounterHandler));
         m_onCloseClientHandlers.emplace_back(std::make_pair(static_handler_token, onCloseClientHandler));
-
-        atomic::putInt64Volatile(&m_nextHandlerRegistrationId, 1);
     }
 
     ~ClientConductor();
@@ -428,7 +425,6 @@ private:
     std::atomic<bool> m_isClosed;
     std::recursive_mutex m_adminLock;
     std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
-    std::int64_t m_nextHandlerRegistrationId;
 
     long long m_timeOfLastDoWorkMs;
     long long m_timeOfLastKeepaliveMs;
@@ -551,11 +547,6 @@ private:
             it->second.m_timeOfLastStateChangeMs = LLONG_MAX;
             return it->second.m_logBuffers;
         }
-    }
-
-    inline std::int64_t nextHandlerRegistrationId()
-    {
-        return atomic::getAndAddInt64(&m_nextHandlerRegistrationId, 1);
     }
 
     void onCheckManagedResources(long long nowMs);

@@ -27,8 +27,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.BiInt2ObjectMap;
-import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -44,42 +43,23 @@ import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_REC
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
 import static java.util.Objects.requireNonNull;
-
-abstract class SendChannelEndpointHotFields extends UdpChannelTransport
-{
-    protected long timeOfLastSmNs;
-
-    SendChannelEndpointHotFields(
-        final UdpChannel udpChannel,
-        final InetSocketAddress endPointAddress,
-        final InetSocketAddress bindAddress,
-        final InetSocketAddress connectAddress,
-        final MediaDriver.Context context)
-    {
-        super(udpChannel, endPointAddress, bindAddress, connectAddress, context);
-    }
-}
+import static org.agrona.collections.Hashing.compoundKey;
 
 /**
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
  * sending data and setup frames plus the receiving of status and NAK frames.
  */
-public class SendChannelEndpoint extends SendChannelEndpointHotFields
+public class SendChannelEndpoint extends UdpChannelTransport
 {
-    private static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
-
-    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
-    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
-    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
-    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+    static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
     private int refCount = 0;
-    private final BiInt2ObjectMap<NetworkPublication> publicationBySessionAndStreamId = new BiInt2ObjectMap<>();
+    protected long timeOfLastResolutionNs;
+    private final Long2ObjectHashMap<NetworkPublication> publicationBySessionAndStreamId = new Long2ObjectHashMap<>();
     private final MultiSndDestination multiSndDestination;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
-    private final CachedNanoClock cachedNanoClock;
     private AtomicCounter localSocketAddressIndicator;
 
     public SendChannelEndpoint(
@@ -95,17 +75,15 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
-        this.cachedNanoClock = context.cachedNanoClock();
-        this.timeOfLastSmNs = cachedNanoClock.nanoTime();
 
         MultiSndDestination multiSndDestination = null;
         if (udpChannel.isManualControlMode())
         {
-            multiSndDestination = new ManualSndMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
+            multiSndDestination = new ManualSndMultiDestination(context.cachedNanoClock());
         }
         else if (udpChannel.isDynamicControlMode() || udpChannel.hasExplicitControl())
         {
-            multiSndDestination = new DynamicSndMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
+            multiSndDestination = new DynamicSndMultiDestination(context.cachedNanoClock());
         }
 
         this.multiSndDestination = multiSndDestination;
@@ -152,7 +130,7 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
     private void updateLocalSocketAddress()
     {
         LocalSocketAddressStatus.updateBindAddress(
-            requireNonNull(localSocketAddressIndicator, "end status not allocated"),
+            requireNonNull(localSocketAddressIndicator, "localSocketAddressIndicator not allocated"),
             bindAddressAndPort(),
             context.countersMetaDataBuffer());
         localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
@@ -211,7 +189,8 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
      */
     public void registerForSend(final NetworkPublication publication)
     {
-        publicationBySessionAndStreamId.put(publication.sessionId(), publication.streamId(), publication);
+        final long key = compoundKey(publication.sessionId(), publication.streamId());
+        publicationBySessionAndStreamId.put(key, publication);
     }
 
     /**
@@ -221,7 +200,8 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
      */
     public void unregisterForSend(final NetworkPublication publication)
     {
-        publicationBySessionAndStreamId.remove(publication.sessionId(), publication.streamId());
+        final long key = compoundKey(publication.sessionId(), publication.streamId());
+        publicationBySessionAndStreamId.remove(key);
     }
 
     /**
@@ -272,13 +252,17 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
         {
             multiSndDestination.checkForReResolution(this, nowNs, conductorProxy);
         }
-        else if (udpChannel.hasExplicitEndpoint() &&
-            !udpChannel.isMulticast() &&
-            ((timeOfLastSmNs + DESTINATION_TIMEOUT) - nowNs) < 0)
+        else if (udpChannel.hasExplicitEndpoint() && !udpChannel.isMulticast())
         {
-            final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
-            conductorProxy.reResolveEndpoint(endpoint, this, udpChannel.remoteData());
-            timeOfLastSmNs = nowNs;
+            final long timeOfLastStatusMessageNs = timeOfLastStatusMessageNs();
+
+            if (((timeOfLastStatusMessageNs + DESTINATION_TIMEOUT) - nowNs) < 0 &&
+                ((timeOfLastResolutionNs + DESTINATION_TIMEOUT) - nowNs) < 0)
+            {
+                final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
+                conductorProxy.reResolveEndpoint(endpoint, this, udpChannel.remoteData());
+                timeOfLastResolutionNs = nowNs;
+            }
         }
     }
 
@@ -290,7 +274,6 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
     {
         final int sessionId = msg.sessionId();
         final int streamId = msg.streamId();
-        final NetworkPublication publication = publicationBySessionAndStreamId.get(sessionId, streamId);
 
         if (null != multiSndDestination)
         {
@@ -298,11 +281,16 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
 
             if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
-                publicationBySessionAndStreamId.forEach(NetworkPublication::triggerSendSetupFrame);
+                for (final NetworkPublication publication : publicationBySessionAndStreamId.values())
+                {
+                    publication.triggerSendSetupFrame();
+                }
+
                 statusMessagesReceived.incrementOrdered();
             }
         }
 
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(compoundKey(sessionId, streamId));
         if (null != publication)
         {
             if (SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
@@ -314,7 +302,6 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
                 publication.onStatusMessage(msg, srcAddress);
             }
 
-            timeOfLastSmNs = cachedNanoClock.nanoTime();
             statusMessagesReceived.incrementOrdered();
         }
     }
@@ -325,7 +312,8 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = publicationBySessionAndStreamId.get(msg.sessionId(), msg.streamId());
+        final long key = compoundKey(msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(key);
 
         if (null != publication)
         {
@@ -340,8 +328,8 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = publicationBySessionAndStreamId.get(msg.sessionId(), msg.streamId());
-
+        final long key = compoundKey(msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(key);
         if (null != publication)
         {
             publication.onRttMeasurement(msg, srcAddress);
@@ -376,5 +364,17 @@ public class SendChannelEndpoint extends SendChannelEndpointHotFields
         {
             updateEndpoint(newAddress, statusIndicator);
         }
+    }
+
+    private long timeOfLastStatusMessageNs()
+    {
+        long timeNs = 0;
+
+        for (final NetworkPublication publication : publicationBySessionAndStreamId.values())
+        {
+            timeNs = Math.max(timeNs, publication.timeOfLastStatusMessageNs());
+        }
+
+        return 0;
     }
 }

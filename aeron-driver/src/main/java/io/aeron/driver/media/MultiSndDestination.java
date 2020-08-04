@@ -27,11 +27,20 @@ import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
+import static io.aeron.driver.media.SendChannelEndpoint.DESTINATION_TIMEOUT;
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
 abstract class MultiSndDestination
 {
     static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
+
+    protected Destination[] destinations = EMPTY_DESTINATIONS;
+    protected final CachedNanoClock nanoClock;
+
+    MultiSndDestination(final CachedNanoClock nanoClock)
+    {
+        this.nanoClock = nanoClock;
+    }
 
     abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
@@ -86,14 +95,9 @@ abstract class MultiSndDestination
 
 class ManualSndMultiDestination extends MultiSndDestination
 {
-    private final long destinationTimeoutNs;
-    private final CachedNanoClock nanoClock;
-    private Destination[] destinations = EMPTY_DESTINATIONS;
-
-    ManualSndMultiDestination(final CachedNanoClock nanoClock, final long destinationTimeoutNs)
+    ManualSndMultiDestination(final CachedNanoClock nanoClock)
     {
-        this.destinationTimeoutNs = destinationTimeoutNs;
-        this.nanoClock = nanoClock;
+        super(nanoClock);
     }
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
@@ -197,7 +201,7 @@ class ManualSndMultiDestination extends MultiSndDestination
     {
         for (final Destination destination : destinations)
         {
-            if ((destination.timeOfLastActivityNs + destinationTimeoutNs) - nowNs < 0)
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
             {
                 final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
                 final InetSocketAddress address = destination.address;
@@ -223,14 +227,9 @@ class ManualSndMultiDestination extends MultiSndDestination
 
 class DynamicSndMultiDestination extends MultiSndDestination
 {
-    private final long destinationTimeoutNs;
-    private final CachedNanoClock nanoClock;
-    private Destination[] destinations = EMPTY_DESTINATIONS;
-
-    DynamicSndMultiDestination(final CachedNanoClock nanoClock, final long destinationTimeoutNs)
+    DynamicSndMultiDestination(final CachedNanoClock nanoClock)
     {
-        this.nanoClock = nanoClock;
-        this.destinationTimeoutNs = destinationTimeoutNs;
+        super(nanoClock);
     }
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
@@ -269,7 +268,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
         for (int lastIndex = destinations.length - 1, i = lastIndex; i >= 0; i--)
         {
             final Destination destination = destinations[i];
-            if ((destination.timeOfLastActivityNs + destinationTimeoutNs) - nowNs < 0)
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
             {
                 if (i != lastIndex)
                 {

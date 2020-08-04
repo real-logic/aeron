@@ -82,7 +82,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
     protected long timeOfLastSendOrHeartbeatNs;
     protected long timeOfLastSetupNs;
-    protected long statusMessageDeadlineNs;
+    protected long timeOfLastStatusMessageNs;
     protected boolean trackSenderLimits = false;
     protected boolean shouldSendSetupFrame = true;
 }
@@ -230,7 +230,7 @@ public class NetworkPublication
         final long nowNs = nanoClock.nanoTime();
         timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        statusMessageDeadlineNs = spiesSimulateConnection ? nowNs : (nowNs + connectionTimeoutNs);
+        timeOfLastStatusMessageNs = nowNs;
 
         positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.termWindowLength = termWindowLength;
@@ -264,6 +264,11 @@ public class NetworkPublication
         }
 
         CloseHelper.close(errorHandler, rawLog);
+    }
+
+    public long timeOfLastStatusMessageNs()
+    {
+        return timeOfLastStatusMessageNs;
     }
 
     public long tag()
@@ -398,6 +403,7 @@ public class NetworkPublication
     {
         if (!isEndOfStream)
         {
+            timeOfLastStatusMessageNs = nanoClock.nanoTime();
             shouldSendSetupFrame = true;
         }
     }
@@ -451,7 +457,7 @@ public class NetworkPublication
         }
 
         final long timeNs = nanoClock.nanoTime();
-        statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
+        timeOfLastStatusMessageNs = timeNs;
 
         senderLimit.setOrdered(flowControl.onStatusMessage(
             msg,
@@ -546,7 +552,7 @@ public class NetworkPublication
 
     final void updateHasReceivers(final long timeNs)
     {
-        if ((statusMessageDeadlineNs - timeNs < 0) && hasReceivers)
+        if (((timeOfLastStatusMessageNs + connectionTimeoutNs) - timeNs < 0) && hasReceivers)
         {
             hasReceivers = false;
         }

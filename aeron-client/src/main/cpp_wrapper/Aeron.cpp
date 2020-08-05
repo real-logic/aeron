@@ -38,6 +38,10 @@ Aeron::~Aeron()
 {
     aeron_close(m_aeron);
     aeron_context_close(m_context.m_context);
+
+    m_availableCounterHandlers.clear();
+    m_unavailableCounterHandlers.clear();
+    m_closeClientHandlers.clear();
 }
 
 aeron_t *Aeron::init_aeron(Context &context)

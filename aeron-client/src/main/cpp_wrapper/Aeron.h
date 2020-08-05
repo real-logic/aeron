@@ -611,102 +611,185 @@ public:
      * Add a handler to the list to be called when a counter becomes available.
      *
      * @param handler to be added to the available counters list.
+     * @return registration id to use to remove the handler.
      */
-    inline void addAvailableCounterHandler(const on_available_counter_t &handler)
+    inline std::int64_t addAvailableCounterHandler(const on_available_counter_t &handler)
     {
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto handler_ptr = std::make_shared<on_available_counter_t>(handler);
+
+        std::int64_t registrationId = aeron_next_correlation_id(m_aeron);
+        m_availableCounterHandlers.emplace_back(std::make_pair(registrationId, handler_ptr));
+        auto &storedHandler = m_availableCounterHandlers.back();
+
         aeron_on_available_counter_pair_t counterPair;
         counterPair.handler = onAvailableCounterCallback;
-        counterPair.clientd = (void *)&handler;
+        counterPair.clientd = reinterpret_cast<void *>(storedHandler.second.get());
 
         if (aeron_add_available_counter_handler(m_aeron, &counterPair) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        return registrationId;
     }
 
     /**
      * Remove a handler from the list to be called when a counter becomes available.
      *
-     * @param handler to be removed from the available counters list.
+     * @param registrationId id for the handler to be removed from the available counters list.
      */
-    inline void removeAvailableCounterHandler(const on_available_counter_t &handler)
+    inline void removeAvailableCounterHandler(std::int64_t registrationId)
     {
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto &v = m_availableCounterHandlers;
+        auto predicate =
+            [registrationId](const std::pair<std::int64_t, std::shared_ptr<on_available_counter_t>> &item)
+            {
+                return item.first == registrationId;
+            };
+
+        auto storedHandler = std::find_if(v.begin(), v.end(), predicate);
+        if (storedHandler == v.end())
+        {
+            return;
+        }
+
         aeron_on_available_counter_pair_t counterPair;
         counterPair.handler = onAvailableCounterCallback;
-        counterPair.clientd = (void *)&handler;
+        counterPair.clientd = reinterpret_cast<void *>(storedHandler->second.get());
 
-        if (aeron_add_available_counter_handler(m_aeron, &counterPair) < 0)
+        if (aeron_remove_available_counter_handler(m_aeron, &counterPair) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        v.erase(storedHandler);
     }
 
     /**
      * Add a handler to the list to be called when a counter becomes unavailable.
      *
      * @param handler to be added to the unavailable counters list.
+     * @return registration id to use to remove the handler.
      */
-    inline void addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
+    inline std::int64_t addUnavailableCounterHandler(const on_unavailable_counter_t &handler)
     {
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto handler_ptr = std::make_shared<on_unavailable_counter_t>(handler);
+
+        std::int64_t registrationId = aeron_next_correlation_id(m_aeron);
+        m_unavailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler_ptr));
+        auto &storedHandler = m_unavailableCounterHandlers.back();
+
         aeron_on_unavailable_counter_pair_t counterPair;
         counterPair.handler = onUnavailableCounterCallback;
-        counterPair.clientd = (void *)&handler;
+        counterPair.clientd = reinterpret_cast<void *>(storedHandler.second.get());
 
         if (aeron_add_unavailable_counter_handler(m_aeron, &counterPair) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        return registrationId;
     }
 
     /**
      * Remove a handler from the list to be called when a counter becomes unavailable.
      *
-     * @param handler to be removed from the unavailable counters list.
+     * @param registrationId id for the handler to be removed from the unavailable counter handlers list.
      */
-    inline void removeUnavailableCounterHandler(const on_unavailable_counter_t &handler)
+    inline void removeUnavailableCounterHandler(std::int64_t registrationId)
     {
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto &v = m_unavailableCounterHandlers;
+        auto predicate =
+            [registrationId](const std::pair<std::int64_t, std::shared_ptr<on_unavailable_counter_t>> &item)
+            {
+                return item.first == registrationId;
+            };
+
+        auto storedHandler = std::find_if(v.begin(), v.end(), predicate);
+        if (storedHandler == v.end())
+        {
+            return;
+        }
+
         aeron_on_unavailable_counter_pair_t counterPair;
         counterPair.handler = onUnavailableCounterCallback;
-        counterPair.clientd = (void *)&handler;
+        counterPair.clientd = reinterpret_cast<void *>(storedHandler->second.get());
 
-        if (aeron_add_unavailable_counter_handler(m_aeron, &counterPair) < 0)
+        if (aeron_remove_unavailable_counter_handler(m_aeron, &counterPair) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        v.erase(storedHandler);
     }
 
     /**
      * Add a handler to the list to be called when the client is closed.
      *
      * @param handler to be added to the close client handlers list.
+     * @return registration id to use to remove the handler.
      */
-    inline void addCloseClientHandler(const on_close_client_t &handler)
+    inline std::int64_t addCloseClientHandler(const on_close_client_t &handler)
     {
-        aeron_on_close_client_pair_t closeClientPair;
-        closeClientPair.handler = onCloseClientCallback;
-        closeClientPair.clientd = (void *)&handler;
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        
+        std::shared_ptr<on_close_client_t> handler_ptr = std::make_shared<on_close_client_t>(handler);
 
-        if (aeron_add_close_handler(m_aeron, &closeClientPair) < 0)
+        std::int64_t registrationId = aeron_next_correlation_id(m_aeron);
+        m_closeClientHandlers.emplace_back(std::make_pair(registrationId, handler_ptr));
+
+        aeron_on_close_client_pair_t counterPair;
+        counterPair.handler = onCloseClientCallback;
+        counterPair.clientd = reinterpret_cast<void *>(handler_ptr.get());
+
+        if (aeron_add_close_handler(m_aeron, &counterPair) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        return registrationId;
     }
 
     /**
      * Remove a handler from the list to be called when the client is closed.
      *
-     * @param handler to be removed from the close client handlers list.
+     * @param registrationId id for the handler to be removed from the close client handlers list.
      */
-    inline void removeCloseClientHandler(const on_close_client_t &handler)
+    inline void removeCloseClientHandler(std::int64_t registrationId)
     {
-        aeron_on_close_client_pair_t closeClientPair;
-        closeClientPair.handler = onCloseClientCallback;
-        closeClientPair.clientd = (void *)&handler;
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
-        if (aeron_remove_close_handler(m_aeron, &closeClientPair) < 0)
+        auto &v = m_closeClientHandlers;
+        auto predicate =
+            [registrationId](const std::pair<std::int64_t, std::shared_ptr<on_close_client_t>> &item)
+            {
+                return item.first == registrationId;
+            };
+
+        auto storedHandler = std::find_if(v.begin(), v.end(), predicate);
+        if (storedHandler == v.end())
+        {
+            return;
+        }
+
+        aeron_on_close_client_pair_t counterPair;
+        counterPair.handler = onCloseClientCallback;
+        counterPair.clientd = reinterpret_cast<void *>(storedHandler->second.get());
+
+        if (aeron_remove_close_handler(m_aeron, &counterPair) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        v.erase(storedHandler);
     }
 
     /**
@@ -785,6 +868,9 @@ private:
     std::unordered_map<std::int64_t, AsyncAddExclusivePublication *> m_pendingExclusivePublications;
     std::unordered_map<std::int64_t, AsyncAddSubscription *> m_pendingSubscriptions;
     std::unordered_map<std::int64_t, AsyncAddCounter *> m_pendingCounters;
+    std::vector<std::pair<std::int64_t, std::shared_ptr<on_available_counter_t>>> m_availableCounterHandlers;
+    std::vector<std::pair<std::int64_t, std::shared_ptr<on_unavailable_counter_t>>> m_unavailableCounterHandlers;
+    std::vector<std::pair<std::int64_t, std::shared_ptr<on_close_client_t>>> m_closeClientHandlers;
     std::recursive_mutex m_adminLock;
     ClientConductor m_clientConductor;
     AgentInvoker<ClientConductor> m_conductorInvoker;
@@ -809,7 +895,7 @@ private:
         void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
     {
         CountersReader reader = CountersReader(counters_reader);
-        on_available_counter_t& callback = *static_cast<on_available_counter_t *>(clientd);
+        on_available_counter_t& callback = *reinterpret_cast<on_available_counter_t *>(clientd);
         callback(reader, registration_id, counter_id);
     }
 
@@ -817,13 +903,13 @@ private:
         void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
     {
         CountersReader reader = CountersReader(counters_reader);
-        on_unavailable_counter_t& callback = *static_cast<on_unavailable_counter_t *>(clientd);
+        on_unavailable_counter_t& callback = *reinterpret_cast<on_unavailable_counter_t *>(clientd);
         callback(reader, registration_id, counter_id);
     }
 
     static void onCloseClientCallback(void *clientd)
     {
-        on_close_client_t& callback = *static_cast<on_close_client_t *>(clientd);
+        on_close_client_t& callback = *reinterpret_cast<on_close_client_t *>(clientd);
         callback();
     }
 };

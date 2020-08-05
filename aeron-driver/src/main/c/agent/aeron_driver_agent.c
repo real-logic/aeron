@@ -566,7 +566,7 @@ void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, si
         &logging_mpsc_rb,
         AERON_DYNAMIC_DISSECTOR_EVENT,
         buffer,
-        sizeof(aeron_driver_agent_add_dissector_header_t) + copy_length);
+        sizeof(aeron_driver_agent_dynamic_event_header_t) + copy_length);
 }
 
 static const char *dissect_command_type_id(int64_t cmd_type_id)

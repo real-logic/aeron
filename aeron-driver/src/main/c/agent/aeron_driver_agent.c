@@ -555,7 +555,7 @@ void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, si
 {
     uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
     aeron_driver_agent_dynamic_event_header_t *hdr =
-        (aeron_driver_agent_dynamic_event_header_t *)message;
+        (aeron_driver_agent_dynamic_event_header_t *)buffer;
     size_t copy_length = length < MAX_FRAME_LENGTH ? length : MAX_FRAME_LENGTH;
 
     hdr->time_ms = aeron_epoch_clock();

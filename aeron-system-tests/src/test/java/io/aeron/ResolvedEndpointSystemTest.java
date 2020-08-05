@@ -47,7 +47,7 @@ public class ResolvedEndpointSystemTest
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @BeforeEach
-    void launch()
+    void before()
     {
         buffer.putInt(0, 1);
 
@@ -60,9 +60,13 @@ public class ResolvedEndpointSystemTest
     }
 
     @AfterEach
-    void tearDown()
+    void after()
     {
         CloseHelper.closeAll(client, driver);
+        if (null != driver)
+        {
+            driver.context().deleteDirectory();
+        }
     }
 
     @Test

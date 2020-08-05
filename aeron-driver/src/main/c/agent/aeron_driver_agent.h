@@ -92,7 +92,8 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
-typedef void (*aeron_driver_agent_generic_dissector_func_t)(FILE *fpout, const void *message, size_t len);
+typedef void (*aeron_driver_agent_generic_dissector_func_t)(
+    FILE *fpout, const char *time_str, const void *message, size_t len);
 
 typedef struct aeron_driver_agent_add_dissector_header_stct
 {

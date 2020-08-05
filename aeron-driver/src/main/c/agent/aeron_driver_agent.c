@@ -1264,9 +1264,14 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)message;
 
-            if (hdr->index < (int64_t)num_dynamic_dissector_entries)
+            if (hdr->index < (int64_t)num_dynamic_dissector_entries &&
+                NULL != dynamic_dissector_entries[hdr->index].dissector_func)
             {
-                dynamic_dissector_entries[hdr->index].dissector_func(logfp, message, length);
+                dynamic_dissector_entries[hdr->index].dissector_func(
+                    logfp,
+                    aeron_driver_agent_dissect_timestamp(hdr->time_ms),
+                    message,
+                    length);
             }
             break;
         }

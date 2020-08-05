@@ -26,7 +26,9 @@ public class ClientContextTest
     @Test
     public void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
-        try (MediaDriver mediaDriver = MediaDriver.launchEmbedded())
+        try (MediaDriver mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)))
         {
             final Aeron.Context ctx = new Aeron.Context()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName());

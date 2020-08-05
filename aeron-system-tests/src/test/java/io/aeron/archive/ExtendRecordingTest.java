@@ -93,7 +93,38 @@ public class ExtendRecordingTest
     @BeforeEach
     public void before()
     {
-        launchAeronAndArchive();
+        final String aeronDirectoryName = CommonContext.generateRandomDirName();
+
+        if (null == archiveDir)
+        {
+            archiveDir = new File(SystemUtil.tmpDirName(), "archive");
+        }
+
+        archivingMediaDriver = TestMediaDriver.launch(
+            new MediaDriver.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .termBufferSparseFile(true)
+                .threadingMode(ThreadingMode.SHARED)
+                .errorHandler(Tests::onError)
+                .spiesSimulateConnection(false)
+                .dirDeleteOnStart(true),
+            testWatcher);
+
+        archive = Archive.launch(
+            new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .aeronDirectoryName(aeronDirectoryName)
+                .archiveDir(archiveDir)
+                .fileSyncLevel(0)
+                .threadingMode(ArchiveThreadingMode.SHARED));
+
+        aeron = Aeron.connect(
+            new Aeron.Context()
+                .aeronDirectoryName(aeronDirectoryName));
+
+        aeronArchive = AeronArchive.connect(
+            new AeronArchive.Context()
+                .aeron(aeron));
     }
 
     @AfterEach
@@ -254,41 +285,5 @@ public class ExtendRecordingTest
         }
 
         assertEquals(startIndex + count, received.get());
-    }
-
-    private void launchAeronAndArchive()
-    {
-        final String aeronDirectoryName = CommonContext.generateRandomDirName();
-
-        if (null == archiveDir)
-        {
-            archiveDir = new File(SystemUtil.tmpDirName(), "archive");
-        }
-
-        archivingMediaDriver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
-            testWatcher);
-
-        archive = Archive.launch(
-            new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-                .aeronDirectoryName(aeronDirectoryName)
-                .archiveDir(archiveDir)
-                .fileSyncLevel(0)
-                .threadingMode(ArchiveThreadingMode.SHARED));
-
-        aeron = Aeron.connect(
-            new Aeron.Context()
-                .aeronDirectoryName(aeronDirectoryName));
-
-        aeronArchive = AeronArchive.connect(
-            new AeronArchive.Context()
-                .aeron(aeron));
     }
 }

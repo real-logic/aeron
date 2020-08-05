@@ -20,6 +20,7 @@
 
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
+#include "TestUtil.h"
 
 using namespace aeron;
 
@@ -124,20 +125,14 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     ::memcpy(key, &key1, sizeof(key));
     const std::int64_t regId1 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
 
-    while (1 != staticAvailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(1 == staticAvailable, invoker);
     ASSERT_EQ(1, dynamicAvailable);
 
     {
         auto counter = aeron->findCounter(regId1);
     }
 
-    while (1 != staticUnavailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(1 == staticUnavailable, invoker);
     ASSERT_EQ(1, dynamicUnavailable);
 
     aeron->removeAvailableCounterHandler(availableRegId);
@@ -147,20 +142,14 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     ::memcpy(key, &key2, sizeof(key));
     const std::int64_t regId2 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
 
-    while (2 != staticAvailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(2 == staticAvailable, invoker);
     ASSERT_EQ(1, dynamicAvailable);
 
     {
         auto counter = aeron->findCounter(regId2);
     }
 
-    while (2 != staticUnavailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(2 == staticUnavailable, invoker);
     ASSERT_EQ(1, dynamicUnavailable);
 }
 

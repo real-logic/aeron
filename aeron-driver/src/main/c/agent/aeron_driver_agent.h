@@ -34,6 +34,10 @@
 #define AERON_MAP_RAW_LOG_OP (0x20)
 #define AERON_MAP_RAW_LOG_OP_CLOSE (0x40)
 #define AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE (0x80)
+#define AERON_DYNAMIC_DISSECTOR_EVENT (0x100)
+
+/* commands only (not mask values) */
+#define AERON_ADD_DYNAMIC_DISSECTOR (0x010000)
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
@@ -88,13 +92,36 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
+typedef void (*aeron_driver_agent_generic_dissector_func_t)(FILE *fpout, const void *message, size_t len);
+
+typedef struct aeron_driver_agent_add_dissector_header_stct
+{
+    int64_t time_ms;
+    int64_t index;
+    aeron_driver_agent_generic_dissector_func_t dissector_func;
+}
+aeron_driver_agent_add_dissector_header_t;
+
+typedef struct aeron_driver_agent_dynamic_event_header_stct
+{
+    int64_t time_ms;
+    int64_t index;
+}
+aeron_driver_agent_dynamic_event_header_t;
+
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
 
-const char *dissect_log_start(int64_t time_ms);
+const char *aeron_driver_agent_dissect_timestamp(int64_t time_ms);
+
+const char *aeron_driver_agent_dissect_log_start(int64_t time_ms);
+
+int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_dissector_func_t func);
+
+void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length);
 
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 

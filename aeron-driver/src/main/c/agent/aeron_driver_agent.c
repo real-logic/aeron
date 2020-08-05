@@ -36,6 +36,8 @@
 #include "aeron_driver_context.h"
 #include "util/aeron_dlopen.h"
 #include "aeron_windows.h"
+#include "aeron_alloc.h"
+#include "util/aeron_arrayutil.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
@@ -45,11 +47,20 @@ struct mmsghdr
 };
 #endif
 
+typedef struct aeron_driver_agent_dynamic_dissector_entry_stct
+{
+    aeron_driver_agent_generic_dissector_func_t dissector_func;
+}
+aeron_driver_agent_dynamic_dissector_entry_t;
+
 static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
 static uint64_t mask = 0;
+static int64_t dynamic_dissector_index = 0;
 static FILE *logfp = NULL;
+static aeron_driver_agent_dynamic_dissector_entry_t *dynamic_dissector_entries = NULL;
+static size_t num_dynamic_dissector_entries = 0;
 static aeron_thread_t log_reader_thread;
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb()
@@ -151,7 +162,7 @@ static void initialize_agent_logging()
             exit(EXIT_FAILURE);
         }
 
-        fprintf(logfp, "%s\n", dissect_log_start(aeron_epoch_clock()));
+        fprintf(logfp, "%s\n", aeron_driver_agent_dissect_log_start(aeron_epoch_clock()));
     }
 }
 
@@ -502,7 +513,7 @@ static const char *dissect_msg_type_id(int32_t id)
     }
 }
 
-static const char *dissect_timestamp(int64_t time_ms)
+const char *aeron_driver_agent_dissect_timestamp(int64_t time_ms)
 {
     static char buffer[80];
 
@@ -510,14 +521,52 @@ static const char *dissect_timestamp(int64_t time_ms)
     return buffer;
 }
 
-const char *dissect_log_start(int64_t time_ms)
+const char *aeron_driver_agent_dissect_log_start(int64_t time_ms)
 {
     static char buffer[384];
     char datestamp[256];
 
     aeron_agent_format_date(datestamp, sizeof(datestamp) - 1, time_ms);
-    snprintf(buffer, sizeof(buffer) - 1, "[%s] log started %s", dissect_timestamp(time_ms), datestamp);
+    snprintf(
+        buffer, sizeof(buffer) - 1, "[%s] log started %s", aeron_driver_agent_dissect_timestamp(time_ms), datestamp);
     return buffer;
+}
+
+int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_dissector_func_t func)
+{
+    uint8_t buffer[sizeof(aeron_driver_agent_add_dissector_header_t)];
+    aeron_driver_agent_add_dissector_header_t *hdr =
+        (aeron_driver_agent_add_dissector_header_t *)buffer;
+
+    hdr->time_ms = aeron_epoch_clock();
+    AERON_GET_AND_ADD_INT64(hdr->index, dynamic_dissector_index, 1);
+    hdr->dissector_func = func;
+
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb,
+        AERON_ADD_DYNAMIC_DISSECTOR,
+        buffer,
+        sizeof(aeron_driver_agent_add_dissector_header_t));
+
+    return hdr->index;
+}
+
+void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length)
+{
+    uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
+    aeron_driver_agent_dynamic_event_header_t *hdr =
+        (aeron_driver_agent_dynamic_event_header_t *)message;
+    size_t copy_length = length < MAX_FRAME_LENGTH ? length : MAX_FRAME_LENGTH;
+
+    hdr->time_ms = aeron_epoch_clock();
+    hdr->index = index;
+    memcpy(buffer + sizeof(aeron_driver_agent_dynamic_event_header_t), message, copy_length);
+
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb,
+        AERON_DYNAMIC_DISSECTOR_EVENT,
+        buffer,
+        sizeof(aeron_driver_agent_add_dissector_header_t) + copy_length);
 }
 
 static const char *dissect_command_type_id(int64_t cmd_type_id)
@@ -1102,7 +1151,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             fprintf(
                 logfp,
                 "[%s] %s %s\n",
-                dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
                 dissect_msg_type_id(msg_type_id),
                 dissect_cmd_out(
                     hdr->cmd_id,
@@ -1118,7 +1167,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             fprintf(
                 logfp,
                 "[%s] %s %s\n",
-                dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
                 dissect_msg_type_id(msg_type_id),
                 dissect_cmd_in(
                     hdr->cmd_id,
@@ -1140,7 +1189,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             fprintf(
                 logfp,
                 "[%s] [%d:%d] %s %s: %s\n",
-                dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
                 hdr->result,
                 (int)hdr->message_len,
                 dissect_msg_type_id(msg_type_id),
@@ -1157,7 +1206,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             fprintf(
                 logfp,
                 "[%s] MAP_RAW_LOG %p, \"%*s\" = %d\n",
-                dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
                 (void *)hdr->map_raw.map_raw_log.addr,
                 hdr->map_raw.map_raw_log.path_len,
                 pathname,
@@ -1172,7 +1221,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             fprintf(
                 logfp,
                 "[%s] MAP_RAW_LOG_CLOSE %p = %d\n",
-                dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
                 (void *)hdr->map_raw.map_raw_log_close.addr,
                 hdr->map_raw.map_raw_log_close.result);
             break;
@@ -1186,12 +1235,39 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             fprintf(
                 logfp,
                 "[%s] UNTETHERED_SUBSCRIPTION_STATE_CHANGE: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
-                dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
                 hdr->subscription_id,
                 hdr->stream_id,
                 hdr->session_id,
                 dissect_tether_state(hdr->old_state),
                 dissect_tether_state(hdr->new_state));
+            break;
+        }
+
+        case AERON_ADD_DYNAMIC_DISSECTOR:
+        {
+            aeron_driver_agent_add_dissector_header_t *hdr = (aeron_driver_agent_add_dissector_header_t *)message;
+
+            if (aeron_array_ensure_capacity(
+                (uint8_t **)&dynamic_dissector_entries,
+                sizeof(aeron_driver_agent_dynamic_dissector_entry_t),
+                num_dynamic_dissector_entries,
+                hdr->index + 1) >= 0)
+            {
+                dynamic_dissector_entries[hdr->index].dissector_func = hdr->dissector_func;
+                num_dynamic_dissector_entries = hdr->index + 1;
+            }
+            break;
+        }
+
+        case AERON_DYNAMIC_DISSECTOR_EVENT:
+        {
+            aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)message;
+
+            if (hdr->index < (int64_t)num_dynamic_dissector_entries)
+            {
+                dynamic_dissector_entries[hdr->index].dissector_func(logfp, message, length);
+            }
             break;
         }
 

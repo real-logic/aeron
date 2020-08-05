@@ -80,13 +80,13 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub2");
+                Tests.yieldingWait("No bind address/port for sub1");
             }
 
             List<String> bindAddressAndPort2;
             while ((bindAddressAndPort2 = sub2.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub3");
+                Tests.yieldingWait("No bind address/port for sub2");
             }
 
             assertNotEquals(bindAddressAndPort1, bindAddressAndPort2);
@@ -94,26 +94,26 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPort3;
             while ((bindAddressAndPort3 = sub3.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub4");
+                Tests.yieldingWait("No bind address/port for sub3");
             }
 
             assertEquals(bindAddressAndPort3, bindAddressAndPort1);
 
-            final String pub2Uri = new ChannelUriStringBuilder()
+            final String pubUri = new ChannelUriStringBuilder()
                 .media("udp")
                 .endpoint(bindAddressAndPort1.get(0))
                 .build();
 
-            try (Publication publication = client.addPublication(pub2Uri, STREAM_ID))
+            try (Publication pub = client.addPublication(pubUri, STREAM_ID))
             {
-                while (publication.offer(buffer, 0, buffer.capacity()) < 0)
+                while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub2");
+                    Tests.yieldingWait("Failed to publish to pub");
                 }
 
                 while (sub1.poll(fragmentHandler, 1) < 0)
                 {
-                    Tests.yieldingWait("Failed to receive from sub2");
+                    Tests.yieldingWait("Failed to receive from sub1");
                 }
             }
         }
@@ -129,7 +129,7 @@ public class ResolvedEndpointSystemTest
         final String tagged2 = "aeron:udp?tags=1001";
 
         try (Subscription sub1 = client.addSubscription(systemAssignedPortUri, STREAM_ID);
-            Subscription sub4 = client.addSubscription(tagged2, STREAM_ID + 1))
+            Subscription sub2 = client.addSubscription(tagged2, STREAM_ID + 1))
         {
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())
@@ -138,9 +138,9 @@ public class ResolvedEndpointSystemTest
             }
 
             List<String> bindAddressAndPort4;
-            while ((bindAddressAndPort4 = sub4.localSocketAddresses()).isEmpty())
+            while ((bindAddressAndPort4 = sub2.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub4");
+                Tests.yieldingWait("No bind address/port for sub2");
             }
 
             assertEquals(bindAddressAndPort4, bindAddressAndPort1);
@@ -149,11 +149,11 @@ public class ResolvedEndpointSystemTest
                 .media("udp").endpoint(bindAddressAndPort1.get(0))
                 .build();
 
-            try (Publication publication = client.addPublication(pub1Uri, STREAM_ID))
+            try (Publication pub = client.addPublication(pub1Uri, STREAM_ID))
             {
-                while (publication.offer(buffer, 0, buffer.capacity()) < 0)
+                while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub1");
+                    Tests.yieldingWait("Failed to publish to pub");
                 }
 
                 while (sub1.poll(fragmentHandler, 1) < 0)
@@ -220,30 +220,30 @@ public class ResolvedEndpointSystemTest
     {
         final String mdcUri = "aeron:udp?control=localhost:0";
 
-        try (Publication mdcPub = client.addPublication(mdcUri, STREAM_ID))
+        try (Publication pub = client.addPublication(mdcUri, STREAM_ID))
         {
             List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = mdcPub.localSocketAddresses()).isEmpty())
+            while ((bindAddressAndPort1 = pub.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for mdcPub");
+                Tests.yieldingWait("No bind address/port for pub");
             }
 
-            final String mdcSubUri1 = new ChannelUriStringBuilder()
+            final String mdcSubUri = new ChannelUriStringBuilder()
                 .media("udp")
                 .controlEndpoint(bindAddressAndPort1.get(0))
                 .group(true)
                 .build();
 
-            try (Subscription sub = client.addSubscription(mdcSubUri1, STREAM_ID))
+            try (Subscription sub = client.addSubscription(mdcSubUri, STREAM_ID))
             {
-                while (mdcPub.offer(buffer, 0, buffer.capacity()) < 0)
+                while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub2");
+                    Tests.yieldingWait("Failed to publish to pub");
                 }
 
                 while (sub.poll(fragmentHandler, 1) < 0)
                 {
-                    Tests.yieldingWait("Failed to receive from sub2");
+                    Tests.yieldingWait("Failed to receive from sub");
                 }
             }
         }

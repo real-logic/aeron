@@ -67,15 +67,31 @@ public class NetworkUtil
         return buffer.slice();
     }
 
+    /**
+     * Format an address and port pair so they can be used in a URI endpoint.
+     *
+     * @param address part of the endpoint.
+     * @param port    part of the endpoint.
+     * @return The formatted string for a the address, IPv4 or IPv6, and port separated by a ':'.
+     */
     public static String formatAddressAndPort(final InetAddress address, final int port)
     {
-        final String formattedAddress = address instanceof Inet6Address ?
-            "[" + address.getHostAddress() + "]" :
-            address.getHostAddress();
-
-        return formattedAddress + ":" + port;
+        if (address instanceof Inet6Address)
+        {
+            return "[" + address.getHostAddress() + "]:" + port;
+        }
+        else
+        {
+            return address.getHostAddress() + ":" + port;
+        }
     }
 
+    /**
+     * Get the {@link ProtocolFamily} to which the address belongs.
+     *
+     * @param address to get the {@link ProtocolFamily} for.
+     * @return the {@link ProtocolFamily} to which the address belongs.
+     */
     public static ProtocolFamily getProtocolFamily(final InetAddress address)
     {
         if (address instanceof Inet4Address)

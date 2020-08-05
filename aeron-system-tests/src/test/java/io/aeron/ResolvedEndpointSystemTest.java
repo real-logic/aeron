@@ -71,6 +71,40 @@ public class ResolvedEndpointSystemTest
 
     @Test
     @Timeout(5)
+    void shouldSubscribeWithSystemAssignedPort()
+    {
+        final String uri = "aeron:udp?endpoint=localhost:0";
+
+        try (Subscription sub = client.addSubscription(uri, STREAM_ID))
+        {
+            List<String> bindAddressAndPort1;
+            while ((bindAddressAndPort1 = sub.localSocketAddresses()).isEmpty())
+            {
+                Tests.yieldingWait("No bind address/port for sub");
+            }
+
+            final String resolvedUri = new ChannelUriStringBuilder()
+                .media("udp")
+                .endpoint(bindAddressAndPort1.get(0))
+                .build();
+
+            try (Publication pub = client.addPublication(resolvedUri, STREAM_ID))
+            {
+                while (pub.offer(buffer, 0, buffer.capacity()) < 0)
+                {
+                    Tests.yieldingWait("Failed to publish to pub");
+                }
+
+                while (sub.poll(fragmentHandler, 1) < 0)
+                {
+                    Tests.yieldingWait("Failed to receive from sub");
+                }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(5)
     void shouldSubscribeToSystemAssignedPorts()
     {
         final String systemAssignedPortUri1 = "aeron:udp?endpoint=127.0.0.1:0|tags=1002";
@@ -220,7 +254,7 @@ public class ResolvedEndpointSystemTest
 
     @Test
     @Timeout(5)
-    void shouldAllowWildcardOnDynamicMultiDestinationPublication()
+    void shouldAllowSystemAssignedPortOnDynamicMultiDestinationPublication()
     {
         final String mdcUri = "aeron:udp?control=localhost:0";
 

@@ -96,6 +96,11 @@ std::int64_t Aeron::addCounter(
     return addCounter->registration_id;
 }
 
+std::int64_t Aeron::getRegistrationId(aeron_client_registering_resource_stct *resource)
+{
+    return resource->registration_id;
+}
+
 std::string Aeron::version()
 {
     return std::string(aeron_version_full());

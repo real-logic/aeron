@@ -35,14 +35,21 @@ class ClientConductor;
 class Counter : public AtomicCounter
 {
 public:
-    Counter(aeron_counter_t *counter, CountersReader& reader) :
-        AtomicCounter(counter), m_reader(reader)
+    /// @cond HIDDEN_SYMBOLS
+    Counter(aeron_counter_t *counter, CountersReader& reader, std::int64_t registrationId) :
+        AtomicCounter(counter), m_reader(reader), m_registrationId(registrationId)
     {
     }
+    /// @endcond
+
+//    TODO: implement this as it is public.
+//    Counter(CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId) :
+//    {
+//    }
 
     inline std::int64_t registrationId() const
     {
-        return 0;
+        return m_registrationId;
     }
 
     std::int32_t state() const;
@@ -51,15 +58,9 @@ public:
 
     bool isClosed() const;
 
-    /// @cond HIDDEN_SYMBOLS
-    inline void close()
-    {
-        aeron_counter_close(counter(), NULL, NULL);
-    }
-    /// @endcond
-
 private:
     CountersReader& m_reader;
+    std::int64_t m_registrationId;
 };
 
 }

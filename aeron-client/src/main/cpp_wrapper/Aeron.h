@@ -603,7 +603,8 @@ public:
         }
         else
         {
-            return std::make_shared<Counter>(counter, m_countersReader);
+            std::int64_t registrationId = getRegistrationId(addCounter);
+            return std::make_shared<Counter>(counter, m_countersReader, registrationId);
         }
     }
 
@@ -876,6 +877,8 @@ private:
     AgentInvoker<ClientConductor> m_conductorInvoker;
 
     static aeron_t *init_aeron(Context &context);
+
+    static std::int64_t getRegistrationId(aeron_client_registering_resource_stct *resource);
 
     static void onAvailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {

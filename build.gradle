@@ -610,7 +610,7 @@ project(':aeron-agent') {
 
         manifest.attributes(
             'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Version': aeronVersion,
             'Implementation-Vendor': 'Real Logic Limited',
             "Premain-Class": "io.aeron.agent.EventLogAgent",
             "Agent-Class": "io.aeron.agent.EventLogAgent",
@@ -778,7 +778,7 @@ project(':aeron-all') {
         archiveClassifier.set('')
         manifest.attributes(
             'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Version': aeronVersion,
             'Implementation-Vendor': 'Real Logic Limited',
             'Automatic-Module-Name': 'io.aeron.all')
     }

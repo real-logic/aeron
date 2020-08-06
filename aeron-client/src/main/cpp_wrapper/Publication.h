@@ -534,7 +534,7 @@ private:
     {
         on_reserved_value_supplier_t &supplier = *static_cast<on_reserved_value_supplier_t *>(clientd);
         AtomicBuffer atomicBuffer(buffer, frame_length);
-        return supplier(atomicBuffer, 0, frame_length);
+        return supplier(atomicBuffer, 0, static_cast<util::index_t>(frame_length));
     }
 };
 

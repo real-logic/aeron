@@ -85,6 +85,14 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 }
 
 /**
+* Put a 32 bit int with atomic semantics.
+**/
+inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
+{
+    _InterlockedExchange(reinterpret_cast<volatile long *>(address), value);
+}
+
+/**
 * Returns a 64 bit integer with volatile semantics.
 * On x64 MOV is a SC Atomic a operation.
 */

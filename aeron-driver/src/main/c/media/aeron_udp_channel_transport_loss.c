@@ -19,6 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,9 +47,7 @@ static const aeron_udp_channel_interceptor_loss_params_t *aeron_udp_channel_inte
 static unsigned short data_loss_xsubi[3];
 
 int aeron_udp_channel_interceptor_loss_init_incoming(
-    void **interceptor_state,
-    aeron_driver_context_t *context,
-    aeron_udp_channel_transport_affinity_t affinity);
+    void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity);
 
 aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_load(
     const aeron_udp_channel_interceptor_bindings_t *delegate_bindings)
@@ -127,9 +126,7 @@ int aeron_udp_channel_interceptor_loss_init_incoming(
 }
 
 static bool aeron_udp_channel_interceptor_loss_should_drop_frame(
-    const uint8_t *buffer,
-    const double rate,
-    const unsigned long msg_type_mask)
+    const uint8_t *buffer, const double rate, const unsigned long msg_type_mask)
 {
     const aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     const unsigned int msg_type_bit = 1U << (unsigned int)frame_header->type;

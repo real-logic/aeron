@@ -535,7 +535,8 @@ int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
         return -1;
     }
 
-    memcpy(values, header->frame, sizeof(aeron_header_values_t));
+    memcpy(&values->frame, header->frame, sizeof(struct aeron_header_values_frame_stct));
+    values->initial_term_id = header->initial_term_id;
     return 0;
 }
 

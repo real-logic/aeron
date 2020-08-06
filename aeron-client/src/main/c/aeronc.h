@@ -38,15 +38,20 @@ typedef struct aeron_header_stct aeron_header_t;
 #pragma pack(4)
 typedef struct aeron_header_values_stct
 {
-    int32_t frame_length;
-    int8_t version;
-    uint8_t flags;
-    int16_t type;
-    int32_t term_offset;
-    int32_t session_id;
-    int32_t stream_id;
-    int32_t term_id;
-    int64_t reserved_value;
+    struct aeron_header_values_frame_stct
+    {
+        int32_t frame_length;
+        int8_t version;
+        uint8_t flags;
+        int16_t type;
+        int32_t term_offset;
+        int32_t session_id;
+        int32_t stream_id;
+        int32_t term_id;
+        int64_t reserved_value;
+    }
+    frame;
+    int32_t initial_term_id;
 }
 aeron_header_values_t;
 #pragma pack(pop)

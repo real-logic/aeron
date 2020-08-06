@@ -104,6 +104,19 @@ void aeron_default_error_handler(void *clientd, int errcode, const char *message
     exit(EXIT_FAILURE);
 }
 
+int aeron_default_path(char *path, size_t path_length)
+{
+#if defined(__linux__)
+    int result = snprintf(path, path_length, "/dev/shm/aeron-%s", username());
+#elif defined(_MSC_VER)
+    int result = snprintf(path, path_length, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\\", username());
+#else
+    int result = snprintf(path, path_length, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
+#endif
+
+    return result;
+}
+
 int aeron_context_init(aeron_context_t **context)
 {
     aeron_context_t *_context = NULL;
@@ -133,13 +146,7 @@ int aeron_context_init(aeron_context_t **context)
         return -1;
     }
 
-#if defined(__linux__)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
-#elif defined(_MSC_VER)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\\", username());
-#else
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
-#endif
+    aeron_default_path(_context->aeron_dir, AERON_MAX_PATH - 1);
 
     _context->error_handler = aeron_default_error_handler;
     _context->error_handler_clientd = NULL;

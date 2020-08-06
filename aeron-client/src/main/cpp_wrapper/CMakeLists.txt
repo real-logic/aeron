@@ -146,6 +146,10 @@ target_link_libraries(aeron_client_wrapper
     )
 
 target_link_libraries(aeron_client_wrapper_shared
+    aeron
+    )
+
+target_link_libraries(aeron_client_wrapper_shared
     INTERFACE ${CMAKE_THREAD_LIBS_INIT}
     )
 

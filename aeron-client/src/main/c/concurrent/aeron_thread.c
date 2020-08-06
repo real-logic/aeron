@@ -19,6 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -151,16 +152,16 @@ int aeron_thread_create(aeron_thread_t *thread, void *attr, void*(*callback)(voi
 void aeron_thread_set_name(const char *role_name)
 {
     size_t wn = mbstowcs(NULL, role_name, 0);
-    wchar_t *buf = malloc(sizeof(wchar_t) * (wn + 1));  // value-initialize to 0 (see below)
-    if (!buf)
+    wchar_t *buf;
+    if (aeron_alloc(&buf, sizeof(wchar_t) * (wn + 1)) < 0)  // value-initialize to 0 (see below)
     {
         return;
     }
-	
+
     mbstowcs(buf, role_name, wn + 1);
     SetThreadDescription(GetCurrentThread(), buf);
 
-    free(buf);
+    aeron_free(buf);
 }
 
 int aeron_thread_join(aeron_thread_t thread, void **value_ptr)

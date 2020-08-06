@@ -22,7 +22,7 @@
 namespace aeron { namespace concurrent { namespace atomic {
 
 /**
- * A compiler directive not reorder instructions.
+ * A compiler directive to not reorder instructions.
  */
 inline void thread_fence()
 {
@@ -30,7 +30,7 @@ inline void thread_fence()
 }
 
 /**
-* Fence operation that uses locked addl as mfence is sometimes expensive
+* Fence operation that uses locked addl as mfence is sometimes expensive.
 */
 inline void fence()
 {
@@ -60,7 +60,7 @@ inline void cpu_pause()
 
 /**
 * Returns a 32 bit integer with volatile semantics.
-* On x64 MOV is a SC Atomic a operation.
+* On x64 MOV is an atomic operation.
 */
 inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
@@ -71,7 +71,7 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 }
 
 /**
-* Put a 32 bit int with volatile semantics
+* Put a 32 bit int with volatile semantics.
 */
 inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 {
@@ -83,7 +83,7 @@ inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 }
 
 /**
-* Put a 32 bit int with ordered semantics
+* Put a 32 bit int with ordered semantics.
 */
 inline void putInt32Ordered(volatile std::int32_t *address, std::int32_t value)
 {
@@ -105,7 +105,7 @@ inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 
 /**
 * Returns a 64 bit integer with volatile semantics.
-* On x64 MOV is a SC Atomic a operation.
+* On x64 MOV is an atomic operation.
 */
 inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {

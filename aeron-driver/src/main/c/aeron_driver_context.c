@@ -48,69 +48,6 @@
 #include "agent/aeron_driver_agent.h"
 #include "util/aeron_dlopen.h"
 
-#if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wunused-function"
-#endif
-
-inline static const char *tmp_dir()
-{
-#if defined(_MSC_VER)
-    static char buff[MAX_PATH + 1];
-
-    if (GetTempPath(MAX_PATH, &buff[0]) > 0)
-    {
-        return buff;
-    }
-
-    return NULL;
-#else
-    const char *dir = "/tmp";
-
-    if (getenv("TMPDIR"))
-    {
-        dir = getenv("TMPDIR");
-    }
-
-    return dir;
-#endif
-}
-
-inline static bool has_file_separator_at_end(const char *path)
-{
-#if defined(_MSC_VER)
-    const char last = path[strlen(path) - 1];
-    return last == '\\' || last == '/';
-#else
-    return path[strlen(path) - 1] == '/';
-#endif
-}
-
-#if defined(__clang__)
-    #pragma clang diagnostic pop
-#endif
-
-inline static const char *username()
-{
-    const char *username = getenv("USER");
-#if (_MSC_VER)
-    if (NULL == username)
-    {
-        username = getenv("USERNAME");
-        if (NULL == username)
-        {
-             username = "default";
-        }
-    }
-#else
-    if (NULL == username)
-    {
-        username = "default";
-    }
-#endif
-    return username;
-}
-
 void aeron_config_prop_warning(const char *name, const char *str)
 {
     char buffer[AERON_MAX_PATH];
@@ -449,19 +386,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
-#if defined(__linux__)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
-#elif defined(_MSC_VER)
-    snprintf(
-        _context->aeron_dir,
-        AERON_MAX_PATH - 1,
-        "%s%saeron-%s",
-        tmp_dir(),
-        has_file_separator_at_end(tmp_dir()) ? "" : "\\",
-        username());
-#else
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
-#endif
+    aeron_default_path(_context->aeron_dir, AERON_MAX_PATH - 1);
 
     _context->threading_mode = aeron_config_parse_threading_mode(
         getenv(AERON_THREADING_MODE_ENV_VAR), AERON_THREADING_MODE_DEFAULT);

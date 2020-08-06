@@ -36,7 +36,7 @@ typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_header_stct aeron_header_t;
 #pragma pack(push)
 #pragma pack(4)
-typedef struct aeron_header_values_stct
+typedef struct aeron_header_values_frame_stct
 {
     int32_t frame_length;
     int8_t version;
@@ -47,6 +47,13 @@ typedef struct aeron_header_values_stct
     int32_t stream_id;
     int32_t term_id;
     int64_t reserved_value;
+}
+aeron_header_values_frame_t;
+
+typedef struct aeron_header_values_stct
+{
+    aeron_header_values_frame_t frame;
+    int32_t initial_term_id;
 }
 aeron_header_values_t;
 #pragma pack(pop)

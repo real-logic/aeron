@@ -26,35 +26,35 @@
 #endif
 
 _Static_assert(
-    sizeof(aeron_header_values_t) == sizeof(aeron_data_header_t),
-    "sizeof(aeron_header_values_t) must match sizeof(aeron_data_header_t)");
+    sizeof(aeron_header_values_frame_t) == sizeof(aeron_data_header_t),
+    "sizeof(aeron_header_values_frame_t) must match sizeof(aeron_data_header_t)");
 _Static_assert(
-    offsetof(aeron_header_values_t, frame_length) == offsetof(aeron_frame_header_t, frame_length),
-    "offsetof(aeron_header_values_t, frame_length) must match offsetof(aeron_frame_header_t, frame_length)");
+    offsetof(aeron_header_values_frame_t, frame_length) == offsetof(aeron_frame_header_t, frame_length),
+    "offsetof(aeron_header_values_frame_t, frame_length) must match offsetof(aeron_frame_header_t, frame_length)");
 _Static_assert(
-    offsetof(aeron_header_values_t, version) == offsetof(aeron_frame_header_t, version),
-    "offsetof(aeron_header_values_t, version) must match offsetof(aeron_frame_header_t, version)");
+    offsetof(aeron_header_values_frame_t, version) == offsetof(aeron_frame_header_t, version),
+    "offsetof(aeron_header_values_frame_t, version) must match offsetof(aeron_frame_header_t, version)");
 _Static_assert(
-    offsetof(aeron_header_values_t, flags) == offsetof(aeron_frame_header_t, flags),
-    "offsetof(aeron_header_values_t, flags) == offsetof(aeron_frame_header_t, flags)");
+    offsetof(aeron_header_values_frame_t, flags) == offsetof(aeron_frame_header_t, flags),
+    "offsetof(aeron_header_values_frame_t, flags) == offsetof(aeron_frame_header_t, flags)");
 _Static_assert(
-    offsetof(aeron_header_values_t, type) == offsetof(aeron_frame_header_t, type),
-    "offsetof(aeron_header_values_t, type) == offsetof(aeron_frame_header_t, type)");
+    offsetof(aeron_header_values_frame_t, type) == offsetof(aeron_frame_header_t, type),
+    "offsetof(aeron_header_values_frame_t, type) == offsetof(aeron_frame_header_t, type)");
 _Static_assert(
-    offsetof(aeron_header_values_t, term_offset) == offsetof(aeron_data_header_t, term_offset),
-    "offsetof(aeron_header_values_t, term_offset) == offsetof(aeron_data_header_t, term_offset)");
+    offsetof(aeron_header_values_frame_t, term_offset) == offsetof(aeron_data_header_t, term_offset),
+    "offsetof(aeron_header_values_frame_t, term_offset) == offsetof(aeron_data_header_t, term_offset)");
 _Static_assert(
-    offsetof(aeron_header_values_t, session_id) == offsetof(aeron_data_header_t, session_id),
-    "offsetof(aeron_header_values_t, session_id) == offsetof(aeron_data_header_t, session_id)");
+    offsetof(aeron_header_values_frame_t, session_id) == offsetof(aeron_data_header_t, session_id),
+    "offsetof(aeron_header_values_frame_t, session_id) == offsetof(aeron_data_header_t, session_id)");
 _Static_assert(
-    offsetof(aeron_header_values_t, stream_id) == offsetof(aeron_data_header_t, stream_id),
-    "offsetof(aeron_header_values_t, stream_id) == offsetof(aeron_data_header_t, stream_id)");
+    offsetof(aeron_header_values_frame_t, stream_id) == offsetof(aeron_data_header_t, stream_id),
+    "offsetof(aeron_header_values_frame_t, stream_id) == offsetof(aeron_data_header_t, stream_id)");
 _Static_assert(
-    offsetof(aeron_header_values_t, term_id) == offsetof(aeron_data_header_t, term_id),
-    "offsetof(aeron_header_values_t, term_id) == offsetof(aeron_data_header_t, term_id)");
+    offsetof(aeron_header_values_frame_t, term_id) == offsetof(aeron_data_header_t, term_id),
+    "offsetof(aeron_header_values_frame_t, term_id) == offsetof(aeron_data_header_t, term_id)");
 _Static_assert(
-    offsetof(aeron_header_values_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value),
-    "offsetof(aeron_header_values_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value)");
+    offsetof(aeron_header_values_frame_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value),
+    "offsetof(aeron_header_values_frame_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value)");
 
 int aeron_image_create(
     aeron_image_t **image,
@@ -287,7 +287,7 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
 
         if (AERON_HDR_TYPE_PAD != frame->frame_header.type)
         {
-            aeron_header_t header = { frame };
+            aeron_header_t header = { frame, image->metadata->initial_term_id };
 
             handler(
                 clientd,
@@ -354,7 +354,7 @@ int aeron_image_controlled_poll(
             continue;
         }
 
-        aeron_header_t header = { frame };
+        aeron_header_t header = { frame, image->metadata->initial_term_id };
         aeron_controlled_fragment_handler_action_t action =
             handler(
                 clientd,
@@ -436,7 +436,7 @@ int aeron_image_bounded_poll(
 
         if (AERON_HDR_TYPE_PAD != frame->frame_header.type)
         {
-            aeron_header_t header = { frame };
+            aeron_header_t header = { frame, image->metadata->initial_term_id };
 
             handler(
                 clientd,
@@ -506,7 +506,7 @@ int aeron_image_bounded_controlled_poll(
             continue;
         }
 
-        aeron_header_t header = { frame };
+        aeron_header_t header = { frame, image->metadata->initial_term_id };
         aeron_controlled_fragment_handler_action_t action =
             handler(
                 clientd,
@@ -608,7 +608,7 @@ int64_t aeron_image_controlled_peek(
             continue;
         }
 
-        aeron_header_t header = { frame };
+        aeron_header_t header = { frame, image->metadata->initial_term_id };
         aeron_controlled_fragment_handler_action_t action =
             handler(
                 clientd,

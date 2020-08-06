@@ -477,6 +477,8 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
 
     appendMessage(m_sub_pos, messageLength);
     appendMessage(m_sub_pos + alignedMessageLength, messageLength);
+    aeron_image_constants_t image_constants;
+    aeron_image_constants(m_image, &image_constants);
 
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
@@ -487,7 +489,9 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
         EXPECT_EQ(buffer, termBuffer(0) + AERON_DATA_HEADER_LENGTH);
         EXPECT_EQ(length, messageLength);
         EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
-        EXPECT_EQ(values.type, AERON_HDR_TYPE_DATA);
+        EXPECT_EQ(values.frame.type, AERON_HDR_TYPE_DATA);
+        EXPECT_EQ(image_constants.initial_term_id, values.initial_term_id);
+
         return AERON_ACTION_BREAK;
     };
 

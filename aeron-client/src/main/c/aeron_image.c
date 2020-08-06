@@ -26,35 +26,35 @@
 #endif
 
 _Static_assert(
-    sizeof(struct aeron_header_values_frame_stct) == sizeof(aeron_data_header_t),
-    "sizeof(struct aeron_header_values_frame_stct) must match sizeof(aeron_data_header_t)");
+    sizeof(aeron_header_values_frame_t) == sizeof(aeron_data_header_t),
+    "sizeof(aeron_header_values_frame_t) must match sizeof(aeron_data_header_t)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, frame_length) == offsetof(aeron_frame_header_t, frame_length),
-    "offsetof(struct aeron_header_values_frame_stct, frame_length) must match offsetof(aeron_frame_header_t, frame_length)");
+    offsetof(aeron_header_values_frame_t, frame_length) == offsetof(aeron_frame_header_t, frame_length),
+    "offsetof(aeron_header_values_frame_t, frame_length) must match offsetof(aeron_frame_header_t, frame_length)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, version) == offsetof(aeron_frame_header_t, version),
-    "offsetof(struct aeron_header_values_frame_stct, version) must match offsetof(aeron_frame_header_t, version)");
+    offsetof(aeron_header_values_frame_t, version) == offsetof(aeron_frame_header_t, version),
+    "offsetof(aeron_header_values_frame_t, version) must match offsetof(aeron_frame_header_t, version)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, flags) == offsetof(aeron_frame_header_t, flags),
-    "offsetof(struct aeron_header_values_frame_stct, flags) == offsetof(aeron_frame_header_t, flags)");
+    offsetof(aeron_header_values_frame_t, flags) == offsetof(aeron_frame_header_t, flags),
+    "offsetof(aeron_header_values_frame_t, flags) == offsetof(aeron_frame_header_t, flags)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, type) == offsetof(aeron_frame_header_t, type),
-    "offsetof(struct aeron_header_values_frame_stct, type) == offsetof(aeron_frame_header_t, type)");
+    offsetof(aeron_header_values_frame_t, type) == offsetof(aeron_frame_header_t, type),
+    "offsetof(aeron_header_values_frame_t, type) == offsetof(aeron_frame_header_t, type)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, term_offset) == offsetof(aeron_data_header_t, term_offset),
-    "offsetof(struct aeron_header_values_frame_stct, term_offset) == offsetof(aeron_data_header_t, term_offset)");
+    offsetof(aeron_header_values_frame_t, term_offset) == offsetof(aeron_data_header_t, term_offset),
+    "offsetof(aeron_header_values_frame_t, term_offset) == offsetof(aeron_data_header_t, term_offset)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, session_id) == offsetof(aeron_data_header_t, session_id),
-    "offsetof(struct aeron_header_values_frame_stct, session_id) == offsetof(aeron_data_header_t, session_id)");
+    offsetof(aeron_header_values_frame_t, session_id) == offsetof(aeron_data_header_t, session_id),
+    "offsetof(aeron_header_values_frame_t, session_id) == offsetof(aeron_data_header_t, session_id)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, stream_id) == offsetof(aeron_data_header_t, stream_id),
-    "offsetof(struct aeron_header_values_frame_stct, stream_id) == offsetof(aeron_data_header_t, stream_id)");
+    offsetof(aeron_header_values_frame_t, stream_id) == offsetof(aeron_data_header_t, stream_id),
+    "offsetof(aeron_header_values_frame_t, stream_id) == offsetof(aeron_data_header_t, stream_id)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, term_id) == offsetof(aeron_data_header_t, term_id),
-    "offsetof(struct aeron_header_values_frame_stct, term_id) == offsetof(aeron_data_header_t, term_id)");
+    offsetof(aeron_header_values_frame_t, term_id) == offsetof(aeron_data_header_t, term_id),
+    "offsetof(aeron_header_values_frame_t, term_id) == offsetof(aeron_data_header_t, term_id)");
 _Static_assert(
-    offsetof(struct aeron_header_values_frame_stct, reserved_value) == offsetof(aeron_data_header_t, reserved_value),
-    "offsetof(struct aeron_header_values_frame_stct, reserved_value) == offsetof(aeron_data_header_t, reserved_value)");
+    offsetof(aeron_header_values_frame_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value),
+    "offsetof(aeron_header_values_frame_t, reserved_value) == offsetof(aeron_data_header_t, reserved_value)");
 
 int aeron_image_create(
     aeron_image_t **image,

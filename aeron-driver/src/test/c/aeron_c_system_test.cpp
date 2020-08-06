@@ -217,12 +217,17 @@ TEST_P(CSystemTest, shouldAddAndClosePublication)
     std::atomic<bool> publicationClosedFlag(false);
     aeron_async_add_publication_t *async;
     aeron_publication_t *publication;
+    aeron_publication_constants_t publication_constants;
 
     ASSERT_TRUE(connect());
 
     ASSERT_EQ(aeron_async_add_publication(&async, m_aeron, std::get<0>(GetParam()), STREAM_ID), 0);
+    std::int64_t registration_id = aeron_async_add_publication_get_registration_id(async);
 
     ASSERT_TRUE((publication = awaitPublicationOrError(async))) << aeron_errmsg();
+
+    ASSERT_EQ(0, aeron_publication_constants(publication, &publication_constants)) << aeron_errmsg();
+    ASSERT_EQ(registration_id, publication_constants.registration_id);
 
     aeron_publication_close(publication, setFlagOnClose, &publicationClosedFlag);
 
@@ -230,6 +235,7 @@ TEST_P(CSystemTest, shouldAddAndClosePublication)
     {
         std::this_thread::yield();
     }
+
 }
 
 TEST_P(CSystemTest, shouldAddAndCloseExclusivePublication)
@@ -237,12 +243,16 @@ TEST_P(CSystemTest, shouldAddAndCloseExclusivePublication)
     std::atomic<bool> publicationClosedFlag(false);
     aeron_async_add_exclusive_publication_t *async;
     aeron_exclusive_publication_t *publication;
+    aeron_publication_constants_t publication_constants;
 
     ASSERT_TRUE(connect());
 
     ASSERT_EQ(aeron_async_add_exclusive_publication(&async, m_aeron, std::get<0>(GetParam()), STREAM_ID), 0);
+    std::int64_t registration_id = aeron_async_add_exclusive_exclusive_publication_get_registration_id(async);
 
     ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async))) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_exclusive_publication_constants(publication, &publication_constants));
+    ASSERT_EQ(registration_id, publication_constants.registration_id);
 
     aeron_exclusive_publication_close(publication, nullptr, nullptr);
 
@@ -278,13 +288,17 @@ TEST_P(CSystemTest, shouldAddAndCloseCounter)
     std::atomic<bool> counterClosedFlag(false);
     aeron_async_add_counter_t *async;
     aeron_counter_t *counter;
+    aeron_counter_constants_t counter_constants;
 
     ASSERT_TRUE(connect());
 
     ASSERT_EQ(aeron_async_add_counter(
         &async, m_aeron, 12, nullptr, 0, "my counter", strlen("my counter")), 0);
+    std::int64_t registration_id = aeron_async_add_counter_get_registration_id(async);
 
     ASSERT_TRUE((counter = awaitCounterOrError(async))) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_counter_constants(counter, &counter_constants));
+    ASSERT_EQ(registration_id, counter_constants.registration_id);
 
     aeron_counter_close(counter, setFlagOnClose, &counterClosedFlag);
 

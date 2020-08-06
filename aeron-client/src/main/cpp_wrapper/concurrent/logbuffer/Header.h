@@ -53,12 +53,11 @@ public:
      */
     inline std::int32_t initialTermId() const
     {
-        return m_initialTermId;
+        return m_headerValues.initial_term_id;
     }
 
     inline void initialTermId(std::int32_t initialTermId)
     {
-        m_initialTermId = initialTermId;
     }
 
     /**
@@ -105,7 +104,7 @@ public:
      */
     inline std::int32_t frameLength() const
     {
-        return m_headerValues.frame_length;
+        return m_headerValues.frame.frame_length;
     }
 
     /**
@@ -115,7 +114,7 @@ public:
      */
     inline std::int32_t sessionId() const
     {
-        return m_headerValues.session_id;
+        return m_headerValues.frame.session_id;
     }
 
     /**
@@ -125,7 +124,7 @@ public:
      */
     inline std::int32_t streamId() const
     {
-        return m_headerValues.stream_id;
+        return m_headerValues.frame.stream_id;
     }
 
     /**
@@ -135,7 +134,7 @@ public:
      */
     inline std::int32_t termId() const
     {
-        return m_headerValues.term_id;
+        return m_headerValues.frame.term_id;
     }
 
     /**
@@ -145,7 +144,7 @@ public:
      */
     inline std::int32_t termOffset() const
     {
-        return m_headerValues.term_offset;
+        return m_headerValues.frame.term_offset;
     }
 
     /**
@@ -156,7 +155,7 @@ public:
     inline std::uint16_t type() const
     {
         // TODO: Why is this uint16_t (it is int16_t elsewhere).
-        return static_cast<uint16_t>(m_headerValues.type);
+        return static_cast<uint16_t>(m_headerValues.frame.type);
     }
 
     /**
@@ -168,7 +167,7 @@ public:
      */
     inline std::uint8_t flags() const
     {
-        return m_headerValues.flags;
+        return m_headerValues.frame.flags;
     }
 
     /**
@@ -190,7 +189,7 @@ public:
      */
     inline std::int64_t reservedValue() const
     {
-        return m_headerValues.reserved_value;
+        return m_headerValues.frame.reserved_value;
     }
 
     /**
@@ -208,7 +207,6 @@ private:
     aeron_header_t *m_header;
     aeron_header_values_t m_headerValues;
     void *m_context;
-    std::int32_t m_initialTermId;
     std::int32_t m_positionBitsToShift;
 };
 

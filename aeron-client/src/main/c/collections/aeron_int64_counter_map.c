@@ -19,20 +19,14 @@
 extern size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask);
 
 extern int aeron_int64_counter_map_init(
-    aeron_int64_counter_map_t *map,
-    int64_t initial_value,
-    size_t initial_capacity,
-    float load_factor);
+    aeron_int64_counter_map_t *map, int64_t initial_value, size_t initial_capacity, float load_factor);
 
 extern void aeron_int64_counter_map_delete(aeron_int64_counter_map_t *map);
 
 extern int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t new_entries_length);
 
 extern int aeron_int64_counter_map_put(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    const int64_t value,
-    int64_t *existing_value);
+    aeron_int64_counter_map_t *map, const int64_t key, const int64_t value, int64_t *existing_value);
 
 extern int64_t aeron_int64_counter_map_get(aeron_int64_counter_map_t *map, const int64_t key);
 
@@ -41,16 +35,10 @@ extern void aeron_int64_counter_map_compact_chain(aeron_int64_counter_map_t *map
 extern int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, int64_t key);
 
 extern int aeron_int64_counter_map_add_and_get(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    int64_t delta,
-    int64_t *value);
+    aeron_int64_counter_map_t *map, const int64_t key, int64_t delta, int64_t *value);
 
 extern int aeron_int64_counter_map_get_and_add(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    const int64_t delta,
-    int64_t *value);
+    aeron_int64_counter_map_t *map, const int64_t key, const int64_t delta, int64_t *value);
 
 extern int aeron_int64_counter_map_inc_and_get(aeron_int64_counter_map_t *map, const int64_t key, int64_t *value);
 
@@ -61,7 +49,5 @@ extern int aeron_int64_counter_map_get_and_inc(aeron_int64_counter_map_t *map, c
 extern int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, const int64_t key, int64_t *value);
 
 extern void aeron_int64_counter_map_for_each(
-    aeron_int64_counter_map_t *map,
-    aeron_int64_counter_map_for_each_func_t func,
-    void *clientd);
+    aeron_int64_counter_map_t *map, aeron_int64_counter_map_for_each_func_t func, void *clientd);
 

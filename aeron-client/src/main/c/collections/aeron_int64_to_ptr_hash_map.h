@@ -41,7 +41,8 @@ inline size_t aeron_int64_to_ptr_hash_map_hash_key(int64_t key, size_t mask)
     return (size_t)(((uint64_t)key * 31u) & mask);
 }
 
-inline int aeron_int64_to_ptr_hash_map_init(aeron_int64_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor)
+inline int aeron_int64_to_ptr_hash_map_init(
+    aeron_int64_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor)
 {
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
@@ -242,7 +243,7 @@ typedef void (*aeron_int64_to_ptr_hash_map_for_each_func_t)(void *clientd, int64
 typedef bool (*aeron_int64_to_ptr_hash_map_predicate_func_t)(void *clientd, int64_t key, void *value);
 
 inline void aeron_int64_to_ptr_hash_map_for_each(
-        aeron_int64_to_ptr_hash_map_t *map, aeron_int64_to_ptr_hash_map_for_each_func_t func, void *clientd)
+    aeron_int64_to_ptr_hash_map_t *map, aeron_int64_to_ptr_hash_map_for_each_func_t func, void *clientd)
 {
     for (size_t i = 0; i < map->capacity; i++)
     {

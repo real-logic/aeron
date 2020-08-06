@@ -139,10 +139,7 @@ inline int aeron_int64_to_tagged_ptr_hash_map_rehash(aeron_int64_to_tagged_ptr_h
 }
 
 inline int aeron_int64_to_tagged_ptr_hash_map_put(
-    aeron_int64_to_tagged_ptr_hash_map_t *map,
-    const int64_t key,
-    int32_t tag,
-    void *value)
+    aeron_int64_to_tagged_ptr_hash_map_t *map, const int64_t key, int32_t tag, void *value)
 {
     size_t mask = map->capacity - 1;
     size_t index = aeron_int64_to_tagged_ptr_hash_map_hash_key(key, mask);
@@ -240,10 +237,7 @@ inline void aeron_int64_to_tagged_ptr_hash_map_compact_chain(
 }
 
 inline bool aeron_int64_to_tagged_ptr_hash_map_remove(
-    aeron_int64_to_tagged_ptr_hash_map_t *map,
-    int64_t key,
-    uint32_t *tag,
-    void **value)
+    aeron_int64_to_tagged_ptr_hash_map_t *map, int64_t key, uint32_t *tag, void **value)
 {
     size_t mask = map->capacity - 1;
     size_t index = aeron_int64_to_tagged_ptr_hash_map_hash_key(key, mask);

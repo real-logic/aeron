@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
-
 #include "collections/aeron_map.h"
 
 extern int64_t aeron_map_compound_key(int32_t high, int32_t low);

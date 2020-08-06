@@ -24,15 +24,14 @@ extern bool aeron_array_to_ptr_hash_map_compare(
     aeron_array_to_ptr_hash_map_key_t *key, const uint8_t *key_str, size_t key_str_len, uint64_t key_hash_code);
 
 extern int aeron_array_to_ptr_hash_map_init(
-    aeron_array_to_ptr_hash_map_t *map,
-    size_t initial_capacity,
-    float load_factor);
+    aeron_array_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor);
 
 extern void aeron_array_to_ptr_hash_map_delete(aeron_array_to_ptr_hash_map_t *map);
 
 extern int aeron_array_to_ptr_hash_map_rehash(aeron_array_to_ptr_hash_map_t *map, size_t new_capacity);
 
-extern int aeron_array_to_ptr_hash_map_put(aeron_array_to_ptr_hash_map_t *map, const uint8_t *key, size_t key_len, void *value);
+extern int aeron_array_to_ptr_hash_map_put(
+    aeron_array_to_ptr_hash_map_t *map, const uint8_t *key, size_t key_len, void *value);
 
 extern void *aeron_array_to_ptr_hash_map_get(aeron_array_to_ptr_hash_map_t *map, const uint8_t *key, size_t key_len);
 

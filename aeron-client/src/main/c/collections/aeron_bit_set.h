@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include "util/aeron_bitutil.h"
 
 struct aeron_bit_set_stct

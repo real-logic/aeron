@@ -31,6 +31,7 @@
 #include <unistd.h>
 #endif
 
+#include <errno.h>
 #include "util/aeron_error.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_name_resolver.h"

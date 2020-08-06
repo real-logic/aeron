@@ -637,16 +637,12 @@ typedef int64_t (*aeron_reserved_value_supplier_t)(void *clientd, uint8_t *buffe
 /**
  * Structure to hold pointer to a buffer and the buffer length.
  */
-#if !defined(AERON_IOVEC)
 typedef struct aeron_iovec_stct
 {
     uint8_t *iov_base;
     size_t iov_len;
 }
 aeron_iovec_t;
-#else
-typedef struct iov aeron_iovec_t;
-#endif
 
 /**
  * Structure used to hold information for a try_claim function call.

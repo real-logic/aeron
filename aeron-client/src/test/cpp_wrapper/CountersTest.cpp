@@ -82,7 +82,6 @@ TEST_F(CountersTest, shouldAddAndCloseCounterWithCallbacks)
     int64_t counterId = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
     {
         WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId));
-        counter->close();
     }
 
     WAIT_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&counterUnavailable));

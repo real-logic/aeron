@@ -69,7 +69,8 @@ class CLIENT_EXPORT Publication
 public:
 
     /// @cond HIDDEN_SYMBOLS
-    Publication(aeron_publication_t *publication) : m_publication(publication), m_channel()
+    Publication(aeron_publication_t *publication, CountersReader &countersReader) :
+        m_publication(publication), m_countersReader(countersReader), m_channel()
     {
         if (aeron_publication_constants(m_publication, &m_constants) < 0)
         {
@@ -526,6 +527,7 @@ public:
 private:
     aeron_publication_t *m_publication;
     aeron_publication_constants_t m_constants;
+    CountersReader &m_countersReader;
     std::string m_channel;
 
     static std::int64_t reservedValueSupplierCallback(void *clientd, uint8_t *buffer, size_t frame_length)

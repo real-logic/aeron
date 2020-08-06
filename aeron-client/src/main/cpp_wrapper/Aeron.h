@@ -218,7 +218,7 @@ public:
         }
         else
         {
-            return std::make_shared<Publication>(publication);
+            return std::make_shared<Publication>(publication, m_countersReader);
         }
     }
 
@@ -592,6 +592,7 @@ public:
     inline std::shared_ptr<Counter> findCounter(AsyncAddCounter *addCounter)
     {
         aeron_counter_t *counter;
+        std::int64_t registrationId = getRegistrationId(addCounter);
         int result = aeron_async_add_counter_poll(&counter, addCounter);
         if (result < 0)
         {
@@ -603,7 +604,6 @@ public:
         }
         else
         {
-            std::int64_t registrationId = getRegistrationId(addCounter);
             return std::make_shared<Counter>(counter, m_countersReader, registrationId);
         }
     }

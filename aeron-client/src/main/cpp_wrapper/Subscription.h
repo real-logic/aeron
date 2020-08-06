@@ -90,8 +90,8 @@ public:
         }
         m_channel.append(m_constants.channel);
     }
-
     /// @endcond
+
     ~Subscription()
     {
         aeron_subscription_close(m_subscription, AsyncAddSubscription::remove, m_addSubscription);

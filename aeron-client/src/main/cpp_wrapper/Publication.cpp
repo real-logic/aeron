@@ -62,8 +62,7 @@ bool Publication::findDestinationResponse(std::int64_t correlationId)
 
 std::vector<std::string> Publication::localSocketAddresses() const
 {
-    throw UnsupportedOperationException("Not yet implemented, need the channel status id first", SOURCEINFO);
-    //    return LocalSocketAddressStatus::findAddresses(m_conductor.countersReader(), channelStatus(), channelStatusId());
+    return LocalSocketAddressStatus::findAddresses(m_countersReader, channelStatus(), channelStatusId());
 }
 
 }

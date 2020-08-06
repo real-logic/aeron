@@ -56,47 +56,6 @@ public:
         return m_headerValues.initial_term_id;
     }
 
-    inline void initialTermId(std::int32_t initialTermId)
-    {
-    }
-
-    /**
-     * The offset at which the frame begins.
-     *
-     * @return offset at which the frame begins.
-     */
-    inline util::index_t offset() const
-    {
-        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
-//        return m_offset;
-    }
-
-    inline void offset(util::index_t offset)
-    {
-        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
-//        m_offset = offset;
-    }
-
-    /**
-     * The AtomicBuffer containing the header.
-     *
-     * @return AtomicBuffer containing the header.
-     */
-    inline AtomicBuffer& buffer()
-    {
-        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
-//        return m_buffer;
-    }
-
-    inline void buffer(AtomicBuffer& buffer)
-    {
-        throw UnsupportedOperationException("No raw buffer support", SOURCEINFO);
-//        if (&buffer != &m_buffer)
-//        {
-//            m_buffer.wrap(buffer);
-//        }
-    }
-
     /**
      * The total length of the frame including the header.
      *

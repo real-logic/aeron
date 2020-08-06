@@ -17,7 +17,6 @@
 #ifndef AERON_URI_H
 #define AERON_URI_H
 
-#include <errno.h>
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 

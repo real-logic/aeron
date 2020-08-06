@@ -91,7 +91,6 @@ public class NameReResolutionTest
     {
         final MediaDriver.Context context = new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-            .aeronDirectoryName("")
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);

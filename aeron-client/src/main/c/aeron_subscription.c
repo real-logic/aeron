@@ -542,7 +542,7 @@ int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
 
 int64_t aeron_header_position(aeron_header_t *header)
 {
-    const int64_t offset_at_end_of_frame = AERON_ALIGN(
+    const int32_t offset_at_end_of_frame = AERON_ALIGN(
         header->frame->term_offset + header->frame->frame_header.frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     return aeron_logbuffer_compute_position(
         header->frame->term_id, offset_at_end_of_frame, header->position_bits_to_shift, header->initial_term_id);

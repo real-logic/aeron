@@ -1938,7 +1938,7 @@ const char *aeron_errmsg();
  * is equal to path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);
-  
+
 /**
  * Gets the registration id for addition of the counter.  Note that using this after a call to poll the succeeds or
  * errors is undefined behaviour.  As the async_add_counter_t may have been freed.

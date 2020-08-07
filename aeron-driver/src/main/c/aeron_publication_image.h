@@ -85,7 +85,7 @@ typedef struct aeron_publication_image_stct
     aeron_loss_reporter_t *loss_reporter;
     aeron_loss_reporter_entry_offset_t loss_reporter_offset;
 
-    char *log_file_name;
+    char log_file_name[AERON_MAX_PATH];
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;

@@ -55,7 +55,7 @@ typedef struct aeron_ipc_publication_stct
     }
     conductor_fields;
 
-    char *log_file_name;
+    char log_file_name[AERON_MAX_PATH];
     int64_t term_window_length;
     int64_t trip_gain;
     int64_t unblock_timeout_ns;

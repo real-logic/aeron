@@ -71,7 +71,7 @@ typedef struct aeron_network_publication_stct
     aeron_flow_control_strategy_t *flow_control;
     aeron_clock_cache_t *cached_clock;
 
-    char *log_file_name;
+    char log_file_name[AERON_MAX_PATH];
     int64_t term_buffer_length;
     int64_t term_window_length;
     int64_t trip_gain;

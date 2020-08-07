@@ -36,8 +36,6 @@ int aeron_ipc_publication_create(
     bool is_exclusive,
     aeron_system_counters_t *system_counters)
 {
-    char path[AERON_MAX_PATH];
-    int path_length = aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, registration_id);
     aeron_ipc_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
@@ -59,28 +57,17 @@ int aeron_ipc_publication_create(
         return -1;
     }
 
-    _pub->log_file_name = NULL;
-    if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length + 1) < 0)
-    {
-        aeron_free(_pub);
-        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication log_file_name");
-        return -1;
-    }
-
+    _pub->log_file_name_length = aeron_ipc_publication_location(
+        _pub->log_file_name, sizeof(_pub->log_file_name), context->aeron_dir, registration_id);
     if (context->map_raw_log_func(
-        &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
+        &_pub->mapped_raw_log, _pub->log_file_name, params->is_sparse, params->term_length, context->file_page_size) < 0)
     {
-        aeron_free(_pub->log_file_name);
+        aeron_set_err(aeron_errcode(), "error mapping IPC raw log %s: %s", _pub->log_file_name, aeron_errmsg());
         aeron_free(_pub);
-        aeron_set_err(aeron_errcode(), "error mapping IPC raw log %s: %s", path, aeron_errmsg());
         return -1;
     }
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
-
-    strncpy(_pub->log_file_name, path, (size_t)path_length);
-    _pub->log_file_name[path_length] = '\0';
-    _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 
     if (params->has_position)
@@ -181,7 +168,6 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
     if (NULL != publication)
     {
         publication->map_raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
-        aeron_free(publication->log_file_name);
     }
 
     aeron_free(publication);

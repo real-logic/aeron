@@ -17,9 +17,9 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 #define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
-#include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
+#include "functional"
+#include "util/Index.h"
+#include "concurrent/AtomicBuffer.h"
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 
@@ -41,70 +41,6 @@ typedef std::function<void(
     util::index_t offset,
     util::index_t length,
     Header& header)> fragment_handler_t;
-
-/**
- * Callback to indicate an exception has occurred.
- *
- * This handler may be called in a context of noexcept so the handler can not safely throw.
- *
- * @param exception that has occurred.
- */
-typedef std::function<void(const std::exception& exception)> exception_handler_t;
-
-namespace TermReader {
-
-struct ReadOutcome
-{
-    std::int32_t offset;
-    int fragmentsRead;
-};
-
-template <typename F>
-inline void read(
-    ReadOutcome& outcome,
-    AtomicBuffer& termBuffer,
-    std::int32_t termOffset,
-    F&& handler,
-    int fragmentsLimit,
-    Header& header,
-    const exception_handler_t & exceptionHandler)
-{
-    outcome.fragmentsRead = 0;
-    outcome.offset = termOffset;
-    const util::index_t capacity = termBuffer.capacity();
-
-    try
-    {
-        while (outcome.fragmentsRead < fragmentsLimit && termOffset < capacity)
-        {
-            const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
-            if (frameLength <= 0)
-            {
-                break;
-            }
-
-            const std::int32_t fragmentOffset = termOffset;
-            termOffset += util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
-
-            if (!FrameDescriptor::isPaddingFrame(termBuffer, fragmentOffset))
-            {
-                header.buffer(termBuffer);
-                header.offset(fragmentOffset);
-                handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
-
-                ++outcome.fragmentsRead;
-            }
-        }
-    }
-    catch (const std::exception& ex)
-    {
-        exceptionHandler(ex);
-    }
-
-    outcome.offset = termOffset;
-}
-
-}
 
 }}}
 

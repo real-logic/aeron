@@ -17,10 +17,10 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_HEADER_H
 #define AERON_CONCURRENT_LOGBUFFER_HEADER_H
 
-#include <util/Index.h>
-#include <util/BitUtil.h>
-#include <util/Exceptions.h>
-#include <concurrent/AtomicBuffer.h>
+#include "util/Index.h"
+#include "util/BitUtil.h"
+#include "util/Exceptions.h"
+#include "concurrent/AtomicBuffer.h"
 #include "DataFrameHeader.h"
 
 extern "C"
@@ -136,9 +136,7 @@ public:
      */
     inline std::int64_t position() const
     {
-        throw UnsupportedOperationException("Expose compute_position function", SOURCEINFO);
-//        const std::int32_t resultingOffset = util::BitUtil::align(termOffset() + frameLength(), FrameDescriptor::FRAME_ALIGNMENT);
-//        return LogBufferDescriptor::computePosition(termId(), resultingOffset, m_positionBitsToShift, m_initialTermId);
+        return aeron_header_position(m_header);
     }
 
     /**
@@ -166,7 +164,6 @@ private:
     aeron_header_t *m_header;
     aeron_header_values_t m_headerValues;
     void *m_context;
-    std::int32_t m_positionBitsToShift;
 };
 
 }}}

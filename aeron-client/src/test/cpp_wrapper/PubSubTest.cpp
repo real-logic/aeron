@@ -126,6 +126,9 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
 
             std::string message = "hello world!";
             int32_t length = buffer.putString(0, message);
+            const std::int64_t expectedPosition = util::BitUtil::align(
+                dataHeaderLength + length, FrameDescriptor::FRAME_ALIGNMENT);
+
             POLL_FOR(0 < pub->offer(buffer, 0, length, reservedValueSupplier), invoker);
             POLL_FOR(0 < sub->poll(
                 [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -135,6 +138,7 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
                     EXPECT_EQ(sessionId, header.sessionId());
                     EXPECT_EQ(streamId, header.streamId());
                     EXPECT_EQ(length, header.frameLength() - dataHeaderLength);
+                    EXPECT_EQ(expectedPosition, header.position());
                 }, 1), invoker);
         }
 
@@ -238,8 +242,7 @@ TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
                 EXPECT_EQ(message, buffer.getString(offset));
                 EXPECT_EQ(termId, header.termId());
                 EXPECT_EQ(termOffset, header.termOffset());
-                // TODO: Need to expose initial term id on the header.
-//                EXPECT_EQ(initialTermId, header.initialTermId());
+                EXPECT_EQ(initialTermId, header.initialTermId());
             }, 1), invoker);
     }
 

@@ -16,10 +16,9 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
 #include "MockAtomicBuffer.h"
-#include <concurrent/logbuffer/TermGapScanner.h>
-#include <concurrent/logbuffer/LogBufferDescriptor.h>
+#include "concurrent/logbuffer/TermGapScanner.h"
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
 
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::mock;
@@ -41,7 +40,7 @@ public:
         m_logBuffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_logBuffer.fill(0);
     }
@@ -63,7 +62,7 @@ TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
         .WillOnce(testing::Return(DataFrameHeader::LENGTH));
 
     auto f =
-        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        [&](std::int32_t termId, AtomicBuffer &buffer, std::int32_t offset, std::int32_t length)
         {
             EXPECT_EQ(TERM_ID, termId);
             EXPECT_EQ(0, offset);
@@ -91,7 +90,7 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
         .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
 
     auto f =
-        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        [&](std::int32_t termId, AtomicBuffer &buffer, std::int32_t offset, std::int32_t length)
         {
             EXPECT_EQ(TERM_ID, termId);
             EXPECT_EQ(tail, offset);
@@ -120,7 +119,7 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
         .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
 
     auto f =
-        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        [&](std::int32_t termId, AtomicBuffer &buffer, std::int32_t offset, std::int32_t length)
         {
             EXPECT_EQ(TERM_ID, termId);
             EXPECT_EQ(tail, offset);
@@ -146,7 +145,7 @@ TEST_F(TermGapScannerTest, shouldReportNoGapWhenHwmIsInPadding)
         .WillRepeatedly(testing::Return(0));
 
     auto f =
-        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        [&](std::int32_t termId, AtomicBuffer &buffer, std::int32_t offset, std::int32_t length)
         {
             called = true;
         };

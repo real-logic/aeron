@@ -19,7 +19,7 @@
 #include <gtest/gtest.h>
 
 #include "MockAtomicBuffer.h"
-#include <concurrent/logbuffer/TermBlockScanner.h>
+#include "concurrent/logbuffer/TermBlockScanner.h"
 
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::mock;
@@ -34,13 +34,12 @@ class TermBlockScannerTest : public testing::Test
 {
 public:
     TermBlockScannerTest() :
-        m_log(&m_logBuffer[0],
-        m_logBuffer.size())
+        m_log(&m_logBuffer[0],m_logBuffer.size())
     {
         m_logBuffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_logBuffer.fill(0);
     }

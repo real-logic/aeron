@@ -19,8 +19,8 @@
 #include <gtest/gtest.h>
 
 #include "MockAtomicBuffer.h"
-#include <concurrent/broadcast/BroadcastBufferDescriptor.h>
-#include <concurrent/broadcast/BroadcastTransmitter.h>
+#include "concurrent/broadcast/BroadcastBufferDescriptor.h"
+#include "concurrent/broadcast/BroadcastTransmitter.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::mock;
@@ -48,7 +48,7 @@ public:
         m_buffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_buffer.fill(0);
     }
@@ -104,7 +104,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
     AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int64_t tail = 0;
-    const std::int32_t recordOffset = (std::int32_t)tail;
+    const auto recordOffset = static_cast<std::int32_t>(tail);
     const std::int32_t length = 8;
     const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
@@ -144,7 +144,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
     AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int64_t tail = RecordDescriptor::RECORD_ALIGNMENT * 3;
-    const std::int32_t recordOffset = (std::int32_t)tail;
+    const auto recordOffset = static_cast<std::int32_t>(tail);
     const std::int32_t length = 8;
     const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
@@ -187,7 +187,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
     const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
     const std::int64_t tail = CAPACITY - alignedRecordLength;
-    const std::int32_t recordOffset = (std::int32_t)tail;
+    const auto recordOffset = static_cast<std::int32_t>(tail);
     const util::index_t srcIndex = 0;
     testing::Sequence sequence;
 
@@ -224,7 +224,7 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
     AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     std::int64_t tail = CAPACITY - RecordDescriptor::RECORD_ALIGNMENT;
-    std::int32_t recordOffset = (std::int32_t)tail;
+    auto recordOffset = static_cast<std::int32_t>(tail);
     const std::int32_t length = RecordDescriptor::RECORD_ALIGNMENT + 8;
     const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);

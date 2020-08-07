@@ -21,10 +21,9 @@
 
 #include <gtest/gtest.h>
 
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/CountersManager.h>
-#include <concurrent/status/UnsafeBufferPosition.h>
-#include <util/Exceptions.h>
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/CountersManager.h"
+#include "concurrent/status/UnsafeBufferPosition.h"
 
 #define FREE_TO_REUSE_TIMEOUT (1000L)
 
@@ -42,12 +41,13 @@ public:
         m_countersManagerWithCoolDown(
             AtomicBuffer(&m_metadataBuffer[0], m_metadataBuffer.size()),
             AtomicBuffer(&m_valuesBuffer[0], m_valuesBuffer.size()),
-            [&]() { return m_currentTimestamp; },
+            [&]()
+            { return m_currentTimestamp; },
             FREE_TO_REUSE_TIMEOUT)
     {
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_metadataBuffer.fill(0);
         m_valuesBuffer.fill(0);
@@ -64,10 +64,11 @@ public:
 
 TEST_F(CountersManagerTest, checkEmpty)
 {
-    m_countersManager.forEach([](std::int32_t, std::int32_t, const AtomicBuffer&, const std::string &)
-    {
-        FAIL();
-    });
+    m_countersManager.forEach(
+        [](std::int32_t, std::int32_t, const AtomicBuffer &, const std::string &)
+        {
+            FAIL();
+        });
 }
 
 TEST_F(CountersManagerTest, checkOverflow)
@@ -75,12 +76,12 @@ TEST_F(CountersManagerTest, checkOverflow)
     std::vector<std::string> labels = { "lab0", "lab1", "lab2", "lab3", "lab4" };
 
     ASSERT_THROW(
-    {
-        for (auto& l: labels)
         {
-            m_countersManager.allocate(l);
-        }
-    }, IllegalArgumentException);
+            for (auto &l: labels)
+            {
+                m_countersManager.allocate(l);
+            }
+        }, IllegalArgumentException);
 }
 
 TEST_F(CountersManagerTest, checkAlloc)
@@ -89,22 +90,22 @@ TEST_F(CountersManagerTest, checkAlloc)
     std::map<std::int32_t, std::string> allocated;
 
     ASSERT_NO_THROW(
-    {
-        for (auto& l: labels)
         {
-            allocated[m_countersManager.allocate(l)] = l;
-        }
-    });
+            for (auto &l: labels)
+            {
+                allocated[m_countersManager.allocate(l)] = l;
+            }
+        });
 
     ASSERT_NO_THROW(
-    {
-        m_countersManager.forEach(
-            [&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string &label)
-            {
-                ASSERT_EQ(label, allocated[counterId]);
-                allocated.erase(allocated.find(counterId));
-            });
-    });
+        {
+            m_countersManager.forEach(
+                [&](std::int32_t counterId, std::int32_t, const AtomicBuffer &, const std::string &label)
+                {
+                    ASSERT_EQ(label, allocated[counterId]);
+                    allocated.erase(allocated.find(counterId));
+                });
+        });
 
     ASSERT_EQ(allocated.empty(), true);
 }
@@ -114,18 +115,18 @@ TEST_F(CountersManagerTest, checkRecycle)
     std::vector<std::string> labels = { "lab0", "lab1", "lab2", "lab3" };
 
     ASSERT_NO_THROW(
-    {
-        for (auto& l: labels)
         {
-            m_countersManager.allocate(l);
-        }
-    });
+            for (auto &l: labels)
+            {
+                m_countersManager.allocate(l);
+            }
+        });
 
     ASSERT_NO_THROW(
-    {
-        m_countersManager.free(2);
-        ASSERT_EQ(m_countersManager.allocate("newLab2"), 2);
-    });
+        {
+            m_countersManager.free(2);
+            ASSERT_EQ(m_countersManager.allocate("newLab2"), 2);
+        });
 }
 
 TEST_F(CountersManagerTest, shouldFreeAndReuseCounters)
@@ -205,7 +206,7 @@ TEST_F(CountersManagerTest, shouldStoreMetaData)
     int numCounters = 0;
 
     m_countersManager.forEach(
-        [&](std::int32_t counterId, std::int32_t typeId, const AtomicBuffer& buffer, const std::string &label)
+        [&](std::int32_t counterId, std::int32_t typeId, const AtomicBuffer &buffer, const std::string &label)
         {
             EXPECT_EQ(counterId, numCounters);
             EXPECT_EQ(label, labels[numCounters]);

@@ -21,14 +21,20 @@
 
 #define COND_MOCK 1
 
-#include <concurrent/AtomicBuffer.h>
+#include "concurrent/AtomicBuffer.h"
 
-namespace aeron { namespace concurrent { namespace mock {
+namespace aeron
+{
+namespace concurrent
+{
+namespace mock
+{
 
 class MockAtomicBuffer : public AtomicBuffer
 {
 public:
     MockAtomicBuffer(std::uint8_t *buffer, size_t length);
+
     virtual ~MockAtomicBuffer();
 
     MOCK_METHOD2(putUInt8, void(util::index_t offset, std::uint8_t v));
@@ -40,7 +46,9 @@ public:
     MOCK_CONST_METHOD1(getInt32Volatile, std::int32_t(util::index_t offset));
     MOCK_METHOD2(getAndAddInt32, std::int32_t(util::index_t offset, std::int32_t delta));
     MOCK_METHOD2(getAndAddInt64, std::int64_t(util::index_t offset, std::int64_t delta));
-    MOCK_METHOD4(putBytes, void(util::index_t index, const concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length));
+    MOCK_METHOD4(
+        putBytes,
+        void(util::index_t index, const concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length));
     MOCK_METHOD3(putBytes, void(util::index_t index, const std::uint8_t *srcBuffer, util::index_t length));
     MOCK_METHOD2(putInt32Ordered, void(util::index_t offset, std::int32_t v));
     MOCK_CONST_METHOD1(getUInt16, std::uint16_t(util::index_t offset));
@@ -69,6 +77,8 @@ private:
     AtomicBuffer m_realBuffer;
 };
 
-}}}
+}
+}
+}
 
 #endif

@@ -20,7 +20,7 @@
 
 
 #include "MockAtomicBuffer.h"
-#include <concurrent/errors/DistinctErrorLog.h>
+#include "concurrent/errors/DistinctErrorLog.h"
 
 using namespace aeron::concurrent::errors;
 using namespace aeron::concurrent::mock;
@@ -49,7 +49,7 @@ public:
         m_mockBuffer.useAsSpy();
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_buffer.fill(0);
     }

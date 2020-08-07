@@ -19,8 +19,8 @@
 #include <gtest/gtest.h>
 
 #include "MockAtomicBuffer.h"
-#include <concurrent/broadcast/BroadcastBufferDescriptor.h>
-#include <concurrent/broadcast/BroadcastReceiver.h>
+#include "concurrent/broadcast/BroadcastBufferDescriptor.h"
+#include "concurrent/broadcast/BroadcastReceiver.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::mock;
@@ -46,7 +46,7 @@ public:
         m_buffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_buffer.fill(0);
     }
@@ -95,7 +95,7 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
     const std::int64_t tail = alignedRecordLength;
     const std::int64_t latestRecord = tail - alignedRecordLength;
-    const std::int32_t recordOffset = (std::int32_t)latestRecord;
+    const auto recordOffset = static_cast<std::int32_t>(latestRecord);
     testing::Sequence sequence;
 
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
@@ -132,7 +132,7 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
     const std::int64_t tail = alignedRecordLength * 2;
     const std::int64_t latestRecord = tail - alignedRecordLength;
     const std::int32_t recordOffsetOne = 0;
-    const std::int32_t recordOffsetTwo = (std::int32_t)latestRecord;
+    const auto recordOffsetTwo = static_cast<std::int32_t>(latestRecord);
 
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(2)
@@ -181,7 +181,7 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
     const std::int64_t tail = CAPACITY * 3 + RecordDescriptor::HEADER_LENGTH + alignedRecordLength;
     const std::int64_t latestRecord = tail - alignedRecordLength;
-    const std::int32_t recordOffset = (std::int32_t)latestRecord & (CAPACITY - 1);
+    const auto recordOffset = static_cast<std::int32_t>(latestRecord & (CAPACITY - 1));
 
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(1)
@@ -217,7 +217,7 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     const std::int64_t catchupTail = (CAPACITY * 2) - RecordDescriptor::HEADER_LENGTH;
     const std::int64_t postPaddingTail = catchupTail + RecordDescriptor::HEADER_LENGTH + alignedRecordLength;
     const std::int64_t latestRecord = catchupTail - alignedRecordLength;
-    const std::int32_t catchupOffset = (std::int32_t)latestRecord & (CAPACITY - 1);
+    const auto catchupOffset = static_cast<std::int32_t>(latestRecord & (CAPACITY - 1));
     testing::Sequence sequence;
 
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
@@ -239,8 +239,8 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
         .Times(1)
         .WillOnce(testing::Return(MSG_TYPE_ID));
 
-    const std::int32_t paddingOffset = (std::int32_t)catchupTail & (CAPACITY - 1);
-    const std::int32_t recordOffset = (std::int32_t)(postPaddingTail - alignedRecordLength) & (CAPACITY - 1);
+    const auto paddingOffset = static_cast<std::int32_t>(catchupTail & (CAPACITY - 1));
+    const auto recordOffset = static_cast<std::int32_t>((postPaddingTail - alignedRecordLength) & (CAPACITY - 1));
 
     EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(paddingOffset)))
         .Times(1)
@@ -271,7 +271,7 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
     const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
     const std::int64_t tail = alignedRecordLength;
     const std::int64_t latestRecord = tail - alignedRecordLength;
-    const std::int32_t recordOffset = (std::int32_t)latestRecord;
+    const auto recordOffset = static_cast<std::int32_t>(latestRecord);
     testing::Sequence sequence;
 
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))

@@ -15,18 +15,15 @@
  */
 
 #include <array>
+#include <thread>
+#include <atomic>
+#include <vector>
 
 #include <gtest/gtest.h>
 
-#include <atomic>
-
 #include "MockAtomicBuffer.h"
-
-#include <concurrent/ringbuffer/RingBufferDescriptor.h>
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
-#include <thread>
-#include <vector>
+#include "concurrent/ringbuffer/RingBufferDescriptor.h"
+#include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
 
 using namespace aeron;
 using namespace aeron::concurrent::ringbuffer;
@@ -49,7 +46,7 @@ class ManyToOneRingBufferTest : public testing::Test
 public:
 
     ManyToOneRingBufferTest() :
-        m_ab(&m_buffer[0],m_buffer.size()),
+        m_ab(&m_buffer[0], m_buffer.size()),
         m_srcAb(&m_srcBuffer[0], m_srcBuffer.size()),
         m_ringBuffer(m_ab),
         m_mockAb(&m_buffer[0], m_buffer.size()),
@@ -85,20 +82,20 @@ TEST_F(ManyToOneRingBufferTest, shouldThrowForCapacityNotPowerOfTwo)
     AERON_DECL_ALIGNED(odd_sized_buffer_t testBuffer, 16);
 
     testBuffer.fill(0);
-    AtomicBuffer ab (&testBuffer[0], testBuffer.size());
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
 
     ASSERT_THROW(
-    {
-        ManyToOneRingBuffer ringBuffer (ab);
-    }, util::IllegalArgumentException);
+        {
+            ManyToOneRingBuffer ringBuffer(ab);
+        }, util::IllegalArgumentException);
 }
 
 TEST_F(ManyToOneRingBufferTest, shouldThrowWhenMaxMessageSizeExceeded)
 {
     ASSERT_THROW(
-    {
-        m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, 0, m_ringBuffer.maxMsgLength() + 1);
-    }, util::IllegalArgumentException);
+        {
+            m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, 0, m_ringBuffer.maxMsgLength() + 1);
+        }, util::IllegalArgumentException);
 }
 
 TEST_F(ManyToOneRingBufferTest, shouldWriteToEmptyBuffer)
@@ -202,7 +199,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadNothingFromEmptyBuffer)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -227,7 +224,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadSingleMessage)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -238,7 +235,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadSingleMessage)
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT; i += 4)
     {
-        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i + 3;
     }
 }
 
@@ -256,7 +253,7 @@ TEST_F(ManyToOneRingBufferTest, shouldNotReadSingleMessagePartWayThroughWriting)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -285,7 +282,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadTwoMessages)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -319,7 +316,7 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         },
@@ -355,7 +352,7 @@ TEST_F(ManyToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
 
     int timesCalled = 0;
     auto handler =
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
             if (2 == timesCalled)
@@ -370,7 +367,7 @@ TEST_F(ManyToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     {
         m_ringBuffer.read(handler);
     }
-    catch (const std::runtime_error&)
+    catch (const std::runtime_error &)
     {
         exceptionReceived = true;
     }
@@ -580,7 +577,7 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
         int msgCount = 0;
         int counts[NUM_PUBLISHERS];
 
-        for (int & count : counts)
+        for (int &count : counts)
         {
             count = 0;
         }
@@ -589,20 +586,20 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
         {
             const int readCount = ringBuffer.read(
                 [&counts](
-                        std::int32_t msgTypeId,
-                        concurrent::AtomicBuffer &buffer,
-                        util::index_t index,
-                        util::index_t length)
-                    {
-                        const std::int32_t id = buffer.getInt32(index);
-                        const std::int32_t messageNumber = buffer.getInt32(index + 4);
+                    std::int32_t msgTypeId,
+                    concurrent::AtomicBuffer &buffer,
+                    util::index_t index,
+                    util::index_t length)
+                {
+                    const std::int32_t id = buffer.getInt32(index);
+                    const std::int32_t messageNumber = buffer.getInt32(index + 4);
 
-                        EXPECT_EQ(length, 4 + 4);
-                        ASSERT_EQ(msgTypeId, MSG_TYPE_ID);
+                    EXPECT_EQ(length, 4 + 4);
+                    ASSERT_EQ(msgTypeId, MSG_TYPE_ID);
 
-                        EXPECT_EQ(counts[id], messageNumber);
-                        counts[id]++;
-                    });
+                    EXPECT_EQ(counts[id], messageNumber);
+                    counts[id]++;
+                });
 
             if (0 == readCount)
             {
@@ -617,7 +614,7 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
             thr.join();
         }
     }
-    catch (const util::OutOfBoundsException& e)
+    catch (const util::OutOfBoundsException &e)
     {
         printf("EXCEPTION %s at %s\n", e.what(), e.where());
     }

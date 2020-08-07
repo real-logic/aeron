@@ -21,8 +21,7 @@
 
 #include <gtest/gtest.h>
 
-#include <concurrent/AtomicBuffer.h>
-#include <util/Exceptions.h>
+#include "concurrent/AtomicBuffer.h"
 
 using namespace aeron::concurrent;
 using namespace aeron::util;
@@ -118,8 +117,8 @@ TEST (atomicBufferTests, concurrentTest)
 
     for (int i = 0; i < 8; i++)
     {
-        threads.push_back(
-            std::thread([&]()
+        threads.push_back(std::thread(
+            [&]()
             {
                 for (size_t n = 0; n < incCount; n++)
                 {

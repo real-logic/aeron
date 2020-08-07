@@ -18,8 +18,8 @@
 
 #include <gmock/gmock.h>
 
-#include <concurrent/errors/ErrorLogReader.h>
-#include <concurrent/errors/DistinctErrorLog.h>
+#include "concurrent/errors/ErrorLogReader.h"
+#include "concurrent/errors/DistinctErrorLog.h"
 
 using namespace aeron::concurrent::errors;
 using namespace aeron::concurrent;
@@ -60,7 +60,7 @@ public:
         m_buffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_buffer.fill(0);
     }

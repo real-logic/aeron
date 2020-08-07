@@ -19,7 +19,7 @@
 #include <gtest/gtest.h>
 
 #include "MockAtomicBuffer.h"
-#include <concurrent/logbuffer/TermReader.h>
+#include "concurrent/logbuffer/TermReader.h"
 
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::mock;
@@ -37,7 +37,7 @@ typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> meta_data_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
 typedef std::array<std::uint8_t, TERM_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 
-void rethrowHandler(const std::exception& ex)
+void rethrowHandler(const std::exception &ex)
 {
     throw ex;
 }
@@ -45,7 +45,7 @@ void rethrowHandler(const std::exception& ex)
 class MockDataHandler
 {
 public:
-    MOCK_CONST_METHOD4(onData, void(AtomicBuffer&, util::index_t, util::index_t, Header&));
+    MOCK_CONST_METHOD4(onData, void(AtomicBuffer&, util::index_t, util::index_t, Header &));
 };
 
 using namespace std::placeholders;
@@ -183,7 +183,8 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
-    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), alignedFrameLength + DataFrameHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(m_handler,
+                onData(testing::Ref(m_log), alignedFrameLength + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength * 2)))

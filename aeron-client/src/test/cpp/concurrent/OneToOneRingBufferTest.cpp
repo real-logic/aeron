@@ -15,18 +15,16 @@
  */
 
 #include <array>
+#include <vector>
+#include <thread>
+#include <atomic>
 
 #include <gtest/gtest.h>
 
-#include <atomic>
-
 #include "MockAtomicBuffer.h"
 
-#include <concurrent/ringbuffer/RingBufferDescriptor.h>
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/ringbuffer/OneToOneRingBuffer.h>
-#include <thread>
-#include <vector>
+#include "concurrent/ringbuffer/RingBufferDescriptor.h"
+#include "concurrent/ringbuffer/OneToOneRingBuffer.h"
 
 using namespace aeron;
 using namespace aeron::concurrent::ringbuffer;
@@ -49,7 +47,7 @@ class OneToOneRingBufferTest : public testing::Test
 public:
 
     OneToOneRingBufferTest() :
-        m_ab(&m_buffer[0],m_buffer.size()),
+        m_ab(&m_buffer[0], m_buffer.size()),
         m_srcAb(&m_srcBuffer[0], m_srcBuffer.size()),
         m_ringBuffer(m_ab),
         m_mockAb(&m_buffer[0], m_buffer.size()),
@@ -85,20 +83,20 @@ TEST_F(OneToOneRingBufferTest, shouldThrowForCapacityNotPowerOfTwo)
     AERON_DECL_ALIGNED(odd_sized_buffer_t testBuffer, 16);
 
     testBuffer.fill(0);
-    AtomicBuffer ab (&testBuffer[0], testBuffer.size());
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
 
     ASSERT_THROW(
-    {
-        OneToOneRingBuffer ringBuffer (ab);
-    }, util::IllegalArgumentException);
+        {
+            OneToOneRingBuffer ringBuffer(ab);
+        }, util::IllegalArgumentException);
 }
 
 TEST_F(OneToOneRingBufferTest, shouldThrowWhenMaxMessageSizeExceeded)
 {
     ASSERT_THROW(
-    {
-        m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, 0, m_ringBuffer.maxMsgLength() + 1);
-    }, util::IllegalArgumentException);
+        {
+            m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, 0, m_ringBuffer.maxMsgLength() + 1);
+        }, util::IllegalArgumentException);
 }
 
 TEST_F(OneToOneRingBufferTest, shouldWriteToEmptyBuffer)
@@ -202,7 +200,7 @@ TEST_F(OneToOneRingBufferTest, shouldReadNothingFromEmptyBuffer)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -227,7 +225,7 @@ TEST_F(OneToOneRingBufferTest, shouldReadSingleMessage)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -256,7 +254,7 @@ TEST_F(OneToOneRingBufferTest, shouldNotReadSingleMessagePartWayThroughWriting)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -285,7 +283,7 @@ TEST_F(OneToOneRingBufferTest, shouldReadTwoMessages)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -319,7 +317,7 @@ TEST_F(OneToOneRingBufferTest, shouldLimitReadOfMessages)
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
             timesCalled++;
         },
@@ -355,7 +353,7 @@ TEST_F(OneToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
 
     int timesCalled = 0;
-    auto handler = [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+    auto handler = [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
     {
         timesCalled++;
         if (2 == timesCalled)
@@ -370,7 +368,7 @@ TEST_F(OneToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     {
         m_ringBuffer.read(handler);
     }
-    catch (const std::runtime_error&)
+    catch (const std::runtime_error &)
     {
         exceptionReceived = true;
     }
@@ -495,7 +493,7 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
             thr.join();
         }
     }
-    catch (const util::OutOfBoundsException& e)
+    catch (const util::OutOfBoundsException &e)
     {
         printf("EXCEPTION %s at %s\n", e.what(), e.where());
     }

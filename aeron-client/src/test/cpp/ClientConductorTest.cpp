@@ -48,7 +48,7 @@ public:
     {
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
@@ -73,7 +73,7 @@ public:
         logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_PAGE_SIZE_OFFSET, PAGE_SIZE);
     }
 
-    virtual void TearDown()
+    void TearDown() override
     {
         ::unlink(m_logFileName.c_str());
         ::unlink(m_logFileName2.c_str());

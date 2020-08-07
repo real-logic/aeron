@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdlib.h>
+#include <cstdlib>
 #include <gtest/gtest.h>
 #include <string>
 
-#include <util/MemoryMappedFile.h>
+#include "util/MemoryMappedFile.h"
 #include "TestUtils.h"
 
 using namespace aeron::util;

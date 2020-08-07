@@ -20,10 +20,10 @@
 #include <array>
 #include <gmock/gmock.h>
 
-#include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
-#include <concurrent/broadcast/CopyBroadcastReceiver.h>
-#include <command/ControlProtocolEvents.h>
-#include <concurrent/logbuffer/LogBufferDescriptor.h>
+#include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
+#include "concurrent/broadcast/CopyBroadcastReceiver.h"
+#include "command/ControlProtocolEvents.h"
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
 #include "DriverProxy.h"
 #include "ClientConductor.h"
 #include "Context.h"

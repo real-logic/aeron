@@ -16,10 +16,9 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
 #include "MockAtomicBuffer.h"
-#include <concurrent/logbuffer/TermScanner.h>
-#include <concurrent/logbuffer/LogBufferDescriptor.h>
+#include "concurrent/logbuffer/TermScanner.h"
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
 
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::mock;
@@ -41,7 +40,7 @@ public:
         m_logBuffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_logBuffer.fill(0);
     }
@@ -109,7 +108,7 @@ TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
 }
 
 static std::int32_t expectScanTwoMessages(
-    MockAtomicBuffer& buffer, std::int32_t frameLengthOne, std::int32_t frameLengthTwo,
+    MockAtomicBuffer &buffer, std::int32_t frameLengthOne, std::int32_t frameLengthTwo,
     std::int32_t frameOffset = 0,
     std::int16_t frameTypeOne = DataFrameHeader::HDR_TYPE_DATA,
     std::int16_t frameTypeTwo = DataFrameHeader::HDR_TYPE_DATA)

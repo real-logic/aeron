@@ -16,9 +16,9 @@
 
 #include <cstdint>
 
-#include <util/ScopeUtils.h>
-#include <util/StringUtil.h>
-#include <util/BitUtil.h>
+#include "util/ScopeUtils.h"
+#include "util/StringUtil.h"
+#include "util/BitUtil.h"
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>

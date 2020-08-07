@@ -49,11 +49,6 @@ SET(HEADERS
     concurrent/atomic/Atomic64_gcc_cpp11.h
     concurrent/atomic/Atomic64_gcc_x86_64.h
     concurrent/atomic/Atomic64_msvc.h
-    concurrent/broadcast/BroadcastBufferDescriptor.h
-    concurrent/broadcast/BroadcastReceiver.h
-    concurrent/broadcast/BroadcastTransmitter.h
-    concurrent/broadcast/CopyBroadcastReceiver.h
-    concurrent/broadcast/RecordDescriptor.h
     concurrent/errors/ErrorLogDescriptor.h
     concurrent/errors/ErrorLogReader.h
     concurrent/errors/DistinctErrorLog.h
@@ -64,11 +59,7 @@ SET(HEADERS
     concurrent/logbuffer/HeaderWriter.h
     concurrent/logbuffer/TermAppender.h
     concurrent/logbuffer/LogBufferDescriptor.h
-    concurrent/logbuffer/TermRebuilder.h
-    concurrent/logbuffer/TermGapScanner.h
-    concurrent/logbuffer/TermBlockScanner.h
     concurrent/logbuffer/TermReader.h
-    concurrent/logbuffer/TermScanner.h
     concurrent/ringbuffer/ManyToOneRingBuffer.h
     concurrent/ringbuffer/RecordDescriptor.h
     concurrent/ringbuffer/RingBufferDescriptor.h
@@ -95,6 +86,9 @@ SET(HEADERS
 # header only library
 add_library(aeron_client_wrapper INTERFACE)
 target_include_directories(aeron_client_wrapper INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_sources(aeron_client_wrapper INTERFACE ${HEADERS})
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")

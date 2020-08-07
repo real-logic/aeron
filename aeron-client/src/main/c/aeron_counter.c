@@ -98,3 +98,13 @@ int aeron_counter_close(
 
     return 0;
 }
+
+bool aeron_counter_is_closed(aeron_counter_t *counter)
+{
+    bool is_closed = false;
+    if (NULL != counter)
+    {
+        AERON_GET_VOLATILE(is_closed, counter->is_closed);
+    }
+    return is_closed;
+}

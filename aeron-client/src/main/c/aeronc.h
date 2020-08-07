@@ -904,7 +904,8 @@ int aeron_publication_remove_destination(aeron_publication_t* publication, const
  * @param on_close_complete_clientd parameter to pass to the on_complete callback.
  * @return 0 for success or -1 for error.
  */
-int aeron_publication_close(aeron_publication_t *publication, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
+int aeron_publication_close(
+    aeron_publication_t *publication, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
 /*
  * Exclusive Publication functions
@@ -1816,6 +1817,13 @@ int aeron_counter_close(
     aeron_counter_t *counter,
     aeron_notification_t on_close_complete,
     void *on_close_complete_clientd);
+
+/**
+ * Check if the counter is closed
+ * @param counter to check
+ * @return true if closed, false otherwise.
+ */
+bool aeron_counter_is_closed(aeron_counter_t *counter);
 
 /**
  * Return full version and build string.

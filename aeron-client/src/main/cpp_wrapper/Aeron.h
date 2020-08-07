@@ -24,7 +24,6 @@
 #include <unordered_map>
 #include <mutex>
 #include "concurrent/logbuffer/TermReader.h"
-#include "concurrent/broadcast/CopyBroadcastReceiver.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"
 #include "concurrent/AgentInvoker.h"
@@ -47,7 +46,6 @@ namespace aeron
 
 using namespace aeron::util;
 using namespace aeron::concurrent;
-using namespace aeron::concurrent::broadcast;
 
 using AsyncAddPublication = aeron_async_add_publication_t;
 using AsyncAddExclusivePublication = aeron_async_add_exclusive_publication_t;

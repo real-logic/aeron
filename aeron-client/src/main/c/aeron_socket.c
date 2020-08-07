@@ -252,7 +252,6 @@ void freeifaddrs(struct ifaddrs *current)
     }
 }
 
-#include <winsock2.h>
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
 #include <stdio.h>

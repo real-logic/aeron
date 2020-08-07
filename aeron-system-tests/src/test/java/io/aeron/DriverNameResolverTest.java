@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DriverNameResolverTest
 {
@@ -341,13 +342,18 @@ public class DriverNameResolverTest
 
     private void awaitCounterValue(final String name, final int counterId, final long expectedValue)
     {
-        final CountersReader countersReader = clients.get(name).countersReader();
+        final Aeron aeron = clients.get(name);
+        final CountersReader countersReader = aeron.countersReader();
         final Supplier<String> messageSupplier =
             () -> "Counter value: " + countersReader.getCounterValue(counterId) + ", expected: " + expectedValue;
 
         while (countersReader.getCounterValue(counterId) != expectedValue)
         {
             Tests.wait(SLEEP_50_MS, messageSupplier);
+            if (aeron.isClosed())
+            {
+                fail(messageSupplier.get());
+            }
         }
     }
 

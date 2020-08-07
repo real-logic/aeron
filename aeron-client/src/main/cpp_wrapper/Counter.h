@@ -62,7 +62,10 @@ public:
         return m_reader.getCounterLabel(id());
     }
 
-    bool isClosed() const;
+    bool isClosed() const
+    {
+        return aeron_counter_is_closed(counter());
+    }
 
 private:
     CountersReader& m_reader;

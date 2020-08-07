@@ -19,7 +19,6 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 endif ()
 
 SET(SOURCE
-    Counter.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp
     )

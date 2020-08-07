@@ -330,7 +330,7 @@ private:
 
     inline void putRawTailOrdered(const std::int64_t termId, const std::int32_t termOffset)
     {
-        aeron::concurrent::atomic::putInt64Ordered(m_tailAddr, (termId * ((int64_t(1) << 32))) | uint32_t(termOffset));
+        aeron::concurrent::atomic::putInt64Ordered(m_tailAddr, (termId * ((INT64_C(1) << 32))) | uint32_t(termOffset));
     }
 };
 

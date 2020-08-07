@@ -41,7 +41,7 @@ static const std::int32_t TERM_ID_1 = 1;
 
 inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
 {
-    return (termId * ((int64_t(1) << 32))) | position;
+    return (termId * ((INT64_C(1) << 32))) | position;
 }
 
 inline util::index_t termTailCounterOffset(const int index)
@@ -114,7 +114,7 @@ TEST_F(ExclusivePublicationTest, shouldReportMaxMessageLength)
 
 TEST_F(ExclusivePublicationTest, shouldReportMaxPossiblePosition)
 {
-    auto expectedPosition = (int64_t)(TERM_LENGTH * (uint64_t(1u) << 31u));
+    auto expectedPosition = (int64_t)(TERM_LENGTH * (UINT64_C(1) << 31u));
     createPub();
     EXPECT_EQ(m_publication->maxPossiblePosition(), expectedPosition);
 }
@@ -210,7 +210,8 @@ TEST_F(ExclusivePublicationTest, shouldRotateWhenAppendTrips)
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET), 1);
 
-    auto expectedTail = static_cast<std::int64_t>(static_cast<std::uint64_t>(TERM_ID_1 + 1) << 32u);
+    int64_t nextTermId = TERM_ID_1 + 1;
+    auto expectedTail = nextTermId << 32;
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(nextIndex)), expectedTail);
 
     EXPECT_GT(m_publication->offer(m_srcBuffer), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
@@ -233,7 +234,8 @@ TEST_F(ExclusivePublicationTest, shouldRotateWhenClaimTrips)
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET), 1);
 
-    auto expectedTail = static_cast<std::int64_t>(static_cast<std::uint64_t>(TERM_ID_1 + 1) << 32u);
+    int64_t nextTermId = TERM_ID_1 + 1;
+    auto expectedTail = nextTermId << 32;
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(nextIndex)), expectedTail);
 
     EXPECT_GT(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim),

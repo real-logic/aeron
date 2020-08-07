@@ -268,6 +268,27 @@ inline static void aeron_async_cmd_free(aeron_client_registering_resource_t *asy
     }
 }
 
+int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *add_counter)
+{
+    return add_counter->registration_id;
+}
+
+int64_t aeron_async_add_publication_get_registration_id(aeron_async_add_publication_t *add_publication)
+{
+    return add_publication->registration_id;
+}
+
+int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
+    aeron_async_add_exclusive_publication_t *add_exclusive_publication)
+{
+    return add_exclusive_publication->registration_id;
+}
+
+int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscription_t *add_subscription)
+{
+    return add_subscription->registration_id;
+}
+
 int aeron_async_add_publication(
     aeron_async_add_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id)
 {

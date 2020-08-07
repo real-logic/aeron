@@ -1922,6 +1922,40 @@ int aeron_errcode();
  */
 const char *aeron_errmsg();
 
+/**
+ * Gets the registration id for addition of the counter.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_counter_t may have been freed.
+ *
+ * @param add_counter used to check for completion.
+ * @return registration id for the counter.
+ */
+int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *add_counter);
+/**
+ * Gets the registration id for addition of the publication.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_publication_t may have been freed.
+ *
+ * @param add_publication used to check for completion.
+ * @return registration id for the publication.
+ */
+int64_t aeron_async_add_publication_get_registration_id(aeron_async_add_publication_t *add_publication);
+/**
+ * Gets the registration id for addition of the exclusive_publication.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_exclusive_publication_t may have been freed.
+ *
+ * @param add_exclusive_publication used to check for completion.
+ * @return registration id for the exclusive_publication.
+ */
+int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
+    aeron_async_add_exclusive_publication_t *add_exclusive_publication);
+/**
+ * Gets the registration id for addition of the subscription.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_subscription_t may have been freed.
+ *
+ * @param add_subscription used to check for completion.
+ * @return registration id for the subscription.
+ */
+int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscription_t *add_subscription);
+
 #ifdef __cplusplus
 }
 #endif

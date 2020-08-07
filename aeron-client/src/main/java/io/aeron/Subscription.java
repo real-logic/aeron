@@ -551,7 +551,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * <p>
      * If the channel is not {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned.
      *
-     * @return channel URI string with an endpoint being resolved to the allocated address:port pairing.
+     * @return channel URI string with an endpoint being resolved to the allocated port.
      * @see #channelStatus()
      * @see #localSocketAddresses()
      */

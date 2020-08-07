@@ -18,11 +18,6 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(BUILD_SHARED_LIBS ON)
 endif ()
 
-SET(SOURCE
-    util/CommandOption.cpp
-    util/CommandOptionParser.cpp
-    )
-
 SET(HEADERS
     CncFileDescriptor.h
     Image.h
@@ -97,17 +92,9 @@ SET(HEADERS
     util/Index.h
     util/Platform.h)
 
-# static library
-add_library(aeron_client_wrapper STATIC ${SOURCE} ${HEADERS})
-add_library(aeron_client_wrapper_shared SHARED ${SOURCE} ${HEADERS})
-
-target_include_directories(aeron_client_wrapper
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH}
-    )
-
-target_include_directories(aeron_client_wrapper_shared
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH}
-    )
+# header only library
+add_library(aeron_client_wrapper INTERFACE)
+target_include_directories(aeron_client_wrapper INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
@@ -118,37 +105,13 @@ else ()
     set(NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
 endif ()
 
-target_compile_definitions(aeron_client_wrapper
-    PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
-    # relative file paths for use in exceptions
-    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
-    )
-
-target_compile_definitions(aeron_client_wrapper_shared
-    PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
-    # relative file paths for use in exceptions
-    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
-    PUBLIC CLIENT_SHARED DLL_EXPORT
-    )
-
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 endif ()
 
-target_link_libraries(aeron_client_wrapper
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT}
-    )
-
-target_link_libraries(aeron_client_wrapper_shared
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT}
-    PUBLIC aeron
-    )
+target_link_libraries(aeron_client_wrapper INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)
-    install(TARGETS aeron_client_wrapper_shared aeron_client_wrapper
-        RUNTIME DESTINATION lib
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-    install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
+   install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
 endif ()

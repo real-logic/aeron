@@ -17,15 +17,6 @@
 set(TEST_HEADERS
     EmbeddedMediaDriver.h
     TestUtil.h)
-#
-#set(TEST_SOURCE)
-
-#add_library(aeron_client_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
-#target_include_directories(aeron_client_test
-#    PUBLIC ${AERON_CLIENT_TEST_PATH})
-#target_link_libraries(aeron_client_test aeron_client)
-#target_compile_definitions(aeron_client_test PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
-#add_dependencies(aeron_client_test gmock)
 
 if (MSVC AND ${CMAKE_VERSION} VERSION_LESS "3.13.0")
     target_compile_definitions(aeron_client_test PUBLIC "MSVC_FILE_IS_LOWER_CASE")

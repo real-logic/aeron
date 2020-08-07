@@ -33,15 +33,79 @@ private:
     std::map<char, CommandOption> m_options;
 
 public:
-    CommandOptionParser();
+    CommandOptionParser()
+    {
+        addOption(CommandOption(CommandOption::UNNAMED, 0, 0, "Unnamed Options"));
+    }
 
-    void parse(int argc, char **argv);
+    void parse(int argc, char **argv)
+    {
+        char currentOption = CommandOption::UNNAMED;
+        getOption(currentOption).setPresent();
 
-    void addOption(const CommandOption &option);
+        for (int n = 1; n < argc; n++)
+        {
+            std::string argStr(argv[n]);
 
-    CommandOption &getOption(char optionChar);
+            if ((argStr.size() >= 2) && (argStr[0] == '-'))
+            {
+                for (size_t argNum = 1; argNum < argStr.size(); argNum++)
+                {
+                    currentOption = argStr[argNum];
 
-    void displayOptionsHelp(std::ostream &out) const;
+                    auto opt = m_options.find(currentOption);
+                    if (m_options.end() == opt)
+                    {
+                        throw CommandOptionException(
+                            std::string("-") + currentOption + " is not a valid command option", SOURCEINFO);
+                    }
+                    else
+                    {
+                        opt->second.setPresent();
+                    }
+                }
+            }
+            else
+            {
+                CommandOption &opt = getOption(currentOption);
+                opt.addParam(argStr);
+            }
+        }
+
+        for (auto &option : m_options)
+        {
+            option.second.validate();
+        }
+    }
+
+    void addOption(const CommandOption &option)
+    {
+        m_options[option.getOptionChar()] = option;
+    }
+
+    CommandOption &getOption(char optionChar)
+    {
+        auto opt = m_options.find(optionChar);
+
+        if (m_options.end() == opt)
+        {
+            throw CommandOptionException(
+                std::string("CommandOptionParser::getOption invalid option lookup: ") + optionChar, SOURCEINFO);
+        }
+
+        return opt->second;
+    }
+
+    void displayOptionsHelp(std::ostream &out) const
+    {
+        for (const auto &opt : m_options)
+        {
+            if (opt.first != CommandOption::UNNAMED)
+            {
+                out << "    -" << opt.first << " " << opt.second.getHelpText() << std::endl;
+            }
+        }
+    }
 };
 
 }

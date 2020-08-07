@@ -83,10 +83,7 @@ public class ResolvedEndpointSystemTest
                 Tests.yieldingWait("No bind address/port for sub");
             }
 
-            final String resolvedUri = new ChannelUriStringBuilder()
-                .media("udp")
-                .endpoint(bindAddressAndPort1.get(0))
-                .build();
+            final String resolvedUri = "aeron:udp?endpoint=" + bindAddressAndPort1.get(0);
 
             try (Publication pub = client.addPublication(resolvedUri, STREAM_ID))
             {
@@ -137,10 +134,7 @@ public class ResolvedEndpointSystemTest
 
             assertEquals(bindAddressAndPort3, bindAddressAndPort1);
 
-            final String pubUri = new ChannelUriStringBuilder()
-                .media("udp")
-                .endpoint(bindAddressAndPort1.get(0))
-                .build();
+            final String pubUri = "aeron:udp?endpoint=" + bindAddressAndPort1.get(0);
 
             try (Publication pub = client.addPublication(pubUri, STREAM_ID))
             {
@@ -175,19 +169,17 @@ public class ResolvedEndpointSystemTest
                 Tests.yieldingWait("No bind address/port for sub1");
             }
 
-            List<String> bindAddressAndPort4;
-            while ((bindAddressAndPort4 = sub2.localSocketAddresses()).isEmpty())
+            List<String> bindAddressAndPort2;
+            while ((bindAddressAndPort2 = sub2.localSocketAddresses()).isEmpty())
             {
                 Tests.yieldingWait("No bind address/port for sub2");
             }
 
-            assertEquals(bindAddressAndPort4, bindAddressAndPort1);
+            assertEquals(bindAddressAndPort2, bindAddressAndPort1);
 
-            final String pub1Uri = new ChannelUriStringBuilder()
-                .media("udp").endpoint(bindAddressAndPort1.get(0))
-                .build();
+            final String pubUri = "aeron:udp?endpoint=" + bindAddressAndPort1.get(0);
 
-            try (Publication pub = client.addPublication(pub1Uri, STREAM_ID))
+            try (Publication pub = client.addPublication(pubUri, STREAM_ID))
             {
                 while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
@@ -220,15 +212,8 @@ public class ResolvedEndpointSystemTest
                 Tests.yieldingWait("Unable to get bind address/ports for mds subscription");
             }
 
-            final String pub1Uri = new ChannelUriStringBuilder()
-                .media("udp")
-                .endpoint(bindAddressAndPorts.get(0))
-                .build();
-
-            final String pub2Uri = new ChannelUriStringBuilder()
-                .media("udp")
-                .endpoint(bindAddressAndPorts.get(1))
-                .build();
+            final String pub1Uri = "aeron:udp?endpoint=" + bindAddressAndPorts.get(0);
+            final String pub2Uri = "aeron:udp?endpoint=" + bindAddressAndPorts.get(1);
 
             try (Publication pub1 = client.addPublication(pub1Uri, STREAM_ID);
                 Publication pub2 = client.addPublication(pub2Uri, STREAM_ID))

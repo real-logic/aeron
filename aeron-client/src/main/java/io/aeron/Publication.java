@@ -113,7 +113,7 @@ public abstract class Publication implements AutoCloseable
         this.termBufferLength = logBuffers.termLength();
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBufferLength);
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxPossiblePosition = termBufferLength * (1L << 31L);
+        this.maxPossiblePosition = termBufferLength * (1L << 31);
         this.conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;

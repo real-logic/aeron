@@ -38,7 +38,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 
-#include "aeron_windows.h"
 #include "util/aeron_error.h"
 #include "aeronmd.h"
 #include "aeron_alloc.h"

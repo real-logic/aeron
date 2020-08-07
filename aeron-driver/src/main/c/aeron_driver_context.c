@@ -26,7 +26,6 @@
 
 #include "util/aeron_platform.h"
 #if defined(AERON_COMPILER_MSVC)
-#include <io.h>
 #else
 #include <unistd.h>
 #endif
@@ -38,7 +37,6 @@
 #include <uuid/uuid.h>
 #endif
 
-#include "aeron_windows.h"
 #include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_parse_util.h"

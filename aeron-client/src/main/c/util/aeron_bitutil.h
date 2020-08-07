@@ -22,13 +22,18 @@
 #include <stddef.h>
 #include "util/aeron_platform.h"
 
+#if defined(AERON_COMPILER_MSVC)
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
 #define AERON_CACHE_LINE_LENGTH (64)
 
 #define AERON_ALIGN(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
 
 #define AERON_IS_POWER_OF_TWO(value) ((value) > 0 && (((value) & (~(value) + 1)) == (value)))
 
-#define AERON_MIN(a,b) ((a) < (b) ? (a) : (b))
+#define AERON_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #if defined(__GNUC__)
 #define AERON_C_COND_EXPECT(exp, c) (__builtin_expect((exp), c))

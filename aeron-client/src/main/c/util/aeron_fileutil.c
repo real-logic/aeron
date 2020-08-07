@@ -550,3 +550,79 @@ int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *
 
     return result;
 }
+
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
+inline static const char *tmp_dir()
+{
+#if defined(_MSC_VER)
+    static char buff[MAX_PATH + 1];
+
+    if (GetTempPath(MAX_PATH, &buff[0]) > 0)
+    {
+        return buff;
+    }
+
+    return NULL;
+#else
+    const char *dir = "/tmp";
+
+    if (getenv("TMPDIR"))
+    {
+        dir = getenv("TMPDIR");
+    }
+
+    return dir;
+#endif
+}
+
+inline static bool has_file_separator_at_end(const char *path)
+{
+#if defined(_MSC_VER)
+    const char last = path[strlen(path) - 1];
+    return last == '\\' || last == '/';
+#else
+    return path[strlen(path) - 1] == '/';
+#endif
+}
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
+inline static const char *username()
+{
+    const char *username = getenv("USER");
+#if (_MSC_VER)
+    if (NULL == username)
+    {
+        username = getenv("USERNAME");
+        if (NULL == username)
+        {
+             username = "default";
+        }
+    }
+#else
+    if (NULL == username)
+    {
+        username = "default";
+    }
+#endif
+    return username;
+}
+
+int aeron_default_path(char *path, size_t path_length)
+{
+#if defined(__linux__)
+    return snprintf(path, path_length, "/dev/shm/aeron-%s", username());
+#elif defined(_MSC_VER)
+    return snprintf(
+        path, path_length, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\\", username());
+#else
+    return snprintf(
+        path, path_length, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
+#endif
+}

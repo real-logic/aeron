@@ -29,69 +29,6 @@
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
 
-#if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wunused-function"
-#endif
-
-inline static const char *tmp_dir()
-{
-#if defined(_MSC_VER)
-    static char buff[MAX_PATH + 1];
-
-    if (GetTempPath(MAX_PATH, &buff[0]) > 0)
-    {
-        return buff;
-    }
-
-    return NULL;
-#else
-    const char *dir = "/tmp";
-
-    if (getenv("TMPDIR"))
-    {
-        dir = getenv("TMPDIR");
-    }
-
-    return dir;
-#endif
-}
-
-inline static bool has_file_separator_at_end(const char *path)
-{
-#if defined(_MSC_VER)
-    const char last = path[strlen(path) - 1];
-    return last == '\\' || last == '/';
-#else
-    return path[strlen(path) - 1] == '/';
-#endif
-}
-
-#if defined(__clang__)
-    #pragma clang diagnostic pop
-#endif
-
-inline static const char *username()
-{
-    const char *username = getenv("USER");
-#if (_MSC_VER)
-    if (NULL == username)
-    {
-        username = getenv("USERNAME");
-        if (NULL == username)
-        {
-             username = "default";
-        }
-    }
-#else
-    if (NULL == username)
-    {
-        username = "default";
-    }
-#endif
-    return username;
-}
-
 #define AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT (false)
 #define AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000L)
 #define AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT (500 * 1000 * 1000LL)
@@ -133,13 +70,7 @@ int aeron_context_init(aeron_context_t **context)
         return -1;
     }
 
-#if defined(__linux__)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
-#elif defined(_MSC_VER)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\\", username());
-#else
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
-#endif
+    aeron_default_path(_context->aeron_dir, AERON_MAX_PATH - 1);
 
     _context->error_handler = aeron_default_error_handler;
     _context->error_handler_clientd = NULL;

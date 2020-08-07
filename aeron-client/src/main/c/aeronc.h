@@ -1931,6 +1931,15 @@ int aeron_errcode();
 const char *aeron_errmsg();
 
 /**
+ * Get the default path used by the Aeron media driver
+ * @param path buffer to store the path.
+ * @param path_length space available in the buffer
+ * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`.  If this
+ * is equal to path_length then the path has been truncated.
+ */
+int aeron_default_path(char *path, size_t path_length);
+  
+/**
  * Gets the registration id for addition of the counter.  Note that using this after a call to poll the succeeds or
  * errors is undefined behaviour.  As the async_add_counter_t may have been freed.
  *
@@ -1938,6 +1947,7 @@ const char *aeron_errmsg();
  * @return registration id for the counter.
  */
 int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *add_counter);
+
 /**
  * Gets the registration id for addition of the publication.  Note that using this after a call to poll the succeeds or
  * errors is undefined behaviour.  As the async_add_publication_t may have been freed.
@@ -1946,6 +1956,7 @@ int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *a
  * @return registration id for the publication.
  */
 int64_t aeron_async_add_publication_get_registration_id(aeron_async_add_publication_t *add_publication);
+
 /**
  * Gets the registration id for addition of the exclusive_publication.  Note that using this after a call to poll the succeeds or
  * errors is undefined behaviour.  As the async_add_exclusive_publication_t may have been freed.
@@ -1955,6 +1966,7 @@ int64_t aeron_async_add_publication_get_registration_id(aeron_async_add_publicat
  */
 int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
     aeron_async_add_exclusive_publication_t *add_exclusive_publication);
+
 /**
  * Gets the registration id for addition of the subscription.  Note that using this after a call to poll the succeeds or
  * errors is undefined behaviour.  As the async_add_subscription_t may have been freed.

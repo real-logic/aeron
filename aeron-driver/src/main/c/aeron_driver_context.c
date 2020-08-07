@@ -37,6 +37,7 @@
 #include <uuid/uuid.h>
 #endif
 
+#include "aeron_windows.h"
 #include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_parse_util.h"

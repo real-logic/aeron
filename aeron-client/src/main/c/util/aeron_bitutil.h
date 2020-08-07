@@ -50,7 +50,9 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
     unsigned long r;
 
     if (_BitScanForward(&r, (unsigned long)value))
+    {
         return (int)r;
+    }
 
     return 32;
 #else
@@ -86,7 +88,9 @@ inline int aeron_number_of_trailing_zeroes_u64(uint64_t value)
     unsigned long r;
 
     if (_BitScanForward64(&r, (__int64)value))
+    {
         return (int)r;
+    }
 
     return 64;
 #else

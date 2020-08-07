@@ -512,7 +512,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Resolve channel endpoint and replace it with assigned local socket address. If there are no addresses, or if
      * there is more than one, returned from {@link #localSocketAddresses()} then the original {@link #channel()} is
-     * returned.
+     * returned. This method will resolve names to IP address and the port, if port is 0 then the system assigned
+     * port from the ephemeral range is returned.
      * <p>
      * If the channel is not {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned.
      *
@@ -535,6 +536,49 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
                 uri.put(CommonContext.ENDPOINT_PARAM_NAME, localSocketAddresses.get(0));
 
                 return uri.toString();
+            }
+
+            return channel;
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve channel endpoint and replace it with the port from the ephemeral range when 0 was provided. If there are
+     * no addresses, or if there is more than one, returned from {@link #localSocketAddresses()} then the original
+     * {@link #channel()} is returned.
+     * <p>
+     * If the channel is not {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then {@code null} will be returned.
+     *
+     * @return channel URI string with an endpoint being resolved to the allocated address:port pairing.
+     * @see #channelStatus()
+     * @see #localSocketAddresses()
+     */
+    public String tryResolveChannelEndpointPort()
+    {
+        final long channelStatus = channelStatus();
+
+        if (ChannelEndpointStatus.ACTIVE == channelStatus)
+        {
+            final List<String> localSocketAddresses = LocalSocketAddressStatus.findAddresses(
+                conductor.countersReader(), channelStatus, channelStatusId);
+
+            if (1 == localSocketAddresses.size())
+            {
+                final ChannelUri uri = ChannelUri.parse(channel);
+                final String endpoint = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
+
+                if (null != endpoint && endpoint.endsWith(":0"))
+                {
+                    final String resolvedEndpoint = localSocketAddresses.get(0);
+                    final int i = resolvedEndpoint.lastIndexOf(':');
+                    final String newEndpoint =
+                        endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i);
+                    uri.put(CommonContext.ENDPOINT_PARAM_NAME, newEndpoint);
+
+                    return uri.toString();
+                }
             }
 
             return channel;

@@ -216,13 +216,63 @@ public class SubscriptionTest
         subscription.channelStatusId(channelStatusId);
         when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
 
-        allocateAddressCounter("128.0.0.1:19091", channelStatusId, ACTIVE);
+        allocateAddressCounter("127.0.0.1:19091", channelStatusId, ACTIVE);
         allocateAddressCounter("localhost:21212", channelStatusId, ERRORED);
 
         final String channelWithResolvedEndpoint = subscription.tryResolveChannelEndpoint();
 
         assertEquals(
-            ChannelUri.parse("aeron:udp?endpoint=128.0.0.1:19091|interface=192.168.5.0/24|reliable=false"),
+            ChannelUri.parse("aeron:udp?endpoint=127.0.0.1:19091|interface=192.168.5.0/24|reliable=false"),
+            ChannelUri.parse(channelWithResolvedEndpoint));
+    }
+
+    @Test
+    void tryResolveChannelEndpointReturnsChannelWithAResolvedEndpointAndPort()
+    {
+        final int channelStatusId = 444;
+        final String channel = "aeron:udp?endpoint=localhost:0|interface=192.168.5.0/24|reliable=false";
+        subscription = new Subscription(
+            conductor,
+            channel,
+            STREAM_ID_1,
+            SUBSCRIPTION_CORRELATION_ID,
+            availableImageHandlerMock,
+            unavailableImageHandlerMock);
+        subscription.channelStatusId(channelStatusId);
+        when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
+
+        allocateAddressCounter("127.0.0.1:19091", channelStatusId, ACTIVE);
+        allocateAddressCounter("localhost:21212", channelStatusId, ERRORED);
+
+        final String channelWithResolvedEndpoint = subscription.tryResolveChannelEndpoint();
+
+        assertEquals(
+            ChannelUri.parse("aeron:udp?endpoint=127.0.0.1:19091|interface=192.168.5.0/24|reliable=false"),
+            ChannelUri.parse(channelWithResolvedEndpoint));
+    }
+
+    @Test
+    void tryResolveChannelEndpointReturnsChannelWithAResolvedEndpointPortOnly()
+    {
+        final int channelStatusId = 444;
+        final String channel = "aeron:udp?endpoint=localhost:0|interface=192.168.5.0/24|reliable=false";
+        subscription = new Subscription(
+            conductor,
+            channel,
+            STREAM_ID_1,
+            SUBSCRIPTION_CORRELATION_ID,
+            availableImageHandlerMock,
+            unavailableImageHandlerMock);
+        subscription.channelStatusId(channelStatusId);
+        when(conductor.channelStatus(channelStatusId)).thenReturn(ACTIVE);
+
+        allocateAddressCounter("127.0.0.1:19091", channelStatusId, ACTIVE);
+        allocateAddressCounter("localhost:21212", channelStatusId, ERRORED);
+
+        final String channelWithResolvedEndpoint = subscription.tryResolveChannelEndpointPort();
+
+        assertEquals(
+            ChannelUri.parse("aeron:udp?endpoint=localhost:19091|interface=192.168.5.0/24|reliable=false"),
             ChannelUri.parse(channelWithResolvedEndpoint));
     }
 

@@ -2941,13 +2941,13 @@ public class AeronArchive implements AutoCloseable
 
             if (2 == step)
             {
-                final String controlResponseChannel = controlResponsePoller.subscription().tryResolveChannelEndpoint();
-                if (null == controlResponseChannel)
+                final String responseChannel = controlResponsePoller.subscription().tryResolveChannelEndpointPort();
+                if (null == responseChannel)
                 {
                     return null;
                 }
 
-                if (!archiveProxy.tryConnect(controlResponseChannel, ctx.controlResponseStreamId(), correlationId))
+                if (!archiveProxy.tryConnect(responseChannel, ctx.controlResponseStreamId(), correlationId))
                 {
                     return null;
                 }

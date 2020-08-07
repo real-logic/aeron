@@ -28,6 +28,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -77,13 +79,42 @@ public class ResolvedEndpointSystemTest
 
         try (Subscription sub = client.addSubscription(uri, STREAM_ID))
         {
-            List<String> bindAddressAndPort1;
-            while ((bindAddressAndPort1 = sub.localSocketAddresses()).isEmpty())
+            String resolvedUri;
+            while (null == (resolvedUri = sub.tryResolveChannelEndpoint()))
             {
                 Tests.yieldingWait("No bind address/port for sub");
             }
 
-            final String resolvedUri = "aeron:udp?endpoint=" + bindAddressAndPort1.get(0);
+            try (Publication pub = client.addPublication(resolvedUri, STREAM_ID))
+            {
+                while (pub.offer(buffer, 0, buffer.capacity()) < 0)
+                {
+                    Tests.yieldingWait("Failed to publish to pub");
+                }
+
+                while (sub.poll(fragmentHandler, 1) < 0)
+                {
+                    Tests.yieldingWait("Failed to receive from sub");
+                }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    void shouldSubscribeWithSystemAssignedPortOnly()
+    {
+        final String uri = "aeron:udp?endpoint=localhost:0";
+
+        try (Subscription sub = client.addSubscription(uri, STREAM_ID))
+        {
+            String resolvedUri;
+            while (null == (resolvedUri = sub.tryResolveChannelEndpointPort()))
+            {
+                Tests.yieldingWait("No bind address/port for sub");
+            }
+
+            assertThat(resolvedUri, startsWith("aeron:udp?endpoint=localhost:"));
 
             try (Publication pub = client.addPublication(resolvedUri, STREAM_ID))
             {

@@ -22,7 +22,7 @@
 namespace aeron { namespace concurrent { namespace atomic {
 
 /**
-* A compiler directive not reorder instructions.
+* A compiler directive to not reorder instructions.
 */
 inline void thread_fence()
 {
@@ -54,7 +54,7 @@ inline void cpu_pause()
 
 /**
 * Returns a 32 bit integer with volatile semantics.
-* On x64 MOV is a SC Atomic a operation.
+* On x64 MOV is an atomic operation.
 */
 inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
@@ -91,7 +91,7 @@ inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 
 /**
 * Returns a 64 bit integer with volatile semantics.
-* On x64 MOV is a SC Atomic a operation.
+* On x64 MOV is an atomic operation.
 */
 inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {

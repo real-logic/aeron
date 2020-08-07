@@ -84,7 +84,7 @@ int64_t aeron_min_flow_control_strategy_on_idle(
         if ((receiver->time_of_last_status_message + strategy_state->receiver_timeout_ns) - now_ns < 0)
         {
             aeron_array_fast_unordered_remove(
-                (uint8_t *) strategy_state->receivers.array,
+                (uint8_t *)strategy_state->receivers.array,
                 sizeof(aeron_min_flow_control_strategy_receiver_t),
                 (size_t)i,
                 (size_t)last_index);
@@ -271,7 +271,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     aeron_flow_control_strategy_t *_strategy;
     aeron_flow_control_tagged_options_t options;
 
-    const char *fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, "fc");
+    const char *fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_URI_FC_KEY);
     if (aeron_flow_control_parse_tagged_options(NULL != fc_options ? strlen(fc_options) : 0, fc_options, &options) < 0)
     {
         return -1;
@@ -337,9 +337,7 @@ int aeron_tagged_flow_control_strategy_supplier(
 }
 
 int aeron_tagged_flow_control_strategy_to_string(
-    aeron_flow_control_strategy_t *strategy,
-    char *buffer,
-    size_t buffer_len)
+    aeron_flow_control_strategy_t *strategy, char *buffer, size_t buffer_len)
 {
     aeron_min_flow_control_strategy_state_t *strategy_state =
         (aeron_min_flow_control_strategy_state_t *)strategy->state;

@@ -20,8 +20,7 @@
 #include <thread>
 
 // Implement all operations using C++11 standard library atomics and GCC intrinsics.
-// Not as fast as the x64 specializations, but allows Aeron to work on other
-// platforms (e.g. ARM).
+// Not as fast as the x64 specializations, but allows Aeron to work on other platforms (e.g. ARM).
 // See: https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
 
 namespace aeron { namespace concurrent { namespace atomic {
@@ -55,13 +54,13 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
     std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
     acquire();
+
     return sequence;
 }
 
 inline void putInt32Volatile(volatile std::int32_t *source, std::int32_t value)
 {
-    thread_fence();
-    *reinterpret_cast<volatile std::int32_t *>(source) = value;
+    __atomic_store(source, &value, __ATOMIC_SEQ_CST);
 }
 
 inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
@@ -72,7 +71,6 @@ inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
 
 inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 {
-    // Semantics: _InterlockedExchange((volatile long *)address, value);
     __atomic_store(address, &value, __ATOMIC_SEQ_CST);
 }
 
@@ -95,8 +93,7 @@ inline volatile T *getValueVolatile(volatile T **source)
 
 inline void putInt64Volatile(volatile std::int64_t *address, std::int64_t value)
 {
-    release();
-    *reinterpret_cast<volatile std::int64_t *>(address) = value;
+    __atomic_store(address, &value, __ATOMIC_SEQ_CST);
 }
 
 template<typename T>
@@ -106,6 +103,7 @@ inline void putValueVolatile(volatile T *address, T value)
 
     release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
+    fence();
 }
 
 inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
@@ -123,25 +121,21 @@ inline void putValueOrdered(volatile T **address, volatile T *value)
 
 inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 {
-    // Semantics: _InterlockedExchange64(address, value);
     __atomic_store(address, &value, __ATOMIC_SEQ_CST);
 }
 
 inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t value)
 {
-    // Semantics: return _InterlockedExchangeAdd64(address, value);
     return __atomic_fetch_add(address, value, __ATOMIC_SEQ_CST);
 }
 
 inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t value)
 {
-    // Semantics: return _InterlockedExchangeAdd((volatile long *)address, value);
     return __atomic_fetch_add(address, value, __ATOMIC_SEQ_CST);
 }
 
 inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
 {
-    // Semantics: return _InterlockedCompareExchange((volatile long *)destination, desired, expected);
     if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
     {
         return expected;
@@ -154,7 +148,6 @@ inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t exp
 
 inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
 {
-    // Semantics: return _InterlockedCompareExchange64(destination, desired, expected);
     if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
     {
         return expected;

@@ -26,7 +26,7 @@ class BitSetTest : public testing::Test
 public:
     BitSetTest() = default;
 
-    void assertGetAndSet(aeron_bit_set_t *bit_set)
+    static void assertGetAndSet(aeron_bit_set_t *bit_set)
     {
         bool result;
 
@@ -112,7 +112,6 @@ TEST_F(BitSetTest, shouldSetAndGetHeap)
 
     aeron_bit_set_heap_free(bit_set);
 }
-
 
 TEST_F(BitSetTest, shouldSetAndGet)
 {

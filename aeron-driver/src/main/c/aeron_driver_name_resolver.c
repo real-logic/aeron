@@ -365,6 +365,7 @@ static uint16_t aeron_driver_name_resolver_get_port(aeron_driver_name_resolver_t
     uint16_t port = resolver->local_socket_addr.ss_family == AF_INET6 ?
         ((struct sockaddr_in6 *)&resolver->local_socket_addr)->sin6_port :
         ((struct sockaddr_in *)&resolver->local_socket_addr)->sin_port;
+
     return ntohs(port);
 }
 
@@ -635,15 +636,15 @@ static bool aeron_driver_name_resolver_sockaddr_equals(struct sockaddr_storage *
 
     if (AF_INET == a->ss_family)
     {
-        struct sockaddr_in *a_in = (struct sockaddr_in*) a;
-        struct sockaddr_in *b_in = (struct sockaddr_in*) b;
+        struct sockaddr_in *a_in = (struct sockaddr_in*)a;
+        struct sockaddr_in *b_in = (struct sockaddr_in*)b;
 
         return a_in->sin_addr.s_addr == b_in->sin_addr.s_addr && a_in->sin_port == b_in->sin_port;
     }
     else if (AF_INET6 == a->ss_family)
     {
-        struct sockaddr_in6 *a_in = (struct sockaddr_in6*) a;
-        struct sockaddr_in6 *b_in = (struct sockaddr_in6*) b;
+        struct sockaddr_in6 *a_in = (struct sockaddr_in6*)a;
+        struct sockaddr_in6 *b_in = (struct sockaddr_in6*)b;
 
         return 0 == memcmp(&a_in->sin6_addr, &b_in->sin6_addr, sizeof(a_in->sin6_addr)) &&
             a_in->sin6_port == b_in->sin6_port;
@@ -783,7 +784,7 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
 {
     uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
 
-    aeron_frame_header_t *frame_header = (aeron_frame_header_t *) aligned_buffer;
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *)aligned_buffer;
     frame_header->type = AERON_HDR_TYPE_RES;
     frame_header->flags = UINT8_C(0);
     frame_header->version = AERON_FRAME_HEADER_VERSION;
@@ -915,7 +916,7 @@ int aeron_driver_name_resolver_set_resolution_header(
                 return 0;
             }
 
-            aeron_resolution_header_ipv4_t *hdr_ipv4 = (aeron_resolution_header_ipv4_t *) resolution_header;
+            aeron_resolution_header_ipv4_t *hdr_ipv4 = (aeron_resolution_header_ipv4_t *)resolution_header;
             memcpy(&hdr_ipv4->addr, cache_addr->address, sizeof(hdr_ipv4->addr));
             hdr_ipv4->name_length = (int16_t)name_length;
             name_offset = sizeof(aeron_resolution_header_ipv4_t);
@@ -929,7 +930,7 @@ int aeron_driver_name_resolver_set_resolution_header(
                 return 0;
             }
 
-            aeron_resolution_header_ipv6_t *hdr_ipv6 = (aeron_resolution_header_ipv6_t *) resolution_header;
+            aeron_resolution_header_ipv6_t *hdr_ipv6 = (aeron_resolution_header_ipv6_t *)resolution_header;
 
             memcpy(&hdr_ipv6->addr, cache_addr->address, sizeof(hdr_ipv6->addr));
             hdr_ipv6->name_length = (int16_t)name_length;

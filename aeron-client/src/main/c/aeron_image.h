@@ -57,6 +57,7 @@ aeron_image_t;
 typedef struct aeron_header_stct
 {
     aeron_data_header_t *frame;
+    int32_t initial_term_id;
 }
 aeron_header_t;
 

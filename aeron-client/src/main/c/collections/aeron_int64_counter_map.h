@@ -44,10 +44,7 @@ inline size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask)
 }
 
 inline int aeron_int64_counter_map_init(
-    aeron_int64_counter_map_t *map,
-    int64_t initial_value,
-    size_t initial_capacity,
-    float load_factor)
+    aeron_int64_counter_map_t *map, int64_t initial_value, size_t initial_capacity, float load_factor)
 {
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
@@ -172,10 +169,7 @@ inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, in
 }
 
 inline int aeron_int64_counter_map_put(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    const int64_t value,
-    int64_t *existing_value)
+    aeron_int64_counter_map_t *map, const int64_t key, const int64_t value, int64_t *existing_value)
 {
     if (value == map->initial_value)
     {
@@ -259,10 +253,7 @@ inline int64_t aeron_int64_counter_map_get(aeron_int64_counter_map_t *map, const
 }
 
 inline int aeron_int64_counter_map_get_and_add(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    const int64_t delta,
-    int64_t *value)
+    aeron_int64_counter_map_t *map, const int64_t key, const int64_t delta, int64_t *value)
 {
     size_t mask = map->entries_length - 1;
     size_t index = aeron_int64_counter_map_hash_key(key, mask);
@@ -315,10 +306,7 @@ inline int aeron_int64_counter_map_get_and_add(
 }
 
 inline int aeron_int64_counter_map_add_and_get(
-    aeron_int64_counter_map_t *map,
-    const int64_t key,
-    int64_t delta,
-    int64_t *value)
+    aeron_int64_counter_map_t *map, const int64_t key, int64_t delta, int64_t *value)
 {
     int64_t existing_value = 0;
     int result = aeron_int64_counter_map_get_and_add(map, key, delta, &existing_value);
@@ -352,9 +340,7 @@ inline int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, c
 typedef void (*aeron_int64_counter_map_for_each_func_t)(void *clientd, int64_t key, int64_t value);
 
 inline void aeron_int64_counter_map_for_each(
-    aeron_int64_counter_map_t *map,
-    aeron_int64_counter_map_for_each_func_t func,
-    void *clientd)
+    aeron_int64_counter_map_t *map, aeron_int64_counter_map_for_each_func_t func, void *clientd)
 {
     for (size_t i = 0, size = map->entries_length; i < size; i += 2)
     {

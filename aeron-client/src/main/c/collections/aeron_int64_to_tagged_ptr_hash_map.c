@@ -22,23 +22,14 @@ extern int aeron_int64_to_tagged_ptr_hash_map_init(aeron_int64_to_tagged_ptr_has
 extern void aeron_int64_to_tagged_ptr_hash_map_delete(aeron_int64_to_tagged_ptr_hash_map_t *map);
 extern int aeron_int64_to_tagged_ptr_hash_map_rehash(aeron_int64_to_tagged_ptr_hash_map_t *map, size_t new_capacity);
 extern int aeron_int64_to_tagged_ptr_hash_map_put(
-    aeron_int64_to_tagged_ptr_hash_map_t *map,
-    const int64_t key,
-    int32_t tag,
-    void *value);
+    aeron_int64_to_tagged_ptr_hash_map_t *map, const int64_t key, int32_t tag, void *value);
 extern bool aeron_int64_to_tagged_ptr_hash_map_get(
-    aeron_int64_to_tagged_ptr_hash_map_t *map,
-    const int64_t key,
-    uint32_t *tag,
-    void **value);
+    aeron_int64_to_tagged_ptr_hash_map_t *map, const int64_t key, uint32_t *tag, void **value);
 
 extern void aeron_int64_to_tagged_ptr_hash_map_compact_chain(aeron_int64_to_tagged_ptr_hash_map_t *map, size_t delete_index);
 
 extern bool aeron_int64_to_tagged_ptr_hash_map_remove(
-    aeron_int64_to_tagged_ptr_hash_map_t *map,
-    int64_t key,
-    uint32_t *tag,
-    void **value);
+    aeron_int64_to_tagged_ptr_hash_map_t *map, int64_t key, uint32_t *tag, void **value);
 extern void aeron_int64_to_tagged_ptr_hash_map_for_each(
     aeron_int64_to_tagged_ptr_hash_map_t *map, aeron_int64_to_tagged_ptr_hash_map_for_each_func_t func, void *clientd);
 extern void aeron_int64_to_tagged_ptr_hash_map_remove_if(

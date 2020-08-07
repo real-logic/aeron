@@ -25,8 +25,8 @@
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
-#include "aeron_flow_control.h"
 #include "aeron_alloc.h"
+#include "aeron_flow_control.h"
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name)
 {
@@ -158,9 +158,7 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
 }
 
 void aeron_flow_control_extract_strategy_name_length(
-    const size_t options_length,
-    const char *options,
-    size_t *strategy_length)
+    const size_t options_length, const char *options, size_t *strategy_length)
 {
     const char *next_option = (const char *)memchr(options, ',', options_length);
     *strategy_length = NULL == next_option ? options_length : (size_t)labs((long)(next_option - options));
@@ -182,7 +180,8 @@ int aeron_default_multicast_flow_control_strategy_supplier(
         channel->has_explicit_control ||
         channel->is_multicast)
     {
-        const char *flow_control_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, "fc");
+        const char *flow_control_options = aeron_uri_find_param_value(
+            &channel->uri.params.udp.additional_params, AERON_URI_FC_KEY);
         if (NULL != flow_control_options)
         {
             const char *strategy_name = flow_control_options;
@@ -247,9 +246,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
 #define AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN (64)
 
 int aeron_flow_control_parse_tagged_options(
-    size_t options_length,
-    const char *options,
-    aeron_flow_control_tagged_options_t *flow_control_options)
+    size_t options_length, const char *options, aeron_flow_control_tagged_options_t *flow_control_options)
 {
     flow_control_options->strategy_name = NULL;
     flow_control_options->strategy_name_length = 0;

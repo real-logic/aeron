@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-#include <string.h>
 #include "aeron_bit_set.h"
 
 extern int aeron_bit_set_stack_alloc(
-    size_t bit_set_length,
-    uint64_t *static_array,
-    size_t static_array_len,
-    aeron_bit_set_t *bit_set);
+    size_t bit_set_length, uint64_t *static_array, size_t static_array_len, aeron_bit_set_t *bit_set);
 
 extern int aeron_bit_set_stack_init(
     size_t bit_set_length,

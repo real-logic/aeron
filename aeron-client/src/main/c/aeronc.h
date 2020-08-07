@@ -36,7 +36,7 @@ typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_header_stct aeron_header_t;
 #pragma pack(push)
 #pragma pack(4)
-typedef struct aeron_header_values_stct
+typedef struct aeron_header_values_frame_stct
 {
     int32_t frame_length;
     int8_t version;
@@ -47,6 +47,13 @@ typedef struct aeron_header_values_stct
     int32_t stream_id;
     int32_t term_id;
     int64_t reserved_value;
+}
+aeron_header_values_frame_t;
+
+typedef struct aeron_header_values_stct
+{
+    aeron_header_values_frame_t frame;
+    int32_t initial_term_id;
 }
 aeron_header_values_t;
 #pragma pack(pop)
@@ -1923,6 +1930,43 @@ const char *aeron_errmsg();
  * is equal to path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);
+  
+/**
+ * Gets the registration id for addition of the counter.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_counter_t may have been freed.
+ *
+ * @param add_counter used to check for completion.
+ * @return registration id for the counter.
+ */
+int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *add_counter);
+
+/**
+ * Gets the registration id for addition of the publication.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_publication_t may have been freed.
+ *
+ * @param add_publication used to check for completion.
+ * @return registration id for the publication.
+ */
+int64_t aeron_async_add_publication_get_registration_id(aeron_async_add_publication_t *add_publication);
+
+/**
+ * Gets the registration id for addition of the exclusive_publication.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_exclusive_publication_t may have been freed.
+ *
+ * @param add_exclusive_publication used to check for completion.
+ * @return registration id for the exclusive_publication.
+ */
+int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
+    aeron_async_add_exclusive_publication_t *add_exclusive_publication);
+
+/**
+ * Gets the registration id for addition of the subscription.  Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour.  As the async_add_subscription_t may have been freed.
+ *
+ * @param add_subscription used to check for completion.
+ * @return registration id for the subscription.
+ */
+int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscription_t *add_subscription);
 
 #ifdef __cplusplus
 }

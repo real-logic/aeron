@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <inttypes.h>
-#include <string.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
 #include "util/aeron_math.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
-#include "aeron_alloc.h"
-#include "aeron_uri.h"
 
 typedef enum aeron_uri_parser_state_enum
 {
@@ -486,9 +482,7 @@ int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *re
 }
 
 int aeron_uri_publication_session_id_param(
-    aeron_uri_params_t *uri_params,
-    aeron_driver_conductor_t *conductor,
-    aeron_uri_publication_params_t *params)
+    aeron_uri_params_t *uri_params, aeron_driver_conductor_t *conductor, aeron_uri_publication_params_t *params)
 {
     const char *session_id_str = aeron_uri_find_param_value(uri_params, AERON_URI_SESSION_ID_KEY);
     if (NULL != session_id_str)

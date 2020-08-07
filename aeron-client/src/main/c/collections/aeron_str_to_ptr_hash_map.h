@@ -54,13 +54,12 @@ inline size_t aeron_str_to_ptr_hash_map_hash_key(uint64_t key, size_t mask)
 inline bool aeron_str_to_ptr_hash_map_compare(
     aeron_str_to_ptr_hash_map_key_t *key, const char *key_str, size_t key_str_len, uint64_t key_hash_code)
 {
-    return (key->hash_code == key_hash_code && key->str_length == key_str_len && strncmp(key->str, key_str, key_str_len) == 0);
+    return (key->hash_code == key_hash_code &&
+        key->str_length == key_str_len &&
+        strncmp(key->str, key_str, key_str_len) == 0);
 }
 
-inline int aeron_str_to_ptr_hash_map_init(
-    aeron_str_to_ptr_hash_map_t *map,
-    size_t initial_capacity,
-    float load_factor)
+inline int aeron_str_to_ptr_hash_map_init(aeron_str_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor)
 {
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
@@ -271,7 +270,7 @@ inline void *aeron_str_to_ptr_hash_map_remove(aeron_str_to_ptr_hash_map_t *map, 
 typedef void (*aeron_str_to_ptr_hash_map_for_each_func_t)(void *clientd, const char *key, size_t key_len, void *value);
 
 inline void aeron_str_to_ptr_hash_map_for_each(
-        aeron_str_to_ptr_hash_map_t *map, aeron_str_to_ptr_hash_map_for_each_func_t func, void *clientd)
+    aeron_str_to_ptr_hash_map_t *map, aeron_str_to_ptr_hash_map_for_each_func_t func, void *clientd)
 {
     for (size_t i = 0; i < map->capacity; i++)
     {

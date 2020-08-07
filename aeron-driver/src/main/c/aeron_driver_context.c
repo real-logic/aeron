@@ -24,12 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "util/aeron_platform.h"
-#if defined(AERON_COMPILER_MSVC)
-#else
-#include <unistd.h>
-#endif
-
 #include <inttypes.h>
 #include <errno.h>
 

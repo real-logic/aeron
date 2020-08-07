@@ -540,6 +540,14 @@ int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
     return 0;
 }
 
+int64_t aeron_header_position(aeron_header_t *header)
+{
+    const int64_t offset_at_end_of_frame = AERON_ALIGN(
+        header->frame->term_offset + header->frame->frame_header.frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    return aeron_logbuffer_compute_position(
+        header->frame->term_id, offset_at_end_of_frame, header->position_bits_to_shift, header->initial_term_id);
+}
+
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
 extern void aeron_subscription_propose_last_image_change_number(

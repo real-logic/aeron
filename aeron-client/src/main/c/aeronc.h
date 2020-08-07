@@ -1178,6 +1178,14 @@ typedef void (*aeron_block_handler_t)(
  */
 int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values);
 
+/**
+ * Get the current position to which the Image has advanced on reading this message.
+ *
+ * @param header the current header message
+ * @return the current position to which the Image has advanced on reading this message.
+ */
+int64_t aeron_header_position(aeron_header_t *header);
+
 typedef struct aeron_subscription_constants_stct
 {
     /**

@@ -24,16 +24,16 @@
 
 #define AERON_CACHE_LINE_LENGTH (64)
 
-#define AERON_ALIGN(value,alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
+#define AERON_ALIGN(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
 
 #define AERON_IS_POWER_OF_TWO(value) ((value) > 0 && (((value) & (~(value) + 1)) == (value)))
 
 #define AERON_MIN(a,b) ((a) < (b) ? (a) : (b))
 
 #if defined(__GNUC__)
-#define AERON_C_COND_EXPECT(exp,c) (__builtin_expect((exp),c))
+#define AERON_C_COND_EXPECT(exp, c) (__builtin_expect((exp), c))
 #else
-#define AERON_C_COND_EXPECT(exp,c) (exp)
+#define AERON_C_COND_EXPECT(exp, c) (exp)
 #endif
 
 /* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
@@ -110,7 +110,9 @@ inline int aeron_number_of_leading_zeroes(int32_t value)
     unsigned long r;
 
     if (_BitScanReverse(&r, (unsigned long)value))
+    {
         return 31 - (int)r;
+    }
 
     return 32;
 #else

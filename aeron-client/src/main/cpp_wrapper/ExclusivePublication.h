@@ -61,7 +61,8 @@ class ExclusivePublication
 public:
 
     /// @cond HIDDEN_SYMBOLS
-    ExclusivePublication(aeron_exclusive_publication_t *publication) : m_publication(publication), m_channel()
+    ExclusivePublication(aeron_exclusive_publication_t *publication, CountersReader &countersReader) :
+        m_publication(publication), m_countersReader(countersReader), m_channel()
     {
         if (aeron_exclusive_publication_constants(m_publication, &m_constants) < 0)
         {
@@ -71,7 +72,10 @@ public:
     }
     /// @endcond
 
-    ~ExclusivePublication();
+    ~ExclusivePublication()
+    {
+        aeron_exclusive_publication_close(m_publication, NULL, NULL);
+    }
 
     /**
      * Media address for delivery to the channel.
@@ -296,7 +300,10 @@ public:
      * @return local socket address for this subscription.
      * @see #channelStatus()
      */
-    std::vector<std::string> localSocketAddresses() const;
+    std::vector<std::string> localSocketAddresses() const
+    {
+        return LocalSocketAddressStatus::findAddresses(m_countersReader, channelStatus(), channelStatusId());
+    }
 
     /**
      * Non-blocking publish of a buffer containing a message.
@@ -477,14 +484,26 @@ public:
      *
      * @param endpointChannel for the destination to add
      */
-    void addDestination(const std::string &endpointChannel);
+    void addDestination(const std::string &endpointChannel)
+    {
+        if (aeron_exclusive_publication_add_destination(m_publication, endpointChannel.c_str(), NULL) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
 
     /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to remove
      */
-    void removeDestination(const std::string &endpointChannel);
+    void removeDestination(const std::string &endpointChannel)
+    {
+        if (aeron_exclusive_publication_remove_destination(m_publication, endpointChannel.c_str(), NULL) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
 
     /// @cond HIDDEN_SYMBOLS
     inline void close()
@@ -495,6 +514,7 @@ public:
 
 private:
     aeron_exclusive_publication_t *m_publication;
+    CountersReader &m_countersReader;
     aeron_publication_constants_t m_constants;
     std::string m_channel;
 

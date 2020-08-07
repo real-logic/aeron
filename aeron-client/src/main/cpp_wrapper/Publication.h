@@ -23,18 +23,15 @@
 #include <string>
 #include <vector>
 
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/BufferClaim.h>
-#include <concurrent/status/UnsafeBufferPosition.h>
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/logbuffer/BufferClaim.h"
+#include "concurrent/logbuffer/TermAppender.h"
+#include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
+#include "concurrent/status/LocalSocketAddressStatus.h"
 #include "util/Exceptions.h"
 #include "util/Export.h"
-#include "concurrent/logbuffer/TermAppender.h"
-
-extern "C"
-{
 #include "aeronc.h"
-}
 
 namespace aeron
 {
@@ -80,7 +77,10 @@ public:
     }
     /// @endcond
 
-    ~Publication();
+    ~Publication()
+    {
+        aeron_publication_close(m_publication, NULL, NULL);
+    }
 
     /**
      * Media address for delivery to the channel.
@@ -308,7 +308,11 @@ public:
      * @return local socket address for this subscription.
      * @see #channelStatus()
      */
-    std::vector<std::string> localSocketAddresses() const;
+    std::vector<std::string> localSocketAddresses() const
+    {
+        return LocalSocketAddressStatus::findAddresses(m_countersReader, channelStatus(), channelStatusId());
+    }
+
 
     /**
      * Non-blocking publish of a buffer containing a message.
@@ -493,7 +497,15 @@ public:
      * @param endpointChannel for the destination to add
      * @return correlation id for the add command
      */
-    std::int64_t addDestination(const std::string &endpointChannel);
+    std::int64_t addDestination(const std::string &endpointChannel)
+    {
+        int64_t correlationId;
+        if (aeron_publication_add_destination(m_publication, endpointChannel.c_str(), &correlationId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+        return correlationId;
+    }
 
     /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
@@ -501,7 +513,15 @@ public:
      * @param endpointChannel for the destination to remove
      * @return correlation id for the remove command
      */
-    std::int64_t removeDestination(const std::string &endpointChannel);
+    std::int64_t removeDestination(const std::string &endpointChannel)
+    {
+        int64_t correlationId;
+        if (aeron_publication_remove_destination(m_publication, endpointChannel.c_str(), &correlationId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+        return correlationId;
+    }
 
     /**
      * Retrieve the status of the associated add or remove destination operation with the given correlationId.
@@ -522,7 +542,11 @@ public:
      * or Publication::removeDestination
      * @return true for added or false if not.
      */
-    bool findDestinationResponse(std::int64_t correlationId);
+    bool findDestinationResponse(std::int64_t correlationId)
+    {
+        throw UnsupportedOperationException(
+            "Should look at using the same async approach to adding destinations", SOURCEINFO);
+    }
 
 private:
     aeron_publication_t *m_publication;

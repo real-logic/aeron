@@ -165,7 +165,11 @@ public:
      * @return local socket address for this subscription.
      * @see #channelStatus()
      */
-    std::vector<std::string> localSocketAddresses() const;
+    std::vector<std::string> localSocketAddresses() const
+    {
+        return aeron::concurrent::status::LocalSocketAddressStatus::findAddresses(
+            m_countersReader, channelStatus(), channelStatusId());
+    }
 
     /**
      * Add a destination manually to a multi-destination Subscription.
@@ -173,7 +177,16 @@ public:
      * @param endpointChannel for the destination to add.
      * @return correlation id for the add command
      */
-    std::int64_t addDestination(const std::string &endpointChannel);
+    std::int64_t addDestination(const std::string &endpointChannel)
+    {
+        std::int64_t correlationId;
+        if (aeron_subscription_add_destination(m_subscription, endpointChannel.c_str(), &correlationId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return correlationId;
+    }
 
     /**
      * Remove a previously added destination from a multi-destination Subscription.
@@ -181,7 +194,16 @@ public:
      * @param endpointChannel for the destination to remove.
      * @return correlation id for the remove command
      */
-    std::int64_t removeDestination(const std::string &endpointChannel);
+    std::int64_t removeDestination(const std::string &endpointChannel)
+    {
+        std::int64_t correlationId;
+        if (aeron_subscription_remove_destination(m_subscription, endpointChannel.c_str(), &correlationId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return correlationId;
+    }
 
     /**
      * Retrieve the status of the associated add or remove destination operation with the given correlationId.
@@ -202,7 +224,11 @@ public:
      * or Subscription::removeDestination
      * @return true for added or false if not.
      */
-    bool findDestinationResponse(std::int64_t correlationId);
+    bool findDestinationResponse(std::int64_t correlationId)
+    {
+        throw UnsupportedOperationException(
+            "Should look at using the same async approach to adding destinations", SOURCEINFO);
+    }
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments.

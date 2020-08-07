@@ -354,7 +354,7 @@ public:
         }
         else
         {
-            return std::make_shared<ExclusivePublication>(publication);
+            return std::make_shared<ExclusivePublication>(publication, m_countersReader);
         }
     }
 

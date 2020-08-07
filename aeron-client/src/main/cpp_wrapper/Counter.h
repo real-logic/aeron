@@ -52,9 +52,15 @@ public:
         return m_registrationId;
     }
 
-    std::int32_t state() const;
+    std::int32_t state() const
+    {
+        return m_reader.getCounterState(id());
+    }
 
-    std::string label() const;
+    std::string label() const
+    {
+        return m_reader.getCounterLabel(id());
+    }
 
     bool isClosed() const;
 

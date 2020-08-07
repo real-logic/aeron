@@ -24,16 +24,6 @@ extern "C"
 namespace aeron
 {
 
-std::int32_t Counter::state() const
-{
-    return m_reader.getCounterState(id());
-}
-
-std::string Counter::label() const
-{
-    return m_reader.getCounterLabel(id());
-}
-
 bool Counter::isClosed() const
 {
     aeron_counter_t *counter_ptr = counter();

@@ -917,7 +917,7 @@ int aeron_driver_name_resolver_set_resolution_header(
             }
 
             aeron_resolution_header_ipv4_t *hdr_ipv4 = (aeron_resolution_header_ipv4_t *)resolution_header;
-            memcpy(&hdr_ipv4->addr, cache_addr->address, sizeof(hdr_ipv4->addr));
+            memcpy(hdr_ipv4->addr, cache_addr->address, sizeof(hdr_ipv4->addr));
             hdr_ipv4->name_length = (int16_t)name_length;
             name_offset = sizeof(aeron_resolution_header_ipv4_t);
 
@@ -932,7 +932,7 @@ int aeron_driver_name_resolver_set_resolution_header(
 
             aeron_resolution_header_ipv6_t *hdr_ipv6 = (aeron_resolution_header_ipv6_t *)resolution_header;
 
-            memcpy(&hdr_ipv6->addr, cache_addr->address, sizeof(hdr_ipv6->addr));
+            memcpy(hdr_ipv6->addr, cache_addr->address, sizeof(hdr_ipv6->addr));
             hdr_ipv6->name_length = (int16_t)name_length;
             name_offset = sizeof(aeron_resolution_header_ipv6_t);
 
@@ -947,7 +947,7 @@ int aeron_driver_name_resolver_set_resolution_header(
     resolution_header->res_flags = flags;
 
     uint8_t *buffer = (uint8_t *)resolution_header;
-    memcpy(&buffer[name_offset], name, name_length);
+    memcpy(buffer + name_offset, name, name_length);
 
     return (int)entry_length;
 }

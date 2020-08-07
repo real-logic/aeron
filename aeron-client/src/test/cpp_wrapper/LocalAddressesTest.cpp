@@ -29,15 +29,15 @@ using namespace aeron;
 using testing::MockFunction;
 using testing::_;
 
-class PubSubTest : public testing::Test
+class LocalAddressesTest : public testing::Test
 {
 public:
-    PubSubTest()
+    LocalAddressesTest()
     {
         m_driver.start();
     }
 
-    ~PubSubTest() override
+    ~LocalAddressesTest() override
     {
         m_driver.stop();
     }
@@ -46,7 +46,7 @@ protected:
     EmbeddedMediaDriver m_driver;
 };
 
-TEST_F(PubSubTest, shouldGetLocalAddresses)
+TEST_F(LocalAddressesTest, shouldGetLocalAddresses)
 {
     std::int32_t streamId = 10001;
     std::string channel = "aeron:udp?endpoint=127.0.0.1:23456|control=127.0.0.1:23457";

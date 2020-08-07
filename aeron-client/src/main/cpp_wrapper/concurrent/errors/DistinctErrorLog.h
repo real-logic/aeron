@@ -22,9 +22,9 @@
 #include <algorithm>
 #include <mutex>
 #include <atomic>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
-#include <util/BitUtil.h>
+#include "util/Index.h"
+#include "concurrent/AtomicBuffer.h"
+#include "util/BitUtil.h"
 #include "ErrorLogDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace errors {

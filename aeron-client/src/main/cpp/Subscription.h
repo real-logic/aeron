@@ -143,6 +143,20 @@ public:
     std::string tryResolveChannelEndpoint() const;
 
     /**
+     * Resolve channel endpoint and replace it with the port from the ephemeral range when 0 was provided. If there are
+     * no addresses, or if there is more than one, returned from {@link #localSocketAddresses()} then the original
+     * {@link #channel()} is returned.
+     * <p>
+     * If the channel is not {@link ChannelEndpointStatus#CHANNEL_ENDPOINT_ACTIVE}, then an empty string will be
+     * returned.
+     *
+     * @return channel URI string with an endpoint being resolved to the allocated port.
+     * @see #channelStatus()
+     * @see #localSocketAddresses()
+     */
+    std::string tryResolveChannelEndpointPort() const;
+
+    /**
      * Add a destination manually to a multi-destination Subscription.
      *
      * @param endpointChannel for the destination to add.

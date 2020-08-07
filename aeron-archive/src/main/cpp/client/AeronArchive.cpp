@@ -72,7 +72,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (2 == m_step)
     {
-        std::string controlResponseChannel = m_subscription->tryResolveChannelEndpoint();
+        std::string controlResponseChannel = m_subscription->tryResolveChannelEndpointPort();
         if (controlResponseChannel.empty())
         {
             return std::shared_ptr<AeronArchive>();

@@ -22,7 +22,6 @@ SET(SOURCE
     Publication.cpp
     ExclusivePublication.cpp
     Subscription.cpp
-    Aeron.cpp
     Counter.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp)

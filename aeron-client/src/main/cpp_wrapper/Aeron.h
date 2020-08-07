@@ -77,9 +77,25 @@ public:
      *
      * @param context for configuration of the client.
      */
-    explicit Aeron(Context &context);
+    explicit Aeron(Context &context) :
+        m_context(context.conclude()),
+        m_aeron(Aeron::init_aeron(m_context)),
+        m_countersReader(aeron_counters_reader(m_aeron)),
+        m_clientConductor(m_aeron),
+        m_conductorInvoker(m_clientConductor, m_context.m_exceptionHandler)
+    {
+        aeron_start(m_aeron);
+    }
 
-    ~Aeron();
+    ~Aeron()
+    {
+        aeron_close(m_aeron);
+        aeron_context_close(m_context.m_context);
+
+        m_availableCounterHandlers.clear();
+        m_unavailableCounterHandlers.clear();
+        m_closeClientHandlers.clear();
+    }
 
     /**
      * Indicate if the instance is closed and can not longer be used.
@@ -128,7 +144,16 @@ public:
      * @param streamId within the channel scope.
      * @return id to resolve the AsyncAddPublication for the publication
      */
-    std::int64_t addPublication(const std::string &channel, std::int32_t streamId);
+    std::int64_t addPublication(const std::string &channel, std::int32_t streamId)
+    {
+        AsyncAddPublication *addPublication = addPublicationAsync(channel, streamId);
+        std::int64_t registrationId = aeron_async_add_publication_get_registration_id(addPublication);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingPublications[registrationId] = addPublication;
+
+        return registrationId;
+    }
 
     /**
      * Retrieve the Publication associated with the given registrationId.
@@ -229,7 +254,17 @@ public:
      * @param streamId within the channel scope.
      * @return id to resolve AsyncAddExclusivePublication for the publication
      */
-    std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId);
+    std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId)
+    {
+        AsyncAddExclusivePublication *addExclusivePublication = addExclusivePublicationAsync(channel, streamId);
+        std::int64_t registrationId = aeron_async_add_exclusive_exclusive_publication_get_registration_id(
+            addExclusivePublication);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingExclusivePublications[registrationId] = addExclusivePublication;
+
+        return registrationId;
+    }
 
     /**
      * Retrieve the ExclusivePublication associated with the given registrationId.
@@ -354,7 +389,17 @@ public:
         const std::string &channel,
         std::int32_t streamId,
         const on_available_image_t &onAvailableImageHandler,
-        const on_unavailable_image_t &onUnavailableImageHandler);
+        const on_unavailable_image_t &onUnavailableImageHandler)
+    {
+        AsyncAddSubscription *addSubscription = addSubscriptionAsync(
+            channel, streamId, onAvailableImageHandler, onUnavailableImageHandler);
+        std::int64_t registrationId = aeron_async_add_subscription_get_registration_id(addSubscription->m_async);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingSubscriptions[registrationId] = addSubscription;
+
+        return registrationId;
+    }
 
     /**
      * Retrieve the Subscription associated with the given registrationId.
@@ -509,7 +554,17 @@ public:
         std::int32_t typeId,
         const std::uint8_t *keyBuffer,
         std::size_t keyLength,
-        const std::string &label);
+        const std::string &label)
+    {
+        AsyncAddCounter *addCounter = addCounterAsync(typeId, keyBuffer, keyLength, label);
+        std::int64_t registrationId = aeron_async_add_counter_get_registration_id(addCounter);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        m_pendingCounters[registrationId] = addCounter;
+        return registrationId;
+    }
+
 
     /**
      * Retrieve the Counter associated with the given registrationId.
@@ -592,7 +647,7 @@ public:
     inline std::shared_ptr<Counter> findCounter(AsyncAddCounter *addCounter)
     {
         aeron_counter_t *counter;
-        std::int64_t registrationId = getRegistrationId(addCounter);
+        std::int64_t registrationId = aeron_async_add_counter_get_registration_id(addCounter);
         int result = aeron_async_add_counter_poll(&counter, addCounter);
         if (result < 0)
         {
@@ -859,7 +914,11 @@ public:
      *
      * @return static version and build string for the binary library.
      */
-    static std::string version();
+    static std::string version()
+    {
+        return std::string(aeron_version_full());
+    }
+
 
 private:
     Context m_context;
@@ -876,9 +935,16 @@ private:
     ClientConductor m_clientConductor;
     AgentInvoker<ClientConductor> m_conductorInvoker;
 
-    static aeron_t *init_aeron(Context &context);
-
-    static std::int64_t getRegistrationId(aeron_client_registering_resource_stct *resource);
+    static aeron_t *init_aeron(Context &context)
+    {
+        aeron_t *aeron;
+        context.attachCallbacksToContext();
+        if (aeron_init(&aeron, context.m_context) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+        return aeron;
+    }
 
     static void onAvailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {

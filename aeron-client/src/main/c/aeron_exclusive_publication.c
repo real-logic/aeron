@@ -79,7 +79,7 @@ int aeron_exclusive_publication_create(
     _publication->session_id = session_id;
     _publication->is_closed = false;
 
-    _publication->max_possible_position = ((int64_t)term_length << 31L);
+    _publication->max_possible_position = ((int64_t)term_length << 31);
     _publication->max_payload_length = (size_t)(_publication->log_meta_data->mtu_length - AERON_DATA_HEADER_LENGTH);
     _publication->max_message_length = aeron_frame_compute_max_message_length(term_length);
     _publication->term_buffer_length = (int32_t)term_length;
@@ -292,9 +292,7 @@ int64_t aeron_exclusive_publication_offerv(
 }
 
 int64_t aeron_exclusive_publication_try_claim(
-    aeron_exclusive_publication_t *publication,
-    size_t length,
-    aeron_buffer_claim_t *buffer_claim)
+    aeron_exclusive_publication_t *publication, size_t length, aeron_buffer_claim_t *buffer_claim)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
     bool is_closed;
@@ -344,9 +342,7 @@ int64_t aeron_exclusive_publication_try_claim(
     return new_position;
 }
 
-int64_t aeron_exclusive_publication_append_padding(
-    aeron_exclusive_publication_t *publication,
-    size_t length)
+int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t *publication, size_t length)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
     bool is_closed;
@@ -399,9 +395,7 @@ int64_t aeron_exclusive_publication_append_padding(
 }
 
 int64_t aeron_exclusive_publication_offer_block(
-    aeron_exclusive_publication_t *publication,
-    const uint8_t *buffer,
-    size_t length)
+    aeron_exclusive_publication_t *publication, const uint8_t *buffer, size_t length)
 {
     bool is_closed;
 

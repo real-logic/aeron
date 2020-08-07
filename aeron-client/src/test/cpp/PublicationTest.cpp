@@ -106,6 +106,12 @@ TEST_F(PublicationTest, shouldReportInitialPosition)
     EXPECT_EQ(m_publication->position(), 0);
 }
 
+TEST_F(PublicationTest, shouldReportMaxPossiblePosition)
+{
+    auto expectedPosition = (int64_t)(TERM_LENGTH * (uint64_t(1u) << 31u));
+    EXPECT_EQ(m_publication->maxPossiblePosition(), expectedPosition);
+}
+
 TEST_F(PublicationTest, shouldReportMaxMessageLength)
 {
     EXPECT_EQ(m_publication->maxMessageLength(), FrameDescriptor::computeMaxMessageLength(TERM_LENGTH));

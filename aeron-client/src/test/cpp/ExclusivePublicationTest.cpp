@@ -112,6 +112,13 @@ TEST_F(ExclusivePublicationTest, shouldReportMaxMessageLength)
     EXPECT_EQ(m_publication->maxMessageLength(), FrameDescriptor::computeMaxMessageLength(TERM_LENGTH));
 }
 
+TEST_F(ExclusivePublicationTest, shouldReportMaxPossiblePosition)
+{
+    auto expectedPosition = (int64_t)(TERM_LENGTH * (uint64_t(1u) << 31u));
+    createPub();
+    EXPECT_EQ(m_publication->maxPossiblePosition(), expectedPosition);
+}
+
 TEST_F(ExclusivePublicationTest, shouldReportCorrectTermBufferLength)
 {
     createPub();

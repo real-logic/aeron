@@ -68,7 +68,7 @@ int aeron_publication_create(
 
     size_t term_length = (size_t)_publication->log_meta_data->term_length;
 
-    _publication->max_possible_position = ((int64_t)term_length << 31L);
+    _publication->max_possible_position = ((int64_t)term_length << 31);
     _publication->max_payload_length = (size_t)(_publication->log_meta_data->mtu_length - AERON_DATA_HEADER_LENGTH);
     _publication->max_message_length = aeron_frame_compute_max_message_length(term_length);
     _publication->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_length);
@@ -294,10 +294,7 @@ int64_t aeron_publication_offerv(
     return new_position;
 }
 
-int64_t aeron_publication_try_claim(
-    aeron_publication_t *publication,
-    size_t length,
-    aeron_buffer_claim_t *buffer_claim)
+int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t length, aeron_buffer_claim_t *buffer_claim)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
     bool is_closed;

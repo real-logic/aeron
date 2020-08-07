@@ -208,6 +208,17 @@ public:
         return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
     }
 
+
+    /**
+     * Get the max possible position the stream can reach given term length.
+     *
+     * @return the max possible position the stream can reach given term length.
+     */
+    inline std::int64_t maxPossiblePosition() const
+    {
+        return m_maxPossiblePosition;
+    }
+
     /**
      * Get the current position to which the publication has advanced for this stream.
      *

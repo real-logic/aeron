@@ -63,6 +63,12 @@ TEST_F(SystemTest, DISABLED_shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
     }
 }
 
+TEST_F(SystemTest, shouldGetDefaultPath)
+{
+    const std::string defaultPath = Context::defaultAeronPath();
+    EXPECT_GT(defaultPath.length(), 0U);
+}
+
 TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
 {
     const int counterTypeId = 1001;

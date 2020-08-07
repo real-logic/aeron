@@ -24,7 +24,6 @@ SET(SOURCE
     Subscription.cpp
     Aeron.cpp
     Counter.cpp
-    Context.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp)
 

@@ -447,62 +447,34 @@ public:
     }
 
     static void requestDriverTermination(
-        const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength);
-
-    inline static std::string tmpDir()
+        const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
     {
-#if defined(_MSC_VER)
-        static char buff[MAX_PATH+1];
-        std::string dir = "";
-
-        if (::GetTempPath(MAX_PATH, &buff[0]) > 0)
-        {
-            dir = buff;
-        }
-
-        return dir;
-#else
-        std::string dir = "/tmp";
-
-        if (::getenv("TMPDIR"))
-        {
-            dir = ::getenv("TMPDIR");
-        }
-
-        return dir;
-#endif
+        throw UnsupportedOperationException("Need to implement in C API", SOURCEINFO);
     }
 
-    inline static std::string getUserName()
+    static std::string defaultAeronPath()
     {
-        const char *username = ::getenv("USER");
-#if (_MSC_VER)
-        if (nullptr == username)
+        char path[1024];
+        size_t length = sizeof(path);
+        int result = aeron_default_path(path, length);
+        if (result < 0)
         {
-            username = ::getenv("USERNAME");
-            if (nullptr == username)
-            {
-                 username = "default";
-            }
+            std::string errMsg = std::string("Failed to get default path, result: ") += std::to_string(result);
+            throw IllegalStateException(errMsg, SOURCEINFO);
         }
-#else
-        if (nullptr == username)
+        else if (length <= static_cast<size_t>(result))
         {
-            username = "default";
-        }
-#endif
-        return username;
-    }
+            std::string errMsg = std::string("Path information was truncated, buffer length: ");
+            errMsg += std::to_string(length);
+            errMsg += ", path length: ";
+            errMsg += std::to_string(result);
+            errMsg += ", path: ";
+            errMsg += std::string(path, 0, length);
 
-    inline static std::string defaultAeronPath()
-    {
-#if defined(__linux__)
-        return "/dev/shm/aeron-" + getUserName();
-#elif (_MSC_VER)
-        return tmpDir() + "aeron-" + getUserName();
-#else
-        return tmpDir() + "/aeron-" + getUserName();
-#endif
+            throw IllegalStateException(errMsg, SOURCEINFO);
+        }
+
+        return std::string(path, 0, length);
     }
 
 private:
@@ -517,14 +489,6 @@ private:
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
     on_close_client_t m_onCloseClientHandler = defaultOnCloseClientHandler;
-
-    // Deprecated???
-    std::string m_dirName = defaultAeronPath();
-    long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
-    long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
-    bool m_useConductorAgentInvoker = false;
-    bool m_preTouchMappedMemory = false;
-    // ...end
 
     void attachCallbacksToContext()
     {

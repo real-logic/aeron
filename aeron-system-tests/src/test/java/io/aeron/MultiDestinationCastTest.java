@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -64,8 +63,7 @@ public class MultiDestinationCastTest
     private static final int MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
-    private static final String ROOT_DIR =
-        SystemUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID() + File.separator;
+    private static final String ROOT_DIR = SystemUtil.tmpDirName() + "aeron-system-tests" + File.separator;
 
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
 

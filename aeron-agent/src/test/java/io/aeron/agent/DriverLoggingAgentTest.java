@@ -139,7 +139,7 @@ public class DriverLoggingAgentTest
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
             .aeronDirectoryName(aeronDirectoryName);
 
-        try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
+        try (MediaDriver ignore = MediaDriver.launch(driverCtx))
         {
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());

@@ -26,7 +26,7 @@ public class ClientContextTest
     @Test
     public void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
-        try (MediaDriver mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()
+        try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)))
         {

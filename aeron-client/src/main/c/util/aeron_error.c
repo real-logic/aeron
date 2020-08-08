@@ -61,6 +61,7 @@ static void initialize_error()
 int aeron_errcode()
 {
     initialize_error();
+
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
     int result = 0;
 
@@ -75,6 +76,7 @@ int aeron_errcode()
 const char *aeron_errmsg()
 {
     initialize_error();
+
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
     const char *result = "";
 
@@ -89,6 +91,7 @@ const char *aeron_errmsg()
 static aeron_per_thread_error_t *get_required_error_state()
 {
     initialize_error();
+
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
 
     if (NULL == error_state)

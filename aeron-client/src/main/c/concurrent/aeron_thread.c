@@ -24,12 +24,12 @@
 #if !defined(_WIN32)
 #include <unistd.h>
 #else
-#include <Windows.h>
+#include <windows.h>
 
 struct aeron_thread_stct
 {
     HANDLE handle;
-    void *(*callback)(void*);
+    void *(*callback)(void *);
     void *arg0;
     void *result;
 };
@@ -100,7 +100,7 @@ static BOOL WINAPI aeron_thread_once_callback(PINIT_ONCE init_once, void (*callb
 
 void aeron_thread_once(AERON_INIT_ONCE *s_init_once, void *callback)
 {
-    InitOnceExecuteOnce((PINIT_ONCE)s_init_once, aeron_thread_once_callback, callback, NULL);
+    InitOnceExecuteOnce((PINIT_ONCE)s_init_once, (PINIT_ONCE_FN)aeron_thread_once_callback, callback, NULL);
 }
 
 int aeron_mutex_init(aeron_mutex_t *mutex, void *attr)
@@ -138,18 +138,20 @@ int aeron_thread_attr_init(pthread_attr_t *attr)
 
 static DWORD WINAPI aeron_thread_proc(LPVOID parameter)
 {
-    aeron_thread_t *thread = (aeron_thread_t*)parameter;
+    aeron_thread_t *thread = (aeron_thread_t *)parameter;
     (*thread)->result = (*thread)->callback((*thread)->arg0);
+
     return 0;
 }
 
-int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void*(*callback)(void*), void *arg0)
+int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void *(*callback)(void *), void *arg0)
 {
-    if (thread_ptr == NULL)
+    if (NULL == thread_ptr)
     {
         return -1;
     }
-    if (aeron_alloc((void **)thread_ptr, sizeof(struct aeron_thread_stct)) <0)
+
+    if (aeron_alloc((void **)thread_ptr, sizeof(struct aeron_thread_stct)) < 0)
     {
         return -1;
     }
@@ -157,31 +159,34 @@ int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void*(*callback)
     (*thread_ptr)->callback = callback;
     (*thread_ptr)->arg0 = arg0;
     DWORD id;
+
     (*thread_ptr)->handle = CreateThread(
-        NULL,              // default security attributes
-        0,                 // use default stack size
-        aeron_thread_proc, // thread function name
-        thread_ptr,        // argument to thread function
-        0,                 // use default creation flags
-        &id);              // returns the thread identifier
+        NULL,  // default security attributes
+        0,         // use default stack size
+        aeron_thread_proc,    // thread function name
+        thread_ptr,           // argument to thread function
+        0,      // use default creation flags
+        &id);                 // returns the thread identifier
+
     if (!(*thread_ptr)->handle)
     {
         aeron_free(*thread_ptr);
         return -1;
     }
+
     return 0;
 }
 
 void aeron_thread_set_name(const char *role_name)
 {
-    size_t wn = mbstowcs(NULL, role_name, 0);
+    size_t wchar_count = mbstowcs(NULL, role_name, 0);
     wchar_t *buf;
-    if (aeron_alloc(&buf, sizeof(wchar_t) * (wn + 1)) < 0)  // value-initialize to 0 (see below)
+    if (aeron_alloc((void **)&buf, sizeof(wchar_t) * (wchar_count + 1)) < 0)  // value-initialize to 0 (see below)
     {
         return;
     }
 
-    mbstowcs(buf, role_name, wn + 1);
+    mbstowcs(buf, role_name, wchar_count + 1);
     SetThreadDescription(GetCurrentThread(), buf);
 
     aeron_free(buf);
@@ -189,11 +194,12 @@ void aeron_thread_set_name(const char *role_name)
 
 int aeron_thread_join(aeron_thread_t thread, void **value_ptr)
 {
-    int result = 0;
     if (!thread)
     {
         return EINVAL;
     }
+
+    int result = 0;
     if (thread->handle)
     {
         WaitForSingleObject(thread->handle, INFINITE);
@@ -213,12 +219,12 @@ int aeron_thread_join(aeron_thread_t thread, void **value_ptr)
     return result;
 }
 
-int aeron_thread_key_create(pthread_key_t *key, void(*destr_function)(void *))
+int aeron_thread_key_create(pthread_key_t *key_ptr, void (*destr_func)(void *))
 {
     DWORD dkey = TlsAlloc();
     if (dkey != TLS_OUT_OF_INDEXES)
     {
-        *key = dkey;
+        *key_ptr = dkey;
         return 0;
     }
     else

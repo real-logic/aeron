@@ -29,61 +29,63 @@ void aeron_micro_sleep(size_t microseconds);
 
 #if defined(AERON_COMPILER_GCC)
 
-    #include <pthread.h>
-    typedef pthread_mutex_t aeron_mutex_t;
-    #define AERON_INIT_ONCE pthread_once_t
-    #define AERON_INIT_ONCE_VALUE PTHREAD_ONCE_INIT
+#include <pthread.h>
+typedef pthread_mutex_t aeron_mutex_t;
+#define AERON_INIT_ONCE pthread_once_t
+#define AERON_INIT_ONCE_VALUE PTHREAD_ONCE_INIT
 
-    typedef pthread_t aeron_thread_t;
-    #define aeron_mutex_init pthread_mutex_init
-    #define aeron_mutex_lock pthread_mutex_lock
-    #define aeron_mutex_unlock pthread_mutex_unlock
-    #define aeron_mutex_destroy pthread_mutex_destroy
-    #define aeron_thread_once pthread_once
-    #define aeron_thread_attr_init pthread_attr_init
-    #define aeron_thread_create pthread_create
-    #define aeron_thread_join pthread_join
-    #define aeron_thread_key_create pthread_key_create
-    #define aeron_thread_key_delete pthread_key_delete
-    #define aeron_thread_get_specific pthread_getspecific
-    #define aeron_thread_set_specific pthread_setspecific
+typedef pthread_t aeron_thread_t;
+#define aeron_mutex_init pthread_mutex_init
+#define aeron_mutex_lock pthread_mutex_lock
+#define aeron_mutex_unlock pthread_mutex_unlock
+#define aeron_mutex_destroy pthread_mutex_destroy
+#define aeron_thread_once pthread_once
+#define aeron_thread_attr_init pthread_attr_init
+#define aeron_thread_create pthread_create
+#define aeron_thread_join pthread_join
+#define aeron_thread_key_create pthread_key_create
+#define aeron_thread_key_delete pthread_key_delete
+#define aeron_thread_get_specific pthread_getspecific
+#define aeron_thread_set_specific pthread_setspecific
 
 #elif defined(AERON_COMPILER_MSVC)
-    typedef void *aeron_mutex_t;
 
-    struct aeron_thread_stct;
-    typedef struct aeron_thread_stct *aeron_thread_t;
+typedef void *aeron_mutex_t;
 
-    typedef union _AERON_INIT_ONCE {
-        void *Ptr;
-    } AERON_INIT_ONCE;
+struct aeron_thread_stct;
+typedef struct aeron_thread_stct *aeron_thread_t;
 
-    typedef unsigned long pthread_attr_t;
-    typedef unsigned long pthread_key_t;
+typedef union aeron_init_once_union
+{
+    void *ptr;
+}
+AERON_INIT_ONCE;
 
-    #define AERON_INIT_ONCE_VALUE {0} /* Static initializer */
+typedef unsigned long pthread_attr_t;
+typedef unsigned long pthread_key_t;
 
-    void aeron_thread_once(AERON_INIT_ONCE *s_init_once, void *callback);
+#define AERON_INIT_ONCE_VALUE {0}
 
-    int aeron_mutex_init(aeron_mutex_t *mutex, void *attr);
-    int aeron_mutex_destroy(aeron_mutex_t *mutex);
-    int aeron_mutex_lock(aeron_mutex_t *mutex);
-    int aeron_mutex_unlock(aeron_mutex_t *mutex);
+void aeron_thread_once(AERON_INIT_ONCE *s_init_once, void *callback);
 
-    int aeron_thread_attr_init(pthread_attr_t *attr);
+int aeron_mutex_init(aeron_mutex_t *mutex, void *attr);
+int aeron_mutex_destroy(aeron_mutex_t *mutex);
+int aeron_mutex_lock(aeron_mutex_t *mutex);
+int aeron_mutex_unlock(aeron_mutex_t *mutex);
 
-    int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void*(*callback)(void*), void *arg0);
+int aeron_thread_attr_init(pthread_attr_t *attr);
 
-    int aeron_thread_join(aeron_thread_t thread, void **value_ptr);
+int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void *(*callback)(void *), void *arg0);
 
-    int aeron_thread_key_create(pthread_key_t *key, void(*destr_function)(void *));
+int aeron_thread_join(aeron_thread_t thread, void **value_ptr);
 
-    int aeron_thread_key_delete(pthread_key_t key);
+int aeron_thread_key_create(pthread_key_t *key_ptr, void (*destr_func)(void *));
 
-    int aeron_thread_set_specific(pthread_key_t key, const void *pointer);
+int aeron_thread_key_delete(pthread_key_t key);
 
-    void* aeron_thread_get_specific(pthread_key_t key);
+int aeron_thread_set_specific(pthread_key_t key, const void *pointer);
 
+void* aeron_thread_get_specific(pthread_key_t key);
 
 #else
 #error Unsupported platform!

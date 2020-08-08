@@ -72,7 +72,7 @@ int aeron_udp_channel_transport_init(
         goto error;
     }
 
-    is_ipv6 = (AF_INET6 == bind_addr->ss_family);
+    is_ipv6 = AF_INET6 == bind_addr->ss_family;
     is_multicast = aeron_is_addr_multicast(bind_addr);
     socklen_t bind_addr_len = is_ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
 
@@ -406,10 +406,7 @@ int aeron_udp_channel_transport_bind_addr_and_port(
 }
 
 extern void *aeron_udp_channel_transport_get_interceptor_clientd(
-    aeron_udp_channel_transport_t *transport,
-    int interceptor_index);
+    aeron_udp_channel_transport_t *transport, int interceptor_index);
 
 extern void aeron_udp_channel_transport_set_interceptor_clientd(
-    aeron_udp_channel_transport_t *transport,
-    int interceptor_index,
-    void *clientd);
+    aeron_udp_channel_transport_t *transport, int interceptor_index, void *clientd);

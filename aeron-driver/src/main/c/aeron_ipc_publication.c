@@ -136,7 +136,7 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.managed_resource.decref = aeron_ipc_publication_decref;
     _pub->conductor_fields.has_reached_end_of_life = false;
     _pub->conductor_fields.trip_limit = 0;
-    _pub->conductor_fields.time_of_last_consumer_position_change = now_ns;
+    _pub->conductor_fields.time_of_last_consumer_position_change_ns = now_ns;
     _pub->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
     _pub->session_id = session_id;
@@ -361,7 +361,7 @@ void aeron_ipc_publication_on_time_event(
             if (aeron_ipc_publication_is_drained(publication))
             {
                 publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_LINGER;
-                publication->conductor_fields.managed_resource.time_of_last_state_change = now_ns;
+                publication->conductor_fields.managed_resource.time_of_last_state_change_ns = now_ns;
 
                 for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
                 {
@@ -431,7 +431,7 @@ void aeron_ipc_publication_check_for_blocked_publisher(
         aeron_ipc_publication_is_possibly_blocked(publication, producer_position, consumer_position))
     {
         if (now_ns >
-            (publication->conductor_fields.time_of_last_consumer_position_change + publication->unblock_timeout_ns))
+            (publication->conductor_fields.time_of_last_consumer_position_change_ns + publication->unblock_timeout_ns))
         {
             if (aeron_logbuffer_unblocker_unblock(
                 publication->mapped_raw_log.term_buffers,
@@ -444,7 +444,7 @@ void aeron_ipc_publication_check_for_blocked_publisher(
     }
     else
     {
-        publication->conductor_fields.time_of_last_consumer_position_change = now_ns;
+        publication->conductor_fields.time_of_last_consumer_position_change_ns = now_ns;
         publication->conductor_fields.last_consumer_position = publication->conductor_fields.consumer_position;
     }
 }

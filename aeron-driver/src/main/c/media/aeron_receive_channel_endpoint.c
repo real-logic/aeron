@@ -139,7 +139,7 @@ int aeron_receive_channel_endpoint_delete(
     aeron_int64_counter_map_delete(&endpoint->stream_id_to_refcnt_map);
     aeron_int64_counter_map_delete(&endpoint->stream_and_session_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
-    bool deleted_this_channel = false;
+    bool delete_this_channel = false;
 
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
@@ -151,11 +151,11 @@ int aeron_receive_channel_endpoint_delete(
         }
 
         // The endpoint will be deleted by the destination, for simple endpoints, i.e. non-mds the channel is shared.
-        deleted_this_channel |= destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel;
+        delete_this_channel |= destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel;
         aeron_receive_destination_delete(destination, counters_manager);
     }
 
-    if (!deleted_this_channel)
+    if (!delete_this_channel)
     {
         aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
     }
@@ -186,8 +186,8 @@ int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *end
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
-        const int sendmsg_result =
-            destination->data_paths->sendmsg_func(destination->data_paths, &destination->transport, msghdr);
+        const int sendmsg_result = destination->data_paths->sendmsg_func(
+            destination->data_paths, &destination->transport, msghdr);
 
         min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
     }

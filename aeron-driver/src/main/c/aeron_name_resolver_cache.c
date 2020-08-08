@@ -69,7 +69,7 @@ int aeron_name_resolver_cache_add_or_update(
     const char *name,
     size_t name_length,
     aeron_name_resolver_cache_addr_t *cache_addr,
-    int64_t time_of_last_activity,
+    int64_t time_of_last_activity_ms,
     int64_t *cache_entries_counter)
 {
     int index = aeron_name_resolver_cache_find_index_by_name_and_type(cache, name, name_length, cache_addr->res_type);
@@ -112,8 +112,8 @@ int aeron_name_resolver_cache_add_or_update(
     }
 
     memcpy(&entry->cache_addr, cache_addr, sizeof(entry->cache_addr));
-    entry->time_of_last_activity_ms = time_of_last_activity;
-    entry->deadline_ms = time_of_last_activity + cache->timeout_ms;
+    entry->time_of_last_activity_ms = time_of_last_activity_ms;
+    entry->deadline_ms = time_of_last_activity_ms + cache->timeout_ms;
 
     return num_updated;
 }

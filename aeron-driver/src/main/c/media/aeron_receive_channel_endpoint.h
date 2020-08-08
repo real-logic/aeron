@@ -159,14 +159,10 @@ int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoi
 int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
 int aeron_receive_channel_endpoint_incref_to_stream_and_session(
-    aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int32_t session_id);
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
 
 int aeron_receive_channel_endpoint_decref_to_stream_and_session(
-    aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int32_t session_id);
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
 
 int aeron_receive_channel_endpoint_on_add_subscription(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
@@ -178,8 +174,7 @@ int aeron_receive_channel_endpoint_on_remove_subscription_by_session(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
 
 int aeron_receive_channel_endpoint_add_destination(
-    aeron_receive_channel_endpoint_t *endpoint,
-    aeron_receive_destination_t *destination);
+    aeron_receive_channel_endpoint_t *endpoint, aeron_receive_destination_t *destination);
 int aeron_receive_channel_endpoint_remove_destination(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_udp_channel_t *channel,

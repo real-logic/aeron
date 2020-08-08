@@ -31,10 +31,12 @@
 
 typedef struct aeron_min_flow_control_strategy_receiver_stct
 {
+    uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
     int64_t last_position;
     int64_t last_position_plus_window;
-    int64_t time_of_last_status_message;
+    int64_t time_of_last_status_message_ns;
     int64_t receiver_id;
+    uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_min_flow_control_strategy_receiver_t;
 
@@ -81,7 +83,7 @@ int64_t aeron_min_flow_control_strategy_on_idle(
     {
         aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
 
-        if ((receiver->time_of_last_status_message + strategy_state->receiver_timeout_ns) - now_ns < 0)
+        if ((receiver->time_of_last_status_message_ns + strategy_state->receiver_timeout_ns) - now_ns < 0)
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)strategy_state->receivers.array,
@@ -132,7 +134,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
         {
             receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
             receiver->last_position_plus_window = position + window_length;
-            receiver->time_of_last_status_message = now_ns;
+            receiver->time_of_last_status_message_ns = now_ns;
             is_existing = true;
         }
 
@@ -156,7 +158,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
 
             receiver->last_position = position;
             receiver->last_position_plus_window = position + window_length;
-            receiver->time_of_last_status_message = now_ns;
+            receiver->time_of_last_status_message_ns = now_ns;
             receiver->receiver_id = receiver_id;
 
             min_position = (position + window_length) < min_position ? (position + window_length) : min_position;

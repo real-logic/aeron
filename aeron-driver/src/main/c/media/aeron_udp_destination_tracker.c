@@ -276,7 +276,7 @@ int aeron_udp_destination_tracker_address_compare(struct sockaddr_storage *lhs, 
 {
     if (lhs->ss_family == rhs->ss_family)
     {
-        size_t len = (AF_INET == lhs->ss_family) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+        size_t len = AF_INET == lhs->ss_family ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
         return memcmp(lhs, rhs, len);
     }

@@ -37,9 +37,9 @@ typedef struct aeron_publication_image_connection_stct
     struct sockaddr_storage resolved_control_address_for_implicit_unicast_channels;
     aeron_receive_destination_t *destination;  // Not owned.
     struct sockaddr_storage *control_addr;     // Not owned.
+    bool is_eos;
     int64_t time_of_last_activity_ns;
     int64_t time_of_last_frame_ns;
-    bool is_eos;
 }
 aeron_publication_image_connection_t;
 
@@ -185,9 +185,7 @@ int aeron_publication_image_add_destination(aeron_publication_image_t *image, ae
 int aeron_publication_image_remove_destination(aeron_publication_image_t *image, aeron_udp_channel_t *channel);
 
 void aeron_publication_image_add_connection_if_unknown(
-    aeron_publication_image_t *image,
-    aeron_receive_destination_t *destination,
-    struct sockaddr_storage *src_addr);
+    aeron_publication_image_t *image, aeron_receive_destination_t *destination, struct sockaddr_storage *src_addr);
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);

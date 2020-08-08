@@ -395,7 +395,7 @@ static int aeron_driver_name_resolver_add_neighbor(
     aeron_driver_name_resolver_t *resolver,
     aeron_name_resolver_cache_addr_t *cache_addr,
     bool is_self,
-    int64_t time_of_last_activity)
+    int64_t time_of_last_activity_ms)
 {
     const int neighbor_index = aeron_driver_name_resolver_find_neighbor_by_addr(resolver, cache_addr);
     if (neighbor_index < 0)
@@ -418,7 +418,7 @@ static int aeron_driver_name_resolver_add_neighbor(
         }
 
         memcpy(&new_neighbor->cache_addr, cache_addr, sizeof(new_neighbor->cache_addr));
-        new_neighbor->time_of_last_activity_ms = time_of_last_activity;
+        new_neighbor->time_of_last_activity_ms = time_of_last_activity_ms;
         resolver->neighbors.length++;
         aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, (int64_t)resolver->neighbors.length);
 
@@ -426,7 +426,7 @@ static int aeron_driver_name_resolver_add_neighbor(
     }
     else if (is_self)
     {
-        resolver->neighbors.array[neighbor_index].time_of_last_activity_ms = time_of_last_activity;
+        resolver->neighbors.array[neighbor_index].time_of_last_activity_ms = time_of_last_activity_ms;
 
         return 2;
     }
@@ -451,20 +451,20 @@ static int aeron_driver_name_resolver_on_resolution_entry(
         return 0;
     }
 
-    int64_t time_of_last_activity = now_ms - resolution_header->age_in_ms;
+    int64_t time_of_last_activity_ms = now_ms - resolution_header->age_in_ms;
 
     if (aeron_name_resolver_cache_add_or_update(
         &resolver->cache,
         name,
         name_length,
         cache_addr,
-        time_of_last_activity,
+        time_of_last_activity_ms,
         resolver->cache_size_counter.value_addr) < 0)
     {
         return -1;
     }
 
-    if (aeron_driver_name_resolver_add_neighbor(resolver, cache_addr, is_self, time_of_last_activity) < 0)
+    if (aeron_driver_name_resolver_add_neighbor(resolver, cache_addr, is_self, time_of_last_activity_ms) < 0)
     {
         return -1;
     }

@@ -71,16 +71,13 @@ int aeron_udp_channel_transport_bind_addr_and_port(
     aeron_udp_channel_transport_t *transport, char *buffer, size_t length);
 
 inline void *aeron_udp_channel_transport_get_interceptor_clientd(
-    aeron_udp_channel_transport_t *transport,
-    int interceptor_index)
+    aeron_udp_channel_transport_t *transport, int interceptor_index)
 {
     return transport->interceptor_clientds[interceptor_index];
 }
 
 inline void aeron_udp_channel_transport_set_interceptor_clientd(
-    aeron_udp_channel_transport_t *transport,
-    int interceptor_index,
-    void *clientd)
+    aeron_udp_channel_transport_t *transport, int interceptor_index, void *clientd)
 {
     transport->interceptor_clientds[interceptor_index] = clientd;
 }

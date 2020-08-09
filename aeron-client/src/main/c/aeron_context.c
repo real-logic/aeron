@@ -18,8 +18,14 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
+#include "concurrent/aeron_mpsc_rb.h"
 #include "util/aeron_platform.h"
+#include "util/aeron_fileutil.h"
+#include "aeron_cnc_file_descriptor.h"
+#include "command/aeron_control_protocol.h"
+
 #if defined(AERON_COMPILER_MSVC)
 #include <io.h>
 #endif
@@ -34,6 +40,12 @@
 #define AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT (500 * 1000 * 1000LL)
 #define AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT (3 * 1000 * 1000 * 1000LL)
 #define AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT (false)
+
+#ifdef _MSC_VER
+#define AERON_FILE_SEP '\\'
+#else
+#define AERON_FILE_SEP '/'
+#endif
 
 void aeron_default_error_handler(void *clientd, int errcode, const char *message)
 {
@@ -392,4 +404,78 @@ int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool
 bool aeron_context_get_use_conductor_agent_invoker(aeron_context_t *context)
 {
     return NULL != context ? context->use_conductor_agent_invoker : AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT;
+}
+
+int aeron_context_request_driver_termination(const char *directory, const uint8_t *token_buffer, size_t token_length)
+{
+    size_t min_length = AERON_CNC_VERSION_AND_META_DATA_LENGTH;
+
+    if (AERON_MAX_PATH < token_length)
+    {
+        aeron_set_err(-EINVAL, "Token too long: %lu", (unsigned long)token_length);
+        return -EINVAL;
+    }
+
+    char filename[AERON_MAX_PATH];
+
+    snprintf(filename, sizeof(filename) - 1, "%s%c%s", directory, AERON_FILE_SEP, AERON_CNC_FILE);
+
+    int64_t file_length_result = aeron_file_length(filename);
+    if (file_length_result < 0)
+    {
+        aeron_set_err(-1, "Invalid file length");
+        return -1;
+    }
+    
+    size_t file_length = (size_t)file_length_result;
+    if (file_length > min_length)
+    {
+        aeron_mapped_file_t cnc_mmap;
+        aeron_map_existing_file(&cnc_mmap, filename);
+        if (cnc_mmap.length > min_length)
+        {
+            aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap.addr;
+            int32_t cnc_version = aeron_cnc_version_volatile(metadata);
+            if (aeron_semantic_version_major(cnc_version) != aeron_semantic_version_major(AERON_CNC_VERSION))
+            {
+                aeron_set_err(
+                    -1, 
+                    "Aeron CnC version does not match: app=%" PRId32 ", file=%" PRId32, 
+                    AERON_CNC_VERSION, 
+                    cnc_version);
+            }
+            
+            if (!aeron_cnc_is_file_length_sufficient(&cnc_mmap))
+            {
+                aeron_set_err(-1, "Aeron CnC file length not sufficient: length=%" PRId64, file_length_result);
+            }
+
+            aeron_mpsc_rb_t rb;
+            if (aeron_mpsc_rb_init(&rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) < 0)
+            {
+                aeron_set_err_from_last_err_code("Failed to setup ring buffer for termination");
+                return aeron_errcode();
+            }
+
+            char buffer[sizeof(aeron_terminate_driver_command_t) + AERON_MAX_PATH];
+            aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)buffer;
+
+            command->correlated.client_id = aeron_mpsc_rb_next_correlation_id(&rb);
+            command->correlated.correlation_id = aeron_mpsc_rb_next_correlation_id(&rb);
+            command->token_length = (int32_t)token_length;
+            memcpy((void *)(command + 1), token_buffer, token_length);
+
+            size_t command_length = sizeof(aeron_terminate_driver_command_t) + token_length;
+
+            if (AERON_RB_SUCCESS != aeron_mpsc_rb_write(&rb, AERON_COMMAND_TERMINATE_DRIVER, command, command_length))
+            {
+                aeron_set_err(-1, "Unable to write to driver ring buffer");
+                return -1;
+            }
+
+            return 1;
+        }
+    }
+
+    return 0;
 }

@@ -1984,6 +1984,8 @@ int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
  */
 int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscription_t *add_subscription);
 
+int aeron_context_request_driver_termination(const char *directory, const uint8_t *token_buffer, size_t token_length);
+
 #ifdef __cplusplus
 }
 #endif

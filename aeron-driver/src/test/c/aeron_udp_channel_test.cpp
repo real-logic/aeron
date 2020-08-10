@@ -19,7 +19,6 @@
 extern "C"
 {
 #include "media/aeron_udp_channel.h"
-#include "util/aeron_error.h"
 #include "util/aeron_env.h"
 }
 

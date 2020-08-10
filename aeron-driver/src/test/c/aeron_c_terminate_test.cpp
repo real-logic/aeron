@@ -19,12 +19,9 @@
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"
-#include "aeronc.h"
 
 extern "C"
 {
-#include "util/aeron_fileutil.h"
-#include "aeron_context.h"
 #include "aeron_client.h"
 }
 

@@ -19,9 +19,9 @@
 
 extern "C"
 {
-#include <aeron_publication_image.h>
-#include <aeron_data_packet_dispatcher.h>
-#include <aeron_driver_receiver.h>
+#include "aeron_publication_image.h"
+#include "aeron_data_packet_dispatcher.h"
+#include "aeron_driver_receiver.h"
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 }

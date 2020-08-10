@@ -17,7 +17,7 @@
 #include <functional>
 
 #include <gtest/gtest.h>
-#include <inttypes.h>
+#include <cinttypes>
 
 extern "C"
 {

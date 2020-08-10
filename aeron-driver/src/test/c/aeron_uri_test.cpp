@@ -23,7 +23,6 @@ extern "C"
 {
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
-#include "util/aeron_error.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_name_resolver.h"

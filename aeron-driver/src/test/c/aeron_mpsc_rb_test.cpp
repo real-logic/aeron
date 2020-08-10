@@ -24,7 +24,7 @@
 
 extern "C"
 {
-#include <concurrent/aeron_mpsc_rb.h>
+#include "concurrent/aeron_mpsc_rb.h"
 }
 
 #undef max

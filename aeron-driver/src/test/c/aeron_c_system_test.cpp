@@ -19,11 +19,11 @@
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"
-#include "aeronc.h"
 
 extern "C"
 {
 #include "concurrent/aeron_atomic.h"
+#include "aeronc.h"
 }
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"

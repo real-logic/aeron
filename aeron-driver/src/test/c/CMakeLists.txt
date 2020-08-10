@@ -85,6 +85,7 @@ aeron_driver_test(properties_test aeron_properties_test.cpp)
 aeron_driver_test(driver_configuration_test aeron_driver_configuration_test.cpp)
 aeron_driver_test(driver_agent_test agent/aeron_driver_agent_test.cpp)
 
+aeron_driver_test(c_terminate_test aeron_c_terminate_test.cpp)
 aeron_driver_test(c_system_test aeron_c_system_test.cpp)
 set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL ON)

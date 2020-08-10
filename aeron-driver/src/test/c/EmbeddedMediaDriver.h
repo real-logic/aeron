@@ -30,13 +30,12 @@
 #include <thread>
 #include <atomic>
 
-extern "C"
-{
 #include "aeronmd.h"
-}
 
 namespace aeron
 {
+
+const char *TERMINATION_KEY = "Exit please";
 
 class EmbeddedMediaDriver
 {
@@ -68,6 +67,18 @@ public:
         m_thread.join();
     }
 
+    void joinAndClose()
+    {
+        m_running = false;
+        m_thread.join();
+
+        aeron_driver_close(m_driver);
+        aeron_driver_context_close(m_context);
+
+        m_driver = nullptr;
+        m_context = nullptr;
+    }
+
     void start()
     {
         if (init() < 0)
@@ -80,6 +91,11 @@ public:
             {
                 driverLoop();
             });
+    }
+
+    const char *directory()
+    {
+        return aeron_driver_context_get_dir(m_context);
     }
 
 protected:
@@ -97,6 +113,8 @@ protected:
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
+        aeron_driver_context_set_driver_termination_validator(m_context, validateTermination, NULL);
+        aeron_driver_context_set_driver_termination_hook(m_context, terminationHook, this);
 
         if (aeron_driver_init(&m_driver, m_context) < 0)
         {
@@ -118,6 +136,18 @@ private:
     std::thread m_thread;
     aeron_driver_context_t *m_context;
     aeron_driver_t *m_driver;
+
+    static bool validateTermination(void *state, uint8_t *buffer, int32_t length)
+    {
+        int32_t key_length = (int32_t)strlen(TERMINATION_KEY);
+        return key_length == length && 0 == memcmp(TERMINATION_KEY, buffer, (size_t)length);
+    }
+
+    static void terminationHook(void *clientd)
+    {
+        EmbeddedMediaDriver *driver = static_cast<EmbeddedMediaDriver *>(clientd);
+        driver->m_running = false;
+    }
 };
 
 }

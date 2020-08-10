@@ -615,6 +615,14 @@ public class TestCluster implements AutoCloseable
 
     AeronCluster connectClient()
     {
+        return connectClient(
+            new AeronCluster.Context()
+                .ingressChannel(INGRESS_CHANNEL)
+                .egressChannel(EGRESS_CHANNEL));
+    }
+
+    AeronCluster connectClient(final AeronCluster.Context clientCtx)
+    {
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 
         if (null == clientMediaDriver)
@@ -631,11 +639,9 @@ public class TestCluster implements AutoCloseable
 
         CloseHelper.close(client);
         client = AeronCluster.connect(
-            new AeronCluster.Context()
+            clientCtx
                 .aeronDirectoryName(aeronDirName)
                 .egressListener(egressMessageListener)
-                .ingressChannel(INGRESS_CHANNEL)
-                .egressChannel(EGRESS_CHANNEL)
                 .ingressEndpoints(staticClusterMemberEndpoints));
 
         return client;

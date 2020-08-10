@@ -1553,6 +1553,12 @@ public final class AeronCluster implements AutoCloseable
 
         private void awaitPublicationConnected()
         {
+            final String responseChannel = egressSubscription.tryResolveChannelEndpointPort();
+            if (null == responseChannel)
+            {
+                return;
+            }
+
             if (null == ingressPublication)
             {
                 for (final MemberIngress member : memberByIdMap.values())
@@ -1560,18 +1566,18 @@ public final class AeronCluster implements AutoCloseable
                     if (member.publication.isConnected())
                     {
                         ingressPublication = member.publication;
-                        prepareConnectRequest();
+                        prepareConnectRequest(responseChannel);
                         return;
                     }
                 }
             }
             else if (ingressPublication.isConnected())
             {
-                prepareConnectRequest();
+                prepareConnectRequest(responseChannel);
             }
         }
 
-        private void prepareConnectRequest()
+        private void prepareConnectRequest(final String responseChannel)
         {
             correlationId = ctx.aeron().nextCorrelationId();
             final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
@@ -1582,7 +1588,7 @@ public final class AeronCluster implements AutoCloseable
                 .correlationId(correlationId)
                 .responseStreamId(ctx.egressStreamId())
                 .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
-                .responseChannel(ctx.egressChannel())
+                .responseChannel(responseChannel)
                 .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
             messageLength = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();

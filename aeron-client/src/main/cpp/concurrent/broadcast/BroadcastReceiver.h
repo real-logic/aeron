@@ -43,7 +43,7 @@ public:
 
         m_cursor = m_buffer.getInt64(m_latestCounterIndex);
         m_nextRecord = m_cursor;
-        m_recordOffset = static_cast<std::int32_t>(m_cursor & m_mask);
+        m_recordOffset = static_cast<util::index_t>(m_cursor & m_mask);
     }
 
     inline util::index_t capacity() const
@@ -84,13 +84,13 @@ public:
 
         if (tail > cursor)
         {
-            util::index_t recordOffset = (std::int32_t)cursor & m_mask;
+            auto recordOffset = static_cast<util::index_t>(cursor & m_mask);
 
             if (!validate(cursor))
             {
                 m_lappedCount += 1;
                 cursor = m_buffer.getInt64(m_latestCounterIndex);
-                recordOffset = (std::int32_t)cursor & m_mask;
+                recordOffset = static_cast<util::index_t>(cursor & m_mask);
             }
 
             m_cursor = cursor;

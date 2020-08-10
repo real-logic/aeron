@@ -40,10 +40,15 @@ class BroadcastReceiverTest : public testing::Test
 {
 public:
     BroadcastReceiverTest() :
-        m_mockBuffer(&m_buffer[0], m_buffer.size()),
-        m_broadcastReceiver(m_mockBuffer)
+        m_mockBuffer(&m_buffer[0], m_buffer.size())
     {
         m_buffer.fill(0);
+
+        EXPECT_CALL(m_mockBuffer, getInt64(CAPACITY + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET))
+            .Times(1)
+            .WillOnce(testing::Return(0));
+
+        m_broadcastReceiver.reset(new BroadcastReceiver(m_mockBuffer));
     }
 
     void SetUp() override
@@ -52,14 +57,14 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16){};
     MockAtomicBuffer m_mockBuffer;
-    BroadcastReceiver m_broadcastReceiver;
+    std::unique_ptr<BroadcastReceiver> m_broadcastReceiver{};
 };
 
 TEST_F(BroadcastReceiverTest, shouldCalculateCapacityForBuffer)
 {
-    EXPECT_EQ(m_broadcastReceiver.capacity(), CAPACITY);
+    EXPECT_EQ(m_broadcastReceiver->capacity(), CAPACITY);
 }
 
 TEST_F(BroadcastReceiverTest, shouldThrowExceptionForCapacityThatIsNotPowerOfTwo)
@@ -76,7 +81,7 @@ TEST_F(BroadcastReceiverTest, shouldThrowExceptionForCapacityThatIsNotPowerOfTwo
 
 TEST_F(BroadcastReceiverTest, shouldNotBeLappedBeforeReception)
 {
-    EXPECT_EQ(m_broadcastReceiver.lappedCount(), 0);
+    EXPECT_EQ(m_broadcastReceiver->lappedCount(), 0);
 }
 
 TEST_F(BroadcastReceiverTest, shouldNotReceiveFromEmptyBuffer)
@@ -85,7 +90,7 @@ TEST_F(BroadcastReceiverTest, shouldNotReceiveFromEmptyBuffer)
         .Times(1)
         .WillOnce(testing::Return(0));
 
-    EXPECT_FALSE(m_broadcastReceiver.receiveNext());
+    EXPECT_FALSE(m_broadcastReceiver->receiveNext());
 }
 
 TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
@@ -116,12 +121,12 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
-    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
-    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
-    EXPECT_EQ(m_broadcastReceiver.length(), length);
-    EXPECT_TRUE(m_broadcastReceiver.validate());
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_EQ(m_broadcastReceiver->typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver->buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver->offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver->length(), length);
+    EXPECT_TRUE(m_broadcastReceiver->validate());
 }
 
 TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
@@ -157,21 +162,21 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
-    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
-    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffsetOne));
-    EXPECT_EQ(m_broadcastReceiver.length(), length);
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_EQ(m_broadcastReceiver->typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver->buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver->offset(), RecordDescriptor::msgOffset(recordOffsetOne));
+    EXPECT_EQ(m_broadcastReceiver->length(), length);
 
-    EXPECT_TRUE(m_broadcastReceiver.validate());
+    EXPECT_TRUE(m_broadcastReceiver->validate());
 
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
-    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
-    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffsetTwo));
-    EXPECT_EQ(m_broadcastReceiver.length(), length);
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_EQ(m_broadcastReceiver->typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver->buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver->offset(), RecordDescriptor::msgOffset(recordOffsetTwo));
+    EXPECT_EQ(m_broadcastReceiver->length(), length);
 
-    EXPECT_TRUE(m_broadcastReceiver.validate());
+    EXPECT_TRUE(m_broadcastReceiver->validate());
 }
 
 TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
@@ -200,13 +205,13 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
-    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
-    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
-    EXPECT_EQ(m_broadcastReceiver.length(), length);
-    EXPECT_TRUE(m_broadcastReceiver.validate());
-    EXPECT_GT(m_broadcastReceiver.lappedCount(), 0);
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_EQ(m_broadcastReceiver->typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver->buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver->offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver->length(), length);
+    EXPECT_TRUE(m_broadcastReceiver->validate());
+    EXPECT_GT(m_broadcastReceiver->lappedCount(), 0);
 }
 
 TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRecord)
@@ -255,13 +260,13 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
         .Times(1)
         .WillOnce(testing::Return(MSG_TYPE_ID));
 
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
-    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
-    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
-    EXPECT_EQ(m_broadcastReceiver.length(), length);
-    EXPECT_TRUE(m_broadcastReceiver.validate());
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_EQ(m_broadcastReceiver->typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver->buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver->offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver->length(), length);
+    EXPECT_TRUE(m_broadcastReceiver->validate());
 }
 
 TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
@@ -291,10 +296,10 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
-    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
-    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
-    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
-    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
-    EXPECT_EQ(m_broadcastReceiver.length(), length);
-    EXPECT_FALSE(m_broadcastReceiver.validate());
+    EXPECT_TRUE(m_broadcastReceiver->receiveNext());
+    EXPECT_EQ(m_broadcastReceiver->typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver->buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver->offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver->length(), length);
+    EXPECT_FALSE(m_broadcastReceiver->validate());
 }

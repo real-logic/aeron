@@ -23,11 +23,7 @@
 
 #include "concurrent/AtomicBuffer.h"
 
-namespace aeron
-{
-namespace concurrent
-{
-namespace mock
+namespace aeron { namespace concurrent { namespace mock
 {
 
 class MockAtomicBuffer : public AtomicBuffer
@@ -48,7 +44,10 @@ public:
     MOCK_METHOD2(getAndAddInt64, std::int64_t(util::index_t offset, std::int64_t delta));
     MOCK_METHOD4(
         putBytes,
-        void(util::index_t index, const concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length));
+        void(util::index_t index,
+            const concurrent::AtomicBuffer &srcBuffer,
+            util::index_t srcIndex,
+            util::index_t length));
     MOCK_METHOD3(putBytes, void(util::index_t index, const std::uint8_t *srcBuffer, util::index_t length));
     MOCK_METHOD2(putInt32Ordered, void(util::index_t offset, std::int32_t v));
     MOCK_CONST_METHOD1(getUInt16, std::uint16_t(util::index_t offset));
@@ -57,7 +56,7 @@ public:
     MOCK_METHOD2(putInt64Ordered, void(util::index_t, std::int64_t v));
     MOCK_CONST_METHOD1(getInt64Volatile, std::int64_t(util::index_t));
 
-    MOCK_METHOD2(putStringWithoutLength, std::int32_t(util::index_t, const std::string&));
+    MOCK_METHOD2(putStringWithoutLength, std::int32_t(util::index_t, const std::string &));
 
     void useAsSpy()
     {
@@ -77,8 +76,6 @@ private:
     AtomicBuffer m_realBuffer;
 };
 
-}
-}
-}
+}}}
 
 #endif

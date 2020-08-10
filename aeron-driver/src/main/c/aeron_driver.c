@@ -31,7 +31,6 @@
 #define S_IRWXO 0
 #endif
 #include <stdlib.h>
-#include <stddef.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <fcntl.h>

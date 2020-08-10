@@ -826,13 +826,25 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Channel for receiving response messages from a cluster.
+         *
+         * <p>
+         * Channel's <em>endpoint</em> can be specified explicitly (i.e. by providing address and port pair) or
+         * by using zero as a port number. Here is an example of valid response channels:
+         * <ul>
+         *     <li>{@code aeron:udp?endpoint=localhost:9020} - listen on port {@code 9020} on localhost.</li>
+         *     <li>{@code aeron:udp?endpoint=192.168.10.10:9020} - listen on port {@code 9020} on
+         *     {@code 192.168.10.10}.</li>
+         *     <li>{@code aeron:udp?endpoint=localhost:0} - in this case the port is unspecified and the OS
+         *     will assign a free port from the
+         *     <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral port range</a>.</li>
+         * </ul>
          */
         public static final String EGRESS_CHANNEL_PROP_NAME = "aeron.cluster.egress.channel";
 
         /**
          * Channel for receiving response messages from a cluster.
          */
-        public static final String EGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9020";
+        public static final String EGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
 
         /**
          * Stream id within a channel for receiving messages from a cluster.

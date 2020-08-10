@@ -23,7 +23,10 @@ import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
@@ -74,35 +77,6 @@ public class ResolvedEndpointSystemTest
     @Test
     @Timeout(5)
     void shouldSubscribeWithSystemAssignedPort()
-    {
-        final String uri = "aeron:udp?endpoint=localhost:0";
-
-        try (Subscription sub = client.addSubscription(uri, STREAM_ID))
-        {
-            String resolvedUri;
-            while (null == (resolvedUri = sub.tryResolveChannelEndpoint()))
-            {
-                Tests.yieldingWait("No bind address/port for sub");
-            }
-
-            try (Publication pub = client.addPublication(resolvedUri, STREAM_ID))
-            {
-                while (pub.offer(buffer, 0, buffer.capacity()) < 0)
-                {
-                    Tests.yieldingWait("Failed to publish to pub");
-                }
-
-                while (sub.poll(fragmentHandler, 1) < 0)
-                {
-                    Tests.yieldingWait("Failed to receive from sub");
-                }
-            }
-        }
-    }
-
-    @Test
-    @Timeout(5)
-    void shouldSubscribeWithSystemAssignedPortOnly()
     {
         final String uri = "aeron:udp?endpoint=localhost:0";
 

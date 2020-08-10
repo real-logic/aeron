@@ -93,6 +93,11 @@ public:
             });
     }
 
+    const char *directory()
+    {
+        return aeron_driver_context_get_dir(m_context);
+    }
+
 protected:
     int init()
     {

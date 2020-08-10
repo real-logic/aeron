@@ -39,47 +39,7 @@ using namespace aeron;
 class TerminateTest : public testing::Test
 {
 public:
-    TerminateTest()
-    {
-    }
-
-    ~TerminateTest() override
-    {
-        if (m_aeron)
-        {
-            aeron_close(m_aeron);
-        }
-
-        if (m_context)
-        {
-            aeron_context_close(m_context);
-        }
-    }
-
-    aeron_t *connect()
-    {
-        if (aeron_context_init(&m_context) < 0)
-        {
-            throw std::runtime_error(aeron_errmsg());
-        }
-
-        if (aeron_init(&m_aeron, m_context) < 0)
-        {
-            throw std::runtime_error(aeron_errmsg());
-        }
-
-        if (aeron_start(m_aeron) < 0)
-        {
-            throw std::runtime_error(aeron_errmsg());
-        }
-
-        return m_aeron;
-    }
-
-
-protected:
-    aeron_context_t *m_context = nullptr;
-    aeron_t *m_aeron = nullptr;
+    TerminateTest() = default;
 };
 
 TEST_F(TerminateTest, shouldShutdownDriver)
@@ -87,20 +47,11 @@ TEST_F(TerminateTest, shouldShutdownDriver)
     EmbeddedMediaDriver driver;
     driver.start();
 
-    aeron_t *aeron = connect();
-    const char *dir = aeron_context_get_dir(aeron->context);
-
     char path[1024];
-    snprintf(path, sizeof(path), "%s%c%s", dir, AERON_FILE_SEP, AERON_CNC_FILE);
+    snprintf(path, sizeof(path), "%s%c%s", driver.directory(), AERON_FILE_SEP, AERON_CNC_FILE);
 
     ASSERT_EQ(1, aeron_context_request_driver_termination(
-        aeron_context_get_dir(m_context), (uint8_t *)TERMINATION_KEY, strlen(TERMINATION_KEY)));
+            driver.directory(), (uint8_t *)TERMINATION_KEY, strlen(TERMINATION_KEY))) << aeron_errmsg;
 
     driver.joinAndClose();
-
-    struct stat sb;
-    while (0 == stat(path, &sb))
-    {
-        sched_yield();
-    }
 }

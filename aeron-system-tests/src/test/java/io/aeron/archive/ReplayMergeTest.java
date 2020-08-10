@@ -37,6 +37,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
@@ -136,8 +137,8 @@ public class ReplayMergeTest
                 .errorHandler(Tests::onError)
                 .aeron(aeron));
 
-        dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
-        dataCollector.add(archive.context().archiveDir().toPath());
+        dataCollector.add(Paths.get(mediaDriverContext.aeronDirectoryName()));
+        dataCollector.add(archiveDir.toPath());
     }
 
     @AfterEach

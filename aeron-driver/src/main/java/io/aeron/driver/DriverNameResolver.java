@@ -68,18 +68,18 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private final byte[] nameTempBuffer = new byte[ResolutionEntryFlyweight.MAX_NAME_LENGTH];
     private final byte[] addressTempBuffer = new byte[ResolutionEntryFlyweight.ADDRESS_LENGTH_IP6];
 
-    private final byte[] localName;
     private final String localDriverName;
     private InetSocketAddress localSocketAddress;
+    private final byte[] localName;
     private byte[] localAddress;
 
     private final String bootstrapNeighbor;
     private InetSocketAddress bootstrapNeighborAddress;
     private long timeOfLastBootstrapNeighborResolveMs;
 
-    private final long neighborTimeoutMs;
-    private final long selfResolutionIntervalMs;
-    private final long neighborResolutionIntervalMs;
+    private final long neighborTimeoutMs = TIMEOUT_MS;
+    private final long selfResolutionIntervalMs = SELF_RESOLUTION_INTERVAL_MS;
+    private final long neighborResolutionIntervalMs = NEIGHBOR_RESOLUTION_INTERVAL_MS;
     private final int mtuLength;
     private final boolean preferIPv6 = false;
 
@@ -89,17 +89,14 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
     DriverNameResolver(final MediaDriver.Context ctx)
     {
-        this.neighborTimeoutMs = TIMEOUT_MS;
-        this.selfResolutionIntervalMs = SELF_RESOLUTION_INTERVAL_MS;
-        this.neighborResolutionIntervalMs = NEIGHBOR_RESOLUTION_INTERVAL_MS;
-        this.mtuLength = ctx.mtuLength();
+        mtuLength = ctx.mtuLength();
         invalidPackets = ctx.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
         shortSends = ctx.systemCounters().get(SystemCounterDescriptor.SHORT_SENDS);
         delegateResolver = ctx.nameResolver();
 
         final long nowMs = ctx.epochClock().time();
 
-        this.bootstrapNeighbor = ctx.resolverBootstrapNeighbor();
+        bootstrapNeighbor = ctx.resolverBootstrapNeighbor();
         bootstrapNeighborAddress = null == bootstrapNeighbor ?
             null : UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
         timeOfLastBootstrapNeighborResolveMs = nowMs;
@@ -108,19 +105,16 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             UdpNameResolutionTransport.getInterfaceAddress(ctx.resolverInterface()) :
             new InetSocketAddress("0.0.0.0", 0);
 
-        final String driverName = null != ctx.resolverName() ? ctx.resolverName() : getCanonicalName();
-
-        localDriverName = driverName;
-        localName = driverName.getBytes(StandardCharsets.US_ASCII);
+        localDriverName = null != ctx.resolverName() ? ctx.resolverName() : getCanonicalName();
+        localName = localDriverName.getBytes(StandardCharsets.US_ASCII);
         localAddress = localSocketAddress.getAddress().getAddress();
 
         deadlineSelfResolutionMs = 0;
-        deadlineNeighborResolutionMs = nowMs + this.neighborResolutionIntervalMs;
+        deadlineNeighborResolutionMs = nowMs + neighborResolutionIntervalMs;
 
         cache = new DriverNameResolverCache(TIMEOUT_MS);
 
         final UdpChannel placeholderChannel = UdpChannel.parse("aeron:udp?endpoint=localhost:8050");
-
         transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, ctx);
 
         neighborsCounter = ctx.countersManager().newCounter(
@@ -132,6 +126,11 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     public void close()
     {
         CloseHelper.closeAll(transport, cache);
+    }
+
+    public String localDriverName()
+    {
+        return localDriverName;
     }
 
     public void openDatagramChannel()
@@ -304,9 +303,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
 
     public void sendNeighborResolutions(final long nowMs)
     {
-        final DriverNameResolverCache.Iterator iter = cache.resetIterator();
-
-        while (iter.hasNext())
+        for (final DriverNameResolverCache.Iterator iter = cache.resetIterator(); iter.hasNext();)
         {
             byteBuffer.clear();
 

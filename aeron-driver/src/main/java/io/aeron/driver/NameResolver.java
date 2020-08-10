@@ -18,7 +18,7 @@ package io.aeron.driver;
 import java.net.InetAddress;
 
 /**
- * Interface to allow resolving a name into an {@link InetAddress}.
+ * Interface to allow resolving a name to an {@link InetAddress}.
  */
 public interface NameResolver
 {
@@ -43,7 +43,6 @@ public interface NameResolver
      * @param isReLookup   true if this is a re-lookup or false if initial lookup.
      * @return string in name:port form.
      */
-    @SuppressWarnings("unused")
     default String lookup(String name, String uriParamName, boolean isReLookup)
     {
         return name;
@@ -55,7 +54,6 @@ public interface NameResolver
      * @param nowMs current epoch clock time in milliseconds
      * @return work count
      */
-    @SuppressWarnings("unused")
     default int doWork(final long nowMs)
     {
         return 0;

@@ -142,6 +142,12 @@ public class DriverConductor implements Agent
             clientProxy,
             this);
 
+        final AtomicCounter resolutionCounter = ctx.systemCounters().get(RESOLUTION_CHANGES);
+        resolutionCounter.appendToLabel(": resolverName=");
+        resolutionCounter.appendToLabel(ctx.resolverName());
+        resolutionCounter.appendToLabel(" canonicalName=");
+        resolutionCounter.appendToLabel(DriverNameResolver.getCanonicalName());
+
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());

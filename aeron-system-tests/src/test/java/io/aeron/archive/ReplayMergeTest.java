@@ -23,18 +23,17 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.DataCollector;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -92,6 +91,7 @@ public class ReplayMergeTest
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     private final MutableInteger received = new MutableInteger();
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
+    private final DataCollector dataCollector = new DataCollector();
 
     private TestMediaDriver mediaDriver;
     private Archive archive;
@@ -135,6 +135,9 @@ public class ReplayMergeTest
             new AeronArchive.Context()
                 .errorHandler(Tests::onError)
                 .aeron(aeron));
+
+        dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
+        dataCollector.add(archive.context().archiveDir().toPath());
     }
 
     @AfterEach
@@ -155,7 +158,7 @@ public class ReplayMergeTest
 
     @Test
     @Timeout(10)
-    public void shouldMergeFromReplayToLive()
+    public void shouldMergeFromReplayToLive(final TestInfo testInfo)
     {
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
         final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;
@@ -248,6 +251,11 @@ public class ReplayMergeTest
             {
                 aeronArchive.tryStopRecording(subscriptionId);
             }
+        }
+        catch (final Throwable ex)
+        {
+            dataCollector.dumpData(testInfo);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

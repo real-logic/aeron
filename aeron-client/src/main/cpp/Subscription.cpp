@@ -88,29 +88,6 @@ std::vector<std::string> Subscription::localSocketAddresses() const
         m_conductor.countersReader(), channelStatus(), channelStatusId());
 }
 
-std::string Subscription::tryResolveChannelEndpoint() const
-{
-    const int64_t currentChannelStatus = channelStatus();
-
-    if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus) 
-    {
-        std::vector<std::string> localSocketAddresses = LocalSocketAddressStatus::findAddresses(
-            m_conductor.countersReader(), currentChannelStatus, m_channelStatusId);
-
-        if (1 == localSocketAddresses.size()) 
-        {
-            std::shared_ptr<ChannelUri> channelUriPtr = ChannelUri::parse(m_channel);
-            channelUriPtr->put(ENDPOINT_PARAM_NAME, localSocketAddresses.at(0));
-
-            return channelUriPtr->toString();
-        }
-        
-        return m_channel;
-    }
-    
-    return {};
-}
-
 std::string Subscription::tryResolveChannelEndpointPort() const
 {
     const int64_t currentChannelStatus = channelStatus();

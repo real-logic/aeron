@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.codecs.RecordingState;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -39,10 +40,13 @@ import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.ArchiveTool.*;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
-import static io.aeron.archive.Catalog.*;
+import static io.aeron.archive.Catalog.CatalogEntryProcessor;
+import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
+import static io.aeron.archive.codecs.RecordingState.INVALID;
+import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
@@ -1067,7 +1071,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecordingValidFlag(catalog, validRecording4);
+            assertRecordingStateIsValid(catalog, validRecording4);
         }
     }
 
@@ -1079,7 +1083,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecordingValidFlag(catalog, validRecording4);
+            assertRecordingStateIsValid(catalog, validRecording4);
         }
     }
 
@@ -1176,7 +1180,7 @@ class ArchiveToolTests
     private void assertRecording(
         final Catalog catalog,
         final long recordingId,
-        final byte valid,
+        final RecordingState state,
         final long startPosition,
         final long stopPosition,
         final long startTimestamp,
@@ -1190,7 +1194,7 @@ class ArchiveToolTests
             recordingId,
             (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
             {
-                assertEquals(valid, headerDecoder.valid());
+                assertEquals(state, headerDecoder.state());
                 assertEquals(startPosition, descriptorDecoder.startPosition());
                 assertEquals(stopPosition, descriptorDecoder.stopPosition());
                 assertEquals(startTimestamp, descriptorDecoder.startTimestamp());
@@ -1205,10 +1209,10 @@ class ArchiveToolTests
             }));
     }
 
-    private void assertRecordingValidFlag(final Catalog catalog, final long recordingId)
+    private void assertRecordingStateIsValid(final Catalog catalog, final long recordingId)
     {
         final CatalogEntryProcessor processor = (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-            assertEquals(VALID, headerDecoder.valid());
+            assertEquals(VALID, headerDecoder.state());
 
         assertTrue(catalog.forEntry(recordingId, processor));
     }

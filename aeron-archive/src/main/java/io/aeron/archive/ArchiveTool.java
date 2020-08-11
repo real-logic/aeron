@@ -50,6 +50,8 @@ import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.checksum.Checksums.newInstance;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.codecs.RecordingState.INVALID;
+import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
@@ -838,7 +840,7 @@ public class ArchiveTool
         if (isPositionInvariantViolated(out, recordingId, startPosition, stopPosition))
         {
             errorCount.increment();
-            headerEncoder.valid(INVALID);
+            headerEncoder.state(INVALID);
             return;
         }
 
@@ -860,7 +862,7 @@ public class ArchiveTool
                         startPosition + " and/or stopPosition=" + stopPosition + " exceed max segment file position=" +
                         maxSegmentPosition);
                     errorCount.increment();
-                    headerEncoder.valid(INVALID);
+                    headerEncoder.state(INVALID);
                     return;
                 }
             }
@@ -880,7 +882,7 @@ public class ArchiveTool
             final String message = ex.getMessage();
             out.println("(recordingId=" + recordingId + ") ERR: " + (null != message ? message : ex.toString()));
             errorCount.increment();
-            headerEncoder.valid(INVALID);
+            headerEncoder.state(INVALID);
             return;
         }
 
@@ -907,7 +909,7 @@ public class ArchiveTool
                         headerFlyweight))
                     {
                         errorCount.increment();
-                        headerEncoder.valid(INVALID);
+                        headerEncoder.state(INVALID);
                         return;
                     }
                 }
@@ -927,7 +929,7 @@ public class ArchiveTool
                 headerFlyweight))
             {
                 errorCount.increment();
-                headerEncoder.valid(INVALID);
+                headerEncoder.state(INVALID);
                 return;
             }
         }
@@ -938,7 +940,7 @@ public class ArchiveTool
             encoder.stopTimestamp(epochClock.time());
         }
 
-        headerEncoder.valid(VALID);
+        headerEncoder.state(VALID);
         out.println("(recordingId=" + recordingId + ") OK");
     }
 

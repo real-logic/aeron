@@ -37,6 +37,7 @@ import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
+import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.Math.max;
@@ -108,8 +109,6 @@ class Catalog implements AutoCloseable
     static final long MAX_CATALOG_LENGTH = Integer.MAX_VALUE;
     static final long MAX_ENTRIES = calculateMaxEntries(MAX_CATALOG_LENGTH, DEFAULT_RECORD_LENGTH);
     static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
-    static final byte VALID = 1;
-    static final byte INVALID = 0;
 
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
@@ -377,7 +376,7 @@ class Catalog implements AutoCloseable
         descriptorHeaderEncoder
             .wrap(catalogBuffer, 0)
             .length(descriptorEncoder.encodedLength())
-            .valid(VALID);
+            .state(VALID);
 
         forceWrites(catalogChannel);
 
@@ -440,9 +439,9 @@ class Catalog implements AutoCloseable
     boolean hasRecording(final long recordingId)
     {
         return recordingId >= 0 && recordingId < nextRecordingId &&
-            fieldAccessBuffer.getByte(
+            VALID.value() == fieldAccessBuffer.getInt(
                 recordingDescriptorOffset(recordingId) +
-                    RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
+                    RecordingDescriptorHeaderDecoder.stateEncodingOffset(), BYTE_ORDER);
     }
 
     int forEach(final CatalogEntryProcessor consumer)
@@ -658,7 +657,8 @@ class Catalog implements AutoCloseable
 
     static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
     {
-        return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
+        return VALID.value() ==
+            descriptorBuffer.getInt(RecordingDescriptorHeaderDecoder.stateEncodingOffset(), BYTE_ORDER);
     }
 
     static long calculateCatalogLength(final long maxEntries)
@@ -761,7 +761,7 @@ class Catalog implements AutoCloseable
         final UnsafeBuffer buffer)
     {
         final long recordingId = decoder.recordingId();
-        if (VALID == headerDecoder.valid() && NULL_POSITION == decoder.stopPosition())
+        if (VALID == headerDecoder.state() && NULL_POSITION == decoder.stopPosition())
         {
             final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
             final String maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);

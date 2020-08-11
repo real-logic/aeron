@@ -48,8 +48,8 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long DUTY_CYCLE_INTERVAL_MS = 10;
 
-    public static final int NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID = 14;
-    public static final int NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID = 15;
+    public static final int NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID = 15;
+    public static final int NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID = 16;
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
@@ -120,17 +120,12 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         neighborsCounter = ctx.countersManager().newCounter(
             "Resolver neighbors", NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
         cacheEntriesCounter = ctx.countersManager().newCounter(
-            "Resolver cache entries: name " + localDriverName, NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
+            "Resolver cache entries: name=" + localDriverName, NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
     }
 
     public void close()
     {
         CloseHelper.closeAll(transport, cache);
-    }
-
-    public String localDriverName()
-    {
-        return localDriverName;
     }
 
     public void openDatagramChannel()
@@ -460,7 +455,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return -1;
     }
 
-    public static String getCanonicalName()
+    static String getCanonicalName()
     {
         String canonicalName = null;
 

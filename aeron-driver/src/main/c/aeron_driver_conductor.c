@@ -306,9 +306,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
 
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    const char* driver_name = NULL == context->resolver_name ? "" : context->resolver_name;
-    int label_length = snprintf(
-        label, sizeof(label), ": driverName=%s hostname=%s", context->resolver_name, local_hostname);
+    const char *driver_name = NULL == context->resolver_name ? "" : context->resolver_name;
+    int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, local_hostname);
 
     if (label_length > 0)
     {

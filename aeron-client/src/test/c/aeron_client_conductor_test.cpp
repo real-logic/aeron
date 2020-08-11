@@ -65,6 +65,10 @@ static int64_t test_nano_clock()
     return now_ns;
 }
 
+static void no_op_error_handler(void *clientd, int errcode, const char *message)
+{
+}
+
 using namespace aeron::test;
 
 class ClientConductorTest : public testing::Test
@@ -672,4 +676,16 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
     // graceful close and reclaim for sanitize
     ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
     doWork();
+}
+
+TEST_F(ClientConductorTest, shouldSetCloseFlagOnTimeout)
+{
+    m_conductor.error_handler = no_op_error_handler;
+
+    aeron_client_timeout_t timeout;
+    timeout.client_id = m_conductor.client_id;
+
+    aeron_client_conductor_on_client_timeout(&m_conductor, &timeout);
+
+    ASSERT_TRUE(aeron_client_conductor_is_closed(&m_conductor));
 }

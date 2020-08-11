@@ -235,6 +235,7 @@ typedef struct aeron_client_conductor_stct
     bool invoker_mode;
     bool pre_touch;
     bool is_terminating;
+    bool is_closed;
 }
 aeron_client_conductor_t;
 
@@ -394,6 +395,13 @@ inline void aeron_client_conductor_notify_close_handlers(aeron_client_conductor_
 
         pair->handler(pair->clientd);
     }
+}
+
+inline bool aeron_client_conductor_is_closed(aeron_client_conductor_t *conductor)
+{
+    bool is_closed;
+    AERON_GET_VOLATILE(is_closed, conductor->is_closed);
+    return is_closed;
 }
 
 #endif //AERON_C_CLIENT_CONDUCTOR_H

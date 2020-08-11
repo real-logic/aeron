@@ -78,6 +78,7 @@ SET(HEADERS
     util/Exceptions.h
     util/LangUtil.h
     util/MacroUtil.h
+    util/MemoryMappedFile.h
     util/ScopeUtils.h
     util/BitUtil.h
     util/Index.h

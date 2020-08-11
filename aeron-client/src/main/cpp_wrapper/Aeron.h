@@ -102,7 +102,8 @@ public:
      */
     inline bool isClosed()
     {
-        throw UnsupportedOperationException("Need client close on C API", SOURCEINFO);
+        return false;
+//        throw UnsupportedOperationException("Need client close on C API", SOURCEINFO);
     }
 
     /**
@@ -946,14 +947,14 @@ private:
 
     static void onAvailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
-        on_available_image_t& callback = *static_cast<on_available_image_t *>(clientd);
+        on_available_image_t& callback = *reinterpret_cast<on_available_image_t *>(clientd);
         Image imageWrapper(subscription, image);
         callback(imageWrapper);
     }
 
     static void onUnavailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
-        on_unavailable_image_t & callback = *static_cast<on_unavailable_image_t *>(clientd);
+        on_unavailable_image_t & callback = *reinterpret_cast<on_unavailable_image_t *>(clientd);
         Image imageWrapper(subscription, image);
         callback(imageWrapper);
     }

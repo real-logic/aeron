@@ -26,6 +26,7 @@
 #include "util/Export.h"
 #include "concurrent/CountersReader.h"
 #include "Context.h"
+#include "ChannelUri.h"
 
 namespace aeron
 {
@@ -170,6 +171,39 @@ public:
         return aeron::concurrent::status::LocalSocketAddressStatus::findAddresses(
             m_countersReader, channelStatus(), channelStatusId());
     }
+
+    std::string tryResolveChannelEndpointPort() const
+    {
+        const int64_t currentChannelStatus = channelStatus();
+
+        if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus)
+        {
+            std::vector<std::string> localSocketAddresses = LocalSocketAddressStatus::findAddresses(
+                m_countersReader, currentChannelStatus, channelStatusId());
+
+            if (1 == localSocketAddresses.size())
+            {
+                std::shared_ptr<ChannelUri> channelUriPtr = ChannelUri::parse(m_channel);
+                std::string endpoint = channelUriPtr->get(ENDPOINT_PARAM_NAME);
+
+                if (!endpoint.empty() && endsWith(endpoint, std::string(":0")))
+                {
+                    std::string &resolvedEndpoint = localSocketAddresses.at(0);
+                    std::size_t i = resolvedEndpoint.find_last_of(':');
+                    std::string newEndpoint = endpoint.substr(0, endpoint.length() - 2) + resolvedEndpoint.substr(i);
+
+                    channelUriPtr->put(ENDPOINT_PARAM_NAME, newEndpoint);
+
+                    return channelUriPtr->toString();
+                }
+            }
+
+            return m_channel;
+        }
+
+        return {};
+    }
+
 
     /**
      * Add a destination manually to a multi-destination Subscription.

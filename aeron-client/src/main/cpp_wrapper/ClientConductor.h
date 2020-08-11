@@ -22,6 +22,9 @@
 namespace aeron
 {
 
+typedef std::function<long long()> epoch_clock_t;
+typedef std::function<long long()> nano_clock_t;
+
 class ClientConductor
 {
 public:
@@ -46,6 +49,27 @@ public:
 private:
     aeron_t *m_aeron;
 };
+
+inline long long currentTimeMillis()
+{
+    using namespace std::chrono;
+
+    system_clock::time_point now = system_clock::now();
+    milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
+
+    return ms.count();
+}
+
+inline long long systemNanoClock()
+{
+    using namespace std::chrono;
+
+    high_resolution_clock::time_point now = high_resolution_clock::now();
+    nanoseconds ns = duration_cast<nanoseconds>(now.time_since_epoch());
+
+    return ns.count();
+}
+
 }
 
 #endif

@@ -143,9 +143,9 @@ public class DriverConductor implements Agent
             this);
 
         final AtomicCounter resolutionCounter = ctx.systemCounters().get(RESOLUTION_CHANGES);
-        resolutionCounter.appendToLabel(": resolverName=");
+        resolutionCounter.appendToLabel(": driverName=");
         resolutionCounter.appendToLabel(ctx.resolverName());
-        resolutionCounter.appendToLabel(" canonicalName=");
+        resolutionCounter.appendToLabel(" hostname=");
         resolutionCounter.appendToLabel(DriverNameResolver.getCanonicalName());
 
         final long nowNs = nanoClock.nanoTime();

@@ -113,6 +113,20 @@ void aeron_counters_manager_update_label(
     AERON_PUT_ORDERED(metadata->label_length, (int32_t)length);
 }
 
+void aeron_counters_manager_append_to_label(
+    volatile aeron_counters_manager_t *manager, int32_t counter_id, size_t length, const char *value)
+{
+    aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
+        (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
+
+    size_t current_length = metadata->label_length;
+    size_t available_length = sizeof(metadata->label) - current_length;
+    size_t copy_length = length > available_length ? available_length : length;
+
+    memcpy(metadata->label, value, copy_length);
+    AERON_PUT_ORDERED(metadata->label_length, ((int32_t)(current_length + copy_length)));
+}
+
 void aeron_counters_manager_remove_free_list_index(volatile aeron_counters_manager_t *manager, int index)
 {
     for (int i = index; i < manager->free_list_index; i++)

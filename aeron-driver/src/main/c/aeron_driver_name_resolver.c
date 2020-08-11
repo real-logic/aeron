@@ -47,8 +47,6 @@ struct mmsghdr
 };
 #endif
 
-// Cater for windows.
-#define AERON_MAX_HOSTNAME_LEN (256)
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
 #define AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS (1)
 

@@ -52,6 +52,7 @@ int aeron_default_name_resolver_supplier(
     resolver->do_work_func = aeron_default_name_resolver_do_work;
     resolver->close_func = aeron_default_name_resolver_close;
     resolver->state = NULL;
+
     return 0;
 }
 

@@ -444,10 +444,16 @@ public:
         return *this;
     }
 
-    static void requestDriverTermination(
+    static bool requestDriverTermination(
         const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
     {
-        throw UnsupportedOperationException("Need to implement in C API", SOURCEINFO);
+        int result = aeron_context_request_driver_termination(directory.c_str(), tokenBuffer, tokenLength);
+        if (result < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return 1 == result;
     }
 
     static std::string defaultAeronPath()

@@ -26,6 +26,9 @@
 extern "C"
 {
 #include "aeronc.h"
+#include "aeron_publication.h"
+#include "aeron_exclusive_publication.h"
+#include "aeron_subscription.h"
 #include "aeron_context.h"
 #include "aeron_cnc_file_descriptor.h"
 #include "concurrent/aeron_mpsc_rb.h"
@@ -47,6 +50,7 @@ extern "C"
 #define TIME_ADVANCE_INTERVAL_NS (1000 * 1000LL)
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24567"
+#define DEST_URI "aeron:udp?endpoint=localhost:24568"
 #define SUB_URI "aeron:udp?endpoint=localhost:24567"
 #define STREAM_ID (101)
 #define SESSION_ID (110)
@@ -262,6 +266,23 @@ public:
             sizeof(aeron_publication_buffers_ready_t) + logFile.length()) < 0)
         {
             throw std::runtime_error("error transmitting ON_PUBLICATION_READY: " + std::string(aeron_errmsg()));
+        }
+    }
+
+    void transmitOnOperationSuccess(aeron_async_destination_t *async)
+    {
+        char response_buffer[sizeof(aeron_operation_succeeded_t)];
+        auto response = reinterpret_cast<aeron_operation_succeeded_t *>(response_buffer);
+
+        response->correlation_id = async->registration_id;
+
+        if (aeron_broadcast_transmitter_transmit(
+            &m_to_clients,
+            AERON_RESPONSE_ON_OPERATION_SUCCESS,
+            response_buffer,
+            sizeof(aeron_operation_succeeded_t)) < 0)
+        {
+            throw std::runtime_error("error transmitting ON_OPERATION_SUCCESS: " + std::string(aeron_errmsg()));
         }
     }
 
@@ -672,6 +693,122 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
     doWork();
 
     EXPECT_TRUE(was_on_new_subscription_called);
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestination)
+{
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_destination_t *async_add_dest = nullptr;
+    aeron_async_destination_t *async_remove_dest = nullptr;
+    aeron_publication_t *publication = nullptr;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    transmitOnPublicationReady(async_pub, m_logFileName, false);
+    createLogFile(m_logFileName);
+    doWork();
+    ASSERT_GT(aeron_async_add_publication_poll(&publication, async_pub), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_publication_destination(&async_add_dest, &m_conductor, publication, DEST_URI),
+        0);
+
+    transmitOnOperationSuccess(async_add_dest);
+    doWork();
+    ASSERT_EQ(async_add_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+    ASSERT_EQ(async_add_dest->resource.publication->registration_id, publication->registration_id);
+    ASSERT_GT(aeron_publication_async_add_destination_poll(async_add_dest), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_remove_publication_destination(
+            &async_remove_dest, &m_conductor, publication, DEST_URI),
+        0);
+    transmitOnOperationSuccess(async_remove_dest);
+    doWork();
+    ASSERT_GT(aeron_publication_async_add_destination_poll(async_remove_dest), 0) << aeron_errmsg();
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestination)
+{
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_destination_t *async_dest = nullptr;
+    aeron_exclusive_publication_t *publication = nullptr;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    transmitOnPublicationReady(async_pub, m_logFileName, false);
+    createLogFile(m_logFileName);
+    doWork();
+    ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async_pub), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_exclusive_publication_destination(
+            &async_dest, &m_conductor, publication, DEST_URI),
+        0);
+
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_EQ(async_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+    ASSERT_EQ(async_dest->resource.publication->registration_id, publication->registration_id);
+    ASSERT_GT(aeron_exclusive_publication_async_add_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_remove_exclusive_publication_destination(
+            &async_dest, &m_conductor, publication, DEST_URI),
+        0);
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_GT(aeron_publication_async_add_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestination)
+{
+    aeron_async_add_subscription_t *async_sub = nullptr;
+    aeron_async_destination_t *async_dest = nullptr;
+    aeron_subscription_t *subscription = nullptr;
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_subscription(
+            &async_sub, &m_conductor, PUB_URI, STREAM_ID, NULL, NULL, NULL, NULL),
+        0);
+    doWork();
+
+    transmitOnSubscriptionReady(async_sub);
+    createLogFile(m_logFileName);
+    doWork();
+    ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async_sub), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_subscription_destination(
+            &async_dest, &m_conductor, subscription, DEST_URI),
+        0);
+
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_EQ(async_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+    ASSERT_EQ(async_dest->resource.subscription->registration_id, subscription->registration_id);
+    ASSERT_GT(aeron_subscription_async_add_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_remove_subscription_destination(&async_dest, &m_conductor, subscription, DEST_URI),
+        0);
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_GT(aeron_subscription_async_remove_destination_poll(async_dest), 0) << aeron_errmsg();
 
     // graceful close and reclaim for sanitize
     ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);

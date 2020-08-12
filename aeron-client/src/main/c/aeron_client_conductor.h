@@ -46,7 +46,8 @@ typedef enum aeron_client_managed_resource_type_en
     AERON_CLIENT_TYPE_SUBSCRIPTION,
     AERON_CLIENT_TYPE_IMAGE,
     AERON_CLIENT_TYPE_LOGBUFFER,
-    AERON_CLIENT_TYPE_COUNTER
+    AERON_CLIENT_TYPE_COUNTER,
+    AERON_CLIENT_TYPE_DESTINATION
 }
 aeron_client_managed_resource_type_t;
 
@@ -67,6 +68,7 @@ typedef struct aeron_client_registering_resource_stct
         aeron_exclusive_publication_t *exclusive_publication;
         aeron_subscription_t *subscription;
         aeron_counter_t *counter;
+        aeron_client_command_base_t *base_resource;
     }
     resource;
 
@@ -297,6 +299,42 @@ int aeron_client_conductor_async_close_counter(
     aeron_notification_t on_close_complete,
     void *on_close_complete_clientd);
 
+int aeron_client_conductor_async_add_publication_destination(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_publication_t *publication,
+    const char *uri);
+
+int aeron_client_conductor_async_remove_publication_destination(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_publication_t *publication,
+    const char *uri);
+
+int aeron_client_conductor_async_add_exclusive_publication_destination(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_exclusive_publication_t *publication,
+    const char *uri);
+
+int aeron_client_conductor_async_remove_exclusive_publication_destination(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_exclusive_publication_t *publication,
+    const char *uri);
+
+int aeron_client_conductor_async_add_subscription_destination(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_subscription_t *subscription,
+    const char *uri);
+
+int aeron_client_conductor_async_remove_subscription_destination(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_subscription_t *subscription,
+    const char *uri);
+
 int aeron_client_conductor_async_handler(aeron_client_conductor_t *conductor, aeron_client_handler_cmd_t *cmd);
 
 int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_error_response_t *response);
@@ -304,6 +342,8 @@ int aeron_client_conductor_on_publication_ready(
     aeron_client_conductor_t *conductor, aeron_publication_buffers_ready_t *response);
 int aeron_client_conductor_on_subscription_ready(
     aeron_client_conductor_t *conductor, aeron_subscription_ready_t *response);
+int aeron_client_conductor_on_operation_success(
+    aeron_client_conductor_t *conductor, aeron_operation_succeeded_t *response);
 int aeron_client_conductor_on_available_image(
     aeron_client_conductor_t *conductor,
     aeron_image_buffers_ready_t *response,

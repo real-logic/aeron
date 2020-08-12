@@ -1103,7 +1103,7 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "ADD_DESTINATION invalid resource (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "DESTINATION command invalid resource (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, EINVAL, err_buffer);
             return;
         }
@@ -1126,7 +1126,7 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
             char err_buffer[AERON_MAX_PATH];
 
             snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "ADD_DESTINATION could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "DESTINATION command could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, err_buffer);
             return;
         }
@@ -1140,7 +1140,7 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
     {
         char err_buffer[AERON_MAX_PATH];
 
-        snprintf(err_buffer, sizeof(err_buffer) - 1, "destination registering_resources: %s", aeron_errmsg());
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "DESTINATION registering_resources: %s", aeron_errmsg());
         conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
         return;
     }

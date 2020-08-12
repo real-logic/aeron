@@ -258,7 +258,10 @@ int aeron_client_conductor_async_close_publication(
     void *on_close_complete_clientd);
 
 int aeron_client_conductor_async_add_exclusive_publication(
-    aeron_async_add_exclusive_publication_t **async, aeron_client_conductor_t *conductor, const char *uri, int32_t stream_id);
+    aeron_async_add_exclusive_publication_t **async,
+    aeron_client_conductor_t *conductor,
+    const char *uri,
+    int32_t stream_id);
 int aeron_client_conductor_async_close_exclusive_publication(
     aeron_client_conductor_t *conductor,
     aeron_exclusive_publication_t *publication,
@@ -308,18 +311,11 @@ int aeron_client_conductor_on_available_image(
     const char *log_file,
     int32_t source_identity_length,
     const char *source_identity);
-int aeron_client_conductor_on_unavailable_image(
-    aeron_client_conductor_t *conductor,
-    aeron_image_message_t *response);
-int aeron_client_conductor_on_counter_ready(
-    aeron_client_conductor_t *conductor,
-    aeron_counter_update_t *response);
+int aeron_client_conductor_on_unavailable_image(aeron_client_conductor_t *conductor, aeron_image_message_t *response);
+int aeron_client_conductor_on_counter_ready(aeron_client_conductor_t *conductor, aeron_counter_update_t *response);
 int aeron_client_conductor_on_unavailable_counter(
-    aeron_client_conductor_t *conductor,
-    aeron_counter_update_t *response);
-int aeron_client_conductor_on_client_timeout(
-    aeron_client_conductor_t *conductor,
-    aeron_client_timeout_t *response);
+    aeron_client_conductor_t *conductor, aeron_counter_update_t *response);
+int aeron_client_conductor_on_client_timeout(aeron_client_conductor_t *conductor, aeron_client_timeout_t *response);
 
 int aeron_client_conductor_get_or_create_log_buffer(
     aeron_client_conductor_t *conductor,
@@ -327,9 +323,7 @@ int aeron_client_conductor_get_or_create_log_buffer(
     const char *log_file,
     int64_t original_registration_id,
     bool pre_touch);
-int aeron_client_conductor_release_log_buffer(
-    aeron_client_conductor_t *conductor,
-    aeron_log_buffer_t *log_buffer);
+int aeron_client_conductor_release_log_buffer(aeron_client_conductor_t *conductor, aeron_log_buffer_t *log_buffer);
 
 int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aeron_image_t *image);
 

@@ -175,6 +175,11 @@ int aeron_close(aeron_t *client)
     return 0;
 }
 
+bool aeron_is_closed(aeron_t *client)
+{
+    return aeron_client_conductor_is_closed(&client->conductor);
+}
+
 typedef struct aeron_print_counters_stream_out_stct
 {
     void (*stream_out)(const char *);

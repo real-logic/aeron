@@ -316,6 +316,15 @@ void aeron_main_idle_strategy(aeron_t *client, int work_count);
  */
 int aeron_close(aeron_t *client);
 
+/**
+ * Determines if the client has been closed, e.g. via a driver timeout.  Don't call this method after calling
+ * aeron_close as that will have already freed the associated memory.
+ *
+ * @param client to check if closed.
+ * @return true if it has been closed, false otherwise.
+ */
+bool aeron_is_closed(aeron_t *client);
+
 /*
  * Aeron API functions
  */

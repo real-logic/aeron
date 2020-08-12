@@ -719,6 +719,7 @@ void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *cond
      * loop will be terminating. So, will not process lingering, etc. Let the aeron_close() cleanup
      * everything when the app is ready, but we want to mark everything as closed so that it won't be used.
      */
+    AERON_PUT_VOLATILE(conductor->is_closed, true);
 
     aeron_int64_to_ptr_hash_map_for_each(
         &conductor->image_by_id_map, aeron_client_conductor_force_close_resource, NULL);
@@ -2192,3 +2193,4 @@ extern int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
 extern bool aeron_counter_heartbeat_timestamp_is_active(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t type_id, int64_t registration_id);
 extern void aeron_client_conductor_notify_close_handlers(aeron_client_conductor_t *conductor);
+extern bool aeron_client_conductor_is_closed(aeron_client_conductor_t *conductor);

@@ -207,7 +207,7 @@ public class ReplayMergeTest
                     {
                         if (Publication.BACK_PRESSURED == position)
                         {
-                            awaitPositionChange(counters, recordingCounterId, publication.position());
+                            awaitPositionChange(replayMerge, counters, recordingCounterId, publication.position());
                         }
                         else
                         {
@@ -260,7 +260,8 @@ public class ReplayMergeTest
         }
     }
 
-    static void awaitPositionChange(final CountersReader counters, final int counterId, final long position)
+    static void awaitPositionChange(
+        final ReplayMerge replayMerge, final CountersReader counters, final int counterId, final long position)
     {
         if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
         {
@@ -272,8 +273,11 @@ public class ReplayMergeTest
         do
         {
             Tests.yieldingWait(
-                "publication position: %d, current position: %d, time since last change: %.6f ms",
-                position, currentPosition, (System.nanoTime() - initialTimestampNs) / 1_000_000.0);
+                "publicationPosition=%d, recordingPosition=%d, timeSinceLastChangeMs=%d, replayMerge=%s",
+                position,
+                currentPosition,
+                (System.nanoTime() - initialTimestampNs) / 1_000_000,
+                replayMerge.toString());
         }
         while (currentPosition == counters.getCounterValue(counterId) && currentPosition < position);
     }

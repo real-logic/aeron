@@ -23,6 +23,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
@@ -309,6 +310,10 @@ public class Configuration
 
     /**
      * Property name for {@link Publication} unblock timeout.
+     * <p>
+     * A publication can become blocked if the client crashes while publishing or if
+     * {@link io.aeron.Publication#tryClaim(int, BufferClaim)} is used without following up by calling
+     * {@link BufferClaim#commit()} or {@link BufferClaim#abort()}.
      */
     public static final String PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME = "aeron.publication.unblock.timeout";
 

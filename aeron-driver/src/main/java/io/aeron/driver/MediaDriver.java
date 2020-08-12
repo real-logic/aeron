@@ -24,6 +24,7 @@ import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -1331,6 +1332,10 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Timeout in nanoseconds after which a publication will be unblocked if a offer is partially complete to allow
          * other publishers to make progress.
+         * <p>
+         * A publication can become blocked if the client crashes while publishing or if
+         * {@link io.aeron.Publication#tryClaim(int, BufferClaim)} is used without following up by calling
+         * {@link BufferClaim#commit()} or {@link BufferClaim#abort()}.
          *
          * @return timeout in nanoseconds after which a publication will be unblocked.
          * @see Configuration#PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME
@@ -1343,6 +1348,10 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Timeout in nanoseconds after which a publication will be unblocked if a offer is partially complete to allow
          * other publishers to make progress.
+         * <p>
+         * A publication can become blocked if the client crashes while publishing or if
+         * {@link io.aeron.Publication#tryClaim(int, BufferClaim)} is used without following up by calling
+         * {@link BufferClaim#commit()} or {@link BufferClaim#abort()}.
          *
          * @param timeoutNs in nanoseconds after which a publication will be unblocked.
          * @return this for a fluent API.

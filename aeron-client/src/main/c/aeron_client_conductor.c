@@ -1075,7 +1075,7 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
 static void aeron_client_conductor_on_cmd_destination(const void *clientd, const void *item, int32_t msg_type_id)
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_add_subscription_t *async = (aeron_async_add_subscription_t *)item;
+    aeron_async_destination_t *async = (aeron_async_destination_t *)item;
 
     char buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
     aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;

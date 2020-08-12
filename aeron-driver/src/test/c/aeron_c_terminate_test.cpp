@@ -48,7 +48,7 @@ TEST_F(TerminateTest, shouldShutdownDriver)
     snprintf(path, sizeof(path), "%s%c%s", driver.directory(), AERON_FILE_SEP, AERON_CNC_FILE);
 
     ASSERT_EQ(1, aeron_context_request_driver_termination(
-            driver.directory(), (uint8_t *)TERMINATION_KEY, strlen(TERMINATION_KEY))) << aeron_errmsg;
+            driver.directory(), (uint8_t *)TERMINATION_KEY, strlen(TERMINATION_KEY))) << aeron_errmsg();
 
     driver.joinAndClose();
 }

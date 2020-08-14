@@ -181,7 +181,7 @@ public class DriverConductor implements Agent
         workCount += processTimers(nowNs);
         workCount += clientCommandAdapter.receive();
         workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
-        workCount = trackPositions(workCount, nowNs);
+        workCount = trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
 
         return workCount;
@@ -1695,7 +1695,7 @@ public class DriverConductor implements Agent
         return isSparse;
     }
 
-    private int trackPositions(final int existingWorkCount, final long nowNs)
+    private int trackStreamPositions(final int existingWorkCount, final long nowNs)
     {
         int workCount = existingWorkCount;
 

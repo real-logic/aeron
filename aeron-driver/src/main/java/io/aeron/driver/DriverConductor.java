@@ -173,15 +173,14 @@ public class DriverConductor implements Agent
 
     public int doWork()
     {
-        int workCount = 0;
-
         final long nowNs = nanoClock.nanoTime();
         updateClocks(nowNs);
 
+        int workCount = 0;
         workCount += processTimers(nowNs);
         workCount += clientCommandAdapter.receive();
         workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
-        workCount = trackStreamPositions(workCount, nowNs);
+        workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
 
         return workCount;

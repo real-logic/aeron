@@ -650,12 +650,12 @@ int aeron_publication_async_add_destination(
     return aeron_client_conductor_async_add_publication_destination(async, &client->conductor, publication, uri);
 }
 
-int aeron_publication_async_add_destination_poll(aeron_async_destination_t *async)
+int aeron_publication_async_destination_poll(aeron_async_destination_t *async)
 {
     return aeron_async_destination_poll(async);
 }
 
-int aeron_subscription_async_remove_destination(
+int aeron_publication_async_remove_destination(
     aeron_async_destination_t **async,
     aeron_t *client,
     aeron_publication_t *publication,
@@ -671,20 +671,38 @@ int aeron_subscription_async_remove_destination(
     return aeron_client_conductor_async_remove_publication_destination(async, &client->conductor, publication, uri);
 }
 
+int aeron_subscription_async_add_destination(
+    aeron_async_destination_t **async, aeron_t *client, aeron_subscription_t *subscription, const char *uri)
+{
+    if (NULL == subscription || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
 
-int aeron_publication_async_remove_destination_poll(aeron_async_destination_t *async)
+    return aeron_client_conductor_async_add_subscription_destination(async, &client->conductor, subscription, uri);
+}
+
+int aeron_subscription_async_destination_poll(aeron_async_destination_t *async)
 {
     return aeron_async_destination_poll(async);
 }
 
-int aeron_subscription_async_add_destination_poll(aeron_async_destination_t *async)
+int aeron_subscription_async_remove_destination(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_subscription_t *subscription,
+    const char *uri)
 {
-    return aeron_async_destination_poll(async);
-}
+    if (NULL == subscription || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
 
-int aeron_subscription_async_remove_destination_poll(aeron_async_destination_t *async)
-{
-    return aeron_async_destination_poll(async);
+    return aeron_client_conductor_async_remove_subscription_destination(async, &client->conductor, subscription, uri);
 }
 
 int aeron_exclusive_publication_async_add_destination(
@@ -704,9 +722,26 @@ int aeron_exclusive_publication_async_add_destination(
         async, &client->conductor, publication, uri);
 }
 
-int aeron_exclusive_publication_async_add_destination_poll(aeron_async_destination_t *async)
+int aeron_exclusive_publication_async_destination_poll(aeron_async_destination_t *async)
 {
     return aeron_async_destination_poll(async);
+}
+
+int aeron_exclusive_publication_async_remove_destination(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_exclusive_publication_t *publication,
+    const char *uri)
+{
+    if (NULL == publication || uri == NULL)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_client_conductor_async_remove_exclusive_publication_destination(
+        async, &client->conductor, publication, uri);
 }
 
 int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd)

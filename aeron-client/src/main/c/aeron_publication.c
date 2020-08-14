@@ -467,32 +467,6 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication)
     return aeron_counter_get_volatile(publication->position_limit);
 }
 
-int aeron_publication_add_destination(aeron_publication_t *publication, const char *uri, int64_t *correlation_id)
-{
-    if (NULL == publication || uri == NULL)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
-        return -1;
-    }
-
-    return aeron_client_conductor_offer_destination_command(
-        publication->conductor, publication->registration_id, AERON_COMMAND_ADD_DESTINATION, uri, correlation_id);
-}
-
-int aeron_publication_remove_destination(aeron_publication_t *publication, const char *uri, int64_t *correlation_id)
-{
-    if (NULL == publication || uri == NULL)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
-        return -1;
-    }
-
-    return aeron_client_conductor_offer_destination_command(
-        publication->conductor, publication->registration_id, AERON_COMMAND_REMOVE_DESTINATION, uri, correlation_id);
-}
-
 extern int64_t aeron_publication_new_position(
     aeron_publication_t *publication,
     int32_t term_count,

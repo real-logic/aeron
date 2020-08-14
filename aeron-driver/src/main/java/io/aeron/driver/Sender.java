@@ -65,7 +65,7 @@ public class Sender extends SenderRhsPadding implements Agent
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
     private final AtomicCounter resolutionChanges;
-    private final CachedNanoClock nanoClock;
+    private final CachedNanoClock cachedNanoClock;
     private final DriverConductorProxy conductorProxy;
 
     private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;
@@ -76,12 +76,12 @@ public class Sender extends SenderRhsPadding implements Agent
         this.commandQueue = ctx.senderCommandQueue();
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
-        this.nanoClock = ctx.cachedNanoClock();
+        this.cachedNanoClock = ctx.cachedNanoClock();
         this.statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() >> 1;
         this.reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
         this.dutyCycleRatio = ctx.sendToStatusMessagePollRatio();
         this.conductorProxy = ctx.driverConductorProxy();
-        this.reResolutionDeadlineNs = nanoClock.nanoTime() + reResolutionCheckIntervalNs;
+        this.reResolutionDeadlineNs = cachedNanoClock.nanoTime() + reResolutionCheckIntervalNs;
     }
 
     public void onClose()
@@ -92,7 +92,7 @@ public class Sender extends SenderRhsPadding implements Agent
     public int doWork()
     {
         final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
-        final long nowNs = nanoClock.nanoTime();
+        final long nowNs = cachedNanoClock.nanoTime();
         final int bytesSent = doSend(nowNs);
 
         int bytesReceived = 0;

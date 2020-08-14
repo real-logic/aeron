@@ -42,7 +42,7 @@ public class Receiver implements Agent
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
-    private final CachedNanoClock nanoClock;
+    private final CachedNanoClock cachedNanoClock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
@@ -55,10 +55,10 @@ public class Receiver implements Agent
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
         resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
-        nanoClock = ctx.cachedNanoClock();
+        cachedNanoClock = ctx.cachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
         reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
-        reResolutionDeadlineNs = nanoClock.nanoTime() + reResolutionCheckIntervalNs;
+        reResolutionDeadlineNs = cachedNanoClock.nanoTime() + reResolutionCheckIntervalNs;
     }
 
     public void onClose()
@@ -76,7 +76,7 @@ public class Receiver implements Agent
         int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();
         totalBytesReceived.getAndAddOrdered(bytesReceived);
-        final long nowNs = nanoClock.nanoTime();
+        final long nowNs = cachedNanoClock.nanoTime();
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
@@ -117,7 +117,7 @@ public class Receiver implements Agent
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
             sessionId, streamId, transportIndex, channelEndpoint, periodic, controlAddress);
 
-        cmd.timeOfStatusMessageNs(nanoClock.nanoTime());
+        cmd.timeOfStatusMessageNs(cachedNanoClock.nanoTime());
         pendingSetupMessages.add(cmd);
     }
 

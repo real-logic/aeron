@@ -90,8 +90,8 @@ typedef struct aeron_driver_name_resolver_stct
 
     int64_t time_of_last_work_ms;
     int64_t time_of_last_bootstrap_neighbor_resolve_ms;
-    int64_t dead_line_self_resolutions_ms;
-    int64_t dead_line_neighbor_resolutions_ms;
+    int64_t self_resolutions_deadline_ms;
+    int64_t neighbor_resolutions_deadline_ms;
 
     int64_t now_ms;
 
@@ -235,9 +235,9 @@ int aeron_driver_name_resolver_init(
     int64_t now_ms = aeron_clock_cached_epoch_time(context->cached_clock);
     _driver_resolver->neighbor_timeout_ms = AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
     _driver_resolver->self_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
-    _driver_resolver->dead_line_self_resolutions_ms = 0;
+    _driver_resolver->self_resolutions_deadline_ms = 0;
     _driver_resolver->neighbor_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_NEIGHBOUR_RESOLUTION_INTERVAL_MS;
-    _driver_resolver->dead_line_neighbor_resolutions_ms = now_ms + _driver_resolver->neighbor_resolution_interval_ms;
+    _driver_resolver->neighbor_resolutions_deadline_ms = now_ms + _driver_resolver->neighbor_resolution_interval_ms;
     _driver_resolver->time_of_last_bootstrap_neighbor_resolve_ms = now_ms;
     _driver_resolver->time_of_last_work_ms = 0;
 
@@ -1003,18 +1003,18 @@ int aeron_driver_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t 
             &driver_resolver->cache, now_ms, driver_resolver->cache_size_counter.value_addr);
         work_count += aeron_driver_name_resolver_timeout_neighbors(driver_resolver, now_ms);
 
-        if (driver_resolver->dead_line_self_resolutions_ms <= now_ms)
+        if (driver_resolver->self_resolutions_deadline_ms <= now_ms)
         {
             work_count += aeron_driver_name_resolver_send_self_resolutions(driver_resolver, now_ms);
 
-            driver_resolver->dead_line_self_resolutions_ms = now_ms + driver_resolver->self_resolution_interval_ms;
+            driver_resolver->self_resolutions_deadline_ms = now_ms + driver_resolver->self_resolution_interval_ms;
         }
 
-        if (driver_resolver->dead_line_neighbor_resolutions_ms <= now_ms)
+        if (driver_resolver->neighbor_resolutions_deadline_ms <= now_ms)
         {
             work_count += aeron_driver_name_resolver_send_neighbor_resolutions(driver_resolver, now_ms);
 
-            driver_resolver->dead_line_neighbor_resolutions_ms =
+            driver_resolver->neighbor_resolutions_deadline_ms =
                 now_ms + driver_resolver->neighbor_resolution_interval_ms;
         }
 

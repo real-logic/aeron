@@ -84,8 +84,8 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private final boolean preferIPv6 = false;
 
     private long timeOfLastWorkMs = 0;
-    private long deadlineSelfResolutionMs;
-    private long deadlineNeighborResolutionMs;
+    private long selfResolutionDeadlineMs;
+    private long neighborResolutionDeadlineMs;
 
     DriverNameResolver(final MediaDriver.Context ctx)
     {
@@ -109,8 +109,8 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         localName = localDriverName.getBytes(StandardCharsets.US_ASCII);
         localAddress = localSocketAddress.getAddress().getAddress();
 
-        deadlineSelfResolutionMs = 0;
-        deadlineNeighborResolutionMs = nowMs + neighborResolutionIntervalMs;
+        selfResolutionDeadlineMs = 0;
+        neighborResolutionDeadlineMs = nowMs + neighborResolutionIntervalMs;
 
         cache = new DriverNameResolverCache(TIMEOUT_MS);
 
@@ -164,12 +164,12 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             workCount += cache.timeoutOldEntries(nowMs, cacheEntriesCounter);
             workCount += timeoutNeighbors(nowMs);
 
-            if (nowMs > deadlineSelfResolutionMs)
+            if (nowMs > selfResolutionDeadlineMs)
             {
                 sendSelfResolutions(nowMs);
             }
 
-            if (nowMs > deadlineNeighborResolutionMs)
+            if (nowMs > neighborResolutionDeadlineMs)
             {
                 sendNeighborResolutions(nowMs);
             }
@@ -293,7 +293,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             sendResolutionFrameTo(byteBuffer, bootstrapNeighborAddress);
         }
 
-        deadlineSelfResolutionMs = nowMs + selfResolutionIntervalMs;
+        selfResolutionDeadlineMs = nowMs + selfResolutionIntervalMs;
     }
 
     public void sendNeighborResolutions(final long nowMs)
@@ -342,7 +342,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
             }
         }
 
-        deadlineNeighborResolutionMs = nowMs + neighborResolutionIntervalMs;
+        neighborResolutionDeadlineMs = nowMs + neighborResolutionIntervalMs;
     }
 
     public int sendResolutionFrameTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)

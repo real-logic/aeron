@@ -177,41 +177,12 @@ public class DriverConductor implements Agent
 
         final long nowNs = nanoClock.nanoTime();
         updateClocks(nowNs);
-        workCount += processTimers(nowNs);
 
+        workCount += processTimers(nowNs);
         workCount += clientCommandAdapter.receive();
         workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        workCount = trackPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
-
-        final ArrayList<PublicationImage> publicationImages = this.publicationImages;
-        for (int i = 0, size = publicationImages.size(); i < size; i++)
-        {
-            final PublicationImage image = publicationImages.get(i);
-            if (image.isRebuilding())
-            {
-                image.trackRebuild(nowNs, statusMessageTimeoutNs);
-            }
-        }
-
-        final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
-        for (int i = 0, size = networkPublications.size(); i < size; i++)
-        {
-            final NetworkPublication publication = networkPublications.get(i);
-            if (publication.state() == NetworkPublication.State.ACTIVE)
-            {
-                workCount += publication.updatePublisherLimit();
-            }
-        }
-
-        final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
-        for (int i = 0, size = ipcPublications.size(); i < size; i++)
-        {
-            final IpcPublication publication = ipcPublications.get(i);
-            if (publication.state() == IpcPublication.State.ACTIVE)
-            {
-                workCount += publication.updatePublisherLimit();
-            }
-        }
 
         return workCount;
     }
@@ -1722,5 +1693,42 @@ public class DriverConductor implements Agent
         }
 
         return isSparse;
+    }
+
+    private int trackPositions(final int existingWorkCount, final long nowNs)
+    {
+        int workCount = existingWorkCount;
+
+        final ArrayList<PublicationImage> publicationImages = this.publicationImages;
+        for (int i = 0, size = publicationImages.size(); i < size; i++)
+        {
+            final PublicationImage image = publicationImages.get(i);
+            if (image.isRebuilding())
+            {
+                image.trackRebuild(nowNs, statusMessageTimeoutNs);
+            }
+        }
+
+        final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+            if (publication.state() == NetworkPublication.State.ACTIVE)
+            {
+                workCount += publication.updatePublisherLimit();
+            }
+        }
+
+        final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
+        {
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.state() == IpcPublication.State.ACTIVE)
+            {
+                workCount += publication.updatePublisherLimit();
+            }
+        }
+
+        return workCount;
     }
 }

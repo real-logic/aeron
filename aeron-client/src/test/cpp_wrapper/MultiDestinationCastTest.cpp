@@ -56,13 +56,47 @@ TEST_F(MultiDestinationCastTest, shouldAddRemoveDestinationFromPublication)
 {
 //    Context ctx;
 //    ctx.useConductorAgentInvoker(true);
+    buffer_t buf;
+    AtomicBuffer buffer(buf);
     std::shared_ptr<Aeron> aeron = Aeron::connect();
     std::int32_t streamId = 1001;
 
     auto sub1RegId = aeron->addSubscription(SUB1_MDC_MANUAL_URI, streamId);
     auto sub2RegId = aeron->addSubscription(SUB2_MDC_MANUAL_URI, streamId);
-//    auto pubRegId = aeron->addPublication()
+    auto pubRegId = aeron->addPublication(PUB_MDC_MANUAL_URI, streamId);
 
     WAIT_FOR_NON_NULL(sub1, aeron->findSubscription(sub1RegId));
     WAIT_FOR_NON_NULL(sub2, aeron->findSubscription(sub2RegId));
+    WAIT_FOR_NON_NULL(pub, aeron->findPublication(pubRegId));
+
+    int64_t dest1CorrelationId = pub->addDestination(SUB1_MDC_MANUAL_URI);
+    int64_t dest2CorrelationId = pub->addDestination(SUB2_MDC_MANUAL_URI);
+
+    WAIT_FOR(pub->findDestinationResponse(dest1CorrelationId));
+    WAIT_FOR(pub->findDestinationResponse(dest2CorrelationId));
+
+    WAIT_FOR(sub1->isConnected());
+    WAIT_FOR(sub2->isConnected());
+
+    WAIT_FOR(0 < pub->offer(buffer, 0, 128));
+    WAIT_FOR(0 < sub1->poll(
+        [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header) {},
+        1));
+    WAIT_FOR(0 < sub2->poll(
+        [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header) {},
+        1));
+
+    int64_t removeDestCorrelationId = pub->removeDestination(SUB1_MDC_MANUAL_URI);
+
+    WAIT_FOR(pub->findDestinationResponse(removeDestCorrelationId));
+
+    WAIT_FOR(0 < pub->offer(buffer, 0, 128));
+    WAIT_FOR(0 < sub2->poll(
+        [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header) {},
+        1));
+
+    EXPECT_EQ(0, sub2->poll(
+        [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header) {},
+        1));
+
 }

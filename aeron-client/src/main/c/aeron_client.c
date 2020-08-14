@@ -294,6 +294,11 @@ int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscri
     return add_subscription->registration_id;
 }
 
+int64_t aeron_async_destination_get_registration_id(aeron_async_destination_t *async_destination)
+{
+    return async_destination->registration_id;
+}
+
 int aeron_async_add_publication(
     aeron_async_add_publication_t **async, aeron_t *client, const char *uri, int32_t stream_id)
 {

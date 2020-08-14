@@ -2105,6 +2105,16 @@ int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
  */
 int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscription_t *add_subscription);
 
+/**
+ * Gets the registration_id for the destination command supplied.  Note that this is the correlation_id used for
+ * the specified destination command, not the registration_id for the original parent resource (publication,
+ * subscription).
+ *
+ * @param async_destination tracking the current destination command.
+ * @return correlation_id sent to driver.
+ */
+int64_t aeron_async_destination_get_registration_id(aeron_async_destination_t *async_destination);
+
 int aeron_context_request_driver_termination(const char *directory, const uint8_t *token_buffer, size_t token_length);
 
 #ifdef __cplusplus

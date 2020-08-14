@@ -242,7 +242,7 @@ public:
         }
         else
         {
-            return std::make_shared<Publication>(publication, m_countersReader);
+            return std::make_shared<Publication>(m_aeron, publication, m_countersReader);
         }
     }
 

@@ -47,6 +47,8 @@ static const std::int64_t ADMIN_ACTION = -3;
 static const std::int64_t PUBLICATION_CLOSED = -4;
 static const std::int64_t MAX_POSITION_EXCEEDED = -5;
 
+using AsyncDestination = aeron_async_destination_t;
+
 /**
  * @example BasicPublisher.cpp
  */
@@ -66,8 +68,8 @@ class CLIENT_EXPORT Publication
 public:
 
     /// @cond HIDDEN_SYMBOLS
-    Publication(aeron_publication_t *publication, CountersReader &countersReader) :
-        m_publication(publication), m_countersReader(countersReader), m_channel()
+    Publication(aeron_t *aeron, aeron_publication_t *publication, CountersReader &countersReader) :
+        m_aeron(aeron), m_publication(publication), m_countersReader(countersReader), m_channel()
     {
         if (aeron_publication_constants(m_publication, &m_constants) < 0)
         {
@@ -495,16 +497,51 @@ public:
      * Add a destination manually to a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to add
+     * @return async object to track the progress of the command
+     */
+    AsyncDestination *addDestinationAsync(const std::string &endpointChannel)
+    {
+        AsyncDestination *async = nullptr;
+        if (aeron_publication_async_add_destination(&async, m_aeron, m_publication, endpointChannel.c_str()))
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return async;
+    }
+
+    /**
+     * Add a destination manually to a multi-destination-cast Publication.
+     *
+     * @param endpointChannel for the destination to add
      * @return correlation id for the add command
      */
     std::int64_t addDestination(const std::string &endpointChannel)
     {
-        int64_t correlationId;
-        if (aeron_publication_add_destination(m_publication, endpointChannel.c_str(), &correlationId) < 0)
+        AsyncDestination *async = addDestinationAsync(endpointChannel);
+        std::int64_t correlationId = aeron_async_destination_get_registration_id(async);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingDestinations[correlationId] = async;
+
+        return correlationId;
+    }
+
+    /**
+     * Remove a previously added destination manually from a multi-destination-cast Publication.
+     *
+     * @param endpointChannel for the destination to remove
+     * @return async object to track the progress of the command
+     */
+    AsyncDestination *removeDestinationAsync(const std::string &endpointChannel)
+    {
+        AsyncDestination *async;
+        if (aeron_publication_async_remove_destination(&async, m_aeron, m_publication, endpointChannel.c_str()) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        return correlationId;
+
+        return async;
     }
 
     /**
@@ -515,12 +552,42 @@ public:
      */
     std::int64_t removeDestination(const std::string &endpointChannel)
     {
-        int64_t correlationId;
-        if (aeron_publication_remove_destination(m_publication, endpointChannel.c_str(), &correlationId) < 0)
+        AsyncDestination *async = removeDestinationAsync(endpointChannel);
+        std::int64_t correlationId = aeron_async_destination_get_registration_id(async);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingDestinations[correlationId] = async;
+
+        return correlationId;
+    }
+
+    /**
+     * Retrieve the status of the associated add or remove destination operation with the given correlationId.
+     *
+     * This method is non-blocking.
+     *
+     * The value returned is dependent on what has occurred with respect to the media driver:
+     *
+     * - If the correlationId is unknown, then an exception is thrown.
+     * - If the media driver has not answered the add/remove command, then a false is returned.
+     * - If the media driver has successfully added or removed the destination then true is returned.
+     * - If the media driver has returned an error, this method will throw the error returned.
+     *
+     * @see Publication::addDestination
+     * @see Publication::removeDestination
+     *
+     * @param async used to track the progress of the destination command.
+     * @return true for added or false if not.
+     */
+    bool findDestinationResponse(AsyncDestination *async)
+    {
+        int result = aeron_publication_async_add_destination_poll(async);
+        if (result < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        return correlationId;
+
+        return 0 < result;
     }
 
     /**
@@ -544,15 +611,25 @@ public:
      */
     bool findDestinationResponse(std::int64_t correlationId)
     {
-        throw UnsupportedOperationException(
-            "Should look at using the same async approach to adding destinations", SOURCEINFO);
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto search = m_pendingDestinations.find(correlationId);
+        if (search == m_pendingDestinations.end())
+        {
+            throw IllegalArgumentException("Unknown correlation id", SOURCEINFO);
+        }
+
+        return findDestinationResponse(search->second);
     }
 
 private:
+    aeron_t *m_aeron;
     aeron_publication_t *m_publication;
     aeron_publication_constants_t m_constants;
     CountersReader &m_countersReader;
     std::string m_channel;
+    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
+    std::recursive_mutex m_adminLock;
 
     static std::int64_t reservedValueSupplierCallback(void *clientd, uint8_t *buffer, size_t frame_length)
     {

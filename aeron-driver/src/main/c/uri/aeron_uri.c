@@ -481,6 +481,30 @@ int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *re
     return 1;
 }
 
+int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status)
+{
+    const char *value_str = aeron_uri_find_param_value(uri_params, AERON_URI_ATS_KEY);
+    *uri_ats_status = AERON_URI_ATS_STATUS_DEFAULT;
+    if (value_str != NULL)
+    {
+        if (strncmp("true", value_str, strlen("true")) == 0)
+        {
+            *uri_ats_status = AERON_URI_ATS_STATUS_ENABLED;
+        }
+        else if (strncmp("false", value_str, strlen("false")) == 0)
+        {
+            *uri_ats_status = AERON_URI_ATS_STATUS_DISABLED;
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "could not parse %s=%s as bool from URI", AERON_URI_ATS_KEY, value_str);
+            return -1;
+        }
+    }
+
+    return 1;
+}
+
 int aeron_uri_publication_session_id_param(
     aeron_uri_params_t *uri_params, aeron_driver_conductor_t *conductor, aeron_uri_publication_params_t *params)
 {

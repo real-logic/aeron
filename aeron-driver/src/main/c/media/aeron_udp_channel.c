@@ -199,6 +199,7 @@ int aeron_udp_channel_parse(
     _channel->is_dynamic_control_mode = false;
     _channel->is_multicast = false;
     _channel->tag_id = AERON_URI_INVALID_TAG;
+    _channel->ats_status = AERON_URI_ATS_STATUS_DEFAULT;
 
     if (_channel->uri.type != AERON_URI_UDP)
     {
@@ -267,6 +268,11 @@ int aeron_udp_channel_parse(
                 _channel->uri.params.udp.channel_tag);
             goto error_cleanup;
         }
+    }
+
+    if (aeron_uri_get_ats(&_channel->uri.params.udp.additional_params, &_channel->ats_status) < 0)
+    {
+        goto error_cleanup;
     }
 
     if (aeron_is_addr_multicast(&endpoint_addr))

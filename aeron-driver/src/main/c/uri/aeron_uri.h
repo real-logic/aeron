@@ -135,6 +135,14 @@ typedef struct aeron_uri_stct
 }
 aeron_uri_t;
 
+typedef enum aeron_uri_ats_status_en
+{
+    AERON_URI_ATS_STATUS_DEFAULT,
+    AERON_URI_ATS_STATUS_ENABLED,
+    AERON_URI_ATS_STATUS_DISABLED
+}
+aeron_uri_ats_status_t;
+
 typedef int (*aeron_uri_parse_callback_t)(void *clientd, const char *key, const char *value);
 
 int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, void *clientd);
@@ -151,6 +159,7 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 const char *aeron_uri_find_param_value(const aeron_uri_params_t *uri_params, const char *key);
 int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval);
 int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *retval);
+int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status);
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;

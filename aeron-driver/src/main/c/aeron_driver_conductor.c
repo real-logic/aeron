@@ -1302,6 +1302,32 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_find_receive_channel_en
     return NULL;
 }
 
+/* this should be re-usable if/when we decide to reuse transports with MDS */
+int aeron_driver_conductor_update_and_check_ats_status(
+    aeron_driver_context_t *context, aeron_udp_channel_t *channel, const aeron_udp_channel_t *existing_channel)
+{
+    if (!context->ats_enabled && AERON_URI_ATS_STATUS_ENABLED == channel->ats_status)
+    {
+        aeron_set_err(EINVAL, "%s", "ATS is not enabled and thus ats=true not allowed.");
+        return -1;
+    }
+
+    aeron_uri_ats_status_t context_status = context->ats_enabled ?
+        AERON_URI_ATS_STATUS_ENABLED : AERON_URI_ATS_STATUS_DISABLED;
+    channel->ats_status = (AERON_URI_ATS_STATUS_DEFAULT == channel->ats_status) ? context_status : channel->ats_status;
+
+    if (NULL != existing_channel)
+    {
+        if (existing_channel->ats_status != channel->ats_status)
+        {
+            aeron_set_err(EINVAL, "%s", "ATS mismatch on existing channel");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_endpoint(
     aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
 {
@@ -1328,6 +1354,12 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
         endpoint = aeron_str_to_ptr_hash_map_get(
             &conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
+    }
+
+    if (aeron_driver_conductor_update_and_check_ats_status(
+        conductor->context, channel, NULL == endpoint ? NULL : endpoint->conductor_fields.udp_channel) < 0)
+    {
+        return NULL;
     }
 
     if (NULL == endpoint)
@@ -1393,6 +1425,12 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         {
             endpoint = NULL;
         }
+    }
+
+    if (aeron_driver_conductor_update_and_check_ats_status(
+        conductor->context, channel, NULL == endpoint ? NULL : endpoint->conductor_fields.udp_channel) < 0)
+    {
+        return NULL;
     }
 
     if (NULL == endpoint)

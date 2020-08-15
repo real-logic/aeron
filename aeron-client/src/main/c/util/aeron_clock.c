@@ -25,20 +25,16 @@
 #include "util/aeron_clock.h"
 #include "concurrent/aeron_atomic.h"
 
-#include "util/aeron_platform.h"
-
 #if defined(AERON_COMPILER_MSVC)
 
-#include <Windows.h>
+#define MS_PER_SEC  1000ULL     // MS = milliseconds
+#define US_PER_MS   1000ULL     // US = microseconds
+#define HNS_PER_US  10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
+#define NS_PER_US   1000ULL
 
-#define MS_PER_SEC      1000ULL     // MS = milliseconds
-#define US_PER_MS       1000ULL     // US = microseconds
-#define HNS_PER_US      10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
-#define NS_PER_US       1000ULL
-
-#define HNS_PER_SEC     (MS_PER_SEC * US_PER_MS * HNS_PER_US)
-#define NS_PER_HNS      (100ULL)    // NS = nanoseconds
-#define NS_PER_SEC      (MS_PER_SEC * US_PER_MS * NS_PER_US)
+#define HNS_PER_SEC (MS_PER_SEC * US_PER_MS * HNS_PER_US)
+#define NS_PER_HNS  (100ULL)    // NS = nanoseconds
+#define NS_PER_SEC  (MS_PER_SEC * US_PER_MS * NS_PER_US)
 
 int aeron_clock_gettime_monotonic(struct timespec *tv)
 {
@@ -101,6 +97,7 @@ int aeron_clock_gettime_realtime(struct timespec *tp)
     return clock_gettime(CLOCK_REALTIME, tp);
 #endif
 }
+
 #endif
 
 int64_t aeron_nano_clock()
@@ -127,10 +124,10 @@ int64_t aeron_epoch_clock()
 
 typedef struct aeron_clock_cache_stct
 {
-    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH];
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
     int64_t cached_epoch_time;
     int64_t cached_nano_time;
-    uint8_t post_pad[AERON_CACHE_LINE_LENGTH - (2 * sizeof(int64_t))];
+    uint8_t post_pad[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
 }
 aeron_clock_cache_t;
 

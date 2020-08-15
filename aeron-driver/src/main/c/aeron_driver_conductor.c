@@ -1898,7 +1898,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
     return;
 
-    malformed_command:
+malformed_command:
     AERON_FORMAT_BUFFER(error_message, "command=%d too short: length=%" PRIu32, msg_type_id, (uint32_t)length);
     aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
 }
@@ -1937,8 +1937,7 @@ void aeron_driver_conductor_update_clocks(aeron_driver_conductor_t *conductor, i
     if (conductor->clock_update_deadline_ns - now_ns <= 0)
     {
         conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS;
-        int64_t now_ms = conductor->context->epoch_clock();
-        aeron_clock_update_cached_time(conductor->context->cached_clock, now_ms, now_ns);
+        aeron_clock_update_cached_time(conductor->context->cached_clock, conductor->context->epoch_clock(), now_ns);
     }
 }
 
@@ -2267,7 +2266,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_uri_close(&aeron_uri_params);
     return 0;
 
-    error_cleanup:
+error_cleanup:
     aeron_uri_close(&aeron_uri_params);
     return -1;
 }
@@ -2504,7 +2503,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     aeron_uri_close(&aeron_uri_params);
     return 0;
 
-    error_cleanup:
+error_cleanup:
     aeron_uri_close(&aeron_uri_params);
     return -1;
 }
@@ -3015,14 +3014,13 @@ int aeron_driver_conductor_on_add_receive_destination(
     }
 
     aeron_driver_receiver_proxy_on_add_destination(conductor->context->receiver_proxy, endpoint, destination);
-
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
     return 0;
 }
 
 int aeron_driver_conductor_on_remove_receive_destination(
-    aeron_driver_conductor_t *conductor,
-    aeron_destination_command_t *command)
+    aeron_driver_conductor_t *conductor, aeron_destination_command_t *command)
 {
     aeron_receive_channel_endpoint_t *endpoint = NULL;
 

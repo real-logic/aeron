@@ -302,7 +302,7 @@ int aeron_flow_control_parse_tagged_options(
             if (AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN <= value_length)
             {
                 aeron_set_err(
-                    -EINVAL,
+                    EINVAL,
                     "Flow control options - number field too long (found %d, max %d), field: %.*s, options: %.*s",
                     (int)value_length, (AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN - 1),
                     (int)value_length, value,
@@ -329,7 +329,7 @@ int aeron_flow_control_parse_tagged_options(
                 else if (number_buffer != end_ptr && !has_group_min_size) // Allow empty values if we have a group count
                 {
                     aeron_set_err(
-                        -EINVAL,
+                        EINVAL,
                         "Flow control options - invalid group, field: %.*s, options: %.*s",
                         (int)current_option_length, current_option,
                         (int)options_length, options);
@@ -356,7 +356,7 @@ int aeron_flow_control_parse_tagged_options(
                     else
                     {
                         aeron_set_err(
-                            -EINVAL,
+                            EINVAL,
                             "Group count invalid, field: %.*s, options: %.*s",
                             (int)current_option_length, current_option,
                             (int)options_length, options);
@@ -376,7 +376,7 @@ int aeron_flow_control_parse_tagged_options(
                 else
                 {
                     aeron_set_err(
-                        -EINVAL,
+                        EINVAL,
                         "Flow control options - invalid timeout, field: %.*s, options: %.*s",
                         (int)current_option_length, current_option,
                         (int)options_length, options);
@@ -388,7 +388,7 @@ int aeron_flow_control_parse_tagged_options(
         else
         {
             aeron_set_err(
-                -EINVAL,
+                EINVAL,
                 "Flow control options - unrecognised option, field: %.*s, options: %.*s",
                 (int)current_option_length, current_option,
                 (int)options_length, options);

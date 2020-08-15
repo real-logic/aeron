@@ -1161,6 +1161,16 @@ void aeron_client_conductor_on_cmd_remove_destination(void *clientd, void *item)
     aeron_client_conductor_on_cmd_destination(clientd, item, AERON_COMMAND_REMOVE_DESTINATION);
 }
 
+void aeron_client_conductor_on_cmd_add_rcv_destination(void *clientd, void *item)
+{
+    aeron_client_conductor_on_cmd_destination(clientd, item, AERON_COMMAND_ADD_RCV_DESTINATION);
+}
+
+void aeron_client_conductor_on_cmd_remove_rcv_destination(void *clientd, void *item)
+{
+    aeron_client_conductor_on_cmd_destination(clientd, item, AERON_COMMAND_REMOVE_RCV_DESTINATION);
+}
+
 #define AERON_ON_HANDLER_ADD(p, c, m, t) \
 { \
     int ensure_capacity_result = 0; \
@@ -1797,7 +1807,7 @@ int aeron_client_conductor_async_add_subscription_destination(
     resource.subscription = subscription;
 
     return aeron_client_conductor_async_destination(
-        async, &resource, uri, conductor, aeron_client_conductor_on_cmd_add_destination);
+        async, &resource, uri, conductor, aeron_client_conductor_on_cmd_add_rcv_destination);
 }
 
 int aeron_client_conductor_async_remove_subscription_destination(
@@ -1810,7 +1820,7 @@ int aeron_client_conductor_async_remove_subscription_destination(
     resource.subscription = subscription;
 
     return aeron_client_conductor_async_destination(
-        async, &resource, uri, conductor, aeron_client_conductor_on_cmd_remove_destination);
+        async, &resource, uri, conductor, aeron_client_conductor_on_cmd_remove_rcv_destination);
 }
 
 int aeron_client_conductor_async_handler(aeron_client_conductor_t *conductor, aeron_client_handler_cmd_t *cmd)

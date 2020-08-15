@@ -412,7 +412,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
 
     if (AERON_MAX_PATH < token_length)
     {
-        aeron_set_err(-EINVAL, "Token too long: %lu", (unsigned long)token_length);
+        aeron_set_err(EINVAL, "Token too long: %lu", (unsigned long)token_length);
         return -EINVAL;
     }
 

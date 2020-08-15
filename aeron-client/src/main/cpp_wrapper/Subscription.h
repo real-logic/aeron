@@ -234,6 +234,17 @@ public:
         return correlationId;
     }
 
+    AsyncDestination *removeDestinationAsync(const std::string &endpointChannel)
+    {
+        AsyncDestination *async = nullptr;
+        if (aeron_subscription_async_remove_destination(&async, m_aeron, m_subscription, endpointChannel.c_str()))
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return async;
+    }
+
     /**
      * Remove a previously added destination from a multi-destination Subscription.
      *
@@ -242,14 +253,13 @@ public:
      */
     std::int64_t removeDestination(const std::string &endpointChannel)
     {
-//        std::int64_t correlationId;
-//        if (aeron_subscription_remove_destination(m_subscription, endpointChannel.c_str(), &correlationId) < 0)
-//        {
-//            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-//        }
-//
-//        return correlationId;
-        return -1;
+        AsyncDestination *async = removeDestinationAsync(endpointChannel);
+        std::int64_t correlationId = aeron_async_destination_get_registration_id(async);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingDestinations[correlationId] = async;
+
+        return correlationId;
     }
 
     bool findDestinationResponse(AsyncDestination *async)

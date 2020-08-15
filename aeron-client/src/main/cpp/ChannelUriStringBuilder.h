@@ -358,7 +358,7 @@ public:
 
         if (m_sessionId)
         {
-            sb << SESSION_ID_PARAM_NAME << '=' << prefixTag(m_isSessionIdTagged, *m_sessionId);
+            sb << SESSION_ID_PARAM_NAME << '=' << prefixTag(m_isSessionIdTagged, *m_sessionId) << '|';
         }
 
         if (m_ttl)

@@ -431,10 +431,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
 
     EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
 
-    const std::int64_t position = 0L;
-    const std::int64_t length = stopPosition - position;
-
     {
+        const std::int64_t position = 0L;
+        const std::int64_t length = stopPosition - position;
         std::shared_ptr<Subscription> subscription = addSubscription(
             *aeronArchive->context().aeron(), m_replayChannel, m_replayStreamId);
 
@@ -494,9 +493,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
     EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
 
     const std::int64_t position = 0L;
-    const std::int64_t length = stopPosition - position;
 
     {
+        const std::int64_t length = stopPosition - position;
         std::shared_ptr<Subscription> subscription = aeronArchive->replay(
             recordingId, position, length, m_replayChannel, m_replayStreamId);
 
@@ -729,11 +728,12 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
         .tags("1,2")
         .controlEndpoint(controlEndpoint)
         .controlMode(MDC_CONTROL_MODE_DYNAMIC)
-        .flowControl("min")
+        .flowControl("tagged,g:99901/1,t:5s")
         .termLength(termLength);
 
     recordingChannel
         .media(UDP_MEDIA)
+        .groupTag(99901)
         .endpoint(recordingEndpoint)
         .controlEndpoint(controlEndpoint);
 

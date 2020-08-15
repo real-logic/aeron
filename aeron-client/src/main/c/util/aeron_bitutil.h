@@ -23,8 +23,7 @@
 #include "util/aeron_platform.h"
 
 #if defined(AERON_COMPILER_MSVC)
-#include <winsock2.h>
-#include <windows.h>
+#include <intrin.h>
 #endif
 
 #define AERON_CACHE_LINE_LENGTH (64)
@@ -89,7 +88,7 @@ inline int aeron_number_of_trailing_zeroes_u64(uint64_t value)
     }
 
     return __builtin_ctzll(value);
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && defined(AERON_CPU_X64)
     unsigned long r;
 
     if (_BitScanForward64(&r, (__int64)value))

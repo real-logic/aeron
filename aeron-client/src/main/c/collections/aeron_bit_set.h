@@ -128,7 +128,7 @@ inline void aeron_bit_set_heap_free(aeron_bit_set_t *bit_set)
 
 inline int aeron_bit_set_get(aeron_bit_set_t *bit_set, size_t bit_index, bool *value)
 {
-    if (bit_set->bit_set_length <= bit_index)
+    if (NULL == bit_set || bit_set->bit_set_length <= bit_index || value == NULL)
     {
         return -EINVAL;
     }
@@ -143,7 +143,7 @@ inline int aeron_bit_set_get(aeron_bit_set_t *bit_set, size_t bit_index, bool *v
 
 inline int aeron_bit_set_set(aeron_bit_set_t *bit_set, size_t bit_index, bool value)
 {
-    if (bit_set->bit_set_length <= bit_index)
+    if (NULL == bit_set || bit_set->bit_set_length <= bit_index)
     {
         return -EINVAL;
     }

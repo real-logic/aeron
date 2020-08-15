@@ -1207,23 +1207,21 @@ public class ChannelUriStringBuilder
         if (null != groupTag || null != minGroupSize)
         {
             flowControlValue += ",g:";
-        }
 
-        if (null != groupTag)
-        {
-            flowControlValue += groupTag;
-        }
+            if (null != groupTag)
+            {
+                flowControlValue += groupTag;
+            }
 
-        if (null != minGroupSize)
-        {
-            flowControlValue += "/";
-            flowControlValue += minGroupSize;
+            if (null != minGroupSize)
+            {
+                flowControlValue += ("/" + minGroupSize);
+            }
         }
 
         if (null != timeout)
         {
-            flowControlValue += ",t:";
-            flowControlValue += timeout;
+            flowControlValue += (",t:" + timeout);
         }
 
         return flowControl(flowControlValue);
@@ -1243,14 +1241,12 @@ public class ChannelUriStringBuilder
 
         if (null != minGroupSize)
         {
-            flowControlValue += ",g:/";
-            flowControlValue += minGroupSize;
+            flowControlValue += (",g:/" + minGroupSize);
         }
 
         if (null != timeout)
         {
-            flowControlValue += ",t:";
-            flowControlValue += timeout;
+            flowControlValue += (",t:" + timeout);
         }
 
         return flowControl(flowControlValue);

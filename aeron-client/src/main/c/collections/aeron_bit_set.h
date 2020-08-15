@@ -70,7 +70,8 @@ inline int aeron_bit_set_heap_alloc(size_t bit_set_length, aeron_bit_set_t **bit
 {
     if (NULL == bit_set)
     {
-        return -EINVAL;
+        aeron_set_err(EINVAL, "Invalid bit_set param");
+        return -1;
     }
 
     if (aeron_alloc((void **)bit_set, sizeof(aeron_bit_set_t)) < 0)
@@ -128,9 +129,10 @@ inline void aeron_bit_set_heap_free(aeron_bit_set_t *bit_set)
 
 inline int aeron_bit_set_get(aeron_bit_set_t *bit_set, size_t bit_index, bool *value)
 {
-    if (bit_set->bit_set_length <= bit_index)
+    if (NULL == bit_set || bit_set->bit_set_length <= bit_index)
     {
-        return -EINVAL;
+        aeron_set_err(EINVAL, "Invalid bit_set param");
+        return -1;
     }
 
     const size_t entry = bit_index / 64;
@@ -143,9 +145,10 @@ inline int aeron_bit_set_get(aeron_bit_set_t *bit_set, size_t bit_index, bool *v
 
 inline int aeron_bit_set_set(aeron_bit_set_t *bit_set, size_t bit_index, bool value)
 {
-    if (bit_set->bit_set_length <= bit_index)
+    if (NULL == bit_set || bit_set->bit_set_length <= bit_index)
     {
-        return -EINVAL;
+        aeron_set_err(EINVAL, "Invalid bit_set param");
+        return -1;
     }
 
     const size_t entry = bit_index / 64;

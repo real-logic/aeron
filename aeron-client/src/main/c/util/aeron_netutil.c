@@ -629,7 +629,11 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
 
     if (length < AERON_NETUTIL_FORMATTED_MAX_LENGTH)
     {
-        return -ENOSPC;
+        aeron_set_err(
+            ENOSPC,
+            "Insufficient usable (%d) bytes to storage formatted sockaddr_storage that need (%d)bytes",
+            (int)length, AERON_NETUTIL_FORMATTED_MAX_LENGTH, context->aeron_dir);
+        return -1;
     }
 
     int total = 0;

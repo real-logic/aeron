@@ -143,15 +143,17 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
     const int num_interceptors = aeron_tokenise(
         interceptors_dup, ',', AERON_MAX_INTERCEPTOR_NAMES, interceptor_names);
 
-    if (-ERANGE == num_interceptors)
+    if (num_interceptors < 0)
     {
-        aeron_set_err(
-            EINVAL, "Too many interceptors defined, limit %d: %s", AERON_MAX_INTERCEPTOR_NAMES, interceptors);
-        return NULL;
-    }
-    else if (num_interceptors < 0)
-    {
-        aeron_set_err(EINVAL, "Failed to parse interceptors: %s", interceptors != NULL ? interceptors : "(null)");
+        if (ERANGE == aeron_errcode())
+        {
+            aeron_set_err(
+                EINVAL, "Too many interceptors defined, limit %d: %s", AERON_MAX_INTERCEPTOR_NAMES, interceptors);
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "Failed to parse interceptors: %s", interceptors != NULL ? interceptors : "(null)");
+        }
         return NULL;
     }
 

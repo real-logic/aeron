@@ -193,14 +193,16 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
 
     const int num_libs = aeron_tokenise(libs_dup, ',', AERON_MAX_DL_LIB_NAMES, lib_names);
 
-    if (-ERANGE == num_libs)
+    if (num_libs < 0)
     {
-        aeron_set_err(EINVAL, "Too many dl libs defined, limit %d: %s", AERON_MAX_DL_LIB_NAMES, libs);
-        return -1;
-    }
-    else if (num_libs < 0)
-    {
-        aeron_set_err(EINVAL, "Failed to parse dl libs: %s", libs != NULL ? libs : "(null)");
+        if (ERANGE == aeron_errcode())
+        {
+            aeron_set_err(EINVAL, "Too many dl libs defined, limit %d: %s", AERON_MAX_DL_LIB_NAMES, libs);
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "Failed to parse dl libs: %s", libs != NULL ? libs : "(null)");
+        }
         return -1;
     }
 

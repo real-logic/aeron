@@ -70,14 +70,16 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
 {
     if (NULL == input)
     {
-        return -EINVAL;
+        aeron_set_err(EINVAL, "input param invalid");
+        return -1;
     }
 
     const size_t len = strlen(input);
 
     if (INT32_MAX < len)
     {
-        return -EINVAL;
+        aeron_set_err(EINVAL, "len param too big");
+        return -1;
     }
 
     if (0 == len)
@@ -98,7 +100,8 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
         {
             if (max_tokens <= num_tokens)
             {
-                num_tokens = -ERANGE;
+                aeron_set_err(ERANGE, "num_tokens not in range");
+                num_tokens = -1;
                 break;
             }
 
@@ -109,7 +112,8 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
         {
             if (max_tokens <= num_tokens)
             {
-                num_tokens = -ERANGE;
+                aeron_set_err(ERANGE, "num_tokens not in range");
+                num_tokens = -1;
                 break;
             }
 

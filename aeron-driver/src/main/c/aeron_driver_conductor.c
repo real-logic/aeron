@@ -3039,6 +3039,11 @@ int aeron_driver_conductor_on_add_receive_destination(
         return -1;
     }
 
+    if (aeron_driver_conductor_update_and_check_ats_status(conductor->context, udp_channel, NULL) < 0)
+    {
+        return -1;
+    }
+
     aeron_receive_destination_t *destination = NULL;
 
     if (aeron_receive_destination_create(

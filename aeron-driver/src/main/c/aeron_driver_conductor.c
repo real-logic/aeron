@@ -295,7 +295,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     if (aeron_name_resolver_init(&conductor->name_resolver, context->name_resolver_init_args, context) < 0)
     {
-        aeron_set_err(-1, "Failed to start name resolver: %s", aeron_errmsg());
+        aeron_set_err(EINVAL, "Failed to start name resolver: %s", aeron_errmsg());
         return -1;
     }
 

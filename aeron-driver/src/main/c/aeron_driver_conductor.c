@@ -1359,6 +1359,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     if (aeron_driver_conductor_update_and_check_ats_status(
         conductor->context, channel, NULL == endpoint ? NULL : endpoint->conductor_fields.udp_channel) < 0)
     {
+        aeron_udp_channel_delete(channel);
         return NULL;
     }
 
@@ -1430,6 +1431,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     if (aeron_driver_conductor_update_and_check_ats_status(
         conductor->context, channel, NULL == endpoint ? NULL : endpoint->conductor_fields.udp_channel) < 0)
     {
+        aeron_udp_channel_delete(channel);
         return NULL;
     }
 

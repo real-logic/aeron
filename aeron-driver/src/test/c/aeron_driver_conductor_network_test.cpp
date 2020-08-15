@@ -685,3 +685,27 @@ TEST_F(DriverConductorNetworkTest, shouldFailToRemoveMdsWithSingleUnicastSubscri
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddPublicationWithAtsEnabled)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addPublication(client_id, pub_id, CHANNEL_1 "|ats=true", STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddSubscriptionWithAtsEnabled)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, pub_id, CHANNEL_1 "|ats=true", STREAM_ID_1), 0);
+    doWork();
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}

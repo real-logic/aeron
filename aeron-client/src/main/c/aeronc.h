@@ -887,16 +887,6 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication);
 /**
  * Add a destination manually to a multi-destination-cast publication.
  *
- * @param publication to add destination to.
- * @param uri for the destination to add.
- * @param correlation_id that can be used to track the addition of the destination.
- * @return 0 for success and -1 for error.
- */
-int aeron_publication_add_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id);
-
-/**
- * Add a destination manually to a multi-destination-cast publication.
- *
  * @param async object to use for polling completion.
  * @param publication to add destination to.
  * @param uri for the destination to add.
@@ -907,14 +897,6 @@ int aeron_publication_async_add_destination(
     aeron_t *client,
     aeron_publication_t *publication,
     const char *uri);
-
-/**
- * Poll the completion of the aeron_publication_async_add_destination call.
- *
- * @param async to check for completion.
- * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
- */
-int aeron_publication_async_add_destination_poll(aeron_async_destination_t *async);
 
 /**
  * Remove a destination manually from a multi-destination-cast publication.
@@ -931,12 +913,12 @@ int aeron_publication_async_remove_destination(
     const char *uri);
 
 /**
- * Poll the completion of the aeron_publication_async_remove_destination call.
+ * Poll the completion of the add/remove of a destination to/from a publication.
  *
  * @param async to check for completion.
  * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
-int aeron_publication_async_remove_destination_poll(aeron_async_destination_t *async);
+int aeron_publication_async_destination_poll(aeron_async_destination_t *async);
 
 /**
  * Add a destination manually to a multi-destination-cast exclusive publication.
@@ -953,22 +935,26 @@ int aeron_exclusive_publication_async_add_destination(
     const char *uri);
 
 /**
- * Poll the completion of the aeron_exclusive_publication_async_add_destination call.
+ * Remove a destination manually from a multi-destination-cast exclusive publication.
+ *
+ * @param async object to use for polling completion.
+ * @param publication to remove destination from.
+ * @param uri for the destination to remove.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_exclusive_publication_async_remove_destination(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_exclusive_publication_t *publication,
+    const char *uri);
+
+/**
+ * Poll the completion of the add/remove of a destination to/from an exclusive publication.
  *
  * @param async to check for completion.
  * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
-int aeron_exclusive_publication_async_add_destination_poll(aeron_async_destination_t *async);
-
-/**
- * Remove a previously added destination manually from a multi-destination-cast publication.
- *
- * @param publication to remove destination from.
- * @param uri for the destination to remove.
- * @param correlation_id that can be used to track the removal of the destination.
- * @return 0 for success and -1 for error.
- */
-int aeron_publication_remove_destination(aeron_publication_t* publication, const char* uri, int64_t* correlation_id);
+int aeron_exclusive_publication_async_destination_poll(aeron_async_destination_t *async);
 
 /**
  * Asynchronously close the publication.  Will callback on the on_complete notification when the subscription is closed.
@@ -1108,28 +1094,6 @@ int64_t aeron_exclusive_publication_position(aeron_exclusive_publication_t *publ
  * @return the position limit beyond which this publication will be back pressured or a negative error value.
  */
 int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t *publication);
-
-/**
- * Add a destination manually to a multi-destination-cast publication.
- *
- * @param publication to add destination to.
- * @param uri for the destination to add.
- * @param correlation_id that can be used to track the addition of the destination.
- * @return 0 for success and -1 for error.
- */
-int aeron_exclusive_publication_add_destination(
-    aeron_exclusive_publication_t *publication, const char *uri, int64_t *correlation_id);
-
-/**
- * Remove a previously added destination manually from a multi-destination-cast publication.
- *
- * @param publication to remove destination from.
- * @param uri for the destination to remove.
- * @param correlation_id that can be used to track the removal of the destination.
- * @return 0 for success and -1 for error.
- */
-int aeron_exclusive_publication_remove_destination(
-    aeron_exclusive_publication_t *publication, const char *uri, int64_t *correlation_id);
 
 /**
  * Asynchronously close the publication.
@@ -1443,26 +1407,6 @@ bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription);
 
 /**
- * Add a destination manually to a multi-destination subscription.
- *
- * @param subscription to add destination to.
- * @param uri for the destination to add.
- * @param correlation_id that can be used to track the addition of the destination.
- * @return 0 for success and -1 for error.
- */
-int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id);
-
-/**
- * Remove a previously added destination from a multi-destination subscription.
- *
- * @param subscription to remove destination from.
- * @param uri for the destination to remove.
- * @param correlation_id that can be used to track the removal of the destination.
- * @return 0 for success and -1 for error.
- */
-int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id);
-
-/**
  * Add a destination manually to a multi-destination-subscription.
  *
  * @param async object to use for polling completion.
@@ -1473,16 +1417,8 @@ int aeron_subscription_remove_destination(aeron_subscription_t *subscription, co
 int aeron_subscription_async_add_destination(
     aeron_async_destination_t **async,
     aeron_t *client,
-    aeron_publication_t *publication,
+    aeron_subscription_t *subscription,
     const char *uri);
-
-/**
- * Poll the completion of the aeron_subscription_async_add_destination call.
- *
- * @param async to check for completion.
- * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
- */
-int aeron_subscription_async_add_destination_poll(aeron_async_destination_t *async);
 
 /**
  * Remove a destination manually from a multi-destination-subscription.
@@ -1495,17 +1431,16 @@ int aeron_subscription_async_add_destination_poll(aeron_async_destination_t *asy
 int aeron_subscription_async_remove_destination(
     aeron_async_destination_t **async,
     aeron_t *client,
-    aeron_publication_t *publication,
+    aeron_subscription_t *subscription,
     const char *uri);
 
 /**
- * Poll the completion of the aeron_subscription_async_remove_destination call.
+ * Poll the completion of add/remove of a destination to/from a subscription.
  *
  * @param async to check for completion.
  * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
-int aeron_subscription_async_remove_destination_poll(aeron_async_destination_t *async);
-
+int aeron_subscription_async_destination_poll(aeron_async_destination_t *async);
 
 /**
  * Asynchronously close the subscription.  Will callback on the on_complete notification when the subscription is closed.

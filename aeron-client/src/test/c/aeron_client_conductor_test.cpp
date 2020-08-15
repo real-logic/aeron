@@ -722,7 +722,7 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestination)
     doWork();
     ASSERT_EQ(async_add_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
     ASSERT_EQ(async_add_dest->resource.publication->registration_id, publication->registration_id);
-    ASSERT_GT(aeron_publication_async_add_destination_poll(async_add_dest), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_publication_async_destination_poll(async_add_dest), 0) << aeron_errmsg();
 
     ASSERT_EQ(
         aeron_client_conductor_async_remove_publication_destination(
@@ -730,7 +730,7 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestination)
         0);
     transmitOnOperationSuccess(async_remove_dest);
     doWork();
-    ASSERT_GT(aeron_publication_async_add_destination_poll(async_remove_dest), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_publication_async_destination_poll(async_remove_dest), 0) << aeron_errmsg();
 
     // graceful close and reclaim for sanitize
     ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
@@ -760,7 +760,7 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestination)
     doWork();
     ASSERT_EQ(async_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
     ASSERT_EQ(async_dest->resource.publication->registration_id, publication->registration_id);
-    ASSERT_GT(aeron_exclusive_publication_async_add_destination_poll(async_dest), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_exclusive_publication_async_destination_poll(async_dest), 0) << aeron_errmsg();
 
     ASSERT_EQ(
         aeron_client_conductor_async_remove_exclusive_publication_destination(
@@ -768,7 +768,7 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestination)
         0);
     transmitOnOperationSuccess(async_dest);
     doWork();
-    ASSERT_GT(aeron_publication_async_add_destination_poll(async_dest), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_exclusive_publication_async_destination_poll(async_dest), 0) << aeron_errmsg();
 
     // graceful close and reclaim for sanitize
     ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
@@ -801,14 +801,14 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestination)
     doWork();
     ASSERT_EQ(async_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
     ASSERT_EQ(async_dest->resource.subscription->registration_id, subscription->registration_id);
-    ASSERT_GT(aeron_subscription_async_add_destination_poll(async_dest), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();
 
     ASSERT_EQ(
         aeron_client_conductor_async_remove_subscription_destination(&async_dest, &m_conductor, subscription, DEST_URI),
         0);
     transmitOnOperationSuccess(async_dest);
     doWork();
-    ASSERT_GT(aeron_subscription_async_remove_destination_poll(async_dest), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();
 
     // graceful close and reclaim for sanitize
     ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);

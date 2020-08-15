@@ -503,36 +503,6 @@ long aeron_subscription_block_poll(
     return bytes_consumed;
 }
 
-int aeron_subscription_add_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id)
-{
-    if (NULL == subscription || uri == NULL)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
-        return -1;
-    }
-
-    return aeron_client_conductor_offer_destination_command(
-        subscription->conductor, subscription->registration_id, AERON_COMMAND_ADD_RCV_DESTINATION, uri, correlation_id);
-}
-
-int aeron_subscription_remove_destination(aeron_subscription_t *subscription, const char *uri, int64_t *correlation_id)
-{
-    if (NULL == subscription || uri == NULL)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
-        return -1;
-    }
-
-    return aeron_client_conductor_offer_destination_command(
-        subscription->conductor,
-        subscription->registration_id,
-        AERON_COMMAND_REMOVE_RCV_DESTINATION,
-        uri,
-        correlation_id);
-}
-
 int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
 {
     if (NULL == header || NULL == values)

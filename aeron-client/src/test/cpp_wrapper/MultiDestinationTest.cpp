@@ -146,7 +146,7 @@ TEST_F(MultiDestinationTest, shouldAddRemoveDestinationFromExclusivePublication)
     // The existing C++ API for ExclusivePublications is missing the means to track the add and removal of
     // destinations.  This is fixed in the wrapper, but the test is written for compatibility with
     // both APIs so has to take a few liberties in order to work correctly.
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     POLL_FOR(0 < pub->offer(buffer, 0, 128), invoker());
     POLL_FOR(0 < sub2->poll(m_noOpHandler, 1), invoker());

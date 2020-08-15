@@ -119,7 +119,9 @@ TEST_F(MultiDestinationTest, shouldAddRemoveDestinationFromPublication)
 
 TEST_F(MultiDestinationTest, shouldAddRemoveDestinationFromExclusivePublication)
 {
+#ifdef AERON_SANITIZE_ENABLED
     GTEST_SKIP(); // Currently breaks the sanitizer due to the structure of the API.
+#endif
 
     auto sub1RegId = m_aeron->addSubscription(SUB1_MDC_MANUAL_URI, streamId);
     auto sub2RegId = m_aeron->addSubscription(SUB2_MDC_MANUAL_URI, streamId);

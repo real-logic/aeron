@@ -77,9 +77,11 @@ class CLIENT_EXPORT Subscription
 public:
     /// @cond HIDDEN_SYMBOLS
     Subscription(
+        aeron_t *aeron,
         aeron_subscription_t *subscription,
         AsyncAddSubscription *addSubscription,
         CountersReader& countersReader) :
+        m_aeron(aeron),
         m_subscription(subscription),
         m_addSubscription(addSubscription),
         m_countersReader(countersReader),
@@ -204,6 +206,16 @@ public:
         return {};
     }
 
+    AsyncDestination *addDestinationAsync(const std::string &endpointChannel)
+    {
+        AsyncDestination *async = nullptr;
+        if (aeron_subscription_async_add_destination(&async, m_aeron, m_subscription, endpointChannel.c_str()))
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return async;
+    }
 
     /**
      * Add a destination manually to a multi-destination Subscription.
@@ -213,11 +225,11 @@ public:
      */
     std::int64_t addDestination(const std::string &endpointChannel)
     {
-        std::int64_t correlationId;
-        if (aeron_subscription_add_destination(m_subscription, endpointChannel.c_str(), &correlationId) < 0)
-        {
-            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
+        AsyncDestination *async = addDestinationAsync(endpointChannel);
+        std::int64_t correlationId = aeron_async_destination_get_registration_id(async);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingDestinations[correlationId] = async;
 
         return correlationId;
     }
@@ -230,13 +242,25 @@ public:
      */
     std::int64_t removeDestination(const std::string &endpointChannel)
     {
-        std::int64_t correlationId;
-        if (aeron_subscription_remove_destination(m_subscription, endpointChannel.c_str(), &correlationId) < 0)
+//        std::int64_t correlationId;
+//        if (aeron_subscription_remove_destination(m_subscription, endpointChannel.c_str(), &correlationId) < 0)
+//        {
+//            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+//        }
+//
+//        return correlationId;
+        return -1;
+    }
+
+    bool findDestinationResponse(AsyncDestination *async)
+    {
+        int result = aeron_publication_async_destination_poll(async);
+        if (result < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return correlationId;
+        return 0 < result;
     }
 
     /**
@@ -260,8 +284,15 @@ public:
      */
     bool findDestinationResponse(std::int64_t correlationId)
     {
-        throw UnsupportedOperationException(
-            "Should look at using the same async approach to adding destinations", SOURCEINFO);
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+        auto search = m_pendingDestinations.find(correlationId);
+        if (search == m_pendingDestinations.end())
+        {
+            throw IllegalArgumentException("Unknown correlation id", SOURCEINFO);
+        }
+
+        return findDestinationResponse(search->second);
     }
 
     /**
@@ -457,11 +488,14 @@ public:
     /// @endcond
 
 private:
+    aeron_t *m_aeron;
     aeron_subscription_t *m_subscription;
     AsyncAddSubscription *m_addSubscription;
     aeron_subscription_constants_t m_constants;
     CountersReader& m_countersReader;
     std::string m_channel;
+    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
+    std::recursive_mutex m_adminLock;
 
     static void copyToVector(aeron_image_t *image, void *clientd)
     {

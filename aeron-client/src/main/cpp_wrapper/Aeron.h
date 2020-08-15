@@ -353,7 +353,7 @@ public:
         }
         else
         {
-            return std::make_shared<ExclusivePublication>(publication, m_countersReader);
+            return std::make_shared<ExclusivePublication>(m_aeron, publication, m_countersReader);
         }
     }
 
@@ -521,7 +521,7 @@ public:
         else
         {
             addSubscription->m_async = nullptr;
-            return std::make_shared<Subscription>(subscription, addSubscription, m_countersReader);
+            return std::make_shared<Subscription>(m_aeron, subscription, addSubscription, m_countersReader);
         }
     }
 

@@ -581,7 +581,7 @@ public:
      */
     bool findDestinationResponse(AsyncDestination *async)
     {
-        int result = aeron_publication_async_add_destination_poll(async);
+        int result = aeron_publication_async_destination_poll(async);
         if (result < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

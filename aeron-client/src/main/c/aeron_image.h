@@ -95,7 +95,6 @@ inline int aeron_image_validate_position(aeron_image_t *image, int64_t position)
 
     if (position < current_position ||  position > limit_position)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s: %" PRId64 " position out of range %" PRId64 "-%" PRId64,
             strerror(EINVAL), position, current_position, limit_position);
         return -1;
@@ -103,7 +102,6 @@ inline int aeron_image_validate_position(aeron_image_t *image, int64_t position)
 
     if (0 != (position & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)))
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s: position not aligned to FRAME_ALIGNMENT", strerror(EINVAL));
         return -1;
     }

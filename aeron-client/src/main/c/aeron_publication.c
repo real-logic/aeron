@@ -126,7 +126,6 @@ int64_t aeron_publication_offer(
 
     if (NULL == publication || buffer == NULL)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_publication_offer(NULL): %s", strerror(EINVAL));
         return AERON_PUBLICATION_ERROR;
     }
@@ -169,7 +168,6 @@ int64_t aeron_publication_offer(
             {
                 if (length > publication->max_message_length)
                 {
-                    errno = EINVAL;
                     aeron_set_err(EINVAL, "aeron_publication_offer: length=%" PRIu32 " > max_message_length=%" PRIu32,
                         (uint32_t)length, (uint32_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
@@ -212,7 +210,6 @@ int64_t aeron_publication_offerv(
 
     if (NULL == publication || iov == NULL)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_publication_offerv(NULL): %s", strerror(EINVAL));
         return AERON_PUBLICATION_ERROR;
     }
@@ -262,7 +259,6 @@ int64_t aeron_publication_offerv(
             {
                 if (length > publication->max_message_length)
                 {
-                    errno = EINVAL;
                     aeron_set_err(EINVAL, "aeron_publication_offerv: length=%" PRIu32 " > max_message_length=%" PRIu32,
                         (uint32_t)length, (uint32_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
@@ -301,13 +297,11 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
 
     if (NULL == publication || buffer_claim == NULL)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_publication_try_claim(NULL): %s", strerror(EINVAL));
         return AERON_PUBLICATION_ERROR;
     }
     else if (length > publication->max_payload_length)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_publication_try_claim: length=%" PRIu32 " > max_payload_length=%" PRIu32,
             (uint32_t)length, (uint32_t)publication->max_payload_length);
         return AERON_PUBLICATION_ERROR;
@@ -383,7 +377,6 @@ int aeron_publication_constants(aeron_publication_t *publication, aeron_publicat
 {
     if (NULL == publication || NULL == constants)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return -1;
     }
@@ -423,7 +416,6 @@ int64_t aeron_publication_position(aeron_publication_t *publication)
 
     if (NULL == publication)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return AERON_PUBLICATION_ERROR;
     }
@@ -453,7 +445,6 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication)
 
     if (NULL == publication)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return AERON_PUBLICATION_ERROR;
     }

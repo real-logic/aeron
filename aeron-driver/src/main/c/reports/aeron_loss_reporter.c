@@ -70,7 +70,6 @@ aeron_loss_reporter_entry_offset_t aeron_loss_reporter_create_entry(
     }
     else
     {
-        errno = ENOMEM;
         aeron_set_err(ENOMEM, "could not create loss report entry: %s", strerror(ENOMEM));
     }
 

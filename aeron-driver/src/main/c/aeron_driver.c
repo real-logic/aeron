@@ -696,7 +696,6 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (NULL == driver || NULL == context)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_init: %s", strerror(EINVAL));
         goto error;
     }
@@ -926,7 +925,6 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_start: %s", strerror(EINVAL));
         return -1;
     }
@@ -935,7 +933,6 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
     {
         if (AERON_THREADING_MODE_INVOKER == driver->context->threading_mode)
         {
-            errno = EINVAL;
             aeron_set_err(EINVAL, "aeron_driver_start: %s", "INVOKER threading mode requires manual_main_loop");
             return -1;
         }
@@ -973,7 +970,6 @@ int aeron_driver_main_do_work(aeron_driver_t *driver)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_main_do_work: %s", strerror(EINVAL));
         return -1;
     }
@@ -985,7 +981,6 @@ void aeron_driver_main_idle_strategy(aeron_driver_t *driver, int work_count)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_main_idle_strategy: %s", strerror(EINVAL));
         return;
     }
@@ -997,7 +992,6 @@ int aeron_driver_close(aeron_driver_t *driver)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_close: %s", strerror(EINVAL));
         return -1;
     }

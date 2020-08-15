@@ -67,7 +67,6 @@ int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t 
 {
     if (NULL == counter || NULL == constants)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return -1;
     }

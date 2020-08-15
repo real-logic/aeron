@@ -263,7 +263,6 @@ int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subsc
 {
     if (NULL == subscription || NULL == constants)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return -1;
     }
@@ -354,7 +353,6 @@ int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_im
 {
     if (NULL == subscription || NULL == image)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_subscription_image_retain: %s", strerror(EINVAL));
         return -1;
     }
@@ -375,7 +373,6 @@ int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_i
 {
     if (NULL == subscription || NULL == image)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_subscription_image_release: %s", strerror(EINVAL));
         return -1;
     }
@@ -507,7 +504,6 @@ int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
 {
     if (NULL == header || NULL == values)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
         return -1;
     }

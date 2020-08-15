@@ -308,7 +308,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if (NULL == context)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_context_init(NULL): %s", strerror(EINVAL));
         return -1;
     }
@@ -1018,7 +1017,6 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_context_close(NULL): %s", strerror(EINVAL));
         return -1;
     }

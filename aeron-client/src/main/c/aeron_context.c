@@ -59,7 +59,6 @@ int aeron_context_init(aeron_context_t **context)
 
     if (NULL == context)
     {
-        errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_context_init(NULL): %s", strerror(EINVAL));
         return -1;
     }
@@ -125,7 +124,6 @@ int aeron_context_init(aeron_context_t **context)
 
         if ((0 == result && 0 != errno) || '\0' != *end_ptr)
         {
-            errno = EINVAL;
             aeron_set_err(EINVAL, "could not parse driver timeout: %s=%s", AERON_DRIVER_TIMEOUT_ENV_VAR, value);
             return -1;
         }
@@ -138,7 +136,6 @@ int aeron_context_init(aeron_context_t **context)
         uint64_t result;
         if (aeron_parse_duration_ns(value, &result) < 0)
         {
-            errno = EINVAL;
             aeron_set_err(EINVAL, "could not parse: %s=%s", AERON_CLIENT_RESOURCE_LINGER_DURATION_ENV_VAR, value);
             return -1;
         }

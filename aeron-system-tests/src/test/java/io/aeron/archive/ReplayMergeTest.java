@@ -56,19 +56,21 @@ public class ReplayMergeTest
     private static final String RECORDING_ENDPOINT = "localhost:23266";
     private static final String LIVE_ENDPOINT = "localhost:23267";
     private static final String REPLAY_ENDPOINT = "localhost:23268";
+    private static final long GROUP_TAG = 99901L;
 
     private final ChannelUriStringBuilder publicationChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
-        .minFlowControl(null, "5s")
-        .termLength(TERM_LENGTH);
+        .termLength(TERM_LENGTH)
+        .taggedFlowControl(GROUP_TAG, 1, "5s");
 
     private final ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(RECORDING_ENDPOINT)
-        .controlEndpoint(CONTROL_ENDPOINT);
+        .controlEndpoint(CONTROL_ENDPOINT)
+        .groupTag(GROUP_TAG);
 
     private final ChannelUriStringBuilder subscriptionChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)

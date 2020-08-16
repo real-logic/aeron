@@ -1081,7 +1081,7 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
     aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
-    int64_t resource_registration_id;
+    int64_t resource_registration_id = 0;
     switch (async->resource.base_resource->type)
     {
         case AERON_CLIENT_TYPE_PUBLICATION:

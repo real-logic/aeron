@@ -361,7 +361,7 @@ union aeron_128b_as_64b
 
 __uint128_t aeron_ipv6_netmask_from_prefixlen(size_t prefixlen)
 {
-    union _aeron_128b_as_64b netmask;
+    union aeron_128b_as_64b netmask;
 
     if (0 == prefixlen)
     {

@@ -38,7 +38,7 @@
 #if defined(AERON_CPU_X64)
 #define __builtin_popcountll __popcnt64
 #else
-__inline DWORD64 __builtin_popcountll (DWORD64 operand)
+__inline DWORD64 __builtin_popcountll(DWORD64 operand)
 {
     return __popcnt((DWORD)(operand >> 32)) + __popcnt((DWORD)(operand & UINT32_MAX));
 }
@@ -353,7 +353,7 @@ void aeron_set_ipv4_wildcard_host_and_port(struct sockaddr_storage *sockaddr)
 }
 
 #if defined(AERON_COMPILER_GCC)
-union _aeron_128b_as_64b
+union aeron_128b_as_64b
 {
     __uint128_t value;
     uint64_t q[2];
@@ -393,7 +393,7 @@ bool aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *i
     return (addr1 & netmask) == (addr2 & netmask);
 }
 #else
-union _aeron_128b_as_64b
+union aeron_128b_as_64b
 {
     uint64_t q[2];
 };
@@ -401,7 +401,7 @@ union _aeron_128b_as_64b
 
 size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask)
 {
-    union _aeron_128b_as_64b value;
+    union aeron_128b_as_64b value;
 
     memcpy(&value, netmask, sizeof(value));
 

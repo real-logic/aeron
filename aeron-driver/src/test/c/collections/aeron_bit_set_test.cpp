@@ -214,10 +214,13 @@ TEST_F(BitSetTest, shouldHandleOutOfRangeRequests)
     bool result;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_set(NULL, 0, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_set_length, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_set_length + 1, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, -1, true), -EINVAL);
 
+    EXPECT_EQ(aeron_bit_set_get(NULL, 0, &result), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_get(&bit_set, 0, NULL), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_set_length, &result), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_set_length + 1, &result), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, -1, &result), -EINVAL);

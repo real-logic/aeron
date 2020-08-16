@@ -32,12 +32,14 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.function.Supplier;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
@@ -183,7 +185,7 @@ public class ReplayMergeTest
             final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
             final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
 
-            final long subscriptionId = aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE, true);
+            aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE, true);
             final CountersReader counters = aeron.countersReader();
             final int recordingCounterId = awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
@@ -202,47 +204,50 @@ public class ReplayMergeTest
                     recordingId,
                     0))
             {
+                final MutableLong position = new MutableLong();
+                final Supplier<String> msgOne = () -> String.format(
+                    "lastPosition=%d, replayMerge=%s", position.value, replayMerge);
+
                 for (int i = initialMessageCount; i < totalMessageCount; i++)
                 {
-                    long position;
-                    while ((position = offerMessage(publication, i)) <= 0)
+                    while ((position.value = offerMessage(publication, i)) <= 0)
                     {
-                        if (Publication.BACK_PRESSURED == position)
+                        if (Publication.BACK_PRESSURED == position.value)
                         {
                             awaitPositionChange(replayMerge, counters, recordingCounterId, publication.position());
                         }
                         else
                         {
-                            Tests.yieldingWait(
-                                "i=%d < totalMessageCount=%d, lastPosition=%d", i, totalMessageCount, position);
+                            Tests.yieldingWait(msgOne);
                         }
                     }
                     messagesPublished++;
 
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        Tests.yieldingWait("i=%d < totalMessageCount=%d", i, totalMessageCount);
+                        Tests.yieldingWait(msgOne);
                     }
                 }
 
+                final Supplier<String> msgTwo = () -> String.format("replay did not merge: %s", replayMerge);
                 while (!replayMerge.isMerged())
                 {
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        assertFalse(replayMerge.hasFailed(), "failed to merge");
-                        Tests.yieldingWait("replay did not merge: %s", replayMerge);
+                        Tests.yieldingWait(msgTwo);
                     }
                 }
 
+                final Supplier<String> msgFour = () -> String.format(
+                    "received=%d < totalMessageCount=%d: replayMerge=%s",
+                    received.get(), totalMessageCount, replayMerge);
                 final Image image = replayMerge.image();
                 while (received.get() < totalMessageCount)
                 {
                     if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
                         assertFalse(image.isClosed(), "image closed unexpectedly");
-                        Tests.yieldingWait(
-                            "received=%d < totalMessageCount=%d: replayMerge=",
-                            received.get(), totalMessageCount, replayMerge);
+                        Tests.yieldingWait(msgFour);
                     }
                 }
 
@@ -250,10 +255,6 @@ public class ReplayMergeTest
                 assertTrue(replayMerge.isLiveAdded());
                 assertFalse(replayMerge.hasFailed());
                 assertEquals(totalMessageCount, received.get());
-            }
-            finally
-            {
-                aeronArchive.tryStopRecording(subscriptionId);
             }
         }
         catch (final Throwable ex)
@@ -273,14 +274,16 @@ public class ReplayMergeTest
 
         final long initialTimestampNs = System.nanoTime();
         final long currentPosition = counters.getCounterValue(counterId);
+        final Supplier<String> msg = () -> String.format(
+            "publicationPosition=%d, recordingPosition=%d, timeSinceLastChangeMs=%d, replayMerge=%s",
+            position,
+            currentPosition,
+            (System.nanoTime() - initialTimestampNs) / 1_000_000,
+            replayMerge);
+
         do
         {
-            Tests.yieldingWait(
-                "publicationPosition=%d, recordingPosition=%d, timeSinceLastChangeMs=%d, replayMerge=%s",
-                position,
-                currentPosition,
-                (System.nanoTime() - initialTimestampNs) / 1_000_000,
-                replayMerge);
+            Tests.yieldingWait(msg);
         }
         while (currentPosition == counters.getCounterValue(counterId) && currentPosition < position);
     }
@@ -297,10 +300,9 @@ public class ReplayMergeTest
         {
             final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + i);
 
-            long position;
-            while ((position = publication.offer(buffer, 0, length)) <= 0)
+            while (publication.offer(buffer, 0, length) <= 0)
             {
-                Tests.yieldingWait("i=%d < count=%d, lastPosition=%d", i, count, position);
+                Tests.yield();
             }
         }
     }

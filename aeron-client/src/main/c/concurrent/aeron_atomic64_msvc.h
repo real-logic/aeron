@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <winsock2.h>
 #include <windows.h>
-#include <winnt.h>
 #include <intrin.h>
 
 #define AERON_GET_VOLATILE(dst, src) \

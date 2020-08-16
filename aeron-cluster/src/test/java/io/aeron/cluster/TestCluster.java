@@ -1082,7 +1082,7 @@ public class TestCluster implements AutoCloseable
     static ServiceContext serviceContext(
         final int nodeIndex,
         final int serviceId,
-        final NodeContext nodeContext,
+        final NodeContext nodeCtx,
         final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final int serviceIndex = 3 * nodeIndex + serviceId;
@@ -1097,11 +1097,11 @@ public class TestCluster implements AutoCloseable
             .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE);
 
         serviceCtx.aeronArchiveCtx
-            .controlRequestChannel(nodeContext.archiveCtx.controlChannel())
-            .controlRequestStreamId(nodeContext.archiveCtx.controlStreamId())
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, serviceIndex))
+            .controlRequestChannel(nodeCtx.archiveCtx.localControlChannel())
+            .controlRequestStreamId(nodeCtx.archiveCtx.localControlStreamId())
+            .controlResponseChannel(nodeCtx.archiveCtx.localControlChannel())
             .controlResponseStreamId(1100 + serviceIndex)
-            .recordingEventsChannel(nodeContext.archiveCtx.recordingEventsChannel());
+            .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel());
 
         serviceCtx.serviceContainerCtx
             .archiveContext(serviceCtx.aeronArchiveCtx.clone())
@@ -1141,9 +1141,9 @@ public class TestCluster implements AutoCloseable
             .deleteArchiveOnStart(cleanStart);
 
         nodeCtx.aeronArchiveCtx
-            .controlRequestChannel(nodeCtx.archiveCtx.controlChannel())
-            .controlRequestStreamId(nodeCtx.archiveCtx.controlStreamId())
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlRequestChannel(nodeCtx.archiveCtx.localControlChannel())
+            .controlRequestStreamId(nodeCtx.archiveCtx.localControlStreamId())
+            .controlResponseChannel(nodeCtx.archiveCtx.localControlChannel())
             .controlResponseStreamId(110 + index)
             .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel())
             .aeronDirectoryName(aeronDirName);

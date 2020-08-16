@@ -230,7 +230,7 @@ public class ReplayMergeTest
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
                         assertFalse(replayMerge.hasFailed(), "failed to merge");
-                        Tests.yieldingWait("replay did not merge");
+                        Tests.yieldingWait("replay did not merge: %s", replayMerge);
                     }
                 }
 
@@ -241,7 +241,8 @@ public class ReplayMergeTest
                     {
                         assertFalse(image.isClosed(), "image closed unexpectedly");
                         Tests.yieldingWait(
-                            "received.get()=%d < totalMessageCount=%d", received.get(), totalMessageCount);
+                            "received=%d < totalMessageCount=%d: replayMerge=",
+                            received.get(), totalMessageCount, replayMerge);
                     }
                 }
 
@@ -279,7 +280,7 @@ public class ReplayMergeTest
                 position,
                 currentPosition,
                 (System.nanoTime() - initialTimestampNs) / 1_000_000,
-                replayMerge.toString());
+                replayMerge);
         }
         while (currentPosition == counters.getCounterValue(counterId) && currentPosition < position);
     }

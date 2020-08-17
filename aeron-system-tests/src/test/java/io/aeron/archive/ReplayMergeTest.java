@@ -31,7 +31,6 @@ import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
-import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.*;
@@ -94,7 +93,8 @@ public class ReplayMergeTest
         .endpoint(REPLAY_ENDPOINT);
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-    private final MutableInteger received = new MutableInteger();
+    private final MutableLong receivedMessageCount = new MutableLong();
+    private final MutableLong receivedPosition = new MutableLong();
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
     private final DataCollector dataCollector = new DataCollector();
 
@@ -103,6 +103,17 @@ public class ReplayMergeTest
     private Aeron aeron;
     private AeronArchive aeronArchive;
     private int messagesPublished = 0;
+
+    private final FragmentHandler fragmentHandler = new FragmentAssembler(
+        (buffer, offset, length, header) ->
+        {
+            final String expected = MESSAGE_PREFIX + receivedMessageCount.get();
+            final String actual = buffer.getStringWithoutLengthAscii(offset, length);
+
+            assertEquals(expected, actual);
+            receivedMessageCount.incrementAndGet();
+            receivedPosition.set(header.position());
+        });
 
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
@@ -148,10 +159,10 @@ public class ReplayMergeTest
     @AfterEach
     public void after()
     {
-        if (received.get() != MIN_MESSAGES_PER_TERM * 6)
+        if (receivedMessageCount.get() != MIN_MESSAGES_PER_TERM * 6)
         {
             System.out.println(
-                "received " + received.get() + ", sent " + messagesPublished +
+                "received " + receivedMessageCount.get() + ", sent " + messagesPublished +
                 ", total " + (MIN_MESSAGES_PER_TERM * 6));
         }
 
@@ -168,16 +179,6 @@ public class ReplayMergeTest
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
         final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;
         final int totalMessageCount = initialMessageCount + subsequentMessageCount;
-
-        final FragmentHandler fragmentHandler = new FragmentAssembler(
-            (buffer, offset, length, header) ->
-            {
-                final String expected = MESSAGE_PREFIX + received.get();
-                final String actual = buffer.getStringWithoutLengthAscii(offset, length);
-
-                assertEquals(expected, actual);
-                received.incrementAndGet();
-            });
 
         try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
         {
@@ -204,15 +205,15 @@ public class ReplayMergeTest
                     recordingId,
                     0))
             {
-                final MutableLong position = new MutableLong();
+                final MutableLong offerPosition = new MutableLong();
                 final Supplier<String> msgOne = () -> String.format(
-                    "lastPosition=%d, replayMerge=%s", position.value, replayMerge);
+                    "lastPosition=%d, replayMerge=%s", offerPosition.value, replayMerge);
 
                 for (int i = initialMessageCount; i < totalMessageCount; i++)
                 {
-                    while ((position.value = offerMessage(publication, i)) <= 0)
+                    while ((offerPosition.value = offerMessage(publication, i)) <= 0)
                     {
-                        if (Publication.BACK_PRESSURED == position.value)
+                        if (Publication.BACK_PRESSURED == offerPosition.get())
                         {
                             awaitPositionChange(replayMerge, counters, recordingCounterId, publication.position());
                         }
@@ -239,10 +240,10 @@ public class ReplayMergeTest
                 }
 
                 final Supplier<String> msgFour = () -> String.format(
-                    "received=%d < totalMessageCount=%d: replayMerge=%s",
-                    received.get(), totalMessageCount, replayMerge);
+                    "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
+                    receivedMessageCount.get(), totalMessageCount, replayMerge);
                 final Image image = replayMerge.image();
-                while (received.get() < totalMessageCount)
+                while (receivedMessageCount.get() < totalMessageCount)
                 {
                     if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
@@ -254,7 +255,8 @@ public class ReplayMergeTest
                 assertTrue(replayMerge.isMerged());
                 assertTrue(replayMerge.isLiveAdded());
                 assertFalse(replayMerge.hasFailed());
-                assertEquals(totalMessageCount, received.get());
+                assertEquals(totalMessageCount, receivedMessageCount.get());
+                assertEquals(publication.position(), receivedPosition.get());
             }
         }
         catch (final Throwable ex)

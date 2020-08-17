@@ -165,9 +165,9 @@ class RecordingSession implements Session
         return workCount;
     }
 
-    Image image()
+    Subscription subscription()
     {
-        return image;
+        return image.subscription();
     }
 
     ControlSession controlSession()

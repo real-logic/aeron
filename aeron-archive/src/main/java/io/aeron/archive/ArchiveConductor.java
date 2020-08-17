@@ -894,7 +894,7 @@ abstract class ArchiveConductor
 
             if (null != recordingSession)
             {
-                final long subscriptionId = recordingSession.image().subscription().registrationId();
+                final long subscriptionId = recordingSession.subscription().registrationId();
                 final Subscription subscription = removeRecordingSubscription(subscriptionId);
                 if (null != subscription)
                 {
@@ -922,7 +922,7 @@ abstract class ArchiveConductor
             session.controlSession().attemptSignal(
                 session.correlationId(),
                 recordingId,
-                session.image().subscription().registrationId(),
+                session.subscription().registrationId(),
                 position,
                 RecordingSignal.STOP);
         }

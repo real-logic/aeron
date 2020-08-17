@@ -81,7 +81,7 @@ inline bool aeron_cmpxchgu64(volatile uint64_t *destination, uint64_t expected, 
 
 inline bool aeron_cmpxchg32(volatile int32_t *destination, int32_t expected, int32_t desired)
 {
-    int32_t original = _InterlockedCompareExchange((long volatile*)destination, (long)desired, (long)expected);
+    int32_t original = _InterlockedCompareExchange((long volatile *)destination, (long)desired, (long)expected);
 
     return original == expected;
 }

@@ -70,9 +70,6 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
     return sequence;
 }
 
-/**
-* Put a 32 bit int with volatile semantics.
-*/
 inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 {
     asm volatile(
@@ -82,18 +79,12 @@ inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
         : "memory");
 }
 
-/**
-* Put a 32 bit int with ordered semantics.
-*/
 inline void putInt32Ordered(volatile std::int32_t *address, std::int32_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int32_t *>(address) = value;
 }
 
-/**
-* Put a 32 bit int with atomic semantics.
-**/
 inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 {
     asm volatile(
@@ -103,10 +94,6 @@ inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
         : "memory");
 }
 
-/**
-* Returns a 64 bit integer with volatile semantics.
-* On x64 MOV is an atomic operation.
-*/
 inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
@@ -118,15 +105,12 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 template<typename T>
 inline volatile T *getValueVolatile(volatile T **source)
 {
-    volatile T *t = *reinterpret_cast<volatile T**>(source);
+    volatile T *t = *reinterpret_cast<volatile T **>(source);
     thread_fence();
 
     return t;
 }
 
-/**
-* Put a 64 bit int with volatile semantics.
-*/
 inline void putInt64Volatile(volatile std::int64_t *address, std::int64_t value)
 {
     asm volatile(
@@ -145,9 +129,6 @@ inline void putValueVolatile(volatile T *address, T value)
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
-/**
-* Put a 64 bit int with ordered semantics.
-*/
 inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
 {
     thread_fence();

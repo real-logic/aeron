@@ -64,26 +64,17 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
     return sequence;
 }
 
-/**
-* Put a 32 bit int with ordered semantics
-*/
 inline void putInt32Ordered(volatile std::int32_t *source, std::int32_t value)
 {
     release();
     *reinterpret_cast<volatile std::int32_t *>(source) = value;
 }
 
-/**
-* Put a 32 bit int with atomic semantics.
-**/
 inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 {
     _InterlockedExchange(reinterpret_cast<volatile long *>(address), value);
 }
 
-/**
-* Put a 32 bit int with atomic semantics.
-**/
 inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 {
     _InterlockedExchange(reinterpret_cast<volatile long *>(address), value);
@@ -101,27 +92,18 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
     return sequence;
 }
 
-/**
-* Put a 64 bit int with ordered semantics.
-*/
 inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
 {
     release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
-/**
-* Put a 64 bit int with atomic semantics.
-**/
 inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 {
     _InterlockedExchange64(address, value);
 }
 
-/**
-* Put a 64 bit int with volatile semantics.
-**/
-inline void putInt64Volatile(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Volatile(volatile std::int64_t *address, std::int64_t value)
 {
     _InterlockedExchange64(address, value);
 }

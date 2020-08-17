@@ -48,7 +48,7 @@ import static org.agrona.BitUtil.align;
  * <li>Isolation of an external relationship, namely the file system.</li>
  * </ul>
  */
-class RecordingWriter implements BlockHandler, AutoCloseable
+final class RecordingWriter implements BlockHandler, AutoCloseable
 {
     private final long recordingId;
     private final int segmentLength;
@@ -140,7 +140,7 @@ class RecordingWriter implements BlockHandler, AutoCloseable
             close();
             throw new ArchiveException("file closed by interrupt, recording aborted", ex, ArchiveException.GENERIC);
         }
-        catch (final Exception ex)
+        catch (final Throwable ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);
@@ -156,6 +156,16 @@ class RecordingWriter implements BlockHandler, AutoCloseable
         }
     }
 
+    boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    long position()
+    {
+        return segmentBasePosition + segmentOffset;
+    }
+
     void init() throws IOException
     {
         openRecordingSegmentFile();
@@ -164,11 +174,6 @@ class RecordingWriter implements BlockHandler, AutoCloseable
         {
             recordingFileChannel.position(segmentOffset);
         }
-    }
-
-    boolean isClosed()
-    {
-        return isClosed;
     }
 
     private void computeChecksum(final Checksum checksum, final UnsafeBuffer buffer, final int length)

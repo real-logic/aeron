@@ -95,8 +95,8 @@ abstract class ArchiveConductor
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
     private final ControlSessionProxy controlSessionProxy;
-    private long closeHandlerRegistrationId;
-    private long unavailableCounterHandlerRegistrationId;
+    private final long closeHandlerRegistrationId;
+    private final long unavailableCounterHandlerRegistrationId;
     private final long connectTimeoutMs;
     private long timeOfLastMarkFileUpdateMs;
     private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);

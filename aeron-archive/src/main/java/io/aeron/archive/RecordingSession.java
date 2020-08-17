@@ -219,7 +219,7 @@ class RecordingSession implements Session
 
             if (workCount > 0)
             {
-                this.position.setOrdered(image.position());
+                this.position.setOrdered(recordingWriter.position());
             }
             else if (image.isEndOfStream() || image.isClosed())
             {
@@ -228,7 +228,7 @@ class RecordingSession implements Session
 
             if (null != recordingEventsProxy)
             {
-                final long recordedPosition = position.getWeak();
+                final long recordedPosition = recordingWriter.position();
                 if (progressEventPosition < recordedPosition)
                 {
                     if (recordingEventsProxy.progress(recordingId, image.joinPosition(), recordedPosition))

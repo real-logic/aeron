@@ -114,7 +114,7 @@ public class ExtendRecordingTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
+                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
                 .aeronDirectoryName(aeronDirectoryName)
                 .archiveDir(archiveDir)
                 .errorHandler(Tests::onError)

@@ -118,7 +118,7 @@ class ArchiveToolTests
     {
         archiveDir = ArchiveTests.makeTestDirectory();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, 128, epochClock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, 128 * 1024, epochClock, null, null))
         {
             invalidRecording0 = catalog.addNewRecording(NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");

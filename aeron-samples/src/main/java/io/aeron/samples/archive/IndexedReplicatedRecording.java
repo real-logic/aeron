@@ -59,7 +59,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
     static final int MESSAGE_BURST_COUNT = 10_000;
 
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int MAX_CATALOG_ENTRIES = 64;
+    private static final long CATALOG_CAPACITY = 64 * 1024;
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
     private static final String SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8090";
     private static final String SRC_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8091";
@@ -107,7 +107,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsEnabled(false)
@@ -129,7 +129,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsEnabled(false)

@@ -83,7 +83,7 @@ public class ArchiveDeleteAndRestartTest
             testWatcher);
 
         archiveContext = new Archive.Context()
-            .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
+            .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
             .fileSyncLevel(SYNC_LEVEL)
             .deleteArchiveOnStart(true)
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))

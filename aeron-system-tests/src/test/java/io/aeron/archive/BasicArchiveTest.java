@@ -80,7 +80,7 @@ public class BasicArchiveTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
+                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))

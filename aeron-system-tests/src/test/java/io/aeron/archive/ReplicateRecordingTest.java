@@ -100,7 +100,7 @@ public class ReplicateRecordingTest
 
         srcArchive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .aeronDirectoryName(srcAeronDirectoryName)
                 .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
@@ -124,7 +124,7 @@ public class ReplicateRecordingTest
 
         dstArchive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .aeronDirectoryName(dstAeronDirectoryName)
                 .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))

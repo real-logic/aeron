@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 public class ListRecordingsForUriSessionTest
 {
-    private static final long MAX_ENTRIES = 1024;
+    private static final long CAPACITY = 1024 * 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     public static final byte[] LOCALHOST_BYTES = "localhost".getBytes(StandardCharsets.US_ASCII);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
@@ -37,7 +37,7 @@ public class ListRecordingsForUriSessionTest
     @BeforeEach
     public void before()
     {
-        catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null);
+        catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null);
         matchingRecordingIds[0] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "localhost", "localhost?tag=f", "sourceA");
         catalog.addNewRecording(

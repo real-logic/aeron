@@ -287,12 +287,15 @@ public class ArchiveTool
      *
      * @param archiveDir containing the {@link Catalog}.
      * @return the maximum number of entries supported by a {@link Catalog}.
+     * @see #capacity(File)
+     * @deprecated Use {@link #capacity} instead.
      */
+    @Deprecated
     public static int maxEntries(final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE))
         {
-            return catalog.maxEntries();
+            return (int)(catalog.capacity() / DEFAULT_RECORD_LENGTH);
         }
     }
 
@@ -302,12 +305,46 @@ public class ArchiveTool
      * @param archiveDir    containing the {@link Catalog}.
      * @param newMaxEntries value to set.
      * @return the maximum number of entries supported by a {@link Catalog} after update.
+     * @see #capacity(File, long)
+     * @deprecated Use {@link #capacity(File, long)} instead.
      */
+    @Deprecated
     public static int maxEntries(final File archiveDir, final long newMaxEntries)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, INSTANCE, null, null))
+        final long capacity = newMaxEntries * DEFAULT_RECORD_LENGTH;
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, INSTANCE, null, null))
         {
-            return catalog.maxEntries();
+            return (int)(catalog.capacity() / DEFAULT_RECORD_LENGTH);
+        }
+    }
+
+    /**
+     * Get the capacity in bytes of the {@link Catalog}.
+     *
+     * @param archiveDir containing the {@link Catalog}.
+     * @return capacity in bytes of the {@link Catalog}, i.e. size of the {@link Catalog} file.
+     */
+    public static long capacity(final File archiveDir)
+    {
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE))
+        {
+            return catalog.capacity();
+        }
+    }
+
+    /**
+     * Set the capacity in bytes of the {@link Catalog}. If new capacity is smaller than current {@link Catalog}
+     * capacity then this method is a no op.
+     *
+     * @param archiveDir  containing the {@link Catalog}.
+     * @param newCapacity value to set.
+     * @return the capacity of the {@link Catalog} after update.
+     */
+    public static long capacity(final File archiveDir, final long newCapacity)
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, INSTANCE, null, null))
+        {
+            return catalog.capacity();
         }
     }
 
@@ -323,7 +360,7 @@ public class ArchiveTool
             ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
         {
             printMarkInformation(markFile, out);
-            out.println("Catalog Max Entries: " + catalog.maxEntries());
+            out.println("Catalog capacity in bytes: " + catalog.capacity());
             catalog.forEach((he, hd, e, d) -> out.println(d));
         }
     }
@@ -404,7 +441,7 @@ public class ArchiveTool
             ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
         {
             printMarkInformation(markFile, out);
-            out.println("Catalog Max Entries: " + catalog.maxEntries());
+            out.println("Catalog capacity in bytes: " + catalog.capacity());
 
             out.println();
             out.println("Dumping up to " + fragmentCountLimit + " fragments per recording");

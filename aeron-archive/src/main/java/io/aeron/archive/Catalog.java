@@ -118,7 +118,6 @@ class Catalog implements AutoCloseable
 
 
     private final int recordLength;
-    private final int maxDescriptorStringsCombinedLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
     private boolean isClosed;
@@ -209,8 +208,6 @@ class Catalog implements AutoCloseable
                     .version(ArchiveMarkFile.SEMANTIC_VERSION);
             }
 
-            maxDescriptorStringsCombinedLength =
-                recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
             maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
             refreshCatalog(true, checksum, buffer);
@@ -277,8 +274,6 @@ class Catalog implements AutoCloseable
             }
 
             recordLength = catalogHeaderDecoder.entryLength();
-            maxDescriptorStringsCombinedLength =
-                recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
             maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
             refreshCatalog(false, null, null);
@@ -342,15 +337,6 @@ class Catalog implements AutoCloseable
         if (nextRecordingId > maxRecordingId)
         {
             growCatalog(MAX_CATALOG_LENGTH);
-        }
-
-        final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
-        if (combinedStringsLen > maxDescriptorStringsCombinedLength)
-        {
-            throw new ArchiveException("combined length of channel:'" + strippedChannel +
-                "' and sourceIdentity:'" + sourceIdentity +
-                "' and originalChannel:'" + originalChannel +
-                "' exceeds max allowed:" + maxDescriptorStringsCombinedLength);
         }
 
         final long recordingId = nextRecordingId++;

@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TestNode implements AutoCloseable
@@ -453,6 +454,7 @@ class TestNode implements AutoCloseable
         {
             final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SNAPSHOT_MSG_LENGTH]);
             buffer.putInt(0, messageCount);
+            buffer.putInt(SNAPSHOT_MSG_LENGTH - SIZE_OF_INT, messageCount);
 
             for (int i = 0; i < SNAPSHOT_FRAGMENT_COUNT; i++)
             {

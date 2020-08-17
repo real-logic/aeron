@@ -1054,7 +1054,6 @@ public class ClusterTest
             cluster.startStaticNode(2, true);
 
             final TestNode newLeader = cluster.awaitLeader();
-
             assertNotEquals(2, newLeader.index());
 
             assertTrue(cluster.node(0).service().wasSnapshotLoaded());
@@ -1065,20 +1064,20 @@ public class ClusterTest
             assertEquals(3, cluster.node(1).service().messageCount());
             assertEquals(3, cluster.node(2).service().messageCount());
 
-            cluster.reconnectClient();
-
             final int msgCountAfterStart = 4;
             final int totalMsgCount = 2 + 1 + 4;
+            cluster.reconnectClient();
             cluster.sendMessages(msgCountAfterStart);
             cluster.awaitResponseMessageCount(totalMsgCount);
+
             cluster.awaitServiceMessageCount(newLeader, totalMsgCount);
             assertEquals(totalMsgCount, newLeader.service().messageCount());
 
-            cluster.awaitServiceMessageCount(cluster.node(1), totalMsgCount);
-            assertEquals(totalMsgCount, cluster.node(1).service().messageCount());
+            cluster.awaitServiceMessageCount(cluster.followers().get(0), totalMsgCount);
+            assertEquals(totalMsgCount, cluster.followers().get(0).service().messageCount());
 
-            cluster.awaitServiceMessageCount(cluster.node(2), totalMsgCount);
-            assertEquals(totalMsgCount, cluster.node(2).service().messageCount());
+            cluster.awaitServiceMessageCount(cluster.followers().get(1), totalMsgCount);
+            assertEquals(totalMsgCount, cluster.followers().get(1).service().messageCount());
         }
         catch (final Throwable ex)
         {

@@ -32,9 +32,9 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -451,7 +451,7 @@ class TestNode implements AutoCloseable
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(SNAPSHOT_MSG_LENGTH);
+            final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SNAPSHOT_MSG_LENGTH]);
             buffer.putInt(0, messageCount);
 
             for (int i = 0; i < SNAPSHOT_FRAGMENT_COUNT; i++)

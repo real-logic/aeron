@@ -802,18 +802,16 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final AeronArchive archive)
     {
         idleStrategy.reset();
-        do
+        while (counters.getCounterValue(counterId) < position)
         {
             idle();
+            archive.checkForErrorResponse();
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
                 throw new ClusterException("recording has stopped unexpectedly: " + recordingId);
             }
-
-            archive.checkForErrorResponse();
         }
-        while (counters.getCounterValue(counterId) < position);
     }
 
     private void snapshotState(

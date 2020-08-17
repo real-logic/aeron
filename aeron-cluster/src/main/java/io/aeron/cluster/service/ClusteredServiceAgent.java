@@ -809,7 +809,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
-                throw new ClusterException("recording has stopped unexpectedly: " + recordingId);
+                throw new ClusterException("recording stopped unexpectedly: " + recordingId);
             }
         }
     }

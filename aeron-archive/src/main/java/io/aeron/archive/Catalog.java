@@ -330,17 +330,17 @@ class Catalog implements AutoCloseable
         final String originalChannel,
         final String sourceIdentity)
     {
-        final int recordLength = this.recordLength;
+        final int recordingLength = this.recordLength;
         final long recordingOffset = nextRecordingOffset;
 
-        if (recordingOffset + recordLength >= capacity)
+        if (recordingOffset + recordingLength > capacity)
         {
-            growCatalog(MAX_CATALOG_LENGTH, recordLength);
+            growCatalog(MAX_CATALOG_LENGTH, recordingLength);
         }
 
         final long recordingId = nextRecordingId;
 
-        catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset(recordingId), recordLength);
+        catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset(recordingId), recordingLength);
         descriptorEncoder
             .wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH)
             .recordingId(recordingId)
@@ -367,7 +367,7 @@ class Catalog implements AutoCloseable
 
         // FIXME: Update the index
         nextRecordingId++;
-        nextRecordingOffset += recordLength;
+        nextRecordingOffset += recordingLength;
 
         return recordingId;
     }
@@ -655,13 +655,29 @@ class Catalog implements AutoCloseable
         return (int)(recordingId * recordLength) + recordLength;
     }
 
-    void growCatalog(final long maxCatalogLength, final int recordLength)
+    void growCatalog(final long maxCatalogLength, final int recordingLength)
     {
         final long oldCapacity = capacity;
-        final long newCapacity = Math.min(oldCapacity + (oldCapacity >> 1), maxCatalogLength);
-        if ((newCapacity - oldCapacity) < recordLength)
+        final long recordingOffset = nextRecordingOffset;
+        final long targetCapacity = recordingOffset + recordingLength;
+        if (targetCapacity > maxCatalogLength)
         {
-            throw new ArchiveException("catalog is full, max length reached: " + maxCatalogLength);
+            if (maxCatalogLength == oldCapacity)
+            {
+                throw new ArchiveException("catalog is full, max length reached: " + maxCatalogLength);
+            }
+            else
+            {
+                throw new ArchiveException(String.format(
+                    "recording is too big: recording length %d bytes, available space %d bytes",
+                    recordingLength, maxCatalogLength - recordingOffset));
+            }
+        }
+
+        long newCapacity = oldCapacity;
+        while (newCapacity < targetCapacity)
+        {
+            newCapacity = min(newCapacity + (newCapacity >> 1), maxCatalogLength);
         }
 
         try
@@ -670,7 +686,7 @@ class Catalog implements AutoCloseable
             catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
             catalogByteBuffer = catalogChannel.map(READ_WRITE, 0, newCapacity);
         }
-        catch (final Exception ex)
+        catch (final Throwable ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);

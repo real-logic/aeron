@@ -82,21 +82,13 @@ final class ArchiveEventEncoder
         final int offset,
         final int captureLength,
         final int length,
-        final int maxEntries,
         final long catalogLength,
-        final int newMaxEntries,
         final long newCatalogLength)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, maxEntries, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
-
         encodingBuffer.putLong(offset + relativeOffset, catalogLength, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
-
-        encodingBuffer.putInt(offset + relativeOffset, newMaxEntries, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
 
         encodingBuffer.putLong(offset + relativeOffset, newCatalogLength, LITTLE_ENDIAN);
     }

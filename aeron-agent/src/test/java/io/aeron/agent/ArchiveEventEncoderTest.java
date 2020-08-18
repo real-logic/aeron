@@ -94,20 +94,16 @@ class ArchiveEventEncoderTest
         final int offset = 24;
         final int length = SIZE_OF_LONG * 2 + SIZE_OF_INT * 2;
         final int captureLength = captureLength(length);
-        final int maxEntries = 3;
         final long catalogLength = 128;
-        final int newMaxEntries = 7;
         final long newCatalogLength = 1024;
 
         encodeCatalogResize(
-            buffer, offset, captureLength, length, maxEntries, catalogLength, newMaxEntries, newCatalogLength);
+            buffer, offset, captureLength, length, catalogLength, newCatalogLength);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(maxEntries, buffer.getInt(offset + LOG_HEADER_LENGTH));
-        assertEquals(catalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT));
-        assertEquals(newMaxEntries, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG));
-        assertEquals(newCatalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH + 2 * SIZE_OF_INT + SIZE_OF_LONG));
+        assertEquals(catalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH));
+        assertEquals(newCatalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
     }
 }

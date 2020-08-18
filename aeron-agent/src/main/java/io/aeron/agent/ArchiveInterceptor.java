@@ -56,10 +56,9 @@ class ArchiveInterceptor
     static class Catalog
     {
         @Advice.OnMethodEnter
-        static void catalogResized(
-            final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
+        static void catalogResized(final long catalogLength, final long newCatalogLength)
         {
-            LOGGER.logCatalogResize(maxEntries, catalogLength, newMaxEntries, newCatalogLength);
+            LOGGER.logCatalogResize(catalogLength, newCatalogLength);
         }
     }
 }

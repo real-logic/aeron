@@ -173,7 +173,7 @@ public class ReplayMergeTest
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(30)
     public void shouldMergeFromReplayToLive(final TestInfo testInfo)
     {
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
@@ -203,25 +203,31 @@ public class ReplayMergeTest
                     replayDestination.build(),
                     liveDestination.build(),
                     recordingId,
-                    0))
+                    receivedPosition.get()))
             {
                 final MutableLong offerPosition = new MutableLong();
                 final Supplier<String> msgOne = () -> String.format(
                     "lastPosition=%d, replayMerge=%s", offerPosition.value, replayMerge);
+                final Supplier<String> msgTwo = () -> String.format("replay did not merge: %s", replayMerge);
+                final Supplier<String> msgThree = () -> String.format(
+                    "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
+                    receivedMessageCount.get(), totalMessageCount, replayMerge);
 
-                for (int i = initialMessageCount; i < totalMessageCount; i++)
+                for (int i = messagesPublished; i < totalMessageCount; i++)
                 {
                     while ((offerPosition.value = offerMessage(publication, i)) <= 0)
                     {
                         if (Publication.BACK_PRESSURED == offerPosition.get())
                         {
-                            awaitPositionChange(replayMerge, counters, recordingCounterId, publication.position());
+                            awaitRecordingPositionChange(
+                                replayMerge, counters, recordingCounterId, recordingId, publication);
                         }
-                        else
+                        else if (Publication.NOT_CONNECTED == offerPosition.get())
                         {
-                            Tests.yieldingWait(msgOne);
+                            throw new IllegalStateException("publication is not connected");
                         }
                     }
+
                     messagesPublished++;
 
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
@@ -230,7 +236,6 @@ public class ReplayMergeTest
                     }
                 }
 
-                final Supplier<String> msgTwo = () -> String.format("replay did not merge: %s", replayMerge);
                 while (!replayMerge.isMerged())
                 {
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
@@ -239,16 +244,14 @@ public class ReplayMergeTest
                     }
                 }
 
-                final Supplier<String> msgFour = () -> String.format(
-                    "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
-                    receivedMessageCount.get(), totalMessageCount, replayMerge);
                 final Image image = replayMerge.image();
                 while (receivedMessageCount.get() < totalMessageCount)
                 {
                     if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
                         assertFalse(image.isClosed(), "image closed unexpectedly");
-                        Tests.yieldingWait(msgFour);
+                        assertEquals(image.activeTransportCount(), 1);
+                        Tests.yieldingWait(msgThree);
                     }
                 }
 
@@ -266,14 +269,14 @@ public class ReplayMergeTest
         }
     }
 
-    static void awaitPositionChange(
-        final ReplayMerge replayMerge, final CountersReader counters, final int counterId, final long position)
+    static void awaitRecordingPositionChange(
+        final ReplayMerge replayMerge,
+        final CountersReader counters,
+        final int counterId,
+        final long recordingId,
+        final Publication publication)
     {
-        if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
-        {
-            throw new IllegalStateException("count not active: " + counterId);
-        }
-
+        final long position = publication.position();
         final long initialTimestampNs = System.nanoTime();
         final long currentPosition = counters.getCounterValue(counterId);
         final Supplier<String> msg = () -> String.format(
@@ -286,6 +289,11 @@ public class ReplayMergeTest
         do
         {
             Tests.yieldingWait(msg);
+
+            if (!RecordingPos.isActive(counters, counterId, recordingId))
+            {
+                throw new IllegalStateException("recording not active: " + counterId);
+            }
         }
         while (currentPosition == counters.getCounterValue(counterId) && currentPosition < position);
     }

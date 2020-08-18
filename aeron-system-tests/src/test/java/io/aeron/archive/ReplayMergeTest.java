@@ -174,6 +174,7 @@ public class ReplayMergeTest
 
     @Test
     @Timeout(30)
+    @SuppressWarnings("MethodLength")
     public void shouldMergeFromReplayToLive(final TestInfo testInfo)
     {
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
@@ -192,74 +193,87 @@ public class ReplayMergeTest
             final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
 
             publishMessages(publication, initialMessageCount);
-            messagesPublished += initialMessageCount;
             awaitPosition(counters, recordingCounterId, publication.position());
 
-            try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
-                ReplayMerge replayMerge = new ReplayMerge(
-                    subscription,
-                    aeronArchive,
-                    replayChannel.build(),
-                    replayDestination.build(),
-                    liveDestination.build(),
-                    recordingId,
-                    receivedPosition.get()))
+            retry_merge:
+            while (true)
             {
-                final MutableLong offerPosition = new MutableLong();
-                final Supplier<String> msgOne = () -> String.format(
-                    "lastPosition=%d, replayMerge=%s", offerPosition.value, replayMerge);
-                final Supplier<String> msgTwo = () -> String.format("replay did not merge: %s", replayMerge);
-                final Supplier<String> msgThree = () -> String.format(
-                    "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
-                    receivedMessageCount.get(), totalMessageCount, replayMerge);
-
-                for (int i = messagesPublished; i < totalMessageCount; i++)
+                try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
+                    ReplayMerge replayMerge = new ReplayMerge(
+                        subscription,
+                        aeronArchive,
+                        replayChannel.build(),
+                        replayDestination.build(),
+                        liveDestination.build(),
+                        recordingId,
+                        receivedPosition.get()))
                 {
-                    while ((offerPosition.value = offerMessage(publication, i)) <= 0)
+                    final MutableLong offerPosition = new MutableLong();
+                    final Supplier<String> msgOne = () -> String.format(
+                        "lastPosition=%d, replayMerge=%s", offerPosition.value, replayMerge);
+                    final Supplier<String> msgTwo = () -> String.format("replay did not merge: %s", replayMerge);
+                    final Supplier<String> msgThree = () -> String.format(
+                        "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
+                        receivedMessageCount.get(), totalMessageCount, replayMerge);
+
+                    for (int i = messagesPublished; i < totalMessageCount; i++)
                     {
-                        if (Publication.BACK_PRESSURED == offerPosition.get())
+                        while ((offerPosition.value = offerMessage(publication, i)) <= 0)
                         {
-                            awaitRecordingPositionChange(
-                                replayMerge, counters, recordingCounterId, recordingId, publication);
+                            if (Publication.BACK_PRESSURED == offerPosition.get())
+                            {
+                                awaitRecordingPositionChange(
+                                    replayMerge, counters, recordingCounterId, recordingId, publication);
+                            }
+                            else if (Publication.NOT_CONNECTED == offerPosition.get())
+                            {
+                                throw new IllegalStateException("publication is not connected");
+                            }
                         }
-                        else if (Publication.NOT_CONNECTED == offerPosition.get())
+
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                         {
-                            throw new IllegalStateException("publication is not connected");
+                            if (replayMerge.hasFailed())
+                            {
+                                continue retry_merge;
+                            }
+                            Tests.yieldingWait(msgOne);
                         }
                     }
 
-                    messagesPublished++;
-
-                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                    while (!replayMerge.isMerged())
                     {
-                        Tests.yieldingWait(msgOne);
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            if (replayMerge.hasFailed())
+                            {
+                                continue retry_merge;
+                            }
+                            Tests.yieldingWait(msgTwo);
+                        }
                     }
-                }
 
-                while (!replayMerge.isMerged())
-                {
-                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                    final Image image = replayMerge.image();
+                    while (receivedMessageCount.get() < totalMessageCount)
                     {
-                        Tests.yieldingWait(msgTwo);
+                        if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            if (image.isClosed())
+                            {
+                                continue retry_merge;
+                            }
+                            Tests.yieldingWait(msgThree);
+                        }
                     }
-                }
 
-                final Image image = replayMerge.image();
-                while (receivedMessageCount.get() < totalMessageCount)
-                {
-                    if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
-                    {
-                        assertFalse(image.isClosed(), "image closed unexpectedly");
-                        assertEquals(image.activeTransportCount(), 1);
-                        Tests.yieldingWait(msgThree);
-                    }
-                }
+                    assertTrue(replayMerge.isMerged());
+                    assertTrue(replayMerge.isLiveAdded());
+                    assertFalse(replayMerge.hasFailed());
+                    assertEquals(totalMessageCount, receivedMessageCount.get());
+                    assertEquals(publication.position(), receivedPosition.get());
 
-                assertTrue(replayMerge.isMerged());
-                assertTrue(replayMerge.isLiveAdded());
-                assertFalse(replayMerge.hasFailed());
-                assertEquals(totalMessageCount, receivedMessageCount.get());
-                assertEquals(publication.position(), receivedPosition.get());
+                    return;
+                }
             }
         }
         catch (final Throwable ex)
@@ -301,7 +315,14 @@ public class ReplayMergeTest
     private long offerMessage(final Publication publication, final int index)
     {
         final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + index);
-        return publication.offer(buffer, 0, length);
+        final long offerResult = publication.offer(buffer, 0, length);
+
+        if (offerResult > 0)
+        {
+            messagesPublished++;
+        }
+
+        return offerResult;
     }
 
     private void publishMessages(final Publication publication, final int count)
@@ -314,6 +335,8 @@ public class ReplayMergeTest
             {
                 Tests.yield();
             }
+
+            messagesPublished++;
         }
     }
 }

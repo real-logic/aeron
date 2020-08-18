@@ -1836,7 +1836,10 @@ class ConsensusModuleAgent implements Agent
                 workCount += ingressAdapter.poll();
             }
 
-            workCount += updateLeaderPosition(nowNs);
+            if (ConsensusModule.State.CLOSED != state)
+            {
+                workCount += updateLeaderPosition(nowNs);
+            }
         }
         else
         {

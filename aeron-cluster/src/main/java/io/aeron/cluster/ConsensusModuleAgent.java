@@ -1836,10 +1836,7 @@ class ConsensusModuleAgent implements Agent
                 workCount += ingressAdapter.poll();
             }
 
-            if (ConsensusModule.State.CLOSED != state)
-            {
-                workCount += updateLeaderPosition(nowNs);
-            }
+            workCount += updateLeaderPosition(nowNs);
         }
         else
         {
@@ -2415,32 +2412,35 @@ class ConsensusModuleAgent implements Agent
 
     private int updateLeaderPosition(final long nowNs)
     {
-        final long appendPosition = this.appendPosition.get();
-        thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
-        final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
-
-        if (commitPosition > this.commitPosition.getWeak() ||
-            nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
+        if (ConsensusModule.State.CLOSED != state)
         {
-            for (final ClusterMember member : clusterMembers)
+            final long appendPosition = this.appendPosition.get();
+            thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
+            final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
+
+            if (commitPosition > this.commitPosition.getWeak() ||
+                nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
             {
-                if (member.id() != memberId)
+                for (final ClusterMember member : clusterMembers)
                 {
-                    final ExclusivePublication publication = member.publication();
-                    consensusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
+                    if (member.id() != memberId)
+                    {
+                        final ExclusivePublication publication = member.publication();
+                        consensusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
+                    }
                 }
+
+                this.commitPosition.setOrdered(commitPosition);
+                timeOfLastLogUpdateNs = nowNs;
+
+                clearUncommittedEntriesTo(commitPosition);
+                if (pendingMemberRemovals > 0)
+                {
+                    handleMemberRemovals(commitPosition);
+                }
+
+                return 1;
             }
-
-            this.commitPosition.setOrdered(commitPosition);
-            timeOfLastLogUpdateNs = nowNs;
-
-            clearUncommittedEntriesTo(commitPosition);
-            if (pendingMemberRemovals > 0)
-            {
-                handleMemberRemovals(commitPosition);
-            }
-
-            return 1;
         }
 
         return 0;
@@ -2448,16 +2448,19 @@ class ConsensusModuleAgent implements Agent
 
     private int updateFollowerPosition(final long nowNs)
     {
-        final ExclusivePublication publication = leaderMember.publication();
-        final long appendPosition = this.appendPosition.get();
-
-        if ((appendPosition != lastAppendPosition ||
-            nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
-            consensusPublisher.appendPosition(publication, leadershipTermId, appendPosition, memberId))
+        if (ConsensusModule.State.CLOSED != state)
         {
-            lastAppendPosition = appendPosition;
-            timeOfLastAppendPositionNs = nowNs;
-            return 1;
+            final ExclusivePublication publication = leaderMember.publication();
+            final long appendPosition = this.appendPosition.get();
+
+            if ((appendPosition != lastAppendPosition ||
+                nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
+                consensusPublisher.appendPosition(publication, leadershipTermId, appendPosition, memberId))
+            {
+                lastAppendPosition = appendPosition;
+                timeOfLastAppendPositionNs = nowNs;
+                return 1;
+            }
         }
 
         return 0;

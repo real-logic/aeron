@@ -452,6 +452,7 @@ public class ReplayMerge implements AutoCloseable
                     {
                         subscription.asyncAddDestination(liveDestination);
                         timeOfLastProgressMs = nowMs;
+                        positionOfLastProgress = position;
                         isLiveAdded = true;
                     }
                     else if (shouldStopAndRemoveReplay(position))
@@ -459,6 +460,7 @@ public class ReplayMerge implements AutoCloseable
                         subscription.asyncRemoveDestination(replayDestination);
                         stopReplay();
                         timeOfLastProgressMs = nowMs;
+                        positionOfLastProgress = position;
                         nextState = State.MERGED;
                     }
                 }

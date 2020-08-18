@@ -382,9 +382,9 @@ void aeron_publication_image_track_rebuild(
 
 // TODO: Local definition of macro until we merge and share code with the C driver.
 #if defined(__GNUC__)
-#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp,c) (__builtin_expect((exp),c))
+#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp, c) (__builtin_expect((exp), c))
 #else
-#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp,c) (exp)
+#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp, c) (exp)
 #endif
 
 static inline void aeron_publication_image_track_connection(
@@ -425,9 +425,7 @@ static inline void aeron_publication_image_track_connection(
 }
 
 static inline bool aeron_publication_image_all_eos(
-    aeron_publication_image_t *image,
-    aeron_receive_destination_t *destination,
-    bool is_eos)
+    aeron_publication_image_t *image, aeron_receive_destination_t *destination, bool is_eos)
 {
     bool all_eos = true;
 
@@ -587,7 +585,10 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                 image->last_sm_position = sm_position;
                 image->last_sm_position_window_limit = sm_position + receiver_window_length;
 
-                AERON_PUT_ORDERED(image->log_meta_data->active_transport_count, active_count);
+                if (active_count != image->log_meta_data->active_transport_count)
+                {
+                    AERON_PUT_ORDERED(image->log_meta_data->active_transport_count, active_count);
+                }
             }
         }
     }

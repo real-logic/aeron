@@ -986,13 +986,17 @@ public class PublicationImage
 
         for (final ImageConnection imageConnection : imageConnections)
         {
-            if (null != imageConnection && nowNs < (imageConnection.timeOfLastFrameNs + imageLivenessTimeoutNs))
+            if (null != imageConnection && ((imageConnection.timeOfLastFrameNs + imageLivenessTimeoutNs) - nowNs > 0))
             {
                 activeTransportCount++;
             }
         }
 
-        LogBufferDescriptor.activeTransportCount(rawLog.metaData(), activeTransportCount);
+        final UnsafeBuffer metaDataBuffer = rawLog.metaData();
+        if (metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
+        {
+            LogBufferDescriptor.activeTransportCount(metaDataBuffer, activeTransportCount);
+        }
     }
 
     private ReadablePosition[] positionArray(final ArrayList<SubscriberPosition> subscriberPositions, final long nowNs)

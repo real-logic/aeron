@@ -401,14 +401,14 @@ public class ReplayMerge implements AutoCloseable
                 state(State.ATTEMPT_LIVE_JOIN);
                 workCount += 1;
             }
-            else if (image.isClosed())
-            {
-                throw new IllegalStateException("ReplayMerge Image closed unexpectedly.");
-            }
             else if (position > positionOfLastProgress)
             {
                 timeOfLastProgressMs = nowMs;
                 positionOfLastProgress = position;
+            }
+            else if (image.isClosed())
+            {
+                throw new IllegalStateException("ReplayMerge Image closed unexpectedly.");
             }
         }
 

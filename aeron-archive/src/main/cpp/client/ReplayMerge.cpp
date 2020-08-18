@@ -174,21 +174,23 @@ int ReplayMerge::catchup(long long nowMs)
 
     if (nullptr != m_image)
     {
-        if (m_image->position() >= m_nextTargetPosition)
+        int64_t position = m_image->position();
+        if (position >= m_nextTargetPosition)
         {
             m_timeOfLastProgressMs = nowMs;
+            m_positionOfLastProgress = position;
             m_activeCorrelationId = aeron::NULL_VALUE;
             state(State::ATTEMPT_LIVE_JOIN);
             workCount += 1;
         }
+        else if (position > m_positionOfLastProgress)
+        {
+            m_timeOfLastProgressMs = nowMs;
+            m_positionOfLastProgress = position;
+        }
         else if (m_image->isClosed())
         {
             throw TimeoutException("ReplayMerge Image closed unexpectedly", SOURCEINFO);
-        }
-        else if (m_image->position() > m_positionOfLastProgress)
-        {
-            m_timeOfLastProgressMs = nowMs;
-            m_positionOfLastProgress = m_image->position();
         }
     }
 
@@ -205,7 +207,6 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
 
         if (m_archive->archiveProxy().getRecordingPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
         {
-            m_timeOfLastProgressMs = nowMs;
             m_activeCorrelationId = correlationId;
             workCount += 1;
         }
@@ -222,7 +223,6 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
             if (m_archive->archiveProxy().getRecordingPosition(
                 m_recordingId, correlationId, m_archive->controlSessionId()))
             {
-                m_timeOfLastProgressMs = nowMs;
                 m_activeCorrelationId = correlationId;
             }
         }
@@ -238,6 +238,7 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
                 {
                     m_subscription->addDestination(m_liveDestination);
                     m_timeOfLastProgressMs = nowMs;
+                    m_positionOfLastProgress = position;
                     m_isLiveAdded = true;
                 }
                 else if (shouldStopAndRemoveReplay(position))
@@ -245,6 +246,7 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
                     m_subscription->removeDestination(m_replayDestination);
                     stopReplay();
                     m_timeOfLastProgressMs = nowMs;
+                    m_positionOfLastProgress = position;
                     nextState = State::MERGED;
                 }
             }
@@ -272,7 +274,7 @@ void ReplayMerge::checkProgress(long long nowMs)
 {
     if (hasProgressStalled(nowMs))
     {
-        throw TimeoutException("ReplayMerge no progress state=" + std::to_string(m_state), SOURCEINFO);
+        throw TimeoutException("ReplayMerge no progress: state=" + std::to_string(m_state), SOURCEINFO);
     }
 }
 

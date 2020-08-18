@@ -393,9 +393,11 @@ public class ReplayMerge implements AutoCloseable
 
         if (null != image)
         {
-            if (image.position() >= nextTargetPosition)
+            final long position = image.position();
+            if (position >= nextTargetPosition)
             {
                 timeOfLastProgressMs = nowMs;
+                positionOfLastProgress = position;
                 state(State.ATTEMPT_LIVE_JOIN);
                 workCount += 1;
             }
@@ -403,10 +405,10 @@ public class ReplayMerge implements AutoCloseable
             {
                 throw new IllegalStateException("ReplayMerge Image closed unexpectedly.");
             }
-            else if (image.position() > positionOfLastProgress)
+            else if (position > positionOfLastProgress)
             {
                 timeOfLastProgressMs = nowMs;
-                positionOfLastProgress = image.position();
+                positionOfLastProgress = position;
             }
         }
 
@@ -420,11 +422,9 @@ public class ReplayMerge implements AutoCloseable
         if (Aeron.NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
-
             if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
-                timeOfLastProgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -436,11 +436,9 @@ public class ReplayMerge implements AutoCloseable
             if (AeronArchive.NULL_POSITION == nextTargetPosition)
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
-
                 if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
                 {
                     activeCorrelationId = correlationId;
-                    timeOfLastProgressMs = nowMs;
                 }
             }
             else
@@ -450,7 +448,6 @@ public class ReplayMerge implements AutoCloseable
                 if (null != image)
                 {
                     final long position = image.position();
-
                     if (shouldAddLiveDestination(position))
                     {
                         subscription.asyncAddDestination(liveDestination);
@@ -513,7 +510,7 @@ public class ReplayMerge implements AutoCloseable
     {
         if (hasProgressStalled(nowMs))
         {
-            throw new TimeoutException("ReplayMerge no progress state=" + state);
+            throw new TimeoutException("ReplayMerge no progress: state=" + state);
         }
     }
 
@@ -548,6 +545,8 @@ public class ReplayMerge implements AutoCloseable
     {
         return "ReplayMerge{" +
             "state=" + state +
+            ", nextTargetPosition=" + nextTargetPosition +
+            ", timeOfLastProgressMs=" + timeOfLastProgressMs +
             ", positionOfLastProgress=" + positionOfLastProgress +
             ", isLiveAdded=" + isLiveAdded +
             ", isReplayActive=" + isReplayActive +

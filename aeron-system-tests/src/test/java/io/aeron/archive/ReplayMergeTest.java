@@ -227,10 +227,8 @@ public class ReplayMergeTest
                 receivedPosition.get()))
         {
             final MutableLong offerPosition = new MutableLong();
-            final Supplier<String> msgOne = () -> String.format(
-                "lastPosition=%d, replayMerge=%s", offerPosition.value, replayMerge);
-            final Supplier<String> msgTwo = () -> String.format("replay did not merge: %s", replayMerge);
-            final Supplier<String> msgThree = () -> String.format(
+            final Supplier<String> msgOne = () -> String.format("replay did not merge: %s", replayMerge);
+            final Supplier<String> msgTwo = () -> String.format(
                 "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
                 receivedMessageCount.get(), TOTAL_MESSAGE_COUNT, replayMerge);
 
@@ -242,6 +240,10 @@ public class ReplayMergeTest
                     {
                         awaitRecordingPositionChange(
                             replayMerge, counters, recordingCounterId, recordingId, publication);
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT) && replayMerge.hasFailed())
+                        {
+                            return false;
+                        }
                     }
                     else if (Publication.NOT_CONNECTED == offerPosition.get())
                     {
@@ -249,13 +251,9 @@ public class ReplayMergeTest
                     }
                 }
 
-                if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT) && replayMerge.hasFailed())
                 {
-                    if (replayMerge.hasFailed())
-                    {
-                        return false;
-                    }
-                    Tests.yieldingWait(msgOne);
+                    return false;
                 }
             }
 
@@ -267,7 +265,7 @@ public class ReplayMergeTest
                     {
                         return false;
                     }
-                    Tests.yieldingWait(msgTwo);
+                    Tests.yieldingWait(msgOne);
                 }
             }
 
@@ -280,7 +278,7 @@ public class ReplayMergeTest
                     {
                         return false;
                     }
-                    Tests.yieldingWait(msgThree);
+                    Tests.yieldingWait(msgTwo);
                 }
             }
 

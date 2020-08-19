@@ -209,10 +209,10 @@ public:
     {
         std::int64_t subscriptionId = aeron.addSubscription(channel, streamId);
         std::shared_ptr<Subscription> subscription = aeron.findSubscription(subscriptionId);
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (!subscription)
         {
-            idle.idle();
+            idleStrategy.idle();
             subscription = aeron.findSubscription(subscriptionId);
         }
 
@@ -234,14 +234,14 @@ public:
     static void offerMessages(Publication &publication, std::size_t messageCount, const std::string &messagePrefix)
     {
         BufferClaim bufferClaim;
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
 
         for (std::size_t i = 0; i < messageCount; i++)
         {
             const std::string message = messagePrefix + std::to_string(i);
             while (publication.tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
             {
-                idle.idle();
+                idleStrategy.idle();
             }
 
             bufferClaim.buffer().putStringWithoutLength(bufferClaim.offset(), message);
@@ -252,7 +252,7 @@ public:
     void consumeMessages(Subscription &subscription, std::size_t messageCount, const std::string &messagePrefix) const
     {
         std::size_t received = 0;
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
 
         fragment_handler_t handler =
             [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -269,11 +269,90 @@ public:
         {
             if (0 == subscription.poll(handler, m_fragmentLimit))
             {
-                idle.idle();
+                idleStrategy.idle();
             }
         }
 
         ASSERT_EQ(received, messageCount);
+    }
+
+    bool attemptReplayMerge(
+        std::shared_ptr<AeronArchive> aeronArchive,
+        std::shared_ptr<Publication> publication,
+        fragment_handler_t &handler,
+        const std::string &messagePrefix,
+        ChannelUriStringBuilder &subscriptionChannel,
+        ChannelUriStringBuilder &replayChannel,
+        ChannelUriStringBuilder &replayDestination,
+        ChannelUriStringBuilder &liveDestination,
+        std::int64_t recordingId,
+        std::size_t totalMessageCount,
+        std::size_t &messagesPublished,
+        std::size_t &receivedMessageCount,
+        std::int64_t receivedPosition)
+    {
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), subscriptionChannel.build(), m_recordingStreamId);
+
+        ReplayMerge replayMerge(
+            subscription,
+            aeronArchive,
+            replayChannel.build(),
+            replayDestination.build(),
+            liveDestination.build(),
+            recordingId,
+            receivedPosition);
+
+        for (std::size_t i = messagesPublished; i < totalMessageCount; i++)
+        {
+            BufferClaim bufferClaim;
+            const std::string message = messagePrefix + std::to_string(i);
+
+            idleStrategy.reset();
+            while (publication->tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
+            {
+                idleStrategy.idle();
+                int fragments = replayMerge.poll(handler, m_fragmentLimit);
+                if (0 == fragments && replayMerge.hasFailed())
+                {
+                    return false;
+                }
+            }
+
+            bufferClaim.buffer().putStringWithoutLength(bufferClaim.offset(), message);
+            bufferClaim.commit();
+            ++messagesPublished;
+
+            int fragments = replayMerge.poll(handler, m_fragmentLimit);
+            if (0 == fragments && replayMerge.hasFailed())
+            {
+                return false;
+            }
+        }
+
+        while (!replayMerge.isMerged())
+        {
+            int fragments = replayMerge.poll(handler, m_fragmentLimit);
+            if (0 == fragments && replayMerge.hasFailed())
+            {
+                return false;
+            }
+            idleStrategy.idle(fragments);
+        }
+
+        Image &image = *replayMerge.image();
+        while (receivedMessageCount < totalMessageCount)
+        {
+            int fragments = image.poll(handler, m_fragmentLimit);
+            if (0 == fragments && image.isClosed())
+            {
+                return false;
+            }
+            idleStrategy.idle(fragments);
+        }
+        
+        return true;
     }
 
 protected:
@@ -586,8 +665,8 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
-    const std::int64_t subscriptionId = aeronArchive->startRecording(
-        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+    aeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL, true);
 
     {
         std::shared_ptr<Subscription> subscription = addSubscription(
@@ -622,8 +701,6 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
             EXPECT_EQ(endPosition, replaySubscription->imageByIndex(0)->position());
         }
     }
-
-    aeronArchive->stopRecording(subscriptionId);
 }
 
 struct SubscriptionDescriptor
@@ -759,10 +836,9 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::size_t initialMessageCount = minMessagesPerTerm * 3;
     const std::size_t subsequentMessageCount = minMessagesPerTerm * 3;
     const std::size_t totalMessageCount = initialMessageCount + subsequentMessageCount;
-    aeron::concurrent::YieldingIdleStrategy idle;
+    aeron::concurrent::YieldingIdleStrategy idleStrategy;
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
-
     std::shared_ptr<Publication> publication = addPublication(
         *aeronArchive->context().aeron(), publicationChannel.build(), m_recordingStreamId);
 
@@ -770,8 +846,8 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     recordingChannel.sessionId(sessionId);
     subscriptionChannel.sessionId(sessionId);
 
-    const std::int64_t recordingSubscriptionId = aeronArchive->startRecording(
-        recordingChannel.build(), m_recordingStreamId, AeronArchive::SourceLocation::REMOTE);
+    aeronArchive->startRecording(
+        recordingChannel.build(), m_recordingStreamId, AeronArchive::SourceLocation::REMOTE, true);
 
     CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
     const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
@@ -780,65 +856,45 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     offerMessages(*publication, initialMessageCount, messagePrefix);
     while (countersReader.getCounterValue(counterId) < publication->position())
     {
-        idle.idle();
+        idleStrategy.idle();
     }
 
+    std::size_t messagesPublished = initialMessageCount;
+    std::size_t receivedMessageCount = 0;
+    std::int64_t receivedPosition = 0;
+
+    fragment_handler_t handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            const std::string expected = messagePrefix + std::to_string(receivedMessageCount);
+            const std::string actual = buffer.getStringWithoutLength(offset, static_cast<std::size_t>(length));
+
+            EXPECT_EQ(expected, actual);
+
+            receivedMessageCount++;
+            receivedPosition = header.position();
+        };
+
+    while (!attemptReplayMerge(
+        aeronArchive,
+        publication,
+        handler,
+        messagePrefix,
+        subscriptionChannel,
+        replayChannel,
+        replayDestination,
+        liveDestination,
+        recordingId,
+        totalMessageCount,
+        messagesPublished,
+        receivedMessageCount,
+        receivedPosition))
     {
-        std::shared_ptr<Subscription> subscription = addSubscription(
-            *aeronArchive->context().aeron(), subscriptionChannel.build(), m_recordingStreamId);
-
-        ReplayMerge replayMerge(
-            subscription,
-            aeronArchive,
-            replayChannel.build(),
-            replayDestination.build(),
-            liveDestination.build(),
-            recordingId,
-            0);
-
-        std::size_t received = 0;
-        fragment_handler_t handler =
-            [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-            {
-                const std::string expected = messagePrefix + std::to_string(received);
-                const std::string actual = buffer.getStringWithoutLength(offset, static_cast<std::size_t>(length));
-
-                EXPECT_EQ(expected, actual);
-
-                received++;
-            };
-
-        for (std::size_t i = initialMessageCount; i < totalMessageCount; i++)
-        {
-            BufferClaim bufferClaim;
-            const std::string message = messagePrefix + std::to_string(i);
-            while (publication->tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
-            {
-                idle.idle();
-            }
-
-            bufferClaim.buffer().putStringWithoutLength(bufferClaim.offset(), message);
-            bufferClaim.commit();
-
-            if (0 == replayMerge.poll(handler, m_fragmentLimit))
-            {
-                idle.idle();
-            }
-        }
-
-        while (received < totalMessageCount || !replayMerge.isMerged())
-        {
-            if (0 == replayMerge.poll(handler, m_fragmentLimit))
-            {
-                idle.idle();
-            }
-        }
-
-        EXPECT_EQ(received, totalMessageCount);
-        EXPECT_TRUE(replayMerge.isMerged());
+        idleStrategy.idle();
     }
 
-    aeronArchive->stopRecording(recordingSubscriptionId);
+    EXPECT_EQ(receivedMessageCount, totalMessageCount);
+    EXPECT_EQ(receivedPosition, publication->position());
 }
 
 TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)

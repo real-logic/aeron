@@ -81,7 +81,7 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 class PublicationImageReceiverFields extends PublicationImagePadding2
 {
     protected boolean isEndOfStream = false;
-    protected long lastPacketTimestampNs;
+    protected long timeOfLastPacketNs;
     protected ImageConnection[] imageConnections = new ImageConnection[1];
 }
 
@@ -199,7 +199,7 @@ public class PublicationImage
 
         final long nowNs = cachedNanoClock.nanoTime();
         this.timeOfLastStateChangeNs = nowNs;
-        this.lastPacketTimestampNs = nowNs;
+        this.timeOfLastPacketNs = nowNs;
 
         this.subscriberPositions = positionArray(subscriberPositions, nowNs);
         this.isReliable = subscriberPositions.get(0).subscription().isReliable();
@@ -436,12 +436,6 @@ public class PublicationImage
         }
     }
 
-    /**
-     * Add a destination to this image so it can merge streams.
-     *
-     * @param transportIndex from which packets will arrive.
-     * @param transport      from which packets will arrive.
-     */
     void addDestination(final int transportIndex, final ReceiveDestinationTransport transport)
     {
         imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
@@ -458,14 +452,10 @@ public class PublicationImage
         }
     }
 
-    /**
-     * Remove a destination to this image once merge is achieved.
-     *
-     * @param transportIndex from which packets arrive.
-     */
     void removeDestination(final int transportIndex)
     {
         imageConnections[transportIndex] = null;
+        updateActiveTransportCount();
     }
 
     void addDestinationConnectionIfUnknown(final int transportIndex, final InetSocketAddress remoteAddress)
@@ -567,7 +557,7 @@ public class PublicationImage
             if (!isFlowControlUnderRun(packetPosition))
             {
                 final long nowNs = cachedNanoClock.nanoTime();
-                lastPacketTimestampNs = nowNs;
+                timeOfLastPacketNs = nowNs;
                 trackConnection(transportIndex, srcAddress, nowNs);
 
                 if (isHeartbeat)
@@ -607,7 +597,7 @@ public class PublicationImage
     {
         boolean isActive = true;
 
-        if (((lastPacketTimestampNs + imageLivenessTimeoutNs) - nowNs < 0) ||
+        if (((timeOfLastPacketNs + imageLivenessTimeoutNs) - nowNs < 0) ||
             (isEndOfStream && rebuildPosition.getVolatile() >= hwmPosition.get()))
         {
             isActive = false;

@@ -171,23 +171,22 @@ public class DataTransportPoller extends UdpTransportPoller
             if (channelEndpoint.isValidFrame(unsafeBuffer, length))
             {
                 channelEndpoint.receiveHook(unsafeBuffer, length, srcAddress);
-                final int transportIndex = channelAndTransport.transportIndex;
 
                 final int frameType = frameType(unsafeBuffer, 0);
                 if (HDR_TYPE_DATA == frameType || HDR_TYPE_PAD == frameType)
                 {
                     bytesReceived = channelEndpoint.onDataPacket(
-                        dataMessage, unsafeBuffer, length, srcAddress, transportIndex);
+                        dataMessage, unsafeBuffer, length, srcAddress, channelAndTransport.transportIndex);
                 }
                 else if (HDR_TYPE_SETUP == frameType)
                 {
                     channelEndpoint.onSetupMessage(
-                        setupMessage, unsafeBuffer, length, srcAddress, transportIndex);
+                        setupMessage, unsafeBuffer, length, srcAddress, channelAndTransport.transportIndex);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {
                     channelEndpoint.onRttMeasurement(
-                        rttMeasurement, unsafeBuffer, length, srcAddress, transportIndex);
+                        rttMeasurement, unsafeBuffer, length, srcAddress, channelAndTransport.transportIndex);
                 }
             }
         }

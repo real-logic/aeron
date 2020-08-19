@@ -111,7 +111,7 @@ typedef struct aeron_publication_image_stct
     int32_t next_sm_receiver_window_length;
     int64_t last_status_message_timestamp;
 
-    int64_t last_packet_timestamp_ns;
+    int64_t time_of_last_packet_ns;
 
     int64_t last_sm_change_number;
     int64_t last_sm_position;

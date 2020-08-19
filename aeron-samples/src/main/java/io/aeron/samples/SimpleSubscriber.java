@@ -58,10 +58,10 @@ public class SimpleSubscriber
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
 
-                System.out.println(String.format(
-                    "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
+                System.out.printf(
+                    "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)%n",
                     new String(data), streamId, header.sessionId(),
-                    header.termId(), header.termOffset(), length, offset));
+                    header.termId(), header.termOffset(), length, offset);
 
                 // Received the intended message, time to exit the program
                 running.set(false);

@@ -52,9 +52,7 @@ public class SamplesUtil
     public static Consumer<Subscription> subscriberLoop(
         final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
-        final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
-
-        return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
+        return subscriberLoop(fragmentHandler, limit, running, SampleConfiguration.newIdleStrategy());
     }
 
     /**
@@ -97,9 +95,9 @@ public class SamplesUtil
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(String.format(
-                "Message to stream %d from session %d (%d@%d) <<%s>>",
-                streamId, header.sessionId(), length, offset, new String(data)));
+            System.out.printf(
+                "Message to stream %d from session %d (%d@%d) <<%s>>%n",
+                streamId, header.sessionId(), length, offset, new String(data));
         };
     }
 
@@ -149,9 +147,9 @@ public class SamplesUtil
         final long totalMessages,
         final long totalBytes)
     {
-        System.out.println(String.format(
-            "%.04g msgs/sec, %.04g payload bytes/sec, totals %d messages %d MB",
-            messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
+        System.out.printf(
+            "%.04g msgs/sec, %.04g payload bytes/sec, totals %d messages %d MB%n",
+            messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024));
     }
 
     /**
@@ -162,9 +160,9 @@ public class SamplesUtil
     public static void printAvailableImage(final Image image)
     {
         final Subscription subscription = image.subscription();
-        System.out.println(String.format(
-            "Available image on %s streamId=%d sessionId=%d from %s",
-            subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity()));
+        System.out.printf(
+            "Available image on %s streamId=%d sessionId=%d from %s%n",
+            subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity());
     }
 
     /**
@@ -175,9 +173,9 @@ public class SamplesUtil
     public static void printUnavailableImage(final Image image)
     {
         final Subscription subscription = image.subscription();
-        System.out.println(String.format(
-            "Unavailable image on %s streamId=%d sessionId=%d",
-            subscription.channel(), subscription.streamId(), image.sessionId()));
+        System.out.printf(
+            "Unavailable image on %s streamId=%d sessionId=%d%n",
+            subscription.channel(), subscription.streamId(), image.sessionId());
     }
 
     /**

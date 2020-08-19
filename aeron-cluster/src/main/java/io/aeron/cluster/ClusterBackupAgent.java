@@ -598,7 +598,6 @@ public class ClusterBackupAgent implements Agent
 
                 snapshotRetrieveMonitor = null;
                 correlationId = NULL_VALUE;
-                timeOfLastProgressMs = nowMs;
 
                 if (++snapshotCursor >= snapshotsToRetrieve.size())
                 {

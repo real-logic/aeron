@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.client.ArchiveException;
+import io.aeron.archive.codecs.CatalogHeaderEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -43,6 +44,7 @@ import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
+import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.*;
@@ -59,6 +61,8 @@ class CatalogTest
     private static final int MTU_LENGTH = 1024;
 
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
+    private final RecordingDescriptorHeaderDecoder recordingDescriptorHeaderDecoder =
+        new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final File archiveDir = ArchiveTests.makeTestDirectory();
 
@@ -79,7 +83,17 @@ class CatalogTest
             recordingTwoId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 7, 2, "channelH", "channelH?tag=f", "sourceV");
             recordingThreeId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8, 3, "channelK", "channelK?tag=f", "sourceB");
+                0L,
+                0L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH, MTU_LENGTH,
+                8,
+                3,
+                "channelThatIsVeryLongAndShouldNotBeTruncated",
+                "channelThatIsVeryLongAndShouldNotBeTruncated?tag=f",
+                "source can also be a very very very long String and it will not be truncated even " +
+                    "if gets very very long");
         }
     }
 
@@ -94,21 +108,39 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
-            verifyRecordingForId(catalog, recordingTwoId, 7, 2, "channelH", "sourceV");
-            verifyRecordingForId(catalog, recordingThreeId, 8, 3, "channelK", "sourceB");
+            verifyRecordingForId(catalog, recordingOneId, 128, 6, 1, "channelG", "sourceA");
+            verifyRecordingForId(catalog, recordingTwoId, 128, 7, 2, "channelH", "sourceV");
+            verifyRecordingForId(
+                catalog,
+                recordingThreeId,
+                320,
+                8,
+                3,
+                "channelThatIsVeryLongAndShouldNotBeTruncated",
+                "source can also be a very very very long String and it will not be truncated even " +
+                "if gets very very long");
         }
     }
 
     private void verifyRecordingForId(
         final Catalog catalog,
         final long id,
+        final int length,
         final int sessionId,
         final int streamId,
         final String strippedChannel,
         final String sourceIdentity)
     {
         assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
+
+        recordingDescriptorHeaderDecoder.wrap(
+            unsafeBuffer,
+            0,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
+
+        assertEquals(VALID, recordingDescriptorHeaderDecoder.state());
+        assertEquals(length, recordingDescriptorHeaderDecoder.length());
 
         recordingDescriptorDecoder.wrap(
             unsafeBuffer,
@@ -136,8 +168,8 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
-            verifyRecordingForId(catalog, newRecordingId, 9, 4, "channelJ", "sourceN");
+            verifyRecordingForId(catalog, recordingOneId, 128, 6, 1, "channelG", "sourceA");
+            verifyRecordingForId(catalog, newRecordingId, 128, 9, 4, "channelJ", "sourceN");
         }
     }
 
@@ -388,11 +420,11 @@ class CatalogTest
     {
         after();
         final File archiveDir = ArchiveTests.makeTestDirectory();
-        final long capacity = 10240;
+        final long capacity = 384 + CatalogHeaderEncoder.BLOCK_LENGTH;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, clock, null, null))
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
                 recordingOneId = catalog.addNewRecording(
                     0L,
@@ -411,7 +443,7 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            assertEquals(10, catalog.countEntries());
+            assertEquals(2, catalog.countEntries());
             assertEquals(capacity, catalog.capacity());
         }
     }
@@ -421,11 +453,11 @@ class CatalogTest
     {
         after();
         final File archiveDir = ArchiveTests.makeTestDirectory();
-        final long capacity = 10240;
+        final long capacity = 384 + CatalogHeaderEncoder.BLOCK_LENGTH;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, clock, null, null))
         {
-            for (int i = 0; i < 11; i++)
+            for (int i = 0; i < 4; i++)
             {
                 recordingOneId = catalog.addNewRecording(
                     0L,
@@ -444,8 +476,8 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            assertEquals(11, catalog.countEntries());
-            assertEquals(capacity + (capacity >> 1), catalog.capacity());
+            assertEquals(4, catalog.countEntries());
+            assertEquals(936, catalog.capacity());
         }
     }
 
@@ -468,8 +500,8 @@ class CatalogTest
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
             assertEquals(String.format(
-                "recording is too big: recording length %d bytes, available space %d bytes",
-                Integer.MAX_VALUE, CAPACITY * 2),
+                "recording is too big: total recording length is %d bytes, available space is %d bytes",
+                Integer.MAX_VALUE, CAPACITY * 2 - 704),
                 exception.getMessage());
         }
     }

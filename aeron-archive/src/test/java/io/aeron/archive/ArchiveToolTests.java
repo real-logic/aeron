@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.archive.codecs.RecordingState;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.EpochClock;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
@@ -1190,10 +1191,12 @@ class ArchiveToolTests
         final String strippedChannel,
         final String sourceIdentity)
     {
-        assertTrue(catalog.forEntry(
-            recordingId,
-            (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+        final MutableBoolean found = new MutableBoolean();
+        catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+        {
+            if (recordingId == descriptorDecoder.recordingId())
             {
+                found.set(true);
                 assertEquals(state, headerDecoder.state());
                 assertEquals(startPosition, descriptorDecoder.startPosition());
                 assertEquals(stopPosition, descriptorDecoder.stopPosition());
@@ -1206,7 +1209,10 @@ class ArchiveToolTests
                 assertEquals(strippedChannel, descriptorDecoder.strippedChannel());
                 assertNotNull(descriptorDecoder.originalChannel());
                 assertEquals(sourceIdentity, descriptorDecoder.sourceIdentity());
-            }));
+            }
+        });
+
+        assertTrue(found.get());
     }
 
     private void assertRecordingStateIsValid(final Catalog catalog, final long recordingId)

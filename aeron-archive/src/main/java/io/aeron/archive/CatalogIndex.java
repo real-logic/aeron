@@ -38,16 +38,16 @@ final class CatalogIndex
     /**
      * Add mapping between recording id and its file offset to the index.
      *
-     * @param recordingId     to add.
-     * @param recordingOffset for the given id.
-     * @throws IllegalArgumentException if {@code recordingId < 0 || recordingOffset < 0}.
+     * @param recordingId               to add.
+     * @param recordingDescriptorOffset for the given id.
+     * @throws IllegalArgumentException if {@code recordingId < 0 || recordingDescriptorOffset < 0}.
      * @throws IllegalArgumentException if {@code recordingId} is less than or equal to the last recording id added,
      *                                  i.e. {@code recordingId} must always increase.
      */
-    void add(final long recordingId, final long recordingOffset)
+    void add(final long recordingId, final long recordingDescriptorOffset)
     {
         ensurePositive(recordingId, "recordingId");
-        ensurePositive(recordingOffset, "recordingOffset");
+        ensurePositive(recordingDescriptorOffset, "recordingDescriptorOffset");
 
         final int nextPosition = count << 1;
         long[] index = this.index;
@@ -66,7 +66,7 @@ final class CatalogIndex
             }
         }
         index[nextPosition] = recordingId;
-        index[nextPosition + 1] = recordingOffset;
+        index[nextPosition + 1] = recordingDescriptorOffset;
 
         count++;
     }
@@ -89,7 +89,7 @@ final class CatalogIndex
             return NULL_VALUE;
         }
 
-        final long recordingOffset = index[position + 1];
+        final long recordingDescriptorOffset = index[position + 1];
 
         count--;
 
@@ -103,7 +103,7 @@ final class CatalogIndex
         index[lastPosition] = 0;
         index[lastPosition + 1] = 0;
 
-        return recordingOffset;
+        return recordingDescriptorOffset;
     }
 
     /**
@@ -133,7 +133,7 @@ final class CatalogIndex
     @FunctionalInterface
     interface IndexEntryConsumer
     {
-        void accept(long recordingId, long recordingOffset);
+        void accept(long recordingId, long recordingDescriptorOffset);
     }
 
     /**

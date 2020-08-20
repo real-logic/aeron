@@ -489,23 +489,29 @@ class Catalog implements AutoCloseable
             return NULL_RECORD_ID;
         }
 
-        long recordingId = nextRecordingId;
-        while (--recordingId >= minRecordingId)
+        final long[] index = catalogIndex.index;
+        final int lastPosition = catalogIndex.lastPosition();
+        for (int i = lastPosition; i >= 0; i -= 2)
         {
-            if (wrapDescriptor(recordingId, catalogBuffer))
+            final long recordingId = index[i];
+            if (recordingId < minRecordingId)
             {
-                descriptorDecoder.wrap(
-                    catalogBuffer,
-                    DESCRIPTOR_HEADER_LENGTH,
-                    RecordingDescriptorDecoder.BLOCK_LENGTH,
-                    RecordingDescriptorDecoder.SCHEMA_VERSION);
+                break;
+            }
 
-                if (sessionId == descriptorDecoder.sessionId() &&
-                    streamId == descriptorDecoder.streamId() &&
-                    originalChannelContains(descriptorDecoder, channelFragment))
-                {
-                    return recordingId;
-                }
+            wrapDescriptorAtOffset(catalogBuffer, (int)index[i + 1]);
+
+            descriptorDecoder.wrap(
+                catalogBuffer,
+                DESCRIPTOR_HEADER_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+            if (sessionId == descriptorDecoder.sessionId() &&
+                streamId == descriptorDecoder.streamId() &&
+                originalChannelContains(descriptorDecoder, channelFragment))
+            {
+                return recordingId;
             }
         }
 

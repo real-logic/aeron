@@ -82,7 +82,7 @@ final class CatalogIndex
         ensurePositive(recordingId, "recordingId");
 
         final long[] index = this.index;
-        final int lastPosition = (count << 1) - 2;
+        final int lastPosition = lastPosition();
         final int position = find(index, recordingId, lastPosition);
         if (position < 0)
         {
@@ -117,7 +117,7 @@ final class CatalogIndex
         ensurePositive(recordingId, "recordingId");
 
         final long[] index = this.index;
-        final int lastPosition = (count << 1) - 2;
+        final int lastPosition = lastPosition();
         final int position = find(index, recordingId, lastPosition);
         if (position < 0)
         {
@@ -135,6 +135,16 @@ final class CatalogIndex
     int size()
     {
         return count;
+    }
+
+    /**
+     * Position of the last inserted entry.
+     *
+     * @return position of the last entry or negative value if index is empty.
+     */
+    int lastPosition()
+    {
+        return (count << 1) - 2;
     }
 
     private static int find(final long[] index, final long recordingId, final int lastPosition)

@@ -54,118 +54,118 @@ public:
                 {
                     case ControlProtocolEvents::ON_PUBLICATION_READY:
                     {
-                        const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
+                        const PublicationBuffersReadyFlyweight flyweight(buffer, offset);
 
                         m_driverListener.onNewPublication(
-                            publicationReady.correlationId(),
-                            publicationReady.registrationId(),
-                            publicationReady.streamId(),
-                            publicationReady.sessionId(),
-                            publicationReady.positionLimitCounterId(),
-                            publicationReady.channelStatusIndicatorId(),
-                            publicationReady.logFileName());
+                            flyweight.correlationId(),
+                            flyweight.registrationId(),
+                            flyweight.streamId(),
+                            flyweight.sessionId(),
+                            flyweight.positionLimitCounterId(),
+                            flyweight.channelStatusIndicatorId(),
+                            flyweight.logFileName());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_EXCLUSIVE_PUBLICATION_READY:
                     {
-                        const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
+                        const PublicationBuffersReadyFlyweight flyweight(buffer, offset);
 
                         m_driverListener.onNewExclusivePublication(
-                            publicationReady.correlationId(),
-                            publicationReady.registrationId(),
-                            publicationReady.streamId(),
-                            publicationReady.sessionId(),
-                            publicationReady.positionLimitCounterId(),
-                            publicationReady.channelStatusIndicatorId(),
-                            publicationReady.logFileName());
+                            flyweight.correlationId(),
+                            flyweight.registrationId(),
+                            flyweight.streamId(),
+                            flyweight.sessionId(),
+                            flyweight.positionLimitCounterId(),
+                            flyweight.channelStatusIndicatorId(),
+                            flyweight.logFileName());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_SUBSCRIPTION_READY:
                     {
-                        const SubscriptionReadyFlyweight subscriptionReady(buffer, offset);
+                        const SubscriptionReadyFlyweight flyweight(buffer, offset);
 
                         m_driverListener.onSubscriptionReady(
-                            subscriptionReady.correlationId(),
-                            subscriptionReady.channelStatusIndicatorId());
+                            flyweight.correlationId(),
+                            flyweight.channelStatusIndicatorId());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_AVAILABLE_IMAGE:
                     {
-                        const ImageBuffersReadyFlyweight imageReady(buffer, offset);
+                        const ImageBuffersReadyFlyweight flyweight(buffer, offset);
 
                         m_driverListener.onAvailableImage(
-                            imageReady.correlationId(),
-                            imageReady.sessionId(),
-                            imageReady.subscriberPositionId(),
-                            imageReady.subscriptionRegistrationId(),
-                            imageReady.logFileName(),
-                            imageReady.sourceIdentity());
+                            flyweight.correlationId(),
+                            flyweight.sessionId(),
+                            flyweight.subscriberPositionId(),
+                            flyweight.subscriptionRegistrationId(),
+                            flyweight.logFileName(),
+                            flyweight.sourceIdentity());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_OPERATION_SUCCESS:
                     {
-                        const OperationSucceededFlyweight operationSucceeded(buffer, offset);
+                        const OperationSucceededFlyweight flyweight(buffer, offset);
 
-                        m_driverListener.onOperationSuccess(operationSucceeded.correlationId());
+                        m_driverListener.onOperationSuccess(flyweight.correlationId());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_UNAVAILABLE_IMAGE:
                     {
-                        const ImageMessageFlyweight imageMessage(buffer, offset);
+                        const ImageMessageFlyweight flyweight(buffer, offset);
 
                         m_driverListener.onUnavailableImage(
-                            imageMessage.correlationId(),
-                            imageMessage.subscriptionRegistrationId());
+                            flyweight.correlationId(),
+                            flyweight.subscriptionRegistrationId());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_ERROR:
                     {
-                        const ErrorResponseFlyweight errorResponse(buffer, offset);
-                        const std::int32_t errorCode = errorResponse.errorCode();
+                        const ErrorResponseFlyweight flyweight(buffer, offset);
+                        const std::int32_t errorCode = flyweight.errorCode();
 
                         if (ERROR_CODE_CHANNEL_ENDPOINT_ERROR == errorCode)
                         {
                             m_driverListener.onChannelEndpointErrorResponse(
-                                static_cast<std::int32_t>(errorResponse.offendingCommandCorrelationId()),
-                                errorResponse.errorMessage());
+                                static_cast<std::int32_t>(flyweight.offendingCommandCorrelationId()),
+                                flyweight.errorMessage());
                         }
                         else
                         {
                             m_driverListener.onErrorResponse(
-                                errorResponse.offendingCommandCorrelationId(),
+                                flyweight.offendingCommandCorrelationId(),
                                 errorCode,
-                                errorResponse.errorMessage());
+                                flyweight.errorMessage());
                         }
                         break;
                     }
 
                     case ControlProtocolEvents::ON_COUNTER_READY:
                     {
-                        const CounterUpdateFlyweight response(buffer, offset);
+                        const CounterUpdateFlyweight flyweight(buffer, offset);
 
-                        m_driverListener.onAvailableCounter(response.correlationId(), response.counterId());
+                        m_driverListener.onAvailableCounter(flyweight.correlationId(), flyweight.counterId());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_UNAVAILABLE_COUNTER:
                     {
-                        const CounterUpdateFlyweight response(buffer, offset);
+                        const CounterUpdateFlyweight flyweight(buffer, offset);
 
-                        m_driverListener.onUnavailableCounter(response.correlationId(), response.counterId());
+                        m_driverListener.onUnavailableCounter(flyweight.correlationId(), flyweight.counterId());
                         break;
                     }
 
                     case ControlProtocolEvents::ON_CLIENT_TIMEOUT:
                     {
-                        const ClientTimeoutFlyweight response(buffer, offset);
+                        const ClientTimeoutFlyweight flyweight(buffer, offset);
 
-                        m_driverListener.onClientTimeout(response.clientId());
+                        m_driverListener.onClientTimeout(flyweight.clientId());
                         break;
                     }
 

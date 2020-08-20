@@ -22,11 +22,10 @@
 
 #ifdef _WIN32
     #include <cstddef>
-    typedef void* HANDLE;
+    typedef void * HANDLE;
 #else
     #include <sys/types.h>
 #endif
-
 
 namespace aeron { namespace util
 {
@@ -37,11 +36,11 @@ public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;
 
 #ifdef _WIN32
-    static ptr_t createNew(const char *filename, size_t offset, size_t length);
-    static ptr_t mapExisting(const char *filename, size_t offset, size_t length, bool readOnly = false);
+    static ptr_t createNew(const char *filename, std::size_t offset, std::size_t length);
+    static ptr_t mapExisting(const char *filename, std::size_t offset, std::size_t length, bool readOnly = false);
 #else
-    static ptr_t createNew(const char *filename, off_t offset, size_t length);
-    static ptr_t mapExisting(const char *filename, off_t offset, size_t length, bool readOnly = false);
+    static ptr_t createNew(const char *filename, off_t offset, std::size_t length);
+    static ptr_t mapExisting(const char *filename, off_t offset, std::size_t length, bool readOnly = false);
 #endif
 
     static ptr_t mapExisting(const char *filename, bool readOnly = false);
@@ -53,13 +52,13 @@ public:
 
     ~MemoryMappedFile();
 
-    uint8_t *getMemoryPtr() const;
-    size_t getMemorySize() const;
+    std::uint8_t *getMemoryPtr() const;
+    std::size_t getMemorySize() const;
 
     MemoryMappedFile(MemoryMappedFile const &) = delete;
     MemoryMappedFile& operator=(MemoryMappedFile const &) = delete;
 
-    static size_t getPageSize() noexcept;
+    static std::size_t getPageSize() noexcept;
     static std::int64_t getFileSize(const char *filename);
 
 private:
@@ -73,17 +72,17 @@ private:
     };
 
 #ifdef _WIN32
-    MemoryMappedFile(FileHandle fd, size_t offset, size_t length, bool readOnly);
+    MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_t length, bool readOnly);
 #else
-    MemoryMappedFile(FileHandle fd, off_t offset, size_t length, bool readOnly);
+    MemoryMappedFile(FileHandle fd, off_t offset, std::size_t length, bool readOnly);
 #endif
 
-    uint8_t *doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly);
+    std::uint8_t *doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly);
 
     std::uint8_t *m_memory = 0;
-    size_t m_memorySize = 0;
-    static size_t m_page_size;
-    static bool fill(FileHandle fd, size_t sz, std::uint8_t);
+    std::size_t m_memorySize = 0;
+    static std::size_t m_page_size;
+    static bool fill(FileHandle fd, std::size_t sz, std::uint8_t);
 
 #ifdef _WIN32
     HANDLE m_file = nullptr;

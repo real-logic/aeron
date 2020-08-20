@@ -42,7 +42,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Client conductor receives responses and notifications from Media Driver and acts on them in addition to forwarding
  * commands from the Client API to the Media Driver conductor.
  */
-class ClientConductor implements Agent, DriverEventsListener
+class ClientConductor implements Agent
 {
     private static final long NO_CORRELATION_ID = Aeron.NULL_VALUE;
 

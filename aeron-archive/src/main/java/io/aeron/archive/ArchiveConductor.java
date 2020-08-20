@@ -860,6 +860,20 @@ abstract class ArchiveConductor
         }
     }
 
+    void invalidateRecording(
+        final long correlationId, final long recordingId, final ControlSession controlSession)
+    {
+        if (hasRecording(recordingId, correlationId, controlSession) &&
+            isValidTruncate(correlationId, controlSession, recordingId, -1))
+        {
+            // FIXME: Should segment files be deleted right away or removed only upon Catalog compaction?
+
+            catalog.invalidateRecording(recordingId);
+
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
     void listRecordingSubscriptions(
         final long correlationId,
         final int pseudoIndex,

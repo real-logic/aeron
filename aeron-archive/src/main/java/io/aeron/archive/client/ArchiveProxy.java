@@ -59,6 +59,7 @@ public class ArchiveProxy
     private ExtendRecordingRequest2Encoder extendRecordingRequest2;
     private RecordingPositionRequestEncoder recordingPositionRequest;
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
+    private InvalidateRecordingRequestEncoder invalidateRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
@@ -762,6 +763,33 @@ public class ArchiveProxy
             .position(position);
 
         return offer(truncateRecordingRequest.encodedLength());
+    }
+
+    /**
+     * Invalidate a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
+     * which effectively deletes the recording. The space used by the recording data and metadata will be reclaimed
+     * upon compaction of the Catalog.
+     *
+     * @param recordingId      of the stopped recording to be truncated.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean invalidateRecording(
+        final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == invalidateRecordingRequest)
+        {
+            invalidateRecordingRequest = new InvalidateRecordingRequestEncoder();
+        }
+
+        invalidateRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(invalidateRecordingRequest.encodedLength());
     }
 
     /**

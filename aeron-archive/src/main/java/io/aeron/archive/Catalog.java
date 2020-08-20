@@ -625,6 +625,11 @@ class Catalog implements AutoCloseable
         return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
+    void invalidateRecording(final long recordingId)
+    {
+
+    }
+
     RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)
     {
         final int offset = recordingDescriptorOffset(recordingId) + DESCRIPTOR_HEADER_LENGTH;

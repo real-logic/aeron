@@ -342,7 +342,7 @@ MemoryMappedFile::~MemoryMappedFile()
     }
 }
 
-std::uint8_t* MemoryMappedFile::doMapping(std::size_t length, FileHandle fd, std::size_t offset, bool readOnly)
+std::uint8_t *MemoryMappedFile::doMapping(std::size_t length, FileHandle fd, std::size_t offset, bool readOnly)
 {
     void *memory = ::mmap(
         NULL,
@@ -365,7 +365,7 @@ std::size_t MemoryMappedFile::getPageSize() noexcept
     return static_cast<std::size_t>(::getpagesize());
 }
 
-std::std::int64_t MemoryMappedFile::getFileSize(const char *filename)
+std::int64_t MemoryMappedFile::getFileSize(const char *filename)
 {
     struct stat statInfo{};
 

@@ -291,6 +291,12 @@ class ClientConductor implements Agent, DriverEventsListener
         final int statusIndicatorId,
         final String logFileName)
     {
+        if (correlationId != registrationId)
+        {
+            handleError(new IllegalStateException(
+                "correlationId=" + correlationId + " registrationId=" + registrationId));
+        }
+
         final ExclusivePublication publication = new ExclusivePublication(
             this,
             stashedChannel,

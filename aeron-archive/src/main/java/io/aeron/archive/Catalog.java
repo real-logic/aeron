@@ -37,6 +37,7 @@ import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
+import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -442,11 +443,7 @@ class Catalog implements AutoCloseable
 
     boolean hasRecording(final long recordingId)
     {
-        final int recordingDescriptorOffset;
-        return recordingId >= 0 && recordingId < nextRecordingId &&
-            (recordingDescriptorOffset = recordingDescriptorOffset(recordingId)) >= 0 &&
-            VALID.value() == fieldAccessBuffer.getInt(
-                recordingDescriptorOffset + RecordingDescriptorHeaderDecoder.stateEncodingOffset(), BYTE_ORDER);
+        return recordingId >= 0 && recordingDescriptorOffset(recordingId) > 0;
     }
 
     int forEach(final CatalogEntryProcessor consumer)
@@ -484,7 +481,7 @@ class Catalog implements AutoCloseable
 
     long findLast(final long minRecordingId, final int sessionId, final int streamId, final byte[] channelFragment)
     {
-        if (minRecordingId < 0 || minRecordingId >= nextRecordingId)
+        if (minRecordingId < 0)
         {
             return NULL_RECORD_ID;
         }
@@ -625,9 +622,27 @@ class Catalog implements AutoCloseable
         return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
-    void invalidateRecording(final long recordingId)
+    boolean invalidateRecording(final long recordingId)
     {
+        if (recordingId < 0)
+        {
+            return false;
+        }
 
+        final long offset = catalogIndex.remove(recordingId);
+        if (CatalogIndex.NULL_VALUE != offset)
+        {
+            wrapDescriptorAtOffset(catalogBuffer, (int)offset);
+
+            descriptorHeaderEncoder.wrap(catalogBuffer, 0)
+                .state(INVALID);
+
+            forceWrites(catalogChannel);
+
+            return true;
+        }
+
+        return false;
     }
 
     RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)

@@ -43,6 +43,7 @@ import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
+import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
@@ -622,7 +623,66 @@ class CatalogTest
         }
     }
 
-    // FIXME: Add findLast test that have recordingId in INVALID state
+    @Test
+    void findLastReturnsNullRecordingIdIfRecordingIsInTheInvalidState()
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        {
+            assertTrue(catalog.invalidateRecording(recordingOneId));
+
+            assertEquals(NULL_RECORD_ID, catalog.findLast(0, 6, 1, "channelG?tag=f".getBytes(US_ASCII)));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {-1, Long.MAX_VALUE})
+    void invalidRecordingIsANoOpIfUnknownRecordingIdIsSpecified(final long recordingId)
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        {
+            assertFalse(catalog.invalidateRecording(recordingId));
+        }
+    }
+
+    @Test
+    void invalidRecordingMarksRecordingAsInvalidAndRemovesItFromTheIndexFirstEntry()
+    {
+        testInvalidateRecording(recordingOneId);
+    }
+
+    @Test
+    void invalidRecordingMarksRecordingAsInvalidAndRemovesItFromTheIndexMiddleEntry()
+    {
+        testInvalidateRecording(recordingTwoId);
+    }
+
+    @Test
+    void invalidRecordingMarksRecordingAsInvalidAndRemovesItFromTheIndexLastEntry()
+    {
+        testInvalidateRecording(recordingThreeId);
+    }
+
+    private void testInvalidateRecording(final long recordingId)
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        {
+            final int entries = catalog.countEntries();
+
+            assertTrue(catalog.wrapDescriptor(recordingId, unsafeBuffer));
+
+            recordingDescriptorHeaderDecoder.wrap(
+                unsafeBuffer,
+                0,
+                RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+                RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
+
+            assertTrue(catalog.invalidateRecording(recordingId));
+
+            assertEquals(INVALID, recordingDescriptorHeaderDecoder.state());
+            assertEquals(entries - 1, catalog.countEntries());
+            assertFalse(catalog.hasRecording(recordingId));
+        }
+    }
 
     private void verifyRecordingForId(
         final Catalog catalog,

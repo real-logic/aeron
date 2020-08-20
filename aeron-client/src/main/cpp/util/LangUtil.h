@@ -17,6 +17,7 @@
 #define AERON_LANG_UTIL_H
 
 #include <functional>
+#include <algorithm>
 
 /**
  * @file

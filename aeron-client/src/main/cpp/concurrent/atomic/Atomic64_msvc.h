@@ -52,10 +52,6 @@ inline void cpu_pause()
     _mm_pause();
 }
 
-/**
-* Returns a 32 bit integer with volatile semantics.
-* On x64 MOV is an atomic operation.
-*/
 inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
     std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
@@ -80,10 +76,6 @@ inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
     _InterlockedExchange(reinterpret_cast<volatile long *>(address), value);
 }
 
-/**
-* Returns a 64 bit integer with volatile semantics.
-* On x64 MOV is an atomic operation.
-*/
 inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);

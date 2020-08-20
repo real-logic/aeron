@@ -21,33 +21,24 @@
 
 namespace aeron { namespace concurrent { namespace atomic {
 
-/**
- * A compiler directive to not reorder instructions.
- */
 inline void thread_fence()
 {
-    asm volatile("" ::: "memory");
+    std::atomic_thread_fence(std::memory_order_acq_rel);
 }
 
-/**
-* Fence operation that uses locked addl as mfence is sometimes expensive.
-*/
 inline void fence()
 {
-    asm volatile("lock; addl $0, 0(%%rsp)" ::: "cc", "memory");
+    std::atomic_thread_fence(std::memory_order_seq_cst);
 }
 
 inline void acquire()
 {
-    volatile std::int64_t *dummy;
-    asm volatile("movq 0(%%rsp), %0" : "=r" (dummy) :: "memory");
+    std::atomic_thread_fence(std::memory_order_acquire);
 }
 
 inline void release()
 {
-    // Avoid hitting the same cache-line from different threads.
-    volatile std::int64_t dummy = 0;
-    (void)dummy;
+    std::atomic_thread_fence(std::memory_order_release);
 }
 
 /**
@@ -58,14 +49,10 @@ inline void cpu_pause()
     asm volatile("pause\n" ::: "memory");
 }
 
-/**
-* Returns a 32 bit integer with volatile semantics.
-* On x64 MOV is an atomic operation.
-*/
 inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 {
     std::int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
-    thread_fence();
+    acquire();
 
     return sequence;
 }
@@ -81,7 +68,7 @@ inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 
 inline void putInt32Ordered(volatile std::int32_t *address, std::int32_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int32_t *>(address) = value;
 }
 
@@ -97,7 +84,7 @@ inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
 {
     std::int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
-    thread_fence();
+    acquire();
 
     return sequence;
 }
@@ -106,7 +93,7 @@ template<typename T>
 inline volatile T *getValueVolatile(volatile T **source)
 {
     volatile T *t = *reinterpret_cast<volatile T **>(source);
-    thread_fence();
+    acquire();
 
     return t;
 }
@@ -127,24 +114,22 @@ inline void putValueVolatile(volatile T *address, T value)
 
     thread_fence();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
+    fence();
 }
 
 inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
 template<typename T>
 inline void putValueOrdered(volatile T **address, volatile T *value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile T **>(address) = value;
 }
 
-/**
-* Put a 64 bit int with atomic semantics.
-**/
 inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 {
     asm volatile(
@@ -170,8 +155,8 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t 
     std::int32_t original;
     asm volatile(
         "lock; xaddl %0, %1"
-        : "=r"(original), "+m"(*address)
-        : "0"(value));
+        : "=r" (original), "+m" (*address)
+        : "0" (value));
 
     return original;
 }
@@ -181,8 +166,8 @@ inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t exp
     std::int32_t original;
     asm volatile(
         "lock; cmpxchgl %2, %1"
-        : "=a"(original), "+m"(*destination)
-        : "q"(desired), "0"(expected));
+        : "=a" (original), "+m" (*destination)
+        : "q" (desired), "0" (expected));
 
     return original;
 }
@@ -192,8 +177,8 @@ inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t exp
     std::int64_t original;
     asm volatile(
         "lock; cmpxchgq %2, %1"
-        : "=a"(original), "+m"(*destination)
-        : "q"(desired), "0"(expected));
+        : "=a" (original), "+m" (*destination)
+        : "q" (desired), "0" (expected));
 
     return original;
 }

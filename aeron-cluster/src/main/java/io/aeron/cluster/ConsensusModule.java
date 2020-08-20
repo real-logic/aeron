@@ -52,8 +52,7 @@ import static org.agrona.SystemUtil.*;
  * Component which resides on each node and is responsible for coordinating consensus within a cluster in concert
  * with the lifecycle of clustered services.
  */
-@SuppressWarnings("unused")
-public class ConsensusModule implements AutoCloseable
+public final class ConsensusModule implements AutoCloseable
 {
     /**
      * Possible states for the {@link ConsensusModule}.
@@ -1270,7 +1269,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == terminationHook)
             {
-                terminationHook = () -> shutdownSignalBarrier.signal();
+                terminationHook = () -> shutdownSignalBarrier.signalAll();
             }
 
             if (null == authenticatorSupplier)

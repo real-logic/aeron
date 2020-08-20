@@ -520,7 +520,7 @@ public final class ClusterBackup implements AutoCloseable
 
             if (null == terminationHook)
             {
-                terminationHook = () -> shutdownSignalBarrier.signal();
+                terminationHook = () -> shutdownSignalBarrier.signalAll();
             }
 
             concludeMarkFile();

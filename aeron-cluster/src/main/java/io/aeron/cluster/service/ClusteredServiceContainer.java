@@ -48,7 +48,6 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  * loaded via {@link ClusteredServiceContainer.Configuration#SERVICE_CLASS_NAME_PROP_NAME} or
  * {@link ClusteredServiceContainer.Context#clusteredService(ClusteredService)}.
  */
-@SuppressWarnings("unused")
 public final class ClusteredServiceContainer implements AutoCloseable
 {
     /**
@@ -713,7 +712,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == terminationHook)
             {
-                terminationHook = () -> shutdownSignalBarrier.signal();
+                terminationHook = () -> shutdownSignalBarrier.signalAll();
             }
 
             if (null == clusteredService)

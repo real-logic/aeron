@@ -58,7 +58,7 @@ import static org.agrona.SystemUtil.*;
 /**
  * The Aeron Archive which allows for the recording and replay of local and remote {@link io.aeron.Publication}s .
  */
-public class Archive implements AutoCloseable
+public final class Archive implements AutoCloseable
 {
     private final Context ctx;
     private final AgentRunner conductorRunner;

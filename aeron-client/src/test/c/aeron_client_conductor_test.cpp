@@ -188,7 +188,7 @@ public:
         }
     }
 
-    virtual ~ClientConductorTest() override
+    ~ClientConductorTest() override
     {
         aeron_client_conductor_on_close(&m_conductor);
         m_context->cnc_map.addr = nullptr;
@@ -783,7 +783,7 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestination)
 
     ASSERT_EQ(
         aeron_client_conductor_async_add_subscription(
-            &async_sub, &m_conductor, PUB_URI, STREAM_ID, NULL, NULL, NULL, NULL),
+            &async_sub, &m_conductor, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr),
         0);
     doWork();
 

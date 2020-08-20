@@ -36,7 +36,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.segmentFileName;
@@ -47,6 +46,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -529,16 +529,16 @@ class CatalogTest
 
             assertTrue(originalChannelContains(recordingDescriptorDecoder, ArrayUtil.EMPTY_BYTE_ARRAY));
 
-            final byte[] originalChannelBytes = originalChannel.getBytes(StandardCharsets.US_ASCII);
+            final byte[] originalChannelBytes = originalChannel.getBytes(US_ASCII);
             assertTrue(originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
 
-            final byte[] tagsBytes = "tags=777".getBytes(StandardCharsets.US_ASCII);
+            final byte[] tagsBytes = "tags=777".getBytes(US_ASCII);
             assertTrue(originalChannelContains(recordingDescriptorDecoder, tagsBytes));
 
-            final byte[] testBytes = "TestString".getBytes(StandardCharsets.US_ASCII);
+            final byte[] testBytes = "TestString".getBytes(US_ASCII);
             assertTrue(originalChannelContains(recordingDescriptorDecoder, testBytes));
 
-            final byte[] wrongBytes = "wrong".getBytes(StandardCharsets.US_ASCII);
+            final byte[] wrongBytes = "wrong".getBytes(US_ASCII);
             assertFalse(originalChannelContains(recordingDescriptorDecoder, wrongBytes));
         }
     }
@@ -549,6 +549,80 @@ class CatalogTest
     {
         assertEquals(expected, fragmentStraddlesPageBoundary(fragmentOffset, fragmentLength));
     }
+
+    @ParameterizedTest
+    @ValueSource(longs = { -1, 4, Long.MAX_VALUE })
+    void findLastReturnsNullRecordingIdIfMinRecordingIdIsOutOfRange(final long minRecordingId)
+    {
+        try (Catalog catalog = new Catalog(archiveDir, clock))
+        {
+            assertEquals(NULL_RECORD_ID, catalog.findLast(minRecordingId, 6, 1, "channelG?tag=f".getBytes(US_ASCII)));
+        }
+    }
+
+    @Test
+    void findLastReturnsLastFoundRecordingMatchingGivenCriteria()
+    {
+        final int sessionId = 6;
+        final int streamId = 1;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        {
+            final long recordingF = catalog.addNewRecording(
+                0L,
+                0L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                sessionId,
+                streamId,
+                "F",
+                "channelG?tag=f",
+                "sourceA");
+            catalog.addNewRecording(
+                0L,
+                0L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                sessionId,
+                streamId,
+                "X",
+                "channelG?tag=x",
+                "sourceA");
+            catalog.addNewRecording(
+                0L,
+                0L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                sessionId,
+                streamId + 1,
+                "F",
+                "channelG?tag=f",
+                "sourceA");
+            catalog.addNewRecording(
+                0L,
+                0L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                sessionId + 1,
+                streamId,
+                "F",
+                "channelG?tag=f",
+                "sourceA");
+
+            assertEquals(recordingF,
+                catalog.findLast(recordingOneId, sessionId, streamId, "channelG?tag=f".getBytes(US_ASCII)));
+        }
+    }
+
+    // FIXME: Add findLast test that have recordingId in INVALID state
 
     private void verifyRecordingForId(
         final Catalog catalog,

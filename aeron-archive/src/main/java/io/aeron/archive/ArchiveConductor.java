@@ -540,15 +540,25 @@ abstract class ArchiveConductor
         final byte[] channelFragment,
         final ControlSession controlSession)
     {
-        if (minRecordingId < 0 || minRecordingId >= catalog.countEntries())
+        if (minRecordingId < 0 || minRecordingId >= catalog.nextRecordingId())
         {
-            final String msg = "min recording id outside valid range: " + minRecordingId;
+            final String msg = "min recording id outside valid range [0, " +
+                max(0, catalog.nextRecordingId() - 1) + "]: " + minRecordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
         }
         else
         {
             final long recordingId = catalog.findLast(minRecordingId, sessionId, streamId, channelFragment);
-            controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
+            if (Catalog.NULL_RECORD_ID == recordingId)
+            {
+                final String msg = "recording was not found: minRecordingId=" + minRecordingId +
+                    ", sessionId=" + sessionId + ", streamId=" + streamId;
+                controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+            }
+            else
+            {
+                controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
+            }
         }
     }
 

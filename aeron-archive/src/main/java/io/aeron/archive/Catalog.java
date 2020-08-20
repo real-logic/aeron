@@ -320,6 +320,11 @@ class Catalog implements AutoCloseable
         return catalogIndex.size();
     }
 
+    long nextRecordingId()
+    {
+        return nextRecordingId;
+    }
+
     int version()
     {
         return catalogHeaderDecoder.version();
@@ -479,6 +484,11 @@ class Catalog implements AutoCloseable
 
     long findLast(final long minRecordingId, final int sessionId, final int streamId, final byte[] channelFragment)
     {
+        if (minRecordingId < 0 || minRecordingId >= nextRecordingId)
+        {
+            return NULL_RECORD_ID;
+        }
+
         long recordingId = nextRecordingId;
         while (--recordingId >= minRecordingId)
         {

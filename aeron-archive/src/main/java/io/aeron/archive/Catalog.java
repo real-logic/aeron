@@ -110,6 +110,7 @@ class Catalog implements AutoCloseable
     static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final long MAX_CATALOG_LENGTH = Integer.MAX_VALUE;
     static final long DEFAULT_CAPACITY = 1024 * 1024;
+    static final long MIN_CAPACITY = CatalogHeaderDecoder.BLOCK_LENGTH;
 
     private final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder();
     private final CatalogHeaderEncoder catalogHeaderEncoder = new CatalogHeaderEncoder();
@@ -142,7 +143,7 @@ class Catalog implements AutoCloseable
         final File archiveDir,
         final FileChannel archiveDirChannel,
         final int fileSyncLevel,
-        final long catalogFileLength,
+        final long catalogCapacity,
         final EpochClock epochClock,
         final Checksum checksum,
         final UnsafeBuffer buffer)
@@ -152,7 +153,11 @@ class Catalog implements AutoCloseable
         this.forceMetadata = fileSyncLevel > 1;
         this.epochClock = epochClock;
 
-        // FIXME: Validate catalogFileLength
+        if (catalogCapacity < MIN_CAPACITY)
+        {
+            throw new IllegalArgumentException("Invalid catalog capacity provided: expected value >= " +
+                MIN_CAPACITY + ", got " + catalogCapacity);
+        }
 
         catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
         try
@@ -166,11 +171,11 @@ class Catalog implements AutoCloseable
                 catalogFileChannel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE);
                 if (catalogExists)
                 {
-                    capacity = max(catalogFileChannel.size(), catalogFileLength);
+                    capacity = max(catalogFileChannel.size(), catalogCapacity);
                 }
                 else
                 {
-                    capacity = catalogFileLength;
+                    capacity = catalogCapacity;
                 }
 
                 catalogMappedByteBuffer = catalogFileChannel.map(READ_WRITE, 0, capacity);

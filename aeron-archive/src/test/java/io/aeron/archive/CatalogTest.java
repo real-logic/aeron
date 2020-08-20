@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CatalogTest
 {
     private static final long CAPACITY = 64 * 1024;
-    private static final int TERM_LENGTH = 2 * Catalog.PAGE_SIZE;
+    private static final int TERM_LENGTH = 2 * PAGE_SIZE;
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
@@ -103,6 +103,18 @@ class CatalogTest
         IoUtil.delete(archiveDir, false);
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = { -1, 0, MIN_CAPACITY - 1 })
+    void shouldThrowIllegalArgumentExceptionIfCatalogCapacityIsLessThanMinimalCapacity(final long capacity)
+    {
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> new Catalog(archiveDir, null, 0, capacity, clock, null, null));
+
+        assertEquals(
+            "Invalid catalog capacity provided: expected value >= " + MIN_CAPACITY + ", got " + capacity,
+            exception.getMessage());
+    }
+
     @Test
     void shouldReloadExistingIndex()
     {
@@ -120,40 +132,6 @@ class CatalogTest
                 "source can also be a very very very long String and it will not be truncated even " +
                 "if gets very very long");
         }
-    }
-
-    private void verifyRecordingForId(
-        final Catalog catalog,
-        final long id,
-        final int length,
-        final int sessionId,
-        final int streamId,
-        final String strippedChannel,
-        final String sourceIdentity)
-    {
-        assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
-
-        recordingDescriptorHeaderDecoder.wrap(
-            unsafeBuffer,
-            0,
-            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-            RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
-
-        assertEquals(VALID, recordingDescriptorHeaderDecoder.state());
-        assertEquals(length, recordingDescriptorHeaderDecoder.length());
-
-        recordingDescriptorDecoder.wrap(
-            unsafeBuffer,
-            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
-
-        assertEquals(id, recordingDescriptorDecoder.recordingId());
-        assertEquals(sessionId, recordingDescriptorDecoder.sessionId());
-        assertEquals(streamId, recordingDescriptorDecoder.streamId());
-        assertEquals(strippedChannel, recordingDescriptorDecoder.strippedChannel());
-        assertEquals(strippedChannel + "?tag=f", recordingDescriptorDecoder.originalChannel());
-        assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 
     @Test
@@ -195,7 +173,7 @@ class CatalogTest
     }
 
     @ParameterizedTest
-    @ValueSource(longs = { Long.MIN_VALUE, 0, 1, CAPACITY - 1, CAPACITY })
+    @ValueSource(longs = { MIN_CAPACITY, CAPACITY - 1, CAPACITY })
     void shouldNotDecreaseCapacity(final long newCapacity)
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, clock, null, null))
@@ -211,7 +189,7 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            final Catalog.CatalogEntryProcessor entryProcessor =
+            final CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 assertEquals(NULL_TIMESTAMP, descriptorDecoder.stopTimestamp());
 
@@ -222,7 +200,7 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
         {
-            final Catalog.CatalogEntryProcessor entryProcessor =
+            final CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 assertEquals(42L, descriptorDecoder.stopTimestamp());
 
@@ -550,20 +528,61 @@ class CatalogTest
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, ArrayUtil.EMPTY_BYTE_ARRAY));
+            assertTrue(originalChannelContains(recordingDescriptorDecoder, ArrayUtil.EMPTY_BYTE_ARRAY));
 
             final byte[] originalChannelBytes = originalChannel.getBytes(StandardCharsets.US_ASCII);
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
+            assertTrue(originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
 
             final byte[] tagsBytes = "tags=777".getBytes(StandardCharsets.US_ASCII);
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, tagsBytes));
+            assertTrue(originalChannelContains(recordingDescriptorDecoder, tagsBytes));
 
             final byte[] testBytes = "TestString".getBytes(StandardCharsets.US_ASCII);
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, testBytes));
+            assertTrue(originalChannelContains(recordingDescriptorDecoder, testBytes));
 
             final byte[] wrongBytes = "wrong".getBytes(StandardCharsets.US_ASCII);
-            assertFalse(Catalog.originalChannelContains(recordingDescriptorDecoder, wrongBytes));
+            assertFalse(originalChannelContains(recordingDescriptorDecoder, wrongBytes));
         }
+    }
+
+    @ParameterizedTest(name = "fragmentCrossesPageBoundary({0}, {1}, {2})")
+    @MethodSource("pageBoundaryTestData")
+    void detectPageBoundaryStraddle(final int fragmentOffset, final int fragmentLength, final boolean expected)
+    {
+        assertEquals(expected, fragmentStraddlesPageBoundary(fragmentOffset, fragmentLength));
+    }
+
+    private void verifyRecordingForId(
+        final Catalog catalog,
+        final long id,
+        final int length,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel,
+        final String sourceIdentity)
+    {
+        assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
+
+        recordingDescriptorHeaderDecoder.wrap(
+            unsafeBuffer,
+            0,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
+
+        assertEquals(VALID, recordingDescriptorHeaderDecoder.state());
+        assertEquals(length, recordingDescriptorHeaderDecoder.length());
+
+        recordingDescriptorDecoder.wrap(
+            unsafeBuffer,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+        assertEquals(id, recordingDescriptorDecoder.recordingId());
+        assertEquals(sessionId, recordingDescriptorDecoder.sessionId());
+        assertEquals(streamId, recordingDescriptorDecoder.streamId());
+        assertEquals(strippedChannel, recordingDescriptorDecoder.strippedChannel());
+        assertEquals(strippedChannel + "?tag=f", recordingDescriptorDecoder.originalChannel());
+        assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 
     private static Stream<Arguments> pageBoundaryTestData()
@@ -579,12 +598,5 @@ class CatalogTest
             Arguments.of(0, PAGE_SIZE + 1, true),
             Arguments.of(PAGE_SIZE - 1, 2, true),
             Arguments.of(PAGE_SIZE * 4 + 11, PAGE_SIZE - 10, true));
-    }
-
-    @ParameterizedTest(name = "fragmentCrossesPageBoundary({0}, {1}, {2})")
-    @MethodSource("pageBoundaryTestData")
-    void detectPageBoundaryStraddle(final int fragmentOffset, final int fragmentLength, final boolean expected)
-    {
-        assertEquals(expected, fragmentStraddlesPageBoundary(fragmentOffset, fragmentLength));
     }
 }

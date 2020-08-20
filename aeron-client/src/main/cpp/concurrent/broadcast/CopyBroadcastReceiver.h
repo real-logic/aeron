@@ -20,8 +20,6 @@
 #include <array>
 #include <functional>
 
-#include "BroadcastBufferDescriptor.h"
-#include "RecordDescriptor.h"
 #include "BroadcastReceiver.h"
 
 namespace aeron { namespace concurrent { namespace broadcast {

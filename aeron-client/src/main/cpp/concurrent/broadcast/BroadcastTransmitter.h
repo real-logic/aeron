@@ -17,6 +17,7 @@
 #ifndef AERON_CONCURRENT_BROADCAST_TRANSMITTER_H
 #define AERON_CONCURRENT_BROADCAST_TRANSMITTER_H
 
+#include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
@@ -54,7 +55,7 @@ public:
         checkMessageLength(length);
 
         std::int64_t currentTail = m_buffer.getInt64(m_tailCounterIndex);
-        std::int32_t recordOffset = (std::int32_t) currentTail & m_mask;
+        std::int32_t recordOffset = static_cast<std::int32_t>(currentTail & m_mask);
         const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
         const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
         const std::int64_t newTail = currentTail + alignedRecordLength;

@@ -17,7 +17,6 @@
 #ifndef AERON_CONCURRENT_BROADCAST_BUFFER_DESCRIPTOR_H
 #define AERON_CONCURRENT_BROADCAST_BUFFER_DESCRIPTOR_H
 
-#include "concurrent/AtomicBuffer.h"
 #include "util/BitUtil.h"
 
 namespace aeron { namespace concurrent { namespace broadcast {

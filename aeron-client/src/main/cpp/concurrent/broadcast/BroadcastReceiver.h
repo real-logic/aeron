@@ -17,8 +17,7 @@
 #ifndef AERON_CONCURRENT_BROADCAST_RECEIVER_H
 #define AERON_CONCURRENT_BROADCAST_RECEIVER_H
 
-#include <atomic>
-
+#include "concurrent/AtomicBuffer.h"
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 

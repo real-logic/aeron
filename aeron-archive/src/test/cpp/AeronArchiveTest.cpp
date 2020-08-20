@@ -182,9 +182,6 @@ public:
                 m_stream << "Failed to send driver terminate command" << std::endl;
             }
 
-            m_stream << "Deleting " << aeronPath << std::endl;
-            aeron_delete_directory(aeronPath.c_str());
-
             m_stream << "Deleting " << m_archiveDir << std::endl;
             aeron_delete_directory(m_archiveDir.c_str());
         }

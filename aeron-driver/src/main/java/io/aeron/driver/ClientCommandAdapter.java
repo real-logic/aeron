@@ -32,7 +32,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Receives commands from Aeron clients and dispatches them to the {@link DriverConductor} for processing.
  */
-class ClientCommandAdapter implements MessageHandler
+final class ClientCommandAdapter implements MessageHandler
 {
     private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
@@ -61,17 +61,13 @@ class ClientCommandAdapter implements MessageHandler
         this.conductor = driverConductor;
     }
 
-    public int receive()
+    int receive()
     {
         return toDriverCommands.read(this, Configuration.COMMAND_DRAIN_LIMIT);
     }
 
     @SuppressWarnings("MethodLength")
-    public void onMessage(
-        final int msgTypeId,
-        final MutableDirectBuffer buffer,
-        final int index,
-        @SuppressWarnings("unused") final int length)
+    public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
         long correlationId = 0;
 
@@ -115,8 +111,8 @@ class ClientCommandAdapter implements MessageHandler
                     subscriptionMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = subscriptionMsgFlyweight.correlationId();
-                    final int streamId = subscriptionMsgFlyweight.streamId();
                     final long clientId = subscriptionMsgFlyweight.clientId();
+                    final int streamId = subscriptionMsgFlyweight.streamId();
                     final String channel = subscriptionMsgFlyweight.channel();
 
                     if (channel.startsWith(IPC_CHANNEL))
@@ -185,6 +181,7 @@ class ClientCommandAdapter implements MessageHandler
                     counterMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = counterMsgFlyweight.correlationId();
+                    final long clientId = counterMsgFlyweight.clientId();
                     conductor.onAddCounter(
                         counterMsgFlyweight.typeId(),
                         buffer,
@@ -194,7 +191,7 @@ class ClientCommandAdapter implements MessageHandler
                         index + counterMsgFlyweight.labelBufferOffset(),
                         counterMsgFlyweight.labelBufferLength(),
                         correlationId,
-                        counterMsgFlyweight.clientId());
+                        clientId);
                     break;
                 }
 
@@ -259,7 +256,7 @@ class ClientCommandAdapter implements MessageHandler
                 {
                     final ControlProtocolException ex = new ControlProtocolException(
                         ErrorCode.UNKNOWN_COMMAND_TYPE_ID,
-                        "command type id " + msgTypeId + " unknown. correlationId=" + correlationId);
+                        "command typeId=" + msgTypeId + " unknown, correlationId=" + correlationId);
 
                     clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
                     recordError(ex);
@@ -279,10 +276,10 @@ class ClientCommandAdapter implements MessageHandler
         }
     }
 
-    public void addPublication(final long correlationId, final boolean isExclusive)
+    private void addPublication(final long correlationId, final boolean isExclusive)
     {
-        final int streamId = publicationMsgFlyweight.streamId();
         final long clientId = publicationMsgFlyweight.clientId();
+        final int streamId = publicationMsgFlyweight.streamId();
         final String channel = publicationMsgFlyweight.channel();
 
         if (channel.startsWith(IPC_CHANNEL))

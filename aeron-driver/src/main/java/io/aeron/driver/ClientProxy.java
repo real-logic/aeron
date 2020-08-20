@@ -57,12 +57,10 @@ public class ClientProxy
 
     public void onError(final long correlationId, final ErrorCode errorCode, final String errorMessage)
     {
-        final String msg = null == errorMessage ? "" : errorMessage;
-
         errorResponse
             .offendingCommandCorrelationId(correlationId)
             .errorCode(errorCode)
-            .errorMessage(msg);
+            .errorMessage(errorMessage);
 
         transmit(ON_ERROR, buffer, 0, errorResponse.length());
     }
@@ -77,9 +75,9 @@ public class ClientProxy
         final String sourceIdentity)
     {
         imageReady
+            .correlationId(correlationId)
             .sessionId(sessionId)
             .streamId(streamId)
-            .correlationId(correlationId)
             .subscriptionRegistrationId(subscriptionRegistrationId)
             .subscriberPositionId(positionCounterId)
             .logFileName(logFileName)

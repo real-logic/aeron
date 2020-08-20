@@ -128,30 +128,6 @@ final class CatalogIndex
     }
 
     /**
-     * Consumer function to be implemented by caller of the {@link #forEach(IndexEntryConsumer)} method.
-     */
-    @FunctionalInterface
-    interface IndexEntryConsumer
-    {
-        void accept(long recordingId, long recordingDescriptorOffset);
-    }
-
-    /**
-     * Iterates over an entire index calling consumer for each entry.
-     *
-     * @param consumer to invoke upon each entry.
-     */
-    void forEach(final IndexEntryConsumer consumer)
-    {
-        final long[] index = this.index;
-        final int lastPosition = (count << 1) - 2;
-        for (int i = 0; i <= lastPosition; i += 2)
-        {
-            consumer.accept(index[i], index[i + 1]);
-        }
-    }
-
-    /**
      * Returns size of the index.
      *
      * @return number of the entries in the index.

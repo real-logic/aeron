@@ -15,19 +15,16 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.CatalogIndex.IndexEntryConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
 
 import java.util.Random;
 
 import static io.aeron.archive.CatalogIndex.DEFAULT_INDEX_SIZE;
 import static io.aeron.archive.CatalogIndex.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class CatalogIndexTest
 {
@@ -318,53 +315,5 @@ class CatalogIndexTest
         assertEquals(DEFAULT_INDEX_SIZE - 1, catalogIndex.size());
 
         assertEquals(NULL_VALUE, catalogIndex.get(DEFAULT_INDEX_SIZE));
-    }
-
-    @Test
-    void forEachIsANoOpWhenIndexIsEmpty()
-    {
-        final IndexEntryConsumer consumer = mock(IndexEntryConsumer.class);
-
-        catalogIndex.forEach(consumer);
-
-        verifyNoInteractions(consumer);
-    }
-
-    @Test
-    void forEachInvokesConsumerForEachExistingEntry()
-    {
-        final IndexEntryConsumer consumer = mock(IndexEntryConsumer.class);
-        catalogIndex.add(5, 500);
-        catalogIndex.add(7, 777);
-        catalogIndex.add(13, 1000);
-        catalogIndex.add(29, 1024);
-        catalogIndex.remove(7);
-
-        catalogIndex.forEach(consumer);
-
-        final InOrder inOrder = inOrder(consumer);
-        inOrder.verify(consumer).accept(5, 500);
-        inOrder.verify(consumer).accept(13, 1000);
-        inOrder.verify(consumer).accept(29, 1024);
-        verifyNoMoreInteractions(consumer);
-    }
-
-    @Test
-    void forEachOnFullIndex()
-    {
-        final IndexEntryConsumer consumer = mock(IndexEntryConsumer.class);
-        for (int i = 0; i < DEFAULT_INDEX_SIZE; i++)
-        {
-            catalogIndex.add(i, i);
-        }
-
-        catalogIndex.forEach(consumer);
-
-        final InOrder inOrder = inOrder(consumer);
-        for (int i = 0; i < DEFAULT_INDEX_SIZE; i++)
-        {
-            inOrder.verify(consumer).accept(i, i);
-        }
-        verifyNoMoreInteractions(consumer);
     }
 }

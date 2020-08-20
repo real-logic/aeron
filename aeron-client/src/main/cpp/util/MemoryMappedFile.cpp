@@ -80,7 +80,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, std::s
     if (INVALID_HANDLE_VALUE == fd.handle)
     {
         throw IOException(
-            std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+            std::string("failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
     OnScopeExit tidy(
@@ -95,7 +95,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, std::s
     if (!fill(fd, size, 0))
     {
         throw IOException(
-            std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+            std::string("failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
     auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
@@ -122,7 +122,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(
     if (INVALID_HANDLE_VALUE == fd.handle)
     {
         throw IOException(
-            std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+            std::string("failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
     OnScopeExit tidy(
@@ -240,7 +240,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_
         {
             cleanUp();
             throw IOException(
-                std::string("Failed query size of existing file: ") + toString(GetLastError()), SOURCEINFO);
+                std::string("failed query size of existing file: ") + toString(GetLastError()), SOURCEINFO);
         }
 
         length = static_cast<std::size_t>(fileSize.QuadPart);
@@ -252,7 +252,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_
     if (!m_memory)
     {
         cleanUp();
-        throw IOException(std::string("Failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
+        throw IOException(std::string("failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
     }
 }
 
@@ -294,7 +294,7 @@ uint8_t *MemoryMappedFile::doMapping(std::size_t size, FileHandle fd, std::size_
     DWORD dwDesiredAccess = readOnly ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS;
     void *memory = (LPTSTR)::MapViewOfFile(m_mapping, dwDesiredAccess, 0, static_cast<DWORD>(offset), size);
 
-    return static_cast<uint8_t*>(memory);
+    return static_cast<std::uint8_t *>(memory);
 }
 
 std::size_t MemoryMappedFile::getPageSize() noexcept
@@ -302,7 +302,7 @@ std::size_t MemoryMappedFile::getPageSize() noexcept
     SYSTEM_INFO system_info;
     ::GetSystemInfo(&system_info);
 
-    return static_cast<size_t>(system_info.dwPageSize);
+    return static_cast<std::size_t>(system_info.dwPageSize);
 }
 
 std::int64_t MemoryMappedFile::getFileSize(const char *filename)
@@ -354,15 +354,15 @@ std::uint8_t* MemoryMappedFile::doMapping(std::size_t length, FileHandle fd, std
 
     if (MAP_FAILED == memory)
     {
-        throw IOException("failed to Memory Map File", SOURCEINFO);
+        throw IOException("failed to Memory Map file", SOURCEINFO);
     }
 
-    return static_cast<uint8_t *>(memory);
+    return static_cast<std::uint8_t *>(memory);
 }
 
 std::size_t MemoryMappedFile::getPageSize() noexcept
 {
-    return static_cast<size_t>(::getpagesize());
+    return static_cast<std::size_t>(::getpagesize());
 }
 
 std::std::int64_t MemoryMappedFile::getFileSize(const char *filename)

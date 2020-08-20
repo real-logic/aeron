@@ -42,7 +42,7 @@ public class ArchiveMarkFile implements AutoCloseable
     /**
      * Major version for the archive files stored on disk. A change to this requires migration.
      */
-    public static final int MAJOR_VERSION = 2;
+    public static final int MAJOR_VERSION = 3;
 
     /**
      * Minor version for the archive files stored on disk. A change to this indicates new features.

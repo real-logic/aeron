@@ -82,7 +82,7 @@ private:
     std::uint8_t *m_memory = 0;
     std::size_t m_memorySize = 0;
     static std::size_t m_page_size;
-    static bool fill(FileHandle fd, std::size_t sz, std::uint8_t);
+    static bool fill(FileHandle fd, std::size_t sz, std::uint8_t value);
 
 #ifdef _WIN32
     HANDLE m_file = nullptr;

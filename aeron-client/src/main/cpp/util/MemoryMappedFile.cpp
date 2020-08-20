@@ -147,7 +147,7 @@ bool MemoryMappedFile::fill(FileHandle fd, std::size_t size, std::uint8_t value)
 
     while (size >= m_page_size)
     {
-        if (static_cast<std::size_t>(write(fd.handle, buffer.get(), m_page_size)) != m_page_size)
+        if (static_cast<std::size_t>(::write(fd.handle, buffer.get(), m_page_size)) != m_page_size)
         {
             return false;
         }
@@ -157,7 +157,7 @@ bool MemoryMappedFile::fill(FileHandle fd, std::size_t size, std::uint8_t value)
 
     if (size)
     {
-        if (static_cast<std::size_t>(write(fd.handle, buffer.get(), size)) != size)
+        if (static_cast<std::size_t>(::write(fd.handle, buffer.get(), size)) != size)
         {
             return false;
         }
@@ -260,19 +260,19 @@ void MemoryMappedFile::cleanUp()
 {
     if (m_memory)
     {
-        UnmapViewOfFile(m_memory);
+        ::UnmapViewOfFile(m_memory);
         m_memory = nullptr;
     }
 
     if (m_mapping)
     {
-        CloseHandle(m_mapping);
+        ::CloseHandle(m_mapping);
         m_mapping = nullptr;
     }
 
     if (m_file)
     {
-        CloseHandle(m_file);
+        ::CloseHandle(m_file);
         m_file = nullptr;
     }
 }
@@ -338,14 +338,14 @@ MemoryMappedFile::~MemoryMappedFile()
 {
     if (m_memory && m_memorySize)
     {
-        munmap(m_memory, m_memorySize);
+        ::munmap(m_memory, m_memorySize);
     }
 }
 
 std::uint8_t *MemoryMappedFile::doMapping(std::size_t length, FileHandle fd, std::size_t offset, bool readOnly)
 {
     void *memory = ::mmap(
-        NULL,
+        nullptr,
         length,
         readOnly ? PROT_READ : (PROT_READ | PROT_WRITE),
         MAP_SHARED,

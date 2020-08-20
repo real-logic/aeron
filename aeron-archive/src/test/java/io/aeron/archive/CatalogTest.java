@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogTest
 {
-    private static final long CAPACITY = 64 * 1024;
+    private static final long CAPACITY = 1024;
     private static final int TERM_LENGTH = 2 * PAGE_SIZE;
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
@@ -431,9 +431,8 @@ class CatalogTest
     {
         after();
         final File archiveDir = ArchiveTests.makeTestDirectory();
-        final long capacity = 384 + CatalogHeaderEncoder.BLOCK_LENGTH;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MIN_CAPACITY, clock, null, null))
         {
             for (int i = 0; i < 4; i++)
             {
@@ -455,7 +454,7 @@ class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             assertEquals(4, catalog.countEntries());
-            assertEquals(936, catalog.capacity());
+            assertEquals(819, catalog.capacity());
         }
     }
 

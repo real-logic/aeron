@@ -37,9 +37,9 @@ class DriverEventsAdapter implements MessageHandler
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
-    private final LongHashSet asyncCommandIdSet;
     private final CopyBroadcastReceiver receiver;
     private final DriverEventsListener listener;
+    private final LongHashSet asyncCommandIdSet;
     private final long clientId;
 
     private long activeCorrelationId;
@@ -47,13 +47,13 @@ class DriverEventsAdapter implements MessageHandler
     private boolean isInvalid;
 
     DriverEventsAdapter(
-        final CopyBroadcastReceiver receiver,
         final long clientId,
+        final CopyBroadcastReceiver receiver,
         final DriverEventsListener listener,
         final LongHashSet asyncCommandIdSet)
     {
-        this.receiver = receiver;
         this.clientId = clientId;
+        this.receiver = receiver;
         this.listener = listener;
         this.asyncCommandIdSet = asyncCommandIdSet;
     }

@@ -99,7 +99,7 @@ class ClientConductor implements Agent, DriverEventsListener
         interServiceTimeoutNs = ctx.interServiceTimeoutNs();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
-        driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), ctx.clientId(), this, asyncCommandIdSet);
+        driverEventsAdapter = new DriverEventsAdapter(ctx.clientId(), ctx.toClientBuffer(), this, asyncCommandIdSet);
         driverAgentInvoker = ctx.driverAgentInvoker();
         counterValuesBuffer = ctx.countersValuesBuffer();
         countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), US_ASCII);

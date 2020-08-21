@@ -98,7 +98,7 @@ struct MetaDataDefn
 };
 #pragma pack(pop)
 
-static const size_t META_DATA_LENGTH = BitUtil::align(sizeof(MetaDataDefn), BitUtil::CACHE_LINE_LENGTH * 2);
+static const std::size_t META_DATA_LENGTH = BitUtil::align(sizeof(MetaDataDefn), BitUtil::CACHE_LINE_LENGTH * 2);
 
 inline static std::int32_t cncVersionVolatile(MemoryMappedFile::ptr_t cncFile)
 {
@@ -194,12 +194,13 @@ inline static bool isCncFileLengthSufficient(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
     const MetaDataDefn &metaData = metaDataBuffer.overlayStruct<MetaDataDefn>();
-    size_t metadataRequiredLength = META_DATA_LENGTH +
-        (size_t)metaData.toDriverBufferLength +
-        (size_t)metaData.toClientsBufferLength +
-        (size_t)metaData.counterMetadataBufferLength +
-        (size_t)metaData.counterValuesBufferLength +
-        (size_t)metaData.errorLogBufferLength;
+    const std::size_t metadataRequiredLength =
+        META_DATA_LENGTH +
+        metaData.toDriverBufferLength +
+        metaData.toClientsBufferLength +
+        metaData.counterMetadataBufferLength +
+        metaData.counterValuesBufferLength +
+        metaData.errorLogBufferLength;
 
     return cncFile->getMemorySize() >= metadataRequiredLength;
 }

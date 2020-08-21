@@ -122,7 +122,7 @@ inline int numberOfTrailingZeroes(value_t value) noexcept
 
     if (_BitScanForward(&r, (unsigned long)value))
     {
-        return r;
+        return static_cast<int>(r);
     }
 
     return 32;

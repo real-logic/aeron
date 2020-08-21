@@ -380,19 +380,19 @@ public:
     {
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);
-        ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
+        ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, static_cast<std::size_t>(length));
     }
 
     inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, const std::uint8_t *srcBuffer, util::index_t length)
     {
         boundsCheck(index, length);
-        ::memcpy(m_buffer + index, srcBuffer, length);
+        ::memcpy(m_buffer + index, srcBuffer, static_cast<std::size_t>(length));
     }
 
     inline void getBytes(util::index_t index, std::uint8_t *dst, util::index_t length) const
     {
         boundsCheck(index, length);
-        ::memcpy(dst, m_buffer + index, length);
+        ::memcpy(dst, m_buffer + index, static_cast<std::size_t>(length));
     }
 
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)

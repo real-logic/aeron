@@ -49,7 +49,7 @@ public:
         const fragment_handler_t &delegate,
         size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_delegate(delegate),
-        m_builder(initialBufferLength)
+        m_builder(static_cast<std::uint32_t>(initialBufferLength))
     {
     }
 
@@ -73,7 +73,7 @@ private:
 
     inline void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
-        const std::uint8_t flags = header.flags();
+        std::uint8_t flags = header.flags();
 
         if ((flags & FrameDescriptor::UNFRAGMENTED) == FrameDescriptor::UNFRAGMENTED)
         {

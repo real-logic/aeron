@@ -43,14 +43,14 @@ private:
 
     std::vector<std::string> m_params;
 
-    void checkIndex(size_t index) const;
+    void checkIndex(std::size_t index) const;
 
 public:
     static const char UNNAMED = -1;
 
     CommandOption();
 
-    CommandOption(char optionChar, size_t minParams, size_t maxParams, std::string helpText);
+    CommandOption(char optionChar, std::size_t minParams, std::size_t maxParams, std::string helpText);
 
     char getOptionChar() const
     {
@@ -84,17 +84,18 @@ public:
         return m_params.size();
     }
 
-    std::string getParam(size_t index) const;
+    std::string getParam(std::size_t index) const;
 
-    std::string getParam(size_t index, std::string defaultValue) const;
+    std::string getParam(std::size_t index, std::string defaultValue) const;
 
-    int getParamAsInt(size_t index) const;
+    int getParamAsInt(std::size_t index) const;
 
-    long long getParamAsLong(size_t index) const;
+    long long getParamAsLong(std::size_t index) const;
 
-    int getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue) const;
+    int getParamAsInt(std::size_t index, int minValue, int maxValue, int defaultValue) const;
 
-    long long getParamAsLong(size_t index, long long minValue, long long maxValue, long long defaultValue) const;
+    long long getParamAsLong(
+        std::size_t index, long long minValue, long long maxValue, long long defaultValue) const;
 };
 
 }}

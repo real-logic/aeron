@@ -38,12 +38,12 @@ public:
         BroadcastBufferDescriptor::checkCapacity(m_capacity);
     }
 
-    inline util::index_t capacity()
+    inline util::index_t capacity() const
     {
         return m_capacity;
     }
 
-    inline util::index_t maxMsgLength()
+    inline util::index_t maxMsgLength() const
     {
         return m_maxMsgLength;
     }
@@ -55,7 +55,7 @@ public:
         checkMessageLength(length);
 
         std::int64_t currentTail = m_buffer.getInt64(m_tailCounterIndex);
-        std::int32_t recordOffset = static_cast<std::int32_t>(currentTail & m_mask);
+        auto recordOffset = static_cast<std::int32_t>(currentTail & m_mask);
         const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
         const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
         const std::int64_t newTail = currentTail + alignedRecordLength;
@@ -93,7 +93,7 @@ private:
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
-    inline void checkMessageLength(util::index_t length)
+    inline void checkMessageLength(util::index_t length) const
     {
         if (length > m_maxMsgLength)
         {

@@ -83,9 +83,9 @@ public:
 private:
     struct DistinctObservation
     {
-        std::size_t m_errorCode;
+        std::size_t m_errorCode = 0;
         std::string m_description;
-        util::index_t m_offset;
+        util::index_t m_offset = 0;
     };
 
     AtomicBuffer &m_buffer;
@@ -115,10 +115,10 @@ private:
         auto result = std::find_if(begin, end,
             [errorCode, description](const DistinctObservation& observation)
             {
-                return (errorCode == observation.m_errorCode && description == observation.m_description);
+                return errorCode == observation.m_errorCode && description == observation.m_description;
             });
 
-        return (result != end) ? result : observations.end();
+        return result != end ? result : observations.end();
     }
 
     std::vector<DistinctObservation>::iterator newObservation(

@@ -35,11 +35,7 @@ namespace aeron { namespace concurrent {
 class AtomicBuffer
 {
 public:
-    constexpr AtomicBuffer() noexcept :
-        m_buffer(nullptr),
-        m_length(0)
-    {
-    }
+    constexpr AtomicBuffer() noexcept = default;
 
     /**
      * Wrap a buffer of memory for a given length.
@@ -466,8 +462,8 @@ private:
     // The internal length type used by the atomic buffer
     typedef std::uint32_t length_t;
 
-    std::uint8_t *m_buffer;
-    length_t m_length;
+    std::uint8_t *m_buffer = nullptr;
+    length_t m_length = 0;
 };
 
 }}

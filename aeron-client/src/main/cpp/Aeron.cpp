@@ -86,7 +86,7 @@ Aeron::~Aeron()
     // memory mapped files should be freed by the destructor of the shared_ptr
 }
 
-inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
+MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 {
     auto minLength = static_cast<std::int64_t>(CncFileDescriptor::META_DATA_LENGTH);
     const long long deadlineMs = currentTimeMillis() + context.m_mediaDriverTimeout;

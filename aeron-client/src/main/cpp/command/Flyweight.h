@@ -100,7 +100,7 @@ protected:
 
 private:
     concurrent::AtomicBuffer m_buffer;
-    util::index_t m_baseOffset;
+    util::index_t m_baseOffset = 0;
 };
 
 }}

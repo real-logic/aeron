@@ -104,7 +104,7 @@ inline static std::int32_t cncVersionVolatile(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
-    return metaDataBuffer.getInt32Volatile(offsetof(MetaDataDefn, cncVersion));
+    return metaDataBuffer.getInt32Volatile(static_cast<util::index_t>(offsetof(MetaDataDefn, cncVersion)));
 }
 
 inline static AtomicBuffer createToDriverBuffer(MemoryMappedFile::ptr_t cncFile)

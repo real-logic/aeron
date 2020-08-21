@@ -235,7 +235,7 @@ public:
         return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
     }
 
-    inline void ensureOpen()
+    inline void ensureOpen() const
     {
         if (isClosed())
         {

@@ -446,7 +446,6 @@ private:
     std::uniform_int_distribution<std::int32_t> m_sessionIdDistribution;
 
     Context m_context;
-
     MemoryMappedFile::ptr_t m_cncBuffer;
 
     AtomicBuffer m_toDriverAtomicBuffer;
@@ -456,7 +455,6 @@ private:
 
     ManyToOneRingBuffer m_toDriverRingBuffer;
     DriverProxy m_driverProxy;
-
     BroadcastReceiver m_toClientsBroadcastReceiver;
     CopyBroadcastReceiver m_toClientsCopyReceiver;
 
@@ -465,7 +463,7 @@ private:
     AgentRunner<ClientConductor, SleepingIdleStrategy> m_conductorRunner;
     AgentInvoker<ClientConductor> m_conductorInvoker;
 
-    MemoryMappedFile::ptr_t mapCncFile(Context &context);
+    static MemoryMappedFile::ptr_t mapCncFile(Context &context);
 };
 
 }

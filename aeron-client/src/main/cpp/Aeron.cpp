@@ -83,7 +83,7 @@ Aeron::~Aeron()
         m_conductorRunner.close();
     }
 
-    // memory mapped files should be free'd by the destructor of the shared_ptr
+    // memory mapped files should be freed by the destructor of the shared_ptr
 }
 
 inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)

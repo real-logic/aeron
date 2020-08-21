@@ -376,7 +376,7 @@ public:
 
     /**
      * Set the amount of time, in milliseconds, that this client will to linger inactive connections and internal
-     * arrays before they are free'd.
+     * arrays before they are freed.
      *
      * @param value Number of milliseconds.
      * @return reference to this Context instance

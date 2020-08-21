@@ -66,7 +66,7 @@ inline std::pair<const char *, std::uint32_t> defaultCredentialsOnChallenge(
 }
 
 /**
- * Callback to return encoded credentials so they may be reused or free'd.
+ * Callback to return encoded credentials so they may be reused or freed.
  *
  * @param encodedCredentials to re-use or free.
  */

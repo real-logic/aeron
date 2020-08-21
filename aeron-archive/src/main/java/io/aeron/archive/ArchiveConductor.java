@@ -864,11 +864,18 @@ abstract class ArchiveConductor
         final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
-            isValidTruncate(correlationId, controlSession, recordingId, -1))
+            isValidPurge(correlationId, controlSession, recordingId))
         {
             if (catalog.invalidateRecording(recordingId))
             {
-                // FIXME: Delete segment files
+                final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
+                if (null != segmentFiles)
+                {
+                    for (final String segmentFile : segmentFiles)
+                    {
+                        deleteSegmentFile(correlationId, controlSession, segmentFile);
+                    }
+                }
             }
 
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
@@ -1640,6 +1647,31 @@ abstract class ArchiveConductor
         return true;
     }
 
+    private boolean isValidPurge(final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        for (final ReplaySession replaySession : replaySessionByIdMap.values())
+        {
+            if (replaySession.recordingId() == recordingId)
+            {
+                final String msg = "cannot purge recording with active replay " + recordingId;
+                controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+                return false;
+            }
+        }
+
+        catalog.recordingSummary(recordingId, recordingSummary);
+
+        final long stopPosition = recordingSummary.stopPosition;
+        if (NULL_POSITION == stopPosition)
+        {
+            final String msg = "cannot purge active recording " + recordingId;
+            controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+            return false;
+        }
+
+        return true;
+    }
+
     private boolean isInvalidReplayPosition(
         final long correlationId,
         final ControlSession controlSession,
@@ -1858,7 +1890,13 @@ abstract class ArchiveConductor
         final long segmentBasePosition,
         final ControlSession controlSession)
     {
-        final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
+        deleteSegmentFile(correlationId, controlSession, segmentFileName(recordingId, segmentBasePosition));
+    }
+
+    private void deleteSegmentFile(
+        final long correlationId, final ControlSession controlSession, final String segmentFileName)
+    {
+        final File file = new File(archiveDir, segmentFileName);
         if (file.exists() && !file.delete())
         {
             final String msg = "failed to delete " + file;

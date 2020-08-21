@@ -959,7 +959,6 @@ void ClientConductor::onAvailableImage(
             entry.m_onAvailableImageHandler(*image);
 
             Image::array_t oldImageArray = subscription->addImage(image);
-
             if (nullptr != oldImageArray)
             {
                 lingerResource(m_epochClock(), oldImageArray);
@@ -971,7 +970,6 @@ void ClientConductor::onAvailableImage(
 void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_t subscriptionRegistrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-    const long long nowMs = m_epochClock();
 
     auto it = m_subscriptionByRegistrationId.find(subscriptionRegistrationId);
     if (it != m_subscriptionByRegistrationId.end())
@@ -987,7 +985,7 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
 
             if (nullptr != oldImageArray)
             {
-                lingerResource(nowMs, oldImageArray);
+                lingerResource(m_epochClock(), oldImageArray);
 
                 CallbackGuard callbackGuard(m_isInCallback);
                 entry.m_onUnavailableImageHandler(*oldImageArray[index]);

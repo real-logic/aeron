@@ -77,7 +77,7 @@ private:
     MemoryMappedFile(FileHandle fd, off_t offset, std::size_t length, bool readOnly);
 #endif
 
-    static std::uint8_t *doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly);
+    std::uint8_t *doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly);
 
     std::uint8_t *m_memory = nullptr;
     std::size_t m_memorySize = 0;

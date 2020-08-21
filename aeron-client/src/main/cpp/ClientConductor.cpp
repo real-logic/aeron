@@ -54,6 +54,7 @@ void ClientConductor::onStart()
 
 int ClientConductor::doWork()
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     int workCount = 0;
 
     workCount += m_driverListenerAdapter.receiveMessages();
@@ -685,8 +686,6 @@ void ClientConductor::onNewPublication(
     std::int32_t channelStatusIndicatorId,
     const std::string &logFileName)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_publicationByRegistrationId.find(registrationId);
     if (it != m_publicationByRegistrationId.end())
     {
@@ -715,8 +714,6 @@ void ClientConductor::onNewExclusivePublication(
 {
     assert(registrationId == originalRegistrationId);
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_exclusivePublicationByRegistrationId.find(registrationId);
     if (it != m_exclusivePublicationByRegistrationId.end())
     {
@@ -735,8 +732,6 @@ void ClientConductor::onNewExclusivePublication(
 
 void ClientConductor::onSubscriptionReady(std::int64_t registrationId, std::int32_t channelStatusId)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_subscriptionByRegistrationId.find(registrationId);
     if (it != m_subscriptionByRegistrationId.end() && it->second.m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
@@ -754,8 +749,6 @@ void ClientConductor::onSubscriptionReady(std::int64_t registrationId, std::int3
 
 void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32_t counterId)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_counterByRegistrationId.find(registrationId);
     if (it != m_counterByRegistrationId.end() && it->second.m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
@@ -777,8 +770,6 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
 
 void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int32_t counterId)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     for (auto const &handler: m_onUnavailableCounterHandlers)
     {
         CallbackGuard callbackGuard(m_isInCallback);
@@ -788,8 +779,6 @@ void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_destinationStateByCorrelationId.find(correlationId);
     if (it != m_destinationStateByCorrelationId.end() &&
         it->second.m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
@@ -802,8 +791,6 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 
 void ClientConductor::onChannelEndpointErrorResponse(std::int32_t channelStatusId, const std::string &errorMessage)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     for (auto it = m_subscriptionByRegistrationId.begin(); it != m_subscriptionByRegistrationId.end();)
     {
         std::shared_ptr<Subscription> subscription = it->second.m_subscription.lock();
@@ -878,8 +865,6 @@ void ClientConductor::onChannelEndpointErrorResponse(std::int32_t channelStatusI
 void ClientConductor::onErrorResponse(
     std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string &errorMessage)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto subIt = m_subscriptionByRegistrationId.find(offendingCommandCorrelationId);
     if (subIt != m_subscriptionByRegistrationId.end())
     {
@@ -934,8 +919,6 @@ void ClientConductor::onAvailableImage(
     const std::string &logFilename,
     const std::string &sourceIdentity)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_subscriptionByRegistrationId.find(subscriptionRegistrationId);
     if (it != m_subscriptionByRegistrationId.end())
     {
@@ -969,8 +952,6 @@ void ClientConductor::onAvailableImage(
 
 void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_t subscriptionRegistrationId)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     auto it = m_subscriptionByRegistrationId.find(subscriptionRegistrationId);
     if (it != m_subscriptionByRegistrationId.end())
     {
@@ -998,8 +979,6 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
 {
     if (m_driverProxy.clientId() == clientId && !isClosed())
     {
-        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
         closeAllResources(m_epochClock());
 
         ClientTimeoutException exception("client timeout from driver", SOURCEINFO);
@@ -1101,8 +1080,6 @@ void ClientConductor::closeAllResources(long long nowMs)
 
 void ClientConductor::onCheckManagedResources(long long nowMs)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     for (auto it = m_logBuffersByRegistrationId.begin(); it != m_logBuffersByRegistrationId.end();)
     {
         LogBuffersDefn &entry = it->second;

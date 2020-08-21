@@ -27,7 +27,7 @@ static size_t getAddress(const std::function<T(U...)> &f)
     typedef T(fnType)(U...);
     auto fnPointer = f.template target<fnType *>();
 
-    return nullptr != fnPointer ? (size_t)*fnPointer : 0;
+    return nullptr != fnPointer ? reinterpret_cast<std::size_t>(*fnPointer) : 0;
 }
 
 static ExceptionCategory getCategory(std::int32_t errorCode)

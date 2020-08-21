@@ -26,7 +26,7 @@ namespace aeron { namespace concurrent {
 /**
  * Reads the counters metadata and values buffers.
  *
- * This class is threadsafe and can be used across threads.
+ * This class is threadsafe.
  *
  * <b>Values Buffer</b>
  * <pre>
@@ -100,7 +100,6 @@ public:
             else if (RECORD_ALLOCATED == recordStatus)
             {
                 const auto &record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
-
                 const std::string label = m_metadataBuffer.getString(i + LABEL_LENGTH_OFFSET);
                 const AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
 
@@ -128,6 +127,13 @@ public:
         validateCounterId(id);
 
         return m_metadataBuffer.getInt32Volatile(metadataOffset(id));
+    }
+
+    inline std::int32_t getCounterTypeId(std::int32_t id) const
+    {
+        validateCounterId(id);
+
+        return m_metadataBuffer.getInt32Volatile(metadataOffset(id) + TYPE_ID_OFFSET);
     }
 
     inline std::int64_t getFreeToReuseDeadline(std::int32_t id) const
@@ -169,7 +175,7 @@ public:
     struct CounterValueDefn
     {
         std::int64_t counterValue;
-        std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
+        std::int8_t padding[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
     };
 
     struct CounterMetaDataDefn

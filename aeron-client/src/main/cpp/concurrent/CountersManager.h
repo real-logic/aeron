@@ -16,18 +16,11 @@
 #ifndef AERON_CONCURRENT_COUNTERS_MANAGER_H
 #define AERON_CONCURRENT_COUNTERS_MANAGER_H
 
-#include <functional>
-#include <cstdint>
 #include <deque>
 #include <memory>
 #include <iostream>
 #include <algorithm>
 
-#include "util/Exceptions.h"
-#include "util/StringUtil.h"
-#include "util/BitUtil.h"
-
-#include "AtomicBuffer.h"
 #include "CountersReader.h"
 
 namespace aeron { namespace concurrent {
@@ -72,7 +65,8 @@ public:
 
         record.typeId = typeId;
 
-        AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + recordOffset + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
+        AtomicBuffer keyBuffer(
+            m_metadataBuffer.buffer() + recordOffset + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
         keyFunc(keyBuffer);
 
         record.freeToReuseDeadline = NOT_FREE_TO_REUSE;
@@ -136,7 +130,7 @@ public:
 
 private:
     std::deque<std::int32_t> m_freeList;
-    clock_t m_clock = []() { return 0L; };
+    clock_t m_clock = []() { return 0LL; };
     const long m_freeToReuseTimeoutMs = 0;
     util::index_t m_highWaterMark = -1;
 
@@ -156,7 +150,6 @@ private:
             const std::int32_t counterId = *it;
 
             m_freeList.erase(it);
-
             m_valuesBuffer.putInt64Ordered(counterOffset(counterId), 0L);
 
             return counterId;

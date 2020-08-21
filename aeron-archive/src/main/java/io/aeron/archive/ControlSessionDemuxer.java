@@ -768,9 +768,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 break;
             }
 
-            case InvalidateRecordingRequestDecoder.TEMPLATE_ID:
+            case PurgeRecordingRequestDecoder.TEMPLATE_ID:
             {
-                final InvalidateRecordingRequestDecoder decoder = decoders.invalidateRecordingRequest;
+                final PurgeRecordingRequestDecoder decoder = decoders.purgeRecordingRequest;
                 decoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -781,7 +781,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long controlSessionId = decoder.controlSessionId();
                 final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
 
-                controlSession.onInvalidateRecording(correlationId, decoder.recordingId());
+                controlSession.onPurgeRecording(correlationId, decoder.recordingId());
                 break;
             }
         }

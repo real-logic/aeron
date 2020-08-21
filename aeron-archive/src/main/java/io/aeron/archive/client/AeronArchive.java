@@ -1418,13 +1418,12 @@ public class AeronArchive implements AutoCloseable
 
 
     /**
-     * Invalidate a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
-     * which effectively deletes the recording. The space used by the recording data and metadata will be reclaimed
-     * upon compaction of the Catalog.
+     * Purge a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
+     * and delete the corresponding segment files. The space in the Catalog will be reclaimed upon compaction.
      *
      * @param recordingId of the stopped recording to be invalidated.
      */
-    public void invalidateRecording(final long recordingId)
+    public void purgeRecording(final long recordingId)
     {
         lock.lock();
         try
@@ -1434,7 +1433,7 @@ public class AeronArchive implements AutoCloseable
 
             lastCorrelationId = aeron.nextCorrelationId();
 
-            if (!archiveProxy.invalidateRecording(recordingId, lastCorrelationId, controlSessionId))
+            if (!archiveProxy.purgeRecording(recordingId, lastCorrelationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send invalidate recording request");
             }

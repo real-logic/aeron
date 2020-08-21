@@ -565,7 +565,7 @@
         <field name="stopPosition"         id="3" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="InvalidateRecordingRequest"
+    <sbe:message name="PurgeRecordingRequest"
                  id="104"
                  description="Request the invalidation of stopped recording.">
         <field name="controlSessionId"     id="1" type="int64"/>

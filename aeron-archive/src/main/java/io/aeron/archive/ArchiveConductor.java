@@ -860,15 +860,16 @@ abstract class ArchiveConductor
         }
     }
 
-    void invalidateRecording(
+    void purgeRecording(
         final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
             isValidTruncate(correlationId, controlSession, recordingId, -1))
         {
-            // FIXME: Should segment files be deleted right away or removed only upon Catalog compaction?
-
-            catalog.invalidateRecording(recordingId);
+            if (catalog.invalidateRecording(recordingId))
+            {
+                // FIXME: Delete segment files
+            }
 
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
@@ -1619,7 +1620,7 @@ abstract class ArchiveConductor
         final long stopPosition = recordingSummary.stopPosition;
         final long startPosition = recordingSummary.startPosition;
 
-        if (stopPosition == NULL_POSITION)
+        if (NULL_POSITION == stopPosition)
         {
             final String msg = "cannot truncate active recording";
             controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
@@ -1629,8 +1630,8 @@ abstract class ArchiveConductor
         if (position < startPosition || position > stopPosition || ((position & (FRAME_ALIGNMENT - 1)) != 0))
         {
             final String msg = "invalid position " + position +
-                ": start=" + recordingSummary.startPosition +
-                " stop=" + recordingSummary.stopPosition +
+                ": start=" + startPosition +
+                " stop=" + stopPosition +
                 " alignment=" + FRAME_ALIGNMENT;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;

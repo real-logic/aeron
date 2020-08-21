@@ -388,12 +388,12 @@ final class ControlSession implements Session
         }
     }
 
-    void onInvalidateRecording(final long correlationId, final long recordingId)
+    void onPurgeRecording(final long correlationId, final long recordingId)
     {
         attemptToGoActive();
         if (State.ACTIVE == state)
         {
-            conductor.invalidateRecording(correlationId, recordingId, this);
+            conductor.purgeRecording(correlationId, recordingId, this);
         }
     }
 

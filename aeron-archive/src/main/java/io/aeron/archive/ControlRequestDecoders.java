@@ -34,7 +34,7 @@ class ControlRequestDecoders
     final ExtendRecordingRequest2Decoder extendRecordingRequest2 = new ExtendRecordingRequest2Decoder();
     final RecordingPositionRequestDecoder recordingPositionRequest = new RecordingPositionRequestDecoder();
     final TruncateRecordingRequestDecoder truncateRecordingRequest = new TruncateRecordingRequestDecoder();
-    final InvalidateRecordingRequestDecoder invalidateRecordingRequest = new InvalidateRecordingRequestDecoder();
+    final PurgeRecordingRequestDecoder purgeRecordingRequest = new PurgeRecordingRequestDecoder();
     final StopRecordingSubscriptionRequestDecoder stopRecordingSubscriptionRequest =
         new StopRecordingSubscriptionRequestDecoder();
     final StopPositionRequestDecoder stopPositionRequest = new StopPositionRequestDecoder();

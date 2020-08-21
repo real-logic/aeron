@@ -59,7 +59,7 @@ public class ArchiveProxy
     private ExtendRecordingRequest2Encoder extendRecordingRequest2;
     private RecordingPositionRequestEncoder recordingPositionRequest;
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
-    private InvalidateRecordingRequestEncoder invalidateRecordingRequest;
+    private PurgeRecordingRequestEncoder purgeRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
@@ -766,30 +766,29 @@ public class ArchiveProxy
     }
 
     /**
-     * Invalidate a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
-     * which effectively deletes the recording. The space used by the recording data and metadata will be reclaimed
-     * upon compaction of the Catalog.
+     * Purge a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
+     * and delete the corresponding segment files. The space in the Catalog will be reclaimed upon compaction.
      *
      * @param recordingId      of the stopped recording to be truncated.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean invalidateRecording(
+    public boolean purgeRecording(
         final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == invalidateRecordingRequest)
+        if (null == purgeRecordingRequest)
         {
-            invalidateRecordingRequest = new InvalidateRecordingRequestEncoder();
+            purgeRecordingRequest = new PurgeRecordingRequestEncoder();
         }
 
-        invalidateRecordingRequest
+        purgeRecordingRequest
             .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(invalidateRecordingRequest.encodedLength());
+        return offer(purgeRecordingRequest.encodedLength());
     }
 
     /**

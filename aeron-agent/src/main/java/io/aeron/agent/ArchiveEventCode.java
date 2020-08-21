@@ -89,7 +89,7 @@ public enum ArchiveEventCode implements EventCode
     CATALOG_RESIZE(37, -1,
         (event, buffer, offset, builder) -> dissectCatalogResize(buffer, offset, builder)),
 
-    CMD_IN_INVALIDATE_RECORDING(38, InvalidateRecordingRequestDecoder.TEMPLATE_ID,
+    CMD_IN_PURGE_RECORDING(38, PurgeRecordingRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest);
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();

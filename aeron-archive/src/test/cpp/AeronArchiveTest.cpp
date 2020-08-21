@@ -131,7 +131,7 @@ public:
         m_pid = spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
         #else
         m_pid = -1;
-        posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char* const*)&argv[0], nullptr);
+        posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char * const *)&argv[0], nullptr);
         #endif
 
         if (m_pid < 0)

@@ -95,9 +95,9 @@ inline int numberOfLeadingZeroes(value_t value) noexcept
 #elif defined(_MSC_VER)
     unsigned long r;
 
-    if (_BitScanReverse(&r, (unsigned long)value))
+    if (_BitScanReverse(&r, static_cast<unsigned long>(value)))
     {
-        return 31 - (int)r;
+        return 31 - static_cast<int>(r);
     }
 
     return 32;

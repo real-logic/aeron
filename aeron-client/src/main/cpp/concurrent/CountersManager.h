@@ -118,7 +118,7 @@ public:
     {
         const util::index_t recordOffset = metadataOffset(counterId);
 
-        m_metadataBuffer.putInt64(recordOffset + FREE_TO_REUSE_DEADLINE_OFFSET, m_clock() + m_freeToReuseTimeoutMs);
+        m_metadataBuffer.putInt64(recordOffset + FREE_FOR_REUSE_DEADLINE_OFFSET, m_clock() + m_freeToReuseTimeoutMs);
         m_metadataBuffer.putInt32Ordered(recordOffset, RECORD_RECLAIMED);
         m_freeList.push_back(counterId);
     }
@@ -126,6 +126,11 @@ public:
     inline void setCounterValue(std::int32_t counterId, std::int64_t value)
     {
         m_valuesBuffer.putInt64Ordered(counterOffset(counterId), value);
+    }
+
+    inline void setCounterRegistrationId(std::int32_t counterId, std::int64_t registrationId)
+    {
+        m_valuesBuffer.putInt64Ordered(counterOffset(counterId) + REGISTRATION_ID_OFFSET, registrationId);
     }
 
 private:
@@ -142,7 +147,7 @@ private:
             [&](std::int32_t counterId)
             {
                 return nowMs >=
-                    m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_TO_REUSE_DEADLINE_OFFSET);
+                    m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_FOR_REUSE_DEADLINE_OFFSET);
             });
 
         if (it != m_freeList.end())
@@ -150,6 +155,7 @@ private:
             const std::int32_t counterId = *it;
 
             m_freeList.erase(it);
+            m_valuesBuffer.putInt64Ordered(counterOffset(counterId) + REGISTRATION_ID_OFFSET, DEFAULT_REGISTRATION_ID);
             m_valuesBuffer.putInt64Ordered(counterOffset(counterId), 0L);
 
             return counterId;

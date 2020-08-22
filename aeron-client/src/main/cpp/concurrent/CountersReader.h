@@ -36,7 +36,10 @@ namespace aeron { namespace concurrent {
  *  |                        Counter Value                          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                     120 bytes of padding                     ...
+ *  |                       Registration Id                         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                     112 bytes of padding                     ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  *  |                   Repeats to end of buffer                   ...
@@ -54,7 +57,7 @@ namespace aeron { namespace concurrent {
  *  +---------------------------------------------------------------+
  *  |                          Type Id                              |
  *  +---------------------------------------------------------------+
- *  |                   Free-for-reuse Deadline                     |
+ *  |                  Free-for-reuse Deadline (ms)                 |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                      112 bytes for key                       ...
@@ -122,6 +125,13 @@ public:
         return m_valuesBuffer.getInt64Volatile(counterOffset(id));
     }
 
+    inline std::int64_t getCounterRegistrationId(std::int32_t id) const
+    {
+        validateCounterId(id);
+
+        return m_valuesBuffer.getInt64Volatile(counterOffset(id) + REGISTRATION_ID_OFFSET);
+    }
+
     inline std::int32_t getCounterState(std::int32_t id) const
     {
         validateCounterId(id);
@@ -136,11 +146,11 @@ public:
         return m_metadataBuffer.getInt32Volatile(metadataOffset(id) + TYPE_ID_OFFSET);
     }
 
-    inline std::int64_t getFreeToReuseDeadline(std::int32_t id) const
+    inline std::int64_t getFreeForReuseDeadline(std::int32_t id) const
     {
         validateCounterId(id);
 
-        return m_metadataBuffer.getInt64Volatile(metadataOffset(id) + FREE_TO_REUSE_DEADLINE_OFFSET);
+        return m_metadataBuffer.getInt64Volatile(metadataOffset(id) + FREE_FOR_REUSE_DEADLINE_OFFSET);
     }
 
     inline std::string getCounterLabel(std::int32_t id) const
@@ -175,7 +185,8 @@ public:
     struct CounterValueDefn
     {
         std::int64_t counterValue;
-        std::int8_t padding[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
+        std::int64_t registrationId;
+        std::int8_t padding[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int64_t))];
     };
 
     struct CounterMetaDataDefn
@@ -195,12 +206,15 @@ public:
     static const std::int32_t RECORD_ALLOCATED = 1;
     static const std::int32_t RECORD_RECLAIMED = -1;
 
+    static const std::int64_t DEFAULT_REGISTRATION_ID = 0;
     static const std::int64_t NOT_FREE_TO_REUSE = INT64_MAX;
 
     static const util::index_t COUNTER_LENGTH = sizeof(CounterValueDefn);
+    static const util::index_t REGISTRATION_ID_OFFSET = offsetof(CounterValueDefn, registrationId);
+
     static const util::index_t METADATA_LENGTH = sizeof(CounterMetaDataDefn);
     static const util::index_t TYPE_ID_OFFSET = offsetof(CounterMetaDataDefn, typeId);
-    static const util::index_t FREE_TO_REUSE_DEADLINE_OFFSET = offsetof(CounterMetaDataDefn, freeToReuseDeadline);
+    static const util::index_t FREE_FOR_REUSE_DEADLINE_OFFSET = offsetof(CounterMetaDataDefn, freeToReuseDeadline);
     static const util::index_t KEY_OFFSET = offsetof(CounterMetaDataDefn, key);
     static const util::index_t LABEL_LENGTH_OFFSET = offsetof(CounterMetaDataDefn, labelLength);
 

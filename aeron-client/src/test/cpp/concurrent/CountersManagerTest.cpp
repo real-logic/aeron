@@ -226,3 +226,32 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadValue)
     m_countersManager.setCounterValue(counterId, value);
     EXPECT_EQ(m_countersManager.getCounterValue(counterId), value);
 }
+
+TEST_F(CountersManagerTest, shouldSetRegistrationId)
+{
+    const std::int32_t counterId = m_countersManager.allocate("abc");
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterId), CountersReader::DEFAULT_REGISTRATION_ID);
+
+    const std::int64_t registrationId = 777;
+    m_countersManager.setCounterRegistrationId(counterId, registrationId);
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterId), registrationId);
+}
+
+TEST_F(CountersManagerTest, shouldResetValueAndRegistrationIdIfReused)
+{
+    const std::int32_t counterIdOne = m_countersManager.allocate("abc");
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdOne), CountersReader::DEFAULT_REGISTRATION_ID);
+
+    const std::int64_t registrationIdOne = 777;
+    m_countersManager.setCounterRegistrationId(counterIdOne, registrationIdOne);
+
+    m_countersManager.free(counterIdOne);
+
+    const std::int32_t counterIdTwo = m_countersManager.allocate("def");
+    EXPECT_EQ(counterIdOne, counterIdTwo);
+    EXPECT_EQ(m_countersManager.getCounterValue(counterIdOne), CountersReader::DEFAULT_REGISTRATION_ID);
+
+    const std::int64_t registrationIdTwo = 333;
+    m_countersManager.setCounterRegistrationId(counterIdTwo, registrationIdTwo);
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdTwo), registrationIdTwo);
+}

@@ -167,7 +167,7 @@ aeron_counters_reader_t;
 #define AERON_COUNTERS_MANAGER_IS_VALID_BUFFER_SIZES(metadata, values) ((metadata) >= ((values) * 2))
 
 int aeron_counters_manager_init(
-    volatile aeron_counters_manager_t *manager,
+    aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,
     size_t metadata_length,
     uint8_t *values_buffer,
@@ -178,7 +178,7 @@ int aeron_counters_manager_init(
 void aeron_counters_manager_close(aeron_counters_manager_t *manager);
 
 int32_t aeron_counters_manager_allocate(
-    volatile aeron_counters_manager_t *manager,
+    aeron_counters_manager_t *manager,
     int32_t type_id,
     const uint8_t *key,
     size_t key_length,
@@ -186,17 +186,17 @@ int32_t aeron_counters_manager_allocate(
     size_t label_length);
 
 void aeron_counters_manager_counter_registration_id(
-    volatile aeron_counters_manager_t *manager, int32_t counter_id, int64_t registration_id);
+    aeron_counters_manager_t *manager, int32_t counter_id, int64_t registration_id);
 
 void aeron_counters_manager_update_label(
-    volatile aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label);
+    aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label);
 
 void aeron_counters_manager_append_to_label(
-    volatile aeron_counters_manager_t *manager, int32_t counter_id, size_t length, const char *value);
+    aeron_counters_manager_t *manager, int32_t counter_id, size_t length, const char *value);
 
-int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager);
+int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager);
 
-int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int32_t counter_id);
+int aeron_counters_manager_free(aeron_counters_manager_t *manager, int32_t counter_id);
 
 typedef void (*aeron_counters_reader_foreach_metadata_func_t)(
     int32_t id,
@@ -238,7 +238,7 @@ int aeron_counters_reader_free_for_reuse_deadline_ms(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms);
 
 inline int aeron_counters_reader_init(
-    volatile aeron_counters_reader_t *reader,
+    aeron_counters_reader_t *reader,
     uint8_t *metadata_buffer,
     size_t metadata_length,
     uint8_t *values_buffer,

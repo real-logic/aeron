@@ -23,7 +23,7 @@
 #include "util/aeron_error.h"
 
 int aeron_counters_manager_init(
-    volatile aeron_counters_manager_t *manager,
+    aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,
     size_t metadata_length,
     uint8_t *values_buffer,
@@ -60,7 +60,7 @@ void aeron_counters_manager_close(aeron_counters_manager_t *manager)
 }
 
 int32_t aeron_counters_manager_allocate(
-    volatile aeron_counters_manager_t *manager,
+    aeron_counters_manager_t *manager,
     int32_t type_id,
     const uint8_t *key,
     size_t key_length,
@@ -102,7 +102,7 @@ int32_t aeron_counters_manager_allocate(
 }
 
 void aeron_counters_manager_counter_registration_id(
-    volatile aeron_counters_manager_t *manager, int32_t counter_id, int64_t registration_id)
+    aeron_counters_manager_t *manager, int32_t counter_id, int64_t registration_id)
 {
     aeron_counter_value_descriptor_t *value_descriptor = (aeron_counter_value_descriptor_t *)(
         manager->values + AERON_COUNTER_OFFSET(counter_id));
@@ -111,7 +111,7 @@ void aeron_counters_manager_counter_registration_id(
 }
 
 void aeron_counters_manager_update_label(
-    volatile aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label)
+    aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label)
 {
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
@@ -123,7 +123,7 @@ void aeron_counters_manager_update_label(
 }
 
 void aeron_counters_manager_append_to_label(
-    volatile aeron_counters_manager_t *manager, int32_t counter_id, size_t length, const char *value)
+    aeron_counters_manager_t *manager, int32_t counter_id, size_t length, const char *value)
 {
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
@@ -136,7 +136,7 @@ void aeron_counters_manager_append_to_label(
     AERON_PUT_ORDERED(metadata->label_length, ((int32_t)(current_length + copy_length)));
 }
 
-void aeron_counters_manager_remove_free_list_index(volatile aeron_counters_manager_t *manager, int index)
+void aeron_counters_manager_remove_free_list_index(aeron_counters_manager_t *manager, int index)
 {
     for (int i = index; i < manager->free_list_index; i++)
     {
@@ -146,7 +146,7 @@ void aeron_counters_manager_remove_free_list_index(volatile aeron_counters_manag
     manager->free_list_index--;
 }
 
-int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager)
+int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager)
 {
     int64_t now_ms = manager->clock_func();
 
@@ -173,7 +173,7 @@ int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t
     return ++manager->id_high_water_mark;
 }
 
-int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int32_t counter_id)
+int aeron_counters_manager_free(aeron_counters_manager_t *manager, int32_t counter_id)
 {
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
@@ -239,9 +239,7 @@ void aeron_counters_reader_foreach_metadata(
 }
 
 void aeron_counters_reader_foreach_counter(
-    aeron_counters_reader_t *counters_reader,
-    aeron_counters_reader_foreach_counter_func_t func,
-    void *clientd)
+    aeron_counters_reader_t *counters_reader, aeron_counters_reader_foreach_counter_func_t func, void *clientd)
 {
     int32_t id = 0;
 
@@ -348,7 +346,7 @@ int aeron_counters_reader_free_for_reuse_deadline_ms(
 
 
 extern int aeron_counters_reader_init(
-    volatile aeron_counters_reader_t *reader,
+    aeron_counters_reader_t *reader,
     uint8_t *metadata_buffer,
     size_t metadata_length,
     uint8_t *values_buffer,

@@ -57,7 +57,7 @@ public:
             m_valuesBuffer.size());
     }
 
-    virtual ~CountersTest() override
+    ~CountersTest() override
     {
         aeron_counters_manager_close(&m_manager);
     }
@@ -115,24 +115,66 @@ TEST_F(CountersTest, shouldReadCounterLabel)
         &m_reader, m_reader.max_counter_id, buffer, AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 }
 
-TEST_F(CountersTest, shouldReadTimeToReuse)
+TEST_F(CountersTest, shouldReadTimeForReuseDeadline)
 {
     int64_t deadline;
-    EXPECT_EQ(0, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, 0, &deadline));
+    EXPECT_EQ(0, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, 0, &deadline));
 
-    int32_t id;
-    id = aeron_counters_manager_allocate(&m_manager, 1234, nullptr, 0, nullptr, 0);
+    int32_t id = aeron_counters_manager_allocate(&m_manager, 1234, nullptr, 0, nullptr, 0);
 
-    EXPECT_EQ(0, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, id, &deadline));
+    EXPECT_EQ(0, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, id, &deadline));
     EXPECT_EQ(AERON_COUNTER_NOT_FREE_TO_REUSE, deadline);
 
     int64_t current_time_ms = aeron_epoch_clock();
     aeron_counters_manager_free(&m_manager, id);
 
-    EXPECT_EQ(0, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, id, &deadline));
+    EXPECT_EQ(0, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, id, &deadline));
     EXPECT_LE(current_time_ms + REUSE_TIMEOUT, deadline);
 
     EXPECT_EQ(
-        -1, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, m_reader.max_counter_id, &deadline));
-    EXPECT_EQ(-1, aeron_counters_reader_free_to_reuse_deadline_ms(&m_reader, -1, &deadline));
+        -1, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, m_reader.max_counter_id, &deadline));
+    EXPECT_EQ(-1, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, -1, &deadline));
+}
+
+TEST_F(CountersTest, shouldSetRegistrationId)
+{
+    int32_t id = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, nullptr, 0);
+
+    int64_t registration_id = 999;
+    EXPECT_EQ(0, aeron_counters_reader_counter_registration_id(&m_reader, id, &registration_id));
+    EXPECT_EQ(AERON_COUNTER_REGISTRATION_ID_DEFAULT, registration_id);
+
+    int64_t expected_registration_id = 777;
+    aeron_counters_manager_counter_registration_id(&m_manager, id, expected_registration_id);
+    EXPECT_EQ(0, aeron_counters_reader_counter_registration_id(&m_reader, id, &registration_id));
+    EXPECT_EQ(expected_registration_id, registration_id);
+}
+
+TEST_F(CountersTest, shouldResetValueAndRegistrationIdIfReused)
+{
+    int32_t id_one = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, nullptr, 0);
+
+    int64_t registration_id_one = 999;
+    EXPECT_EQ(0, aeron_counters_reader_counter_registration_id(&m_reader, id_one, &registration_id_one));
+    EXPECT_EQ(AERON_COUNTER_REGISTRATION_ID_DEFAULT, registration_id_one);
+
+    int64_t expected_registration_id_one = 777;
+    aeron_counters_manager_counter_registration_id(&m_manager, id_one, expected_registration_id_one);
+    EXPECT_EQ(0, aeron_counters_reader_counter_registration_id(&m_reader, id_one, &registration_id_one));
+    EXPECT_EQ(expected_registration_id_one, registration_id_one);
+
+    m_manager.free_to_reuse_timeout_ms = 0;
+    aeron_counters_manager_free(&m_manager, id_one);
+
+    int32_t id_two = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, nullptr, 0);
+
+    int64_t registration_id_two = 999;
+    EXPECT_EQ(0, aeron_counters_reader_counter_registration_id(&m_reader, id_one, &registration_id_two));
+    EXPECT_EQ(id_one, id_two);
+    EXPECT_EQ(AERON_COUNTER_REGISTRATION_ID_DEFAULT, registration_id_two);
+
+    int64_t expected_registration_id_two = 333;
+    aeron_counters_manager_counter_registration_id(&m_manager, id_two, expected_registration_id_two);
+    EXPECT_EQ(0, aeron_counters_reader_counter_registration_id(&m_reader, id_two, &registration_id_two));
+    EXPECT_EQ(expected_registration_id_two, registration_id_two);
 }

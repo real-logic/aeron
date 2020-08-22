@@ -145,7 +145,7 @@ inline int numberOfTrailingZeroes(value_t value) noexcept
 
     uint32_t index = static_cast<uint32_t>((value & -value) * 0x04D7651F);
 
-    return table[index >> 27];
+    return table[index >> 27u];
 #endif
 }
 

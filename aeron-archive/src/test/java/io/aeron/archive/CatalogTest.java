@@ -35,9 +35,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.util.stream.Stream;
 
+import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
@@ -47,6 +50,7 @@ import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -104,6 +108,57 @@ class CatalogTest
         IoUtil.delete(archiveDir, false);
     }
 
+    @Test
+    void shouldUse1KBAlignmentWhenReadingFromOldCatalogFile() throws IOException
+    {
+        final int oldRecordLength = 1024;
+
+        final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
+        IoUtil.deleteIfExists(catalogFile);
+        Files.write(catalogFile.toPath(), new byte[oldRecordLength], CREATE_NEW);
+
+        try (Catalog catalog = new Catalog(archiveDir, clock, true, (version) -> {}))
+        {
+            assertEquals(oldRecordLength, catalog.alignment());
+        }
+    }
+
+    @Test
+    void shouldComputeNextRecordingIdIfValueInHeaderIsZero() throws IOException
+    {
+        setNextRecordingId(0);
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        {
+            assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
+        }
+    }
+
+    @Test
+    void shouldThrowArchiveExceprtionIfTooSmallNextRecordingIdInTheHeader() throws IOException
+    {
+        setNextRecordingId(recordingTwoId);
+
+        final ArchiveException exception =
+            assertThrows(ArchiveException.class, () -> new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null));
+        assertEquals(
+            "invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
+            ", was " + recordingTwoId,
+            exception.getMessage());
+    }
+
+    @Test
+    void shouldReadNextRecordingIdFromCatalogHeader() throws IOException
+    {
+        final long nextRecordingId = 10101010;
+        setNextRecordingId(nextRecordingId);
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        {
+            assertEquals(nextRecordingId, catalog.nextRecordingId());
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(longs = { -1, 0, MIN_CAPACITY - 1 })
     void shouldThrowIllegalArgumentExceptionIfCatalogCapacityIsLessThanMinimalCapacity(final long capacity)
@@ -121,12 +176,12 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            verifyRecordingForId(catalog, recordingOneId, 128, 6, 1, "channelG", "sourceA");
-            verifyRecordingForId(catalog, recordingTwoId, 128, 7, 2, "channelH", "sourceV");
+            verifyRecordingForId(catalog, recordingOneId, 160, 6, 1, "channelG", "sourceA");
+            verifyRecordingForId(catalog, recordingTwoId, 160, 7, 2, "channelH", "sourceV");
             verifyRecordingForId(
                 catalog,
                 recordingThreeId,
-                320,
+                352,
                 8,
                 3,
                 "channelThatIsVeryLongAndShouldNotBeTruncated",
@@ -147,8 +202,8 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            verifyRecordingForId(catalog, recordingOneId, 128, 6, 1, "channelG", "sourceA");
-            verifyRecordingForId(catalog, newRecordingId, 128, 9, 4, "channelJ", "sourceN");
+            verifyRecordingForId(catalog, recordingOneId, 160, 6, 1, "channelG", "sourceA");
+            verifyRecordingForId(catalog, newRecordingId, 160, 9, 4, "channelJ", "sourceN");
         }
     }
 
@@ -479,7 +534,7 @@ class CatalogTest
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
             assertEquals(String.format(
                 "recording is too big: total recording length is %d bytes, available space is %d bytes",
-                Integer.MAX_VALUE, CAPACITY * 2 - 704),
+                Integer.MAX_VALUE, CAPACITY * 2 - 800),
                 exception.getMessage());
         }
     }
@@ -635,7 +690,7 @@ class CatalogTest
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {-1, Long.MAX_VALUE})
+    @ValueSource(longs = { -1, Long.MAX_VALUE })
     void invalidRecordingIsANoOpIfUnknownRecordingIdIsSpecified(final long recordingId)
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
@@ -731,5 +786,18 @@ class CatalogTest
             Arguments.of(0, PAGE_SIZE + 1, true),
             Arguments.of(PAGE_SIZE - 1, 2, true),
             Arguments.of(PAGE_SIZE * 4 + 11, PAGE_SIZE - 10, true));
+    }
+
+    private void setNextRecordingId(final long nextRecordingId) throws IOException
+    {
+        try (FileChannel channel = FileChannel.open(archiveDir.toPath().resolve(CATALOG_FILE_NAME), READ, WRITE))
+        {
+            final MappedByteBuffer byteBuffer = channel.map(READ_WRITE, 0, channel.size());
+            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+
+            new CatalogHeaderEncoder()
+                .wrap(unsafeBuffer, 0)
+                .nextRecordingId(nextRecordingId);
+        }
     }
 }

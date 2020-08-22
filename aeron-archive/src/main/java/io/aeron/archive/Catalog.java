@@ -207,6 +207,7 @@ class Catalog implements AutoCloseable
                         ", archive is " +
                         SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
+
                 alignment = catalogHeaderDecoder.alignment();
                 nextRecordingId = catalogHeaderDecoder.nextRecordingId();
             }
@@ -289,7 +290,8 @@ class Catalog implements AutoCloseable
                 versionCheck.accept(version);
             }
 
-            alignment = catalogHeaderDecoder.alignment();
+            final int alignment = catalogHeaderDecoder.alignment();
+            this.alignment = 0 != alignment ? alignment : DEFAULT_RECORD_LENGTH;
             nextRecordingId = catalogHeaderDecoder.nextRecordingId();
 
             buildIndex();
@@ -314,6 +316,11 @@ class Catalog implements AutoCloseable
     long capacity()
     {
         return capacity;
+    }
+
+    int alignment()
+    {
+        return alignment;
     }
 
     int countEntries()
@@ -351,18 +358,17 @@ class Catalog implements AutoCloseable
         final String originalChannel,
         final String sourceIdentity)
     {
-        final int recordingDescriptorLengthWithHeader = DESCRIPTOR_HEADER_LENGTH +
-            computeRecordingDescriptorLength(strippedChannel, originalChannel, sourceIdentity, alignment);
+        final int frameLength = recordingDescriptorFrameLength(strippedChannel, originalChannel, sourceIdentity);
         final int recordingDescriptorOffset = nextRecordingDescriptorOffset;
 
-        if (recordingDescriptorOffset + recordingDescriptorLengthWithHeader > capacity)
+        if (recordingDescriptorOffset + frameLength > capacity)
         {
-            growCatalog(MAX_CATALOG_LENGTH, recordingDescriptorLengthWithHeader);
+            growCatalog(MAX_CATALOG_LENGTH, frameLength);
         }
 
         final long recordingId = nextRecordingId;
 
-        catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset, recordingDescriptorLengthWithHeader);
+        catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset, frameLength);
         descriptorEncoder
             .wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH)
             .recordingId(recordingId)
@@ -382,7 +388,7 @@ class Catalog implements AutoCloseable
 
         descriptorHeaderEncoder
             .wrap(catalogBuffer, 0)
-            .length(recordingDescriptorLengthWithHeader - DESCRIPTOR_HEADER_LENGTH)
+            .length(frameLength - DESCRIPTOR_HEADER_LENGTH)
             .state(VALID);
 
         catalogHeaderEncoder.nextRecordingId(recordingId + 1);
@@ -390,7 +396,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel);
 
         nextRecordingId = recordingId + 1;
-        nextRecordingDescriptorOffset = recordingDescriptorOffset + recordingDescriptorLengthWithHeader;
+        nextRecordingDescriptorOffset = recordingDescriptorOffset + frameLength;
         catalogIndex.add(recordingId, recordingDescriptorOffset);
 
         return recordingId;
@@ -452,15 +458,15 @@ class Catalog implements AutoCloseable
         int offset = CatalogHeaderDecoder.BLOCK_LENGTH;
         while (offset < nextRecordingDescriptorOffset)
         {
-            final int recordingLength = wrapDescriptorAtOffset(catalogBuffer, offset);
-            if (recordingLength <= 0)
+            final int frameLength = wrapDescriptorAtOffset(catalogBuffer, offset);
+            if (frameLength < 0)
             {
                 break;
             }
 
             invokeEntryProcessor(consumer);
 
-            offset += recordingLength + DESCRIPTOR_HEADER_LENGTH;
+            offset += frameLength;
             count++;
         }
 
@@ -688,11 +694,11 @@ class Catalog implements AutoCloseable
         return (int)recordingDescriptorOffset;
     }
 
-    void growCatalog(final long maxCatalogLength, final int recordingLengthWithHeader)
+    void growCatalog(final long maxCatalogLength, final int frameLength)
     {
         final long oldCapacity = capacity;
         final long recordingOffset = nextRecordingDescriptorOffset;
-        final long targetCapacity = recordingOffset + recordingLengthWithHeader;
+        final long targetCapacity = recordingOffset + frameLength;
         if (targetCapacity > maxCatalogLength)
         {
             if (maxCatalogLength == oldCapacity)
@@ -703,7 +709,7 @@ class Catalog implements AutoCloseable
             {
                 throw new ArchiveException(String.format(
                     "recording is too big: total recording length is %d bytes, available space is %d bytes",
-                    recordingLengthWithHeader, maxCatalogLength - recordingOffset));
+                    frameLength, maxCatalogLength - recordingOffset));
             }
         }
 
@@ -741,23 +747,35 @@ class Catalog implements AutoCloseable
     private void buildIndex()
     {
         int offset = CatalogHeaderDecoder.BLOCK_LENGTH;
+        long recordingId = -1;
         while (offset < capacity)
         {
-            final int recordingLength = wrapDescriptorAtOffset(catalogBuffer, offset);
-            if (recordingLength <= 0)
+            final int frameLength = wrapDescriptorAtOffset(catalogBuffer, offset);
+            if (frameLength < 0)
             {
                 break;
             }
 
+            recordingId = recordingId(catalogBuffer);
             if (isValidDescriptor(catalogBuffer))
             {
-                catalogIndex.add(recordingId(catalogBuffer), offset);
+                catalogIndex.add(recordingId, offset);
             }
 
-            offset += recordingLength + DESCRIPTOR_HEADER_LENGTH;
+            offset += frameLength;
         }
 
         nextRecordingDescriptorOffset = offset;
+
+        if (0 == nextRecordingId)
+        {
+            nextRecordingId = recordingId + 1;
+        }
+        else if (nextRecordingId < recordingId + 1)
+        {
+            throw new ArchiveException("invalid nextRecordingId: expected value greater or equal to " +
+                (recordingId + 1) + ", was " + nextRecordingId);
+        }
     }
 
     private int wrapDescriptorAtOffset(final UnsafeBuffer buffer, final int recordingDescriptorOffset)
@@ -767,10 +785,12 @@ class Catalog implements AutoCloseable
 
         if (recordingLength > 0)
         {
-            buffer.wrap(catalogByteBuffer, recordingDescriptorOffset, recordingLength + DESCRIPTOR_HEADER_LENGTH);
+            final int frameLength = align(recordingLength + DESCRIPTOR_HEADER_LENGTH, alignment);
+            buffer.wrap(catalogByteBuffer, recordingDescriptorOffset, frameLength);
+            return frameLength;
         }
 
-        return recordingLength;
+        return -1;
     }
 
     private void invokeEntryProcessor(final CatalogEntryProcessor consumer)
@@ -791,13 +811,16 @@ class Catalog implements AutoCloseable
         consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
     }
 
-    private static int computeRecordingDescriptorLength(
-        final String strippedChannel, final String originalChannel, final String sourceIdentity, final int alignment)
+    private int recordingDescriptorFrameLength(
+        final String strippedChannel, final String originalChannel, final String sourceIdentity)
     {
-        final int prefixLength = 7 * SIZE_OF_LONG + 6 * SIZE_OF_INT;
-        final int suffixLength =
-            3 * SIZE_OF_INT + strippedChannel.length() + originalChannel.length() + sourceIdentity.length();
-        return align(prefixLength + suffixLength, alignment);
+        final int recordingDescriptorLength =
+            7 * SIZE_OF_LONG +
+            6 * SIZE_OF_INT +
+            SIZE_OF_INT + strippedChannel.length() +
+            SIZE_OF_INT + originalChannel.length() +
+            SIZE_OF_INT + sourceIdentity.length();
+        return align(DESCRIPTOR_HEADER_LENGTH + recordingDescriptorLength, alignment);
     }
 
     /**

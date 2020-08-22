@@ -75,7 +75,7 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
 
     uint32_t index = (uint32_t)((value & -value) * 0x04D7651F);
 
-    return table[index >> 27];
+    return table[index >> 27u];
 #endif
 }
 

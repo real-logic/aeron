@@ -206,7 +206,7 @@ public:
     static const std::int32_t RECORD_ALLOCATED = 1;
     static const std::int32_t RECORD_RECLAIMED = -1;
 
-    static const std::int64_t DEFAULT_REGISTRATION_ID = 0;
+    static const std::int64_t DEFAULT_REGISTRATION_ID = INT64_C(0);
     static const std::int64_t NOT_FREE_TO_REUSE = INT64_MAX;
 
     static const util::index_t COUNTER_LENGTH = sizeof(CounterValueDefn);

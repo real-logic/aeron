@@ -21,7 +21,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "CountersReader.h"
+#include "concurrent/CountersReader.h"
 
 namespace aeron { namespace concurrent {
 

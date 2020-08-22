@@ -22,10 +22,11 @@
 #include <gtest/gtest.h>
 
 #include "concurrent/AtomicBuffer.h"
+#include "concurrent/CountersReader.h"
 #include "concurrent/CountersManager.h"
 #include "concurrent/status/UnsafeBufferPosition.h"
 
-#define FREE_TO_REUSE_TIMEOUT (1000L)
+#define FREE_TO_REUSE_TIMEOUT (1000LL)
 
 using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
@@ -229,8 +230,9 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadValue)
 
 TEST_F(CountersManagerTest, shouldSetRegistrationId)
 {
+    const std::int64_t defaultRegistrationId = CountersManager::DEFAULT_REGISTRATION_ID;
     const std::int32_t counterId = m_countersManager.allocate("abc");
-    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterId), CountersReader::DEFAULT_REGISTRATION_ID);
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterId), defaultRegistrationId);
 
     const std::int64_t registrationId = 777;
     m_countersManager.setCounterRegistrationId(counterId, registrationId);
@@ -239,17 +241,19 @@ TEST_F(CountersManagerTest, shouldSetRegistrationId)
 
 TEST_F(CountersManagerTest, shouldResetValueAndRegistrationIdIfReused)
 {
+    const std::int64_t defaultRegistrationId = CountersManager::DEFAULT_REGISTRATION_ID;
     const std::int32_t counterIdOne = m_countersManager.allocate("abc");
-    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdOne), CountersReader::DEFAULT_REGISTRATION_ID);
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdOne), defaultRegistrationId);
 
     const std::int64_t registrationIdOne = 777;
     m_countersManager.setCounterRegistrationId(counterIdOne, registrationIdOne);
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdOne), registrationIdOne);
 
     m_countersManager.free(counterIdOne);
 
     const std::int32_t counterIdTwo = m_countersManager.allocate("def");
     EXPECT_EQ(counterIdOne, counterIdTwo);
-    EXPECT_EQ(m_countersManager.getCounterValue(counterIdOne), CountersReader::DEFAULT_REGISTRATION_ID);
+    EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdTwo), defaultRegistrationId);
 
     const std::int64_t registrationIdTwo = 333;
     m_countersManager.setCounterRegistrationId(counterIdTwo, registrationIdTwo);

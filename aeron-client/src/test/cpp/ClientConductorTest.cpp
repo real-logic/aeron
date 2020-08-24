@@ -741,7 +741,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
     ASSERT_FALSE(sub->hasImage(correlationId));
 }
 
-TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
+TEST_F(ClientConductorTest, shouldCallInactiveConnectionAfterInactiveConnection)
 {
     std::int64_t id = m_conductor.addSubscription(
         CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);

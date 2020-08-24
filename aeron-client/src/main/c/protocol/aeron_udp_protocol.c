@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
 #include <string.h>
 
 #include "util/aeron_bitutil.h"
@@ -42,7 +41,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 
 extern size_t aeron_res_header_address_length(int8_t res_type);
 
-extern size_t aeron_frame_compute_max_message_length(size_t term_length);
+extern size_t aeron_compute_max_message_length(size_t term_length);
 
 size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header)
 {
@@ -72,7 +71,7 @@ int aeron_res_header_entry_length(void *res, size_t remaining)
             {
                 aeron_resolution_header_ipv6_t *res_ipv6 = (aeron_resolution_header_ipv6_t *)res_header;
                 size_t entry_length = aeron_res_header_entry_length_ipv6(res_ipv6);
-                result = entry_length <= remaining ? (int) entry_length : -1;
+                result = entry_length <= remaining ? (int)entry_length : -1;
             }
             break;
         }
@@ -83,7 +82,7 @@ int aeron_res_header_entry_length(void *res, size_t remaining)
             {
                 aeron_resolution_header_ipv4_t *res_ipv4 = (aeron_resolution_header_ipv4_t *)res_header;
                 size_t entry_length = aeron_res_header_entry_length_ipv4(res_ipv4);
-                result = entry_length <= remaining ? (int) entry_length : -1;
+                result = entry_length <= remaining ? (int)entry_length : -1;
             }
             break;
         }

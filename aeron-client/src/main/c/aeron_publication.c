@@ -70,7 +70,7 @@ int aeron_publication_create(
 
     _publication->max_possible_position = ((int64_t)term_length << 31);
     _publication->max_payload_length = (size_t)(_publication->log_meta_data->mtu_length - AERON_DATA_HEADER_LENGTH);
-    _publication->max_message_length = aeron_frame_compute_max_message_length(term_length);
+    _publication->max_message_length = aeron_compute_max_message_length(term_length);
     _publication->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_length);
     _publication->initial_term_id = _publication->log_meta_data->initial_term_id;
 

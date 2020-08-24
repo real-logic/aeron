@@ -16,6 +16,7 @@
 
 #include "aeron_bitutil.h"
 
+extern uint8_t *aeron_cache_line_align_buffer(uint8_t *buffer);
 extern int aeron_number_of_trailing_zeroes(int32_t value);
 extern int aeron_number_of_trailing_zeroes_u64(uint64_t value);
 extern int aeron_number_of_leading_zeroes(int32_t value);

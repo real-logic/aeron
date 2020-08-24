@@ -104,6 +104,7 @@ typedef struct aeron_driver_name_resolver_stct
     aeron_distinct_error_log_t *error_log;
 
     struct sockaddr_storage received_address;
+    uint8_t *aligned_buffer;
     uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH + AERON_CACHE_LINE_LENGTH];
 }
 aeron_driver_name_resolver_t;
@@ -119,8 +120,7 @@ void aeron_driver_name_resolver_receive(
     struct sockaddr_storage *addr);
 
 static int aeron_driver_name_resolver_from_sockaddr(
-    struct sockaddr_storage *addr,
-    aeron_name_resolver_cache_addr_t *cache_addr);
+    struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr);
 
 int aeron_driver_name_resolver_init(
     aeron_driver_name_resolver_t **driver_resolver,
@@ -137,6 +137,8 @@ int aeron_driver_name_resolver_init(
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         goto error_cleanup;
     }
+
+    _driver_resolver->aligned_buffer = aeron_cache_line_align_buffer(_driver_resolver->buffer);
 
     _driver_resolver->name = name;
     if (NULL == _driver_resolver->name)
@@ -306,8 +308,7 @@ int aeron_driver_name_resolver_close(aeron_name_resolver_t *resolver)
 }
 
 static int aeron_driver_name_resolver_to_sockaddr(
-    aeron_name_resolver_cache_addr_t *cache_addr,
-    struct sockaddr_storage *addr)
+    aeron_name_resolver_cache_addr_t *cache_addr, struct sockaddr_storage *addr)
 {
     int result = -1;
     if (cache_addr->res_type == AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD)
@@ -335,8 +336,7 @@ static int aeron_driver_name_resolver_to_sockaddr(
 }
 
 static int aeron_driver_name_resolver_from_sockaddr(
-    struct sockaddr_storage *addr,
-    aeron_name_resolver_cache_addr_t *cache_addr)
+    struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr)
 {
     int result = -1;
     if (addr->ss_family == AF_INET6)
@@ -373,8 +373,7 @@ static uint16_t aeron_driver_name_resolver_get_port(aeron_driver_name_resolver_t
 }
 
 static int aeron_driver_name_resolver_find_neighbor_by_addr(
-    aeron_driver_name_resolver_t *resolver,
-    aeron_name_resolver_cache_addr_t *cache_addr)
+    aeron_driver_name_resolver_t *resolver, aeron_name_resolver_cache_addr_t *cache_addr)
 {
     for (size_t i = 0; i < resolver->neighbors.length; i++)
     {
@@ -592,11 +591,9 @@ void aeron_driver_name_resolver_receive(
 
 static int aeron_driver_name_resolver_poll(aeron_driver_name_resolver_t *resolver)
 {
-    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
-
     struct mmsghdr mmsghdr[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
     struct iovec iov[AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS];
-    iov[0].iov_base = aligned_buffer;
+    iov[0].iov_base = resolver->aligned_buffer;
     iov[0].iov_len = AERON_MAX_UDP_PAYLOAD_LENGTH;
 
     for (size_t i = 0; i < AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS; i++)
@@ -693,8 +690,6 @@ static int aeron_driver_name_resolver_do_send(
 
 static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
 {
-    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
-
     if (NULL == resolver->bootstrap_neighbor && 0 == resolver->neighbors.length)
     {
         return 0;
@@ -702,6 +697,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
     const size_t entry_offset = sizeof(aeron_frame_header_t);
 
+    uint8_t *aligned_buffer = resolver->aligned_buffer;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)&aligned_buffer[0];
     aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&aligned_buffer[entry_offset];
 
@@ -789,8 +785,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
 static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
 {
-    uint8_t *aligned_buffer = (uint8_t *)AERON_ALIGN((uintptr_t)resolver->buffer, AERON_CACHE_LINE_LENGTH);
-
+    uint8_t *aligned_buffer = resolver->aligned_buffer;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)aligned_buffer;
     frame_header->type = AERON_HDR_TYPE_RES;
     frame_header->flags = UINT8_C(0);
@@ -1025,9 +1020,7 @@ int aeron_driver_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t 
 }
 
 int aeron_driver_name_resolver_supplier(
-    aeron_name_resolver_t *resolver,
-    const char *args,
-    aeron_driver_context_t *context)
+    aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
 {
     aeron_driver_name_resolver_t *name_resolver = NULL;
 
@@ -1045,7 +1038,6 @@ int aeron_driver_name_resolver_supplier(
     resolver->resolve_func = aeron_driver_name_resolver_resolve;
     resolver->do_work_func = aeron_driver_name_resolver_do_work;
     resolver->close_func = aeron_driver_name_resolver_close;
-
     resolver->state = name_resolver;
 
     return 0;

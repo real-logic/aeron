@@ -26,11 +26,11 @@
 #include <intrin.h>
 #endif
 
-#define AERON_CACHE_LINE_LENGTH (64)
+#define AERON_CACHE_LINE_LENGTH (64u)
 
-#define AERON_ALIGN(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
+#define AERON_ALIGN(value, alignment) (((value) + ((alignment) - 1u)) & ~((alignment) - 1u))
 
-#define AERON_IS_POWER_OF_TWO(value) ((value) > 0 && (((value) & (~(value) + 1)) == (value)))
+#define AERON_IS_POWER_OF_TWO(value) ((value) > 0 && (((value) & (~(value) + 1u)) == (value)))
 
 #define AERON_MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -39,6 +39,12 @@
 #else
 #define AERON_C_COND_EXPECT(exp, c) (exp)
 #endif
+
+inline uint8_t *aeron_cache_line_align_buffer(uint8_t *buffer)
+{
+    size_t remainder = ((size_t)buffer) % AERON_CACHE_LINE_LENGTH;
+    return 0 == remainder ? buffer : (buffer + (AERON_CACHE_LINE_LENGTH - remainder));
+}
 
 /* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
 inline int aeron_number_of_trailing_zeroes(int32_t value)

@@ -18,10 +18,7 @@ package io.aeron.archive;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.archive.checksum.Checksum;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
+import io.aeron.archive.codecs.*;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
@@ -30,6 +27,7 @@ import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,11 +35,14 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
 import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
@@ -61,8 +62,8 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static java.nio.file.StandardOpenOption.*;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toMap;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -110,29 +111,30 @@ public class ArchiveTool
             System.exit(-1);
         }
 
+        final PrintStream out = System.out;
         if (args.length == 2 && args[1].equals("describe"))
         {
-            describe(System.out, archiveDir);
+            describe(out, archiveDir);
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
-            describeRecording(System.out, archiveDir, Long.parseLong(args[2]));
+            describeRecording(out, archiveDir, Long.parseLong(args[2]));
         }
         else if (args.length >= 2 && args[1].equals("dump"))
         {
             dump(
-                System.out,
+                out,
                 archiveDir,
                 args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE,
                 ArchiveTool::continueOnFrameLimit);
         }
         else if (args.length == 2 && args[1].equals("errors"))
         {
-            printErrors(System.out, archiveDir);
+            printErrors(out, archiveDir);
         }
         else if (args.length == 2 && args[1].equals("pid"))
         {
-            System.out.println(pid(archiveDir));
+            out.println(pid(archiveDir));
         }
         else if (args.length >= 2 && args[1].equals("verify"))
         {
@@ -141,7 +143,7 @@ public class ArchiveTool
             if (args.length == 2)
             {
                 hasErrors = !verify(
-                    System.out,
+                    out,
                     archiveDir,
                     emptySet(),
                     null,
@@ -152,7 +154,7 @@ public class ArchiveTool
                 if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
                     hasErrors = !verify(
-                        System.out,
+                        out,
                         archiveDir,
                         EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
                         null,
@@ -161,7 +163,7 @@ public class ArchiveTool
                 else
                 {
                     hasErrors = !verifyRecording(
-                        System.out,
+                        out,
                         archiveDir,
                         Long.parseLong(args[2]),
                         emptySet(),
@@ -174,7 +176,7 @@ public class ArchiveTool
                 if (APPLY_CHECKSUM == VerifyOption.byFlag(args[2]))
                 {
                     hasErrors = !verify(
-                        System.out,
+                        out,
                         archiveDir,
                         EnumSet.of(APPLY_CHECKSUM),
                         validateChecksumClass(args[3]),
@@ -183,7 +185,7 @@ public class ArchiveTool
                 else
                 {
                     hasErrors = !verifyRecording(
-                        System.out,
+                        out,
                         archiveDir,
                         Long.parseLong(args[2]),
                         EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
@@ -196,7 +198,7 @@ public class ArchiveTool
                 if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
                     hasErrors = !verify(
-                        System.out,
+                        out,
                         archiveDir,
                         EnumSet.allOf(VerifyOption.class),
                         validateChecksumClass(args[4]),
@@ -205,7 +207,7 @@ public class ArchiveTool
                 else
                 {
                     hasErrors = !verifyRecording(
-                        System.out,
+                        out,
                         archiveDir,
                         Long.parseLong(args[2]),
                         EnumSet.of(APPLY_CHECKSUM),
@@ -216,7 +218,7 @@ public class ArchiveTool
             else
             {
                 hasErrors = !verifyRecording(
-                    System.out,
+                    out,
                     archiveDir,
                     Long.parseLong(args[2]),
                     EnumSet.allOf(VerifyOption.class),
@@ -233,18 +235,18 @@ public class ArchiveTool
         {
             if (args.length == 3)
             {
-                checksum(System.out, archiveDir, false, args[2]);
+                checksum(out, archiveDir, false, args[2]);
             }
             else
             {
                 if ("-a".equals(args[3]))
                 {
-                    checksum(System.out, archiveDir, true, args[2]);
+                    checksum(out, archiveDir, true, args[2]);
                 }
                 else
                 {
                     checksumRecording(
-                        System.out,
+                        out,
                         archiveDir,
                         Long.parseLong(args[3]),
                         args.length > 4 && "-a".equals(args[4]),
@@ -254,24 +256,34 @@ public class ArchiveTool
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
         {
-            System.out.println(countEntries(archiveDir));
+            out.println(countEntries(archiveDir));
         }
         else if (args.length == 2 && args[1].equals("max-entries"))
         {
-            System.out.println(maxEntries(archiveDir));
+            out.println(maxEntries(archiveDir));
         }
         else if (args.length == 3 && args[1].equals("max-entries"))
         {
-            System.out.println(maxEntries(archiveDir, Long.parseLong(args[2])));
+            out.println(maxEntries(archiveDir, Long.parseLong(args[2])));
         }
         else if (args.length == 2 && args[1].equals("migrate"))
         {
-            System.out.print("WARNING: please ensure archive is not running and that a backup has been taken of " +
+            out.print("WARNING: please ensure archive is not running and that a backup has been taken of " +
                 "the archive directory before attempting migration(s).");
 
             if (readContinueAnswer("Continue? (y/n)"))
             {
-                migrate(System.out, archiveDir);
+                migrate(out, archiveDir);
+            }
+        }
+        else if (args.length == 2 && args[1].equals("compact"))
+        {
+            out.print("WARNING: Compacting the Catalog is non-recoverable operation! All recordings in state " +
+                "`INVALID` will be deleted along with the corresponding segment files.");
+
+            if (readContinueAnswer("Continue? (y/n)"))
+            {
+                compact(out, archiveDir);
             }
         }
         else
@@ -601,24 +613,110 @@ public class ArchiveTool
     public static void migrate(final PrintStream out, final File archiveDir)
     {
         final EpochClock epochClock = INSTANCE;
-        try (ArchiveMarkFile markFile = openMarkFileReadWrite(archiveDir, epochClock);
-            Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+        try
         {
-            out.println("MarkFile version=" + fullVersionString(markFile.decoder().version()));
-            out.println("Catalog version=" + fullVersionString(catalog.version()));
-            out.println("Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
+            final int markFileVersion;
+            try (ArchiveMarkFile markFile = openMarkFileReadWrite(archiveDir, epochClock);
+                Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+            {
+                markFileVersion = markFile.decoder().version();
+                out.println("MarkFile version=" + fullVersionString(markFileVersion));
+                out.println("Catalog version=" + fullVersionString(catalog.version()));
+                out.println("Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
+            }
 
-            final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(markFile.decoder().version());
-
+            final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(markFileVersion);
             for (final ArchiveMigrationStep step : steps)
             {
-                out.println("Migration step " + step.toString());
-                step.migrate(out, markFile, catalog, archiveDir);
+                try (ArchiveMarkFile markFile = openMarkFileReadWrite(archiveDir, epochClock);
+                    Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+                {
+                    out.println("Migration step " + step.toString());
+                    step.migrate(out, markFile, catalog, archiveDir);
+                }
             }
         }
         catch (final Exception ex)
         {
             ex.printStackTrace(out);
+        }
+    }
+
+    /**
+     * Compact Catalog file by removing all recordings in state {@link io.aeron.archive.codecs.RecordingState#INVALID}
+     * and delete the corresponding segment files.
+     *
+     * @param out        stream to print results and errors to.
+     * @param archiveDir that contains {@link MarkFile}, {@link Catalog}, and recordings.
+     */
+    public static void compact(final PrintStream out, final File archiveDir)
+    {
+        compact(out, archiveDir, INSTANCE);
+    }
+
+    static void compact(final PrintStream out, final File archiveDir, final EpochClock epochClock)
+    {
+        final File compactFile = new File(archiveDir, CATALOG_FILE_NAME + ".compact");
+        try
+        {
+            final Path compactFilePath = compactFile.toPath();
+            try (FileChannel channel = FileChannel.open(compactFilePath, READ, WRITE, CREATE_NEW);
+                Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+            {
+                final MappedByteBuffer byteBuffer = channel.map(READ_WRITE, 0, MAX_CATALOG_LENGTH);
+                final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+
+                new CatalogHeaderEncoder()
+                    .wrap(unsafeBuffer, 0)
+                    .version(catalog.version())
+                    .length(CatalogHeaderEncoder.BLOCK_LENGTH)
+                    .nextRecordingId(catalog.nextRecordingId())
+                    .alignment(catalog.alignment());
+
+                final MutableInteger offset = new MutableInteger(CatalogHeaderEncoder.BLOCK_LENGTH);
+                final MutableInteger deletedRecords = new MutableInteger();
+                final MutableInteger reclaimedBytes = new MutableInteger();
+
+                catalog.forEach(
+                    (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                    {
+                        final int frameLength = headerDecoder.encodedLength() + headerDecoder.length();
+                        if (INVALID == headerDecoder.state())
+                        {
+                            deletedRecords.increment();
+                            reclaimedBytes.addAndGet(frameLength);
+
+                            final String[] segmentFiles = listSegmentFiles(archiveDir, descriptorDecoder.recordingId());
+                            if (segmentFiles != null)
+                            {
+                                for (final String segmentFile : segmentFiles)
+                                {
+                                    IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            final int index = offset.getAndAdd(frameLength);
+                            unsafeBuffer.putBytes(index, headerDecoder.buffer(), 0, frameLength);
+                        }
+                    });
+
+                out.println("Compaction result: deleted " + deletedRecords.get() + " records and reclaimed " +
+                    reclaimedBytes.get() + " bytes");
+            }
+
+            final Path catalogFilePath = compactFilePath.resolveSibling(CATALOG_FILE_NAME);
+            Files.delete(catalogFilePath);
+            Files.move(compactFilePath, catalogFilePath);
+        }
+        catch (final IOException ex)
+        {
+            ex.printStackTrace(out);
+        }
+        finally
+        {
+            IoUtil.deleteIfExists(compactFile);
         }
     }
 
@@ -765,7 +863,7 @@ public class ArchiveTool
             null);
     }
 
-    private static Catalog openCatalogReadWrite(final File archiveDir, final EpochClock epochClock)
+    static Catalog openCatalogReadWrite(final File archiveDir, final EpochClock epochClock)
     {
         return new Catalog(archiveDir, epochClock, true, (version) -> {});
     }
@@ -1316,6 +1414,8 @@ public class ArchiveTool
             "  count-entries: queries the number of recording entries in the catalog.%n" +
             "  max-entries [number of entries]: gets or increases the maximum number of%n" +
             "     recording entries the catalog can store.%n" +
+            "  compact: compact Catalog file by removing entries in state `INVALID` and delete the corresponding" +
+            "     segment files.%n" +
             "  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.%n");
         System.out.flush();
     }

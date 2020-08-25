@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,8 +42,7 @@ import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.ArchiveTool.*;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
-import static io.aeron.archive.Catalog.CatalogEntryProcessor;
-import static io.aeron.archive.Catalog.PAGE_SIZE;
+import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -57,6 +57,7 @@ import static java.nio.file.Files.createTempDirectory;
 import static java.nio.file.Files.deleteIfExists;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Collections.addAll;
 import static java.util.Collections.emptySet;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.of;
@@ -119,7 +120,7 @@ class ArchiveToolTests
     {
         archiveDir = ArchiveTests.makeTestDirectory();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, 128 * 1024, epochClock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
             invalidRecording0 = catalog.addNewRecording(NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
@@ -1072,7 +1073,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecordingStateIsValid(catalog, validRecording4);
+            assertRecordingState(catalog, validRecording4, VALID);
         }
     }
 
@@ -1084,7 +1085,7 @@ class ArchiveToolTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecordingStateIsValid(catalog, validRecording4);
+            assertRecordingState(catalog, validRecording4, VALID);
         }
     }
 
@@ -1099,6 +1100,47 @@ class ArchiveToolTests
     {
         assertChecksumClassNameValidation(
             () -> verifyRecording(out, archiveDir, validRecording4, of(APPLY_CHECKSUM), null, (file) -> true));
+    }
+
+    @Test
+    void compactDeletesRecordingsInStateInvalidAndDeletesTheCorrespondingSegmentFiles()
+    {
+        // Mark recording as INVALID without invoking `invalidateRecording` operation
+        verifyRecording(
+            out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+        {
+            assertRecordingState(catalog, validRecording3, INVALID);
+
+            assertTrue(catalog.invalidateRecording(validRecording6));
+            assertRecordingState(catalog, validRecording6, INVALID);
+        }
+
+        final List<String> segmentFiles = new ArrayList<>();
+        addAll(segmentFiles, listSegmentFiles(archiveDir, validRecording3));
+        addAll(segmentFiles, listSegmentFiles(archiveDir, validRecording6));
+
+        assertTrue(segmentFiles.stream().allMatch(file -> new File(archiveDir, file).exists()),
+            "Non-existing segment files");
+
+        compact(out, archiveDir, epochClock);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertNoRecording(catalog, validRecording3);
+            assertNoRecording(catalog, validRecording6);
+
+            assertEquals(22, catalog.countEntries());
+            assertRecording(catalog, validRecording0, VALID, 0, NULL_POSITION, 15, NULL_TIMESTAMP,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording51, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
+        }
+
+        assertTrue(segmentFiles.stream().noneMatch(file -> new File(archiveDir, file).exists()),
+            "Segment files not deleted");
+        Mockito.verify(out).println("Compaction result: deleted 2 records and reclaimed 384 bytes");
     }
 
     private static List<Arguments> verifyChecksumClassValidation()
@@ -1212,14 +1254,37 @@ class ArchiveToolTests
             }
         });
 
-        assertTrue(found.get());
+        assertTrue(found.get(), () -> "recordingId=" + recordingId + " was not found");
     }
 
-    private void assertRecordingStateIsValid(final Catalog catalog, final long recordingId)
+    private void assertRecordingState(final Catalog catalog, final long recordingId, final RecordingState expectedState)
     {
-        final CatalogEntryProcessor processor = (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-            assertEquals(VALID, headerDecoder.state());
+        final MutableBoolean found = new MutableBoolean();
+        catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+        {
+            if (recordingId == descriptorDecoder.recordingId())
+            {
+                found.set(true);
+                assertEquals(expectedState, headerDecoder.state());
+            }
+        });
 
-        assertTrue(catalog.forEntry(recordingId, processor));
+        assertTrue(found.get(), () -> "recordingId=" + recordingId + " was not found");
+    }
+
+    private void assertNoRecording(
+        final Catalog catalog,
+        final long recordingId)
+    {
+        final MutableBoolean found = new MutableBoolean();
+        catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+        {
+            if (recordingId == descriptorDecoder.recordingId())
+            {
+                found.set(true);
+            }
+        });
+
+        assertFalse(found.get(), () -> "recordingId=" + recordingId + " was found");
     }
 }

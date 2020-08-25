@@ -759,7 +759,7 @@ public class NetworkPublication
         if (untetheredSubscriptionsSize > 0)
         {
             final long senderPosition = this.senderPosition.getVolatile();
-            final long untetheredWindowLimit = (senderPosition - termWindowLength) + (termWindowLength >> 3);
+            final long untetheredWindowLimit = (senderPosition - termWindowLength) + (termWindowLength >> 2);
 
             for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
             {

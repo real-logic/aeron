@@ -347,7 +347,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)
     {
-        final long untetheredWindowLimit = (consumerPosition - termWindowLength) + (termWindowLength >> 3);
+        final long untetheredWindowLimit = (consumerPosition - termWindowLength) + (termWindowLength >> 2);
 
         for (int lastIndex = untetheredSubscriptions.size() - 1, i = lastIndex; i >= 0; i--)
         {

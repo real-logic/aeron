@@ -131,6 +131,7 @@ class Catalog implements AutoCloseable
     private final EpochClock epochClock;
     private final CatalogIndex catalogIndex = new CatalogIndex();
     private final int alignment;
+    private final int firstRecordingDescriptorOffset;
 
     private FileChannel catalogChannel;
     private MappedByteBuffer catalogByteBuffer;
@@ -224,6 +225,7 @@ class Catalog implements AutoCloseable
                     .nextRecordingId(nextRecordingId)
                     .alignment(alignment);
             }
+            firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
 
             buildIndex();
             refreshCatalog(true, checksum, buffer);
@@ -291,8 +293,17 @@ class Catalog implements AutoCloseable
             }
 
             final int alignment = catalogHeaderDecoder.alignment();
-            this.alignment = 0 != alignment ? alignment : DEFAULT_RECORD_LENGTH;
-            nextRecordingId = catalogHeaderDecoder.nextRecordingId();
+            if (0 != alignment)
+            {
+                this.alignment = alignment;
+                firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
+                nextRecordingId = catalogHeaderDecoder.nextRecordingId();
+            }
+            else
+            {
+                this.alignment = DEFAULT_RECORD_LENGTH;
+                firstRecordingDescriptorOffset = DEFAULT_RECORD_LENGTH;
+            }
 
             buildIndex();
             refreshCatalog(false, null, null);
@@ -311,6 +322,11 @@ class Catalog implements AutoCloseable
             isClosed = true;
             unmapAndCloseChannel();
         }
+    }
+
+    boolean isClosed()
+    {
+        return isClosed;
     }
 
     long capacity()
@@ -455,7 +471,7 @@ class Catalog implements AutoCloseable
     int forEach(final CatalogEntryProcessor consumer)
     {
         int count = 0;
-        int offset = CatalogHeaderDecoder.BLOCK_LENGTH;
+        int offset = firstRecordingDescriptorOffset;
         while (offset < nextRecordingDescriptorOffset)
         {
             final int frameLength = wrapDescriptorAtOffset(catalogBuffer, offset);
@@ -746,7 +762,7 @@ class Catalog implements AutoCloseable
 
     private void buildIndex()
     {
-        int offset = CatalogHeaderDecoder.BLOCK_LENGTH;
+        int offset = firstRecordingDescriptorOffset;
         long recordingId = -1;
         while (offset < capacity)
         {

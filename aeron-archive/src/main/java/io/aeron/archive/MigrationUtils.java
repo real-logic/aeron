@@ -23,16 +23,20 @@ import java.nio.channels.FileChannel;
 
 import static java.nio.file.StandardOpenOption.*;
 
-class MigrationUtils
+final class MigrationUtils
 {
     private static final String MIGRATION_TIMESTAMP_FILE_PREFIX = "migration-";
     private static final String MIGRATION_TIMESTAMP_FILE_SUFFIX = ".dat";
 
-    public static FileChannel createMigrationTimestampFile(
+    private MigrationUtils()
+    {
+    }
+
+    static FileChannel createMigrationTimestampFile(
         final File directory, final int fromVersion, final int toVersion)
     {
         final String filename =
-            MIGRATION_TIMESTAMP_FILE_PREFIX + fromVersion + "-to-" + toVersion + MIGRATION_TIMESTAMP_FILE_SUFFIX;
+            migrationTimestampFileName(fromVersion, toVersion);
         final File timestampFile = new File(directory, filename);
 
         FileChannel fileChannel = null;
@@ -51,7 +55,12 @@ class MigrationUtils
         return fileChannel;
     }
 
-    public static String fullVersionString(final int version)
+    static String migrationTimestampFileName(final int fromVersion, final int toVersion)
+    {
+        return MIGRATION_TIMESTAMP_FILE_PREFIX + fromVersion + "-to-" + toVersion + MIGRATION_TIMESTAMP_FILE_SUFFIX;
+    }
+
+    static String fullVersionString(final int version)
     {
         return version +
             "(Major " + SemanticVersion.major(version) +

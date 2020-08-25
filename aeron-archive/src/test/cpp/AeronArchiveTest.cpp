@@ -373,24 +373,34 @@ protected:
     bool m_debug = false;
 };
 
-TEST_F(AeronArchiveTest, shouldConnectToArchive)
-{
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
-    aeronArchive->checkForErrorResponse();
-}
-
 TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
     aeron::concurrent::YieldingIdleStrategy idle;
+    std::uint8_t previousStep = asyncConnect->step();
 
     std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
     while (!aeronArchive)
     {
-        idle.idle();
+        if (asyncConnect->step() == previousStep)
+        {
+            idle.idle();
+        }
+        else
+        {
+            idle.reset();
+            previousStep = asyncConnect->step();
+        }
+
         aeronArchive = asyncConnect->poll();
     }
 
+    aeronArchive->checkForErrorResponse();
+}
+
+TEST_F(AeronArchiveTest, shouldConnectToArchive)
+{
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
     aeronArchive->checkForErrorResponse();
 }
 

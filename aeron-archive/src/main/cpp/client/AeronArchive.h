@@ -87,6 +87,16 @@ public:
          */
         std::shared_ptr<AeronArchive> poll();
 
+        /**
+         * The step in the connect process this connect attempt has reached.
+         *
+         * @return the step in the connect process this connect attempt has reached.
+         */
+        inline std::uint8_t step()
+        {
+            return m_step;
+        }
+
     private:
         std::unique_ptr<Context_t> m_ctx;
         std::unique_ptr<ArchiveProxy> m_archiveProxy;
@@ -136,16 +146,26 @@ public:
         std::shared_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
         std::shared_ptr<Aeron> aeron = context.aeron();
         ConnectIdleStrategy idle;
+        std::uint8_t previousStep = asyncConnect->step();
 
         std::shared_ptr<AeronArchive> archive = asyncConnect->poll();
         while (!archive)
         {
+            if (asyncConnect->step() == previousStep)
+            {
+                idle.idle();
+            }
+            else
+            {
+                idle.reset();
+                previousStep = asyncConnect->step();
+            }
+
             if (aeron->usesAgentInvoker())
             {
                 aeron->conductorAgentInvoker().invoke();
             }
 
-            idle.idle();
             archive = asyncConnect->poll();
         }
 

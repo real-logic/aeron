@@ -447,14 +447,26 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
             {
                 aeron_set_err(
                     -1, 
-                    "Aeron CnC version does not match: app=%" PRId32 ", file=%" PRId32, 
+                    "Aeron CnC version does not match: client=%" PRId32 ", file=%" PRId32,
                     AERON_CNC_VERSION, 
                     cnc_version);
 
                 result = -1;
                 goto cleanup;
             }
-            
+
+            if (aeron_semantic_version_minor(cnc_version) < aeron_semantic_version_minor(AERON_CNC_VERSION))
+            {
+                aeron_set_err(
+                    -1,
+                    "Driver version insufficient: client=%" PRId32 ", file=%" PRId32,
+                    AERON_CNC_VERSION,
+                    cnc_version);
+
+                result = -1;
+                goto cleanup;
+            }
+
             if (!aeron_cnc_is_file_length_sufficient(&cnc_mmap))
             {
                 aeron_set_err(-1, "Aeron CnC file length not sufficient: length=%" PRId64, file_length_result);

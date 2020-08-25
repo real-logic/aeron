@@ -54,7 +54,7 @@ typedef aeron_rb_handler_t aeron_driver_conductor_to_driver_interceptor_func_t;
 typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 
-#define AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(m) (AERON_THREADING_MODE_SHARED == m || AERON_THREADING_MODE_INVOKER == m)
+#define AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(m) (AERON_THREADING_MODE_SHARED == (m) || AERON_THREADING_MODE_INVOKER == (m))
 
 typedef struct aeron_driver_context_bindings_clientd_entry_stct
 {
@@ -230,6 +230,10 @@ aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
 void aeron_driver_context_print_configuration(aeron_driver_context_t *context);
 
 void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
+
+int aeron_driver_validate_unblock_timeout(aeron_driver_context_t *context);
+
+int aeron_driver_validate_untethered_timeouts(aeron_driver_context_t *context);
 
 int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
 

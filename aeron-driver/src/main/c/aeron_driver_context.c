@@ -483,7 +483,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if ((value = getenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR)))
     {
-        if ((_context->congestion_control_supplier_func = aeron_congestion_control_strategy_supplier_load(value)) == NULL)
+        if ((_context->congestion_control_supplier_func =
+            aeron_congestion_control_strategy_supplier_load(value)) == NULL)
         {
             return -1;
         }
@@ -914,8 +915,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if ((_context->udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load_media(
         AERON_CONFIG_GETENV_OR_DEFAULT(
-                AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_ENV_VAR,
-                AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT))) == NULL)
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_ENV_VAR,
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT))) == NULL)
     {
         return -1;
     }
@@ -1053,6 +1054,56 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_clock_cache_free(context->cached_clock);
     aeron_dl_load_libs_delete(context->dynamic_libs);
     aeron_free(context);
+
+    return 0;
+}
+
+int aeron_driver_validate_unblock_timeout(aeron_driver_context_t *context)
+{
+    if (context->publication_unblock_timeout_ns <= context->timer_interval_ns)
+    {
+        errno = EINVAL;
+        aeron_set_err(
+            EINVAL,
+            "publication_unblock_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
+            context->publication_unblock_timeout_ns, context->timer_interval_ns);
+        return -1;
+    }
+
+    if (context->client_liveness_timeout_ns <= context->timer_interval_ns)
+    {
+        errno = EINVAL;
+        aeron_set_err(
+            EINVAL,
+            "client_liveness_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
+            context->client_liveness_timeout_ns, context->timer_interval_ns);
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_driver_validate_untethered_timeouts(aeron_driver_context_t *context)
+{
+    if (context->untethered_window_limit_timeout_ns <= context->timer_interval_ns)
+    {
+        errno = EINVAL;
+        aeron_set_err(
+            EINVAL,
+            "untethered_window_limit_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
+            context->untethered_window_limit_timeout_ns, context->timer_interval_ns);
+        return -1;
+    }
+
+    if (context->untethered_resting_timeout_ns <= context->timer_interval_ns)
+    {
+        errno = EINVAL;
+        aeron_set_err(
+            EINVAL,
+            "untethered_resting_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
+            context->untethered_resting_timeout_ns, context->timer_interval_ns);
+        return -1;
+    }
 
     return 0;
 }
@@ -1234,7 +1285,7 @@ aeron_threading_mode_t aeron_driver_context_get_threading_mode(aeron_driver_cont
     return NULL != context ? context->threading_mode : AERON_THREADING_MODE_DEFAULT;
 }
 
-int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t * context, bool value)
+int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t *context, bool value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -1247,7 +1298,7 @@ bool aeron_driver_context_get_dir_delete_on_start(aeron_driver_context_t *contex
     return NULL != context ? context->dirs_delete_on_start : AERON_DIR_DELETE_ON_START_DEFAULT;
 }
 
-int aeron_driver_context_set_dir_delete_on_shutdown(aeron_driver_context_t * context, bool value)
+int aeron_driver_context_set_dir_delete_on_shutdown(aeron_driver_context_t *context, bool value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -1609,7 +1660,7 @@ aeron_congestion_control_strategy_supplier_func_t aeron_driver_context_get_conge
     aeron_driver_context_t *context)
 {
     return NULL != context ? context->congestion_control_supplier_func :
-    aeron_congestion_control_strategy_supplier_load(AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT);
+        aeron_congestion_control_strategy_supplier_load(AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT);
 }
 
 int aeron_driver_context_set_loss_report_buffer_length(aeron_driver_context_t *context, size_t value)

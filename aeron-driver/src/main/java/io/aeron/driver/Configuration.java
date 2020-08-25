@@ -1477,7 +1477,7 @@ public class Configuration
     }
 
     /**
-     * Validate that the timeouts for untethered subscriptions.
+     * Validate that the timeouts for untethered subscriptions are greater than timer interval.
      *
      * @param untetheredWindowLimitTimeoutNs after which an untethered subscription will be lingered.
      * @param untetheredRestingTimeoutNs     after which an untethered subscription that is lingered can become active.

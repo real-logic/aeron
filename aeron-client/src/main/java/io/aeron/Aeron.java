@@ -1401,6 +1401,11 @@ public class Aeron implements AutoCloseable
                 }
 
                 CncFileDescriptor.checkVersion(cncVersion);
+                if (SemanticVersion.minor(cncVersion) < SemanticVersion.minor(CncFileDescriptor.CNC_VERSION))
+                {
+                    throw new AeronException("driverVersion=" + SemanticVersion.toString(cncVersion) +
+                        " insufficient for clientVersion=" + SemanticVersion.toString(CncFileDescriptor.CNC_VERSION));
+                }
 
                 if (!CncFileDescriptor.isCncFileLengthSufficient(cncMetaDataBuffer, cncByteBuffer.capacity()))
                 {

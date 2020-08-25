@@ -1497,7 +1497,7 @@ public class Configuration
         if (untetheredRestingTimeoutNs <= timerIntervalNs)
         {
             throw new ConfigurationException(
-                "clientLivenessTimeoutNs=" + untetheredRestingTimeoutNs +
+                "untetheredRestingTimeoutNs=" + untetheredRestingTimeoutNs +
                 " <= timerIntervalNs=" + timerIntervalNs);
         }
     }

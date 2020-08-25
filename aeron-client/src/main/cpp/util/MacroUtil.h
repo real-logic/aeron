@@ -63,9 +63,9 @@ inline static std::string semanticVersionToString(std::int32_t version) noexcept
 #endif
 
 #if defined(__GNUC__)
-    #define AERON_COND_EXPECT(exp,c) (__builtin_expect((exp),c))
+    #define AERON_COND_EXPECT(exp, c) (__builtin_expect((exp), c))
 #else
-    #define AERON_COND_EXPECT(exp,c) (exp)
+    #define AERON_COND_EXPECT(exp, c) (exp)
 #endif
 
 #endif

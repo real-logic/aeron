@@ -128,8 +128,16 @@ MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
         if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
         {
             throw AeronException(
-                "Aeron CnC version does not match: app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
+                "Aeron CnC version does not match: client=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
                 " file=" + semanticVersionToString(cncVersion),
+                SOURCEINFO);
+        }
+
+        if (semanticVersionMinor(cncVersion) < semanticVersionMinor(CncFileDescriptor::CNC_VERSION))
+        {
+            throw AeronException(
+                "Driver version insufficient: client=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
+                    " file=" + semanticVersionToString(cncVersion),
                 SOURCEINFO);
         }
 

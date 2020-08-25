@@ -61,9 +61,9 @@ public class UntetheredSubscriptionTest
         .errorHandler(Tests::onError)
         .spiesSimulateConnection(true)
         .dirDeleteOnStart(true)
-        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
-        .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100))
-        .untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100))
+        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
+        .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(50))
+        .untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(50))
         .threadingMode(ThreadingMode.SHARED),
         testWatcher);
 

@@ -1477,6 +1477,32 @@ public class Configuration
     }
 
     /**
+     * Validate that the timeouts for untethered subscriptions.
+     *
+     * @param untetheredWindowLimitTimeoutNs after which an untethered subscription will be lingered.
+     * @param untetheredRestingTimeoutNs     after which an untethered subscription that is lingered can become active.
+     * @param timerIntervalNs                interval at which the driver will check timeouts.
+     * @throws ConfigurationException if the values are not valid.
+     */
+    public static void validateUntetheredTimeouts(
+        final long untetheredWindowLimitTimeoutNs, final long untetheredRestingTimeoutNs, final long timerIntervalNs)
+    {
+        if (untetheredWindowLimitTimeoutNs <= timerIntervalNs)
+        {
+            throw new ConfigurationException(
+                "untetheredWindowLimitTimeoutNs=" + untetheredWindowLimitTimeoutNs +
+                " <= timerIntervalNs=" + timerIntervalNs);
+        }
+
+        if (untetheredRestingTimeoutNs <= timerIntervalNs)
+        {
+            throw new ConfigurationException(
+                "clientLivenessTimeoutNs=" + untetheredRestingTimeoutNs +
+                " <= timerIntervalNs=" + timerIntervalNs);
+        }
+    }
+
+    /**
      * Create a source identity for a given source address.
      *
      * @param srcAddress to be used for the identity.

@@ -214,16 +214,15 @@ class Catalog implements AutoCloseable
             }
             else
             {
-                forceWrites(archiveDirChannel);
-
                 alignment = CACHE_LINE_LENGTH;
-                nextRecordingId = 0;
 
                 catalogHeaderEncoder
                     .version(ArchiveMarkFile.SEMANTIC_VERSION)
                     .length(CatalogHeaderEncoder.BLOCK_LENGTH)
                     .nextRecordingId(nextRecordingId)
                     .alignment(alignment);
+
+                forceWrites(archiveDirChannel);
             }
             firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
 
@@ -751,6 +750,11 @@ class Catalog implements AutoCloseable
         capacity = newCapacity;
         catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
         fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
+
+        final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(catalogByteBuffer);
+        catalogHeaderDecoder.wrap(
+            catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+        catalogHeaderEncoder.wrap(catalogHeaderBuffer, 0);
 
         catalogResized(oldCapacity, newCapacity);
     }

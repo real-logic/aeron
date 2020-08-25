@@ -117,7 +117,7 @@ class CatalogTest
         IoUtil.deleteIfExists(catalogFile);
         Files.write(catalogFile.toPath(), new byte[oldRecordLength], CREATE_NEW);
 
-        try (Catalog catalog = new Catalog(archiveDir, clock, true, (version) -> {}))
+        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, (version) -> {}))
         {
             assertEquals(oldRecordLength, catalog.alignment());
         }

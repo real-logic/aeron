@@ -52,6 +52,7 @@ import java.util.function.IntConsumer;
 
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.archive.ArchiveThreadingMode.SHARED;
+import static io.aeron.archive.Catalog.MIN_CAPACITY;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
@@ -241,7 +242,12 @@ public class ArchiveTest
     private static Catalog openCatalog(final Context archiveCtx)
     {
         final IntConsumer intConsumer = (version) -> {};
-        return new Catalog(new File(archiveCtx.archiveDirectoryName()), new SystemEpochClock(), true, intConsumer);
+        return new Catalog(
+            new File(archiveCtx.archiveDirectoryName()),
+            new SystemEpochClock(),
+            MIN_CAPACITY,
+            true,
+            intConsumer);
     }
 
     @Test

@@ -155,11 +155,7 @@ class Catalog implements AutoCloseable
         this.forceMetadata = fileSyncLevel > 1;
         this.epochClock = epochClock;
 
-        if (catalogCapacity < MIN_CAPACITY)
-        {
-            throw new IllegalArgumentException("Invalid catalog capacity provided: expected value >= " +
-                MIN_CAPACITY + ", got " + catalogCapacity);
-        }
+        validateCapacity(catalogCapacity);
 
         catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
         try
@@ -238,10 +234,15 @@ class Catalog implements AutoCloseable
 
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
-        this(archiveDir, epochClock, false, null);
+        this(archiveDir, epochClock, MIN_CAPACITY, false, null);
     }
 
-    Catalog(final File archiveDir, final EpochClock epochClock, final boolean writable, final IntConsumer versionCheck)
+    Catalog(
+        final File archiveDir,
+        final EpochClock epochClock,
+        final long catalogCapacity,
+        final boolean writable,
+        final IntConsumer versionCheck)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
@@ -249,6 +250,8 @@ class Catalog implements AutoCloseable
         this.epochClock = epochClock;
         this.catalogChannel = null;
         catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
+
+        validateCapacity(catalogCapacity);
 
         try
         {
@@ -258,7 +261,7 @@ class Catalog implements AutoCloseable
                 new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
-                capacity = channel.size();
+                capacity = max(channel.size(), catalogCapacity);
                 catalogMappedByteBuffer = channel.map(writable ? READ_WRITE : READ_ONLY, 0, capacity);
             }
             catch (final Exception ex)
@@ -762,6 +765,15 @@ class Catalog implements AutoCloseable
     void catalogResized(final long oldCapacity, final long newCapacity)
     {
 //        System.out.println("Catalog capacity changed: " + oldCapacity + " bytes => " + newCapacity + " bytes");
+    }
+
+    private static void validateCapacity(final long catalogCapacity)
+    {
+        if (catalogCapacity < MIN_CAPACITY || catalogCapacity > MAX_CATALOG_LENGTH)
+        {
+            throw new IllegalArgumentException("Invalid catalog capacity provided: expected value >= " +
+                MIN_CAPACITY + ", got " + catalogCapacity);
+        }
     }
 
     private void buildIndex()

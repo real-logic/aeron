@@ -42,7 +42,8 @@ import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.ArchiveTool.*;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
-import static io.aeron.archive.Catalog.*;
+import static io.aeron.archive.Catalog.PAGE_SIZE;
+import static io.aeron.archive.Catalog.listSegmentFiles;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -1141,6 +1142,30 @@ class ArchiveToolTests
         assertTrue(segmentFiles.stream().noneMatch(file -> new File(archiveDir, file).exists()),
             "Segment files not deleted");
         Mockito.verify(out).println("Compaction result: deleted 2 records and reclaimed 384 bytes");
+    }
+
+    @Test
+    void capacityReturnsCurrentCapacityInBytesOfTheCatalog()
+    {
+        final long capacity;
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            capacity = catalog.capacity();
+        }
+
+        assertEquals(capacity, capacity(archiveDir));
+    }
+
+    @Test
+    void capacityIncreasesCapacityOfTheCatalog()
+    {
+        final long capacity;
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            capacity = catalog.capacity();
+        }
+
+        assertEquals(capacity * 2, capacity(archiveDir, capacity * 2));
     }
 
     private static List<Arguments> verifyChecksumClassValidation()

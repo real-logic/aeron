@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.archive.Catalog.MIN_CAPACITY;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
@@ -153,7 +154,7 @@ final class ArchiveMigrationUtils
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return new Catalog(archiveDir, epochClock, true, (version) -> {});
+        return new Catalog(archiveDir, epochClock, MIN_CAPACITY, true, (version) -> {});
     }
 
     private static int totalMarkFileLengthInVersion2(

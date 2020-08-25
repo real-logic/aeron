@@ -354,7 +354,7 @@ public class ArchiveTool
      */
     public static long capacity(final File archiveDir, final long newCapacity)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, INSTANCE, null, null))
+        try (Catalog catalog = openCatalog(archiveDir, INSTANCE, newCapacity))
         {
             return catalog.capacity();
         }
@@ -449,7 +449,7 @@ public class ArchiveTool
         final long fragmentCountLimit,
         final ActionConfirmation<Long> confirmActionOnFragmentCountLimit)
     {
-        try (Catalog catalog = openCatalog(archiveDir, INSTANCE);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE);
             ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
         {
             printMarkInformation(markFile, out);
@@ -728,7 +728,7 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateOnPageStraddle)
     {
-        try (Catalog catalog = openCatalog(archiveDir, epochClock))
+        try (Catalog catalog = openCatalog(archiveDir, epochClock, MIN_CAPACITY))
         {
             final MutableInteger errorCount = new MutableInteger();
             catalog.forEach(createVerifyEntryProcessor(
@@ -747,7 +747,7 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateOnPageStraddle)
     {
-        try (Catalog catalog = openCatalog(archiveDir, epochClock))
+        try (Catalog catalog = openCatalog(archiveDir, epochClock, MIN_CAPACITY))
         {
             final MutableInteger errorCount = new MutableInteger();
             if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
@@ -765,9 +765,9 @@ public class ArchiveTool
         return new Catalog(archiveDir, epochClock);
     }
 
-    private static Catalog openCatalog(final File archiveDir, final EpochClock epochClock)
+    private static Catalog openCatalog(final File archiveDir, final EpochClock epochClock, final long capacity)
     {
-        return new Catalog(archiveDir, epochClock, true, null);
+        return new Catalog(archiveDir, epochClock, capacity, true, null);
     }
 
     private static String validateChecksumClass(final String checksumClassName)
@@ -865,7 +865,7 @@ public class ArchiveTool
 
     static Catalog openCatalogReadWrite(final File archiveDir, final EpochClock epochClock)
     {
-        return new Catalog(archiveDir, epochClock, true, (version) -> {});
+        return new Catalog(archiveDir, epochClock, MIN_CAPACITY, true, (version) -> {});
     }
 
     private static void dump(
@@ -1412,8 +1412,8 @@ public class ArchiveTool
             "     Only the last segment file of each recording is processed by default,%n" +
             "     unless flag '-a' is specified in which case all of the segment files are processed.%n" +
             "  count-entries: queries the number of recording entries in the catalog.%n" +
-            "  max-entries [number of entries]: gets or increases the maximum number of%n" +
-            "     recording entries the catalog can store.%n" +
+            "  max-entries [number of entries]: DEPRECATED: use `capacity` instead.%n" +
+            "  capacity [capacity in bytes]: gets or increases catalog capacity.%n" +
             "  compact: compact Catalog file by removing entries in state `INVALID` and delete the corresponding" +
             "     segment files.%n" +
             "  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.%n");

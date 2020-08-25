@@ -1060,13 +1060,13 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
 
 int aeron_driver_validate_unblock_timeout(aeron_driver_context_t *context)
 {
-    if (context->publication_unblock_timeout_ns <= context->timer_interval_ns)
+    if (context->publication_unblock_timeout_ns <= context->client_liveness_timeout_ns)
     {
         errno = EINVAL;
         aeron_set_err(
             EINVAL,
-            "publication_unblock_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
-            context->publication_unblock_timeout_ns, context->timer_interval_ns);
+            "publication_unblock_timeout_ns=%" PRIu64 " <= client_liveness_timeout_ns=%" PRIu64,
+            context->publication_unblock_timeout_ns, context->client_liveness_timeout_ns);
         return -1;
     }
 

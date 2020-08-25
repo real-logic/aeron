@@ -444,7 +444,7 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
     int64_t snd_pos = aeron_counter_get(publication->snd_pos_position.value_addr);
     int32_t active_term_id = aeron_logbuffer_compute_term_id_from_position(
         snd_pos, publication->position_bits_to_shift, publication->initial_term_id);
-    int32_t term_offset = (int32_t)snd_pos & publication->term_length_mask;
+    int32_t term_offset = (int32_t)(snd_pos & publication->term_length_mask);
 
     if (publication->should_send_setup_frame)
     {
@@ -510,7 +510,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     int64_t sender_position = aeron_counter_get(publication->snd_pos_position.value_addr);
     int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
-    size_t term_length = (size_t)(publication->term_length_mask + 1L);
+    size_t term_length = (size_t)publication->term_length_mask + 1;
     int64_t bottom_resend_window = sender_position - (term_length / 2);
     int result = 0;
 
@@ -582,7 +582,7 @@ void aeron_network_publication_on_nak(
         term_id,
         term_offset,
         (size_t)length,
-        (size_t)(publication->term_length_mask + 1L),
+        (size_t)publication->term_length_mask + 1,
         aeron_clock_cached_nano_time(publication->cached_clock),
         aeron_network_publication_resend,
         publication);
@@ -838,7 +838,7 @@ void aeron_network_publication_check_untethered_subscriptions(
 {
     const int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
     int64_t term_window_length = publication->term_window_length;
-    int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 8);
+    int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 4);
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
@@ -927,8 +927,7 @@ void aeron_network_publication_on_time_event(
     bool has_receivers;
     AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
 
-    bool current_connected_status =
-        aeron_network_publication_has_required_receivers(publication) ||
+    bool current_connected_status = aeron_network_publication_has_required_receivers(publication) ||
         (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
 
     aeron_network_publication_update_connected_status(publication, current_connected_status);

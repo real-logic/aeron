@@ -42,7 +42,7 @@ public class ClientHeartbeatTimestamp
      * {@link HeartbeatTimestamp#allocate(MutableDirectBuffer, String, int, CountersManager, long)}.
      *
      * @param tempBuffer      for writing the metadata.
-     * @param countersManager for he counter.
+     * @param countersManager for the counter.
      * @param registrationId  for the client.
      * @return the allocated counter.
      */

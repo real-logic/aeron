@@ -24,7 +24,6 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
@@ -398,7 +397,7 @@ public class MinFlowControlSystemTest
 
         final CountersReader countersReader = clientA.countersReader();
 
-        final int senderLimitCounterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+        final int senderLimitCounterId = FlowControlTests.findCounterIdByRegistrationId(
             countersReader, SenderLimit.SENDER_LIMIT_TYPE_ID, publication.registrationId);
         final long currentSenderLimit = countersReader.getCounterValue(senderLimitCounterId);
 

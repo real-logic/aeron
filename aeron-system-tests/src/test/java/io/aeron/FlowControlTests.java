@@ -16,9 +16,11 @@
 package io.aeron;
 
 import io.aeron.test.Tests;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
+import static org.agrona.concurrent.status.CountersReader.*;
 
 public class FlowControlTests
 {
@@ -42,5 +44,26 @@ public class FlowControlTests
 
         final long delta = 1 + subscriptions.length;
         Tests.awaitCounterDelta(countersReader, STATUS_MESSAGES_RECEIVED.id(), delta);
+    }
+
+    public static int findCounterIdByRegistrationId(
+        final CountersReader countersReader, final int counterTypeId, final long registrationId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == counterTypeId)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+                if (buffer.getLong(recordOffset + KEY_OFFSET) == registrationId)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return NULL_COUNTER_ID;
     }
 }

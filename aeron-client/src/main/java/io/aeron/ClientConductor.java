@@ -33,7 +33,7 @@ import java.util.concurrent.locks.Lock;
 
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_MS;
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
-import static io.aeron.status.HeartbeatTimestamp.CLIENT_HEARTBEAT_TYPE_ID;
+import static io.aeron.status.HeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -1194,7 +1194,7 @@ class ClientConductor implements Agent
             if (null == heartbeatTimestamp)
             {
                 final int counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
-                    countersReader, CLIENT_HEARTBEAT_TYPE_ID, ctx.clientId());
+                    countersReader, HEARTBEAT_TYPE_ID, ctx.clientId());
 
                 if (counterId != CountersReader.NULL_COUNTER_ID)
                 {
@@ -1206,7 +1206,7 @@ class ClientConductor implements Agent
             else
             {
                 final int counterId = heartbeatTimestamp.id();
-                if (!HeartbeatTimestamp.isActive(countersReader, counterId, CLIENT_HEARTBEAT_TYPE_ID, ctx.clientId()))
+                if (!HeartbeatTimestamp.isActive(countersReader, counterId, HEARTBEAT_TYPE_ID, ctx.clientId()))
                 {
                     isTerminating = true;
                     forceCloseResources();

@@ -32,9 +32,9 @@ import static org.agrona.concurrent.status.CountersReader.*;
 public class HeartbeatTimestamp
 {
     /**
-     * Type id of an Aeron client heartbeat.
+     * Type id of a heartbeat counter.
      */
-    public static final int CLIENT_HEARTBEAT_TYPE_ID = 11;
+    public static final int HEARTBEAT_TYPE_ID = 11;
 
     /**
      * Offset in the key meta data for the registration id of the counter.
@@ -119,7 +119,6 @@ public class HeartbeatTimestamp
                 countersReader.getCounterTypeId(i) == counterTypeId)
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
-
                 if (buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId)
                 {
                     return i;

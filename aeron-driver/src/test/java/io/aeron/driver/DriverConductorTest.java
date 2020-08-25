@@ -50,7 +50,7 @@ import java.util.function.LongConsumer;
 
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
-import static io.aeron.driver.status.ClientHeartbeatTimestamp.CLIENT_HEARTBEAT_TYPE_ID;
+import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.hamcrest.CoreMatchers.is;
@@ -1803,7 +1803,7 @@ public class DriverConductorTest
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
             if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == CLIENT_HEARTBEAT_TYPE_ID)
+                countersReader.getCounterTypeId(i) == HEARTBEAT_TYPE_ID)
             {
                 return new AtomicCounter(countersReader.valuesBuffer(), i);
             }

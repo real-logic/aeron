@@ -20,20 +20,11 @@
 #include <memory>
 #include "util/Export.h"
 
-#ifndef _WIN32
-    #include <sys/types.h>
-    #include <sys/mman.h>
-    #include <sys/stat.h>
-    #include <fcntl.h>
-    #include <unistd.h>
-#else
+#ifdef _WIN32
 #include <cstddef>
-    typedef void* HANDLE;
-    #ifndef NOMINMAX
-    #define NOMINMAX
-    #endif // !NOMINMAX
-    #include <Windows.h>
-    #include "StringUtil.h"
+    typedef void * HANDLE;
+#else
+#include <sys/types.h>
 #endif
 
 namespace aeron { namespace util

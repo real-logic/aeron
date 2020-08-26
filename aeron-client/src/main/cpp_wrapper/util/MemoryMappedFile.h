@@ -17,15 +17,9 @@
 #define AERON_UTIL_MEMORY_MAPPED_FILE_H
 
 #include <cstdint>
-#include <memory>
 #include "util/Export.h"
 
-#ifdef _WIN32
-#include <cstddef>
-    typedef void * HANDLE;
-#else
-#include <sys/types.h>
-#endif
+#include "util/aeron_fileutil.h"
 
 namespace aeron { namespace util
 {
@@ -37,16 +31,8 @@ public:
 
     static std::int64_t getFileSize(const char *filename)
     {
-        struct stat statInfo{};
-
-        if (::stat(filename, &statInfo) < 0)
-        {
-            return -1;
-        }
-
-        return statInfo.st_size;
+        return aeron_file_length(filename);
     }
-
 };
 
 }}

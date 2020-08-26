@@ -31,7 +31,7 @@ namespace aeron { namespace util
 #define AERON_PATH_SEP '/'
 #endif
 
-static constexpr const char* past_prefix(const char * const prefix, const char * const filename)
+static constexpr const char *past_prefix(const char * const prefix, const char * const filename)
 {
     return *prefix == *filename ?
         past_prefix(prefix + 1, filename + 1) : *filename == AERON_PATH_SEP ? filename + 1 : filename;
@@ -90,12 +90,12 @@ public:
     {
     }
 
-    virtual const char * what() const noexcept
+    virtual const char *what() const noexcept
     {
         return m_what.c_str();
     }
 
-    const char * where() const noexcept
+    const char *where() const noexcept
     {
         return m_where.c_str();
     }
@@ -106,19 +106,19 @@ public:
     }
 };
 
-#define AERON_DECLARE_SOURCED_EXCEPTION(exceptionName,category) \
-class exceptionName : public aeron::util::SourcedException     \
-{                                                              \
-public:                                                        \
-    exceptionName(                                             \
-        const std::string &what,                               \
-        const std::string &function,                           \
-        const std::string &file,                               \
-        const int line) :                                      \
-        SourcedException(category, what, function, file, line) \
-    {                                                          \
-    }                                                          \
-}                                                              \
+#define AERON_DECLARE_SOURCED_EXCEPTION(exceptionName, category) \
+class exceptionName : public aeron::util::SourcedException       \
+{                                                                \
+public:                                                          \
+    exceptionName(                                               \
+        const std::string &what,                                 \
+        const std::string &function,                             \
+        const std::string &file,                                 \
+        const int line) :                                        \
+        SourcedException(category, what, function, file, line)   \
+    {                                                            \
+    }                                                            \
+}                                                                \
 
 #define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                  \
 do                                                                      \

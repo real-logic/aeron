@@ -837,7 +837,7 @@ project(':aeron-all') {
 }
 
 task testReport(type: TestReport) {
-    destinationDir = file("$buildDir/reports/allTests")
+    destinationDir = file("${buildDir}/reports/allTests")
     // Include the results from the `test` task in all sub-projects
     reportOn subprojects*.test
 }
@@ -854,6 +854,6 @@ task copyCrashLogs(type: Copy) {
 }
 
 wrapper {
-    gradleVersion = '6.6'
+    gradleVersion = '6.6.1'
     distributionType = 'ALL'
 }

@@ -19,6 +19,7 @@
 
 #include <thread>
 #include <chrono>
+#include <algorithm>
 
 #include "Atomic64.h"
 #include "util/BitUtil.h"

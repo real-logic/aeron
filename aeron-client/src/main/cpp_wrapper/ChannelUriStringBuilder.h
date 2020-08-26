@@ -61,6 +61,7 @@ public:
         m_tether.reset(nullptr);
         m_group.reset(nullptr);
         m_rejoin.reset(nullptr);
+        m_ssc.reset(nullptr);
         m_isSessionIdTagged = false;
         return *this;
     }
@@ -276,6 +277,18 @@ public:
         return *this;
     }
 
+    inline this_t &spiesSimulateConnection(bool spiesSimulateConnection)
+    {
+        m_ssc.reset(new Value(spiesSimulateConnection ? 1 : 0));
+        return *this;
+    }
+
+    inline this_t &spiesSimulateConnection(std::nullptr_t nullp)
+    {
+        m_ssc.reset(nullptr);
+        return *this;
+    }
+
     inline this_t &isSessionIdTagged(bool isSessionIdTagged)
     {
         m_isSessionIdTagged = isSessionIdTagged;
@@ -345,7 +358,7 @@ public:
 
         if (m_sessionId)
         {
-            sb << SESSION_ID_PARAM_NAME << '=' << prefixTag(m_isSessionIdTagged, *m_sessionId);
+            sb << SESSION_ID_PARAM_NAME << '=' << prefixTag(m_isSessionIdTagged, *m_sessionId) << '|';
         }
 
         if (m_ttl)
@@ -408,6 +421,11 @@ public:
             sb << REJOIN_PARAM_NAME << '=' << (m_rejoin->value == 1 ? "true" : "false") << '|';
         }
 
+        if (m_ssc)
+        {
+            sb << SPIES_SIMULATE_CONNECTION_PARAM_NAME << '=' << (m_ssc->value == 1 ? "true" : "false") << '|';
+        }
+
         std::string result = sb.str();
         const char lastChar = result.back();
 
@@ -455,6 +473,7 @@ private:
     std::unique_ptr<Value> m_tether;
     std::unique_ptr<Value> m_group;
     std::unique_ptr<Value> m_rejoin;
+    std::unique_ptr<Value> m_ssc;
     bool m_isSessionIdTagged = false;
 
     inline static std::string prefixTag(bool isTagged, Value &value)

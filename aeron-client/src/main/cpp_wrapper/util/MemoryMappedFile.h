@@ -19,7 +19,10 @@
 #include <cstdint>
 #include "util/Export.h"
 
+extern "C"
+{
 #include "util/aeron_fileutil.h"
+}
 
 namespace aeron { namespace util
 {

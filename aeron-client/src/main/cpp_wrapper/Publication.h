@@ -219,6 +219,16 @@ public:
     }
 
     /**
+     * Get the max possible position the stream can reach given term length.
+     *
+     * @return the max possible position the stream can reach given term length.
+     */
+    inline std::int64_t maxPossiblePosition() const
+    {
+        return m_constants.max_possible_position;
+    }
+
+    /**
      * Get the current position to which the publication has advanced for this stream.
      *
      * @return the current position to which the publication has advanced for this stream or {@link CLOSED}.

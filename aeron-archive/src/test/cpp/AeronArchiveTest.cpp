@@ -43,8 +43,10 @@ typedef intptr_t pid_t;
 #include "client/RecordingEventsAdapter.h"
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
+#include "util/MemoryMappedFile.h"
 
 using namespace aeron;
+using namespace aeron::util;
 using namespace aeron::archive::client;
 
 #ifdef _WIN32
@@ -170,7 +172,7 @@ public:
             const std::string cncFilename = m_context.aeron()->context().cncFileName();
             const std::string aeronPath = aeron::Context::defaultAeronPath();
             m_context.aeron(nullptr);
-#
+
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
                 m_stream << "Waiting for driver termination" << std::endl;

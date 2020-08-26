@@ -16,8 +16,8 @@
 
 find_package(Java REQUIRED)
 
-include_directories(${AERON_CLIENT_SOURCE_PATH})
-include_directories(${AERON_ARCHIVE_SOURCE_PATH})
+#include_directories(${AERON_CLIENT_SOURCE_PATH})
+#include_directories(${AERON_ARCHIVE_SOURCE_PATH})
 
 add_definitions(-DAERON_ALL_JAR="${AERON_ALL_JAR}")
 add_definitions(-DJAVA_EXECUTABLE="${Java_JAVA_EXECUTABLE}")
@@ -27,9 +27,19 @@ add_definitions(-DJAVA_MINOR_VERSION=${Java_VERSION_MINOR})
 
 function(aeron_archive_client_test name file)
     add_executable(${name} ${file})
+    target_include_directories(${name} PUBLIC ${AERON_CLIENT_SOURCE_PATH})
+    target_include_directories(${name} PUBLIC ${AERON_ARCHIVE_SOURCE_PATH})
     target_link_libraries(${name} aeron_client aeron_archive_client ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock aeron-all-jar)
     add_test(NAME ${name} COMMAND ${name})
+
+    set(wrapper_name "${name}W")
+    add_executable(${wrapper_name} ${file})
+    target_include_directories(${wrapper_name} PUBLIC ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+    target_include_directories(${wrapper_name} PUBLIC ${AERON_ARCHIVE_SOURCE_PATH})
+    target_link_libraries(${wrapper_name} aeron_client_wrapper aeron aeron_archive_client_wrapper ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    add_dependencies(${wrapper_name} gmock aeron-all-jar)
+    add_test(NAME ${wrapper_name} COMMAND ${name})
 endfunction()
 
 aeron_archive_client_test(archiveTest AeronArchiveTest.cpp)

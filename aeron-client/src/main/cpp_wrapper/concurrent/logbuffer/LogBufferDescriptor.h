@@ -20,7 +20,6 @@
 #include <util/Index.h>
 #include <util/StringUtil.h>
 #include <util/BitUtil.h>
-#include <util/Exceptions.h>
 #include <concurrent/AtomicBuffer.h>
 #include "FrameDescriptor.h"
 #include "DataFrameHeader.h"

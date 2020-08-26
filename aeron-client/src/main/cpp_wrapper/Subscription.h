@@ -19,7 +19,6 @@
 
 #include <cstdint>
 #include <iostream>
-#include <atomic>
 #include <memory>
 #include <iterator>
 #include "Image.h"

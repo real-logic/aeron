@@ -17,12 +17,11 @@
 #ifndef INCLUDED_AERON_H
 #define INCLUDED_AERON_H
 
-#include "util/Exceptions.h"
-#include <iostream>
 #include <thread>
 #include <random>
 #include <unordered_map>
 #include <mutex>
+#include "util/Exceptions.h"
 #include "concurrent/logbuffer/TermReader.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"

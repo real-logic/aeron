@@ -9,6 +9,8 @@
 
 using namespace aeron;
 
+#define AERON_TEST_TIMEOUT (5000)
+
 #define WAIT_FOR_NON_NULL(val, op)               \
 auto val = op;                                   \
 do                                               \
@@ -16,7 +18,7 @@ do                                               \
     std::int64_t t0 = aeron_epoch_clock();       \
     while (!val)                                 \
     {                                            \
-       ASSERT_LT(aeron_epoch_clock() - t0, 5000) << "Failed waiting for: "  << #op; \
+       ASSERT_LT(aeron_epoch_clock() - t0, AERON_TEST_TIMEOUT) << "Failed waiting for: "  << #op; \
        std::this_thread::yield();                \
        val = op;                                 \
     }                                            \
@@ -29,7 +31,7 @@ do                                               \
     std::int64_t t0 = aeron_epoch_clock();       \
     while (!(op))                                \
     {                                            \
-       ASSERT_LT(aeron_epoch_clock() - t0, 5000) << "Failed waiting for: " << #op; \
+       ASSERT_LT(aeron_epoch_clock() - t0, AERON_TEST_TIMEOUT) << "Failed waiting for: " << #op; \
        std::this_thread::yield();                \
     }                                            \
 }                                                \
@@ -43,21 +45,21 @@ do                                          \
     while (!val)                            \
     {                                       \
        invoker.invoke();                    \
-       ASSERT_LT(aeron_epoch_clock() - t0, 5000) << "Failed waiting for: "  << #op; \
+       ASSERT_LT(aeron_epoch_clock() - t0, AERON_TEST_TIMEOUT) << "Failed waiting for: "  << #op; \
        std::this_thread::yield();           \
        val = op;                            \
     }                                       \
 }                                           \
 while (0)                                   \
 
-#define POLL_FOR(op, invoker)       \
+#define POLL_FOR(op, invoker)              \
 do                                         \
 {                                          \
     std::int64_t t0 = aeron_epoch_clock(); \
     while (!(op))                          \
     {                                      \
        invoker.invoke();                   \
-       ASSERT_LT(aeron_epoch_clock() - t0, 5000) << "Failed waiting for: " << #op; \
+       ASSERT_LT(aeron_epoch_clock() - t0, AERON_TEST_TIMEOUT) << "Failed waiting for: " << #op; \
        std::this_thread::yield();          \
     }                                      \
 }                                          \

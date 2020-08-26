@@ -151,7 +151,7 @@ public:
     inline std::int64_t getFreeToReuseDeadline(std::int32_t id) const
     {
         std::int64_t deadline;
-        if (aeron_counters_reader_free_to_reuse_deadline_ms(m_countersReader, id, &deadline))
+        if (aeron_counters_reader_free_for_reuse_deadline_ms(m_countersReader, id, &deadline))
         {
             throw util::IllegalArgumentException(
                 "counter id " + std::to_string(id) +

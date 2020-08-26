@@ -157,14 +157,14 @@ public:
         }
     }
 
-    long getParamAsLong(size_t index) const
+    long long getParamAsLong(size_t index) const
     {
         checkIndex(index);
         std::string param = m_params[index];
 
         try
         {
-            return parse<long>(param);
+            return parse<long long>(param);
         }
         catch (const ParseException &)
         {
@@ -192,14 +192,14 @@ public:
         return value;
     }
 
-    long getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue) const
+    long long getParamAsLong(size_t index, long long minValue, long long maxValue, long long defaultValue) const
     {
         if (!isPresent())
         {
             return defaultValue;
         }
 
-        long value = getParamAsLong(index);
+        long long value = getParamAsLong(index);
         if (value < minValue || value > maxValue)
         {
             throw CommandOptionException(

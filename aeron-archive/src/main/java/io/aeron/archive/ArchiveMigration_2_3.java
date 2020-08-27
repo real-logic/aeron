@@ -77,7 +77,7 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
                 final MutableInteger offset = new MutableInteger(catalogHeaderLength);
 
                 catalog.forEach(
-                    (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                    (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                     {
                         final int strippedChannelLength = descriptorDecoder.strippedChannelLength();
                         descriptorDecoder.skipStrippedChannel();

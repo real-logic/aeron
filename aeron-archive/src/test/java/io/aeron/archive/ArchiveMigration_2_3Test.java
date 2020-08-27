@@ -199,7 +199,7 @@ class ArchiveMigration_2_3Test
         {
             final MutableInteger index = new MutableInteger();
             catalog.forEach(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     final RecordingDescriptorV2 recording = recordings.get(index.getAndIncrement());
 

@@ -74,6 +74,7 @@ public class CatalogView
         }
 
         public void accept(
+            final int recordingDescriptorOffset,
             final RecordingDescriptorHeaderEncoder headerEncoder,
             final RecordingDescriptorHeaderDecoder headerDecoder,
             final RecordingDescriptorEncoder descriptorEncoder,

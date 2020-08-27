@@ -55,7 +55,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
             archiveDir, markFile.decoder().version(), minimumVersion()))
         {
             catalog.forEach(
-                (headerEncoder, headerDecoder, encoder, decoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, encoder, decoder) ->
                 {
                     final String version0Prefix = decoder.recordingId() + "-";
                     final String version0Suffix = ".rec";

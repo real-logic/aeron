@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
@@ -354,7 +355,7 @@ public class ArchiveTool
      */
     public static long capacity(final File archiveDir, final long newCapacity)
     {
-        try (Catalog catalog = openCatalog(archiveDir, INSTANCE, newCapacity))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, newCapacity, null, null))
         {
             return catalog.capacity();
         }
@@ -373,7 +374,7 @@ public class ArchiveTool
         {
             printMarkInformation(markFile, out);
             out.println("Catalog capacity in bytes: " + catalog.capacity());
-            catalog.forEach((he, hd, e, d) -> out.println(d));
+            catalog.forEach((recordingDescriptorOffset, he, hd, e, d) -> out.println(d));
         }
     }
 
@@ -388,7 +389,7 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE))
         {
-            catalog.forEntry(recordingId, (he, hd, e, d) -> out.println(d));
+            catalog.forEntry(recordingId, (recordingDescriptorOffset, he, hd, e, d) -> out.println(d));
         }
     }
 
@@ -457,7 +458,8 @@ public class ArchiveTool
 
             out.println();
             out.println("Dumping up to " + fragmentCountLimit + " fragments per recording");
-            catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> dump(
+            catalog.forEach(
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> dump(
                 out,
                 archiveDir,
                 catalog,
@@ -616,8 +618,9 @@ public class ArchiveTool
         try
         {
             final int markFileVersion;
+            final IntConsumer noVersionCheck = (version) -> {};
             try (ArchiveMarkFile markFile = openMarkFileReadWrite(archiveDir, epochClock);
-                Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+                Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, noVersionCheck))
             {
                 markFileVersion = markFile.decoder().version();
                 out.println("MarkFile version=" + fullVersionString(markFileVersion));
@@ -629,7 +632,7 @@ public class ArchiveTool
             for (final ArchiveMigrationStep step : steps)
             {
                 try (ArchiveMarkFile markFile = openMarkFileReadWrite(archiveDir, epochClock);
-                    Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+                    Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, noVersionCheck))
                 {
                     out.println("Migration step " + step.toString());
                     step.migrate(out, markFile, catalog, archiveDir);
@@ -678,7 +681,7 @@ public class ArchiveTool
                 final MutableInteger reclaimedBytes = new MutableInteger();
 
                 catalog.forEach(
-                    (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                    (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                     {
                         final int frameLength = headerDecoder.encodedLength() + headerDecoder.length();
                         if (INVALID == headerDecoder.state())
@@ -728,7 +731,7 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateOnPageStraddle)
     {
-        try (Catalog catalog = openCatalog(archiveDir, epochClock, MIN_CAPACITY))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
         {
             final MutableInteger errorCount = new MutableInteger();
             catalog.forEach(createVerifyEntryProcessor(
@@ -747,7 +750,7 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateOnPageStraddle)
     {
-        try (Catalog catalog = openCatalog(archiveDir, epochClock, MIN_CAPACITY))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
         {
             final MutableInteger errorCount = new MutableInteger();
             if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
@@ -765,9 +768,14 @@ public class ArchiveTool
         return new Catalog(archiveDir, epochClock);
     }
 
-    private static Catalog openCatalog(final File archiveDir, final EpochClock epochClock, final long capacity)
+    static Catalog openCatalogReadWrite(
+        final File archiveDir,
+        final EpochClock epochClock,
+        final long capacity,
+        final Checksum checksum,
+        final IntConsumer versionCheck)
     {
-        return new Catalog(archiveDir, epochClock, capacity, true, null);
+        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
     }
 
     private static String validateChecksumClass(final String checksumClassName)
@@ -810,7 +818,8 @@ public class ArchiveTool
         buffer.order(LITTLE_ENDIAN);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 
-        return (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> verifyRecording(
+        return (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            verifyRecording(
             out,
             archiveDir,
             options,
@@ -828,8 +837,8 @@ public class ArchiveTool
     {
         return readContinueAnswer(String.format(
             "Last fragment in segment file: %s straddles a page boundary,%n" +
-            "i.e. it is not possible to verify if it was written correctly.%n%n" +
-            "Please choose the corrective action: (y) to truncate the file or (n) to do nothing",
+                "i.e. it is not possible to verify if it was written correctly.%n%n" +
+                "Please choose the corrective action: (y) to truncate the file or (n) to do nothing",
             maxSegmentFile.getAbsolutePath()));
     }
 
@@ -861,11 +870,6 @@ public class ArchiveTool
             TimeUnit.SECONDS.toMillis(5),
             (version) -> {},
             null);
-    }
-
-    static Catalog openCatalogReadWrite(final File archiveDir, final EpochClock epochClock)
-    {
-        return new Catalog(archiveDir, epochClock, MIN_CAPACITY, true, (version) -> {});
     }
 
     private static void dump(
@@ -1239,14 +1243,15 @@ public class ArchiveTool
         final Checksum checksum,
         final EpochClock epochClock)
     {
-        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
         {
             final CatalogEntryProcessor catalogEntryProcessor =
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     final ByteBuffer buffer = ByteBuffer.allocateDirect(
                         align(descriptorDecoder.mtuLength(), CACHE_LINE_LENGTH));
                     buffer.order(LITTLE_ENDIAN);
+                    catalog.updateChecksum(recordingDescriptorOffset);
                     checksum(buffer, out, archiveDir, allFiles, checksum, descriptorDecoder);
                 };
 
@@ -1368,17 +1373,18 @@ public class ArchiveTool
         final Checksum checksum,
         final EpochClock epochClock)
     {
-        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
         {
             final ByteBuffer buffer = ByteBuffer.allocateDirect(
                 align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
             buffer.order(LITTLE_ENDIAN);
 
             catalog.forEach(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     try
                     {
+                        catalog.updateChecksum(recordingDescriptorOffset);
                         checksum(buffer, out, archiveDir, allFiles, checksum, descriptorDecoder);
                     }
                     catch (final Exception ex)

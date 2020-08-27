@@ -120,7 +120,7 @@ class CatalogTest
         IoUtil.deleteIfExists(catalogFile);
         Files.write(catalogFile.toPath(), new byte[oldRecordLength], CREATE_NEW);
 
-        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, (version) -> {}))
+        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, (version) -> {}))
         {
             assertEquals(oldRecordLength, catalog.alignment());
         }
@@ -249,7 +249,7 @@ class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             final CatalogEntryProcessor entryProcessor =
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 assertEquals(NULL_TIMESTAMP, descriptorDecoder.stopTimestamp());
 
             assertTrue(catalog.forEntry(newRecordingId, entryProcessor));
@@ -260,7 +260,7 @@ class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final CatalogEntryProcessor entryProcessor =
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 assertEquals(42L, descriptorDecoder.stopTimestamp());
 
             assertTrue(catalog.forEntry(newRecordingId, entryProcessor));
@@ -298,7 +298,7 @@ class CatalogTest
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertEquals(NULL_TIMESTAMP, descriptorDecoder.stopTimestamp());
                     assertEquals(NULL_POSITION, descriptorDecoder.stopPosition());
@@ -311,7 +311,7 @@ class CatalogTest
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertEquals(42L, descriptorDecoder.stopTimestamp());
                     assertEquals(SEGMENT_LENGTH * 3 + 1024L + 128L, descriptorDecoder.stopPosition());
@@ -378,7 +378,7 @@ class CatalogTest
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertEquals(42L, descriptorDecoder.stopTimestamp());
                     assertEquals(PAGE_SIZE + 128, descriptorDecoder.stopPosition());
@@ -431,7 +431,7 @@ class CatalogTest
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
@@ -444,7 +444,7 @@ class CatalogTest
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is((long)SEGMENT_LENGTH));
@@ -743,21 +743,22 @@ class CatalogTest
                 "channelNew?tag=X2",
                 "sourceX2");
 
-            catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-            {
-                if (recordingId == descriptorDecoder.recordingId())
+            catalog.forEach(
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
-                    assertEquals(1691549102, headerDecoder.checksum());
-                }
-                else if (recordingId2 == descriptorDecoder.recordingId())
-                {
-                    assertEquals(1452384985, headerDecoder.checksum());
-                }
-                else
-                {
-                    assertEquals(0, headerDecoder.checksum());
-                }
-            });
+                    if (recordingId == descriptorDecoder.recordingId())
+                    {
+                        assertEquals(1691549102, headerDecoder.checksum());
+                    }
+                    else if (recordingId2 == descriptorDecoder.recordingId())
+                    {
+                        assertEquals(1452384985, headerDecoder.checksum());
+                    }
+                    else
+                    {
+                        assertEquals(0, headerDecoder.checksum());
+                    }
+                });
         }
     }
 
@@ -822,7 +823,7 @@ class CatalogTest
     private void assertChecksum(final Catalog catalog, final long recordingId, final int expectedChecksum)
     {
         catalog.forEntry(recordingId,
-            (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
             assertEquals(expectedChecksum, headerDecoder.checksum()));
     }
 

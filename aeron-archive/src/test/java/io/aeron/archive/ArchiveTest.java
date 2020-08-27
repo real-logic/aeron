@@ -218,7 +218,7 @@ public class ArchiveTest
         try (Catalog catalog = openCatalog(archiveCtx))
         {
             final Catalog.CatalogEntryProcessor catalogEntryProcessor =
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
 
             assertTrue(catalog.forEntry(recordingId, catalogEntryProcessor));
@@ -247,6 +247,7 @@ public class ArchiveTest
             new SystemEpochClock(),
             MIN_CAPACITY,
             true,
+            null,
             intConsumer);
     }
 

@@ -801,6 +801,19 @@ final class Catalog implements AutoCloseable
         }
     }
 
+    int computeRecordingDescriptorChecksum(final int recordingDescriptorOffset, final int recordingLength)
+    {
+        final Checksum checksum = this.checksum;
+        if (null != checksum)
+        {
+            return checksum.compute(
+                catalogByteBufferAddress,
+                DESCRIPTOR_HEADER_LENGTH + recordingDescriptorOffset,
+                recordingLength);
+        }
+        return 0;
+    }
+
     void catalogResized(final long oldCapacity, final long newCapacity)
     {
 //        System.out.println("Catalog capacity changed: " + oldCapacity + " bytes => " + newCapacity + " bytes");
@@ -872,19 +885,6 @@ final class Catalog implements AutoCloseable
         }
 
         return -1;
-    }
-
-    private int computeRecordingDescriptorChecksum(final int recordingDescriptorOffset, final int recordingLength)
-    {
-        final Checksum checksum = this.checksum;
-        if (null != checksum)
-        {
-            return checksum.compute(
-                catalogByteBufferAddress,
-                DESCRIPTOR_HEADER_LENGTH + recordingDescriptorOffset,
-                recordingLength);
-        }
-        return 0;
     }
 
     private void invokeEntryProcessor(final int recordingDescriptorOffset, final CatalogEntryProcessor consumer)

@@ -731,11 +731,11 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateOnPageStraddle)
     {
-        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
         {
             final MutableInteger errorCount = new MutableInteger();
             catalog.forEach(createVerifyEntryProcessor(
-                out, archiveDir, options, checksum, epochClock, errorCount, truncateOnPageStraddle));
+                out, archiveDir, options, catalog, checksum, epochClock, errorCount, truncateOnPageStraddle));
 
             return errorCount.get() == 0;
         }
@@ -750,11 +750,11 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateOnPageStraddle)
     {
-        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
         {
             final MutableInteger errorCount = new MutableInteger();
             if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
-                out, archiveDir, options, checksum, epochClock, errorCount, truncateOnPageStraddle)))
+                out, archiveDir, options, catalog, checksum, epochClock, errorCount, truncateOnPageStraddle)))
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
@@ -809,6 +809,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
+        final Catalog catalog,
         final Checksum checksum,
         final EpochClock epochClock,
         final MutableInteger errorCount,
@@ -820,17 +821,20 @@ public class ArchiveTool
 
         return (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
             verifyRecording(
-            out,
-            archiveDir,
-            options,
-            checksum,
-            epochClock,
-            errorCount,
-            truncateOnPageStraddle,
-            headerFlyweight,
-            headerEncoder,
-            descriptorEncoder,
-            descriptorDecoder);
+                out,
+                archiveDir,
+                options,
+                catalog,
+                checksum,
+                epochClock,
+                errorCount,
+                truncateOnPageStraddle,
+                headerFlyweight,
+                recordingDescriptorOffset,
+                headerEncoder,
+                headerDecoder,
+                descriptorEncoder,
+                descriptorDecoder);
     }
 
     private static boolean truncateOnPageStraddle(final File maxSegmentFile)
@@ -964,12 +968,15 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
+        final Catalog catalog,
         final Checksum checksum,
         final EpochClock epochClock,
         final MutableInteger errorCount,
         final ActionConfirmation<File> truncateOnPageStraddle,
         final DataHeaderFlyweight headerFlyweight,
+        final int recordingDescriptorOffset,
         final RecordingDescriptorHeaderEncoder headerEncoder,
+        final RecordingDescriptorHeaderDecoder headerDecoder,
         final RecordingDescriptorEncoder encoder,
         final RecordingDescriptorDecoder decoder)
     {
@@ -1025,10 +1032,25 @@ public class ArchiveTool
             return;
         }
 
+        final boolean applyChecksum = options.contains(APPLY_CHECKSUM);
+
+        if (applyChecksum)
+        {
+            final int recordingDescriptorChecksum =
+                catalog.computeRecordingDescriptorChecksum(recordingDescriptorOffset, headerDecoder.length());
+            if (recordingDescriptorChecksum != headerDecoder.checksum())
+            {
+                out.println("(recordingId=" + recordingId + ") ERR: invalid Catalog checksum: expected=" +
+                    recordingDescriptorChecksum + ", actual=" + headerDecoder.checksum());
+                errorCount.increment();
+                headerEncoder.state(INVALID);
+                return;
+            }
+        }
+
         if (maxSegmentFile != null)
         {
             final int streamId = decoder.streamId();
-            final boolean applyChecksum = options.contains(APPLY_CHECKSUM);
             if (options.contains(VERIFY_ALL_SEGMENT_FILES))
             {
                 for (final String filename : segmentFiles)

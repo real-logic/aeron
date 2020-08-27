@@ -1434,7 +1434,7 @@ public class Configuration
 
         if (Math.abs((long)high - low) > Integer.MAX_VALUE)
         {
-            throw new ConfigurationException("reserved range to too large");
+            throw new ConfigurationException("reserved range too large");
         }
     }
 

@@ -1173,12 +1173,12 @@ bool aeron_is_driver_active_with_cnc(
         else
         {
             int64_t timestamp_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
-            int64_t diff = now_ms - timestamp_ms;
+            int64_t age = now_ms - timestamp_ms;
 
-            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron driver heartbeat is %" PRId64 " ms old", diff);
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron driver heartbeat is %" PRId64 " ms old", age);
             log_func(buffer);
 
-            if (diff <= timeout_ms)
+            if (age <= timeout_ms)
             {
                 return true;
             }

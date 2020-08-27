@@ -120,19 +120,6 @@ public:                                                          \
     }                                                            \
 }                                                                \
 
-#define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                  \
-do                                                                      \
-{                                                                       \
-    switch (errno)                                                      \
-    {                                                                   \
-        case EINVAL:                                                    \
-            throw IllegalArgumentException(aeron_errmsg(), SOURCEINFO); \
-        default:                                                        \
-            throw AeronException(aeron_errmsg(), SOURCEINFO);           \
-    }                                                                   \
-}                                                                       \
-while (0)                                                               \
-
 AERON_DECLARE_SOURCED_EXCEPTION(IOException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(FormatException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(OutOfBoundsException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
@@ -148,6 +135,18 @@ AERON_DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException, ExceptionCategory:
 AERON_DECLARE_SOURCED_EXCEPTION(ReentrantException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(UnsupportedOperationException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
+#define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                  \
+do                                                                      \
+{                                                                       \
+    switch (errno)                                                      \
+    {                                                                   \
+        case EINVAL:                                                    \
+            throw IllegalArgumentException(aeron_errmsg(), SOURCEINFO); \
+        default:                                                        \
+            throw AeronException(aeron_errmsg(), SOURCEINFO);           \
+    }                                                                   \
+}                                                                       \
+while (0)                                                               \
 
 class RegistrationException : public SourcedException
 {

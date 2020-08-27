@@ -16,8 +16,6 @@
 #ifndef AERON_CONCURRENT_COUNTERS_MANAGER_H
 #define AERON_CONCURRENT_COUNTERS_MANAGER_H
 
-#include <functional>
-#include <cstdint>
 #include <deque>
 #include <memory>
 #include <iostream>
@@ -35,6 +33,8 @@ namespace aeron { namespace concurrent {
 
 class CountersManager : public CountersReader
 {
+    using clock_t = std::function<long long()>;
+
 public:
     inline CountersManager(aeron_counters_manager_t *manager, aeron_counters_reader_t *reader) :
         CountersReader(reader), m_countersManager(manager)
@@ -47,10 +47,7 @@ public:
     }
 
     template <typename F>
-    std::int32_t allocate(
-        const std::string& label,
-        std::int32_t typeId,
-        F&& keyFunc)
+    std::int32_t allocate(const std::string &label, std::int32_t typeId, F &&keyFunc)
     {
         int32_t counterId = aeron_counters_manager_allocate(
             m_countersManager, typeId, NULL, 0, label.c_str(), label.length());
@@ -68,13 +65,9 @@ public:
         return counterId;
     }
 
-    std::int32_t allocate(
-        std::int32_t typeId,
-        const std::uint8_t *key,
-        size_t keyLength,
-        const std::string& label)
+    std::int32_t allocate(std::int32_t typeId, const std::uint8_t *key, size_t keyLength, const std::string &label)
     {
-        int32_t counterId = aeron_counters_manager_allocate(
+        std::int32_t counterId = aeron_counters_manager_allocate(
             m_countersManager, typeId, key, keyLength, label.c_str(), label.length());
 
         if (counterId < 0)
@@ -99,6 +92,11 @@ public:
     {
         int64_t *addr = aeron_counters_manager_addr(m_countersManager, counterId);
         AERON_PUT_ORDERED(*addr, value);
+    }
+
+    inline void setCounterRegistrationId(std::int32_t counterId, std::int64_t registrationId)
+    {
+        aeron_counters_manager_counter_registration_id(m_countersManager, counterId, registrationId);
     }
 
 private:

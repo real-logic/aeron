@@ -16,17 +16,16 @@
 #ifndef AERON_COUNTERS_READER_H
 #define AERON_COUNTERS_READER_H
 
-#include <cstdint>
-#include <cstddef>
 #include <functional>
 
+#include "util/Exceptions.h"
 #include "util/BitUtil.h"
 #include "AtomicBuffer.h"
 
 extern "C"
 {
 #include "aeronc.h"
-#include "concurrent/aeron_counters_manager.h"
+#include "concurrent/aeron_counters_manager.h" // TODO: Need to move function prototypes to aeronc.h
 }
 
 namespace aeron { namespace concurrent {
@@ -34,7 +33,7 @@ namespace aeron { namespace concurrent {
 /**
  * Reads the counters metadata and values buffers.
  *
- * This class is threadsafe and can be used across threads.
+ * This class is threadsafe.
  *
  * <b>Values Buffer</b>
  * <pre>
@@ -44,7 +43,10 @@ namespace aeron { namespace concurrent {
  *  |                        Counter Value                          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                     120 bytes of padding                     ...
+ *  |                       Registration Id                         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                     112 bytes of padding                     ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  *  |                   Repeats to end of buffer                   ...
@@ -62,7 +64,7 @@ namespace aeron { namespace concurrent {
  *  +---------------------------------------------------------------+
  *  |                          Type Id                              |
  *  +---------------------------------------------------------------+
- *  |                   Free-for-reuse Deadline                     |
+ *  |                  Free-for-reuse Deadline (ms)                 |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                      112 bytes for key                       ...
@@ -80,21 +82,20 @@ namespace aeron { namespace concurrent {
  * </pre>
  */
 
-typedef std::function<void(
-    std::int32_t,
-    std::int32_t,
-    const AtomicBuffer&,
-    const std::string&)> on_counters_metadata_t;
+typedef std::function<void(std::int32_t, std::int32_t, const AtomicBuffer&, const std::string&)> on_counters_metadata_t;
+
+using namespace aeron::util;
 
 class CountersReader
 {
+
 public:
     inline CountersReader(aeron_counters_reader_t *countersReader) : m_countersReader(countersReader)
     {
     }
 
     template <typename F>
-    void forEach(F&& onCountersMetadata) const
+    void forEach(F &&onCountersMetadata) const
     {
         std::int32_t id = 0;
 
@@ -109,7 +110,7 @@ public:
             }
             else if (RECORD_ALLOCATED == recordStatus)
             {
-                const auto& record = metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
+                const auto &record = metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
 
                 const std::string label = metadataBuffer.getString(i + LABEL_LENGTH_OFFSET);
                 const AtomicBuffer keyBuffer(metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
@@ -134,6 +135,19 @@ public:
         return aeron_counter_get(counter_addr);
     }
 
+    inline std::int64_t getCounterRegistrationId(std::int32_t id) const
+    {
+        validateCounterId(id);
+
+        std::int64_t registrationId;
+        if (aeron_counters_reader_counter_registration_id(m_countersReader, id, &registrationId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return registrationId;
+    }
+
     inline std::int32_t getCounterState(std::int32_t id) const
     {
         std::int32_t state;
@@ -148,7 +162,7 @@ public:
         return state;
     }
 
-    inline std::int64_t getFreeToReuseDeadline(std::int32_t id) const
+    inline std::int64_t getFreeForReuseDeadline(std::int32_t id) const
     {
         std::int64_t deadline;
         if (aeron_counters_reader_free_for_reuse_deadline_ms(m_countersReader, id, &deadline))
@@ -203,7 +217,8 @@ public:
     struct CounterValueDefn
     {
         std::int64_t counterValue;
-        std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
+        std::int64_t registrationId;
+        std::int8_t padding[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int64_t))];
     };
 
     struct CounterMetaDataDefn
@@ -223,12 +238,15 @@ public:
     static const std::int32_t RECORD_ALLOCATED = 1;
     static const std::int32_t RECORD_RECLAIMED = -1;
 
+    static const std::int64_t DEFAULT_REGISTRATION_ID = INT64_C(0);
     static const std::int64_t NOT_FREE_TO_REUSE = INT64_MAX;
 
     static const util::index_t COUNTER_LENGTH = sizeof(CounterValueDefn);
+    static const util::index_t REGISTRATION_ID_OFFSET = offsetof(CounterValueDefn, registrationId);
+
     static const util::index_t METADATA_LENGTH = sizeof(CounterMetaDataDefn);
     static const util::index_t TYPE_ID_OFFSET = offsetof(CounterMetaDataDefn, typeId);
-    static const util::index_t FREE_TO_REUSE_DEADLINE_OFFSET = offsetof(CounterMetaDataDefn, freeToReuseDeadline);
+    static const util::index_t FREE_FOR_REUSE_DEADLINE_OFFSET = offsetof(CounterMetaDataDefn, freeToReuseDeadline);
     static const util::index_t KEY_OFFSET = offsetof(CounterMetaDataDefn, key);
     static const util::index_t LABEL_LENGTH_OFFSET = offsetof(CounterMetaDataDefn, labelLength);
 

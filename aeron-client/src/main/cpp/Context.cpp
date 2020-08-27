@@ -32,7 +32,7 @@ bool Context::requestDriverTermination(
     const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
 {
     auto minLength = static_cast<std::int64_t>(CncFileDescriptor::META_DATA_LENGTH);
-    const std::string cncFilename = directory + std::string(1, AERON_PATH_SEP) + CncFileDescriptor::CNC_FILE;
+    const std::string cncFilename = directory + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
 
     if (MemoryMappedFile::getFileSize(cncFilename.c_str()) > minLength)
     {

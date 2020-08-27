@@ -232,7 +232,7 @@ public:
      */
     inline std::string cncFileName()
     {
-        return m_dirName + std::string(1, AERON_PATH_SEP) + CncFileDescriptor::CNC_FILE;
+        return m_dirName + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
     }
 
     /**

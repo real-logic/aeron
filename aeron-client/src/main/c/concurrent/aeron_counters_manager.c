@@ -22,10 +22,6 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_error.h"
 
-#ifdef _MSC_VER
-#define _Static_assert static_assert
-#endif
-
 int aeron_counters_manager_init(
     aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,

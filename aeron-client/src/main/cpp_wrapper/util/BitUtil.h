@@ -95,9 +95,9 @@ inline int numberOfLeadingZeroes(value_t value) noexcept
 #elif defined(_MSC_VER)
     unsigned long r;
 
-    if (_BitScanReverse(&r, (unsigned long)value))
+    if (_BitScanReverse(&r, static_cast<unsigned long>(value)))
     {
-        return 31 - (int)r;
+        return 31 - static_cast<int>(r);
     }
 
     return 32;
@@ -120,9 +120,9 @@ inline int numberOfTrailingZeroes(value_t value) noexcept
 #elif defined(_MSC_VER)
     unsigned long r;
 
-    if (_BitScanForward(&r, (unsigned long)value))
+    if (_BitScanForward(&r, static_cast<unsigned long>(value)))
     {
-        return r;
+        return static_cast<int>(r);
     }
 
     return 32;
@@ -145,7 +145,7 @@ inline int numberOfTrailingZeroes(value_t value) noexcept
 
     uint32_t index = static_cast<uint32_t>((value & -value) * 0x04D7651F);
 
-    return table[index >> 27];
+    return table[index >> 27u];
 #endif
 }
 

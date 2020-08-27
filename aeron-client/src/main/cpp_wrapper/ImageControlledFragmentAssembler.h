@@ -49,7 +49,7 @@ public:
         const controlled_poll_fragment_handler_t &delegate,
         size_t initialBufferLength = DEFAULT_IMAGE_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_delegate(delegate),
-        m_builder(initialBufferLength)
+        m_builder(static_cast<std::uint32_t>(initialBufferLength))
     {
     }
 

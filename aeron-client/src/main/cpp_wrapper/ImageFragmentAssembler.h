@@ -50,7 +50,7 @@ public:
         const fragment_handler_t &delegate,
         size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_delegate(delegate),
-        m_builder(initialBufferLength)
+        m_builder(static_cast<int32_t>(initialBufferLength))
     {
     }
 

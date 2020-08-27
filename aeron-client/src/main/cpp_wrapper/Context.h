@@ -246,7 +246,7 @@ public:
     inline std::string cncFileName()
     {
         const std::string dir = std::string(aeron_context_get_dir(m_context));
-        return dir + AERON_PATH_SEP + CncFileDescriptor::CNC_FILE;
+        return dir + std::string(1, AERON_PATH_SEP) + CncFileDescriptor::CNC_FILE;
     }
 
     /**

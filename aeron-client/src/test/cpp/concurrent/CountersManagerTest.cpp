@@ -57,8 +57,8 @@ public:
     static const std::int32_t NUM_COUNTERS = 4;
 
     std::int64_t m_currentTimestamp = 0;
-    std::array<std::uint8_t, NUM_COUNTERS * CountersReader::METADATA_LENGTH> m_metadataBuffer;
-    std::array<std::uint8_t, NUM_COUNTERS * CountersReader::COUNTER_LENGTH> m_valuesBuffer;
+    std::array<std::uint8_t, NUM_COUNTERS * CountersReader::METADATA_LENGTH> m_metadataBuffer = {};
+    std::array<std::uint8_t, NUM_COUNTERS * CountersReader::COUNTER_LENGTH> m_valuesBuffer = {};
     CountersManager m_countersManager;
     CountersManager m_countersManagerWithCoolDown;
 };
@@ -258,4 +258,66 @@ TEST_F(CountersManagerTest, shouldResetValueAndRegistrationIdIfReused)
     const std::int64_t registrationIdTwo = 333;
     m_countersManager.setCounterRegistrationId(counterIdTwo, registrationIdTwo);
     EXPECT_EQ(m_countersManager.getCounterRegistrationId(counterIdTwo), registrationIdTwo);
+}
+
+TEST_F(CountersManagerTest, shouldSetOwnerId)
+{
+    const std::int64_t defaultOwnerId = CountersManager::DEFAULT_OWNER_ID;
+    const std::int32_t counterId = m_countersManager.allocate("abc");
+    EXPECT_EQ(m_countersManager.getCounterOwnerId(counterId), defaultOwnerId);
+
+    const std::int64_t OwnerId = 444;
+    m_countersManager.setCounterOwnerId(counterId, OwnerId);
+    EXPECT_EQ(m_countersManager.getCounterOwnerId(counterId), OwnerId);
+}
+
+TEST_F(CountersManagerTest, shouldResetValueAndOwnerIdIfReused)
+{
+    const std::int64_t defaultOwnerId = CountersManager::DEFAULT_OWNER_ID;
+    const std::int32_t counterIdOne = m_countersManager.allocate("abc");
+    EXPECT_EQ(m_countersManager.getCounterOwnerId(counterIdOne), defaultOwnerId);
+
+    const std::int64_t ownerIdOne = 444;
+    m_countersManager.setCounterOwnerId(counterIdOne, ownerIdOne);
+    EXPECT_EQ(m_countersManager.getCounterOwnerId(counterIdOne), ownerIdOne);
+
+    m_countersManager.free(counterIdOne);
+
+    const std::int32_t counterIdTwo = m_countersManager.allocate("def");
+    EXPECT_EQ(counterIdOne, counterIdTwo);
+    EXPECT_EQ(m_countersManager.getCounterOwnerId(counterIdTwo), defaultOwnerId);
+
+    const std::int64_t ownerIdTwo = 222;
+    m_countersManager.setCounterOwnerId(counterIdTwo, ownerIdTwo);
+    EXPECT_EQ(m_countersManager.getCounterOwnerId(counterIdTwo), ownerIdTwo);
+}
+
+TEST_F(CountersManagerTest, shouldFindByRegisrationId)
+{
+    const std::int64_t nullCounterId = CountersManager::NULL_COUNTER_ID;
+    const std::int64_t registrationId = 777;
+
+    m_countersManager.allocate("null");
+
+    const std::int32_t counterId = m_countersManager.allocate("abc");
+    m_countersManager.setCounterRegistrationId(counterId, registrationId);
+
+    EXPECT_EQ(m_countersManager.findByRegistrationId(1), nullCounterId);
+    EXPECT_EQ(m_countersManager.findByRegistrationId(registrationId), counterId);
+}
+
+TEST_F(CountersManagerTest, shouldFindByTypeIdAndRegisrationId)
+{
+    const std::int64_t nullCounterId = CountersManager::NULL_COUNTER_ID;
+    const std::int64_t registrationId = 777;
+    const std::int32_t typeId = 666;
+
+    m_countersManager.allocate("null");
+
+    const std::int32_t counterId = m_countersManager.allocate("abc", typeId, [](AtomicBuffer &){});
+    m_countersManager.setCounterRegistrationId(counterId, registrationId);
+
+    EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(0, registrationId), nullCounterId);
+    EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(typeId, 0), nullCounterId);
+    EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(typeId, registrationId), counterId);
 }

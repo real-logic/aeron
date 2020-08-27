@@ -33,6 +33,10 @@ public:
     inline CountersManager(const AtomicBuffer &metadataBuffer, const AtomicBuffer &valuesBuffer) :
         CountersReader(metadataBuffer, valuesBuffer)
     {
+        if (metadataBuffer.capacity() < (valuesBuffer.capacity() * (METADATA_LENGTH / COUNTER_LENGTH)))
+        {
+            throw util::IllegalArgumentException("metadata buffer is too small", SOURCEINFO);
+        }
     }
 
     inline CountersManager(
@@ -47,20 +51,15 @@ public:
     }
 
     template <typename F>
-    std::int32_t allocate(const std::string &label, std::int32_t typeId, F &&keyFunc)
+    inline std::int32_t allocate(const std::string &label, std::int32_t typeId, F &&keyFunc)
     {
-        std::int32_t counterId = nextCounterId();
-
         if (label.length() > MAX_LABEL_LENGTH)
         {
             throw util::IllegalArgumentException("label too long", SOURCEINFO);
         }
 
-        checkCountersCapacity(counterId);
-
+        std::int32_t counterId = nextCounterId();
         const util::index_t recordOffset = metadataOffset(counterId);
-        checkMetaDataCapacity(recordOffset);
-
         auto &record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
@@ -77,20 +76,16 @@ public:
         return counterId;
     }
 
-    std::int32_t allocate(std::int32_t typeId, const std::uint8_t *key, size_t keyLength, const std::string &label)
+    inline std::int32_t allocate(
+        std::int32_t typeId, const std::uint8_t *key, size_t keyLength, const std::string &label)
     {
-        std::int32_t counterId = nextCounterId();
-
         if (label.length() > MAX_LABEL_LENGTH)
         {
             throw util::IllegalArgumentException("Label too long", SOURCEINFO);
         }
 
-        checkCountersCapacity(counterId);
-
+        std::int32_t counterId = nextCounterId();
         const util::index_t recordOffset = metadataOffset(counterId);
-        checkMetaDataCapacity(recordOffset);
-
         auto &record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
@@ -116,6 +111,7 @@ public:
 
     inline void free(std::int32_t counterId)
     {
+        validateCounterId(counterId);
         const util::index_t recordOffset = metadataOffset(counterId);
 
         m_metadataBuffer.putInt64(recordOffset + FREE_FOR_REUSE_DEADLINE_OFFSET, m_clock() + m_freeToReuseTimeoutMs);
@@ -125,12 +121,20 @@ public:
 
     inline void setCounterValue(std::int32_t counterId, std::int64_t value)
     {
+        validateCounterId(counterId);
         m_valuesBuffer.putInt64Ordered(counterOffset(counterId), value);
     }
 
     inline void setCounterRegistrationId(std::int32_t counterId, std::int64_t registrationId)
     {
+        validateCounterId(counterId);
         m_valuesBuffer.putInt64Ordered(counterOffset(counterId) + REGISTRATION_ID_OFFSET, registrationId);
+    }
+
+    inline void setCounterOwnerId(std::int32_t counterId, std::int64_t ownerId)
+    {
+        validateCounterId(counterId);
+        m_valuesBuffer.putInt64(counterOffset(counterId) + OWNER_ID_OFFSET, ownerId);
     }
 
 private:
@@ -141,43 +145,37 @@ private:
 
     inline std::int32_t nextCounterId()
     {
-        const long long nowMs = m_clock();
-
-        auto it = std::find_if(m_freeList.begin(), m_freeList.end(),
-            [&](std::int32_t counterId)
-            {
-                return nowMs >=
-                    m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_FOR_REUSE_DEADLINE_OFFSET);
-            });
-
-        if (it != m_freeList.end())
+        if (!m_freeList.empty())
         {
-            const std::int32_t counterId = *it;
+            const long long nowMs = m_clock();
 
-            m_freeList.erase(it);
-            m_valuesBuffer.putInt64Ordered(counterOffset(counterId) + REGISTRATION_ID_OFFSET, DEFAULT_REGISTRATION_ID);
-            m_valuesBuffer.putInt64Ordered(counterOffset(counterId), 0L);
+            auto it = std::find_if(m_freeList.begin(), m_freeList.end(),
+                [&](std::int32_t counterId)
+                {
+                   return nowMs >=
+                       m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_FOR_REUSE_DEADLINE_OFFSET);
+                });
 
-            return counterId;
+            if (it != m_freeList.end())
+            {
+                const std::int32_t counterId = *it;
+                const util::index_t offset = counterOffset(counterId);
+
+                m_freeList.erase(it);
+                m_valuesBuffer.putInt64Ordered(offset + REGISTRATION_ID_OFFSET, DEFAULT_REGISTRATION_ID);
+                m_valuesBuffer.putInt64(offset + OWNER_ID_OFFSET, DEFAULT_OWNER_ID);
+                m_valuesBuffer.putInt64Ordered(offset, 0);
+
+                return counterId;
+            }            
         }
 
-        return ++m_highWaterMark;
-    }
-
-    inline void checkCountersCapacity(std::int32_t counterId)
-    {
-        if ((counterOffset(counterId) + COUNTER_LENGTH) > m_valuesBuffer.capacity())
+        if (m_highWaterMark + 1 > m_maxCounterId)
         {
             throw util::IllegalArgumentException("unable to allocated counter, values buffer is full", SOURCEINFO);
         }
-    }
 
-    inline void checkMetaDataCapacity(util::index_t recordOffset)
-    {
-        if ((recordOffset + METADATA_LENGTH) > m_metadataBuffer.capacity())
-        {
-            throw util::IllegalArgumentException("unable to allocate counter, metadata buffer is full", SOURCEINFO);
-        }
+        return ++m_highWaterMark;
     }
 };
 

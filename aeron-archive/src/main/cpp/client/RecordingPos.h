@@ -71,7 +71,8 @@ inline static std::int32_t findCounterIdByRecordingId(CountersReader &countersRe
 
     for (std::int32_t i = 0, size = countersReader.maxCounterId(); i < size; i++)
     {
-        if (countersReader.getCounterState(i) == CountersReader::RECORD_ALLOCATED)
+        const int32_t counterState = countersReader.getCounterState(i);
+        if (CountersReader::RECORD_ALLOCATED == counterState)
         {
             const util::index_t recordOffset = CountersReader::metadataOffset(i);
             auto key = buffer.overlayStruct<RecordingPosKeyDefn>(
@@ -82,6 +83,10 @@ inline static std::int32_t findCounterIdByRecordingId(CountersReader &countersRe
             {
                 return i;
             }
+        }
+        else if (CountersReader::RECORD_UNUSED == counterState)
+        {
+            break;
         }
     }
 
@@ -101,7 +106,8 @@ inline static std::int32_t findCounterIdBySessionId(CountersReader &countersRead
 
     for (std::int32_t i = 0, size = countersReader.maxCounterId(); i < size; i++)
     {
-        if (countersReader.getCounterState(i) == CountersReader::RECORD_ALLOCATED)
+        const int32_t counterState = countersReader.getCounterState(i);
+        if (CountersReader::RECORD_ALLOCATED == counterState)
         {
             const util::index_t recordOffset = CountersReader::metadataOffset(i);
             auto key = buffer.overlayStruct<RecordingPosKeyDefn>(
@@ -112,6 +118,10 @@ inline static std::int32_t findCounterIdBySessionId(CountersReader &countersRead
             {
                 return i;
             }
+        }
+        else if (CountersReader::RECORD_UNUSED == counterState)
+        {
+            break;
         }
     }
 
@@ -180,14 +190,13 @@ inline static std::string getSourceIdentity(CountersReader &countersReader, std:
  */
 inline static bool isActive(CountersReader &countersReader, std::int32_t counterId, std::int64_t recordingId)
 {
-    AtomicBuffer buffer = countersReader.metaDataBuffer();
     const util::index_t recordOffset = CountersReader::metadataOffset(counterId);
+    AtomicBuffer buffer = countersReader.metaDataBuffer();
     auto key = buffer.overlayStruct<RecordingPosKeyDefn>(recordOffset + CountersReader::KEY_OFFSET);
 
-    return
-        buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-            recordingId == key.recordingId &&
-            countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
+    return buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+        recordingId == key.recordingId &&
+        countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
 }
 
 }

@@ -3289,7 +3289,7 @@ public final class MediaDriver implements AutoCloseable
                 final long reuseTimeoutMs;
                 if (counterFreeToReuseTimeoutNs > 0)
                 {
-                    clock = epochClock;
+                    clock = cachedEpochClock;
                     reuseTimeoutMs = Math.max(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
                 }
                 else

@@ -569,8 +569,10 @@ int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
 int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
 
 /*
- * Counters Reader functions
+ * Counters Reader functions and definitions
  */
+
+#define AERON_COUNTERS_MAX_LABEL_LENGTH ((6 * 64u) - sizeof(int32_t))
 
 /**
  * Function called by aeron_counters_reader_foreach_counter for each counter in the aeron_counters_reader_t.
@@ -595,6 +597,62 @@ void aeron_counters_reader_foreach_counter(
     aeron_counters_reader_t *counters_reader,
     aeron_counters_reader_foreach_counter_func_t func,
     void *clientd);
+
+/**
+ * Get the current max counter id.
+ *
+ * @param reader to query
+ * @return -1 on failure, max counter id on success.
+ */
+int32_t aeron_counters_reader_max_counter_id(aeron_counters_reader_t *reader);
+
+/**
+ * Get the address for a counter.
+ *
+ * @param counters_reader that contains the counter
+ * @param counter_id to find
+ * @return address of the counter value
+ */
+int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id);
+
+int aeron_counters_reader_counter_registration_id(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *registration_id);
+
+int aeron_counters_reader_counter_owner_id(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *owner_id);
+
+/**
+ * Get the state for a counter.
+ *
+ * @param counters_reader that contains the counter
+ * @param counter_id to find
+ * @param state out pointer for the current state to be stored in.
+ * @return -1 on failure, 0 on success.
+ */
+int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state);
+
+/**
+ * Get the label for a counter.
+ *
+ * @param counters_reader that contains the counter
+ * @param counter_id to find
+ * @param buffer to store the counter in.
+ * @param buffer_length length of the output buffer
+ * @return -1 on failure, number of characters copied to buffer on success.
+ */
+int aeron_counters_reader_counter_label(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length);
+
+/**
+ * Get the free for reuse deadline (ms) for a counter
+ *
+ * @param counters_reader that contains the counter
+ * @param counter_id to find
+ * @param deadline_ms output value to store the deadline
+ * @return -1 on failure, 0 on success.
+ */
+int aeron_counters_reader_free_for_reuse_deadline_ms(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms);
 
 /*
  * Publication functions

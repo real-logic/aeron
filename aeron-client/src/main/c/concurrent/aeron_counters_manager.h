@@ -228,25 +228,6 @@ inline int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *counters_m
     return (int64_t *)(counters_manager->values + AERON_COUNTER_OFFSET(counter_id));
 }
 
-inline int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id)
-{
-    return (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(counter_id));
-}
-
-int aeron_counters_reader_counter_registration_id(
-    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *registration_id);
-
-int aeron_counters_reader_counter_owner_id(
-    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *owner_id);
-
-int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state);
-
-int aeron_counters_reader_counter_label(
-    aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length);
-
-int aeron_counters_reader_free_for_reuse_deadline_ms(
-    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms);
-
 inline int aeron_counters_reader_init(
     aeron_counters_reader_t *reader,
     uint8_t *metadata_buffer,

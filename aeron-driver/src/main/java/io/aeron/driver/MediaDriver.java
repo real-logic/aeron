@@ -3285,29 +3285,14 @@ public final class MediaDriver implements AutoCloseable
                     countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                final EpochClock clock;
-                final long reuseTimeoutMs;
-                if (counterFreeToReuseTimeoutNs > 0)
-                {
-                    clock = epochClock;
-                    reuseTimeoutMs = Math.max(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
-                }
-                else
-                {
-                    clock = () -> 0;
-                    reuseTimeoutMs = 0;
-                }
+                final long reuseTimeoutMs = counterFreeToReuseTimeoutNs > 0 ?
+                    Math.max(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1) : 0;
 
-                if (useConcurrentCountersManager)
-                {
-                    countersManager = new ConcurrentCountersManager(
-                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, clock, reuseTimeoutMs);
-                }
-                else
-                {
-                    countersManager = new CountersManager(
-                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, clock, reuseTimeoutMs);
-                }
+                countersManager = useConcurrentCountersManager ?
+                    new ConcurrentCountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, cachedEpochClock, reuseTimeoutMs) :
+                    new CountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, cachedEpochClock, reuseTimeoutMs);
             }
 
             if (null == systemCounters)

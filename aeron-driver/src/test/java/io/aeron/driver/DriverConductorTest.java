@@ -1802,10 +1802,14 @@ public class DriverConductorTest
     {
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == HEARTBEAT_TYPE_ID)
+            final int counterState = countersReader.getCounterState(i);
+            if (counterState == RECORD_ALLOCATED && countersReader.getCounterTypeId(i) == HEARTBEAT_TYPE_ID)
             {
                 return new AtomicCounter(countersReader.valuesBuffer(), i);
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
             }
         }
 

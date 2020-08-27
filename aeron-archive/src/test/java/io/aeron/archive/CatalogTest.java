@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.CatalogHeaderEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
@@ -41,6 +42,7 @@ import java.nio.file.Files;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
+import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
@@ -65,6 +67,7 @@ class CatalogTest
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
+    private final UnsafeBuffer segmentFileBuffer = new UnsafeBuffer(ByteBuffer.allocate(FILE_IO_MAX_LENGTH_DEFAULT));
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorHeaderDecoder recordingDescriptorHeaderDecoder =
         new RecordingDescriptorHeaderDecoder();
@@ -81,7 +84,7 @@ class CatalogTest
     @BeforeEach
     void before()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 6, 1, "channelG", "channelG?tag=f", "sourceA");
@@ -128,7 +131,7 @@ class CatalogTest
     {
         setNextRecordingId(0);
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
         }
@@ -139,8 +142,8 @@ class CatalogTest
     {
         setNextRecordingId(recordingTwoId);
 
-        final ArchiveException exception =
-            assertThrows(ArchiveException.class, () -> new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null));
+        final ArchiveException exception = assertThrows(ArchiveException.class,
+            () -> new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer));
         assertEquals(
             "invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
             ", was " + recordingTwoId,
@@ -153,7 +156,7 @@ class CatalogTest
         final long nextRecordingId = 10101010;
         setNextRecordingId(nextRecordingId);
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             assertEquals(nextRecordingId, catalog.nextRecordingId());
         }
@@ -164,7 +167,7 @@ class CatalogTest
     void shouldThrowIllegalArgumentExceptionIfCatalogCapacityIsLessThanMinimalCapacity(final long capacity)
     {
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> new Catalog(archiveDir, null, 0, capacity, clock, null, null));
+            () -> new Catalog(archiveDir, null, 0, capacity, clock, null, segmentFileBuffer));
 
         assertEquals(
             "Invalid catalog capacity provided: expected value >= " + MIN_CAPACITY + ", got " + capacity,
@@ -194,7 +197,7 @@ class CatalogTest
     void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, () -> 3L, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, () -> 3L, null, segmentFileBuffer))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
@@ -222,7 +225,7 @@ class CatalogTest
     {
         final long newCapacity = CAPACITY * 2;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, clock, null, segmentFileBuffer))
         {
             assertEquals(newCapacity, catalog.capacity());
         }
@@ -232,7 +235,7 @@ class CatalogTest
     @ValueSource(longs = { MIN_CAPACITY, CAPACITY - 1, CAPACITY })
     void shouldNotDecreaseCapacity(final long newCapacity)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newCapacity, clock, null, segmentFileBuffer))
         {
             assertEquals(CAPACITY, catalog.capacity());
         }
@@ -254,7 +257,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -304,7 +307,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -341,7 +344,7 @@ class CatalogTest
             ArchiveException.class,
             () ->
             {
-                final Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null);
+                final Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer);
                 catalog.close();
             });
         assertThat(exception.getMessage(), containsString(segmentFile.getAbsolutePath()));
@@ -386,7 +389,7 @@ class CatalogTest
     private long newRecording()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             newRecordingId = catalog.addNewRecording(
                 0L,
@@ -437,7 +440,7 @@ class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             assertTrue(catalog.forEntry(
                 newRecordingId,
@@ -456,7 +459,7 @@ class CatalogTest
         final File archiveDir = ArchiveTests.makeTestDirectory();
         final long capacity = 384 + CatalogHeaderEncoder.BLOCK_LENGTH;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, clock, null, segmentFileBuffer))
         {
             for (int i = 0; i < 2; i++)
             {
@@ -488,7 +491,7 @@ class CatalogTest
         after();
         final File archiveDir = ArchiveTests.makeTestDirectory();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MIN_CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MIN_CAPACITY, clock, null, segmentFileBuffer))
         {
             for (int i = 0; i < 4; i++)
             {
@@ -517,7 +520,7 @@ class CatalogTest
     @Test
     void growCatalogThrowsArchiveExceptionIfCatalogIsFull()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY, (int)(CAPACITY + 1)));
@@ -528,7 +531,7 @@ class CatalogTest
     @Test
     void growCatalogThrowsArchiveExceptionIfRecordingIsTooBig()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
@@ -551,14 +554,14 @@ class CatalogTest
             log.write(bb);
         }
 
-        final Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null);
+        final Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer);
         catalog.close();
     }
 
     @Test
     void shouldContainChannelFragment()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final String originalChannel = "aeron:udp?endpoint=localhost:7777|tags=777|alias=TestString";
             final String strippedChannel = "strippedChannelUri";
@@ -622,7 +625,7 @@ class CatalogTest
         final int sessionId = 6;
         final int streamId = 1;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final long recordingF = catalog.addNewRecording(
                 0L,
@@ -681,7 +684,7 @@ class CatalogTest
     @Test
     void findLastReturnsNullRecordingIdIfRecordingIsInTheInvalidState()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             assertTrue(catalog.invalidateRecording(recordingOneId));
 
@@ -693,7 +696,7 @@ class CatalogTest
     @ValueSource(longs = { -1, Long.MAX_VALUE })
     void invalidRecordingIsANoOpIfUnknownRecordingIdIsSpecified(final long recordingId)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             assertFalse(catalog.invalidateRecording(recordingId));
         }
@@ -717,9 +720,115 @@ class CatalogTest
         testInvalidateRecording(recordingThreeId);
     }
 
+    @Test
+    void shouldComputeChecksumOfTheRecordingDescriptorUponAddingToTheCatalog()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            final long recordingId = catalog.addNewRecording(
+                0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 6, 1, "channelNew", "channelNew?tag=X", "sourceX");
+            final long recordingId2 = catalog.addNewRecording(
+                1,
+                100,
+                2,
+                222,
+                111,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                16,
+                12,
+                "channelNew2",
+                "channelNew?tag=X2",
+                "sourceX2");
+
+            catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            {
+                if (recordingId == descriptorDecoder.recordingId())
+                {
+                    assertEquals(1691549102, headerDecoder.checksum());
+                }
+                else if (recordingId2 == descriptorDecoder.recordingId())
+                {
+                    assertEquals(1452384985, headerDecoder.checksum());
+                }
+                else
+                {
+                    assertEquals(0, headerDecoder.checksum());
+                }
+            });
+        }
+    }
+
+    @Test
+    void recordingStoppedShouldUpdateChecksum()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            assertChecksum(catalog, recordingOneId, 0);
+
+            catalog.recordingStopped(recordingOneId, 140, 231723682323L);
+
+            assertChecksum(catalog, recordingOneId, 1656993099);
+        }
+    }
+
+    @Test
+    void stopPositionShouldUpdateChecksum()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            assertChecksum(catalog, recordingTwoId, 0);
+
+            catalog.stopPosition(recordingTwoId, 7777);
+
+            assertChecksum(catalog, recordingTwoId, -1985007076);
+        }
+    }
+
+    @Test
+    void startPositionShouldUpdateChecksum()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            assertChecksum(catalog, recordingThreeId, 0);
+
+            catalog.startPosition(recordingThreeId, 123);
+
+            assertChecksum(catalog, recordingThreeId, -160510802);
+        }
+    }
+
+    @Test
+    void extendRecordingShouldUpdateChecksum()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            final long recordingId = catalog.addNewRecording(
+                0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 6, 1, "channelNew", "channelNew?tag=X", "sourceX");
+            assertChecksum(catalog, recordingId, 1691549102);
+
+            catalog.extendRecording(recordingId, 555, 13, 31);
+
+            assertChecksum(catalog, recordingId, -1694749833);
+        }
+    }
+
+    private void assertChecksum(final Catalog catalog, final long recordingId, final int expectedChecksum)
+    {
+        catalog.forEntry(recordingId,
+            (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            assertEquals(expectedChecksum, headerDecoder.checksum()));
+    }
+
     private void testInvalidateRecording(final long recordingId)
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
             final int entries = catalog.countEntries();
 

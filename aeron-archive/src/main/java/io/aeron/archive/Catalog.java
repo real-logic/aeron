@@ -129,6 +129,7 @@ class Catalog implements AutoCloseable
     private final File catalogFile;
     private final File archiveDir;
     private final EpochClock epochClock;
+    private final Checksum checksum;
     private final CatalogIndex catalogIndex = new CatalogIndex();
     private final int alignment;
     private final int firstRecordingDescriptorOffset;
@@ -137,6 +138,8 @@ class Catalog implements AutoCloseable
     private MappedByteBuffer catalogByteBuffer;
     private UnsafeBuffer catalogBuffer;
     private UnsafeBuffer fieldAccessBuffer;
+    private UnsafeBuffer headerAccessBuffer;
+    private long catalogByteBufferAddress;
     private long capacity;
     private long nextRecordingId;
     private int nextRecordingDescriptorOffset;
@@ -154,6 +157,7 @@ class Catalog implements AutoCloseable
         this.forceWrites = fileSyncLevel > 0;
         this.forceMetadata = fileSyncLevel > 1;
         this.epochClock = epochClock;
+        this.checksum = checksum;
 
         validateCapacity(catalogCapacity);
 
@@ -185,10 +189,7 @@ class Catalog implements AutoCloseable
             }
 
             catalogChannel = catalogFileChannel;
-            catalogByteBuffer = catalogMappedByteBuffer;
-            catalogByteBuffer.order(BYTE_ORDER);
-            catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
-            fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
+            initBuffers(catalogMappedByteBuffer);
 
             final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(catalogByteBuffer);
             catalogHeaderDecoder.wrap(
@@ -249,6 +250,7 @@ class Catalog implements AutoCloseable
         this.forceMetadata = false;
         this.epochClock = epochClock;
         this.catalogChannel = null;
+        checksum = null;
         catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
 
         validateCapacity(catalogCapacity);
@@ -269,10 +271,7 @@ class Catalog implements AutoCloseable
                 LangUtil.rethrowUnchecked(ex);
             }
 
-            catalogByteBuffer = catalogMappedByteBuffer;
-            catalogByteBuffer.order(BYTE_ORDER);
-            catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
-            fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
+            initBuffers(catalogMappedByteBuffer);
 
             final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(catalogByteBuffer);
             catalogHeaderDecoder.wrap(
@@ -404,9 +403,11 @@ class Catalog implements AutoCloseable
             .originalChannel(originalChannel)
             .sourceIdentity(sourceIdentity);
 
+        final int recordingLength = frameLength - DESCRIPTOR_HEADER_LENGTH;
         descriptorHeaderEncoder
             .wrap(catalogBuffer, 0)
-            .length(frameLength - DESCRIPTOR_HEADER_LENGTH)
+            .length(recordingLength)
+            .checksum(computeRecordingDescriptorChecksum(recordingDescriptorOffset, recordingLength))
             .state(VALID);
 
         catalogHeaderEncoder.nextRecordingId(recordingId + 1);
@@ -586,27 +587,32 @@ class Catalog implements AutoCloseable
 
     void recordingStopped(final long recordingId, final long position, final long timestampMs)
     {
-        final int offset = recordingDescriptorOffset(recordingId) + DESCRIPTOR_HEADER_LENGTH;
+        final int recordingDescriptorOffset = recordingDescriptorOffset(recordingId);
+        final int offset = recordingDescriptorOffset + DESCRIPTOR_HEADER_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
 
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestampMs, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
+        updateChecksum(recordingDescriptorOffset);
         forceWrites(catalogChannel);
     }
 
     void stopPosition(final long recordingId, final long position)
     {
-        final int offset = recordingDescriptorOffset(recordingId) + DESCRIPTOR_HEADER_LENGTH;
+        final int recordingDescriptorOffset = recordingDescriptorOffset(recordingId);
+        final int offset = recordingDescriptorOffset + DESCRIPTOR_HEADER_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
 
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
+        updateChecksum(recordingDescriptorOffset);
         forceWrites(catalogChannel);
     }
 
     void extendRecording(
         final long recordingId, final long controlSessionId, final long correlationId, final int sessionId)
     {
-        final int offset = recordingDescriptorOffset(recordingId) + DESCRIPTOR_HEADER_LENGTH;
+        final int recordingDescriptorOffset = recordingDescriptorOffset(recordingId);
+        final int offset = recordingDescriptorOffset + DESCRIPTOR_HEADER_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? NULL_POSITION : Long.reverseBytes(NULL_POSITION);
 
         fieldAccessBuffer.putLong(offset + controlSessionIdEncodingOffset(), controlSessionId, BYTE_ORDER);
@@ -614,6 +620,7 @@ class Catalog implements AutoCloseable
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP, BYTE_ORDER);
         fieldAccessBuffer.putInt(offset + sessionIdEncodingOffset(), sessionId, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
+        updateChecksum(recordingDescriptorOffset);
         forceWrites(catalogChannel);
     }
 
@@ -629,10 +636,12 @@ class Catalog implements AutoCloseable
 
     void startPosition(final long recordingId, final long position)
     {
-        final int offset = recordingDescriptorOffset(recordingId) +
+        final int recordingDescriptorOffset = recordingDescriptorOffset(recordingId);
+        final int offset = recordingDescriptorOffset +
             DESCRIPTOR_HEADER_LENGTH + startPositionEncodingOffset();
 
         fieldAccessBuffer.putLong(offset, position, BYTE_ORDER);
+        updateChecksum(recordingDescriptorOffset);
         forceWrites(catalogChannel);
     }
 
@@ -737,22 +746,22 @@ class Catalog implements AutoCloseable
             newCapacity = min(newCapacity + (newCapacity >> 1), maxCatalogLength);
         }
 
+        final MappedByteBuffer mappedByteBuffer;
         try
         {
             unmapAndCloseChannel();
             catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
-            catalogByteBuffer = catalogChannel.map(READ_WRITE, 0, newCapacity);
-            catalogByteBuffer.order(BYTE_ORDER);
+            mappedByteBuffer = catalogChannel.map(READ_WRITE, 0, newCapacity);
         }
         catch (final Throwable ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);
+            return;
         }
 
         capacity = newCapacity;
-        catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
-        fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
+        initBuffers(mappedByteBuffer);
 
         final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(catalogByteBuffer);
         catalogHeaderDecoder.wrap(
@@ -774,6 +783,16 @@ class Catalog implements AutoCloseable
             throw new IllegalArgumentException("Invalid catalog capacity provided: expected value >= " +
                 MIN_CAPACITY + ", got " + catalogCapacity);
         }
+    }
+
+    private void initBuffers(final MappedByteBuffer catalogMappedByteBuffer)
+    {
+        catalogByteBuffer = catalogMappedByteBuffer;
+        catalogByteBuffer.order(BYTE_ORDER);
+        catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
+        catalogByteBufferAddress = catalogBuffer.addressOffset();
+        fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
+        headerAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
     }
 
     private void buildIndex()
@@ -823,6 +842,36 @@ class Catalog implements AutoCloseable
         }
 
         return -1;
+    }
+
+    private int computeRecordingDescriptorChecksum(final int recordingDescriptorOffset, final int recordingLength)
+    {
+        final Checksum checksum = this.checksum;
+        if (null != checksum)
+        {
+            return checksum.compute(
+                catalogByteBufferAddress,
+                DESCRIPTOR_HEADER_LENGTH + recordingDescriptorOffset,
+                recordingLength);
+        }
+        return 0;
+    }
+
+    private void updateChecksum(final int recordingDescriptorOffset)
+    {
+        final Checksum checksum = this.checksum;
+        if (null != checksum)
+        {
+            final UnsafeBuffer headerBuffer = this.headerAccessBuffer;
+            final int recordingLength = headerBuffer.getInt(
+                recordingDescriptorOffset + RecordingDescriptorHeaderEncoder.lengthEncodingOffset(), BYTE_ORDER);
+            final int checksumValue = checksum.compute(
+                catalogByteBufferAddress, DESCRIPTOR_HEADER_LENGTH + recordingDescriptorOffset, recordingLength);
+            headerBuffer.putInt(
+                recordingDescriptorOffset + RecordingDescriptorHeaderEncoder.checksumEncodingOffset(),
+                checksumValue,
+                BYTE_ORDER);
+        }
     }
 
     private void invokeEntryProcessor(final CatalogEntryProcessor consumer)

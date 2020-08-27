@@ -139,13 +139,17 @@ public class RecoveryState
 
         for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
-            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
-                counters.getCounterTypeId(i) == RECOVERY_STATE_TYPE_ID)
+            final int counterState = counters.getCounterState(i);
+            if (counterState == RECORD_ALLOCATED && counters.getCounterTypeId(i) == RECOVERY_STATE_TYPE_ID)
             {
                 if (buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + CLUSTER_ID_OFFSET) == clusterId)
                 {
                     return i;
                 }
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
             }
         }
 

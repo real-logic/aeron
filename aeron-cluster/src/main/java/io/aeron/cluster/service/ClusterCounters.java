@@ -68,13 +68,19 @@ public class ClusterCounters
 
         for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
-            final int recordOffset = CountersReader.metaDataOffset(i);
+            final int counterState = counters.getCounterState(i);
 
-            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
-                counters.getCounterTypeId(i) == typeId &&
-                buffer.getInt(recordOffset + KEY_OFFSET) == clusterId)
+            if (counterState == RECORD_ALLOCATED)
             {
-                return i;
+                if (counters.getCounterTypeId(i) == typeId &&
+                    buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET) == clusterId)
+                {
+                    return i;
+                }
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
             }
         }
 

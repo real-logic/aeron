@@ -246,7 +246,7 @@ public:
     inline std::string cncFileName()
     {
         const std::string dir = std::string(aeron_context_get_dir(m_context));
-        return dir + "/" + CncFileDescriptor::CNC_FILE;
+        return dir + AERON_PATH_SEP + CncFileDescriptor::CNC_FILE;
     }
 
     /**
@@ -398,7 +398,7 @@ public:
 
     /**
      * Set the amount of time, in milliseconds, that this client will to linger inactive connections and internal
-     * arrays before they are free'd.
+     * arrays before they are freed.
      *
      * @param value Number of milliseconds.
      * @return reference to this Context instance

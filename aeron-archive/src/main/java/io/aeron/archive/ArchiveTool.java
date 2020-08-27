@@ -1439,7 +1439,7 @@ public class ArchiveTool
             "     (e.g. io.aeron.archive.checksum.Crc32).%n" +
             "     Only the last segment file of each recording is processed by default,%n" +
             "     unless flag '-a' is specified in which case all of the segment files are processed.%n" +
-            "  count-entries: queries the number of recording entries in the catalog.%n" +
+            "  count-entries: queries the number of `VALID` recording entries in the catalog.%n" +
             "  max-entries [number of entries]: DEPRECATED: use `capacity` instead.%n" +
             "  capacity [capacity in bytes]: gets or increases catalog capacity.%n" +
             "  compact: compact Catalog file by removing entries in state `INVALID` and delete the corresponding" +

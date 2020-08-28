@@ -31,7 +31,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 #define MTU (4096)
 
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
-typedef std::array<std::uint8_t, 2 * CAPACITY> buffer_2x_t;
+typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;
 
 static bool always_measure_rtt(void *state, int64_t now_ns)
 {
@@ -108,7 +108,7 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
 {
     struct sockaddr_storage addr; // Don't really care what value this is.
     uint8_t data[128];
-    aeron_data_header_t *message = reinterpret_cast<aeron_data_header_t *>(data);
+    auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
     const char *uri_2 = "aeron:udp?endpoint=localhost:9091";
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
@@ -138,8 +138,7 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
     ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
     image->congestion_control->should_measure_rtt = always_measure_rtt;
 
-    aeron_test_udp_bindings_state_t *test_bindings_state =
-        static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
+    auto *test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
 
     aeron_publication_image_schedule_status_message(image, 1000000000, 0, TERM_BUFFER_SIZE);
     aeron_publication_image_send_pending_status_message(image);
@@ -180,7 +179,7 @@ TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
     uint8_t data[128];
     memset(data, 0, sizeof(data));
 
-    aeron_data_header_t *heartbeat = reinterpret_cast<aeron_data_header_t *>(data);
+    auto *heartbeat = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
     const char *uri_2 = "aeron:udp?endpoint=localhost:9091";
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
@@ -236,7 +235,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
 {
     struct sockaddr_storage addr; // Don't really care what value this is.
     uint8_t data[128];
-    aeron_data_header_t *message = reinterpret_cast<aeron_data_header_t *>(data);
+    auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
     const char *uri_2 = "aeron:udp?endpoint=localhost:9091";
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
@@ -273,8 +272,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
     ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
     image->congestion_control->should_measure_rtt = always_measure_rtt;
 
-    aeron_test_udp_bindings_state_t *test_bindings_state =
-        static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
+    auto *test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
 
     size_t message_length = 64;
 
@@ -289,7 +287,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
 
     aeron_clock_update_cached_time(m_context->cached_clock, t1_ms, t1_ns);
 
-    int32_t next_offset = (int32_t)message_length;
+    auto next_offset = (int32_t)message_length;
     message->term_offset = next_offset;
 
     aeron_publication_image_insert_packet(image, dest_2, 0, next_offset, data, message_length, &addr);
@@ -310,7 +308,7 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
 {
     struct sockaddr_storage addr; // Don't really care what value this is.
     uint8_t data[128];
-    aeron_data_header_t *message = reinterpret_cast<aeron_data_header_t *>(data);
+    auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
     const char *uri_2 = "aeron:udp?endpoint=localhost:9091";
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
@@ -345,8 +343,7 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
     ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
     image->congestion_control->should_measure_rtt = always_measure_rtt;
 
-    aeron_test_udp_bindings_state_t *test_bindings_state =
-        static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
+    auto *test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
 
     aeron_publication_image_schedule_status_message(image, t0_ns, 0, TERM_BUFFER_SIZE);
     aeron_publication_image_send_pending_status_message(image);
@@ -378,7 +375,7 @@ TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndRecei
 {
     struct sockaddr_storage addr; // Don't really care what value this is.
     uint8_t data[128];
-    aeron_data_header_t *message = reinterpret_cast<aeron_data_header_t *>(data);
+    auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
     const char *uri_2 = "aeron:udp?endpoint=localhost:9091";
     aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
@@ -414,8 +411,7 @@ TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndRecei
     ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
     image->congestion_control->should_measure_rtt = always_measure_rtt;
 
-    aeron_test_udp_bindings_state_t *test_bindings_state =
-        static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
+    auto *test_bindings_state = static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
 
     aeron_publication_image_schedule_status_message(image, t0_ns, 0, TERM_BUFFER_SIZE);
     aeron_publication_image_send_pending_status_message(image);

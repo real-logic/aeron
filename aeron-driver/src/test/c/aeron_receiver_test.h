@@ -40,7 +40,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 #define MTU (4096)
 
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
-typedef std::array<std::uint8_t, 2 * CAPACITY> buffer_2x_t;
+typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;
 
 void stub_linger(void *clientd, uint8_t *resource)
 {
@@ -270,7 +270,7 @@ protected:
     aeron_distinct_error_log_t m_error_log;
     AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16);
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16);
-    AERON_DECL_ALIGNED(buffer_2x_t m_counter_meta_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16);
     std::vector<aeron_receive_channel_endpoint_t *> m_endpoints;
     std::vector<aeron_udp_channel_t *> m_channels_for_tear_down;
     std::vector<aeron_publication_image_t *> m_images;

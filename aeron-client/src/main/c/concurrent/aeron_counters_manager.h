@@ -146,6 +146,7 @@ typedef struct aeron_counters_manager_stct
     size_t values_length;
     size_t metadata_length;
 
+    int32_t max_counter_id;
     int32_t id_high_water_mark;
     int32_t *free_list;
     int32_t free_list_index;
@@ -166,7 +167,8 @@ typedef struct aeron_counters_reader_stct
 }
 aeron_counters_reader_t;
 
-#define AERON_COUNTERS_MANAGER_IS_VALID_BUFFER_SIZES(metadata, values) ((metadata) >= ((values) * 2))
+#define AERON_COUNTERS_MANAGER_IS_BUFFER_LENGTHS_VALID(metadata, values) \
+    ((metadata) >= ((values) * (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH)))
 
 int aeron_counters_manager_init(
     aeron_counters_manager_t *manager,

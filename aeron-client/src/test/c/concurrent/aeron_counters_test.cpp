@@ -25,7 +25,7 @@ extern "C"
 }
 
 #define CAPACITY (1024)
-#define METADATA_CAPACITY (CAPACITY * 2)
+#define METADATA_CAPACITY (CAPACITY * 4)
 #define MSG_TYPE_ID (101)
 
 typedef std::array<std::uint8_t, CAPACITY> values_buffer_t;

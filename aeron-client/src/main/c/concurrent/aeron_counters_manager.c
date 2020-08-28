@@ -33,12 +33,13 @@ int aeron_counters_manager_init(
 {
     int result = -1;
 
-    if (AERON_COUNTERS_MANAGER_IS_VALID_BUFFER_SIZES(metadata_length, values_length))
+    if (AERON_COUNTERS_MANAGER_IS_BUFFER_LENGTHS_VALID(metadata_length, values_length))
     {
         manager->metadata = metadata_buffer;
         manager->metadata_length = metadata_length;
         manager->values = values_buffer;
         manager->values_length = values_length;
+        manager->max_counter_id = (int32_t)((values_length / AERON_COUNTERS_MANAGER_VALUE_LENGTH) - 1);
         manager->id_high_water_mark = -1;
         manager->free_list_index = -1;
         manager->free_list_length = 2;
@@ -68,14 +69,7 @@ int32_t aeron_counters_manager_allocate(
     size_t label_length)
 {
     const int32_t counter_id = aeron_counters_manager_next_counter_id(manager);
-
-    if ((counter_id * AERON_COUNTERS_MANAGER_VALUE_LENGTH) + AERON_COUNTERS_MANAGER_VALUE_LENGTH > manager->values_length)
-    {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
-        return -1;
-    }
-
-    if ((counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH) + AERON_COUNTERS_MANAGER_METADATA_LENGTH > manager->metadata_length)
+    if (counter_id < 0)
     {
         aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
@@ -181,6 +175,11 @@ int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager
                 return counter_id;
             }
         }
+    }
+
+    if ((manager->id_high_water_mark + 1) > manager->max_counter_id)
+    {
+        return -1;
     }
 
     return ++manager->id_high_water_mark;

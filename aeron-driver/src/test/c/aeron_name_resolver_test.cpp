@@ -29,7 +29,7 @@ extern "C"
 }
 
 #define METADATA_LENGTH (16 * 1024)
-#define VALUES_LENGTH (METADATA_LENGTH / 2)
+#define VALUES_LENGTH (METADATA_LENGTH / 4)
 #define ERROR_LOG_LENGTH (8192)
 
 class NameResolverTest : public testing::Test
@@ -125,7 +125,7 @@ protected:
         size_t label_length,
         void *clientd)
     {
-        counters_clientd_t *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
+        auto *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
         if (counters_clientd->type_id == type_id)
         {
             int64_t *counter_addr = aeron_counters_manager_addr((aeron_counters_manager_t *) counters_clientd->counters,
@@ -367,7 +367,7 @@ TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
 {
     uint8_t buffer[1024];
     const char *hostname = "this.is.the.hostname";
-    aeron_resolution_header_t *resolution_header = (aeron_resolution_header_t *)&buffer[0];
+    auto *resolution_header = (aeron_resolution_header_t *)&buffer[0];
     uint8_t flags = 0;
     struct sockaddr_storage address;
 
@@ -444,18 +444,16 @@ TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", 0, "A", "[::1]:8050");
     const char *name = "ABCDEFGH";
 
-    aeron_driver_agent_frame_log_header_t *log_header =
-        reinterpret_cast<aeron_driver_agent_frame_log_header_t *>(&buffer[0]);
+    auto *log_header = reinterpret_cast<aeron_driver_agent_frame_log_header_t *>(&buffer[0]);
     log_header->sockaddr_len = sizeof(struct sockaddr_in6);
 
     size_t frame_offset = sizeof(aeron_driver_agent_frame_log_header_t) + log_header->sockaddr_len;
-    aeron_frame_header_t *frame = reinterpret_cast<aeron_frame_header_t *>(&buffer[frame_offset]);
+    auto *frame = reinterpret_cast<aeron_frame_header_t *>(&buffer[frame_offset]);
 
     size_t res_offset = sizeof(aeron_frame_header_t) + frame_offset;
     do
     {
-        aeron_resolution_header_ipv6_t *res =
-            reinterpret_cast<aeron_resolution_header_ipv6_t *>(&buffer[res_offset]);
+        auto *res = reinterpret_cast<aeron_resolution_header_ipv6_t *>(&buffer[res_offset]);
 
         res->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD;
         res->resolution_header.res_flags = AERON_RES_HEADER_SELF_FLAG;

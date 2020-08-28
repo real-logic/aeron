@@ -33,7 +33,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 #define MTU (4096)
 
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
-typedef std::array<std::uint8_t, 2 * CAPACITY> buffer_2x_t;
+typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;
 
 void *get_on_publication_image_fptr()
 {
@@ -60,10 +60,10 @@ protected:
         return ReceiverTestBase::createImage(m_receive_endpoint, m_destination, stream_id, session_id, correlation_id);
     }
 
-    aeron_receive_channel_endpoint_t *m_receive_endpoint;
-    aeron_receive_destination_t *m_destination;
-    aeron_data_packet_dispatcher_t *m_dispatcher;
-    aeron_test_udp_bindings_state_t *m_test_bindings_state;
+    aeron_receive_channel_endpoint_t *m_receive_endpoint = nullptr;
+    aeron_receive_destination_t *m_destination = nullptr;
+    aeron_data_packet_dispatcher_t *m_dispatcher = nullptr;
+    aeron_test_udp_bindings_state_t *m_test_bindings_state = nullptr;
 };
 
 TEST_F(DataPacketDispatcherTest, shouldInsertDataInputSubscribedPublicationImage)

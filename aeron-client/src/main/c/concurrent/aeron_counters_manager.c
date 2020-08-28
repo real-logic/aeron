@@ -103,6 +103,16 @@ int32_t aeron_counters_manager_allocate(
     return counter_id;
 }
 
+int aeron_counters_reader_get_buffers(aeron_counters_reader_t *reader, aeron_counters_reader_buffers_t *buffers)
+{
+    buffers->values = reader->values;
+    buffers->metadata = reader->metadata;
+    buffers->values_length = reader->values_length;
+    buffers->metadata_length = reader->metadata_length;
+
+    return 0;
+}
+
 int32_t aeron_counters_reader_max_counter_id(aeron_counters_reader_t *reader)
 {
     return reader->max_counter_id;

@@ -15,13 +15,11 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsSession extends AbstractListRecordingsSession
 {
-    private final long limitId;
-    private long recordingId;
-
     ListRecordingsSession(
         final long correlationId,
         final long fromRecordingId,
@@ -29,48 +27,22 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         final Catalog catalog,
         final ControlResponseProxy proxy,
         final ControlSession controlSession,
-        final UnsafeBuffer descriptorBuffer)
+        final UnsafeBuffer descriptorBuffer,
+        final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
-        super(correlationId, catalog, proxy, controlSession, descriptorBuffer);
-
-        recordingId = fromRecordingId;
-        limitId = fromRecordingId + count;
+        super(
+            correlationId,
+            fromRecordingId,
+            count,
+            catalog,
+            proxy,
+            controlSession,
+            descriptorBuffer,
+            recordingDescriptorDecoder);
     }
 
-    protected int sendDescriptors()
+    protected boolean acceptDescriptor(final RecordingDescriptorDecoder descriptorDecoder)
     {
-        int totalBytesSent = 0;
-        int recordsScanned = 0;
-
-        while (recordingId < limitId && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
-        {
-            if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
-            {
-                controlSession.sendRecordingUnknown(correlationId, recordingId, proxy);
-                isDone = true;
-                break;
-            }
-
-            if (Catalog.isValidDescriptor(descriptorBuffer))
-            {
-                final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
-                if (bytesSent == 0)
-                {
-                    isDone = controlSession.isDone();
-                    break;
-                }
-                totalBytesSent += bytesSent;
-            }
-
-            ++recordingId;
-            recordsScanned++;
-        }
-
-        if (recordingId >= limitId)
-        {
-            isDone = true;
-        }
-
-        return totalBytesSent;
+        return true;
     }
 }

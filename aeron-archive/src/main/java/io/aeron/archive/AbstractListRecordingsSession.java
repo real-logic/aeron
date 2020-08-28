@@ -16,6 +16,8 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 abstract class AbstractListRecordingsSession implements Session
@@ -28,19 +30,35 @@ abstract class AbstractListRecordingsSession implements Session
     final ControlResponseProxy proxy;
     final long correlationId;
     boolean isDone = false;
+    private final UnsafeBuffer descriptorBuffer;
+    private final RecordingDescriptorDecoder descriptorDecoder;
+    private final Catalog catalog;
+    private final int count;
+    private final ControlSession controlSession;
+    private final ControlResponseProxy proxy;
+    private final long correlationId;
+    private long recordingId;
+    private int sent;
+    private boolean isDone = false;
 
     AbstractListRecordingsSession(
         final long correlationId,
+        final long fromRecordingId,
+        final int count,
         final Catalog catalog,
         final ControlResponseProxy proxy,
         final ControlSession controlSession,
-        final UnsafeBuffer descriptorBuffer)
+        final UnsafeBuffer descriptorBuffer,
+        final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
         this.correlationId = correlationId;
+        this.recordingId = fromRecordingId;
+        this.count = count;
         this.controlSession = controlSession;
         this.catalog = catalog;
         this.proxy = proxy;
         this.descriptorBuffer = descriptorBuffer;
+        descriptorDecoder = recordingDescriptorDecoder;
     }
 
     public void abort()
@@ -60,14 +78,56 @@ abstract class AbstractListRecordingsSession implements Session
 
     public int doWork()
     {
-        int workCount = 0;
-
-        if (!isDone)
+        if (isDone)
         {
-            workCount += sendDescriptors();
+            return 0;
         }
 
-        return workCount;
+        int totalBytesSent = 0;
+        int recordsScanned = 0;
+
+        while (sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
+        {
+            if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
+            {
+                controlSession.sendRecordingUnknown(correlationId, recordingId, proxy);
+
+                isDone = true;
+                break;
+            }
+
+            if (Catalog.isValidDescriptor(descriptorBuffer))
+            {
+                descriptorDecoder.wrap(
+                    descriptorBuffer,
+                    RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+                    RecordingDescriptorDecoder.BLOCK_LENGTH,
+                    RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+                if (acceptDescriptor(descriptorDecoder))
+                {
+                    final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
+                    if (bytesSent == 0)
+                    {
+                        isDone = controlSession.isDone();
+                        break;
+                    }
+
+                    totalBytesSent += bytesSent;
+                    ++sent;
+                }
+            }
+
+            recordingId++;
+            recordsScanned++;
+        }
+
+        if (sent >= count)
+        {
+            isDone = true;
+        }
+
+        return totalBytesSent;
     }
 
     public void close()
@@ -75,5 +135,5 @@ abstract class AbstractListRecordingsSession implements Session
         controlSession.activeListing(null);
     }
 
-    abstract int sendDescriptors();
+    protected abstract boolean acceptDescriptor(RecordingDescriptorDecoder descriptorDecoder);
 }

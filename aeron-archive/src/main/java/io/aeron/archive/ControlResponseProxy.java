@@ -28,11 +28,13 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.archive.codecs.RecordingDescriptorEncoder.recordingIdEncodingOffset;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 class ControlResponseProxy
 {
     private static final int SEND_ATTEMPTS = 3;
     private static final int MESSAGE_HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
+    private static final int DESCRIPTOR_PREFIX_LENGTH = MESSAGE_HEADER_LENGTH + 2 * SIZE_OF_LONG;
     private static final int DESCRIPTOR_CONTENT_OFFSET =
         RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + recordingIdEncodingOffset();
 
@@ -56,25 +58,24 @@ class ControlResponseProxy
         final int messageLength = Catalog.descriptorLength(descriptorBuffer) + MESSAGE_HEADER_LENGTH;
         final int contentLength = messageLength - recordingIdEncodingOffset() - MESSAGE_HEADER_LENGTH;
 
+        recordingDescriptorEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId);
+
         int attempts = SEND_ATTEMPTS;
+        final Publication publication = session.controlPublication();
         do
         {
-            final long result = session.controlPublication().tryClaim(messageLength, bufferClaim);
+            final long result = publication.offer(
+                buffer,
+                0,
+                DESCRIPTOR_PREFIX_LENGTH,
+                descriptorBuffer,
+                DESCRIPTOR_CONTENT_OFFSET,
+                contentLength);
             if (result > 0)
             {
-                final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int bufferOffset = bufferClaim.offset();
-
-                recordingDescriptorEncoder
-                    .wrapAndApplyHeader(buffer, bufferOffset, messageHeaderEncoder)
-                    .controlSessionId(controlSessionId)
-                    .correlationId(correlationId);
-
-                final int contentOffset = bufferOffset + MESSAGE_HEADER_LENGTH + recordingIdEncodingOffset();
-                buffer.putBytes(contentOffset, descriptorBuffer, DESCRIPTOR_CONTENT_OFFSET, contentLength);
-
-                bufferClaim.commit();
-
                 return messageLength;
             }
 

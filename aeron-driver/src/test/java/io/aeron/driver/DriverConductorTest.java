@@ -127,8 +127,9 @@ public class DriverConductorTest
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH));
-        spyCountersManager = spy(new CountersManager(
-            new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII));
+        final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
+            ByteBuffer.allocate(Configuration.countersMetadataBufferLength(BUFFER_LENGTH)));
+        spyCountersManager = spy(new CountersManager(metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII));
 
         final SystemCounters mockSystemCounters = mock(SystemCounters.class);
         when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);

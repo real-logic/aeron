@@ -40,7 +40,6 @@ SET(HEADERS
     concurrent/AtomicBuffer.h
     concurrent/AtomicCounter.h
     concurrent/BusySpinIdleStrategy.h
-    concurrent/CountersManager.h
     concurrent/CountersReader.h
     concurrent/NoOpIdleStrategy.h
     concurrent/SleepingIdleStrategy.h

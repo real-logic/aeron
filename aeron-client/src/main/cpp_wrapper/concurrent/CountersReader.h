@@ -86,8 +86,10 @@ class CountersReader
 {
 
 public:
-    inline CountersReader(aeron_counters_reader_t *countersReader) : m_countersReader(countersReader)
+    inline explicit CountersReader(aeron_counters_reader_t *countersReader) :
+        m_countersReader(countersReader), m_buffers{}
     {
+        aeron_counters_reader_get_buffers(m_countersReader, &m_buffers);
     }
 
     template <typename F>
@@ -97,31 +99,7 @@ public:
         handler_type &handler = onCountersMetadata;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
 
-        aeron_counters_reader_foreach_counter(m_countersReader, NULL, handler_ptr);
-
-        std::int32_t id = 0;
-
-        const AtomicBuffer &metadataBuffer = metaDataBuffer();
-        for (util::index_t i = 0, capacity = metadataBuffer.capacity(); i < capacity; i += METADATA_LENGTH)
-        {
-            std::int32_t recordStatus = metadataBuffer.getInt32Volatile(i);
-
-            if (RECORD_UNUSED == recordStatus)
-            {
-                break;
-            }
-            else if (RECORD_ALLOCATED == recordStatus)
-            {
-                const auto &record = metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
-
-                const std::string label = metadataBuffer.getString(i + LABEL_LENGTH_OFFSET);
-                const AtomicBuffer keyBuffer(metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
-
-                onCountersMetadata(id, record.typeId, keyBuffer, label);
-            }
-
-            id++;
-        }
+        aeron_counters_reader_foreach_counter(m_countersReader, forEachCounter<handler_type>, handler_ptr);
     }
 
     inline std::int32_t maxCounterId() const
@@ -179,7 +157,7 @@ public:
 
     inline std::string getCounterLabel(std::int32_t id) const
     {
-        char buffer[AERON_COUNTERS_MAX_LABEL_LENGTH];
+        char buffer[AERON_COUNTER_MAX_LABEL_LENGTH];
         int length = aeron_counters_reader_counter_label(m_countersReader, id, buffer, sizeof(buffer));
         if (length < 0)
         {
@@ -190,6 +168,26 @@ public:
         }
 
         return std::string(buffer, (size_t)length);
+    }
+
+    inline static util::index_t counterOffset(std::int32_t counterId)
+    {
+        return AERON_COUNTER_OFFSET(counterId);
+    }
+
+    inline static util::index_t metadataOffset(std::int32_t counterId)
+    {
+        return AERON_COUNTER_METADATA_OFFSET(counterId);
+    }
+
+    inline AtomicBuffer valuesBuffer() const
+    {
+        return {m_buffers.values, m_buffers.values_length};
+    }
+
+    inline AtomicBuffer metaDataBuffer() const
+    {
+        return {m_buffers.metadata, m_buffers.metadata_length};
     }
 
 #pragma pack(push)
@@ -212,29 +210,30 @@ public:
     };
 #pragma pack(pop)
 
-    static const std::int32_t NULL_COUNTER_ID = -1;
+    static const std::int32_t NULL_COUNTER_ID = AERON_NULL_COUNTER_ID;
 
-    static const std::int32_t RECORD_UNUSED = 0;
-    static const std::int32_t RECORD_ALLOCATED = 1;
-    static const std::int32_t RECORD_RECLAIMED = -1;
+    static const std::int32_t RECORD_UNUSED = AERON_COUNTER_RECORD_UNUSED;
+    static const std::int32_t RECORD_ALLOCATED = AERON_COUNTER_RECORD_ALLOCATED;
+    static const std::int32_t RECORD_RECLAIMED = AERON_COUNTER_RECORD_RECLAIMED;
 
-    static const std::int64_t DEFAULT_REGISTRATION_ID = INT64_C(0);
-    static const std::int64_t NOT_FREE_TO_REUSE = INT64_MAX;
+    static const std::int64_t DEFAULT_REGISTRATION_ID = AERON_COUNTER_REGISTRATION_ID_DEFAULT;
+    static const std::int64_t NOT_FREE_TO_REUSE = AERON_COUNTER_NOT_FREE_TO_REUSE;
 
-    static const util::index_t COUNTER_LENGTH = sizeof(CounterValueDefn);
-    static const util::index_t REGISTRATION_ID_OFFSET = offsetof(CounterValueDefn, registrationId);
+    static const util::index_t COUNTER_LENGTH = AERON_COUNTER_VALUE_LENGTH;
+    static const util::index_t REGISTRATION_ID_OFFSET = AERON_COUNTER_REGISTRATION_ID_OFFSET;
 
-    static const util::index_t METADATA_LENGTH = sizeof(CounterMetaDataDefn);
-    static const util::index_t TYPE_ID_OFFSET = offsetof(CounterMetaDataDefn, typeId);
-    static const util::index_t FREE_FOR_REUSE_DEADLINE_OFFSET = offsetof(CounterMetaDataDefn, freeToReuseDeadline);
-    static const util::index_t KEY_OFFSET = offsetof(CounterMetaDataDefn, key);
-    static const util::index_t LABEL_LENGTH_OFFSET = offsetof(CounterMetaDataDefn, labelLength);
+    static const util::index_t METADATA_LENGTH = AERON_COUNTER_METADATA_LENGTH;
+    static const util::index_t TYPE_ID_OFFSET = AERON_COUNTER_TYPE_ID_OFFSET;
+    static const util::index_t FREE_FOR_REUSE_DEADLINE_OFFSET = AERON_COUNTER_FREE_FOR_REUSE_DEADLINE_OFFSET;
+    static const util::index_t KEY_OFFSET = AERON_COUNTER_KEY_OFFSET;
+    static const util::index_t LABEL_LENGTH_OFFSET = AERON_COUNTER_LABEL_LENGTH_OFFSET;
 
-    static const std::int32_t MAX_LABEL_LENGTH = sizeof(CounterMetaDataDefn::label);
-    static const std::int32_t MAX_KEY_LENGTH = sizeof(CounterMetaDataDefn::key);
+    static const std::int32_t MAX_LABEL_LENGTH = AERON_COUNTER_MAX_LABEL_LENGTH;
+    static const std::int32_t MAX_KEY_LENGTH = AERON_COUNTER_MAX_KEY_LENGTH;
 
 protected:
     aeron_counters_reader_t *m_countersReader;
+    aeron_counters_reader_buffers_t m_buffers;
 
     void validateCounterId(std::int32_t counterId) const
     {
@@ -253,6 +252,7 @@ protected:
     static void forEachCounter(
         int64_t value,
         int32_t id,
+        int32_t typeId,
         const uint8_t *key,
         size_t key_length,
         const char *label,
@@ -260,8 +260,10 @@ protected:
         void *clientd)
     {
         H &handler = *reinterpret_cast<H *>(clientd);
+        AtomicBuffer keyBuffer{const_cast<uint8_t *>(key), key_length};
+        std::string labelStr{const_cast<char *>(label), label_length};
 
-        handler(id, 0, static_cast<util::index_t>(0), static_cast<util::index_t>(length), headerWrapper);
+        handler(id, typeId, keyBuffer, labelStr);
     }
 
 };

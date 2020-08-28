@@ -678,10 +678,10 @@ final class Catalog implements AutoCloseable
         final long offset = catalogIndex.remove(recordingId);
         if (CatalogIndex.NULL_VALUE != offset)
         {
-            wrapDescriptorAtOffset(catalogBuffer, (int)offset);
-
-            descriptorHeaderEncoder.wrap(catalogBuffer, 0)
-                .state(INVALID);
+            fieldAccessBuffer.putInt(
+                (int)offset + RecordingDescriptorHeaderEncoder.stateEncodingOffset(),
+                INVALID.value(),
+                BYTE_ORDER);
 
             forceWrites(catalogChannel);
 

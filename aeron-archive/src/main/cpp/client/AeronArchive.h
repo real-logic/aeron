@@ -78,7 +78,8 @@ public:
             Context_t &context,
             std::shared_ptr<Aeron> aeron,
             std::int64_t subscriptionId,
-            std::int64_t publicationId);
+            std::int64_t publicationId,
+            const long long deadlineNs);
 
         /**
          * Poll for a complete connection.
@@ -98,6 +99,7 @@ public:
         }
 
     private:
+        nano_clock_t m_nanoClock;
         std::unique_ptr<Context_t> m_ctx;
         std::unique_ptr<ArchiveProxy> m_archiveProxy;
         std::unique_ptr<ControlResponsePoller> m_controlResponsePoller;
@@ -106,6 +108,7 @@ public:
         std::shared_ptr<ExclusivePublication> m_publication;
         const std::int64_t m_subscriptionId;
         const std::int64_t m_publicationId;
+        const long long m_deadlineNs;
         std::int64_t m_correlationId = aeron::NULL_VALUE;
         std::int64_t m_challengeControlSessionId = aeron::NULL_VALUE;
         std::uint8_t m_step = 0;

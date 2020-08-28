@@ -22,11 +22,7 @@
 #include "util/BitUtil.h"
 #include "AtomicBuffer.h"
 
-extern "C"
-{
 #include "aeronc.h"
-#include "concurrent/aeron_counters_manager.h" // TODO: Need to move function prototypes to aeronc.h
-}
 
 namespace aeron { namespace concurrent {
 
@@ -97,6 +93,12 @@ public:
     template <typename F>
     void forEach(F &&onCountersMetadata) const
     {
+        using handler_type = typename std::remove_reference<F>::type;
+        handler_type &handler = onCountersMetadata;
+        void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+
+        aeron_counters_reader_foreach_counter(m_countersReader, NULL, handler_ptr);
+
         std::int32_t id = 0;
 
         const AtomicBuffer &metadataBuffer = metaDataBuffer();
@@ -124,15 +126,14 @@ public:
 
     inline std::int32_t maxCounterId() const
     {
-        // TODO: should this sit behind a function call.
-        return m_countersReader->max_counter_id;
+        return aeron_counters_reader_max_counter_id(m_countersReader);
     }
 
     inline std::int64_t getCounterValue(std::int32_t id) const
     {
         validateCounterId(id);
         int64_t *counter_addr = aeron_counters_reader_addr(m_countersReader, id);
-        return aeron_counter_get(counter_addr);
+        return *counter_addr;
     }
 
     inline std::int64_t getCounterRegistrationId(std::int32_t id) const
@@ -178,9 +179,8 @@ public:
 
     inline std::string getCounterLabel(std::int32_t id) const
     {
-        char buffer[AERON_COUNTERS_MANAGER_METADATA_LENGTH];
-        int length = aeron_counters_reader_counter_label(
-            m_countersReader, id, buffer, AERON_COUNTERS_MANAGER_METADATA_LENGTH);
+        char buffer[AERON_COUNTERS_MAX_LABEL_LENGTH];
+        int length = aeron_counters_reader_counter_label(m_countersReader, id, buffer, sizeof(buffer));
         if (length < 0)
         {
             throw util::IllegalArgumentException(
@@ -190,26 +190,6 @@ public:
         }
 
         return std::string(buffer, (size_t)length);
-    }
-
-    inline static util::index_t counterOffset(std::int32_t counterId)
-    {
-        return AERON_COUNTER_OFFSET(counterId);
-    }
-
-    inline static util::index_t metadataOffset(std::int32_t counterId)
-    {
-        return AERON_COUNTER_METADATA_OFFSET(counterId);
-    }
-
-    inline AtomicBuffer valuesBuffer() const
-    {
-        return AtomicBuffer(m_countersReader->values, m_countersReader->values_length);
-    }
-
-    inline AtomicBuffer metaDataBuffer() const
-    {
-        return AtomicBuffer(m_countersReader->metadata, m_countersReader->metadata_length);
     }
 
 #pragma pack(push)
@@ -266,6 +246,24 @@ protected:
                 SOURCEINFO);
         }
     }
+
+    // typedef std::function<void(std::int32_t, std::int32_t, const AtomicBuffer&, const std::string&)> on_counters_metadata_t;
+
+    template<typename H>
+    static void forEachCounter(
+        int64_t value,
+        int32_t id,
+        const uint8_t *key,
+        size_t key_length,
+        const char *label,
+        size_t label_length,
+        void *clientd)
+    {
+        H &handler = *reinterpret_cast<H *>(clientd);
+
+        handler(id, 0, static_cast<util::index_t>(0), static_cast<util::index_t>(length), headerWrapper);
+    }
+
 };
 
 }}

@@ -27,7 +27,7 @@ extern "C"
 
 #include "util/Index.h"
 #include "AtomicBuffer.h"
-#include "CountersManager.h"
+#include "CountersReader.h"
 
 namespace aeron { namespace concurrent {
 

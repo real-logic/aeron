@@ -18,7 +18,7 @@
 #define AERON_STATUS_INDICATOR_READER_H
 
 #include "concurrent/AtomicBuffer.h"
-#include "concurrent/CountersManager.h"
+#include "concurrent/CountersReader.h"
 
 namespace aeron { namespace concurrent { namespace status {
 
@@ -38,7 +38,7 @@ public:
     StatusIndicatorReader(AtomicBuffer& buffer, std::int32_t id) :
         m_staticBuffer(),
         m_id(id),
-        m_offset(CountersManager::counterOffset(id))
+        m_offset(CountersReader::counterOffset(id))
     {
         if (ChannelEndpointStatus::NO_ID_ALLOCATED == m_id)
         {

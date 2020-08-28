@@ -18,7 +18,7 @@
 #define AERON_UNSAFE_BUFFER_POSITION_H
 
 #include <concurrent/AtomicBuffer.h>
-#include <concurrent/CountersManager.h>
+#include <concurrent/CountersReader.h>
 #include "Position.h"
 
 namespace aeron { namespace concurrent { namespace status {
@@ -29,7 +29,7 @@ public:
     UnsafeBufferPosition(AtomicBuffer& buffer, std::int32_t id) :
         m_buffer(buffer),
         m_id(id),
-        m_offset(CountersManager::counterOffset(id))
+        m_offset(CountersReader::counterOffset(id))
     {
     }
 

@@ -133,6 +133,7 @@ public class DriverConductorTest
 
         final SystemCounters mockSystemCounters = mock(SystemCounters.class);
         when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);
+        when(mockErrorCounter.appendToLabel(any())).thenReturn(mockErrorCounter);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))

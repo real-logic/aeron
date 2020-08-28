@@ -584,7 +584,13 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pa
  * @param clientd to be returned in the call
  */
 typedef void (*aeron_counters_reader_foreach_counter_func_t)(
-    int64_t value, int32_t id, const char *label, size_t label_length, void *clientd);
+    int64_t value,
+    int32_t id,
+    const uint8_t *key,
+    size_t key_length,
+    const char *label,
+    size_t label_length,
+    void *clientd);
 
 /**
  * Iterate over the counters in the counters_reader and call the given function for each counter.

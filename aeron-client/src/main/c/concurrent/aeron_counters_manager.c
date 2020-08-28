@@ -287,6 +287,8 @@ void aeron_counters_reader_foreach_counter(
             func(
                 aeron_counter_get_volatile(value_addr),
                 id,
+                (const uint8_t *)record->key,
+                sizeof(record->key),
                 (const char *)record->label,
                 (size_t)label_length,
                 clientd);

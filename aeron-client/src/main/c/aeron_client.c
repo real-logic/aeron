@@ -186,7 +186,14 @@ typedef struct aeron_print_counters_stream_out_stct
 }
 aeron_print_counters_stream_out_t;
 
-void aeron_print_counters_format(int64_t value, int32_t id, const char *label, size_t label_length, void *clientd)
+void aeron_print_counters_format(
+    int64_t value,
+    int32_t id,
+    const uint8_t *key,
+    size_t key_length,
+    const char *label,
+    size_t label_length,
+    void *clientd)
 {
     char buffer[AERON_MAX_PATH];
     aeron_print_counters_stream_out_t *out = (aeron_print_counters_stream_out_t *)clientd;

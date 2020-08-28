@@ -88,6 +88,7 @@ public class BasicArchiveTest
             new Archive.Context()
                 .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
                 .aeronDirectoryName(aeronDirectoryName)
+                .errorHandler(Tests::onError)
                 .deleteArchiveOnStart(true)
                 .archiveDir(archiveDir)
                 .fileSyncLevel(0)
@@ -193,6 +194,72 @@ public class BasicArchiveTest
 
     @Test
     @Timeout(10)
+    public void jumboRecordingDescriptorEndToEndTest()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long stopPosition;
+
+        final String recordedChannel = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("localhost:3333")
+            .termLength(TERM_LENGTH)
+            .alias(Tests.generateStringWithSuffix("alias", "X", 2000))
+            .build();
+
+        final long subscriptionId = aeronArchive.startRecording(recordedChannel, RECORDED_STREAM_ID, LOCAL);
+        final long recordingId;
+        final int sessionId;
+
+        try (Subscription subscription = aeron.addSubscription(recordedChannel, RECORDED_STREAM_ID);
+            Publication publication = aeron.addPublication(recordedChannel, RECORDED_STREAM_ID))
+        {
+            sessionId = publication.sessionId();
+
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
+
+            offer(publication, messageCount, messagePrefix);
+            consume(subscription, messageCount, messagePrefix);
+
+            stopPosition = publication.position();
+            awaitPosition(counters, counterId, stopPosition);
+
+            final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
+            assertEquals(joinPosition, aeronArchive.getStartPosition(recordingId));
+            assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
+            assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingId));
+        }
+
+        aeronArchive.stopRecording(subscriptionId);
+
+        final int count = aeronArchive.listRecording(
+            recordingId,
+            (controlSessionId,
+            correlationId,
+            recordingId1,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            newStopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId1,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> assertEquals(recordedChannel, originalChannel));
+
+        assertEquals(1, count);
+    }
+
+    @Test
+    @Timeout(10)
     public void purgeRecording()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -260,7 +327,7 @@ public class BasicArchiveTest
             streamId,
             strippedChannel,
             originalChannel,
-            sourceIdentity) -> assertEquals(startPosition, newStopPosition));
+            sourceIdentity) -> fail("Recording was not purged!"));
 
         assertEquals(0, count);
 

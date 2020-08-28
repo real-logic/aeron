@@ -734,29 +734,29 @@ final class Catalog implements AutoCloseable
         return (int)recordingDescriptorOffset;
     }
 
-    void growCatalog(final long maxCatalogLength, final int frameLength)
+    void growCatalog(final long maxCatalogCapacity, final int frameLength)
     {
         final long oldCapacity = capacity;
         final long recordingOffset = nextRecordingDescriptorOffset;
         final long targetCapacity = recordingOffset + frameLength;
-        if (targetCapacity > maxCatalogLength)
+        if (targetCapacity > maxCatalogCapacity)
         {
-            if (maxCatalogLength == oldCapacity)
+            if (maxCatalogCapacity == oldCapacity)
             {
-                throw new ArchiveException("catalog is full, max length reached: " + maxCatalogLength);
+                throw new ArchiveException("catalog is full, max capacity reached: " + maxCatalogCapacity);
             }
             else
             {
                 throw new ArchiveException(String.format(
                     "recording is too big: total recording length is %d bytes, available space is %d bytes",
-                    frameLength, maxCatalogLength - recordingOffset));
+                    frameLength, maxCatalogCapacity - recordingOffset));
             }
         }
 
         long newCapacity = oldCapacity;
         while (newCapacity < targetCapacity)
         {
-            newCapacity = min(newCapacity + (newCapacity >> 1), maxCatalogLength);
+            newCapacity = min(newCapacity + (newCapacity >> 1), maxCatalogCapacity);
         }
 
         final MappedByteBuffer mappedByteBuffer;

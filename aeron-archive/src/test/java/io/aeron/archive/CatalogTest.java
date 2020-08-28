@@ -524,7 +524,7 @@ class CatalogTest
         {
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY, (int)(CAPACITY + 1)));
-            assertEquals("catalog is full, max length reached: " + CAPACITY, exception.getMessage());
+            assertEquals("catalog is full, max capacity reached: " + CAPACITY, exception.getMessage());
         }
     }
 
@@ -539,6 +539,17 @@ class CatalogTest
                 "recording is too big: total recording length is %d bytes, available space is %d bytes",
                 Integer.MAX_VALUE, CAPACITY * 2 - 800),
                 exception.getMessage());
+        }
+    }
+
+    @Test
+    void growCatalogShouldNotExceedMaxCatalogCapacity()
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
+        {
+            final long maxCatalogCapacity = CAPACITY * 1024;
+            catalog.growCatalog(maxCatalogCapacity, (int)(maxCatalogCapacity - 10_000));
+            assertEquals(maxCatalogCapacity, catalog.capacity());
         }
     }
 

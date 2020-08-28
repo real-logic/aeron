@@ -311,7 +311,7 @@ void aeron_counters_reader_foreach_counter(
 
 extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *counters_manager, int32_t counter_id);
 
-inline int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id)
+int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id)
 {
     return (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(counter_id));
 }

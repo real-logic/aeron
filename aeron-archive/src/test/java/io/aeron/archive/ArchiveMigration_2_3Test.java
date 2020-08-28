@@ -34,6 +34,7 @@ import java.util.List;
 import static io.aeron.archive.ArchiveMigrationUtils.*;
 import static io.aeron.archive.MigrationUtils.createMigrationTimestampFile;
 import static io.aeron.archive.MigrationUtils.migrationTimestampFileName;
+import static io.aeron.test.Tests.generateStringWithSuffix;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.Files.exists;
@@ -155,7 +156,7 @@ class ArchiveMigration_2_3Test
             4040,
             "ch1024",
             "aeron:udp?endpoint=localhost:44444",
-            source("source", "B", 854)),
+            generateStringWithSuffix("source", "B", 854)),
             new RecordingDescriptorV2(
             INVALID,
             333,
@@ -255,14 +256,4 @@ class ArchiveMigration_2_3Test
         }
     }
 
-    private String source(final String prefix, final String suffix, final int repeatSuffixTimes)
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(prefix);
-        for (int i = 0; i < repeatSuffixTimes; i++)
-        {
-            builder.append(suffix);
-        }
-        return builder.toString();
-    }
 }

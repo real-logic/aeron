@@ -15,7 +15,9 @@
  */
 package io.aeron.test;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
@@ -180,6 +182,7 @@ public class Tests
 
     /**
      * Yield the thread then check for interrupt in a test.
+     *
      * @see #checkInterruptStatus()
      */
     public static void yield()
@@ -397,5 +400,17 @@ public class Tests
         {
             Tests.yield();
         }
+    }
+
+    public static String generateStringWithSuffix(
+        final String prefix, final String suffix, final int repeatSuffixTimes)
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append(prefix);
+        for (int i = 0; i < repeatSuffixTimes; i++)
+        {
+            builder.append(suffix);
+        }
+        return builder.toString();
     }
 }

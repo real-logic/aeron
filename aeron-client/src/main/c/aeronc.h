@@ -572,7 +572,58 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pa
  * Counters Reader functions and definitions
  */
 
-#define AERON_COUNTERS_MAX_LABEL_LENGTH ((6 * 64u) - sizeof(int32_t))
+// Separate definition to avoid needing aeron_bitutil.h
+#define AERON_COUNTER_CACHE_LINE_LENGTH (64u)
+
+#pragma pack(push)
+#pragma pack(4)
+typedef struct aeron_counter_value_descriptor_stct
+{
+    int64_t counter_value;
+    int64_t registration_id;
+    int64_t owner_id;
+    uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
+}
+    aeron_counter_value_descriptor_t;
+
+typedef struct aeron_counter_metadata_descriptor_stct
+{
+    int32_t state;
+    int32_t type_id;
+    int64_t free_for_reuse_deadline_ms;
+    uint8_t key[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int32_t)) - sizeof(int64_t)];
+    int32_t label_length;
+    uint8_t label[(6 * AERON_CACHE_LINE_LENGTH) - sizeof(int32_t)];
+}
+    aeron_counter_metadata_descriptor_t;
+#pragma pack(pop)
+
+
+#define AERON_COUNTER_VALUE_LENGTH sizeof(aeron_counter_value_descriptor_t)
+#define AERON_COUNTER_REGISTRATION_ID_OFFSET offsetof(aeron_counter_value_descriptor_t, registration_id)
+
+#define AERON_COUNTER_METADATA_LENGTH sizeof(aeron_counter_metadata_descriptor_t)
+#define AERON_COUNTER_TYPE_ID_OFFSET offsetof(aeron_counter_metadata_descriptor_t, type_id)
+#define AERON_COUNTER_FREE_FOR_REUSE_DEADLINE_OFFSET offsetof(aeron_counter_metadata_descriptor_t, free_for_reuse_deadline)
+#define AERON_COUNTER_KEY_OFFSET offsetof(aeron_counter_metadata_descriptor_t, key)
+#define AERON_COUNTER_LABEL_LENGTH_OFFSET offsetof(aeron_counter_metadata_descriptor_t, label)
+
+#define AERON_COUNTER_MAX_LABEL_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->label)
+#define AERON_COUNTER_MAX_KEY_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->key)
+
+#define AERON_COUNTER_RECORD_UNUSED (0)
+#define AERON_COUNTER_RECORD_ALLOCATED (1)
+#define AERON_COUNTER_RECORD_RECLAIMED (-1)
+
+#define AERON_COUNTER_REGISTRATION_ID_DEFAULT INT64_C(0)
+#define AERON_COUNTER_NOT_FREE_TO_REUSE (INT64_MAX)
+#define AERON_COUNTER_OWNER_ID_DEFAULT INT64_C(0)
+
+#define AERON_NULL_COUNTER_ID (-1)
+
+#define AERON_COUNTER_OFFSET(id) ((id) * AERON_COUNTER_VALUE_LENGTH)
+#define AERON_COUNTER_METADATA_OFFSET(id) ((id) * AERON_COUNTER_METADATA_LENGTH)
+
 
 typedef struct aeron_counters_reader_buffers_stct
 {
@@ -583,6 +634,13 @@ typedef struct aeron_counters_reader_buffers_stct
 }
 aeron_counters_reader_buffers_t;
 
+/**
+ * Get buffer pointers and lengths for the counters reader.
+ *
+ * @param reader reader containing the buffers.
+ * @param buffers output structure to return the buffers.
+ * @return -1 on failure, 0 on success.
+ */
 int aeron_counters_reader_get_buffers(aeron_counters_reader_t *reader, aeron_counters_reader_buffers_t *buffers);
 
 /**

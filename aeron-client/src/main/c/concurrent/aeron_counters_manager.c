@@ -26,10 +26,6 @@
 #define _Static_assert static_assert
 #endif
 
-_Static_assert(
-    sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->label) == AERON_COUNTERS_MAX_LABEL_LENGTH,
-    "sizeof(aeron_counter_metadata_descriptor_t.label) != AERON_COUNTERS_MAX_LABEL_LENGTH");
-
 int aeron_counters_manager_init(
     aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,

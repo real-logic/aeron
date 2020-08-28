@@ -874,8 +874,8 @@ final class Catalog implements AutoCloseable
 
     private int wrapDescriptorAtOffset(final UnsafeBuffer buffer, final int recordingDescriptorOffset)
     {
-        final int recordingLength = catalogByteBuffer.getInt(
-            recordingDescriptorOffset + RecordingDescriptorHeaderDecoder.lengthEncodingOffset());
+        final int recordingLength = fieldAccessBuffer.getInt(
+            recordingDescriptorOffset + RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), BYTE_ORDER);
 
         if (recordingLength > 0)
         {

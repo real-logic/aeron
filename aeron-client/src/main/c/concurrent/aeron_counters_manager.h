@@ -28,7 +28,8 @@ typedef struct aeron_counter_value_descriptor_stct
 {
     int64_t counter_value;
     int64_t registration_id;
-    uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int64_t))];
+    int64_t owner_id;
+    uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
 }
 aeron_counter_value_descriptor_t;
 
@@ -36,7 +37,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
 {
     int32_t state;
     int32_t type_id;
-    int64_t free_for_reuse_deadline;
+    int64_t free_for_reuse_deadline_ms;
     uint8_t key[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int32_t)) - sizeof(int64_t)];
     int32_t label_length;
     uint8_t label[(6 * AERON_CACHE_LINE_LENGTH) - sizeof(int32_t)];
@@ -55,6 +56,7 @@ aeron_counter_metadata_descriptor_t;
 #define AERON_COUNTER_RECORD_RECLAIMED (-1)
 
 #define AERON_COUNTER_REGISTRATION_ID_DEFAULT INT64_C(0)
+#define AERON_COUNTER_OWNER_ID_DEFAULT INT64_C(0)
 #define AERON_COUNTER_NOT_FREE_TO_REUSE (INT64_MAX)
 
 #define AERON_NULL_COUNTER_ID (-1)
@@ -188,6 +190,9 @@ int32_t aeron_counters_manager_allocate(
 void aeron_counters_manager_counter_registration_id(
     aeron_counters_manager_t *manager, int32_t counter_id, int64_t registration_id);
 
+void aeron_counters_manager_counter_owner_id(
+    aeron_counters_manager_t *manager, int32_t counter_id, int64_t owner_id);
+
 void aeron_counters_manager_update_label(
     aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label);
 
@@ -229,6 +234,9 @@ inline int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_rea
 int aeron_counters_reader_counter_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *registration_id);
 
+int aeron_counters_reader_counter_owner_id(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *owner_id);
+
 int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state);
 
 int aeron_counters_reader_counter_label(
@@ -248,7 +256,7 @@ inline int aeron_counters_reader_init(
     reader->metadata_length = metadata_length;
     reader->values = values_buffer;
     reader->values_length = values_length;
-    reader->max_counter_id = (int32_t)(values_length / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
+    reader->max_counter_id = (int32_t)((values_length / AERON_COUNTERS_MANAGER_VALUE_LENGTH) - 1);
 
     return 0;
 }

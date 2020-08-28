@@ -115,6 +115,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
 
         m_metadataBuffer.putInt64(recordOffset + FREE_FOR_REUSE_DEADLINE_OFFSET, m_clock() + m_freeToReuseTimeoutMs);
+        m_metadataBuffer.setMemory(recordOffset + KEY_OFFSET, sizeof(CounterMetaDataDefn::key), UINT8_C(0));
         m_metadataBuffer.putInt32Ordered(recordOffset, RECORD_RECLAIMED);
         m_freeList.push_back(counterId);
     }

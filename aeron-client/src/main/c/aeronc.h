@@ -586,6 +586,7 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pa
 typedef void (*aeron_counters_reader_foreach_counter_func_t)(
     int64_t value,
     int32_t id,
+    int32_t type_id,
     const uint8_t *key,
     size_t key_length,
     const char *label,

@@ -189,6 +189,7 @@ aeron_print_counters_stream_out_t;
 void aeron_print_counters_format(
     int64_t value,
     int32_t id,
+    int32_t type_id,
     const uint8_t *key,
     size_t key_length,
     const char *label,

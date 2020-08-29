@@ -1748,7 +1748,7 @@ private:
 
             if (!m_recordingDescriptorPoller->subscription()->isConnected())
             {
-                throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+                throw ArchiveException("response channel from archive is not connected", SOURCEINFO);
             }
 
             checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
@@ -1794,7 +1794,7 @@ private:
 
             if (!m_recordingSubscriptionDescriptorPoller->subscription()->isConnected())
             {
-                throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+                throw ArchiveException("response channel from archive is not connected", SOURCEINFO);
             }
 
             checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);

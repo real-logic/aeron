@@ -1817,7 +1817,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new ArchiveException("subscription to archive is not connected");
+                throw new ArchiveException("response channel from archive is not connected");
             }
 
             checkDeadline(deadlineNs, "awaiting response", correlationId);
@@ -1955,7 +1955,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new ArchiveException("subscription to archive is not connected");
+                throw new ArchiveException("response channel from archive is not connected");
             }
 
             checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
@@ -1997,7 +1997,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new ArchiveException("subscription to archive is not connected");
+                throw new ArchiveException("response channel from archive is not connected");
             }
 
             checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);

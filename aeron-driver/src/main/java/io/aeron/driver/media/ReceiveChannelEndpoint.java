@@ -21,20 +21,17 @@ import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
-import io.aeron.driver.status.ReceiveLocalSocketAddress;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.*;
 import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -122,19 +119,18 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Allocate a channel binding status counter, if required (not used by control-mode=manual).
+     * Set a channel binding status counter, if required (not used by control-mode=manual).
      *
-     * @param tempBuffer      to hold transient counter key/label information.
-     * @param countersManager to use to create the counter.
+     * @param counter to be set.
      */
-    public void allocateLocalSocketAddressIndicator(
-        final MutableDirectBuffer tempBuffer, final CountersManager countersManager)
+    public void localSocketAddressIndicator(final AtomicCounter counter)
     {
-        if (null == multiRcvDestination)
+        if (null != multiRcvDestination)
         {
-            localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
-                tempBuffer, countersManager, statusIndicator.id());
+            throw new IllegalStateException("local socket address indicator not used for MDS");
         }
+
+        localSocketAddressIndicator = counter;
     }
 
     /**
@@ -213,12 +209,9 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
 
     public void closeStatusIndicator()
     {
-        if (!statusIndicator.isClosed())
-        {
-            statusIndicator.close();
-        }
+        statusIndicator.close();
 
-        if (null != localSocketAddressIndicator && !localSocketAddressIndicator.isClosed())
+        if (null != localSocketAddressIndicator)
         {
             localSocketAddressIndicator.close();
         }

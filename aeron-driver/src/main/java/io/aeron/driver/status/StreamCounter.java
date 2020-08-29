@@ -31,7 +31,8 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
  * <p>
  * Positions tracked in bytes include:
  * <ul>
- * <li>{@link PublisherPos}: Highest position on a {@link io.aeron.Publication} reached for offers and claims as an approximation sampled once per second.</li>
+ * <li>{@link PublisherPos}: Highest position on a {@link io.aeron.Publication} reached for offers and claims as an
+ *     approximation sampled once per second.</li>
  * <li>{@link PublisherLimit}: Limit for flow controlling a {@link io.aeron.Publication} offers and claims.</li>
  * <li>{@link SenderPos}: Highest position on a {@link io.aeron.Publication} stream sent to the media.</li>
  * <li>{@link SenderLimit}: Limit for flow controlling a {@link io.aeron.driver.Sender} of a stream.</li>
@@ -93,10 +94,10 @@ public class StreamCounter
         final int streamId,
         final String channel)
     {
-        return new UnsafeBufferPosition(
-            (UnsafeBuffer)countersManager.valuesBuffer(),
-            allocateCounterId(tempBuffer, name, typeId, countersManager, registrationId, sessionId, streamId, channel),
-            countersManager);
+        final int counterId = allocateCounterId(
+            tempBuffer, name, typeId, countersManager, registrationId, sessionId, streamId, channel);
+
+        return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
     }
 
     public static int allocateCounterId(
@@ -131,14 +132,12 @@ public class StreamCounter
         labelLength += tempBuffer.putStringWithoutLengthAscii(
             labelOffset + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
 
-        return countersManager.allocate(
-            typeId,
-            tempBuffer,
-            0,
-            keyLength,
-            tempBuffer,
-            labelOffset,
-            labelLength);
+        final int counterId = countersManager.allocate(
+            typeId, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
+
+        countersManager.setCounterRegistrationId(counterId, registrationId);
+
+        return counterId;
     }
 
     /**
@@ -195,13 +194,9 @@ public class StreamCounter
         }
 
         final int counterId = countersManager.allocate(
-            typeId,
-            tempBuffer,
-            0,
-            keyLength,
-            tempBuffer,
-            labelOffset,
-            labelLength);
+            typeId, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
+
+        countersManager.setCounterRegistrationId(counterId, registrationId);
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
     }

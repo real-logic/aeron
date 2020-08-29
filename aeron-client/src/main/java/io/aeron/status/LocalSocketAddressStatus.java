@@ -58,6 +58,7 @@ public class LocalSocketAddressStatus
      *
      * @param tempBuffer      for building up the key and label.
      * @param countersManager which will allocate the counter.
+     * @param registrationId  of the action the counter is associated with.
      * @param channelStatusId with which the new counter is associated.
      * @param name            for the counter to put in the label.
      * @param typeId          to categorise the counter.
@@ -66,6 +67,7 @@ public class LocalSocketAddressStatus
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
+        final long registrationId,
         final int channelStatusId,
         final String name,
         final int typeId)
@@ -81,7 +83,12 @@ public class LocalSocketAddressStatus
         labelLength += tempBuffer.putIntAscii(keyLength + labelLength, channelStatusId);
         labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
 
-        return countersManager.newCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
+        final AtomicCounter counter = countersManager.newCounter(
+            typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
+
+        countersManager.setCounterRegistrationId(counter.id(), registrationId);
+
+        return counter;
     }
 
     /**

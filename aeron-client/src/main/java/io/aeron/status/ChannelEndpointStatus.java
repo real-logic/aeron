@@ -102,6 +102,7 @@ public class ChannelEndpointStatus
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
      * @param countersManager from which to allocated the underlying storage.
+     * @param registrationId  of the action the counter is associated with.
      * @param channel         for the stream of messages.
      * @return a new {@link AtomicCounter} for tracking the status.
      */
@@ -110,6 +111,7 @@ public class ChannelEndpointStatus
         final String name,
         final int typeId,
         final CountersManager countersManager,
+        final long registrationId,
         final String channel)
     {
         final int keyLength = tempBuffer.putStringWithoutLengthAscii(
@@ -128,6 +130,11 @@ public class ChannelEndpointStatus
             labelLength += 1;
         }
 
-        return countersManager.newCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
+        final AtomicCounter counter = countersManager.newCounter(
+            typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
+
+        countersManager.setCounterRegistrationId(counter.id(), registrationId);
+
+        return counter;
     }
 }

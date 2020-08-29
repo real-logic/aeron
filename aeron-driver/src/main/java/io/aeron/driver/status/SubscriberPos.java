@@ -38,13 +38,14 @@ public class SubscriberPos
     public static UnsafeBufferPosition allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
+        final long clientId,
         final long registrationId,
         final int sessionId,
         final int streamId,
         final String channel,
         final long joinPosition)
     {
-        return StreamCounter.allocate(
+        final UnsafeBufferPosition position = StreamCounter.allocate(
             tempBuffer,
             NAME,
             SUBSCRIBER_POSITION_TYPE_ID,
@@ -54,5 +55,9 @@ public class SubscriberPos
             streamId,
             channel,
             joinPosition);
+
+        countersManager.setCounterOwnerId(position.id(), clientId);
+
+        return position;
     }
 }

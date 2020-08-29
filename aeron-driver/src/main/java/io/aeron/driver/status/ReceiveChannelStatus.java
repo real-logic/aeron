@@ -36,9 +36,12 @@ public class ReceiveChannelStatus
     public static final String NAME = "rcv-channel";
 
     public static AtomicCounter allocate(
-        final MutableDirectBuffer tempBuffer, final CountersManager countersManager, final String channel)
+        final MutableDirectBuffer tempBuffer,
+        final CountersManager countersManager,
+        final long registrationId,
+        final String channel)
     {
         return ChannelEndpointStatus.allocate(
-            tempBuffer, NAME, RECEIVE_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
+            tempBuffer, NAME, RECEIVE_CHANNEL_STATUS_TYPE_ID, countersManager, registrationId, channel);
     }
 }

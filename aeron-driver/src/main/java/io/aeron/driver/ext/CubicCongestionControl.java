@@ -76,7 +76,7 @@ public class CubicCongestionControl implements CongestionControl
     private long lastUpdateTimestampNs;
     private long lastRttTimestampNs = 0;
     private final long windowUpdateTimeoutNs;
-    private long rttInNs;
+    private long rttNs;
     private double k;
     private int cwnd;
     private int w_max;
@@ -109,8 +109,8 @@ public class CubicCongestionControl implements CongestionControl
         k = StrictMath.cbrt((double)w_max * B / C);
 
         // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
-        rttInNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
-        windowUpdateTimeoutNs = rttInNs;
+        rttNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
+        windowUpdateTimeoutNs = rttNs;
 
         rttIndicator = PerImageIndicator.allocate(
             context.tempBuffer(),
@@ -157,7 +157,7 @@ public class CubicCongestionControl implements CongestionControl
     {
         outstandingRttMeasurements--;
         lastRttTimestampNs = nowNs;
-        this.rttInNs = rttNs;
+        this.rttNs = rttNs;
         rttIndicator.setOrdered(rttNs);
     }
 
@@ -194,7 +194,7 @@ public class CubicCongestionControl implements CongestionControl
             {
                 // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
 
-                final double rttInSeconds = (double)rttInNs / (double)SECOND_IN_NS;
+                final double rttInSeconds = (double)rttNs / (double)SECOND_IN_NS;
                 final double wTcp =
                     (double)w_max * (1.0 - B) + ((3.0 * B / (2.0 - B)) * (durationSinceDecr / rttInSeconds));
 

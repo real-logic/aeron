@@ -31,11 +31,15 @@ public class ReceiveLocalSocketAddress
     public static final String NAME = "rcv-local-sockaddr";
 
     public static AtomicCounter allocate(
-        final MutableDirectBuffer tempBuffer, final CountersManager countersManager, final int channelStatusId)
+        final MutableDirectBuffer tempBuffer,
+        final CountersManager countersManager,
+        final long registrationId,
+        final int channelStatusId)
     {
         return LocalSocketAddressStatus.allocate(
             tempBuffer,
             countersManager,
+            registrationId,
             channelStatusId,
             NAME,
             LocalSocketAddressStatus.LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID);

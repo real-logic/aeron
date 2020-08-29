@@ -41,6 +41,7 @@ public class SubscriptionTest
     private static final int STREAM_ID_1 = 1002;
     private static final int INITIAL_TERM_ID = 7;
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
+    private static final long REGISTRATION_ID = 10;
     private static final int READ_BUFFER_CAPACITY = 1024;
     private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
@@ -252,6 +253,7 @@ public class SubscriptionTest
         final AtomicCounter counter = LocalSocketAddressStatus.allocate(
             tempBuffer,
             countersManager,
+            REGISTRATION_ID,
             channelStatusId,
             "test",
             LocalSocketAddressStatus.LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID);

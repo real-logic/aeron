@@ -44,7 +44,14 @@ public class SenderBpe
         final String channel)
     {
         final int counterId = StreamCounter.allocateCounterId(
-            tempBuffer, NAME, SENDER_BPE_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            tempBuffer,
+            NAME,
+            SENDER_BPE_TYPE_ID,
+            countersManager,
+            registrationId,
+            sessionId,
+            streamId,
+            channel);
 
         return new AtomicCounter(countersManager.valuesBuffer(), counterId, countersManager);
     }

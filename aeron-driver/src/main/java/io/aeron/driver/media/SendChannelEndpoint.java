@@ -19,18 +19,15 @@ import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
-import io.aeron.driver.status.SendLocalSocketAddress;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -89,10 +86,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.multiSndDestination = multiSndDestination;
     }
 
-    public void allocateChannelEndStatus(final MutableDirectBuffer tempBuffer, final CountersManager countersManager)
+    public void localSocketAddressIndicator(final AtomicCounter counter)
     {
-        localSocketAddressIndicator = SendLocalSocketAddress.allocate(
-            tempBuffer, countersManager, statusIndicator.id());
+        localSocketAddressIndicator = counter;
     }
 
     public void decRef()
@@ -156,12 +152,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void closeStatusIndicator()
     {
-        if (!statusIndicator.isClosed())
-        {
-            statusIndicator.close();
-        }
+        statusIndicator.close();
 
-        if (null != localSocketAddressIndicator && !localSocketAddressIndicator.isClosed())
+        if (null != localSocketAddressIndicator)
         {
             localSocketAddressIndicator.close();
         }

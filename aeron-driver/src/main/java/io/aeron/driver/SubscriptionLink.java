@@ -60,6 +60,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
         positionBySubscribableMap = new IdentityHashMap<>(hasSessionId ? 1 : 8);
     }
 
+    public AeronClient aeronClient()
+    {
+        return aeronClient;
+    }
+
     public final long registrationId()
     {
         return registrationId;
@@ -341,7 +346,6 @@ class UntetheredSubscription
         timeOfLastUpdateNs = nowNs;
     }
 
-    @SuppressWarnings("unused")
     void stateChange(
         final State oldState,
         final State newState,

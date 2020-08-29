@@ -36,9 +36,12 @@ public class SendChannelStatus
     public static final String NAME = "snd-channel";
 
     public static AtomicCounter allocate(
-        final MutableDirectBuffer tempBuffer, final CountersManager countersManager, final String channel)
+        final MutableDirectBuffer tempBuffer,
+        final CountersManager countersManager,
+        final long registrationId,
+        final String channel)
     {
         return ChannelEndpointStatus.allocate(
-            tempBuffer, NAME, SEND_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
+            tempBuffer, NAME, SEND_CHANNEL_STATUS_TYPE_ID, countersManager, registrationId, channel);
     }
 }

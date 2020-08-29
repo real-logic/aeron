@@ -3033,8 +3033,7 @@ public class AeronArchive implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException(
-                    "Archive connect timeout: correlationId=" + correlationId + " step=" + step);
+                throw new TimeoutException("Archive connect timeout: correlationId=" + correlationId + " step=" + step);
             }
         }
     }

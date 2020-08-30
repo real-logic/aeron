@@ -231,28 +231,36 @@ class ArchiveMigration_2_3Test
 
     private void verifyCatalogHeader(final Path catalogFile, final long nextRecordingId) throws IOException
     {
+        final int catalogHeaderLength = 32;
         try (FileChannel channel = FileChannel.open(catalogFile, READ))
         {
-            final MappedByteBuffer mappedByteBuffer = channel.map(READ_ONLY, 0, channel.size());
+            final MappedByteBuffer mappedByteBuffer = channel.map(READ_ONLY, 0, catalogHeaderLength);
             mappedByteBuffer.order(LITTLE_ENDIAN);
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+            try
+            {
+                final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
 
-            int index = 0;
+                int index = 0;
 
-            // version
-            assertEquals(migration.minimumVersion(), buffer.getInt(index, LITTLE_ENDIAN));
-            index += SIZE_OF_INT;
+                // version
+                assertEquals(migration.minimumVersion(), buffer.getInt(index, LITTLE_ENDIAN));
+                index += SIZE_OF_INT;
 
-            // length
-            assertEquals(32, buffer.getInt(index, LITTLE_ENDIAN));
-            index += SIZE_OF_INT;
+                // length
+                assertEquals(catalogHeaderLength, buffer.getInt(index, LITTLE_ENDIAN));
+                index += SIZE_OF_INT;
 
-            // nextRecordingId
-            assertEquals(nextRecordingId, buffer.getLong(index, LITTLE_ENDIAN));
-            index += SIZE_OF_LONG;
+                // nextRecordingId
+                assertEquals(nextRecordingId, buffer.getLong(index, LITTLE_ENDIAN));
+                index += SIZE_OF_LONG;
 
-            // alignment
-            assertEquals(CACHE_LINE_LENGTH, buffer.getInt(index, LITTLE_ENDIAN));
+                // alignment
+                assertEquals(CACHE_LINE_LENGTH, buffer.getInt(index, LITTLE_ENDIAN));
+            }
+            finally
+            {
+                IoUtil.unmap(mappedByteBuffer);
+            }
         }
     }
 

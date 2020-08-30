@@ -666,47 +666,60 @@ public class ArchiveTool
             try (FileChannel channel = FileChannel.open(compactFilePath, READ, WRITE, CREATE_NEW);
                 Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
             {
-                final MappedByteBuffer byteBuffer = channel.map(READ_WRITE, 0, MAX_CATALOG_LENGTH);
-                final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+                final MappedByteBuffer mappedByteBuffer = channel.map(READ_WRITE, 0, MAX_CATALOG_LENGTH);
+                mappedByteBuffer.order(CatalogHeaderEncoder.BYTE_ORDER);
+                try
+                {
+                    final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(mappedByteBuffer);
 
-                new CatalogHeaderEncoder()
-                    .wrap(unsafeBuffer, 0)
-                    .version(catalog.version())
-                    .length(CatalogHeaderEncoder.BLOCK_LENGTH)
-                    .nextRecordingId(catalog.nextRecordingId())
-                    .alignment(catalog.alignment());
+                    new CatalogHeaderEncoder()
+                        .wrap(unsafeBuffer, 0)
+                        .version(catalog.version())
+                        .length(CatalogHeaderEncoder.BLOCK_LENGTH)
+                        .nextRecordingId(catalog.nextRecordingId())
+                        .alignment(catalog.alignment());
 
-                final MutableInteger offset = new MutableInteger(CatalogHeaderEncoder.BLOCK_LENGTH);
-                final MutableInteger deletedRecords = new MutableInteger();
-                final MutableInteger reclaimedBytes = new MutableInteger();
+                    final MutableInteger offset = new MutableInteger(CatalogHeaderEncoder.BLOCK_LENGTH);
+                    final MutableInteger deletedRecords = new MutableInteger();
+                    final MutableInteger reclaimedBytes = new MutableInteger();
 
-                catalog.forEach(
-                    (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                    {
-                        final int frameLength = headerDecoder.encodedLength() + headerDecoder.length();
-                        if (INVALID == headerDecoder.state())
+                    catalog.forEach(
+                        (recordingDescriptorOffset,
+                        headerEncoder,
+                        headerDecoder,
+                        descriptorEncoder,
+                        descriptorDecoder) ->
                         {
-                            deletedRecords.increment();
-                            reclaimedBytes.addAndGet(frameLength);
-
-                            final String[] segmentFiles = listSegmentFiles(archiveDir, descriptorDecoder.recordingId());
-                            if (segmentFiles != null)
+                            final int frameLength = headerDecoder.encodedLength() + headerDecoder.length();
+                            if (INVALID == headerDecoder.state())
                             {
-                                for (final String segmentFile : segmentFiles)
+                                deletedRecords.increment();
+                                reclaimedBytes.addAndGet(frameLength);
+
+                                final String[] segmentFiles = listSegmentFiles(archiveDir, descriptorDecoder
+                                    .recordingId());
+                                if (segmentFiles != null)
                                 {
-                                    IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
+                                    for (final String segmentFile : segmentFiles)
+                                    {
+                                        IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
+                                    }
                                 }
                             }
-                        }
-                        else
-                        {
-                            final int index = offset.getAndAdd(frameLength);
-                            unsafeBuffer.putBytes(index, headerDecoder.buffer(), 0, frameLength);
-                        }
-                    });
+                            else
+                            {
+                                final int index = offset.getAndAdd(frameLength);
+                                unsafeBuffer.putBytes(index, headerDecoder.buffer(), 0, frameLength);
+                            }
+                        });
 
-                out.println("Compaction result: deleted " + deletedRecords.get() + " records and reclaimed " +
-                    reclaimedBytes.get() + " bytes");
+                    out.println("Compaction result: deleted " + deletedRecords.get() + " records and reclaimed " +
+                        reclaimedBytes.get() + " bytes");
+                }
+                finally
+                {
+                    IoUtil.unmap(mappedByteBuffer);
+                }
             }
 
             final Path catalogFilePath = compactFilePath.resolveSibling(CATALOG_FILE_NAME);

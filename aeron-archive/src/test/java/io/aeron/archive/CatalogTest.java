@@ -67,7 +67,7 @@ class CatalogTest
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
-    private final UnsafeBuffer segmentFileBuffer = new UnsafeBuffer(ByteBuffer.allocate(FILE_IO_MAX_LENGTH_DEFAULT));
+    private final UnsafeBuffer segmentFileBuffer = new UnsafeBuffer(allocate(FILE_IO_MAX_LENGTH_DEFAULT));
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorHeaderDecoder recordingDescriptorHeaderDecoder =
         new RecordingDescriptorHeaderDecoder();
@@ -913,12 +913,18 @@ class CatalogTest
     {
         try (FileChannel channel = FileChannel.open(archiveDir.toPath().resolve(CATALOG_FILE_NAME), READ, WRITE))
         {
-            final MappedByteBuffer byteBuffer = channel.map(READ_WRITE, 0, channel.size());
-            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
-
-            new CatalogHeaderEncoder()
-                .wrap(unsafeBuffer, 0)
-                .nextRecordingId(nextRecordingId);
+            final MappedByteBuffer mappedByteBuffer = channel.map(READ_WRITE, 0, CatalogHeaderEncoder.BLOCK_LENGTH);
+            mappedByteBuffer.order(CatalogHeaderEncoder.BYTE_ORDER);
+            try
+            {
+                new CatalogHeaderEncoder()
+                    .wrap(new UnsafeBuffer(mappedByteBuffer), 0)
+                    .nextRecordingId(nextRecordingId);
+            }
+            finally
+            {
+                IoUtil.unmap(mappedByteBuffer);
+            }
         }
     }
 }

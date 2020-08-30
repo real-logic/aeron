@@ -59,52 +59,58 @@ final class ArchiveMigrationUtils
             final String eventsChannel = "ctx.recordingEventsChannel()";
             final String aeronDirectory = "ctx.aeronDirectoryName()";
 
-            final MappedByteBuffer mappedBuffer = channel
-                .map(READ_WRITE,
+            final MappedByteBuffer mappedByteBuffer = channel.map(
+                READ_WRITE,
                 0,
                 totalMarkFileLengthInVersion2(
                 controlChannel, localControlChannel, eventsChannel, aeronDirectory, errorBufferLength));
-            mappedBuffer.order(LITTLE_ENDIAN);
+            mappedByteBuffer.order(LITTLE_ENDIAN);
+            try
+            {
+                final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+                final long currentTime = epochClock.time();
 
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedBuffer);
-            final long currentTime = epochClock.time();
+                int index = 0;
+                buffer.putInt(index, VERSION_2_1_0); // version
+                index += SIZE_OF_INT;
 
-            int index = 0;
-            buffer.putInt(index, VERSION_2_1_0); // version
-            index += SIZE_OF_INT;
+                buffer.putLong(index, currentTime, LITTLE_ENDIAN); // activityTimestamp
+                index += SIZE_OF_LONG;
 
-            buffer.putLong(index, currentTime, LITTLE_ENDIAN); // activityTimestamp
-            index += SIZE_OF_LONG;
+                buffer.putLong(index, currentTime, LITTLE_ENDIAN); // startTimestamp
+                index += SIZE_OF_LONG;
 
-            buffer.putLong(index, currentTime, LITTLE_ENDIAN); // startTimestamp
-            index += SIZE_OF_LONG;
+                buffer.putLong(index, 1, LITTLE_ENDIAN); // pid
+                index += SIZE_OF_LONG;
 
-            buffer.putLong(index, 1, LITTLE_ENDIAN); // pid
-            index += SIZE_OF_LONG;
+                buffer.putInt(index, 777, LITTLE_ENDIAN); // controlStreamId
+                index += SIZE_OF_INT;
 
-            buffer.putInt(index, 777, LITTLE_ENDIAN); // controlStreamId
-            index += SIZE_OF_INT;
+                buffer.putInt(index, 42, LITTLE_ENDIAN); // localControlStreamId
+                index += SIZE_OF_INT;
 
-            buffer.putInt(index, 42, LITTLE_ENDIAN); // localControlStreamId
-            index += SIZE_OF_INT;
+                buffer.putInt(index, 13, LITTLE_ENDIAN); // eventsStreamId
+                index += SIZE_OF_INT;
 
-            buffer.putInt(index, 13, LITTLE_ENDIAN); // eventsStreamId
-            index += SIZE_OF_INT;
+                buffer.putInt(index, MARK_FILE_HEADER_LENGTH_V2, LITTLE_ENDIAN); // headerLength
+                index += SIZE_OF_INT;
 
-            buffer.putInt(index, MARK_FILE_HEADER_LENGTH_V2, LITTLE_ENDIAN); // headerLength
-            index += SIZE_OF_INT;
+                buffer.putInt(index, errorBufferLength, LITTLE_ENDIAN); // errorBufferLength
+                index += SIZE_OF_INT;
 
-            buffer.putInt(index, errorBufferLength, LITTLE_ENDIAN); // errorBufferLength
-            index += SIZE_OF_INT;
+                index += buffer.putStringAscii(index, controlChannel, LITTLE_ENDIAN); // controlChannel
 
-            index += buffer.putStringAscii(index, controlChannel, LITTLE_ENDIAN); // controlChannel
+                index += buffer.putStringAscii(index, localControlChannel, LITTLE_ENDIAN); // localControlChannel
 
-            index += buffer.putStringAscii(index, localControlChannel, LITTLE_ENDIAN); // localControlChannel
+                index += buffer.putStringAscii(index, eventsChannel, LITTLE_ENDIAN); // eventsChannel
 
-            index += buffer.putStringAscii(index, eventsChannel, LITTLE_ENDIAN); // eventsChannel
-
-            // aeronDirectory
-            buffer.putStringAscii(index, aeronDirectory, LITTLE_ENDIAN);
+                // aeronDirectory
+                buffer.putStringAscii(index, aeronDirectory, LITTLE_ENDIAN);
+            }
+            finally
+            {
+                IoUtil.unmap(mappedByteBuffer);
+            }
         }
         catch (final IOException ex)
         {
@@ -126,14 +132,14 @@ final class ArchiveMigrationUtils
         final Path catalogFile = archiveDir.toPath().resolve(Archive.Configuration.CATALOG_FILE_NAME);
         try (FileChannel channel = FileChannel.open(catalogFile, CREATE_NEW, READ, WRITE, SPARSE))
         {
-            final MappedByteBuffer mappedBuffer = channel.map(
+            final MappedByteBuffer mappedByteBuffer = channel.map(
                 READ_WRITE,
                 0,
                 RECORDING_FRAME_LENGTH_V2 + recordings.size() * RECORDING_FRAME_LENGTH_V2);
-            mappedBuffer.order(LITTLE_ENDIAN);
+            mappedByteBuffer.order(LITTLE_ENDIAN);
             try
             {
-                final UnsafeBuffer buffer = new UnsafeBuffer(mappedBuffer);
+                final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
 
                 int index = 0;
                 buffer.putInt(index, VERSION_2_1_0); // version
@@ -151,7 +157,7 @@ final class ArchiveMigrationUtils
             }
             finally
             {
-                IoUtil.unmap(mappedBuffer);
+                IoUtil.unmap(mappedByteBuffer);
             }
         }
         catch (final IOException ex)

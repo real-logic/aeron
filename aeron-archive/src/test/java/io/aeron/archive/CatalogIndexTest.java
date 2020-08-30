@@ -35,7 +35,7 @@ class CatalogIndexTest
     {
         final long[] emptyIndex = new long[20];
 
-        assertArrayEquals(emptyIndex, catalogIndex.index);
+        assertArrayEquals(emptyIndex, catalogIndex.index());
     }
 
     @Test
@@ -67,7 +67,7 @@ class CatalogIndexTest
         final long[] expected = new long[20];
         expected[0] = recordingId;
         expected[1] = recordingOffset;
-        assertArrayEquals(expected, catalogIndex.index);
+        assertArrayEquals(expected, catalogIndex.index());
         assertEquals(1, catalogIndex.size());
     }
 
@@ -87,7 +87,7 @@ class CatalogIndexTest
         expected[1] = recordingOffset1;
         expected[2] = recordingId2;
         expected[3] = recordingOffset2;
-        assertArrayEquals(expected, catalogIndex.index);
+        assertArrayEquals(expected, catalogIndex.index());
         assertEquals(2, catalogIndex.size());
     }
 
@@ -120,7 +120,7 @@ class CatalogIndexTest
         expectedIndex[pos + 1] = Long.MAX_VALUE;
         catalogIndex.add(Long.MAX_VALUE, Long.MAX_VALUE);
 
-        assertArrayEquals(expectedIndex, catalogIndex.index);
+        assertArrayEquals(expectedIndex, catalogIndex.index());
         assertEquals(DEFAULT_INDEX_SIZE + 1, catalogIndex.size());
     }
 

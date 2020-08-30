@@ -26,14 +26,14 @@ final class CatalogIndex
 
     static final long NULL_VALUE = -1;
 
-    long[] index;
+    private long[] index;
+    private int count;
 
     CatalogIndex()
     {
         index = new long[DEFAULT_INDEX_SIZE << 1];
     }
 
-    int count = 0;
 
     /**
      * Add mapping between recording id and its file offset to the index.
@@ -147,7 +147,17 @@ final class CatalogIndex
         return (count << 1) - 2;
     }
 
-    private static int find(final long[] index, final long recordingId, final int lastPosition)
+    /**
+     * Index array.
+     *
+     * @return index array.
+     */
+    long[] index()
+    {
+        return index;
+    }
+
+    static int find(final long[] index, final long recordingId, final int lastPosition)
     {
         if (lastPosition > 0 && recordingId >= index[0] && recordingId <= index[lastPosition])
         {
@@ -212,5 +222,4 @@ final class CatalogIndex
             throw new IllegalArgumentException(String.format("%s cannot be negative, got %d", msg, value));
         }
     }
-
 }

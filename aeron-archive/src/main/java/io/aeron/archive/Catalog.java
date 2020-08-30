@@ -352,6 +352,11 @@ final class Catalog implements AutoCloseable
         return nextRecordingId;
     }
 
+    CatalogIndex index()
+    {
+        return catalogIndex;
+    }
+
     int version()
     {
         return catalogHeaderDecoder.version();
@@ -468,6 +473,21 @@ final class Catalog implements AutoCloseable
         return wrapDescriptorAtOffset(buffer, recordingDescriptorOffset) > 0;
     }
 
+    int wrapDescriptorAtOffset(final UnsafeBuffer buffer, final int recordingDescriptorOffset)
+    {
+        final int recordingLength = fieldAccessBuffer.getInt(
+            recordingDescriptorOffset + RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), BYTE_ORDER);
+
+        if (recordingLength > 0)
+        {
+            final int frameLength = align(recordingLength + DESCRIPTOR_HEADER_LENGTH, alignment);
+            buffer.wrap(catalogByteBuffer, recordingDescriptorOffset, frameLength);
+            return frameLength;
+        }
+
+        return -1;
+    }
+
     boolean hasRecording(final long recordingId)
     {
         return recordingId >= 0 && recordingDescriptorOffset(recordingId) > 0;
@@ -524,7 +544,7 @@ final class Catalog implements AutoCloseable
             return NULL_RECORD_ID;
         }
 
-        final long[] index = catalogIndex.index;
+        final long[] index = catalogIndex.index();
         final int lastPosition = catalogIndex.lastPosition();
         for (int i = lastPosition; i >= 0; i -= 2)
         {
@@ -870,21 +890,6 @@ final class Catalog implements AutoCloseable
             throw new ArchiveException("invalid nextRecordingId: expected value greater or equal to " +
                 (recordingId + 1) + ", was " + nextRecordingId);
         }
-    }
-
-    private int wrapDescriptorAtOffset(final UnsafeBuffer buffer, final int recordingDescriptorOffset)
-    {
-        final int recordingLength = fieldAccessBuffer.getInt(
-            recordingDescriptorOffset + RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), BYTE_ORDER);
-
-        if (recordingLength > 0)
-        {
-            final int frameLength = align(recordingLength + DESCRIPTOR_HEADER_LENGTH, alignment);
-            buffer.wrap(catalogByteBuffer, recordingDescriptorOffset, frameLength);
-            return frameLength;
-        }
-
-        return -1;
     }
 
     private void invokeEntryProcessor(final int recordingDescriptorOffset, final CatalogEntryProcessor consumer)

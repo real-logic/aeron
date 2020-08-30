@@ -78,44 +78,63 @@ abstract class AbstractListRecordingsSession implements Session
             return 0;
         }
 
-        int totalBytesSent = 0;
-        int recordsScanned = 0;
+        final CatalogIndex catalogIndex = catalog.index();
+        final int lastPosition = catalogIndex.lastPosition();
+        final long[] index = catalogIndex.index();
+        int position = CatalogIndex.find(index, recordingId, lastPosition);
 
-        // FIXME: Use CatalogIndex for the iteration...
-
-        while (sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
+        if (position < 0)
         {
-            if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
+            for (int i = 0; i <= lastPosition; i += 2)
             {
-                controlSession.sendRecordingUnknown(correlationId, recordingId, proxy);
+                if (index[i] >= recordingId)
+                {
+                    position = i;
+                    break;
+                }
+            }
+        }
 
+        final int alreadySent = sent;
+        for (int recordsScanned = 0; sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE; recordsScanned++)
+        {
+            final boolean noMoreRecordings = position < 0 || position > lastPosition;
+            if (noMoreRecordings || catalog.wrapDescriptorAtOffset(descriptorBuffer, (int)index[position + 1]) < 0)
+            {
+                controlSession.sendRecordingUnknown(
+                    correlationId, noMoreRecordings ? recordingId : index[position], proxy);
                 isDone = true;
                 break;
             }
 
-            if (Catalog.isValidDescriptor(descriptorBuffer) && acceptDescriptor(descriptorBuffer))
+            if (acceptDescriptor(descriptorBuffer))
             {
-                final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
-                if (bytesSent == 0)
+                if (0 == controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy))
                 {
                     isDone = controlSession.isDone();
                     break;
                 }
 
-                totalBytesSent += bytesSent;
                 ++sent;
             }
 
-            recordingId++;
-            recordsScanned++;
+            if (position < lastPosition)
+            {
+                recordingId = index[position + 2];
+            }
+            else
+            {
+                recordingId++;
+            }
+            position += 2;
         }
 
-        if (sent >= count)
+        if (sent == count)
         {
             isDone = true;
         }
 
-        return totalBytesSent;
+        return sent - alreadySent;
     }
 
     public void close()

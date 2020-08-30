@@ -66,61 +66,16 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
             {
                 final MappedByteBuffer mappedByteBuffer = channel.map(READ_WRITE, 0, MAX_CATALOG_LENGTH);
                 mappedByteBuffer.order(LITTLE_ENDIAN);
-                final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
-
-                final int alignment = CACHE_LINE_LENGTH;
-
-                // Create CatalogHeader for version 3.0.0
-                final int catalogHeaderLength =
-                    writeCatalogHeader(buffer, version, catalog.nextRecordingId(), alignment);
-
-                final MutableInteger offset = new MutableInteger(catalogHeaderLength);
-
-                catalog.forEach(
-                    (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                    {
-                        final int strippedChannelLength = descriptorDecoder.strippedChannelLength();
-                        descriptorDecoder.skipStrippedChannel();
-
-                        final int originalChannelLength = descriptorDecoder.originalChannelLength();
-                        descriptorDecoder.skipOriginalChannel();
-
-                        final int sourceIdentityLength = descriptorDecoder.sourceIdentityLength();
-
-                        final int frameLength =
-                            align(DESCRIPTOR_HEADER_LENGTH + 7 * SIZE_OF_LONG + 6 * SIZE_OF_INT +
-                            SIZE_OF_INT + strippedChannelLength +
-                            SIZE_OF_INT + originalChannelLength +
-                            SIZE_OF_INT + sourceIdentityLength,
-                            alignment);
-
-                        final DirectBuffer srcBuffer = headerDecoder.buffer();
-                        final int headerLength = headerDecoder.encodedLength();
-
-                        // Copy recording header
-                        int index = offset.get();
-                        buffer.putBytes(
-                            index,
-                            srcBuffer,
-                            0,
-                            headerLength);
-                        index += headerLength;
-
-                        // Correct length
-                        buffer.putInt(offset.get(), frameLength - headerLength, LITTLE_ENDIAN);
-
-                        // Copy recording descriptor
-                        buffer.putBytes(
-                            index,
-                            srcBuffer,
-                            headerLength,
-                            frameLength - headerLength);
-
-                        offset.addAndGet(frameLength);
-                    });
-
-                IoUtil.unmap(mappedByteBuffer);
-                channel.truncate(offset.get()); // trim file to actual length used
+                final int offset;
+                try
+                {
+                    offset = migrateCatalogFile(catalog, version, mappedByteBuffer);
+                }
+                finally
+                {
+                    IoUtil.unmap(mappedByteBuffer);
+                }
+                channel.truncate(offset); // trim file to actual length used
             }
 
             catalog.close();
@@ -140,6 +95,64 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
     public String toString()
     {
         return "to " + fullVersionString(minimumVersion());
+    }
+
+    private int migrateCatalogFile(final Catalog catalog, final int version, final MappedByteBuffer mappedByteBuffer)
+    {
+        final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+
+        final int alignment = CACHE_LINE_LENGTH;
+
+        // Create CatalogHeader for version 3.0.0
+        final int catalogHeaderLength =
+            writeCatalogHeader(buffer, version, catalog.nextRecordingId(), alignment);
+
+        final MutableInteger offset = new MutableInteger(catalogHeaderLength);
+
+        catalog.forEach(
+            (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            {
+                final int strippedChannelLength = descriptorDecoder.strippedChannelLength();
+                descriptorDecoder.skipStrippedChannel();
+
+                final int originalChannelLength = descriptorDecoder.originalChannelLength();
+                descriptorDecoder.skipOriginalChannel();
+
+                final int sourceIdentityLength = descriptorDecoder.sourceIdentityLength();
+
+                final int frameLength =
+                    align(DESCRIPTOR_HEADER_LENGTH + 7 * SIZE_OF_LONG + 6 * SIZE_OF_INT +
+                    SIZE_OF_INT + strippedChannelLength +
+                    SIZE_OF_INT + originalChannelLength +
+                    SIZE_OF_INT + sourceIdentityLength,
+                    alignment);
+
+                final DirectBuffer srcBuffer = headerDecoder.buffer();
+                final int headerLength = headerDecoder.encodedLength();
+
+                // Copy recording header
+                int index = offset.get();
+                buffer.putBytes(
+                    index,
+                    srcBuffer,
+                    0,
+                    headerLength);
+                index += headerLength;
+
+                // Correct length
+                buffer.putInt(offset.get(), frameLength - headerLength, LITTLE_ENDIAN);
+
+                // Copy recording descriptor
+                buffer.putBytes(
+                    index,
+                    srcBuffer,
+                    headerLength,
+                    frameLength - headerLength);
+
+                offset.addAndGet(frameLength);
+            });
+
+        return offset.get();
     }
 
     private int writeCatalogHeader(

@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.client.ArchiveException;
+import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.EpochClock;
@@ -130,21 +131,27 @@ final class ArchiveMigrationUtils
                 0,
                 RECORDING_FRAME_LENGTH_V2 + recordings.size() * RECORDING_FRAME_LENGTH_V2);
             mappedBuffer.order(LITTLE_ENDIAN);
-
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedBuffer);
-
-            int index = 0;
-            buffer.putInt(index, VERSION_2_1_0); // version
-            index += SIZE_OF_INT;
-
-            buffer.putInt(index, RECORDING_FRAME_LENGTH_V2); // entryLength
-
-            index = RECORDING_FRAME_LENGTH_V2;
-
-            for (final RecordingDescriptorV2 recording : recordings)
+            try
             {
-                writeRecording(buffer, index, recording);
-                index += RECORDING_FRAME_LENGTH_V2;
+                final UnsafeBuffer buffer = new UnsafeBuffer(mappedBuffer);
+
+                int index = 0;
+                buffer.putInt(index, VERSION_2_1_0); // version
+                index += SIZE_OF_INT;
+
+                buffer.putInt(index, RECORDING_FRAME_LENGTH_V2); // entryLength
+
+                index = RECORDING_FRAME_LENGTH_V2;
+
+                for (final RecordingDescriptorV2 recording : recordings)
+                {
+                    writeRecording(buffer, index, recording);
+                    index += RECORDING_FRAME_LENGTH_V2;
+                }
+            }
+            finally
+            {
+                IoUtil.unmap(mappedBuffer);
             }
         }
         catch (final IOException ex)

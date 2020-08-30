@@ -478,8 +478,7 @@ abstract class ArchiveConductor
                 catalog,
                 controlResponseProxy,
                 controlSession,
-                descriptorBuffer,
-                recordingDescriptorDecoder);
+                descriptorBuffer);
             addSession(session);
             controlSession.activeListing(session);
         }

@@ -16,12 +16,14 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
     private final int streamId;
     private final byte[] channelFragment;
+    private final RecordingDescriptorDecoder descriptorDecoder;
 
     ListRecordingsForUriSession(
         final long correlationId,
@@ -42,16 +44,23 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
             catalog,
             proxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer
+        );
 
         this.streamId = streamId;
         this.channelFragment = channelFragment;
+        descriptorDecoder = recordingDescriptorDecoder;
     }
 
-    protected boolean acceptDescriptor(final RecordingDescriptorDecoder descriptorDecoder)
+    protected boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)
     {
-        return descriptorDecoder.streamId() == streamId &&
+        descriptorDecoder.wrap(
+            descriptorBuffer,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+        return streamId == descriptorDecoder.streamId() &&
             Catalog.originalChannelContains(descriptorDecoder, channelFragment);
     }
 }

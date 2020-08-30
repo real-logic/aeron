@@ -16,8 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 abstract class AbstractListRecordingsSession implements Session
@@ -31,7 +29,6 @@ abstract class AbstractListRecordingsSession implements Session
     final long correlationId;
     boolean isDone = false;
     private final UnsafeBuffer descriptorBuffer;
-    private final RecordingDescriptorDecoder descriptorDecoder;
     private final Catalog catalog;
     private final int count;
     private final ControlSession controlSession;
@@ -48,8 +45,7 @@ abstract class AbstractListRecordingsSession implements Session
         final Catalog catalog,
         final ControlResponseProxy proxy,
         final ControlSession controlSession,
-        final UnsafeBuffer descriptorBuffer,
-        final RecordingDescriptorDecoder recordingDescriptorDecoder)
+        final UnsafeBuffer descriptorBuffer)
     {
         this.correlationId = correlationId;
         this.recordingId = fromRecordingId;
@@ -58,7 +54,6 @@ abstract class AbstractListRecordingsSession implements Session
         this.catalog = catalog;
         this.proxy = proxy;
         this.descriptorBuffer = descriptorBuffer;
-        descriptorDecoder = recordingDescriptorDecoder;
     }
 
     public void abort()
@@ -86,6 +81,8 @@ abstract class AbstractListRecordingsSession implements Session
         int totalBytesSent = 0;
         int recordsScanned = 0;
 
+        // FIXME: Use CatalogIndex for the iteration...
+
         while (sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
@@ -96,26 +93,17 @@ abstract class AbstractListRecordingsSession implements Session
                 break;
             }
 
-            if (Catalog.isValidDescriptor(descriptorBuffer))
+            if (Catalog.isValidDescriptor(descriptorBuffer) && acceptDescriptor(descriptorBuffer))
             {
-                descriptorDecoder.wrap(
-                    descriptorBuffer,
-                    RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-                    RecordingDescriptorDecoder.BLOCK_LENGTH,
-                    RecordingDescriptorDecoder.SCHEMA_VERSION);
-
-                if (acceptDescriptor(descriptorDecoder))
+                final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
+                if (bytesSent == 0)
                 {
-                    final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
-                    if (bytesSent == 0)
-                    {
-                        isDone = controlSession.isDone();
-                        break;
-                    }
-
-                    totalBytesSent += bytesSent;
-                    ++sent;
+                    isDone = controlSession.isDone();
+                    break;
                 }
+
+                totalBytesSent += bytesSent;
+                ++sent;
             }
 
             recordingId++;
@@ -135,5 +123,5 @@ abstract class AbstractListRecordingsSession implements Session
         controlSession.activeListing(null);
     }
 
-    protected abstract boolean acceptDescriptor(RecordingDescriptorDecoder descriptorDecoder);
+    protected abstract boolean acceptDescriptor(UnsafeBuffer descriptorBuffer);
 }

@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsSession extends AbstractListRecordingsSession
@@ -27,8 +26,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         final Catalog catalog,
         final ControlResponseProxy proxy,
         final ControlSession controlSession,
-        final UnsafeBuffer descriptorBuffer,
-        final RecordingDescriptorDecoder recordingDescriptorDecoder)
+        final UnsafeBuffer descriptorBuffer)
     {
         super(
             correlationId,
@@ -37,11 +35,11 @@ class ListRecordingsSession extends AbstractListRecordingsSession
             catalog,
             proxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer
+        );
     }
 
-    protected boolean acceptDescriptor(final RecordingDescriptorDecoder descriptorDecoder)
+    protected boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)
     {
         return true;
     }

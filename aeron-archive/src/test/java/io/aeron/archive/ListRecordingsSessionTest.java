@@ -61,8 +61,8 @@ public class ListRecordingsSessionTest
             catalog,
             controlResponseProxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer
+        );
 
         final MutableLong counter = new MutableLong(0);
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
@@ -83,8 +83,7 @@ public class ListRecordingsSessionTest
             catalog,
             controlResponseProxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer);
 
         final MutableLong counter = new MutableLong(fromId);
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
@@ -105,8 +104,7 @@ public class ListRecordingsSessionTest
             catalog,
             controlResponseProxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer);
 
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy))).thenReturn(0);
         session.doWork();
@@ -130,8 +128,7 @@ public class ListRecordingsSessionTest
             catalog,
             controlResponseProxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer);
 
         final MutableLong counter = new MutableLong(1);
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
@@ -153,8 +150,7 @@ public class ListRecordingsSessionTest
             catalog,
             controlResponseProxy,
             controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+            descriptorBuffer);
 
         session.doWork();
 

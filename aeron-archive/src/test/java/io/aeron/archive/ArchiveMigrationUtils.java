@@ -146,8 +146,6 @@ final class ArchiveMigrationUtils
                 writeRecording(buffer, index, recording);
                 index += RECORDING_FRAME_LENGTH_V2;
             }
-
-            channel.truncate(index);
         }
         catch (final IOException ex)
         {

@@ -119,6 +119,7 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
                         offset.addAndGet(frameLength);
                     });
 
+                IoUtil.unmap(mappedByteBuffer);
                 channel.truncate(offset.get()); // trim file to actual length used
             }
 

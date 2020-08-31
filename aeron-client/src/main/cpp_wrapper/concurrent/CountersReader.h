@@ -190,26 +190,6 @@ public:
         return {m_buffers.metadata, m_buffers.metadata_length};
     }
 
-#pragma pack(push)
-#pragma pack(4)
-    struct CounterValueDefn
-    {
-        std::int64_t counterValue;
-        std::int64_t registrationId;
-        std::int8_t padding[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int64_t))];
-    };
-
-    struct CounterMetaDataDefn
-    {
-        std::int32_t state;
-        std::int32_t typeId;
-        std::int64_t freeToReuseDeadline;
-        std::int8_t key[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int32_t)) - sizeof(std::int64_t)];
-        std::int32_t labelLength;
-        std::int8_t label[(6 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
-    };
-#pragma pack(pop)
-
     static const std::int32_t NULL_COUNTER_ID = AERON_NULL_COUNTER_ID;
 
     static const std::int32_t RECORD_UNUSED = AERON_COUNTER_RECORD_UNUSED;

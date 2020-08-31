@@ -584,7 +584,7 @@ typedef struct aeron_counter_value_descriptor_stct
     int64_t owner_id;
     uint8_t pad1[(2 * AERON_COUNTER_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
 }
-    aeron_counter_value_descriptor_t;
+aeron_counter_value_descriptor_t;
 
 typedef struct aeron_counter_metadata_descriptor_stct
 {
@@ -595,7 +595,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
     int32_t label_length;
     uint8_t label[(6 * AERON_COUNTER_CACHE_LINE_LENGTH) - sizeof(int32_t)];
 }
-    aeron_counter_metadata_descriptor_t;
+aeron_counter_metadata_descriptor_t;
 #pragma pack(pop)
 
 

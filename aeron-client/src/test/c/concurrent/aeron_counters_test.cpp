@@ -41,14 +41,19 @@ public:
     {
         m_valuesBuffer.fill(0);
         m_metadataBuffer.fill(0);
+
+        aeron_clock_cache_alloc(&m_cached_clock);
+        aeron_clock_update_cached_time(m_cached_clock, 0, 0);
+
         aeron_counters_manager_init(
             &m_manager,
             m_metadataBuffer.data(),
             m_metadataBuffer.size(),
             m_valuesBuffer.data(),
             m_valuesBuffer.size(),
-            aeron_epoch_clock,
+            m_cached_clock,
             REUSE_TIMEOUT);
+
         aeron_counters_reader_init(
             &m_reader,
             m_metadataBuffer.data(),
@@ -60,6 +65,7 @@ public:
     ~CountersTest() override
     {
         aeron_counters_manager_close(&m_manager);
+        aeron_clock_cache_free(m_cached_clock);
     }
 
 protected:
@@ -67,6 +73,7 @@ protected:
     metadata_buffer_t m_metadataBuffer = {};
     aeron_counters_reader_t m_reader = {};
     aeron_counters_manager_t m_manager = {};
+    aeron_clock_cache_t *m_cached_clock = nullptr;
 };
 
 TEST_F(CountersTest, shouldReadCounterState)
@@ -125,11 +132,12 @@ TEST_F(CountersTest, shouldReadTimeForReuseDeadline)
     EXPECT_EQ(0, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, id, &deadline_ms));
     EXPECT_EQ(AERON_COUNTER_NOT_FREE_TO_REUSE, deadline_ms);
 
-    int64_t current_time_ms = aeron_epoch_clock();
+    int64_t now_ms = aeron_epoch_clock();
+    aeron_clock_update_cached_time(m_cached_clock, now_ms, 0);
     aeron_counters_manager_free(&m_manager, id);
 
     EXPECT_EQ(0, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, id, &deadline_ms));
-    EXPECT_LE(current_time_ms + REUSE_TIMEOUT, deadline_ms);
+    EXPECT_LE(now_ms + REUSE_TIMEOUT, deadline_ms);
 
     EXPECT_EQ(
         -1, aeron_counters_reader_free_for_reuse_deadline_ms(&m_reader, m_reader.max_counter_id + 1, &deadline_ms));

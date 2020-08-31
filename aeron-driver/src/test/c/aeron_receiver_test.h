@@ -61,7 +61,15 @@ public:
         m_error_log_buffer(),
         m_counter_value_buffer(),
         m_counter_meta_buffer()
-    {}
+    {
+        aeron_clock_cache_alloc(&m_cached_clock);
+        aeron_clock_update_cached_time(m_cached_clock, 0, 0);
+    }
+
+    ~ReceiverTestBase() override
+    {
+        aeron_clock_cache_free(m_cached_clock);
+    }
 
 protected:
     void SetUp() override
@@ -92,7 +100,7 @@ protected:
             &m_counters_manager,
             m_counter_meta_buffer.data(), m_counter_meta_buffer.size(),
             m_counter_value_buffer.data(), m_counter_value_buffer.size(),
-            aeron_epoch_clock,
+            m_cached_clock,
             1000);
 
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
@@ -257,6 +265,7 @@ protected:
         return setup_header;
     }
 
+    aeron_clock_cache_t *m_cached_clock = nullptr;
     aeron_udp_channel_transport_bindings_t m_transport_bindings;
     aeron_driver_context_t *m_context;
     aeron_counters_manager_t m_counters_manager;

@@ -37,9 +37,17 @@ class NameResolverTest : public testing::Test
 public:
     NameResolverTest()
     {
+        aeron_clock_cache_alloc(&m_cached_clock);
+        aeron_clock_update_cached_time(m_cached_clock, 0, 0);
+
         m_a.context = nullptr;
         m_b.context = nullptr;
         m_c.context = nullptr;
+    }
+
+    ~NameResolverTest() override
+    {
+        aeron_clock_cache_free(m_cached_clock);
     }
 
 protected:
@@ -67,7 +75,7 @@ protected:
         close(&m_c);
     }
 
-    static void initResolver(
+    void initResolver(
         resolver_fields_t *resolver_fields,
         const char *resolver_supplier_name,
         const char *args,
@@ -90,7 +98,7 @@ protected:
             &resolver_fields->counters,
             &resolver_fields->counters_buffer[0], METADATA_LENGTH,
             &resolver_fields->counters_buffer[METADATA_LENGTH], VALUES_LENGTH,
-            aeron_epoch_clock, 1000);
+            m_cached_clock, 1000);
         aeron_system_counters_init(&resolver_fields->system_counters, &resolver_fields->counters);
 
         aeron_distinct_error_log_init(
@@ -128,8 +136,8 @@ protected:
         auto *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
         if (counters_clientd->type_id == type_id)
         {
-            int64_t *counter_addr = aeron_counters_manager_addr((aeron_counters_manager_t *) counters_clientd->counters,
-                                                                id);
+            int64_t *counter_addr = aeron_counters_manager_addr(
+                (aeron_counters_manager_t *)counters_clientd->counters, id);
             AERON_GET_VOLATILE(counters_clientd->value, *counter_addr);
         }
     }
@@ -159,8 +167,7 @@ protected:
 
     static int64_t readSystemCounter(const resolver_fields_t *resolver, aeron_system_counter_enum_t counter)
     {
-        return aeron_counter_get(
-            aeron_system_counter_addr(resolver->context->system_counters, counter));
+        return aeron_counter_get(aeron_system_counter_addr(resolver->context->system_counters, counter));
     }
 
     static int64_t shortSends(const resolver_fields_t *resolver)
@@ -186,9 +193,10 @@ protected:
         return output;
     }
 
-    resolver_fields_t m_a;
-    resolver_fields_t m_b;
-    resolver_fields_t m_c;
+    resolver_fields_t m_a = {};
+    resolver_fields_t m_b = {};
+    resolver_fields_t m_c = {};
+    aeron_clock_cache_t *m_cached_clock = nullptr;
 
 private:
     static void close(resolver_fields_t *resolver_fields)

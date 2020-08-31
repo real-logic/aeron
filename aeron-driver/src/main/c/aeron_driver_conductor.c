@@ -169,7 +169,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         AERON_COUNTERS_METADATA_BUFFER_LENGTH(context->counters_values_buffer_length),
         context->counters_values_buffer,
         context->counters_values_buffer_length,
-        clock_func,
+        context->cached_clock,
         free_to_reuse_timeout_ms) < 0)
     {
         return -1;

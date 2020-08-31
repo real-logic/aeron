@@ -604,7 +604,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
 
 #define AERON_COUNTER_METADATA_LENGTH sizeof(aeron_counter_metadata_descriptor_t)
 #define AERON_COUNTER_TYPE_ID_OFFSET offsetof(aeron_counter_metadata_descriptor_t, type_id)
-#define AERON_COUNTER_FREE_FOR_REUSE_DEADLINE_OFFSET offsetof(aeron_counter_metadata_descriptor_t, free_for_reuse_deadline)
+#define AERON_COUNTER_FREE_FOR_REUSE_DEADLINE_OFFSET offsetof(aeron_counter_metadata_descriptor_t, free_for_reuse_deadline_ms)
 #define AERON_COUNTER_KEY_OFFSET offsetof(aeron_counter_metadata_descriptor_t, key)
 #define AERON_COUNTER_LABEL_LENGTH_OFFSET offsetof(aeron_counter_metadata_descriptor_t, label)
 

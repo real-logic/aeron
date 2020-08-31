@@ -302,8 +302,7 @@ bool aeron_data_packet_dispatcher_has_interest_in(
 }
 
 static void aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated_hash_lookups(
-    aeron_int64_to_tagged_ptr_hash_map_t *image_by_session_id_map,
-    int32_t session_id)
+    aeron_int64_to_tagged_ptr_hash_map_t *image_by_session_id_map, int32_t session_id)
 {
     // This is here as an optimisation so that streams that we don't care about don't trigger the slow
     // path and require checking for interest.  As it is an optimisation, we are ignoring the possible
@@ -522,10 +521,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
 }
 
 extern int aeron_data_packet_dispatcher_remove_with_state(
-    aeron_data_packet_dispatcher_t *dispatcher,
-    int32_t session_id,
-    int32_t stream_id,
-    uint32_t image_state);
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id, uint32_t image_state);
 
 extern int aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);

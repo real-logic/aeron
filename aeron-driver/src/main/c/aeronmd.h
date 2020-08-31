@@ -477,9 +477,7 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
  */
 #define AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
 
-int aeron_driver_context_set_flow_control_receiver_timeout_ns(
-    aeron_driver_context_t *context,
-    uint64_t value);
+int aeron_driver_context_set_flow_control_receiver_timeout_ns(aeron_driver_context_t *context, uint64_t value);
 
 uint64_t aeron_driver_context_get_flow_control_receiver_timeout_ns(aeron_driver_context_t *context);
 
@@ -519,17 +517,14 @@ int aeron_driver_context_set_driver_termination_validator(
     aeron_driver_context_t *context, aeron_driver_termination_validator_func_t value, void *state);
 aeron_driver_termination_validator_func_t aeron_driver_context_get_driver_termination_validator(
     aeron_driver_context_t *context);
-void *aeron_driver_context_get_driver_termination_validator_state(
-    aeron_driver_context_t *context);
+void *aeron_driver_context_get_driver_termination_validator_state(aeron_driver_context_t *context);
 
 typedef void (*aeron_driver_termination_hook_func_t)(void *clientd);
 
 int aeron_driver_context_set_driver_termination_hook(
     aeron_driver_context_t *context, aeron_driver_termination_hook_func_t value, void *state);
-aeron_driver_termination_hook_func_t aeron_driver_context_get_driver_termination_hook(
-    aeron_driver_context_t *context);
-void *aeron_driver_context_get_driver_termination_hook_state(
-    aeron_driver_context_t *context);
+aeron_driver_termination_hook_func_t aeron_driver_context_get_driver_termination_hook(aeron_driver_context_t *context);
+void *aeron_driver_context_get_driver_termination_hook_state(aeron_driver_context_t *context);
 
 /**
  * Should the driver print its configuration on start to stdout.
@@ -728,8 +723,7 @@ const char *aeron_driver_context_get_resolver_bootstrap_neighbor(aeron_driver_co
 #define AERON_NAME_RESOLVER_SUPPLIER_DEFAULT "default"
 
 int aeron_driver_context_set_name_resolver_supplier(
-    aeron_driver_context_t *context,
-    aeron_name_resolver_supplier_func_t value);
+    aeron_driver_context_t *context, aeron_name_resolver_supplier_func_t value);
 aeron_name_resolver_supplier_func_t aeron_driver_context_get_name_resolver_supplier(aeron_driver_context_t *context);
 
 /**

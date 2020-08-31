@@ -21,6 +21,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include "aeron_socket.h"
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
 #include "util/aeron_netutil.h"

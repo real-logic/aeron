@@ -421,8 +421,8 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     result = 0;
 
-    cleanup:
-        aeron_close_socket(probe_fd);
+cleanup:
+    aeron_close_socket(probe_fd);
 
     return result;
 }
@@ -796,6 +796,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
 
+    aeron_mpsc_rb_next_correlation_id(&_driver->conductor.to_driver_commands);
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
     aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
 
@@ -922,8 +923,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     *driver = _driver;
     return 0;
 
-    error:
-
+error:
     if (NULL != _driver)
     {
         aeron_free(_driver);

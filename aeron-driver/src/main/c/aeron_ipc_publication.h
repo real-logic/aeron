@@ -17,12 +17,10 @@
 #ifndef AERON_IPC_PUBLICATION_H
 #define AERON_IPC_PUBLICATION_H
 
-#include "aeron_driver_common.h"
 #include "util/aeron_bitutil.h"
 #include "uri/aeron_uri.h"
-#include "aeron_driver_context.h"
 #include "util/aeron_fileutil.h"
-#include "concurrent/aeron_counters_manager.h"
+#include "aeron_driver_context.h"
 #include "aeron_system_counters.h"
 
 typedef enum aeron_ipc_publication_state_enum

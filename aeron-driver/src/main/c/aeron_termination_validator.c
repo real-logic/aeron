@@ -53,7 +53,7 @@ aeron_driver_termination_validator_func_t aeron_driver_termination_validator_loa
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-        if ((func = (aeron_driver_termination_validator_func_t) aeron_dlsym(RTLD_DEFAULT, validator_name)) == NULL)
+        if ((func = (aeron_driver_termination_validator_func_t)aeron_dlsym(RTLD_DEFAULT, validator_name)) == NULL)
         {
             aeron_set_err(
                 EINVAL, "could not find termination validator %s: dlsym - %s", validator_name, aeron_dlerror());

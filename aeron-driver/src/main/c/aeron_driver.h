@@ -18,7 +18,6 @@
 #define AERON_DRIVER_H
 
 #include "aeron_driver_context.h"
-#include "aeron_agent.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"

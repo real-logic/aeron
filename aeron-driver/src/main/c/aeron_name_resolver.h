@@ -17,7 +17,6 @@
 #ifndef AERON_NAME_RESOLVER_H
 #define AERON_NAME_RESOLVER_H
 
-#include "aeron_socket.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include "aeron_driver_common.h"

@@ -19,6 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <math.h>
 #include <stdlib.h>
 #include "aeronmd.h"
 #include "aeron_windows.h"

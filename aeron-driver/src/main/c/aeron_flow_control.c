@@ -21,7 +21,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <media/aeron_udp_channel.h>
+#include "media/aeron_udp_channel.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"

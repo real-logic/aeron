@@ -187,14 +187,16 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
     struct sockaddr_storage *existing_addr)
 {
     aeron_driver_conductor_proxy_on_re_resolve(
-        conductor_proxy, aeron_driver_conductor_on_re_resolve_control,
-        endpoint_name, endpoint, destination, existing_addr);
+        conductor_proxy,
+        aeron_driver_conductor_on_re_resolve_control,
+        endpoint_name,
+        endpoint,
+        destination,
+        existing_addr);
 }
 
 void aeron_driver_conductor_proxy_on_delete_receive_destination(
-    aeron_driver_conductor_proxy_t *conductor_proxy,
-    void *destination,
-    void *channel)
+    aeron_driver_conductor_proxy_t *conductor_proxy, void *destination, void *channel)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
@@ -222,8 +224,7 @@ void aeron_driver_conductor_proxy_on_delete_receive_destination(
 }
 
 void aeron_conductor_proxy_on_delete_send_destination(
-    aeron_driver_conductor_proxy_t *conductor_proxy,
-    void *removed_uri)
+    aeron_driver_conductor_proxy_t *conductor_proxy, void *removed_uri)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
@@ -250,8 +251,7 @@ void aeron_conductor_proxy_on_delete_send_destination(
 }
 
 void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
-    aeron_driver_conductor_proxy_t *conductor_proxy,
-    void *endpoint)
+    aeron_driver_conductor_proxy_t *conductor_proxy, void *endpoint)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {

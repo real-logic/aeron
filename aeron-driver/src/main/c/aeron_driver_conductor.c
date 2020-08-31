@@ -15,8 +15,6 @@
  */
 
 #include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <inttypes.h>
 #include <errno.h>
 #include "util/aeron_math.h"

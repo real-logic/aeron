@@ -21,7 +21,6 @@
 
 #include <stdlib.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #ifndef _MSC_VER

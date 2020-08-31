@@ -63,7 +63,7 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
     return settings;
 }
 
-int main (int argc, char** argv)
+int main (int argc, char **argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption(optHelp,   0, 0, "                Displays help information."));

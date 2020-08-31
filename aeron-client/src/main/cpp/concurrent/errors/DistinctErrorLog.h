@@ -70,7 +70,7 @@ public:
             }
         }
 
-        DistinctObservation& observation = *it;
+        DistinctObservation &observation = *it;
 
         util::index_t offset = observation.m_offset;
 
@@ -113,7 +113,7 @@ private:
         auto end = begin + numObservations;
 
         auto result = std::find_if(begin, end,
-            [errorCode, description](const DistinctObservation& observation)
+            [errorCode, description](const DistinctObservation &observation)
             {
                 return errorCode == observation.m_errorCode && description == observation.m_description;
             });
@@ -156,7 +156,7 @@ private:
 
             it = m_observations.begin() + numObservations;
 
-            DistinctObservation& observation = *it;
+            DistinctObservation &observation = *it;
             observation.m_errorCode = errorCode;
             observation.m_description = description;
             observation.m_offset = offset;

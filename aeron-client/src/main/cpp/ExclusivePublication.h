@@ -536,7 +536,7 @@ public:
      *     {
      *         try
      *         {
-     *              AtomicBuffer& buffer = bufferClaim.buffer();
+     *              AtomicBuffer &buffer = bufferClaim.buffer();
      *              const index_t offset = bufferClaim.offset();
      *
      *              // Work with buffer directly or wrap with a flyweight

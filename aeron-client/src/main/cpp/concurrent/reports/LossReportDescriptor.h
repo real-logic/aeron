@@ -77,7 +77,7 @@ static const util::index_t CHANNEL_OFFSET = sizeof(LossReportEntryDefn);
 
 static const std::string LOSS_REPORT_FILE_NAME = "loss-report.dat";
 
-inline static std::string file(std::string& aeronDirectoryName)
+inline static std::string file(std::string &aeronDirectoryName)
 {
 #if defined(_MSC_VER)
     return aeronDirectoryName + "\\" + LOSS_REPORT_FILE_NAME;

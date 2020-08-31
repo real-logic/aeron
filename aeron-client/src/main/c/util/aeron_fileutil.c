@@ -222,7 +222,7 @@ int aeron_delete_directory(const char *dirname)
     return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
 
-int aeron_is_directory(const char* dirname)
+int aeron_is_directory(const char *dirname)
 {
     struct stat sb;
     return stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode);
@@ -247,7 +247,7 @@ uint64_t aeron_usable_fs_space(const char *path)
     return result;
 }
 
-int aeron_create_file(const char* path)
+int aeron_create_file(const char *path)
 {
     return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 }

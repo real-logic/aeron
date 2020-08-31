@@ -68,9 +68,9 @@ public:
         }
     }
 
-    void verifyPayload(AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    void verifyPayload(AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
-        std::uint8_t* ptr = buffer.buffer() + offset;
+        std::uint8_t *ptr = buffer.buffer() + offset;
 
         for (int i = 0; i < length; i++)
         {
@@ -118,7 +118,7 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
         called = true;
         EXPECT_EQ(offset, DataFrameHeader::LENGTH);
@@ -156,7 +156,7 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
         called = true;
         EXPECT_EQ(offset, DataFrameHeader::LENGTH);
@@ -199,7 +199,7 @@ TEST_F(FragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header  &header)
     {
         called = true;
     };
@@ -216,7 +216,7 @@ TEST_F(FragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
         called = true;
     };

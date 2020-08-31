@@ -334,7 +334,7 @@ void aeron_close_socket(aeron_socket_t socket)
 #endif
 
 /* aeron_getsockopt and aeron_setsockopt ensure a consistent signature between platforms
- * (MSVC uses char* instead of void* for optval, which causes warnings)
+ * (MSVC uses char * instead of void * for optval, which causes warnings)
  */
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
 {

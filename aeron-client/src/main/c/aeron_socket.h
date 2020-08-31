@@ -33,11 +33,12 @@
 typedef int aeron_socket_t;
 
 #elif defined(AERON_COMPILER_MSVC)
-#include <WinSock2.h>
+
+#include <winsock2.h>
 #include <windows.h>
-#include <Ws2ipdef.h>
-#include <WS2tcpip.h>
-#include <Iphlpapi.h>
+#include <ws2ipdef.h>
+#include <wS2tcpip.h>
+#include <iphlpapi.h>
 
 // SOCKET is uint64_t but we need a signed type to match the Linux version
 typedef int64_t aeron_socket_t;
@@ -55,7 +56,7 @@ struct msghdr {
     struct iovec *msg_iov;
     ULONG msg_iovlen;
     ULONG msg_controllen;
-    void* msg_control;
+    void *msg_control;
     ULONG msg_flags;
 };
 
@@ -71,10 +72,11 @@ struct ifaddrs
     {
         struct sockaddr *ifu_broadaddr;
         struct sockaddr *ifu_dstaddr;
-    } ifa_ifu;
+    }
+    ifa_ifu;
 
 # ifndef ifa_broadaddr
-#  define ifa_broadaddr        ifa_ifu.ifu_broadaddr
+#  define ifa_broadaddr      ifa_ifu.ifu_broadaddr
 # endif
 # ifndef ifa_dstaddr
 #  define ifa_dstaddr        ifa_ifu.ifu_dstaddr

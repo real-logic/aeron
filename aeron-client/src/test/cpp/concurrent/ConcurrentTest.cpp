@@ -89,7 +89,7 @@ TEST (atomicBufferTests, stringStore)
 
     ASSERT_EQ((size_t)ab.getInt32(256), testString.length());
 
-    std::string result(reinterpret_cast<char*>(&testBuffer[256] + sizeof (std::int32_t)));
+    std::string result(reinterpret_cast<char *>(&testBuffer[256] + sizeof (std::int32_t)));
 
     ASSERT_EQ(testString, result);
 }

@@ -85,7 +85,7 @@ int aeron_thread_key_delete(pthread_key_t key);
 
 int aeron_thread_set_specific(pthread_key_t key, const void *pointer);
 
-void* aeron_thread_get_specific(pthread_key_t key);
+void *aeron_thread_get_specific(pthread_key_t key);
 
 #else
 #error Unsupported platform!

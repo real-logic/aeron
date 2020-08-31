@@ -58,9 +58,8 @@ public:
         int64_t snd_lmt = 0)
     {
         uint8_t msg[1024];
-        aeron_status_message_header_t *sm = (aeron_status_message_header_t *)msg;
-        aeron_status_message_optional_header_t *sm_optional =
-            (aeron_status_message_optional_header_t *) (msg + sizeof(aeron_status_message_header_t));
+        auto *sm = (aeron_status_message_header_t *)msg;
+        auto *sm_optional = (aeron_status_message_optional_header_t *) (msg + sizeof(aeron_status_message_header_t));
 
         sm->frame_header.frame_length = send_gtag ?
             sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
@@ -82,8 +81,8 @@ public:
         int32_t asf_value)
     {
         uint8_t msg[1024];
-        aeron_status_message_header_t *sm = (aeron_status_message_header_t *)msg;
-        int32_t *asf = (int32_t *)(msg + sizeof(aeron_status_message_header_t));
+        auto *sm = (aeron_status_message_header_t *)msg;
+        auto *asf = (int32_t *)(msg + sizeof(aeron_status_message_header_t));
 
         sm->frame_header.frame_length = sizeof(aeron_status_message_header_t) + sizeof(int32_t);
         sm->consumption_term_id = 0;
@@ -521,8 +520,8 @@ TEST_F(TaggedFlowControlTest, shouldUseSenderLimitWhenRequiredReceiversNotMet)
 
 TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
 {
-    const char* fc_options = std::get<0>(GetParam());
-    const char* strategy = std::get<1>(GetParam());
+    const char *fc_options = std::get<0>(GetParam());
+    const char *strategy = std::get<1>(GetParam());
 
     aeron_flow_control_tagged_options_t options;
     ASSERT_EQ(1, aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
@@ -583,7 +582,7 @@ TEST_F(FlowControlTest, shouldFallWithInvalidStrategyName)
 
 TEST_P(ParameterisedFailingOptionsParsingTest, shouldBeInvalid)
 {
-    const char* fc_options = std::get<0>(GetParam());
+    const char *fc_options = std::get<0>(GetParam());
 
     aeron_flow_control_tagged_options_t options;
     ASSERT_EQ(

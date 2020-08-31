@@ -420,7 +420,7 @@ bool aeron_client_has_reached_end_of_life(aeron_driver_conductor_t *conductor, a
     return client->reached_end_of_life;
 }
 
-int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conductor)
+int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t *conductor)
 {
     const int32_t low = conductor->publication_reserved_session_id_low;
     const int32_t high = conductor->publication_reserved_session_id_high;
@@ -429,7 +429,7 @@ int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conduct
         aeron_add_wrap_i32(high, 1) : conductor->next_session_id;
 }
 
-int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* conductor, int32_t session_id)
+int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t *conductor, int32_t session_id)
 {
     conductor->next_session_id = aeron_add_wrap_i32(session_id, 1);
     return session_id;

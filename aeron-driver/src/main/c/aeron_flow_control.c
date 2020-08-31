@@ -264,7 +264,7 @@ int aeron_flow_control_parse_tagged_options(
         return 0;
     }
 
-    const char* current_option = options;
+    const char *current_option = options;
     size_t remaining = options_length;
 
     const char *next_option;

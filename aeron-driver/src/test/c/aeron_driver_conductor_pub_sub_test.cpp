@@ -58,7 +58,7 @@ public:
     }
 
     virtual bool receiveEndpointHasStatus(
-        aeron_driver_conductor_t *conductor, const char* channel, aeron_receive_channel_endpoint_status_t status)
+        aeron_driver_conductor_t *conductor, const char *channel, aeron_receive_channel_endpoint_status_t status)
     {
         return true;
     }
@@ -142,7 +142,7 @@ public:
     }
 
     bool receiveEndpointHasStatus(
-        aeron_driver_conductor_t *conductor, const char* channel, aeron_receive_channel_endpoint_status_t status)
+        aeron_driver_conductor_t *conductor, const char *channel, aeron_receive_channel_endpoint_status_t status)
         override
     {
         aeron_receive_channel_endpoint_t *receive_endpoint =
@@ -151,7 +151,7 @@ public:
         return nullptr != receive_endpoint && status == receive_endpoint->conductor_fields.status;
     }
 
-    size_t numSubscriptions(aeron_driver_conductor_t* conductor) override
+    size_t numSubscriptions(aeron_driver_conductor_t *conductor) override
     {
         return aeron_driver_conductor_num_network_subscriptions(conductor);
     }
@@ -205,7 +205,7 @@ INSTANTIATE_TEST_SUITE_P(
     DriverConductorPubSubParamerisedTest,
     DriverConductorPubSubTest,
     testing::Values(NetworkTestParam::instance(), IpcTestParam::instance()),
-    [](const testing::TestParamInfo<ConductorTestParam *>& info)
+    [](const testing::TestParamInfo<ConductorTestParam *> &info)
     {
         return std::string(info.param->m_name);
     });

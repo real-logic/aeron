@@ -36,7 +36,7 @@
 
 typedef struct aeron_csv_table_name_resolver_row_stct
 {
-    const char* row[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
+    const char *row[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
 }
 aeron_csv_table_name_resolver_row_t;
 
@@ -115,7 +115,7 @@ int aeron_csv_table_name_resolver_supplier(
     }
 
     aeron_csv_table_name_resolver_t *lookup_table;
-    if (aeron_alloc((void**)&lookup_table, sizeof(aeron_csv_table_name_resolver_t)) < 0)
+    if (aeron_alloc((void **)&lookup_table, sizeof(aeron_csv_table_name_resolver_t)) < 0)
     {
         aeron_set_err_from_last_err_code("Allocating lookup table - %s:%d", __FILE__, __LINE__);
         aeron_free(config_csv);

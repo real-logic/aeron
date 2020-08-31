@@ -41,7 +41,7 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
 {
     struct iovec vec[1];
     vec[0].iov_len = length;
-    vec[0].iov_base = (void*) msg;
+    vec[0].iov_base = (void *) msg;
 
     return aeron_spsc_rb_writev(ring_buffer, msg_type_id, vec, 1);
 }
@@ -49,7 +49,7 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
 aeron_rb_write_result_t aeron_spsc_rb_writev(
     volatile aeron_spsc_rb_t *ring_buffer,
     int32_t msg_type_id,
-    const struct iovec* iov,
+    const struct iovec *iov,
     int iovcnt)
 {
     size_t length = 0;
@@ -126,7 +126,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     size_t current_vector_offset = 0;
     for (int i = 0; i < iovcnt; i++)
     {
-        uint8_t* offset = ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index) + current_vector_offset;
+        uint8_t *offset = ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index) + current_vector_offset;
         memcpy(offset, iov[i].iov_base, iov[i].iov_len);
         current_vector_offset += iov[i].iov_len;
     }

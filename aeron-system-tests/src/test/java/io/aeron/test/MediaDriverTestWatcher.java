@@ -50,8 +50,10 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
                         System.out.println();
                         System.out.println("Media Driver: " + aeronDirectoryName + ", exit code: " + files.exitValue);
                         printEnvironment(files.environment, System.out);
+                        System.out.println();
                         System.out.println("*** STDOUT ***");
                         Files.copy(files.stdout.toPath(), System.out);
+                        System.out.println();
                         System.out.println("*** STDERR ***");
                         Files.copy(files.stderr.toPath(), System.out);
                         System.out.println("====");

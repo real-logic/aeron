@@ -119,12 +119,15 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
         environment.put("AERON_DIR_DELETE_ON_START", Boolean.toString(context.dirDeleteOnStart()));
         environment.put("AERON_DIR_DELETE_ON_SHUTDOWN", Boolean.toString(context.dirDeleteOnShutdown()));
+        environment.put("AERON_TERM_BUFFER_SPARSE_FILE", Boolean.toString(context.termBufferSparseFile()));
         environment.put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));
+        environment.put("AERON_IPC_TERM_BUFFER_LENGTH", String.valueOf(context.ipcTermBufferLength()));
         environment.put(
             "AERON_PUBLICATION_UNBLOCK_TIMEOUT", String.valueOf(context.publicationUnblockTimeoutNs()));
         environment.put(
             "AERON_PUBLICATION_CONNECTION_TIMEOUT", String.valueOf(context.publicationConnectionTimeoutNs()));
-        environment.put("AERON_SPIES_SIMULATE_CONNECTION", String.valueOf(context.spiesSimulateConnection()));
+        environment.put("AERON_SPIES_SIMULATE_CONNECTION", Boolean.toString(context.spiesSimulateConnection()));
+        environment.put("AERON_PERFORM_STORAGE_CHECKS", Boolean.toString(context.performStorageChecks()));
         if (null != context.threadingMode())
         {
             environment.put("AERON_THREADING_MODE", context.threadingMode().name());
@@ -141,7 +144,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_FLOW_CONTROL_GROUP_TAG", String.valueOf(context.flowControlGroupTag()));
         environment.put(
             "AERON_FLOW_CONTROL_GROUP_MIN_SIZE", String.valueOf(context.flowControlGroupMinSize()));
-        environment.put("AERON_PRINT_CONFIGURATION", "true");
+        environment.put("AERON_PRINT_CONFIGURATION", Boolean.toString(context.printConfigurationOnStart()));
 
         if (null != context.resolverName())
         {

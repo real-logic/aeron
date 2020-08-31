@@ -39,7 +39,8 @@ int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
     aeron_driver_context_t *context,
-    aeron_counters_manager_t *counters_manager)
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id)
 {
     aeron_send_channel_endpoint_t *_endpoint = NULL;
     char bind_addr_and_port[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
@@ -125,7 +126,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->has_sender_released = false;
 
     _endpoint->channel_status.counter_id = aeron_counter_send_channel_status_allocate(
-        counters_manager, channel->uri_length, channel->original_uri);
+        counters_manager, registration_id, channel->uri_length, channel->original_uri);
     _endpoint->channel_status.value_addr = aeron_counters_manager_addr(
         counters_manager, _endpoint->channel_status.counter_id);
 
@@ -138,6 +139,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->local_sockaddr_indicator.counter_id = aeron_counter_local_sockaddr_indicator_allocate(
         counters_manager,
         AERON_COUNTER_SND_LOCAL_SOCKADDR_NAME,
+        registration_id,
         _endpoint->channel_status.counter_id,
         bind_addr_and_port);
 

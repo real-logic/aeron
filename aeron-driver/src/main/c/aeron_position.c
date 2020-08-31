@@ -46,8 +46,12 @@ int32_t aeron_stream_counter_allocate(
 
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
 
-    return aeron_counters_manager_allocate(
+    int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
+
+    aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    
+    return counter_id;
 }
 
 int32_t aeron_counter_publisher_limit_allocate(
@@ -179,6 +183,7 @@ int32_t aeron_channel_endpoint_status_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
+    int64_t registration_id,
     size_t channel_length,
     const char *channel)
 {
@@ -191,8 +196,12 @@ int32_t aeron_channel_endpoint_status_allocate(
 
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
 
-    return aeron_counters_manager_allocate(
+    int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
+
+    aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    
+    return counter_id;
 }
 
 void aeron_channel_endpoint_status_update_label(
@@ -213,6 +222,7 @@ void aeron_channel_endpoint_status_update_label(
 
 int32_t aeron_counter_send_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
     size_t channel_length,
     const char *channel)
 {
@@ -220,12 +230,14 @@ int32_t aeron_counter_send_channel_status_allocate(
         counters_manager,
         AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
         AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID,
+        registration_id,
         channel_length,
         channel);
 }
 
 int32_t aeron_counter_receive_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
     size_t channel_length,
     const char *channel)
 {
@@ -233,6 +245,7 @@ int32_t aeron_counter_receive_channel_status_allocate(
         counters_manager,
         AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME,
         AERON_COUNTER_RECEIVE_CHANNEL_STATUS_TYPE_ID,
+        registration_id,
         channel_length,
         channel);
 }
@@ -240,6 +253,7 @@ int32_t aeron_counter_receive_channel_status_allocate(
 int32_t aeron_counter_local_sockaddr_indicator_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
+    int64_t registration_id,
     int32_t channel_status_counter_id,
     const char *local_sockaddr)
 {
@@ -256,13 +270,17 @@ int32_t aeron_counter_local_sockaddr_indicator_allocate(
     int label_length = snprintf(
         label, sizeof(label), "%s: %" PRId32 " %s", name, channel_status_counter_id, local_sockaddr);
 
-    return aeron_counters_manager_allocate(
+    int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager,
         AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID,
         (const uint8_t *)&sockaddr_layout,
         sizeof(sockaddr_layout),
         label,
         label_length);
+
+    aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+
+    return counter_id;
 }
 
 int32_t aeron_heartbeat_timestamp_allocate(
@@ -282,9 +300,7 @@ int32_t aeron_heartbeat_timestamp_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
 }
 
-int32_t aeron_counter_client_heartbeat_timestamp_allocate(
-    aeron_counters_manager_t *counters_manager,
-    int64_t client_id)
+int32_t aeron_counter_client_heartbeat_timestamp_allocate(aeron_counters_manager_t *counters_manager, int64_t client_id)
 {
     return aeron_heartbeat_timestamp_allocate(
         counters_manager,

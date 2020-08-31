@@ -134,14 +134,14 @@ protected:
     {
         aeron_atomic_counter_t status_indicator;
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
-            &m_counters_manager, channel->uri_length, channel->original_uri);
+            &m_counters_manager, 0, channel->uri_length, channel->original_uri);
         status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
         aeron_receive_destination_t *destination = nullptr;
         if (!channel->is_manual_control_mode)
         {
             if (0 != aeron_receive_destination_create(
-                &destination, channel, m_context, &m_counters_manager, status_indicator.counter_id))
+                &destination, channel, m_context, &m_counters_manager, 0, status_indicator.counter_id))
             {
                 return nullptr;
             }

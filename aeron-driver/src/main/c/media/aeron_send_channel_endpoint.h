@@ -68,7 +68,8 @@ int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
     aeron_driver_context_t *context,
-    aeron_counters_manager_t *counters_manager);
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id);
 
 int aeron_send_channel_endpoint_delete(
     aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint);

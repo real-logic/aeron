@@ -356,6 +356,12 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
             if (client_heartbeat.counter_id >= 0)
             {
+                aeron_counters_manager_counter_registration_id(
+                    &conductor->counters_manager, client_heartbeat.counter_id, client_id);
+
+                aeron_counters_manager_counter_owner_id(
+                    &conductor->counters_manager, client_heartbeat.counter_id, client_id);
+
                 index = (int)conductor->clients.length;
                 client = &conductor->clients.array[index];
 
@@ -430,9 +436,7 @@ int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* 
 }
 
 static void aeron_driver_conductor_track_session_id_offsets(
-    aeron_driver_conductor_t *conductor,
-    aeron_bit_set_t *session_id_offsets,
-    int32_t publication_session_id)
+    aeron_driver_conductor_t *conductor, aeron_bit_set_t *session_id_offsets, int32_t publication_session_id)
 {
     const int32_t next_session_id = aeron_driver_conductor_next_session_id(conductor);
     const int32_t session_id_offset = aeron_sub_wrap_i32(publication_session_id, next_session_id);
@@ -1327,7 +1331,7 @@ int aeron_driver_conductor_update_and_check_ats_status(
 }
 
 aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_endpoint(
-    aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
+    aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel, int64_t registration_id)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;
 
@@ -1374,7 +1378,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         }
 
         if (aeron_send_channel_endpoint_create(
-            &endpoint, channel, conductor->context, &conductor->counters_manager) < 0)
+            &endpoint, channel, conductor->context, &conductor->counters_manager, registration_id) < 0)
         {
             return NULL;
         }
@@ -1400,7 +1404,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 }
 
 aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_channel_endpoint(
-    aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
+    aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel, int64_t correlation_id)
 {
     aeron_receive_destination_t *destination = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
@@ -1449,7 +1453,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         }
 
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
-            &conductor->counters_manager, channel->uri_length, channel->original_uri);
+            &conductor->counters_manager, correlation_id, channel->uri_length, channel->original_uri);
 
         status_indicator.value_addr = aeron_counters_manager_addr(
             &conductor->counters_manager, status_indicator.counter_id);
@@ -1463,9 +1467,11 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         if (!channel->is_manual_control_mode)
         {
             if (aeron_receive_destination_create(
-                &destination, channel,
+                &destination,
+                channel,
                 conductor->context,
                 &conductor->counters_manager,
+                correlation_id,
                 status_indicator.counter_id) < 0)
             {
                 return NULL;
@@ -2171,6 +2177,7 @@ int aeron_driver_conductor_link_subscribable(
 
         if (counter_id >= 0)
         {
+            aeron_counters_manager_counter_owner_id(&conductor->counters_manager, counter_id, link->client_id);
             int64_t *position_addr = aeron_counters_manager_addr(&conductor->counters_manager, counter_id);
 
             if (aeron_driver_subscribable_add_position(subscribable, link, counter_id, position_addr, now_ns) >= 0)
@@ -2337,7 +2344,8 @@ int aeron_driver_conductor_on_add_network_publication(
     }
 
     // From here on the udp_channel is owned by the endpoint.
-    if ((endpoint = aeron_driver_conductor_get_or_add_send_channel_endpoint(conductor, udp_channel)) == NULL)
+    endpoint = aeron_driver_conductor_get_or_add_send_channel_endpoint(conductor, udp_channel, correlation_id);
+    if (NULL == endpoint)
     {
         return -1;
     }
@@ -2641,6 +2649,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
     size_t uri_length = command->channel_length;
+    int64_t correlation_id = command->correlated.correlation_id;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
 
@@ -2658,7 +2667,8 @@ int aeron_driver_conductor_on_add_network_subscription(
     }
 
     // From here on the udp_channel is owned by the endpoint.
-    if ((endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(conductor, udp_channel)) == NULL)
+    endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(conductor, udp_channel, correlation_id);
+    if (NULL == endpoint)
     {
         return -1;
     }
@@ -2714,7 +2724,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->has_session_id = params.has_session_id;
         link->session_id = params.session_id;
         link->client_id = command->correlated.client_id;
-        link->registration_id = command->correlated.correlation_id;
+        link->registration_id = correlation_id;
         link->is_reliable = params.is_reliable;
         link->is_sparse = params.is_sparse;
         link->is_tether = params.is_tether;
@@ -2725,7 +2735,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->subscribable_list.array = NULL;
 
         aeron_driver_conductor_on_subscription_ready(
-            conductor, command->correlated.correlation_id, endpoint->channel_status.counter_id);
+            conductor, correlation_id, endpoint->channel_status.counter_id);
 
         int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
@@ -3051,6 +3061,7 @@ int aeron_driver_conductor_on_add_receive_destination(
         udp_channel,
         conductor->context,
         &conductor->counters_manager,
+        command->registration_id,
         endpoint->channel_status.counter_id) < 0)
     {
         return -1;
@@ -3153,6 +3164,12 @@ int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, a
 
     if (counter_id >= 0)
     {
+        aeron_counters_manager_counter_registration_id(
+            &conductor->counters_manager, counter_id, command->correlated.correlation_id);
+
+        aeron_counters_manager_counter_owner_id(
+            &conductor->counters_manager, counter_id, command->correlated.client_id);
+
         int ensure_capacity_result = 0;
 
         AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->counter_links, aeron_counter_link_t);
@@ -3318,8 +3335,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 
     bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
     aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;
-    bool treat_as_multicast =
-        AERON_INFER == group_subscription ?
+    bool treat_as_multicast = AERON_INFER == group_subscription ?
         endpoint->conductor_fields.udp_channel->is_multicast : AERON_FORCE_TRUE == group_subscription;
 
     aeron_publication_image_t *image = NULL;

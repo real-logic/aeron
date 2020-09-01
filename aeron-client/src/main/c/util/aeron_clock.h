@@ -17,12 +17,16 @@
 #ifndef AERON_AERON_CLOCK_H
 #define AERON_AERON_CLOCK_H
 
-#include <stdint.h>
+#include "util/aeron_bitutil.h"
 
-/**
- * Opaque reference to a cached clock instance.
- */
-typedef struct aeron_clock_cache_stct aeron_clock_cache_t;
+typedef struct aeron_clock_cache_stct
+{
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
+    int64_t cached_epoch_time;
+    int64_t cached_nano_time;
+    uint8_t post_pad[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
+}
+aeron_clock_cache_t;
 
 /**
  * Update the cached clock with the current epoch and nano time values.
@@ -35,6 +39,7 @@ void aeron_clock_update_cached_time(aeron_clock_cache_t *cached_time, int64_t ep
 
 /**
  * Retrieves the cached epoch time from supplied cached clock.
+ *
  * @param cached_time 'this'
  * @return The current cached value for the epoch time.
  */
@@ -42,13 +47,15 @@ int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cached_time);
 
 /**
  * Retrieves the cached nano time from supplied cached clock.
+ *
  * @param cached_time 'this'
  * @return The current cached value for the nano time.
  */
 int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cached_time);
 
 /**
- * Allocate a cached clock
+ * Allocate a cached clock.
+ *
  * @param cached_time Pointer to the pointer to be initialised with the new cached clock
  * @return -1 if allocation fails, e.g. out of memory.
  */
@@ -56,6 +63,7 @@ int aeron_clock_cache_alloc(aeron_clock_cache_t **cached_time);
 
 /**
  * Free a cached clock.
+ *
  * @param cached_time
  */
 void aeron_clock_cache_free(aeron_clock_cache_t *cached_time);

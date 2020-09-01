@@ -29,16 +29,11 @@ extern "C"
 class CountersManagerTest : public testing::Test
 {
 public:
-    CountersManagerTest()
-    {
-        aeron_clock_cache_alloc(&m_cached_clock);
-        aeron_clock_update_cached_time(m_cached_clock, 0, 0);
-    }
+    CountersManagerTest() = default;
 
     ~CountersManagerTest() override
     {
         aeron_counters_manager_close(&m_manager);
-        aeron_clock_cache_free(m_cached_clock);
     }
 
     void SetUp() override
@@ -55,7 +50,7 @@ public:
             m_metadata.size(),
             m_values.data(),
             m_values.size(),
-            m_cached_clock,
+            &m_cached_clock,
             0);
     }
 
@@ -67,7 +62,7 @@ public:
             m_metadata.size(),
             m_values.data(),
             m_values.size(),
-            m_cached_clock,
+            &m_cached_clock,
             FREE_TO_REUSE_TIMEOUT_MS);
     }
 
@@ -75,7 +70,7 @@ public:
     std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_METADATA_LENGTH> m_metadata = {};
     std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_VALUE_LENGTH> m_values = {};
     aeron_counters_manager_t m_manager = {};
-    aeron_clock_cache_t *m_cached_clock = nullptr;
+    aeron_clock_cache_t m_cached_clock = {};
 };
 
 void func_should_never_be_called(
@@ -191,7 +186,7 @@ TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCoolDown)
 
     ASSERT_EQ(aeron_counters_manager_free(&m_manager, def), 0);
 
-    aeron_clock_update_cached_time(m_cached_clock, FREE_TO_REUSE_TIMEOUT_MS - 1, 0);
+    aeron_clock_update_cached_time(&m_cached_clock, FREE_TO_REUSE_TIMEOUT_MS - 1, 0);
     EXPECT_GT(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "the next label", 14), ghi);
 }
 
@@ -205,7 +200,7 @@ TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCoolDown)
 
     ASSERT_EQ(aeron_counters_manager_free(&m_manager, def), 0);
 
-    aeron_clock_update_cached_time(m_cached_clock, FREE_TO_REUSE_TIMEOUT_MS, 0);
+    aeron_clock_update_cached_time(&m_cached_clock, FREE_TO_REUSE_TIMEOUT_MS, 0);
     EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, "the next label", 14), def);
 }
 

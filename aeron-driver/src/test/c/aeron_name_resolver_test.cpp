@@ -37,17 +37,9 @@ class NameResolverTest : public testing::Test
 public:
     NameResolverTest()
     {
-        aeron_clock_cache_alloc(&m_cached_clock);
-        aeron_clock_update_cached_time(m_cached_clock, 0, 0);
-
         m_a.context = nullptr;
         m_b.context = nullptr;
         m_c.context = nullptr;
-    }
-
-    ~NameResolverTest() override
-    {
-        aeron_clock_cache_free(m_cached_clock);
     }
 
 protected:
@@ -98,7 +90,7 @@ protected:
             &resolver_fields->counters,
             &resolver_fields->counters_buffer[0], METADATA_LENGTH,
             &resolver_fields->counters_buffer[METADATA_LENGTH], VALUES_LENGTH,
-            m_cached_clock, 1000);
+            &m_cached_clock, 1000);
         aeron_system_counters_init(&resolver_fields->system_counters, &resolver_fields->counters);
 
         aeron_distinct_error_log_init(
@@ -196,7 +188,7 @@ protected:
     resolver_fields_t m_a = {};
     resolver_fields_t m_b = {};
     resolver_fields_t m_c = {};
-    aeron_clock_cache_t *m_cached_clock = nullptr;
+    aeron_clock_cache_t m_cached_clock = {};
 
 private:
     static void close(resolver_fields_t *resolver_fields)

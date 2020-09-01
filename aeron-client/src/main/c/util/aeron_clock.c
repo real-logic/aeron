@@ -21,7 +21,6 @@
 
 #include <time.h>
 #include "aeron_alloc.h"
-#include "util/aeron_bitutil.h"
 #include "util/aeron_clock.h"
 #include "concurrent/aeron_atomic.h"
 
@@ -123,15 +122,6 @@ int64_t aeron_epoch_clock()
 
     return ((int64_t)ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
-
-typedef struct aeron_clock_cache_stct
-{
-    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
-    int64_t cached_epoch_time;
-    int64_t cached_nano_time;
-    uint8_t post_pad[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
-}
-aeron_clock_cache_t;
 
 void aeron_clock_update_cached_time(aeron_clock_cache_t *cached_time, int64_t epoch_time, int64_t nano_time)
 {

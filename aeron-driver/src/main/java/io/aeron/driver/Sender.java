@@ -58,6 +58,8 @@ public class Sender extends SenderRhsPadding implements Agent
 {
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
+    private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;
+
     private final long statusMessageReadTimeoutNs;
     private final long reResolutionCheckIntervalNs;
     private final int dutyCycleRatio;
@@ -67,8 +69,6 @@ public class Sender extends SenderRhsPadding implements Agent
     private final AtomicCounter resolutionChanges;
     private final CachedNanoClock cachedNanoClock;
     private final DriverConductorProxy conductorProxy;
-
-    private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;
 
     public Sender(final MediaDriver.Context ctx)
     {

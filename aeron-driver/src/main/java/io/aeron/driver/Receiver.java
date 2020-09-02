@@ -207,8 +207,9 @@ public class Receiver implements Agent
             channelEndpoint.sendSetupElicitingStatusMessage(transportIndex, transport.explicitControlAddress(), 0, 0);
         }
 
-        for (final PublicationImage image : publicationImages)
+        for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
+            final PublicationImage image = publicationImages.get(i);
             if (channelEndpoint == image.channelEndpoint())
             {
                 image.addDestination(transportIndex, transport);
@@ -229,8 +230,9 @@ public class Receiver implements Agent
             CloseHelper.close(transport);
             dataTransportPoller.selectNowWithoutProcessing();
 
-            for (final PublicationImage image : publicationImages)
+            for (int i = 0, size = publicationImages.size(); i < size; i++)
             {
+                final PublicationImage image = publicationImages.get(i);
                 if (channelEndpoint == image.channelEndpoint())
                 {
                     image.removeDestination(transportIndex);
@@ -242,8 +244,7 @@ public class Receiver implements Agent
     public void onResolutionChange(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel channel, final InetSocketAddress newAddress)
     {
-        final int transportIndex = channelEndpoint.hasDestinationControl() ?
-            channelEndpoint.destination(channel) : 0;
+        final int transportIndex = channelEndpoint.hasDestinationControl() ? channelEndpoint.destination(channel) : 0;
 
         for (final PendingSetupMessageFromSource pending : this.pendingSetupMessages)
         {

@@ -24,8 +24,7 @@
 #include "concurrent/aeron_term_gap_filler.h"
 
 static void aeron_publication_image_connection_set_control_address(
-    aeron_publication_image_connection_t *connection,
-    const struct sockaddr_storage *control_address)
+    aeron_publication_image_connection_t *connection, const struct sockaddr_storage *control_address)
 {
     memcpy(
         &connection->resolved_control_address_for_implicit_unicast_channels,
@@ -472,9 +471,7 @@ static inline bool aeron_publication_image_connection_is_alive(
 }
 
 void aeron_publication_image_add_connection_if_unknown(
-    aeron_publication_image_t *image,
-    aeron_receive_destination_t *destination,
-    struct sockaddr_storage *src_addr)
+    aeron_publication_image_t *image, aeron_receive_destination_t *destination, struct sockaddr_storage *src_addr)
 {
     aeron_publication_image_track_connection(
         image, destination, src_addr, aeron_clock_cached_nano_time(image->cached_clock));

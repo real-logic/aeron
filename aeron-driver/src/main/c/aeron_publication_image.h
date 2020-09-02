@@ -212,7 +212,8 @@ inline bool aeron_publication_image_is_flow_control_under_run(aeron_publication_
     return is_flow_control_under_run;
 }
 
-inline bool aeron_publication_image_is_flow_control_over_run(aeron_publication_image_t *image, int64_t proposed_position)
+inline bool aeron_publication_image_is_flow_control_over_run(
+    aeron_publication_image_t *image, int64_t proposed_position)
 {
     const bool is_flow_control_over_run = proposed_position > image->last_sm_position_window_limit;
 

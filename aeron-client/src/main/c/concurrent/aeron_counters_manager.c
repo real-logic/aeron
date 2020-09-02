@@ -22,6 +22,10 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_error.h"
 
+#ifdef _MSC_VER
+#define _Static_assert static_assert
+#endif
+
 int aeron_counters_manager_init(
     aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,
@@ -93,6 +97,21 @@ int32_t aeron_counters_manager_allocate(
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_ALLOCATED);
 
     return counter_id;
+}
+
+int aeron_counters_reader_get_buffers(aeron_counters_reader_t *reader, aeron_counters_reader_buffers_t *buffers)
+{
+    buffers->values = reader->values;
+    buffers->metadata = reader->metadata;
+    buffers->values_length = reader->values_length;
+    buffers->metadata_length = reader->metadata_length;
+
+    return 0;
+}
+
+int32_t aeron_counters_reader_max_counter_id(aeron_counters_reader_t *reader)
+{
+    return reader->max_counter_id;
 }
 
 void aeron_counters_manager_counter_registration_id(
@@ -274,6 +293,9 @@ void aeron_counters_reader_foreach_counter(
             func(
                 aeron_counter_get_volatile(value_addr),
                 id,
+                record->type_id,
+                (const uint8_t *)record->key,
+                sizeof(record->key),
                 (const char *)record->label,
                 (size_t)label_length,
                 clientd);
@@ -289,7 +311,10 @@ void aeron_counters_reader_foreach_counter(
 
 extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *counters_manager, int32_t counter_id);
 
-extern int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id);
+int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id)
+{
+    return (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(counter_id));
+}
 
 int aeron_counters_reader_counter_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *registration_id)

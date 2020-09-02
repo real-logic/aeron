@@ -846,6 +846,7 @@ task copyCrashLogs(type: Copy) {
     from '.'
     include '**/build/test-output/**'
     include '**/hs_err*.log'
+    include '**/LastTest.log'
     include 'LICENSE'
     exclude 'build'
     into 'build/crash_logs'

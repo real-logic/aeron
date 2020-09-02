@@ -56,9 +56,7 @@ class SenderRhsPadding extends SenderHotFields
  */
 public class Sender extends SenderRhsPadding implements Agent
 {
-    private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
-
-    private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;
+    private NetworkPublication[] networkPublications = new NetworkPublication[0];
 
     private final long statusMessageReadTimeoutNs;
     private final long reResolutionCheckIntervalNs;

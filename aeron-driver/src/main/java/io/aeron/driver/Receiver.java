@@ -43,7 +43,7 @@ public class Receiver implements Agent
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
     private final CachedNanoClock cachedNanoClock;
-    private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
+    private PublicationImage[] publicationImages = new PublicationImage[0];
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
     private final long reResolutionCheckIntervalNs;
@@ -78,10 +78,10 @@ public class Receiver implements Agent
         totalBytesReceived.getAndAddOrdered(bytesReceived);
         final long nowNs = cachedNanoClock.nanoTime();
 
-        final ArrayList<PublicationImage> publicationImages = this.publicationImages;
-        for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
+        final PublicationImage[] publicationImages = this.publicationImages;
+        for (int lastIndex = publicationImages.length - 1, i = lastIndex; i >= 0; i--)
         {
-            final PublicationImage image = publicationImages.get(i);
+            final PublicationImage image = publicationImages[i];
             if (image.hasActivityAndNotEndOfStream(nowNs))
             {
                 workCount += image.sendPendingStatusMessage();
@@ -90,8 +90,8 @@ public class Receiver implements Agent
             }
             else
             {
-                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex--);
                 image.removeFromDispatcher();
+                this.publicationImages = ArrayUtil.remove(this.publicationImages, i);
             }
         }
 
@@ -145,7 +145,7 @@ public class Receiver implements Agent
 
     public void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
-        publicationImages.add(image);
+        publicationImages = ArrayUtil.add(publicationImages, image);
         channelEndpoint.addPublicationImage(image);
     }
 
@@ -207,9 +207,8 @@ public class Receiver implements Agent
             channelEndpoint.sendSetupElicitingStatusMessage(transportIndex, transport.explicitControlAddress(), 0, 0);
         }
 
-        for (int i = 0, size = publicationImages.size(); i < size; i++)
+        for (final PublicationImage image : publicationImages)
         {
-            final PublicationImage image = publicationImages.get(i);
             if (channelEndpoint == image.channelEndpoint())
             {
                 image.addDestination(transportIndex, transport);
@@ -230,9 +229,8 @@ public class Receiver implements Agent
             CloseHelper.close(transport);
             dataTransportPoller.selectNowWithoutProcessing();
 
-            for (int i = 0, size = publicationImages.size(); i < size; i++)
+            for (final PublicationImage image : publicationImages)
             {
-                final PublicationImage image = publicationImages.get(i);
                 if (channelEndpoint == image.channelEndpoint())
                 {
                     image.removeDestination(transportIndex);
@@ -246,7 +244,7 @@ public class Receiver implements Agent
     {
         final int transportIndex = channelEndpoint.hasDestinationControl() ? channelEndpoint.destination(channel) : 0;
 
-        for (final PendingSetupMessageFromSource pending : this.pendingSetupMessages)
+        for (final PendingSetupMessageFromSource pending : pendingSetupMessages)
         {
             if (pending.channelEndpoint() == channelEndpoint &&
                 pending.isPeriodic() &&

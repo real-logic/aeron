@@ -982,10 +982,13 @@ public class PublicationImage
             }
         }
 
-        final UnsafeBuffer metaDataBuffer = rawLog.metaData();
-        if (metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
+        if (!rawLog.isInactive())
         {
-            LogBufferDescriptor.activeTransportCount(metaDataBuffer, activeTransportCount);
+            final UnsafeBuffer metaDataBuffer = rawLog.metaData();
+            if (metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
+            {
+                LogBufferDescriptor.activeTransportCount(metaDataBuffer, activeTransportCount);
+            }
         }
     }
 

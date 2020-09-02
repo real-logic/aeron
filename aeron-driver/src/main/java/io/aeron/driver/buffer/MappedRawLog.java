@@ -141,14 +141,11 @@ class MappedRawLog implements RawLog
         final MappedByteBuffer[] mappedBuffers = this.mappedBuffers;
         if (null != mappedBuffers)
         {
+            this.mappedBuffers = null;
             for (int i = 0; i < mappedBuffers.length; i++)
             {
-                final MappedByteBuffer buffer = mappedBuffers[i];
-                mappedBuffers[i] = null;
-                IoUtil.unmap(buffer);
+                IoUtil.unmap(mappedBuffers[i]);
             }
-
-            this.mappedBuffers = null;
         }
 
         if (null != logFile)

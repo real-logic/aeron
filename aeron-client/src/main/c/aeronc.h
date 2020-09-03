@@ -34,6 +34,7 @@ typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
 typedef struct aeron_publication_stct aeron_publication_t;
 typedef struct aeron_exclusive_publication_stct aeron_exclusive_publication_t;
 typedef struct aeron_header_stct aeron_header_t;
+
 #pragma pack(push)
 #pragma pack(4)
 typedef struct aeron_header_values_frame_stct
@@ -154,7 +155,7 @@ void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *co
  * Function called by aeron_client_t to deliver notification that the media driver has added an aeron_subscription_t
  * successfully.
  *
- * Implementations should do the minimum work for passing off state to another thread for later processing.
+ * Implementations should do the minimum work for handing off state to another thread for later processing.
  *
  * @param clientd to be returned in the call
  * @param async associated with the original aeron_add_async_subscription call
@@ -318,7 +319,7 @@ void aeron_main_idle_strategy(aeron_t *client, int work_count);
 int aeron_close(aeron_t *client);
 
 /**
- * Determines if the client has been closed, e.g. via a driver timeout.  Don't call this method after calling
+ * Determines if the client has been closed, e.g. via a driver timeout. Don't call this method after calling
  * aeron_close as that will have already freed the associated memory.
  *
  * @param client to check if closed.
@@ -326,15 +327,15 @@ int aeron_close(aeron_t *client);
  */
 bool aeron_is_closed(aeron_t *client);
 
-/*
+/**
  * Aeron API functions
  */
 
 /**
  * Call stream_out to print the counter labels and values.
  *
- * @param client to get the counters from
- * @param stream_out to call for each label and value
+ * @param client to get the counters from.
+ * @param stream_out to call for each label and value.
  */
 void aeron_print_counters(aeron_t *client, void (*stream_out)(const char *));
 
@@ -568,7 +569,7 @@ int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
  */
 int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair);
 
-/*
+/**
  * Counters Reader functions and definitions
  */
 
@@ -624,7 +625,6 @@ aeron_counter_metadata_descriptor_t;
 #define AERON_COUNTER_OFFSET(id) ((id) * AERON_COUNTER_VALUE_LENGTH)
 #define AERON_COUNTER_METADATA_OFFSET(id) ((id) * AERON_COUNTER_METADATA_LENGTH)
 
-
 typedef struct aeron_counters_reader_buffers_stct
 {
     uint8_t *values;
@@ -670,9 +670,7 @@ typedef void (*aeron_counters_reader_foreach_counter_func_t)(
  * @param clientd to pass for each call to func.
  */
 void aeron_counters_reader_foreach_counter(
-    aeron_counters_reader_t *counters_reader,
-    aeron_counters_reader_foreach_counter_func_t func,
-    void *clientd);
+    aeron_counters_reader_t *counters_reader, aeron_counters_reader_foreach_counter_func_t func, void *clientd);
 
 /**
  * Get the current max counter id.
@@ -691,9 +689,25 @@ int32_t aeron_counters_reader_max_counter_id(aeron_counters_reader_t *reader);
  */
 int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id);
 
+/**
+ * Get the registration id assigned to a counter.
+ *
+ * @param counters_reader representing the this pointer.
+ * @param counter_id      for which the registration id requested.
+ * @param registration_id pointer for value to be set on success.
+ * @return -1 on failure, 0 on success.
+ */
 int aeron_counters_reader_counter_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *registration_id);
 
+/**
+ * Get the owner id assigned to a counter which will typically be the client id.
+ *
+ * @param counters_reader representing the this pointer.
+ * @param counter_id      for which the registration id requested.
+ * @param owner_id        pointer for value to be set on success.
+ * @return -1 on failure, 0 on success.
+ */
 int aeron_counters_reader_counter_owner_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *owner_id);
 
@@ -720,17 +734,17 @@ int aeron_counters_reader_counter_label(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length);
 
 /**
- * Get the free for reuse deadline (ms) for a counter
+ * Get the free for reuse deadline (ms) for a counter.
  *
- * @param counters_reader that contains the counter
- * @param counter_id to find
- * @param deadline_ms output value to store the deadline
+ * @param counters_reader that contains the counter.
+ * @param counter_id to find.
+ * @param deadline_ms output value to store the deadline.
  * @return -1 on failure, 0 on success.
  */
 int aeron_counters_reader_free_for_reuse_deadline_ms(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *deadline_ms);
 
-/*
+/**
  * Publication functions
  */
 
@@ -1091,12 +1105,12 @@ int aeron_exclusive_publication_async_remove_destination(
 int aeron_exclusive_publication_async_destination_poll(aeron_async_destination_t *async);
 
 /**
- * Asynchronously close the publication.  Will callback on the on_complete notification when the subscription is closed.
+ * Asynchronously close the publication. Will callback on the on_complete notification when the subscription is closed.
  * The callback is optional, use NULL for the on_complete callback if not required.
  *
  * @param publication to close
- * @param on_close_complete optional callback to execute once the subscription has been closed and freed.  This may happen on a
- * separate thread, so the caller should ensure that clientd has the appropriate lifetime.
+ * @param on_close_complete optional callback to execute once the subscription has been closed and freed. This may
+ * happen on a separate thread, so the caller should ensure that clientd has the appropriate lifetime.
  * @param on_close_complete_clientd parameter to pass to the on_complete callback.
  * @return 0 for success or -1 for error.
  */
@@ -1164,9 +1178,7 @@ int64_t aeron_exclusive_publication_offerv(
  * @return the new stream position otherwise a negative error value.
  */
 int64_t aeron_exclusive_publication_try_claim(
-    aeron_exclusive_publication_t *publication,
-    size_t length,
-    aeron_buffer_claim_t *buffer_claim);
+    aeron_exclusive_publication_t *publication, size_t length, aeron_buffer_claim_t *buffer_claim);
 
 /**
  * Append a padding record log of a given length to make up the log to a position.
@@ -1174,9 +1186,7 @@ int64_t aeron_exclusive_publication_try_claim(
  * @param length of the range to claim, in bytes.
  * @return the new stream position otherwise a negative error value.
  */
-int64_t aeron_exclusive_publication_append_padding(
-    aeron_exclusive_publication_t *publication,
-    size_t length);
+int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t *publication, size_t length);
 
 /**
  * Offer a block of pre-formatted message fragments directly into the current term.
@@ -1187,9 +1197,7 @@ int64_t aeron_exclusive_publication_append_padding(
  * @return the new stream position otherwise a negative error value.
  */
 int64_t aeron_exclusive_publication_offer_block(
-    aeron_exclusive_publication_t *publication,
-    const uint8_t *buffer,
-    size_t length);
+    aeron_exclusive_publication_t *publication, const uint8_t *buffer, size_t length);
 
 /**
  * Get the status of the media channel for this publication.
@@ -1206,7 +1214,7 @@ int64_t aeron_exclusive_publication_channel_status(aeron_exclusive_publication_t
  *
  * @param publication to get the constants for.
  * @param constants structure to fill in with the constants
- * @return 0 for succes and -1 for error.
+ * @return 0 for success and -1 for error.
  */
 int aeron_exclusive_publication_constants(
     aeron_exclusive_publication_t *publication, aeron_publication_constants_t *constants);
@@ -1256,7 +1264,7 @@ bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *public
  */
 bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication);
 
-/*
+/**
  * Subscription functions
  *
  * Aeron Subscriber API for receiving a reconstructed image for a stream of messages from publishers on
@@ -1344,8 +1352,7 @@ typedef void (*aeron_block_handler_t)(
     void *clientd, const uint8_t *buffer, size_t length, int32_t session_id, int32_t term_id);
 
 /**
- * Get all of the field values from the header. This will do a memcpy into the supplied
- * header_values_t pointer.
+ * Get all of the field values from the header. This will do a memcpy into the supplied header_values_t pointer.
  *
  * @param header to read values from.
  * @param values to copy values to, must not be null.
@@ -1563,10 +1570,7 @@ int aeron_subscription_async_add_destination(
  * @return 0 for success and -1 for error.
  */
 int aeron_subscription_async_remove_destination(
-    aeron_async_destination_t **async,
-    aeron_t *client,
-    aeron_subscription_t *subscription,
-    const char *uri);
+    aeron_async_destination_t **async, aeron_t *client, aeron_subscription_t *subscription, const char *uri);
 
 /**
  * Poll the completion of add/remove of a destination to/from a subscription.
@@ -1577,16 +1581,17 @@ int aeron_subscription_async_remove_destination(
 int aeron_subscription_async_destination_poll(aeron_async_destination_t *async);
 
 /**
- * Asynchronously close the subscription.  Will callback on the on_complete notification when the subscription is closed.
- * The callback is optional, use NULL for the on_complete callback if not required.
+ * Asynchronously close the subscription. Will callback on the on_complete notification when the subscription is
+ * closed. The callback is optional, use NULL for the on_complete callback if not required.
  *
  * @param subscription to close
- * @param on_close_complete optional callback to execute once the subscription has been closed and freed.  This may happen on a
- * separate thread, so the caller should ensure that clientd has the appropriate lifetime.
+ * @param on_close_complete optional callback to execute once the subscription has been closed and freed. This may
+ * happen on a separate thread, so the caller should ensure that clientd has the appropriate lifetime.
  * @param on_close_complete_clientd parameter to pass to the on_complete callback.
  * @return 0 for success or -1 for error.
  */
-int aeron_subscription_close(aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
+int aeron_subscription_close(
+    aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
 /**
  * Image Functions
@@ -1838,9 +1843,7 @@ bool aeron_image_is_closed(aeron_image_t *image);
  * @return 0 for success and -1 for error.
  */
 int aeron_image_fragment_assembler_create(
-    aeron_image_fragment_assembler_t **assembler,
-    aeron_fragment_handler_t delegate,
-    void *delegate_clientd);
+    aeron_image_fragment_assembler_t **assembler, aeron_fragment_handler_t delegate, void *delegate_clientd);
 
 /**
  * Delete an image fragment assembler.
@@ -1903,9 +1906,7 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assem
  * @return 0 for success and -1 for error.
  */
 int aeron_fragment_assembler_create(
-    aeron_fragment_assembler_t **assembler,
-    aeron_fragment_handler_t delegate,
-    void *delegate_clientd);
+    aeron_fragment_assembler_t **assembler, aeron_fragment_handler_t delegate, void *delegate_clientd);
 
 /**
  * Delete a fragment assembler.
@@ -1959,9 +1960,9 @@ int aeron_controlled_fragment_assembler_delete(aeron_controlled_fragment_assembl
 aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_handler(
     void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
-/*
-* Counter functions
-*/
+/**
+ * Counter functions
+ */
 
 /**
  * Return a pointer to the counter value.
@@ -2004,9 +2005,7 @@ int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t 
  * @return 0 for success or -1 for error.
  */
 int aeron_counter_close(
-    aeron_counter_t *counter,
-    aeron_notification_t on_close_complete,
-    void *on_close_complete_clientd);
+    aeron_counter_t *counter, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
 /**
  * Check if the counter is closed
@@ -2129,16 +2128,17 @@ int aeron_errcode();
 const char *aeron_errmsg();
 
 /**
- * Get the default path used by the Aeron media driver
+ * Get the default path used by the Aeron media driver.
+ *
  * @param path buffer to store the path.
  * @param path_length space available in the buffer
- * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`.  If this
+ * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`. If this
  * is equal to path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);
 
 /**
- * Gets the registration id for addition of the counter.  Note that using this after a call to poll the succeeds or
+ * Gets the registration id for addition of the counter. Note that using this after a call to poll the succeeds or
  * errors is undefined behaviour.  As the async_add_counter_t may have been freed.
  *
  * @param add_counter used to check for completion.
@@ -2147,8 +2147,8 @@ int aeron_default_path(char *path, size_t path_length);
 int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *add_counter);
 
 /**
- * Gets the registration id for addition of the publication.  Note that using this after a call to poll the succeeds or
- * errors is undefined behaviour.  As the async_add_publication_t may have been freed.
+ * Gets the registration id for addition of the publication. Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour. As the async_add_publication_t may have been freed.
  *
  * @param add_publication used to check for completion.
  * @return registration id for the publication.
@@ -2156,8 +2156,8 @@ int64_t aeron_async_add_counter_get_registration_id(aeron_async_add_counter_t *a
 int64_t aeron_async_add_publication_get_registration_id(aeron_async_add_publication_t *add_publication);
 
 /**
- * Gets the registration id for addition of the exclusive_publication.  Note that using this after a call to poll the succeeds or
- * errors is undefined behaviour.  As the async_add_exclusive_publication_t may have been freed.
+ * Gets the registration id for addition of the exclusive_publication. Note that using this after a call to poll the
+ * succeeds or errors is undefined behaviour. As the async_add_exclusive_publication_t may have been freed.
  *
  * @param add_exclusive_publication used to check for completion.
  * @return registration id for the exclusive_publication.
@@ -2166,8 +2166,8 @@ int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
     aeron_async_add_exclusive_publication_t *add_exclusive_publication);
 
 /**
- * Gets the registration id for addition of the subscription.  Note that using this after a call to poll the succeeds or
- * errors is undefined behaviour.  As the async_add_subscription_t may have been freed.
+ * Gets the registration id for addition of the subscription. Note that using this after a call to poll the succeeds or
+ * errors is undefined behaviour. As the async_add_subscription_t may have been freed.
  *
  * @param add_subscription used to check for completion.
  * @return registration id for the subscription.
@@ -2175,7 +2175,7 @@ int64_t aeron_async_add_exclusive_exclusive_publication_get_registration_id(
 int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscription_t *add_subscription);
 
 /**
- * Gets the registration_id for the destination command supplied.  Note that this is the correlation_id used for
+ * Gets the registration_id for the destination command supplied. Note that this is the correlation_id used for
  * the specified destination command, not the registration_id for the original parent resource (publication,
  * subscription).
  *
@@ -2184,6 +2184,14 @@ int64_t aeron_async_add_subscription_get_registration_id(aeron_async_add_subscri
  */
 int64_t aeron_async_destination_get_registration_id(aeron_async_destination_t *async_destination);
 
+/**
+ * Request the media driver terminates operation and closes all resources.
+ *
+ * @param directory    in which the media driver is running.
+ * @param token_buffer containing the authentication token confirming the client is allowed to terminate the driver.
+ * @param token_length of the token in the buffer.
+ * @return
+ */
 int aeron_context_request_driver_termination(const char *directory, const uint8_t *token_buffer, size_t token_length);
 
 #ifdef __cplusplus

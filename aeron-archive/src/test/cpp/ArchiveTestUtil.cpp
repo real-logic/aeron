@@ -24,7 +24,6 @@
 #define NOMINMAX
 #endif // !NOMINMAX
 #include <Windows.h>
-#include "StringUtil.h"
 #endif
 
 namespace aeron { namespace test {

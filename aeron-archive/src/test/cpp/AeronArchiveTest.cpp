@@ -43,7 +43,7 @@ typedef intptr_t pid_t;
 #include "client/RecordingEventsAdapter.h"
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
-#include "util/MemoryMappedFile.h"
+#include "ArchiveTestUtil.h"
 
 using namespace aeron;
 using namespace aeron::util;
@@ -178,7 +178,7 @@ public:
                 m_stream << "Waiting for driver termination" << std::endl;
 
                 const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-                while (-1 != MemoryMappedFile::getFileSize(cncFilename.c_str()))
+                while (test::fileExists(cncFilename.c_str()))
                 {
                     std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
                 }

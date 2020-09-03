@@ -18,7 +18,6 @@
 #define AERON_CNC_FILE_DESCRIPTOR_H
 
 #include "util/Index.h"
-#include "util/MemoryMappedFile.h"
 #include "util/MacroUtil.h"
 #include "concurrent/AtomicBuffer.h"
 

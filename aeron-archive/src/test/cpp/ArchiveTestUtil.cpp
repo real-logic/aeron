@@ -13,31 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_UTIL_MEMORY_MAPPED_FILE_H
-#define AERON_UTIL_MEMORY_MAPPED_FILE_H
 
-#include <cstdint>
-#include "util/Export.h"
+#include "ArchiveTestUtil.h"
 
-extern "C"
+#ifndef _WIN32
+#include <sys/stat.h>
+#include <fcntl.h>
+#else
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif // !NOMINMAX
+#include <Windows.h>
+#include "StringUtil.h"
+#endif
+
+namespace aeron { namespace test {
+
+bool fileExists(const char *path)
 {
-#include "util/aeron_fileutil.h"
+    struct stat statInfo{};
+    return ::stat(path, &statInfo) == 0;
 }
 
-namespace aeron { namespace util
-{
-
-class CLIENT_EXPORT MemoryMappedFile
-{
-public:
-    typedef std::shared_ptr<MemoryMappedFile> ptr_t;
-
-    static std::int64_t getFileSize(const char *filename)
-    {
-        return aeron_file_length(filename);
-    }
-};
-
 }}
-
-#endif

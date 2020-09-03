@@ -18,8 +18,7 @@ package io.aeron.test;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
-import org.agrona.IoUtil;
-import org.agrona.SystemUtil;
+import org.agrona.*;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 
@@ -75,8 +74,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             terminateDriver();
             if (!aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
             {
-                aeronMediaDriverProcess.destroyForcibly();
-                throw new RuntimeException("Failed to shutdown cleaning, forcing close");
+                aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
+                throw new RuntimeException("Failed to shutdown cleanly, forced close");
             }
 
             if (null != driverOutputConsumer)
@@ -166,15 +165,10 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         try
         {
-            final File stdoutFile;
-            final File stderrFile;
+            File stdoutFile = NULL_FILE;
+            File stderrFile = NULL_FILE;
 
-            if (null == driverOutputConsumer)
-            {
-                stdoutFile = NULL_FILE;
-                stderrFile = NULL_FILE;
-            }
-            else
+            if (null != driverOutputConsumer)
             {
                 stdoutFile = File.createTempFile("CTestMediaDriver-", ".out");
                 final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
@@ -191,7 +185,8 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
+            return null;
         }
     }
 

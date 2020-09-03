@@ -28,10 +28,18 @@
 
 namespace aeron { namespace test {
 
+#ifndef _WIN32
 bool fileExists(const char *path)
 {
     struct stat statInfo{};
     return ::stat(path, &statInfo) == 0;
 }
+#else
+bool fileExists(const char *path)
+{
+    DWORD dwAttrib = GetFileAttributes(path);
+    return dwAttrib != INVALID_FILE_ATTRIBUTES;
+}
+#endif
 
 }}

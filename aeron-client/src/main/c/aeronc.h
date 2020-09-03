@@ -648,17 +648,6 @@ aeron_counters_reader_buffers_t;
  */
 int aeron_counters_reader_get_buffers(aeron_counters_reader_t *reader, aeron_counters_reader_buffers_t *buffers);
 
-typedef struct aeron_counters_reader_buffers_stct
-{
-    uint8_t *values;
-    uint8_t *metadata;
-    size_t values_length;
-    size_t metadata_length;
-}
-aeron_counters_reader_buffers_t;
-
-int aeron_counters_reader_get_buffers(aeron_counters_reader_t *reader, aeron_counters_reader_buffers_t *buffers);
-
 /**
  * Function called by aeron_counters_reader_foreach_counter for each counter in the aeron_counters_reader_t.
  *

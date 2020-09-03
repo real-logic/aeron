@@ -226,8 +226,6 @@ protected:
         }
     }
 
-    // typedef std::function<void(std::int32_t, std::int32_t, const AtomicBuffer&, const std::string&)> on_counters_metadata_t;
-
     template<typename H>
     static void forEachCounter(
         int64_t value,

@@ -308,14 +308,12 @@ public class ArchiveTest
         final int recordingStreamId = archive.context().recordingEventsStreamId();
 
         final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
-        Tests.awaitConnected(recordingEvents);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
         final Publication recordedPublication = client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
-
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();
         final int initialTermId = recordedPublication.initialTermId();
@@ -389,7 +387,7 @@ public class ArchiveTest
         final long requestStopCorrelationId = correlationId++;
         if (!archiveProxy.stopRecording(publishUri, PUBLISH_STREAM_ID, requestStopCorrelationId, controlSessionId))
         {
-            throw new IllegalStateException("Failed to stop recording");
+            throw new IllegalStateException("failed to send stop recording");
         }
 
         ArchiveTests.awaitOk(controlResponse, requestStopCorrelationId);
@@ -421,9 +419,7 @@ public class ArchiveTest
     }
 
     private void prePublicationActionsAndVerifications(
-        final ArchiveProxy archiveProxy,
-        final Publication controlPublication,
-        final Subscription recordingEvents)
+        final ArchiveProxy archiveProxy, final Publication controlPublication, final Subscription recordingEvents)
     {
         Tests.awaitConnected(controlPublication);
         Tests.awaitConnected(recordingEvents);
@@ -432,7 +428,6 @@ public class ArchiveTest
         final long connectCorrelationId = correlationId++;
         assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
-        Tests.awaitConnected(controlResponse);
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
@@ -444,7 +439,7 @@ public class ArchiveTest
             startRecordingCorrelationId,
             controlSessionId))
         {
-            throw new IllegalStateException("Failed to start recording");
+            throw new IllegalStateException("failed to start recording");
         }
 
         ArchiveTests.awaitOk(controlResponse, startRecordingCorrelationId);
@@ -609,7 +604,7 @@ public class ArchiveTest
                 replayCorrelationId,
                 controlSessionId))
             {
-                throw new IllegalStateException("Failed to replay");
+                throw new IllegalStateException("failed to replay");
             }
 
             ArchiveTests.awaitOk(controlResponse, replayCorrelationId);
@@ -682,7 +677,7 @@ public class ArchiveTest
             final int expectedLength = messageLengths[messageCount] - HEADER_LENGTH;
             if (length != expectedLength)
             {
-                fail("Message length=" + length + " expected=" + expectedLength + " messageCount=" + messageCount);
+                fail("messageLength=" + length + " expected=" + expectedLength + " messageCount=" + messageCount);
             }
 
             assertEquals(messageCount, buffer.getInt(offset));

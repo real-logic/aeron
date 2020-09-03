@@ -37,7 +37,7 @@ public class ArchiveTests
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive-test");
         if (archiveDir.exists())
         {
-            System.err.println("Warning archive directory exists, deleting: " + archiveDir.getAbsolutePath());
+            System.err.println("warning - archive directory exists, deleting: " + archiveDir.getAbsolutePath());
             IoUtil.delete(archiveDir, false);
         }
 
@@ -50,9 +50,7 @@ public class ArchiveTests
     }
 
     public static void awaitConnectedReply(
-        final Subscription controlResponse,
-        final long expectedCorrelationId,
-        final LongConsumer receiveSessionId)
+        final Subscription controlResponse, final long expectedCorrelationId, final LongConsumer receiveSessionId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -153,7 +151,6 @@ public class ArchiveTests
             {
                 System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
             }
-
         };
     }
 }

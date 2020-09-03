@@ -432,6 +432,7 @@ public class Aeron implements AutoCloseable
      * @return true if found and removed otherwise false.
      * @deprecated please use {@link #removeAvailableCounterHandler(long)}.
      */
+    @Deprecated
     public boolean removeAvailableCounterHandler(final AvailableCounterHandler handler)
     {
         return conductor.removeAvailableCounterHandler(handler);
@@ -466,6 +467,7 @@ public class Aeron implements AutoCloseable
      * @return true if found and removed otherwise false.
      * @deprecated please use {@link #removeUnavailableCounterHandler(long)}.
      */
+    @Deprecated
     public boolean removeUnavailableCounterHandler(final UnavailableCounterHandler handler)
     {
         return conductor.removeUnavailableCounterHandler(handler);
@@ -500,6 +502,7 @@ public class Aeron implements AutoCloseable
      * @return true if found and removed otherwise false.
      * @deprecated please use {@link #removeCloseHandler(long)}.
      */
+    @Deprecated
     public boolean removeCloseHandler(final Runnable handler)
     {
         return conductor.removeCloseHandler(handler);

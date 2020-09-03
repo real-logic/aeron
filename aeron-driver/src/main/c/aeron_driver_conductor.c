@@ -516,6 +516,14 @@ void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *condu
     aeron_driver_conductor_unlink_all_subscribable(conductor, link);
 }
 
+void aeron_driver_conductor_error(
+        aeron_driver_conductor_t *conductor, int error_code, const char *description, const char *message)
+{
+    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
+    aeron_counter_increment(conductor->errors_counter, 1);
+    aeron_set_err(0, "%s", "no error");
+}
+
 void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *client)
 {
     for (size_t i = 0; i < client->publication_links.length; i++)
@@ -611,38 +619,56 @@ void aeron_driver_conductor_on_available_image(
     const char *source_identity,
     size_t source_identity_length)
 {
-    char response_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
-    char *ptr = response_buffer;
-    aeron_image_buffers_ready_t *response;
-    size_t response_length =
+    const size_t response_length =
         sizeof(aeron_image_buffers_ready_t) +
         AERON_ALIGN(log_file_name_length, sizeof(int32_t)) +
         source_identity_length +
         (2 * sizeof(int32_t));
 
-    response = (aeron_image_buffers_ready_t *)ptr;
+    const size_t static_buffer_length = sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH);
+    char static_buffer[static_buffer_length];
+    char *response_buffer = static_buffer;
+    char *dynamic_buffer = NULL;
+    if (response_length > static_buffer_length)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        {
+            char error_message[AERON_MAX_PATH];
+            int os_errno = aeron_errcode();
+            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
+
+            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
+            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            return;
+        }
+        response_buffer = dynamic_buffer;
+    }
+
+    aeron_image_buffers_ready_t *response = (aeron_image_buffers_ready_t *)response_buffer;
 
     response->correlation_id = correlation_id;
     response->stream_id = stream_id;
     response->session_id = session_id;
     response->subscriber_position_id = subscriber_position_id;
     response->subscriber_registration_id = subscriber_registration_id;
-    ptr += sizeof(aeron_image_buffers_ready_t);
+    response_buffer += sizeof(aeron_image_buffers_ready_t);
 
     int32_t length_field;
 
     length_field = (int32_t)log_file_name_length;
-    memcpy(ptr, &length_field, sizeof(length_field));
-    ptr += sizeof(int32_t);
-    memcpy(ptr, log_file_name, log_file_name_length);
-    ptr += AERON_ALIGN(log_file_name_length, sizeof(int32_t));
+    memcpy(response_buffer, &length_field, sizeof(length_field));
+    response_buffer += sizeof(int32_t);
+    memcpy(response_buffer, log_file_name, log_file_name_length);
+    response_buffer += AERON_ALIGN(log_file_name_length, sizeof(int32_t));
 
     length_field = (int32_t)source_identity_length;
-    memcpy(ptr, &length_field, sizeof(length_field));
-    ptr += sizeof(int32_t);
-    memcpy(ptr, source_identity, source_identity_length);
+    memcpy(response_buffer, &length_field, sizeof(length_field));
+    response_buffer += sizeof(int32_t);
+    memcpy(response_buffer, source_identity, source_identity_length);
 
     aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_AVAILABLE_IMAGE, response, response_length);
+    aeron_free(dynamic_buffer);
 }
 
 void aeron_ipc_publication_entry_on_time_event(
@@ -1604,7 +1630,13 @@ void aeron_driver_conductor_client_transmit(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *msg, size_t length)
 {
     conductor->context->to_client_interceptor_func(conductor, msg_type_id, msg, length);
-    aeron_broadcast_transmitter_transmit(&conductor->to_clients, msg_type_id, msg, length);
+    if (aeron_broadcast_transmitter_transmit(&conductor->to_clients, msg_type_id, msg, length) < 0)
+    {
+        char error_message[AERON_MAX_PATH];
+
+        AERON_FORMAT_BUFFER(error_message, "msg_type_id=%d,  length=%" PRIu32, msg_type_id, (uint32_t) length);
+        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_GENERIC_ERROR, "failed to transmit message", error_message);
+    }
 }
 
 void aeron_driver_conductor_on_error(
@@ -1614,7 +1646,28 @@ void aeron_driver_conductor_on_error(
     size_t length,
     int64_t correlation_id)
 {
-    char response_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
+    const size_t response_length = sizeof(aeron_error_response_t) + length;
+
+    const size_t static_buffer_length = sizeof(aeron_error_response_t) + AERON_MAX_PATH;
+    char static_buffer[static_buffer_length];
+    char *response_buffer = static_buffer;
+    char *dynamic_buffer = NULL;
+    if (response_length > static_buffer_length)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        {
+            char error_message[AERON_MAX_PATH];
+            int os_errno = aeron_errcode();
+            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
+
+            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
+            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            return;
+        }
+        response_buffer = dynamic_buffer;
+    }
+
     aeron_error_response_t *response = (aeron_error_response_t *)response_buffer;
 
     response->offending_command_correlation_id = correlation_id;
@@ -1622,8 +1675,8 @@ void aeron_driver_conductor_on_error(
     response->error_message_length = (int32_t)length;
     memcpy(response_buffer + sizeof(aeron_error_response_t), message, length);
 
-    aeron_driver_conductor_client_transmit(
-        conductor, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
+    aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_ERROR, response, response_length);
+    aeron_free(dynamic_buffer);
 }
 
 void aeron_driver_conductor_on_publication_ready(
@@ -1638,7 +1691,28 @@ void aeron_driver_conductor_on_publication_ready(
     const char *log_file_name,
     size_t log_file_name_length)
 {
-    char response_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
+    const size_t response_length = sizeof(aeron_publication_buffers_ready_t) + log_file_name_length;
+
+    const size_t static_buffer_length = sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH;
+    char static_buffer[static_buffer_length];
+    char *response_buffer = static_buffer;
+    char *dynamic_buffer = NULL;
+    if (response_length > static_buffer_length)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        {
+            char error_message[AERON_MAX_PATH];
+            int os_errno = aeron_errcode();
+            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
+
+            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
+            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            return;
+        }
+        response_buffer = dynamic_buffer;
+    }
+
     aeron_publication_buffers_ready_t *response = (aeron_publication_buffers_ready_t *)response_buffer;
 
     response->correlation_id = registration_id;
@@ -1654,7 +1728,8 @@ void aeron_driver_conductor_on_publication_ready(
         conductor,
         is_exclusive ? AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY : AERON_RESPONSE_ON_PUBLICATION_READY,
         response,
-        sizeof(aeron_publication_buffers_ready_t) + log_file_name_length);
+        response_length);
+    aeron_free(dynamic_buffer);
 }
 
 void aeron_driver_conductor_on_subscription_ready(
@@ -1726,7 +1801,28 @@ void aeron_driver_conductor_on_unavailable_image(
     const char *channel,
     size_t channel_length)
 {
-    char response_buffer[sizeof(aeron_image_message_t) + AERON_MAX_PATH];
+    const size_t response_length = sizeof(aeron_image_message_t) + channel_length;
+
+    const size_t static_buffer_length = sizeof(aeron_image_message_t) + AERON_MAX_PATH;
+    char static_buffer[static_buffer_length];
+    char *response_buffer = static_buffer;
+    char *dynamic_buffer = NULL;
+    if (response_length > static_buffer_length)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        {
+            char error_message[AERON_MAX_PATH];
+            int os_errno = aeron_errcode();
+            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
+
+            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
+            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            return;
+        }
+        response_buffer = dynamic_buffer;
+    }
+
     aeron_image_message_t *response = (aeron_image_message_t *)response_buffer;
 
     response->correlation_id = correlation_id;
@@ -1735,16 +1831,8 @@ void aeron_driver_conductor_on_unavailable_image(
     response->channel_length = (int32_t)channel_length;
     memcpy(response_buffer + sizeof(aeron_image_message_t), channel, channel_length);
 
-    aeron_driver_conductor_client_transmit(
-        conductor, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE, response, sizeof(aeron_image_message_t) + channel_length);
-}
-
-void aeron_driver_conductor_error(
-    aeron_driver_conductor_t *conductor, int error_code, const char *description, const char *message)
-{
-    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
-    aeron_counter_increment(conductor->errors_counter, 1);
-    aeron_set_err(0, "%s", "no error");
+    aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE, response, response_length);
+    aeron_free(dynamic_buffer);
 }
 
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd)

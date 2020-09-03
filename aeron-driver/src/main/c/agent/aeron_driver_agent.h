@@ -150,4 +150,22 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     int32_t stream_id,
     int32_t session_id);
 
+void aeron_driver_agent_conductor_to_driver_interceptor(
+    int32_t msg_type_id, const void *message, size_t length, void *clientd);
+
+void aeron_driver_agent_conductor_to_client_interceptor(
+    aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
+
+int aeron_driver_agent_map_raw_log_interceptor(
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool use_sparse_files,
+    uint64_t term_length,
+    uint64_t page_size);
+
+void aeron_driver_agent_log_frame(
+    int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len);
+
+void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length);
+
 #endif //AERON_DRIVER_AGENT_H

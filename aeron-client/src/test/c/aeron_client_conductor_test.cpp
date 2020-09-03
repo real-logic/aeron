@@ -37,7 +37,8 @@ extern "C"
 #include "aeron_client_conductor.h"
 }
 
-#define CAPACITY (1024)
+#define CAPACITY (16 * 1024)
+#define MAX_MESSAGE_SIZE (CAPACITY / 8 - AERON_RB_RECORD_HEADER_LENGTH)
 #define TO_DRIVER_RING_BUFFER_LENGTH (CAPACITY + AERON_RB_TRAILER_LENGTH)
 #define TO_CLIENTS_BUFFER_LENGTH (CAPACITY + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
 #define COUNTER_VALUES_BUFFER_LENGTH (1024 * 1024)
@@ -208,6 +209,22 @@ public:
         auto conductorTest = reinterpret_cast<ClientConductorTest *>(clientd);
 
         conductorTest->m_to_driver_handler(type_id, buffer, length);
+    }
+
+     static char *allocateStringWithPrefix(const char *prefix, const char *suffix, const char c, const size_t length)
+    {
+        char *uri = new char[length + 1];;
+        uri[length] = '\0';
+
+        memcpy(uri, prefix, strlen(prefix));
+
+        size_t offset = strlen(prefix);
+        memcpy(uri + offset, suffix, strlen(suffix));
+
+        offset += strlen(suffix);
+        memset(uri + offset, c, length - offset);
+
+        return uri;
     }
 
     size_t readToDriver(std::function<void(int32_t, const void *, size_t)>& handler)
@@ -393,6 +410,33 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     doWork();
 }
 
+TEST_F(ClientConductorTest, shouldAddPublicationSuccessfullyMaxMessageSize)
+{
+    aeron_async_add_publication_t *async = nullptr;
+    aeron_publication_t *publication = nullptr;
+    const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_publication_command_t);
+    char *uri = allocateStringWithPrefix(PUB_URI, "|alias=", 'X', uri_length);
+
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, uri, STREAM_ID), 0);
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr == publication);
+
+    transmitOnPublicationReady(async, m_logFileName, false);
+    createLogFile(m_logFileName);
+    doWork();
+
+    ASSERT_GT(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr != publication);
+    EXPECT_EQ(strcmp(uri, publication->channel), 0);
+
+    delete[] uri;
+
+    ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    doWork();
+}
+
 TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverError)
 {
     aeron_async_add_publication_t *async = nullptr;
@@ -445,6 +489,33 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfully)
 
     ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
+
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfullyMaxMessageSize)
+{
+    aeron_async_add_exclusive_publication_t *async = nullptr;
+    aeron_exclusive_publication_t *publication = nullptr;
+    const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_publication_command_t);
+    char *uri = allocateStringWithPrefix(PUB_URI, "|alias=", 'C', uri_length);
+
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, uri, STREAM_ID), 0);
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr == publication);
+
+    transmitOnPublicationReady(async, m_logFileName, true);
+    createLogFile(m_logFileName);
+    doWork();
+
+    ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr != publication);
+    EXPECT_EQ(strcmp(uri, publication->channel), 0);
+
+    delete[] uri;
 
     ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
     doWork();
@@ -506,6 +577,33 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfully)
     doWork();
 }
 
+TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfullyMaxMessageSize)
+{
+    aeron_async_add_subscription_t *async = nullptr;
+    aeron_subscription_t *subscription = nullptr;
+    const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_subscription_command_t);
+    char *uri = allocateStringWithPrefix(SUB_URI, "|alias=", 'Z', uri_length);
+
+    ASSERT_EQ(aeron_client_conductor_async_add_subscription(
+        &async, &m_conductor, uri, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr == subscription);
+
+    transmitOnSubscriptionReady(async);
+    doWork();
+
+    ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr != subscription);
+    EXPECT_EQ(strcmp(uri, subscription->channel), 0);
+
+    delete[] uri;
+
+    ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+    doWork();
+}
+
 TEST_F(ClientConductorTest, shouldErrorOnAddSubscriptionFromDriverError)
 {
     aeron_async_add_subscription_t *async = nullptr;
@@ -559,6 +657,37 @@ TEST_F(ClientConductorTest, shouldAddCounterSuccessfully)
 
     ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != counter);
+
+    ASSERT_EQ(aeron_counter_close(counter, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldAddCounterSuccessfullyMaxMessageSize)
+{
+    aeron_async_add_counter_t *async = nullptr;
+    aeron_counter_t *counter = nullptr;
+    const size_t key_buffer_length = 256;
+    uint8_t *key_buffer = new uint8_t[key_buffer_length];
+    key_buffer[5] = 13;
+    const size_t label_buffer_length =
+            MAX_MESSAGE_SIZE - key_buffer_length - 2 * sizeof(int32_t) - sizeof(aeron_counter_command_t);
+    char *label_buffer = allocateStringWithPrefix("label", "=", 'x', label_buffer_length);
+
+    ASSERT_EQ(aeron_client_conductor_async_add_counter(
+        &async, &m_conductor, COUNTER_TYPE_ID, key_buffer, key_buffer_length, label_buffer, label_buffer_length), 0);
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr == counter);
+
+    transmitOnCounterReady(async);
+    doWork();
+
+    ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr != counter);
+
+    delete[] label_buffer;
+    delete[] key_buffer;
 
     ASSERT_EQ(aeron_counter_close(counter, nullptr, nullptr), 0);
     doWork();
@@ -748,6 +877,49 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestination)
     doWork();
 }
 
+TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestinationMaxMessageSize)
+{
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_destination_t *async_add_dest = nullptr;
+    aeron_async_destination_t *async_remove_dest = nullptr;
+    aeron_publication_t *publication = nullptr;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    transmitOnPublicationReady(async_pub, m_logFileName, false);
+    createLogFile(m_logFileName);
+    doWork();
+    ASSERT_GT(aeron_async_add_publication_poll(&publication, async_pub), 0) << aeron_errmsg();
+
+    const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_destination_command_t);
+    const char *destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_publication_destination(&async_add_dest, &m_conductor, publication, destUri),
+        0);
+
+    transmitOnOperationSuccess(async_add_dest);
+    doWork();
+    ASSERT_EQ(async_add_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+    ASSERT_EQ(async_add_dest->resource.publication->registration_id, publication->registration_id);
+    ASSERT_GT(aeron_publication_async_destination_poll(async_add_dest), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_remove_publication_destination(
+            &async_remove_dest, &m_conductor, publication, destUri),
+        0);
+    transmitOnOperationSuccess(async_remove_dest);
+
+    delete[] destUri;
+
+    doWork();
+    ASSERT_GT(aeron_publication_async_destination_poll(async_remove_dest), 0) << aeron_errmsg();
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    doWork();
+}
+
 TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestination)
 {
     aeron_async_add_publication_t *async_pub = nullptr;
@@ -777,6 +949,49 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestination)
         aeron_client_conductor_async_remove_exclusive_publication_destination(
             &async_dest, &m_conductor, publication, DEST_URI),
         0);
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_GT(aeron_exclusive_publication_async_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestinationMaxMessageSize)
+{
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_destination_t *async_dest = nullptr;
+    aeron_exclusive_publication_t *publication = nullptr;
+
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    doWork();
+
+    transmitOnPublicationReady(async_pub, m_logFileName, false);
+    createLogFile(m_logFileName);
+    doWork();
+    ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async_pub), 0) << aeron_errmsg();
+
+    const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_destination_command_t);
+    const char *destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_exclusive_publication_destination(
+            &async_dest, &m_conductor, publication, destUri),
+        0);
+
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_EQ(async_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+    ASSERT_EQ(async_dest->resource.publication->registration_id, publication->registration_id);
+    ASSERT_GT(aeron_exclusive_publication_async_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_remove_exclusive_publication_destination(
+            &async_dest, &m_conductor, publication, destUri),
+        0);
+
+    delete[] destUri;
+
     transmitOnOperationSuccess(async_dest);
     doWork();
     ASSERT_GT(aeron_exclusive_publication_async_destination_poll(async_dest), 0) << aeron_errmsg();
@@ -818,6 +1033,51 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestination)
         aeron_client_conductor_async_remove_subscription_destination(&async_dest, &m_conductor, subscription, DEST_URI),
         0);
     transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    // graceful close and reclaim for sanitize
+    ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+    doWork();
+}
+
+TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestinationMaxMessageSize)
+{
+    aeron_async_add_subscription_t *async_sub = nullptr;
+    aeron_async_destination_t *async_dest = nullptr;
+    aeron_subscription_t *subscription = nullptr;
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_subscription(
+            &async_sub, &m_conductor, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr),
+        0);
+    doWork();
+
+    transmitOnSubscriptionReady(async_sub);
+    createLogFile(m_logFileName);
+    doWork();
+    ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async_sub), 0) << aeron_errmsg();
+
+    const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_destination_command_t);
+    const char *destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
+    ASSERT_EQ(
+        aeron_client_conductor_async_add_subscription_destination(
+            &async_dest, &m_conductor, subscription, destUri),
+        0);
+
+    transmitOnOperationSuccess(async_dest);
+    doWork();
+    ASSERT_EQ(async_dest->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+    ASSERT_EQ(async_dest->resource.subscription->registration_id, subscription->registration_id);
+    ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();
+
+    ASSERT_EQ(
+        aeron_client_conductor_async_remove_subscription_destination(&async_dest, &m_conductor, subscription, destUri),
+        0);
+    transmitOnOperationSuccess(async_dest);
+
+    delete[] destUri;
+
     doWork();
     ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();
 

@@ -411,7 +411,7 @@ public class CommonContext implements Cloneable
     /**
      * Get the directory in which the aeron config files are stored.
      * <p>
-     * This is valid after a call to {@link #conclude()}.
+     * This is valid after a call to {@link #conclude()} or {@link #concludeAeronDirectory()}.
      *
      * @return the directory in which the aeron config files are stored.
      * @see #aeronDirectoryName()

@@ -87,8 +87,6 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             throw new RuntimeException("Interrupted while waiting for shutdown", ex);
         }
-
-        IoUtil.delete(new File(context.aeronDirectoryName()), false);
     }
 
     private void terminateDriver()
@@ -107,8 +105,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             throw new RuntimeException("Unable to find native media driver binary: " + aeronBinary.getAbsolutePath());
         }
 
-        IoUtil.ensureDirectoryExists(
-            new File(context.aeronDirectoryName()).getParentFile(), "Aeron C Media Driver directory");
+        context.concludeAeronDirectory();
+        IoUtil.ensureDirectoryExists(context.aeronDirectory().getParentFile(), "Aeron C Media Driver directory");
 
         final HashMap<String, String> environment = new HashMap<>();
 

@@ -34,7 +34,7 @@ function startNode() {
         -Daeron.event.cluster.log=all \
         -Daeron.cluster.tutorial.nodeId=$1 \
         ${JVM_OPTS} ${ADD_OPENS} \
-        io.aeron.samples.tutorial.cluster.BasicAuctionClusteredServiceNode > logs/cluster-$1.log &
+        io.aeron.samples.cluster.BasicAuctionClusteredServiceNode > logs/cluster-$1.log &
 }
 
 function startAll() {

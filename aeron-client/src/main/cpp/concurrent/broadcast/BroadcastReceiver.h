@@ -40,7 +40,7 @@ public:
     {
         BroadcastBufferDescriptor::checkCapacity(m_capacity);
 
-        m_cursor = m_buffer.getInt64(m_latestCounterIndex);
+        m_cursor = m_buffer.getInt64Volatile(m_latestCounterIndex);
         m_nextRecord = m_cursor;
         m_recordOffset = static_cast<util::index_t>(m_cursor & m_mask);
     }

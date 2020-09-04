@@ -94,7 +94,7 @@ int aeron_broadcast_transmitter_transmit(
 
     memcpy(transmitter->buffer + record_offset + AERON_BROADCAST_RECORD_HEADER_LENGTH, msg, length);
 
-    transmitter->descriptor->latest_counter = current_tail;
+    AERON_PUT_ORDERED(transmitter->descriptor->latest_counter, current_tail);
     AERON_PUT_ORDERED(transmitter->descriptor->tail_counter, current_tail + aligned_record_length);
 
     return 0;

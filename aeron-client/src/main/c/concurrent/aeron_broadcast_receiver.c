@@ -28,12 +28,15 @@ int aeron_broadcast_receiver_init(volatile aeron_broadcast_receiver_t *receiver,
     {
         receiver->buffer = buffer;
         receiver->capacity = capacity;
-        receiver->mask = capacity - 1;
-        receiver->descriptor = (aeron_broadcast_descriptor_t *) (receiver->buffer + receiver->capacity);
+        receiver->mask = capacity - 1u;
+        receiver->descriptor = (aeron_broadcast_descriptor_t *)(receiver->buffer + receiver->capacity);
 
-        receiver->record_offset = 0;
-        receiver->cursor = 0;
-        receiver->next_record = 0;
+        int64_t latest;
+        AERON_GET_VOLATILE(latest, receiver->descriptor->latest_counter);
+
+        receiver->cursor = latest;
+        receiver->next_record = latest;
+        receiver->record_offset = (size_t)latest & receiver->mask;
         receiver->lapped_count = 0;
 
         result = 0;

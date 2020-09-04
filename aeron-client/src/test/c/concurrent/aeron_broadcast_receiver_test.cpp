@@ -24,7 +24,7 @@ extern "C"
 #include "concurrent/aeron_broadcast_receiver.h"
 }
 
-#define CAPACITY (1024)
+#define CAPACITY (1024u)
 #define BUFFER_SZ (CAPACITY + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
 #define MSG_TYPE_ID (101)
 
@@ -95,10 +95,9 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
     receiver.descriptor->tail_counter = tail;
     receiver.descriptor->tail_intent_counter = tail;
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -126,15 +125,14 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
     receiver.descriptor->tail_counter = tail;
     receiver.descriptor->tail_intent_counter = tail;
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset_one);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset_one);
 
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset_two);
 
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -162,7 +160,7 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
     size_t aligned_record_length = AERON_ALIGN(record_length, AERON_BROADCAST_RECORD_ALIGNMENT);
     size_t tail = CAPACITY * 3 + AERON_BROADCAST_RECORD_HEADER_LENGTH + aligned_record_length;
     size_t latest_record = tail - aligned_record_length;
-    size_t record_offset = latest_record & (CAPACITY - 1);
+    size_t record_offset = latest_record & (CAPACITY - 1u);
 
     ASSERT_EQ(aeron_broadcast_receiver_init(&receiver, m_buffer.data(), m_buffer.size()), 0);
 
@@ -170,10 +168,9 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
     receiver.descriptor->tail_intent_counter = tail;
     receiver.descriptor->latest_counter = latest_record;
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -195,7 +192,7 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     size_t catchup_tail = (CAPACITY * 2) - AERON_BROADCAST_RECORD_HEADER_LENGTH;
     size_t post_padding_tail = catchup_tail + AERON_BROADCAST_RECORD_HEADER_LENGTH + aligned_record_length;
     size_t latest_record = catchup_tail - aligned_record_length;
-    size_t catchup_offset = latest_record & (CAPACITY - 1);
+    size_t catchup_offset = latest_record & (CAPACITY - 1u);
 
     ASSERT_EQ(aeron_broadcast_receiver_init(&receiver, m_buffer.data(), m_buffer.size()), 0);
 
@@ -203,21 +200,20 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     receiver.descriptor->tail_intent_counter = catchup_tail;
     receiver.descriptor->latest_counter = latest_record;
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + catchup_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + catchup_offset);
 
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
-    size_t padding_offset = catchup_tail & (CAPACITY - 1);
-    size_t record_offset = (post_padding_tail - aligned_record_length) & (CAPACITY - 1);
+    size_t padding_offset = catchup_tail & (CAPACITY - 1u);
+    size_t record_offset = (post_padding_tail - aligned_record_length) & (CAPACITY - 1u);
 
     record = (aeron_broadcast_record_descriptor_t *)(receiver.buffer + padding_offset);
     record->length = 0;
     record->msg_type_id = AERON_BROADCAST_PADDING_MSG_TYPE_ID;
 
     record = (aeron_broadcast_record_descriptor_t *)(receiver.buffer + record_offset);
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));
@@ -247,10 +243,9 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
     receiver.descriptor->tail_counter = tail;
     receiver.descriptor->tail_intent_counter = tail;
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
-    record->length = (std::int32_t)record_length;
+    record->length = (int32_t)record_length;
     record->msg_type_id = MSG_TYPE_ID;
 
     EXPECT_TRUE(aeron_broadcast_receiver_receive_next(&receiver));

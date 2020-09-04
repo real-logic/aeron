@@ -21,7 +21,7 @@
 #include "aeron_atomic.h"
 #include "aeron_broadcast_descriptor.h"
 
-#define AERON_BROADCAST_SCRATCH_BUFFER_LENGTH (4096)
+#define AERON_BROADCAST_SCRATCH_BUFFER_LENGTH (4096u)
 
 typedef struct aeron_broadcast_receiver_stct
 {
@@ -67,13 +67,13 @@ inline bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_recei
 
     if (tail > cursor)
     {
-        size_t record_offset = (uint32_t)cursor & (receiver->capacity - 1);
+        size_t record_offset = (uint32_t)cursor & (receiver->capacity - 1u);
 
         if (!aeron_broadcast_receiver_validate_at(receiver, cursor))
         {
             receiver->lapped_count++;
-            cursor = receiver->descriptor->latest_counter;
-            record_offset = (uint32_t)cursor & (receiver->capacity - 1);
+            AERON_GET_VOLATILE(cursor, receiver->descriptor->latest_counter);
+            record_offset = (uint32_t)cursor & (receiver->capacity - 1u);
         }
 
         aeron_broadcast_record_descriptor_t *record =

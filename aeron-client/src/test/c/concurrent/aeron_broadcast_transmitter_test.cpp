@@ -24,7 +24,7 @@ extern "C"
 #include <concurrent/aeron_broadcast_transmitter.h>
 }
 
-#define CAPACITY (1024)
+#define CAPACITY (1024u)
 #define BUFFER_SZ (CAPACITY + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
 #define MSG_TYPE_ID (101)
 
@@ -93,8 +93,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
 
     EXPECT_EQ(aeron_broadcast_transmitter_transmit(&transmitter, MSG_TYPE_ID, m_srcBuffer.data(), length), 0);
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
     EXPECT_EQ(transmitter.descriptor->tail_intent_counter, (int64_t)(tail + alignedRecordLength));
     EXPECT_EQ(record->length, (int32_t)recordLength);
@@ -118,8 +117,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
 
     EXPECT_EQ(aeron_broadcast_transmitter_transmit(&transmitter, MSG_TYPE_ID, m_srcBuffer.data(), length), 0);
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
     EXPECT_EQ(transmitter.descriptor->tail_intent_counter, (int64_t)(tail + alignedRecordLength));
     EXPECT_EQ(record->length, (int32_t)recordLength);
@@ -143,8 +141,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
 
     EXPECT_EQ(aeron_broadcast_transmitter_transmit(&transmitter, MSG_TYPE_ID, m_srcBuffer.data(), length), 0);
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
     EXPECT_EQ(transmitter.descriptor->tail_intent_counter, (int64_t)(tail + alignedRecordLength));
     EXPECT_EQ(record->length, (int32_t)recordLength);
@@ -169,8 +166,7 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
 
     EXPECT_EQ(aeron_broadcast_transmitter_transmit(&transmitter, MSG_TYPE_ID, m_srcBuffer.data(), length), 0);
 
-    aeron_broadcast_record_descriptor_t *record =
-        (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
+    auto *record = (aeron_broadcast_record_descriptor_t *)(m_buffer.data() + record_offset);
 
     EXPECT_EQ(transmitter.descriptor->tail_intent_counter, (int64_t)(tail + alignedRecordLength + toEndOfBuffer));
     EXPECT_EQ(record->length, (int32_t)toEndOfBuffer);

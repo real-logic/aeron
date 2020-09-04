@@ -34,22 +34,22 @@ import static java.util.Collections.emptyMap;
 public final class CTestMediaDriver implements TestMediaDriver
 {
     private static final File NULL_FILE = SystemUtil.isWindows() ? new File("NUL") : new File("/dev/null");
-    private static final Map<Class<?>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
+    private static final Map<Class<? extends FlowControlSupplier>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE =
         new IdentityHashMap<>();
     private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> C_DRIVER_ADDITIONAL_ENV_VARS =
         ThreadLocal.withInitial(IdentityHashMap::new);
 
     static
     {
-        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
+        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.put(
             DefaultMulticastFlowControlSupplier.class, "aeron_max_multicast_flow_control_strategy_supplier");
-        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
+        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.put(
             MaxMulticastFlowControlSupplier.class, "aeron_max_multicast_flow_control_strategy_supplier");
-        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
+        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.put(
             MinMulticastFlowControlSupplier.class, "aeron_min_flow_control_strategy_supplier");
-        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
+        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.put(
             DefaultUnicastFlowControlSupplier.class, "aeron_unicast_flow_control_strategy_supplier");
-        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
+        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.put(
             TaggedMulticastFlowControlSupplier.class, "aeron_tagged_flow_control_strategy_supplier");
     }
 
@@ -238,7 +238,7 @@ public final class CTestMediaDriver implements TestMediaDriver
     private static String getFlowControlStrategyName(final FlowControlSupplier flowControlSupplier)
     {
         return null == flowControlSupplier ?
-            null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.get(flowControlSupplier.getClass());
+            null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.get(flowControlSupplier.getClass());
     }
 
     public MediaDriver.Context context()

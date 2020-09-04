@@ -44,7 +44,7 @@ public:
     {
         m_buffer.fill(0);
 
-        EXPECT_CALL(m_mockBuffer, getInt64(CAPACITY + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET))
+        EXPECT_CALL(m_mockBuffer, getInt64Volatile(CAPACITY + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET))
             .Times(1)
             .WillOnce(testing::Return(0));
 
@@ -111,8 +111,6 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
         .Times(2)
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
-        .Times(0);
 
     EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffset)))
         .Times(2)
@@ -145,8 +143,6 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(4)
         .WillRepeatedly(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
-        .Times(0);
 
     EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffsetOne)))
         .Times(2)
@@ -194,7 +190,7 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
     EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(2)
         .WillRepeatedly(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(LATEST_COUNTER_INDEX))
         .Times(1)
         .WillOnce(testing::Return(latestRecord));
 
@@ -233,7 +229,7 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
         .Times(3)
         .WillOnce(testing::Return(catchupTail))
         .WillRepeatedly(testing::Return(postPaddingTail));
-    EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(LATEST_COUNTER_INDEX))
         .Times(1)
         .WillOnce(testing::Return(latestRecord));
 
@@ -287,8 +283,7 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
-        .Times(0);
+
     EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(recordLength));

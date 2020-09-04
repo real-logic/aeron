@@ -88,7 +88,7 @@ public:
             if (!validate(cursor))
             {
                 m_lappedCount += 1;
-                cursor = m_buffer.getInt64(m_latestCounterIndex);
+                cursor = m_buffer.getInt64Volatile(m_latestCounterIndex);
                 recordOffset = static_cast<util::index_t>(cursor & m_mask);
             }
 

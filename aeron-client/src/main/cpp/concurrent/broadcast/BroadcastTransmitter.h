@@ -80,7 +80,7 @@ public:
 
         m_buffer.putBytes(RecordDescriptor::msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
-        m_buffer.putInt64(m_latestCounterIndex, currentTail);
+        m_buffer.putInt64Ordered(m_latestCounterIndex, currentTail);
         m_buffer.putInt64Ordered(m_tailCounterIndex, currentTail + alignedRecordLength);
     }
 

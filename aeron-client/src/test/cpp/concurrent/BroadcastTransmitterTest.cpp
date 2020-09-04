@@ -54,7 +54,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16) = {};
     MockAtomicBuffer m_mockBuffer;
     BroadcastTransmitter m_broadcastTransmitter;
 };
@@ -129,7 +129,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
         .Times(1)
         .InSequence(sequence);
 
-    EXPECT_CALL(m_mockBuffer, putInt64(LATEST_COUNTER_INDEX, tail))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(LATEST_COUNTER_INDEX, tail))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_COUNTER_INDEX, tail + alignedRecordLength))
@@ -169,7 +169,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
         .Times(1)
         .InSequence(sequence);
 
-    EXPECT_CALL(m_mockBuffer, putInt64(LATEST_COUNTER_INDEX, tail))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(LATEST_COUNTER_INDEX, tail))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_COUNTER_INDEX, tail + alignedRecordLength))
@@ -209,7 +209,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
         .Times(1)
         .InSequence(sequence);
 
-    EXPECT_CALL(m_mockBuffer, putInt64(LATEST_COUNTER_INDEX, tail))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(LATEST_COUNTER_INDEX, tail))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_COUNTER_INDEX, tail + alignedRecordLength))
@@ -262,7 +262,7 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
         .Times(1)
         .InSequence(sequence);
 
-    EXPECT_CALL(m_mockBuffer, putInt64(LATEST_COUNTER_INDEX, tail))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(LATEST_COUNTER_INDEX, tail))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_COUNTER_INDEX, tail + alignedRecordLength))

@@ -112,16 +112,6 @@ int aeron_send_channel_endpoint_create(
         return -1;
     }
 
-    // TODO: Remove the update and just create in a single shot.
-    aeron_channel_endpoint_status_update_label(
-        counters_manager,
-        _endpoint->channel_status.counter_id,
-        AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
-        channel->uri_length,
-        channel->original_uri,
-        bind_addr_and_port_length,
-        bind_addr_and_port);
-
     _endpoint->transport.dispatch_clientd = _endpoint;
     _endpoint->has_sender_released = false;
 
@@ -135,6 +125,16 @@ int aeron_send_channel_endpoint_create(
         aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
         return -1;
     }
+
+    // TODO: Remove the update and just create in a single shot.
+    aeron_channel_endpoint_status_update_label(
+            counters_manager,
+            _endpoint->channel_status.counter_id,
+            AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
+            channel->uri_length,
+            channel->original_uri,
+            bind_addr_and_port_length,
+            bind_addr_and_port);
 
     _endpoint->local_sockaddr_indicator.counter_id = aeron_counter_local_sockaddr_indicator_allocate(
         counters_manager,

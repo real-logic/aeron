@@ -74,6 +74,7 @@ int aeron_counter_constants(aeron_counter_t *counter, aeron_counter_constants_t 
 
     constants->registration_id = counter->registration_id;
     constants->counter_id = counter->counter_id;
+
     return 0;
 }
 
@@ -106,5 +107,6 @@ bool aeron_counter_is_closed(aeron_counter_t *counter)
     {
         AERON_GET_VOLATILE(is_closed, counter->is_closed);
     }
+
     return is_closed;
 }

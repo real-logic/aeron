@@ -49,8 +49,11 @@ int32_t aeron_stream_counter_allocate(
     int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
 
-    aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
-    
+    if (counter_id >= 0)
+    {
+        aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    }
+
     return counter_id;
 }
 
@@ -199,7 +202,10 @@ int32_t aeron_channel_endpoint_status_allocate(
     int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
 
-    aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    if (counter_id >= 0)
+    {
+        aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    }
     
     return counter_id;
 }
@@ -278,7 +284,10 @@ int32_t aeron_counter_local_sockaddr_indicator_allocate(
         label,
         label_length);
 
-    aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    if (counter_id >= 0)
+    {
+        aeron_counters_manager_counter_registration_id(counters_manager, counter_id, registration_id);
+    }
 
     return counter_id;
 }

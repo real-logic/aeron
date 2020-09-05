@@ -28,6 +28,10 @@ extern "C"
 
 #define AERON_NULL_VALUE (-1)
 
+#define AERON_CLIENT_ERROR_DRIVER_TIMEOUT (-1000)
+#define AERON_CLIENT_ERROR_CLIENT_TIMEOUT (-1001)
+#define AERON_CLIENT_ERROR_CONDUCTOR_SERVICE_TIMEOUT (-1002)
+
 typedef struct aeron_context_stct aeron_context_t;
 typedef struct aeron_stct aeron_t;
 typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;

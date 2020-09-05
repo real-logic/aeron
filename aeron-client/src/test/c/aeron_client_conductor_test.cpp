@@ -46,6 +46,8 @@ extern "C"
 #define FILE_PAGE_SIZE (4 * 1024)
 
 #define CLIENT_LIVENESS_TIMEOUT (5 * 1000 * 1000 * 1000LL)
+#define DRIVER_TIMEOUT_INTERVAL_MS (1 * 1000)
+#define DRIVER_TIMEOUT_INTERVAL_NS (DRIVER_TIMEOUT_INTERVAL_MS * 1000 * 1000LL)
 
 #define TIME_ADVANCE_INTERVAL_NS (1000 * 1000LL)
 
@@ -69,8 +71,10 @@ static int64_t test_nano_clock()
     return now_ns;
 }
 
-static void no_op_error_handler(void *clientd, int errcode, const char *message)
+static void save_last_errorcode(void *clientd, int errcode, const char *message)
 {
+    int *last_errorcode = static_cast<int *>(clientd);
+    *last_errorcode = errcode;
 }
 
 using namespace aeron::test;
@@ -152,6 +156,8 @@ public:
 
         m_context->epoch_clock = test_epoch_clock;
         m_context->nano_clock = test_nano_clock;
+        m_context->driver_timeout_ms = DRIVER_TIMEOUT_INTERVAL_MS;
+        m_context->keepalive_interval_ns = DRIVER_TIMEOUT_INTERVAL_NS;
 
         aeron_context_set_use_conductor_agent_invoker(m_context, true);
 
@@ -228,7 +234,7 @@ public:
     }
 
     int doWorkForNs(
-        int64_t interval_ns, bool updateDriverHeartbeat= true, int64_t advance_interval_ns = TIME_ADVANCE_INTERVAL_NS)
+        int64_t interval_ns, bool updateDriverHeartbeat = true, int64_t advance_interval_ns = TIME_ADVANCE_INTERVAL_NS)
     {
         int work_count = 0;
         int64_t target_ns = now_ns + interval_ns;
@@ -402,6 +408,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverError)
     doWork();
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
+    ASSERT_EQ(EINVAL, errno);
 }
 
 TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)
@@ -418,6 +425,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)
     doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
+    ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errno);
 }
 
 TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfully)
@@ -473,6 +481,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddExclusivePublicationFromDriverTimeou
     doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
 
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), -1);
+    ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errno);
 }
 
 TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfully)
@@ -530,6 +539,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddSubscriptionFromDriverTimeout)
     doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
 
     ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), -1);
+    ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errno);
 }
 
 TEST_F(ClientConductorTest, shouldAddCounterSuccessfully)
@@ -587,6 +597,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddCounterFromDriverTimeout)
     doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
 
     ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), -1);
+    ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errno);
 }
 
 TEST_F(ClientConductorTest, shouldAddPublicationAndHandleOnNewPublication)
@@ -817,7 +828,9 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestination)
 
 TEST_F(ClientConductorTest, shouldSetCloseFlagOnTimeout)
 {
-    m_conductor.error_handler = no_op_error_handler;
+    int errorcode = 0;
+    m_conductor.error_handler_clientd = &errorcode;
+    m_conductor.error_handler = save_last_errorcode;
 
     aeron_client_timeout_t timeout;
     timeout.client_id = m_conductor.client_id;
@@ -825,4 +838,29 @@ TEST_F(ClientConductorTest, shouldSetCloseFlagOnTimeout)
     aeron_client_conductor_on_client_timeout(&m_conductor, &timeout);
 
     ASSERT_TRUE(aeron_client_conductor_is_closed(&m_conductor));
+    ASSERT_EQ(AERON_CLIENT_ERROR_CLIENT_TIMEOUT, errorcode);
+}
+
+TEST_F(ClientConductorTest, shouldCreateServiceIntervalTimeoutError)
+{
+    int errorcode = 0;
+    m_conductor.error_handler_clientd = &errorcode;
+    m_conductor.error_handler = save_last_errorcode;
+
+    doWork();
+    doWorkForNs(CLIENT_LIVENESS_TIMEOUT + 1, false, CLIENT_LIVENESS_TIMEOUT + 1);
+
+    ASSERT_EQ(AERON_CLIENT_ERROR_CONDUCTOR_SERVICE_TIMEOUT, errorcode);
+}
+
+TEST_F(ClientConductorTest, shouldCreateDriverTimeoutError)
+{
+    int errorcode = 0;
+    m_conductor.error_handler_clientd = &errorcode;
+    m_conductor.error_handler = save_last_errorcode;
+
+    doWork();
+    doWorkForNs(DRIVER_TIMEOUT_INTERVAL_NS * 2, false, DRIVER_TIMEOUT_INTERVAL_NS * 2);
+
+    ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errorcode);
 }

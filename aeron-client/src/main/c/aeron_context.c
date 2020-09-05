@@ -413,7 +413,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
     if (AERON_MAX_PATH < token_length)
     {
         aeron_set_err(EINVAL, "Token too long: %lu", (unsigned long)token_length);
-        return -EINVAL;
+        return -1;
     }
 
     char filename[AERON_MAX_PATH];
@@ -423,7 +423,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
     int64_t file_length_result = aeron_file_length(filename);
     if (file_length_result < 0)
     {
-        aeron_set_err(-1, "Invalid file length");
+        aeron_set_err(EINVAL, "Invalid file length");
         return -1;
     }
     
@@ -446,7 +446,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
             if (aeron_semantic_version_major(cnc_version) != aeron_semantic_version_major(AERON_CNC_VERSION))
             {
                 aeron_set_err(
-                    -1, 
+                    EINVAL,
                     "Aeron CnC version does not match: client=%" PRId32 ", file=%" PRId32,
                     AERON_CNC_VERSION, 
                     cnc_version);
@@ -458,7 +458,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
             if (aeron_semantic_version_minor(cnc_version) < aeron_semantic_version_minor(AERON_CNC_VERSION))
             {
                 aeron_set_err(
-                    -1,
+                    EINVAL,
                     "Driver version insufficient: client=%" PRId32 ", file=%" PRId32,
                     AERON_CNC_VERSION,
                     cnc_version);
@@ -469,7 +469,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
 
             if (!aeron_cnc_is_file_length_sufficient(&cnc_mmap))
             {
-                aeron_set_err(-1, "Aeron CnC file length not sufficient: length=%" PRId64, file_length_result);
+                aeron_set_err(EINVAL, "Aeron CnC file length not sufficient: length=%" PRId64, file_length_result);
                 result = -1;
                 goto cleanup;
             }
@@ -478,7 +478,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
             if (aeron_mpsc_rb_init(&rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) < 0)
             {
                 aeron_set_err_from_last_err_code("Failed to setup ring buffer for termination");
-                result = aeron_errcode();
+                result = -1;
                 goto cleanup;
             }
 
@@ -494,7 +494,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
 
             if (AERON_RB_SUCCESS != aeron_mpsc_rb_write(&rb, AERON_COMMAND_TERMINATE_DRIVER, command, command_length))
             {
-                aeron_set_err(-1, "Unable to write to driver ring buffer");
+                aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "Unable to write to driver ring buffer");
                 result = -1;
             }
 

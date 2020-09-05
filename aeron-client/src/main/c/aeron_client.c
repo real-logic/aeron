@@ -358,7 +358,8 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(ETIMEDOUT, "%s", "async_add_publication no response from media driver");
+            aeron_set_err(
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -424,7 +425,8 @@ int aeron_async_add_exclusive_publication_poll(
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(ETIMEDOUT, "%s", "async_add_exclusive_publication no response from media driver");
+            aeron_set_err(
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -504,7 +506,8 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(ETIMEDOUT, "%s", "async_add_subscription no response from media driver");
+            aeron_set_err(
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -582,7 +585,8 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(ETIMEDOUT, "%s", "async_add_counter no response from media driver");
+            aeron_set_err(
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -631,7 +635,8 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(ETIMEDOUT, "%s", "async_add_counter no response from media driver");
+            aeron_set_err(
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }

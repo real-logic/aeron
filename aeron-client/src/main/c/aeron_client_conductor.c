@@ -823,7 +823,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
 
             snprintf(
                 err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             return;
         }
 
@@ -890,7 +890,7 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)",
                 __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             return;
         }
 
@@ -957,7 +957,7 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)",
                 __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             return;
         }
 
@@ -1035,7 +1035,7 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)",
                 __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             return;
         }
 
@@ -1129,7 +1129,7 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
 
             snprintf(
                 err_buffer, sizeof(err_buffer) - 1, "DESTINATION command could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             return;
         }
 
@@ -1306,7 +1306,7 @@ int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *co
     {
         if (++fail_count > AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD)
         {
-            aeron_set_err(EXFULL, "%s", "could not offer to conductor command queue");
+            aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", "could not offer to conductor command queue");
             return -1;
         }
 
@@ -2384,8 +2384,8 @@ int aeron_client_conductor_offer_remove_command(
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "remove command could not be sent (%s:%d)",
                 __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
-            aeron_set_err(EXFULL, "%s", err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
             return -1;
         }
 
@@ -2422,8 +2422,8 @@ int aeron_client_conductor_offer_destination_command(
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "destination command could not be sent (%s:%d)",
                 __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EXFULL, err_buffer);
-            aeron_set_err(EXFULL, "%s", err_buffer);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
             return -1;
         }
 

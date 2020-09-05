@@ -856,21 +856,15 @@ int aeron_receive_channel_endpoint_add_pending_setup_destination(
         if (aeron_driver_receiver_add_pending_setup(
             receiver, endpoint, destination, 0, 0, &udp_channel->local_control) < 0)
         {
-            aeron_set_err(-1, "receiver on_add_endpoint: %s", aeron_errmsg());
+            aeron_set_err_from_last_err_code("receiver on_add_endpoint: %s", aeron_errmsg());
             return -1;
         }
 
         if (aeron_receive_channel_endpoint_send_sm(
-            endpoint,
-            &destination->current_control_addr,
-            0,
-            0,
-            0,
-            0,
-            0,
-            AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+            endpoint, &destination->current_control_addr, 0, 0, 0, 0, 0, AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
         {
-            aeron_set_err(-1, "aeron_receive_channel_endpoint_add_pending_setup send SM: %s", aeron_errmsg());
+            aeron_set_err_from_last_err_code(
+                "aeron_receive_channel_endpoint_add_pending_setup send SM: %s", aeron_errmsg());
             return -1;
         }
 

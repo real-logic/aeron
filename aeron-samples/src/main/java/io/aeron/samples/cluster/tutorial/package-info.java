@@ -16,4 +16,4 @@
 /**
  * Samples for using getting a overview of using Aeron Cluster with the basic tutorial.
  */
-package io.aeron.samples.cluster;
+package io.aeron.samples.cluster.tutorial;

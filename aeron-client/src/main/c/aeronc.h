@@ -2133,7 +2133,7 @@ const char *aeron_errmsg();
  * @param path buffer to store the path.
  * @param path_length space available in the buffer
  * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`. If this
- * is equal to path_length then the path has been truncated.
+ * is equal to or greater than the path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);
 

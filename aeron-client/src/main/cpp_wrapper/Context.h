@@ -556,7 +556,7 @@ private:
 
     static void errorHandlerCallback(void *clientd, int errcode, const char *message)
     {
-        const AeronException &exception = aeron::util::AeronException(std::string(message), "", "", 0);
+        const SourcedException exception = mapErrnoToAeronException(errcode, message, SOURCEINFO);
         exception_handler_t &handler = *reinterpret_cast<exception_handler_t *>(clientd);
         handler(exception);
     }

@@ -585,18 +585,18 @@ TEST_P(ParameterisedFailingOptionsParsingTest, shouldBeInvalid)
     const char *fc_options = std::get<0>(GetParam());
 
     aeron_flow_control_tagged_options_t options;
-    ASSERT_EQ(
-        std::get<1>(GetParam()), aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
+    ASSERT_EQ(-1, aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
+    ASSERT_EQ(std::get<1>(GetParam()), aeron_errcode());
 }
 
 INSTANTIATE_TEST_SUITE_P(
     ParsingTests,
     ParameterisedFailingOptionsParsingTest,
     testing::Values(
-        std::make_tuple("min,t1a0s", -EINVAL),
-        std::make_tuple("min,g:1f2", -EINVAL),
-        std::make_tuple("min,t:10s,g:1b2", -EINVAL),
-        std::make_tuple("min,o:-1", -EINVAL),
-        std::make_tuple("tagged,g:1/", -EINVAL),
-        std::make_tuple("tagged,g:", -EINVAL),
-        std::make_tuple("tagged,g:/", -EINVAL)));
+        std::make_tuple("min,t1a0s", EINVAL),
+        std::make_tuple("min,g:1f2", EINVAL),
+        std::make_tuple("min,t:10s,g:1b2", EINVAL),
+        std::make_tuple("min,o:-1", EINVAL),
+        std::make_tuple("tagged,g:1/", EINVAL),
+        std::make_tuple("tagged,g:", EINVAL),
+        std::make_tuple("tagged,g:/", EINVAL)));

@@ -559,7 +559,7 @@ void aeron_driver_name_resolver_receive(
         }
         else
         {
-            aeron_set_err(-1, "Invalid res type on entry: %d", resolution_header->res_type);
+            aeron_set_err(EINVAL, "Invalid res type on entry: %d", resolution_header->res_type);
             aeron_name_resolver_log_and_clear_error(resolver);
             return;
         }
@@ -570,8 +570,8 @@ void aeron_driver_name_resolver_receive(
         {
             if (aeron_driver_name_resolver_from_sockaddr(addr, &cache_addr) < 0)
             {
-                aeron_set_err(
-                    -1, "Failed to replace wildcard with source addr: %d, %s", addr->ss_family, aeron_errmsg());
+                aeron_set_err_from_last_err_code(
+                    "Failed to replace wildcard with source addr: %d, %s", addr->ss_family, aeron_errmsg());
                 aeron_name_resolver_log_and_clear_error(resolver);
 
                 return;
@@ -581,7 +581,7 @@ void aeron_driver_name_resolver_receive(
         if (aeron_driver_name_resolver_on_resolution_entry(
             resolver, resolution_header, name, name_length, &cache_addr, is_self, resolver->now_ms) < 0)
         {
-            aeron_set_err(-1, "Failed to handle resolution entry: %s", aeron_errmsg());
+            aeron_set_err_from_last_err_code("Failed to handle resolution entry: %s", aeron_errmsg());
             aeron_name_resolver_log_and_clear_error(resolver);
         }
 

@@ -180,7 +180,7 @@ int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatche
 
     if ((stream_interest = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
     {
-        aeron_set_err(-1, "No subscription for stream: %" PRIi32, stream_id);
+        aeron_set_err(EINVAL, "No subscription for stream: %" PRIi32, stream_id);
         return -1;
     }
 
@@ -205,7 +205,7 @@ int aeron_data_packet_dispatcher_remove_subscription_by_session(
 
     if ((stream_interest = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
     {
-        aeron_set_err(-1, "No subscription for stream: %" PRIi32, stream_id);
+        aeron_set_err(EINVAL, "No subscription for stream: %" PRIi32, stream_id);
         return -1;
     }
 

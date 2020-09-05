@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <functional>
 #include "MacroUtil.h"
+#include "aeronc.h"
 
 namespace aeron { namespace util
 {
@@ -135,16 +136,42 @@ AERON_DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException, ExceptionCategory:
 AERON_DECLARE_SOURCED_EXCEPTION(ReentrantException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(UnsupportedOperationException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
+
+inline SourcedException mapErrnoToAeronException(
+    int error_code, const char *error_message, const std::string &function, const std::string &file, const int line)
+{
+    switch (error_code)
+    {
+        case EINVAL:
+            return IllegalArgumentException(error_message, function, file, line);
+
+        case EPERM:
+        case AERON_CLIENT_ERROR_BUFFER_FULL:
+            return IllegalStateException(error_message, function, file, line);
+
+        case EIO:
+        case ENOENT:
+            return IOException(error_message, function, file, line);
+
+        case AERON_CLIENT_ERROR_DRIVER_TIMEOUT:
+            return DriverTimeoutException(error_message, function, file, line);
+
+        case AERON_CLIENT_ERROR_CLIENT_TIMEOUT:
+            return ClientTimeoutException(error_message, function, file, line);
+
+        case AERON_CLIENT_ERROR_CONDUCTOR_SERVICE_TIMEOUT:
+            return ConductorServiceTimeoutException(error_message, function, file, line);
+
+        case ETIMEDOUT:
+        default:
+            return AeronException(error_message, function, file, line);
+    }
+}
+
 #define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                  \
 do                                                                      \
 {                                                                       \
-    switch (errno)                                                      \
-    {                                                                   \
-        case EINVAL:                                                    \
-            throw IllegalArgumentException(aeron_errmsg(), SOURCEINFO); \
-        default:                                                        \
-            throw AeronException(aeron_errmsg(), SOURCEINFO);           \
-    }                                                                   \
+    throw mapErrnoToAeronException(aeron_errcode(), aeron_errmsg(), SOURCEINFO);  \
 }                                                                       \
 while (0)                                                               \
 

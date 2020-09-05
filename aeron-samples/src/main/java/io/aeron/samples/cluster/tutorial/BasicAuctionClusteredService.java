@@ -77,7 +77,7 @@ public class BasicAuctionClusteredService implements ClusteredService
         final int length,
         final Header header)
     {
-        final long correlationId = buffer.getLong(offset + CORRELATION_ID_OFFSET);            // <1>
+        final long correlationId = buffer.getLong(offset + CORRELATION_ID_OFFSET);                   // <1>
         final long customerId = buffer.getLong(offset + CUSTOMER_ID_OFFSET);
         final long price = buffer.getLong(offset + PRICE_OFFSET);
 
@@ -90,7 +90,7 @@ public class BasicAuctionClusteredService implements ClusteredService
             egressMessageBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
             egressMessageBuffer.putByte(BID_SUCCEEDED_OFFSET, bidSucceeded ? (byte)1 : (byte)0);
 
-            while (session.offer(egressMessageBuffer, 0, EGRESS_MESSAGE_LENGTH) < 0)          // <5>
+            while (session.offer(egressMessageBuffer, 0, EGRESS_MESSAGE_LENGTH) < 0)                 // <5>
             {
                 idleStrategy.idle();                                                                 // <6>
             }
@@ -101,7 +101,7 @@ public class BasicAuctionClusteredService implements ClusteredService
     // tag::takeSnapshot[]
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
     {
-        snapshotBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());           // <1>
+        snapshotBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());    // <1>
         snapshotBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
 
         while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)     // <2>

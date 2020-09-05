@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredService.*;
+import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode.calculatePort;
 
 // tag::client[]
 public class BasicAuctionClusterClient implements EgressListener
@@ -141,13 +142,13 @@ public class BasicAuctionClusterClient implements EgressListener
     private long sendBid(final AeronCluster aeronCluster, final long price)
     {
         final long correlationId = this.correlationId++;
-        actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);                   // <1>
+        actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);            // <1>
         actionBidBuffer.putLong(CUSTOMER_ID_OFFSET, customerId);
         actionBidBuffer.putLong(PRICE_OFFSET, price);
 
-        while (aeronCluster.offer(actionBidBuffer, 0, BasicAuctionClusteredService.BID_MESSAGE_LENGTH) < 0)    // <2>
+        while (aeronCluster.offer(actionBidBuffer, 0, BID_MESSAGE_LENGTH) < 0)    // <2>
         {
-            idleStrategy.idle(aeronCluster.pollEgress());                                // <3>
+            idleStrategy.idle(aeronCluster.pollEgress());                         // <3>
         }
 
         return correlationId;
@@ -161,7 +162,7 @@ public class BasicAuctionClusterClient implements EgressListener
         {
             sb.append(i).append('=');
             sb.append(hostnames.get(i)).append(':').append(
-                BasicAuctionClusteredServiceNode.calculatePort(i, BasicAuctionClusteredServiceNode.CLIENT_FACING_PORT_OFFSET));
+                calculatePort(i, BasicAuctionClusteredServiceNode.CLIENT_FACING_PORT_OFFSET));
             sb.append(',');
         }
 

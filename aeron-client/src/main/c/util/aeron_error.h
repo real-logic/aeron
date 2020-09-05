@@ -17,6 +17,7 @@
 #ifndef AERON_ERROR_H
 #define AERON_ERROR_H
 
+#include <string.h>
 #include "aeron_common.h"
 
 #define AERON_ERROR_MAX_STACK_DEPTH (16)
@@ -24,11 +25,11 @@
 typedef struct aeron_per_thread_error_stct
 {
     int errcode;
-    char errmsg[AERON_ERROR_MAX_STACK_DEPTH * AERON_MAX_PATH + 128];
-    char error_stack[AERON_ERROR_MAX_STACK_DEPTH][AERON_MAX_PATH];
     int stack_depth;
     int errmsg_version;
     int error_stack_version;
+    char errmsg[AERON_ERROR_MAX_STACK_DEPTH * AERON_MAX_PATH + 128];
+    char error_stack[AERON_ERROR_MAX_STACK_DEPTH][AERON_MAX_PATH];
 }
 aeron_per_thread_error_t;
 
@@ -39,6 +40,8 @@ void aeron_set_errno(int errcode);
 void aeron_set_err_from_last_err_code(const char *format, ...);
 const char *aeron_error_code_str(int errcode);
 void aeron_err_append(int errcode, const char *format, ...);
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define AERON_ERR(errcode, fmt, ...) aeron_err_append(errcode, "[%s, %s:%d] (%d) " fmt, __PRETTY_FUNCTION__, __FILENAME__, __LINE__, errcode, __VA_ARGS__)
 
 #if defined(AERON_COMPILER_MSVC)
 bool aeron_error_dll_process_attach();

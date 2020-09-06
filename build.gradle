@@ -33,7 +33,7 @@ defaultTasks 'clean', 'build'
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.7.0'
+def agronaVersion = '1.7.1'
 def agronaVersionRange = '[1.7,1.8[' // allow any patch release of 1.7.x
 def sbeVersion = '1.20.0'
 def checkstyleVersion = '8.36'

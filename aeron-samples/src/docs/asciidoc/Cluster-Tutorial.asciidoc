@@ -172,7 +172,7 @@ cluster (e.g. sending response messages and taking snapshots).
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService.java[tag=new_service]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=new_service]
 ----
 
 === Start Up
@@ -186,7 +186,7 @@ snapshot is stored.
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService.java[tag=start]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=start]
 ----
 
 <1> Take a reference to the cluster, so that we can have access to features of the cluster within the other callbacks.
@@ -205,11 +205,11 @@ this value as the timestamp within your application state, so it will be consist
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService.java[tag=state]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=state]
 ----
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService.java[tag=message]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=message]
 ----
 
 For our input message we have 3 fields, a `correlationId` which it the customer supplied identifier for the message,
@@ -246,7 +246,7 @@ For now, our state is so simple neither of those will impact us.
 
 [source%autofit, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService.java[tag=takeSnapshot]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=takeSnapshot]
 ----
 
 <1> Write the persistent part of the application logic to a message buffer. In our case, the currently winning customer
@@ -264,7 +264,7 @@ detected from the store messages. The two approaches can be used to sanity check
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredService.java[tag=loadSnapshot]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=loadSnapshot]
 ----
 
 <1> The method `Image::isEndOfStream` can be used to determine if there is going to be any more input.
@@ -312,11 +312,11 @@ but in the interest of simplicity we are going to specify a port range for each 
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=ports]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=ports]
 ----
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=udp_channel]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=udp_channel]
 ----
 
 While we don't really need 100 ports for each node (closer to 10), it does make it clear which ports are assigned to
@@ -329,11 +329,11 @@ necessary components and then start them. As indicated above we are going to giv
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=new_service]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=new_service]
 ----
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=main]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=main]
 ----
 
 <1> Pass in the node id as a command line parameter to the service so that we can reuse the code for each instance of
@@ -355,7 +355,7 @@ performance out the system.
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=media_driver]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=media_driver]
 ----
 
 Note we've specified the custom `aeronDirName` to allow multiple Media Drivers on the same host. There is nothing
@@ -365,7 +365,7 @@ special in the configuration in the Media Driver specific to Cluster.
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=archive]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=archive]
 ----
 
 Again nothing special in the Archive configuration specific to Cluster. We've used the same `aeronDirName` as used by
@@ -375,7 +375,7 @@ the Media Driver. The `controlChannel` uses node specific port in the constructi
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=archive_client]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=archive_client]
 ----
 
 Because Cluster's Consensus Module requires that we write a log file to support the Raft protocol, we need a client for
@@ -386,7 +386,7 @@ we are using the node specific port to prevent collisions.
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=consensus_module]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=consensus_module]
 ----
 
 This is first of the two configuration sections that specific to Cluster. The Consensus Module is responsible for
@@ -438,7 +438,7 @@ just have the one.
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=clustered_service]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=clustered_service]
 ----
 
 <1> Again we use the node specific Media Driver.
@@ -453,7 +453,7 @@ Now we have a configured cluster, we can start it running. The code for launchin
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusteredServiceNode.java[tag=running]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=running]
 ----
 
 <1> Launches a `ClusteredMediaDriver` that includes instances of the Media Driver, Archive and Consensus Module.
@@ -522,11 +522,11 @@ nodes and provides methods for offering messages into the cluster and polling fo
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusterClient.java[tag=client]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusterClient.java[tag=client]
 ----
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusterClient.java[tag=connect]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusterClient.java[tag=connect]
 ----
 
 <1> Launch a media driver that will allow communication with the cluster nodes. We're using an embedded instance here
@@ -568,7 +568,7 @@ second of the two items that are connected at start up. This class provides an A
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusterClient.java[tag=publish]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusterClient.java[tag=publish]
 ----
 
 <1> In much the same way that we would send messages to a publication we put the data that we want to send into an
@@ -591,7 +591,7 @@ responses that we receive.
 
 [source, Java, indent=0, options="nowrap"]
 ----
-include::{sampleSourceDir}/io/aeron/samples/cluster/BasicAuctionClusterClient.java[tag=response]
+include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusterClient.java[tag=response]
 ----
 
 === Using the Cluster

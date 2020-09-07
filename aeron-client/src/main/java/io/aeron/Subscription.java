@@ -40,13 +40,13 @@ abstract class SubscriptionLhsPadding
 
 abstract class SubscriptionFields extends SubscriptionLhsPadding
 {
-    protected static final Image[] EMPTY_ARRAY = new Image[0];
+    protected static final Image[] EMPTY_IMAGES = new Image[0];
 
     protected final long registrationId;
     protected final int streamId;
     protected int roundRobinIndex = 0;
     protected volatile boolean isClosed = false;
-    protected volatile Image[] images = EMPTY_ARRAY;
+    protected volatile Image[] images = EMPTY_IMAGES;
     protected final ClientConductor conductor;
     protected final String channel;
     protected final AvailableImageHandler availableImageHandler;
@@ -566,7 +566,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         isClosed = true;
         final Image[] images = this.images;
-        this.images = EMPTY_ARRAY;
+        this.images = EMPTY_IMAGES;
 
         conductor.closeImages(images, unavailableImageHandler);
     }
@@ -596,7 +596,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         if (null != removedImage)
         {
             removedImage.close();
-            images = ArrayUtil.remove(oldArray, i);
+            images = oldArray.length == 1 ? EMPTY_IMAGES : ArrayUtil.remove(oldArray, i);
             conductor.releaseLogBuffers(removedImage.logBuffers(), correlationId);
         }
 

@@ -42,13 +42,15 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
  */
 public class DataTransportPoller extends UdpTransportPoller
 {
+    private static final ChannelAndTransport[] EMPTY_TRANSPORTS = new ChannelAndTransport[0];
+
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final DataHeaderFlyweight dataMessage = new DataHeaderFlyweight(unsafeBuffer);
     private final SetupFlyweight setupMessage = new SetupFlyweight(unsafeBuffer);
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
-    private ChannelAndTransport[] channelAndTransports = new ChannelAndTransport[0];
+    private ChannelAndTransport[] channelAndTransports = EMPTY_TRANSPORTS;
 
     public DataTransportPoller(final ErrorHandler errorHandler)
     {
@@ -57,9 +59,9 @@ public class DataTransportPoller extends UdpTransportPoller
 
     public void close()
     {
-        for (final ChannelAndTransport channelEndpoint : channelAndTransports)
+        for (final ChannelAndTransport transport : channelAndTransports)
         {
-            final ReceiveChannelEndpoint receiveChannelEndpoint = channelEndpoint.channelEndpoint;
+            final ReceiveChannelEndpoint receiveChannelEndpoint = transport.channelEndpoint;
             receiveChannelEndpoint.closeMultiRcvDestination(this);
             CloseHelper.close(errorHandler, receiveChannelEndpoint);
         }
@@ -132,7 +134,7 @@ public class DataTransportPoller extends UdpTransportPoller
 
     public void cancelRead(final ReceiveChannelEndpoint channelEndpoint, final UdpChannelTransport transport)
     {
-        final ChannelAndTransport[] transports = this.channelAndTransports;
+        final ChannelAndTransport[] transports = channelAndTransports;
         int index = ArrayUtil.UNKNOWN_INDEX;
 
         for (int i = 0, length = transports.length; i < length; i++)
@@ -146,7 +148,7 @@ public class DataTransportPoller extends UdpTransportPoller
 
         if (index != ArrayUtil.UNKNOWN_INDEX)
         {
-            channelAndTransports = ArrayUtil.remove(transports, index);
+            channelAndTransports = 1 == transports.length ? EMPTY_TRANSPORTS : ArrayUtil.remove(transports, index);
         }
     }
 

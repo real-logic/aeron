@@ -32,7 +32,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 public final class ClusterMember
 {
-    public static final ClusterMember[] EMPTY_CLUSTER_MEMBER_ARRAY = new ClusterMember[0];
+    static final ClusterMember[] EMPTY_MEMBERS = new ClusterMember[0];
 
     private boolean isBallotSent;
     private boolean isLeader;
@@ -527,7 +527,7 @@ public final class ClusterMember
     {
         if (null == value || value.length() == 0)
         {
-            return ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
+            return ClusterMember.EMPTY_MEMBERS;
         }
 
         final String[] memberValues = value.split("\\|");
@@ -1168,7 +1168,15 @@ public final class ClusterMember
      */
     public static ClusterMember[] removeMember(final ClusterMember[] oldMembers, final int memberId)
     {
-        return ArrayUtil.remove(oldMembers, findMemberIndex(oldMembers, memberId));
+        final int memberIndex = findMemberIndex(oldMembers, memberId);
+        if (ArrayUtil.UNKNOWN_INDEX != memberIndex && 1 == oldMembers.length)
+        {
+            return EMPTY_MEMBERS;
+        }
+        else
+        {
+            return ArrayUtil.remove(oldMembers, memberIndex);
+        }
     }
 
     /**

@@ -38,12 +38,13 @@ import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
  */
 public class Receiver implements Agent
 {
+    private static final PublicationImage[] EMPTY_IMAGES = new PublicationImage[0];
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
     private final CachedNanoClock cachedNanoClock;
-    private PublicationImage[] publicationImages = new PublicationImage[0];
+    private PublicationImage[] publicationImages = EMPTY_IMAGES;
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
     private final long reResolutionCheckIntervalNs;
@@ -91,7 +92,8 @@ public class Receiver implements Agent
             else
             {
                 image.removeFromDispatcher();
-                this.publicationImages = ArrayUtil.remove(this.publicationImages, i);
+                this.publicationImages = 1 == this.publicationImages.length ?
+                    EMPTY_IMAGES : ArrayUtil.remove(this.publicationImages, i);
             }
         }
 

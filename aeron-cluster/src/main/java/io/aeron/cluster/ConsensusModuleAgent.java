@@ -91,7 +91,7 @@ class ConsensusModuleAgent implements Agent
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role = Cluster.Role.FOLLOWER;
     private ClusterMember[] clusterMembers;
-    private ClusterMember[] passiveMembers = ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
+    private ClusterMember[] passiveMembers = ClusterMember.EMPTY_MEMBERS;
     private ClusterMember leaderMember;
     private ClusterMember thisMember;
     private long[] rankedPositions;
@@ -1247,7 +1247,7 @@ class ConsensusModuleAgent implements Agent
             ctx.clusterMarkFile().memberId(memberId);
         }
 
-        if (ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY == clusterMembers)
+        if (ClusterMember.EMPTY_MEMBERS == clusterMembers)
         {
             clusterMembers = ClusterMember.parse(members);
             this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);

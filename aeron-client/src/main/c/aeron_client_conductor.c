@@ -806,11 +806,10 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
 
     const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
 
-    const size_t static_buffer_length = sizeof(aeron_publication_command_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -894,11 +893,10 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
 
     const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
 
-    const size_t static_buffer_length = sizeof(aeron_publication_command_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -982,11 +980,10 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
 
     const size_t command_length = sizeof(aeron_subscription_command_t) + async->uri_length;
 
-    const size_t static_buffer_length = sizeof(aeron_subscription_command_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_subscription_command_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -1075,12 +1072,10 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
         sizeof(int32_t) +
         (size_t)async->counter.label_buffer_length;
 
-    const size_t static_buffer_length =
-        sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH);
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH)];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH))
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -1197,11 +1192,10 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
 
     const size_t command_length = sizeof(aeron_destination_command_t) + async->uri_length;
 
-    const size_t static_buffer_length = sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -2513,11 +2507,10 @@ int aeron_client_conductor_offer_destination_command(
     size_t uri_length = strlen(uri);
     const size_t command_length = sizeof(aeron_destination_command_t) + uri_length;
 
-    const size_t static_buffer_length = sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {

@@ -171,11 +171,10 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 {
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    const size_t static_buffer_length = MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t);
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -198,11 +197,10 @@ void aeron_driver_agent_conductor_to_client_interceptor(
 {
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    const size_t static_buffer_length = MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t);
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {
@@ -232,11 +230,10 @@ int aeron_driver_agent_raw_log_map_interceptor(
     const size_t path_len = strlen(path);
     const size_t command_length = sizeof(aeron_driver_agent_map_raw_log_op_header_t) + path_len;
 
-    const size_t static_buffer_length = AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t);
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_driver_agent_map_raw_log_op_header_t) + AERON_MAX_PATH];
     char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (command_length > static_buffer_length)
+    if (command_length > sizeof(aeron_driver_agent_map_raw_log_op_header_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
         {

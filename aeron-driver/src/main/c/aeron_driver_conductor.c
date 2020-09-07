@@ -625,11 +625,10 @@ void aeron_driver_conductor_on_available_image(
         source_identity_length +
         (2 * sizeof(int32_t));
 
-    const size_t static_buffer_length = sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH);
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
     char *response_buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (response_length > static_buffer_length)
+    if (response_length > sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH))
     {
         if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
         {
@@ -1648,11 +1647,10 @@ void aeron_driver_conductor_on_error(
 {
     const size_t response_length = sizeof(aeron_error_response_t) + length;
 
-    const size_t static_buffer_length = sizeof(aeron_error_response_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
     char *response_buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (response_length > static_buffer_length)
+    if (response_length > sizeof(aeron_error_response_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
         {
@@ -1693,11 +1691,10 @@ void aeron_driver_conductor_on_publication_ready(
 {
     const size_t response_length = sizeof(aeron_publication_buffers_ready_t) + log_file_name_length;
 
-    const size_t static_buffer_length = sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
     char *response_buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (response_length > static_buffer_length)
+    if (response_length > sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
         {
@@ -1803,11 +1800,10 @@ void aeron_driver_conductor_on_unavailable_image(
 {
     const size_t response_length = sizeof(aeron_image_message_t) + channel_length;
 
-    const size_t static_buffer_length = sizeof(aeron_image_message_t) + AERON_MAX_PATH;
-    char static_buffer[static_buffer_length];
+    char static_buffer[sizeof(aeron_image_message_t) + AERON_MAX_PATH];
     char *response_buffer = static_buffer;
     char *dynamic_buffer = NULL;
-    if (response_length > static_buffer_length)
+    if (response_length > sizeof(aeron_image_message_t) + AERON_MAX_PATH)
     {
         if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
         {

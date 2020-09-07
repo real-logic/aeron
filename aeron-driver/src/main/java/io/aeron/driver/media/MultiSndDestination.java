@@ -19,6 +19,7 @@ import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.CachedNanoClock;
 
 import java.io.IOException;
@@ -146,12 +147,7 @@ class ManualSndMultiDestination extends MultiSndDestination
 
     void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
-        final int length = destinations.length;
-        final Destination[] newElements = new Destination[length + 1];
-
-        System.arraycopy(destinations, 0, newElements, 0, length);
-        newElements[length] = new Destination(nanoClock.nanoTime(), channelUri, address);
-        destinations = newElements;
+        destinations = ArrayUtil.add(destinations, new Destination(nanoClock.nanoTime(), channelUri, address));
     }
 
     void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
@@ -171,27 +167,13 @@ class ManualSndMultiDestination extends MultiSndDestination
 
         if (found)
         {
-            final Destination[] oldElements = destinations;
-            final int length = oldElements.length;
-            final int newLength = length - 1;
-
-            if (0 == newLength)
+            if (1 == destinations.length)
             {
                 destinations = EMPTY_DESTINATIONS;
             }
             else
             {
-                final Destination[] newElements = new Destination[newLength];
-
-                for (int i = 0, j = 0; i < length; i++)
-                {
-                    if (index != i)
-                    {
-                        newElements[j++] = oldElements[i];
-                    }
-                }
-
-                destinations = newElements;
+                destinations = ArrayUtil.remove(destinations, index);
             }
         }
     }
@@ -293,12 +275,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
 
     private void add(final Destination destination)
     {
-        final int length = destinations.length;
-        final Destination[] newElements = new Destination[length + 1];
-
-        System.arraycopy(destinations, 0, newElements, 0, length);
-        newElements[length] = destination;
-        destinations = newElements;
+        destinations = ArrayUtil.add(destinations, destination);
     }
 
     private void truncateDestinations(final int removed)

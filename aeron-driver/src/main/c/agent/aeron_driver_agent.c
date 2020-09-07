@@ -171,8 +171,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 {
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
-    char *buffer = static_buffer;
+    char *buffer = NULL;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
     {
@@ -181,6 +180,11 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
             return;
         }
         buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
+        buffer = static_buffer;
     }
 
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
@@ -197,8 +201,7 @@ void aeron_driver_agent_conductor_to_client_interceptor(
 {
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
-    char *buffer = static_buffer;
+    char *buffer = NULL;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
     {
@@ -207,6 +210,11 @@ void aeron_driver_agent_conductor_to_client_interceptor(
             return;
         }
         buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
+        buffer = static_buffer;
     }
 
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
@@ -230,8 +238,7 @@ int aeron_driver_agent_raw_log_map_interceptor(
     const size_t path_len = strlen(path);
     const size_t command_length = sizeof(aeron_driver_agent_map_raw_log_op_header_t) + path_len;
 
-    char static_buffer[sizeof(aeron_driver_agent_map_raw_log_op_header_t) + AERON_MAX_PATH];
-    char *buffer = static_buffer;
+    char *buffer = NULL;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_driver_agent_map_raw_log_op_header_t) + AERON_MAX_PATH)
     {
@@ -240,6 +247,11 @@ int aeron_driver_agent_raw_log_map_interceptor(
             return result;
         }
         buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_driver_agent_map_raw_log_op_header_t) + AERON_MAX_PATH];
+        buffer = static_buffer;
     }
 
     aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;

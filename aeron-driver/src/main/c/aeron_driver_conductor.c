@@ -625,8 +625,7 @@ void aeron_driver_conductor_on_available_image(
         source_identity_length +
         (2 * sizeof(int32_t));
 
-    char static_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
-    char *response_buffer = static_buffer;
+    char *response_buffer = NULL;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH))
     {
@@ -642,6 +641,11 @@ void aeron_driver_conductor_on_available_image(
             return;
         }
         response_buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
+        response_buffer = static_buffer;
     }
 
     aeron_image_buffers_ready_t *response = (aeron_image_buffers_ready_t *)response_buffer;
@@ -1647,8 +1651,7 @@ void aeron_driver_conductor_on_error(
 {
     const size_t response_length = sizeof(aeron_error_response_t) + length;
 
-    char static_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
-    char *response_buffer = static_buffer;
+    char *response_buffer = NULL;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_error_response_t) + AERON_MAX_PATH)
     {
@@ -1664,6 +1667,11 @@ void aeron_driver_conductor_on_error(
             return;
         }
         response_buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
+        response_buffer = static_buffer;
     }
 
     aeron_error_response_t *response = (aeron_error_response_t *)response_buffer;
@@ -1691,8 +1699,7 @@ void aeron_driver_conductor_on_publication_ready(
 {
     const size_t response_length = sizeof(aeron_publication_buffers_ready_t) + log_file_name_length;
 
-    char static_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
-    char *response_buffer = static_buffer;
+    char *response_buffer = NULL;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH)
     {
@@ -1708,6 +1715,11 @@ void aeron_driver_conductor_on_publication_ready(
             return;
         }
         response_buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
+        response_buffer = static_buffer;
     }
 
     aeron_publication_buffers_ready_t *response = (aeron_publication_buffers_ready_t *)response_buffer;
@@ -1800,8 +1812,7 @@ void aeron_driver_conductor_on_unavailable_image(
 {
     const size_t response_length = sizeof(aeron_image_message_t) + channel_length;
 
-    char static_buffer[sizeof(aeron_image_message_t) + AERON_MAX_PATH];
-    char *response_buffer = static_buffer;
+    char *response_buffer = NULL;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_image_message_t) + AERON_MAX_PATH)
     {
@@ -1817,6 +1828,11 @@ void aeron_driver_conductor_on_unavailable_image(
             return;
         }
         response_buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_image_message_t) + AERON_MAX_PATH];
+        response_buffer = static_buffer;
     }
 
     aeron_image_message_t *response = (aeron_image_message_t *)response_buffer;

@@ -23,6 +23,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 import static org.agrona.AsciiEncoding.parseLongAscii;
 import static org.agrona.SystemUtil.parseDuration;
+import static org.agrona.collections.ArrayUtil.add;
 
 /**
  * Abstract minimum multicast sender flow control strategy. It supports the concept of only tracking the minimum of a
@@ -177,16 +178,6 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
     protected final int groupMinSize()
     {
         return groupMinSize;
-    }
-
-    static Receiver[] add(final Receiver[] receivers, final Receiver receiver)
-    {
-        final int length = receivers.length;
-        final Receiver[] newElements = new Receiver[length + 1];
-
-        System.arraycopy(receivers, 0, newElements, 0, length);
-        newElements[length] = receiver;
-        return newElements;
     }
 
     static Receiver[] truncateReceivers(final Receiver[] receivers, final int removed)

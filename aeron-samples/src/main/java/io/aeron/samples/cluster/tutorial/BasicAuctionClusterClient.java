@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.samples.cluster;
+package io.aeron.samples.cluster.tutorial;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
@@ -31,9 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.aeron.samples.cluster.BasicAuctionClusteredService.*;
-import static io.aeron.samples.cluster.BasicAuctionClusteredServiceNode.CLIENT_FACING_PORT_OFFSET;
-import static io.aeron.samples.cluster.BasicAuctionClusteredServiceNode.calculatePort;
+import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredService.*;
+import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode.calculatePort;
 
 // tag::client[]
 public class BasicAuctionClusterClient implements EgressListener
@@ -143,13 +142,13 @@ public class BasicAuctionClusterClient implements EgressListener
     private long sendBid(final AeronCluster aeronCluster, final long price)
     {
         final long correlationId = this.correlationId++;
-        actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);                   // <1>
+        actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);            // <1>
         actionBidBuffer.putLong(CUSTOMER_ID_OFFSET, customerId);
         actionBidBuffer.putLong(PRICE_OFFSET, price);
 
         while (aeronCluster.offer(actionBidBuffer, 0, BID_MESSAGE_LENGTH) < 0)    // <2>
         {
-            idleStrategy.idle(aeronCluster.pollEgress());                                // <3>
+            idleStrategy.idle(aeronCluster.pollEgress());                         // <3>
         }
 
         return correlationId;
@@ -162,7 +161,8 @@ public class BasicAuctionClusterClient implements EgressListener
         for (int i = 0; i < hostnames.size(); i++)
         {
             sb.append(i).append('=');
-            sb.append(hostnames.get(i)).append(':').append(calculatePort(i, CLIENT_FACING_PORT_OFFSET));
+            sb.append(hostnames.get(i)).append(':').append(
+                calculatePort(i, BasicAuctionClusteredServiceNode.CLIENT_FACING_PORT_OFFSET));
             sb.append(',');
         }
 

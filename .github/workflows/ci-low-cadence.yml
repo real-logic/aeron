@@ -15,8 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11' ]
-        os: [ 'ubuntu-latest' ]
+        java: [ '8', '11', '14' ]
+        os: [ 'ubuntu-latest', 'windows-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -38,19 +38,19 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build and Run Slow Tests with Gradle
         run: ./gradlew slowTest
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   c-driver-slow-system-test-gcc-build:
     name: C++ Slow System Tests GCC ${{ matrix.version }}
@@ -84,19 +84,19 @@ jobs:
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-c-gcc-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   c-driver-slow-system-test-msvc-build:
     name: C++ Slow System Tests MSVC
@@ -123,19 +123,19 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
         run: cppbuild/cppbuild --slow-system-tests
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-c-msvc-latest
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-sanitize-build:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
@@ -169,16 +169,16 @@ jobs:
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --build-archive-api --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-gcc-sanitize-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}

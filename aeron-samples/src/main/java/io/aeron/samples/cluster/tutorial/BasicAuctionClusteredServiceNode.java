@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.samples.cluster;
+package io.aeron.samples.cluster.tutorial;
 
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;

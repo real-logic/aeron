@@ -43,19 +43,19 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
         run: ./gradlew
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}
@@ -89,19 +89,19 @@ jobs:
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-gcc-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-centos-build:
     name: C++ GCC ${{ matrix.version }} (CentOS)
@@ -127,19 +127,19 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
         run: cppbuild/centos-docker-build ${{ matrix.version }}
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-gcc-centos-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}
@@ -175,19 +175,19 @@ jobs:
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-clang-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-clang-debug-build:
     name: C++ Clang ${{ matrix.version }} debug build
@@ -223,27 +223,25 @@ jobs:
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --debug-build --build-archive-api
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-clang-debug-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
-  cpp-clang-macos-build:
+  cpp-xcode-build:
     name: C++ Xcode ${{ matrix.version }} (macOS)
     runs-on: macOS-latest
     strategy:
       fail-fast: false
-      matrix:
-        version: [ '11.5' ]
     env:
       CC: clang
       CXX: clang++
@@ -262,24 +260,21 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Install compiler
-        run: |
-          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-xcode-latest
+          path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-msvc-build:
     name: C++ MSVC (Windows)
@@ -306,16 +301,16 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
-      - name: Copy crash logs
-        id: copy_crash_logs
+      - name: Copy test logs
+        id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/crash_logs"
+          echo "::set-output name=dir::build/test_logs"
 
-          ./gradlew copyCrashLogs
+          ./gradlew copyTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_crash_logs.outputs.dir }}
+          name: crash-logs-msvc-latest
+          path: ${{ steps.copy_test_logs.outputs.dir }}

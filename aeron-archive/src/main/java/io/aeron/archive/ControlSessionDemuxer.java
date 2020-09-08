@@ -97,8 +97,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = headerDecoder.templateId();
-        switch (templateId)
+        switch (headerDecoder.templateId())
         {
             case ConnectRequestDecoder.TEMPLATE_ID:
             {

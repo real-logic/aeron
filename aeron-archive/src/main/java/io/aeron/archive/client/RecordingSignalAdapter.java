@@ -105,8 +105,7 @@ public class RecordingSignalAdapter
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case ControlResponseDecoder.TEMPLATE_ID:
                 controlResponseDecoder.wrap(

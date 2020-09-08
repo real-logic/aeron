@@ -83,8 +83,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case CanvassPositionDecoder.TEMPLATE_ID:
                 canvassPositionDecoder.wrap(

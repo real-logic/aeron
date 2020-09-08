@@ -73,8 +73,7 @@ public class RecordingEventsAdapter implements FragmentHandler
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case RecordingStartedDecoder.TEMPLATE_ID:
                 recordingStartedDecoder.wrap(

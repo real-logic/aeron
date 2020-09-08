@@ -27,6 +27,7 @@ import org.agrona.DirectBuffer;
 final class ConsensusModuleAdapter implements AutoCloseable
 {
     private static final int FRAGMENT_LIMIT = 10;
+
     private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -55,7 +56,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
         return subscription.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
-    @SuppressWarnings({ "unused", "MethodLength" })
+    @SuppressWarnings("MethodLength")
     private ControlledFragmentHandler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -69,8 +70,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
 
         ControlledFragmentHandler.Action action = ControlledFragmentHandler.Action.CONTINUE;
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case SessionMessageHeaderDecoder.TEMPLATE_ID:
                 sessionMessageHeaderDecoder.wrap(

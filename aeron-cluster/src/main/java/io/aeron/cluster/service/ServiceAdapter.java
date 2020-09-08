@@ -60,8 +60,7 @@ final class ServiceAdapter implements AutoCloseable
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case JoinLogDecoder.TEMPLATE_ID:
                 joinLogDecoder.wrap(

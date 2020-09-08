@@ -79,8 +79,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case SnapshotMarkerDecoder.TEMPLATE_ID:
                 snapshotMarkerDecoder.wrap(

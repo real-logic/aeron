@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11' ]
+        java: [ '8', '11', '14' ]
         os: [ 'ubuntu-latest', 'windows-latest' ]
     steps:
       - name: Checkout code

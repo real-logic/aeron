@@ -857,14 +857,14 @@ task testReport(type: TestReport) {
     reportOn subprojects*.test
 }
 
-task copyCrashLogs(type: Copy) {
+task copyTestLogs(type: Copy) {
     from '.'
     include '**/build/test-output/**'
     include '**/hs_err*.log'
     include '**/LastTest.log'
     include 'LICENSE'
     exclude 'build'
-    into 'build/crash_logs'
+    into 'build/test_logs'
 
     includeEmptyDirs = false
 }

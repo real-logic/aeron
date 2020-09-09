@@ -963,7 +963,7 @@ private:
         void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
     {
         CountersReader reader = CountersReader(counters_reader);
-        on_unavailable_counter_t& callback = *reinterpret_cast<on_unavailable_counter_t *>(clientd);
+        on_unavailable_counter_t &callback = *reinterpret_cast<on_unavailable_counter_t *>(clientd);
         callback(reader, registration_id, counter_id);
     }
 

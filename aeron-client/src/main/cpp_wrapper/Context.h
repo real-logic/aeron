@@ -372,7 +372,7 @@ public:
      */
     inline this_t &mediaDriverTimeout(long value)
     {
-        if (0 < value)
+        if (value < 0)
         {
             throw IllegalArgumentException("timeout less than 0", SOURCEINFO);
         }
@@ -405,7 +405,7 @@ public:
      */
     inline this_t &resourceLingerTimeout(long value)
     {
-        if (0 < value)
+        if (value < 0)
         {
             throw IllegalArgumentException("timeout less than 0", SOURCEINFO);
         }

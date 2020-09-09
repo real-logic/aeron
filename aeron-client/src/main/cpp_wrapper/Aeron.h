@@ -101,8 +101,7 @@ public:
      */
     inline bool isClosed()
     {
-        return false;
-//        throw UnsupportedOperationException("Need client close on C API", SOURCEINFO);
+        return aeron_is_closed(m_aeron);
     }
 
     /**

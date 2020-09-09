@@ -82,6 +82,11 @@ public:
             });
     }
 
+    uint64_t livenessTimeoutNs()
+    {
+        return aeron_driver_context_get_client_liveness_timeout_ns(m_context);
+    }
+
 protected:
     int init()
     {
@@ -97,6 +102,8 @@ protected:
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
+        aeron_driver_context_set_timer_interval_ns(m_context, 500000000);
+        aeron_driver_context_set_client_liveness_timeout_ns(m_context, 1000000000);
 
         long long debugTimeoutMs;
         if (0 != (debugTimeoutMs = EmbeddedMediaDriver::getDebugTimeoutMs()))

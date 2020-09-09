@@ -495,9 +495,7 @@ public:
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        // TODO: Ideally we wouldn't need the DataFrameHeader code, but the C versions are not exposed.
-        // TODO: Figure what the best implementation would be here...
-        // Also this is slight cheat, we are assuming that the frame_header and data pointers index into the same
+        // This is slight cheat, we are assuming that the frame_header and data pointers index into the same
         // contiguous block of memory.
         bufferClaim.wrap(temp_claim.frame_header, DataFrameHeader::LENGTH + length);
 

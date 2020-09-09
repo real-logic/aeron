@@ -20,37 +20,22 @@
 #include <cstddef>
 
 #include "util/Index.h"
+#include "aeronc.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace DataFrameHeader {
 
-#pragma pack(push)
-#pragma pack(4)
-struct DataFrameHeaderDefn
-{
-    std::int32_t frameLength;
-    std::uint8_t version;
-    std::uint8_t flags;
-    std::uint16_t type;
-    std::int32_t termOffset;
-    std::int32_t sessionId;
-    std::int32_t streamId;
-    std::int32_t termId;
-    std::int64_t reservedValue;
-};
-#pragma pack(pop)
-
-static const util::index_t FRAME_LENGTH_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, frameLength);
-static const util::index_t VERSION_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, version);
-static const util::index_t FLAGS_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, flags);
-static const util::index_t TYPE_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, type);
-static const util::index_t TERM_OFFSET_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, termOffset);
-static const util::index_t SESSION_ID_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, sessionId);
-static const util::index_t STREAM_ID_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, streamId);
-static const util::index_t TERM_ID_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, termId);
-static const util::index_t RESERVED_VALUE_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, reservedValue);
-static const util::index_t DATA_OFFSET = sizeof(DataFrameHeaderDefn);
+static const util::index_t FRAME_LENGTH_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, frame_length);
+static const util::index_t VERSION_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, version);
+static const util::index_t FLAGS_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, flags);
+static const util::index_t TYPE_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, type);
+static const util::index_t TERM_OFFSET_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, term_offset);
+static const util::index_t SESSION_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, session_id);
+static const util::index_t STREAM_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, stream_id);
+static const util::index_t TERM_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, term_id);
+static const util::index_t RESERVED_VALUE_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, reserved_value);
+static const util::index_t DATA_OFFSET = sizeof(aeron_header_values_frame_t);
 
 static const util::index_t LENGTH = DATA_OFFSET;
 

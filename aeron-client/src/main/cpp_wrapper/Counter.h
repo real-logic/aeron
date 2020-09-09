@@ -42,10 +42,12 @@ public:
     }
     /// @endcond
 
-//    TODO: implement this as it is public.
-//    Counter(CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId) :
-//    {
-//    }
+    Counter(CountersReader &reader, std::int64_t registrationId, std::int32_t counterId) :
+        AtomicCounter(reader.getCounterAddress(counterId), registrationId, counterId),
+        m_reader(reader),
+        m_registrationId(registrationId)
+    {
+    }
 
     inline std::int64_t registrationId() const
     {

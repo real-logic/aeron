@@ -113,9 +113,16 @@ public:
     inline std::int64_t getCounterValue(std::int32_t id) const
     {
         validateCounterId(id);
-        int64_t *counter_addr = aeron_counters_reader_addr(m_countersReader, id);
+        int64_t *counter_addr = getCounterAddress(id);
         return *counter_addr;
     }
+
+    /// @cond HIDDEN_SYMBOLS
+    inline int64_t *getCounterAddress(int32_t id) const
+    {
+        return aeron_counters_reader_addr(m_countersReader, id);
+    }
+    /// @endcond
 
     inline std::int64_t getCounterRegistrationId(std::int32_t id) const
     {

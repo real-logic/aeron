@@ -84,6 +84,16 @@ TEST_F(CountersTest, shouldAddAndCloseCounterWithCallbacks)
         WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId));
         ASSERT_EQ(counter->registrationId(), aeron->countersReader().getCounterRegistrationId(counter->id()));
         ASSERT_EQ(aeron->clientId(), aeron->countersReader().getCounterOwnerId(counter->id()));
+
+        counter->incrementOrdered();
+        counter->incrementOrdered();
+        counter->incrementOrdered();
+        counter->incrementOrdered();
+
+        Counter readOnlyCounter(aeron->countersReader(), counter->registrationId(), counter->id());
+        ASSERT_EQ(
+            readOnlyCounter.registrationId(), aeron->countersReader().getCounterRegistrationId(readOnlyCounter.id()));
+        ASSERT_EQ(counter->get(), readOnlyCounter.get());
     }
 
     WAIT_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&counterUnavailable));

@@ -35,9 +35,19 @@ public:
         aeron_counter_constants(m_counter, &m_constants);
     }
 
+    AtomicCounter(std::int64_t *ptr, std::int64_t registrationId, std::int32_t counterId) :
+        m_counter(nullptr), m_ptr(ptr)
+    {
+        m_constants.registration_id = registrationId;
+        m_constants.counter_id = counterId;
+    }
+
     ~AtomicCounter()
     {
-        aeron_counter_close(m_counter, NULL, NULL);
+        if (nullptr != m_counter)
+        {
+            aeron_counter_close(m_counter, NULL, NULL);
+        }
     }
 
     inline std::int32_t id() const

@@ -21,6 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <iterator>
+
 #include "Image.h"
 #include "util/Export.h"
 #include "concurrent/CountersReader.h"

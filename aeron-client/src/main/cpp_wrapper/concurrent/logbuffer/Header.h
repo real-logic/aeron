@@ -23,10 +23,7 @@
 #include "concurrent/AtomicBuffer.h"
 #include "DataFrameHeader.h"
 
-extern "C"
-{
 #include "aeronc.h"
-}
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

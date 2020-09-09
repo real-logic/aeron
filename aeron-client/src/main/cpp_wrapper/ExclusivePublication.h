@@ -22,17 +22,14 @@
 #include <memory>
 #include <string>
 
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/BufferClaim.h>
-#include <concurrent/status/UnsafeBufferPosition.h>
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/logbuffer/BufferClaim.h"
+#include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "Publication.h"
 #include "util/Exceptions.h"
 
-extern "C"
-{
 #include "aeronc.h"
-}
 
 namespace aeron
 {

@@ -17,13 +17,10 @@
 #ifndef INCLUDED_AERON_H
 #define INCLUDED_AERON_H
 
-#include <thread>
-#include <random>
 #include <unordered_map>
 #include <mutex>
+
 #include "util/Exceptions.h"
-#include "concurrent/logbuffer/TermReader.h"
-#include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"
 #include "concurrent/AgentInvoker.h"
 #include "Publication.h"
@@ -34,10 +31,7 @@
 #include "util/Export.h"
 #include "ClientConductor.h"
 
-extern "C"
-{
 #include "aeronc.h"
-}
 
 /// Top namespace for Aeron C++ API
 namespace aeron

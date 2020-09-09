@@ -19,11 +19,7 @@
 #include <cstdint>
 #include <memory>
 
-extern "C"
-{
 #include "aeronc.h"
-}
-
 
 #include "util/Index.h"
 #include "AtomicBuffer.h"

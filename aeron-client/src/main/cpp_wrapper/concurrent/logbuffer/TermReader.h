@@ -17,10 +17,10 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 #define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
-#include "functional"
+#include <functional>
+
 #include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
-#include "LogBufferDescriptor.h"
 #include "Header.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {

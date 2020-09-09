@@ -17,8 +17,10 @@
 #define AERON_CONTROLLEDFRAGMENTASSEMBLER_H
 
 #include <unordered_map>
+
 #include "Aeron.h"
 #include "BufferBuilder.h"
+#include "concurrent/logbuffer/FrameDescriptor.h"
 
 namespace aeron
 {

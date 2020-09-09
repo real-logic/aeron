@@ -18,12 +18,9 @@
 #define AERON_CONCURRENT_LOGBUFFER_TERM_APPENDER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
-#include "HeaderWriter.h"
-#include "LogBufferDescriptor.h"
-#include "BufferClaim.h"
-#include "DataFrameHeader.h"
+
+#include "util/Index.h"
+#include "concurrent/AtomicBuffer.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

@@ -17,10 +17,11 @@
 #define AERON_LOSS_REPORT_READER_H
 
 #include <functional>
-#include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
-#include <util/BitUtil.h>
-#include <concurrent/reports/LossReportDescriptor.h>
+
+#include "util/Index.h"
+#include "concurrent/AtomicBuffer.h"
+#include "util/BitUtil.h"
+#include "concurrent/reports/LossReportDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace reports {
 

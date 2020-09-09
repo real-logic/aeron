@@ -19,9 +19,11 @@
 #include <cinttypes>
 #include <csignal>
 #include <climits>
+#include <random>
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"
+#include "concurrent/SleepingIdleStrategy.h"
 #include "Configuration.h"
 #include "RateReporter.h"
 #include "Aeron.h"

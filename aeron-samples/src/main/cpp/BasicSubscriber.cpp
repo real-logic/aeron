@@ -20,6 +20,7 @@
 
 #include "Configuration.h"
 #include "util/CommandOptionParser.h"
+#include "concurrent/SleepingIdleStrategy.h"
 #include "Aeron.h"
 
 using namespace aeron::util;

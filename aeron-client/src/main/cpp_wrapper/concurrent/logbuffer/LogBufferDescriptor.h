@@ -17,10 +17,10 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_DESCRIPTOR_H
 #define AERON_CONCURRENT_LOGBUFFER_DESCRIPTOR_H
 
-#include <util/Index.h>
-#include <util/StringUtil.h>
-#include <util/BitUtil.h>
-#include <concurrent/AtomicBuffer.h>
+#include "util/Index.h"
+#include "util/StringUtil.h"
+#include "util/BitUtil.h"
+#include "concurrent/AtomicBuffer.h"
 #include "FrameDescriptor.h"
 #include "DataFrameHeader.h"
 

@@ -18,16 +18,14 @@
 #define AERON_CONTEXT_H
 
 #include <memory>
-#include <util/Exceptions.h>
-#include <concurrent/AgentRunner.h>
-#include <concurrent/CountersReader.h>
-#include <CncFileDescriptor.h>
 #include <iostream>
 
-extern "C"
-{
+#include "util/Exceptions.h"
+#include "concurrent/AgentRunner.h"
+#include "concurrent/CountersReader.h"
+#include "CncFileDescriptor.h"
+
 #include "aeronc.h"
-}
 
 namespace aeron
 {

@@ -17,14 +17,15 @@
 #ifndef AERON_IMAGE_H
 #define AERON_IMAGE_H
 
-#include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/Header.h>
 #include <algorithm>
 #include <array>
 #include <vector>
 #include <atomic>
 #include <cassert>
 #include <functional>
+
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/logbuffer/Header.h"
 
 namespace aeron
 {

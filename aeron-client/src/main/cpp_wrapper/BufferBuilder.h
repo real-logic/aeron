@@ -17,6 +17,7 @@
 #define AERON_BUFFERBUILDER_H
 
 #include <limits>
+
 #include "Aeron.h"
 
 namespace aeron

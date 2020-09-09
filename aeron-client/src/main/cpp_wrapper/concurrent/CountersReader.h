@@ -42,7 +42,10 @@ namespace aeron { namespace concurrent {
  *  |                       Registration Id                         |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                     112 bytes of padding                     ...
+ *  |                          Owner Id                             |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                     104 bytes of padding                     ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  *  |                   Repeats to end of buffer                   ...
@@ -125,6 +128,19 @@ public:
         }
 
         return registrationId;
+    }
+
+    inline std::int64_t getCounterOwnerId(std::int32_t id) const
+    {
+        validateCounterId(id);
+
+        std::int64_t ownerId;
+        if (aeron_counters_reader_counter_owner_id(m_countersReader, id, &ownerId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return ownerId;
     }
 
     inline std::int32_t getCounterState(std::int32_t id) const

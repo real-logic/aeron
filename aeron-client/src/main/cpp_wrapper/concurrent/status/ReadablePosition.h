@@ -23,11 +23,11 @@ template <class X>
 class ReadablePosition
 {
 public:
-    explicit ReadablePosition(X& impl) : m_impl(impl)
+    explicit ReadablePosition(X &impl) : m_impl(impl)
     {
     }
 
-    inline void wrap(const ReadablePosition<X>& position)
+    inline void wrap(const ReadablePosition<X> &position)
     {
         m_impl.wrap(position.m_impl);
     }

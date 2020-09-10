@@ -25,7 +25,7 @@
 
 #define COUNTER_LABEL "counter label"
 #define COUNTER_TYPE_ID (102)
-#define COUNTER_KEY_LENGTH (sizeof(int64_t) + 3)
+#define COUNTER_KEY_LENGTH (sizeof(std::int64_t) + 3)
 
 using namespace aeron;
 using testing::MockFunction;
@@ -47,8 +47,8 @@ public:
 protected:
     EmbeddedMediaDriver m_driver;
     std::string m_label = COUNTER_LABEL;
-    uint8_t m_key[COUNTER_KEY_LENGTH];
-    size_t m_key_length = COUNTER_KEY_LENGTH;
+    std::uint8_t m_key[COUNTER_KEY_LENGTH];
+    std::size_t m_key_length = COUNTER_KEY_LENGTH;
 };
 
 TEST_F(CountersTest, shouldAddAndCloseCounterWithCallbacks)
@@ -79,7 +79,7 @@ TEST_F(CountersTest, shouldAddAndCloseCounterWithCallbacks)
     std::int64_t regId = INT64_C(9387628937456);
 
     memcpy(m_key, &regId, sizeof(regId));
-    int64_t counterId = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
+    std::int64_t counterId = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
     {
         WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId));
         ASSERT_EQ(counter->registrationId(), aeron->countersReader().getCounterRegistrationId(counter->id()));
@@ -108,7 +108,7 @@ TEST_F(CountersTest, shouldReadCounterChange)
     std::int64_t regId = INT64_C(9387628937456);
 
     memcpy(m_key, &regId, sizeof(regId));
-    int64_t counterId = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
+    std::int64_t counterId = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
     WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId));
 
     EXPECT_EQ(counter->label(), aeron->countersReader().getCounterLabel(counter->id()));

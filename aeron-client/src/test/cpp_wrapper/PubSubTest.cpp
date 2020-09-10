@@ -125,7 +125,7 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
             };
 
             std::string message = "hello world!";
-            int32_t length = buffer.putString(0, message);
+            std::int32_t length = buffer.putString(0, message);
             const std::int64_t expectedPosition = util::BitUtil::align(
                 dataHeaderLength + length, FrameDescriptor::FRAME_ALIGNMENT);
 
@@ -299,8 +299,6 @@ TEST_P(PubSubTest, shouldBlockPollSubscription)
 
 TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
 {
-    buffer_t buf;
-    AtomicBuffer buffer(buf);
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
     const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();

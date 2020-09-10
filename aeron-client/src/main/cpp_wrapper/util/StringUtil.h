@@ -101,6 +101,7 @@ inline std::string toString(const value_t &value)
 {
     std::stringstream stream;
     stream << value;
+
     return stream.str();
 }
 
@@ -111,6 +112,7 @@ inline std::string toStringWithCommas(const value_t &value)
 
     stream.imbue(std::locale(""));
     stream << std::fixed << value;
+
     return stream.str();
 }
 
@@ -191,7 +193,6 @@ static T fromString(const std::string &str)
 
     return t;
 }
-
 
 }}
 

@@ -37,10 +37,10 @@ namespace aeron { namespace concurrent { namespace logbuffer {
  * @param header representing the meta data for the data.
  */
 typedef std::function<void(
-    concurrent::AtomicBuffer& buffer,
+    concurrent::AtomicBuffer &buffer,
     util::index_t offset,
     util::index_t length,
-    Header& header)> fragment_handler_t;
+    Header &header)> fragment_handler_t;
 
 }}}
 

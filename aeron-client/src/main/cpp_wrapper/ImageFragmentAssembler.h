@@ -49,9 +49,9 @@ public:
      */
     explicit ImageFragmentAssembler(
         const fragment_handler_t &delegate,
-        size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
+        std::size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_delegate(delegate),
-        m_builder(static_cast<int32_t>(initialBufferLength))
+        m_builder(static_cast<std::int32_t>(initialBufferLength))
     {
     }
 
@@ -85,9 +85,7 @@ private:
         {
             if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
             {
-                m_builder
-                    .reset()
-                    .append(buffer, offset, length, header);
+                m_builder.reset().append(buffer, offset, length, header);
             }
             else
             {

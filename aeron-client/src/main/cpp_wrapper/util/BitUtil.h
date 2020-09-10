@@ -196,7 +196,6 @@ inline int fastMod3(value_t value) noexcept
 }
 }
 
-}
-}
+}}
 
 #endif

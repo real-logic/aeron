@@ -72,6 +72,7 @@ ChannelUriStringBuilder &setParameters(const char *media, const char *endpoint, 
     {
         builder.endpoint(endpoint);
     }
+
     return builder;
 }
 

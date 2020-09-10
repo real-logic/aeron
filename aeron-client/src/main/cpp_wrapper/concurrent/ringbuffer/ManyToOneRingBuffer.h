@@ -28,12 +28,13 @@
 #include "RingBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
-namespace aeron { namespace concurrent { namespace ringbuffer {
+namespace aeron { namespace concurrent { namespace ringbuffer
+{
 
 class ManyToOneRingBuffer
 {
 public:
-    explicit ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer) :
+    explicit ManyToOneRingBuffer(concurrent::AtomicBuffer &buffer) :
         m_buffer(buffer)
     {
         m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
@@ -49,8 +50,9 @@ public:
         m_consumerHeartbeatIndex = m_capacity + RingBufferDescriptor::CONSUMER_HEARTBEAT_OFFSET;
     }
 
-    ManyToOneRingBuffer(const ManyToOneRingBuffer&) = delete;
-    ManyToOneRingBuffer& operator=(const ManyToOneRingBuffer&) = delete;
+    ManyToOneRingBuffer(const ManyToOneRingBuffer &) = delete;
+
+    ManyToOneRingBuffer &operator=(const ManyToOneRingBuffer &) = delete;
 
     inline util::index_t capacity() const
     {
@@ -58,7 +60,7 @@ public:
     }
 
     bool write(
-        std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+        std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         bool isSuccessful = false;
 
@@ -81,7 +83,7 @@ public:
         return isSuccessful;
     }
 
-    int read(const handler_t& handler, int messageCountLimit)
+    int read(const handler_t &handler, int messageCountLimit)
     {
         const std::int64_t head = m_buffer.getInt64(m_headPositionIndex);
         const auto headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
@@ -89,7 +91,7 @@ public:
         int messagesRead = 0;
         int bytesRead = 0;
 
-        auto cleanup = util::InvokeOnScopeExit {
+        auto cleanup = util::InvokeOnScopeExit{
             [&]()
             {
                 if (bytesRead != 0)
@@ -120,14 +122,16 @@ public:
 
             ++messagesRead;
             handler(
-                msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
+                msgTypeId,
+                m_buffer,
+                RecordDescriptor::encodedMsgOffset(recordIndex),
                 recordLength - RecordDescriptor::HEADER_LENGTH);
         }
 
         return messagesRead;
     }
 
-    inline int read(const handler_t& handler)
+    inline int read(const handler_t &handler)
     {
         return read(handler, INT_MAX);
     }
@@ -325,7 +329,7 @@ private:
         }
     }
 
-    inline static bool scanBackToConfirmStillZeroed(const AtomicBuffer& buffer, std::int32_t from, std::int32_t limit)
+    inline static bool scanBackToConfirmStillZeroed(const AtomicBuffer &buffer, std::int32_t from, std::int32_t limit)
     {
         std::int32_t i = from - RecordDescriptor::ALIGNMENT;
         bool allZeroes = true;

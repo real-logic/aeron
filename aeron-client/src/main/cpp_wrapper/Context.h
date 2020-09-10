@@ -375,7 +375,7 @@ public:
             throw IllegalArgumentException("timeout less than 0", SOURCEINFO);
         }
 
-        if (aeron_context_set_driver_timeout_ms(m_context, (uint64_t)value) < 0)
+        if (aeron_context_set_driver_timeout_ms(m_context, static_cast<std::uint64_t>(value)) < 0)
         {
             throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
         }
@@ -391,7 +391,7 @@ public:
      */
     long mediaDriverTimeout() const
     {
-        return (long)aeron_context_get_driver_timeout_ms(m_context);
+        return static_cast<long>(aeron_context_get_driver_timeout_ms(m_context));
     }
 
     /**
@@ -408,7 +408,7 @@ public:
             throw IllegalArgumentException("timeout less than 0", SOURCEINFO);
         }
 
-        uint64_t duration_ns = (uint64_t)value * 1000000;
+        std::uint64_t duration_ns = static_cast<std::uint64_t>(value) * 1000000;
         if (aeron_context_set_resource_linger_duration_ns(m_context, duration_ns) < 0)
         {
             throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
@@ -458,8 +458,9 @@ public:
     static std::string defaultAeronPath()
     {
         char path[1024];
-        size_t length = sizeof(path);
+        std::size_t length = sizeof(path);
         int result = aeron_default_path(path, length);
+
         if (result < 0)
         {
             std::string errMsg = std::string("Failed to get default path, result: ") += std::to_string(result);

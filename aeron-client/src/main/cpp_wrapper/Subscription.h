@@ -43,7 +43,8 @@ private:
         m_async(nullptr),
         m_onAvailableImage(onAvailableImage),
         m_onUnavailableImage(onUnavailableImage)
-    {}
+    {
+    }
 
     aeron_async_add_subscription_t *m_async;
     const on_available_image_t m_onAvailableImage;
@@ -80,7 +81,7 @@ public:
         aeron_t *aeron,
         aeron_subscription_t *subscription,
         AsyncAddSubscription *addSubscription,
-        CountersReader& countersReader) :
+        CountersReader &countersReader) :
         m_aeron(aeron),
         m_subscription(subscription),
         m_addSubscription(addSubscription),
@@ -176,7 +177,7 @@ public:
 
     std::string tryResolveChannelEndpointPort() const
     {
-        const int64_t currentChannelStatus = channelStatus();
+        const std::int64_t currentChannelStatus = channelStatus();
 
         if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus)
         {
@@ -323,12 +324,14 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+
         int numFragments = aeron_subscription_poll(
-            m_subscription, doPoll<handler_type>, handler_ptr, static_cast<size_t>(fragmentLimit));
+            m_subscription, doPoll<handler_type>, handler_ptr, static_cast<std::size_t>(fragmentLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return numFragments;
     }
 
@@ -353,9 +356,9 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = fragmentHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
-        int numFragments = aeron_subscription_controlled_poll(
-            m_subscription, doControlledPoll<handler_type>, handler_ptr, static_cast<size_t>(fragmentLimit));
 
+        int numFragments = aeron_subscription_controlled_poll(
+            m_subscription, doControlledPoll<handler_type>, handler_ptr, static_cast<std::size_t>(fragmentLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -377,12 +380,14 @@ public:
         using handler_type = typename std::remove_reference<F>::type;
         handler_type &handler = blockHandler;
         void *handler_ptr = const_cast<void *>(reinterpret_cast<const void *>(&handler));
+
         long numFragments = aeron_subscription_block_poll(
-            m_subscription, doBlockPoll<handler_type>, handler_ptr, static_cast<size_t>(blockLengthLimit));
+            m_subscription, doBlockPoll<handler_type>, handler_ptr, static_cast<std::size_t>(blockLengthLimit));
         if (numFragments < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return numFragments;
     }
 
@@ -430,7 +435,7 @@ public:
      * @param index in the array
      * @return image at given index or exception if out of range.
      */
-    inline std::shared_ptr<Image> imageByIndex(size_t index) const
+    inline std::shared_ptr<Image> imageByIndex(std::size_t index) const
     {
         aeron_image_t *image = aeron_subscription_image_at_index(m_subscription, index);
         return std::make_shared<Image>(m_subscription, image);
@@ -447,8 +452,10 @@ public:
     {
         auto images = std::make_shared<std::vector<std::shared_ptr<Image>>>();
         auto subscriptionAndImages = std::make_pair(m_subscription, images.get());
+
         aeron_subscription_for_each_image(
             m_subscription, Subscription::copyToVector, static_cast<void *>(&subscriptionAndImages));
+
         return images;
     }
 
@@ -461,7 +468,7 @@ public:
     inline int forEachImage(F &&func) const
     {
         auto imageList = copyOfImageList();
-        for (auto & image : *imageList)
+        for (auto &image : *imageList)
         {
             func(image);
         }
@@ -484,7 +491,8 @@ public:
     {
         bool hasImage = false;
         auto imageList = copyOfImageList();
-        for (auto & image : *imageList)
+
+        for (auto &image : *imageList)
         {
             if (image->correlationId() == correlationId)
             {

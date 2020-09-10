@@ -118,7 +118,7 @@ public:
     }
 
     /// @cond HIDDEN_SYMBOLS
-    inline int64_t *getCounterAddress(int32_t id) const
+    inline int64_t *getCounterAddress(std::int32_t id) const
     {
         return aeron_counters_reader_addr(m_countersReader, id);
     }
@@ -157,7 +157,7 @@ public:
         {
             throw util::IllegalArgumentException(
                 "counter id " + std::to_string(id) +
-                    " out of range: maxCounterId=" + std::to_string(maxCounterId()),
+                " out of range: maxCounterId=" + std::to_string(maxCounterId()),
                 SOURCEINFO);
         }
 
@@ -171,7 +171,7 @@ public:
         {
             throw util::IllegalArgumentException(
                 "counter id " + std::to_string(id) +
-                    " out of range: maxCounterId=" + std::to_string(maxCounterId()),
+                " out of range: maxCounterId=" + std::to_string(maxCounterId()),
                 SOURCEINFO);
         }
 
@@ -185,7 +185,7 @@ public:
         {
             throw util::IllegalArgumentException(
                 "counter id " + std::to_string(id) +
-                    " out of range: maxCounterId=" + std::to_string(maxCounterId()),
+                " out of range: maxCounterId=" + std::to_string(maxCounterId()),
                 SOURCEINFO);
         }
 
@@ -200,7 +200,7 @@ public:
         {
             throw util::IllegalArgumentException(
                 "counter id " + std::to_string(id) +
-                    " out of range: maxCounterId=" + std::to_string(maxCounterId()),
+                " out of range: maxCounterId=" + std::to_string(maxCounterId()),
                 SOURCEINFO);
         }
 
@@ -219,12 +219,12 @@ public:
 
     inline AtomicBuffer valuesBuffer() const
     {
-        return {m_buffers.values, m_buffers.values_length};
+        return { m_buffers.values, m_buffers.values_length };
     }
 
     inline AtomicBuffer metaDataBuffer() const
     {
-        return {m_buffers.metadata, m_buffers.metadata_length};
+        return { m_buffers.metadata, m_buffers.metadata_length };
     }
 
     static const std::int32_t NULL_COUNTER_ID = AERON_NULL_COUNTER_ID;
@@ -275,8 +275,8 @@ protected:
         void *clientd)
     {
         H &handler = *reinterpret_cast<H *>(clientd);
-        AtomicBuffer keyBuffer{const_cast<uint8_t *>(key), key_length};
-        std::string labelStr{const_cast<char *>(label), label_length};
+        AtomicBuffer keyBuffer = { const_cast<uint8_t *>(key), key_length };
+        std::string labelStr = { const_cast<char *>(label), label_length };
 
         handler(id, typeId, keyBuffer, labelStr);
     }

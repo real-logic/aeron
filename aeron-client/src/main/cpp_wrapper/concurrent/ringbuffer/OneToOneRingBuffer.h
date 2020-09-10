@@ -28,7 +28,8 @@
 #include "RingBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
-namespace aeron { namespace concurrent { namespace ringbuffer {
+namespace aeron { namespace concurrent { namespace ringbuffer
+{
 
 class OneToOneRingBuffer
 {
@@ -50,6 +51,7 @@ public:
     }
 
     OneToOneRingBuffer(const OneToOneRingBuffer &) = delete;
+
     OneToOneRingBuffer &operator=(const OneToOneRingBuffer &) = delete;
 
     inline util::index_t capacity() const
@@ -57,7 +59,8 @@ public:
         return m_capacity;
     }
 
-    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
+    bool write(
+        std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMsgLength(length);
@@ -68,13 +71,13 @@ public:
 
         std::int64_t head = m_buffer.getInt64(m_headCachePositionIndex);
         std::int64_t tail = m_buffer.getInt64(m_tailPositionIndex);
-        const util::index_t availableCapacity = m_capacity - (util::index_t)(tail - head);
+        const util::index_t availableCapacity = m_capacity - static_cast<util::index_t>(tail - head);
 
         if (requiredCapacity > availableCapacity)
         {
             head = m_buffer.getInt64Volatile(m_headPositionIndex);
 
-            if (requiredCapacity > (m_capacity - (util::index_t)(tail - head)))
+            if (requiredCapacity > (m_capacity - static_cast<util::index_t>(tail - head)))
             {
                 return false;
             }
@@ -83,7 +86,7 @@ public:
         }
 
         util::index_t padding = 0;
-        auto recordIndex = static_cast<util::index_t>(tail & mask);
+        auto recordIndex = static_cast<util::index_t>(tail) & mask;
         const util::index_t toBufferEndLength = m_capacity - recordIndex;
 
         if (requiredCapacity > toBufferEndLength)
@@ -128,7 +131,7 @@ public:
         int messagesRead = 0;
         int bytesRead = 0;
 
-        auto cleanup = util::InvokeOnScopeExit {
+        auto cleanup = util::InvokeOnScopeExit{
             [&]()
             {
                 if (bytesRead != 0)
@@ -159,7 +162,9 @@ public:
 
             ++messagesRead;
             handler(
-                msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
+                msgTypeId,
+                m_buffer,
+                RecordDescriptor::encodedMsgOffset(recordIndex),
                 recordLength - RecordDescriptor::HEADER_LENGTH);
         }
 
@@ -255,6 +260,8 @@ private:
     }
 };
 
-}}}
+}
+}
+}
 
 #endif

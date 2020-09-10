@@ -136,7 +136,7 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t 
 
 inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
 {
-    if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+    if (__atomic_compare_exchange(destination, &expected, &desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
     {
         return expected;
     }
@@ -148,7 +148,7 @@ inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t exp
 
 inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
 {
-    if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+    if (__atomic_compare_exchange(destination, &expected, &desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
     {
         return expected;
     }

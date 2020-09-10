@@ -27,7 +27,8 @@ using namespace aeron;
 class SystemTest : public testing::Test
 {
 public:
-    SystemTest() :  m_livenessTimeoutNs(250 * 1000 * 1000LL)
+    SystemTest() :
+        m_livenessTimeoutNs(250 * 1000 * 1000LL)
     {
         m_driver.livenessTimeoutNs(m_livenessTimeoutNs);
         m_driver.start();
@@ -38,14 +39,14 @@ public:
         m_driver.stop();
     }
 
-    static int32_t typeId(CountersReader& reader, int32_t counterId)
+    static std::int32_t typeId(CountersReader &reader, std::int32_t counterId)
     {
         const index_t offset = aeron::concurrent::CountersReader::metadataOffset(counterId);
         return reader.metaDataBuffer().getInt32(offset + CountersReader::TYPE_ID_OFFSET);
     }
 
 protected:
-    uint64_t m_livenessTimeoutNs;
+    std::uint64_t m_livenessTimeoutNs;
     EmbeddedMediaDriver m_driver;
 };
 
@@ -53,10 +54,11 @@ TEST_F(SystemTest, shouldReportClosedIfTimedOut)
 {
     Context ctx;
     ctx.useConductorAgentInvoker(true);
-    ctx.errorHandler([](const std::exception e)
-    {
-        // Deliberately ignored.
-    });
+    ctx.errorHandler(
+        [](const std::exception e)
+        {
+            // Deliberately ignored.
+        });
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
     AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();

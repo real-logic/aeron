@@ -174,7 +174,6 @@ public:
         }
 
         const std::shared_ptr<Publication> publication = findPublication(search->second);
-
         if (nullptr != publication)
         {
             m_pendingPublications.erase(registrationId);
@@ -200,6 +199,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return addPublication;
     }
 
@@ -266,7 +266,8 @@ public:
      *
      * - If the registrationId is unknown, then a nullptr is returned.
      * - If the media driver has not answered the add command, then a nullptr is returned.
-     * - If the media driver has successfully added the ExclusivePublication then what is returned is the ExclusivePublication.
+     * - If the media driver has successfully added the ExclusivePublication then what is returned is the
+     *  ExclusivePublication.
      * - If the media driver has returned an error, this method will throw the error returned.
      *
      * @see Aeron::addExclusivePublication
@@ -285,7 +286,6 @@ public:
         }
 
         const std::shared_ptr<ExclusivePublication> publication = findExclusivePublication(search->second);
-
         if (nullptr != publication)
         {
             m_pendingExclusivePublications.erase(registrationId);
@@ -311,6 +311,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return addPublication;
     }
 
@@ -323,7 +324,8 @@ public:
      *
      * - If the registrationId is unknown, then a nullptr is returned.
      * - If the media driver has not answered the add command, then a nullptr is returned.
-     * - If the media driver has successfully added the ExclusivePublication then what is returned is the ExclusivePublication.
+     * - If the media driver has successfully added the ExclusivePublication then what is returned is the
+     *  ExclusivePublication.
      * - If the media driver has returned an error, this method will throw the error returned.
      *
      * @see Aeron::addExclusivePublicationAsync
@@ -420,7 +422,6 @@ public:
         }
 
         const std::shared_ptr<Subscription> subscription = findSubscription(search->second);
-
         if (nullptr != subscription)
         {
             m_pendingSubscriptions.erase(registrationId);
@@ -448,8 +449,10 @@ public:
     {
         AsyncAddSubscription *addSubscription = new AsyncAddSubscription(
             onAvailableImageHandler, onUnavailableImageHandler);
-        void *availableClientd = const_cast<void *>(reinterpret_cast<const void *>(&addSubscription->m_onAvailableImage));
-        void *unavailableClientd = const_cast<void *>(reinterpret_cast<const void *>(&addSubscription->m_onUnavailableImage));
+        void *availableClientd =
+            const_cast<void *>(reinterpret_cast<const void *>(&addSubscription->m_onAvailableImage));
+        void *unavailableClientd =
+            const_cast<void *>(reinterpret_cast<const void *>(&addSubscription->m_onUnavailableImage));
 
         if (aeron_async_add_subscription(
             &addSubscription->m_async,
@@ -469,13 +472,11 @@ public:
      *
      * This method will override the default handlers from the {@link Context}.
      *
-     * @param channel                 for receiving the messages known to the media layer.
-     * @param streamId                within the channel scope.
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
      * @return AsyncAddSubscription object to track the addition of the subscription
      */
-    inline AsyncAddSubscription *addSubscriptionAsync(
-        const std::string &channel,
-        std::int32_t streamId)
+    inline AsyncAddSubscription *addSubscriptionAsync(const std::string &channel, std::int32_t streamId)
     {
         return addSubscriptionAsync(
             channel, streamId, m_context.m_onAvailableImageHandler, m_context.m_onUnavailableImageHandler);
@@ -913,7 +914,7 @@ public:
 
 private:
     Context m_context;
-    aeron_t* m_aeron;
+    aeron_t *m_aeron;
     CountersReader m_countersReader;
     std::unordered_map<std::int64_t, AsyncAddPublication *> m_pendingPublications;
     std::unordered_map<std::int64_t, AsyncAddExclusivePublication *> m_pendingExclusivePublications;
@@ -934,19 +935,20 @@ private:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return aeron;
     }
 
     static void onAvailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
-        on_available_image_t& callback = *reinterpret_cast<on_available_image_t *>(clientd);
+        on_available_image_t &callback = *reinterpret_cast<on_available_image_t *>(clientd);
         Image imageWrapper(subscription, image);
         callback(imageWrapper);
     }
 
     static void onUnavailableImageCallback(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
-        on_unavailable_image_t & callback = *reinterpret_cast<on_unavailable_image_t *>(clientd);
+        on_unavailable_image_t &callback = *reinterpret_cast<on_unavailable_image_t *>(clientd);
         Image imageWrapper(subscription, image);
         callback(imageWrapper);
     }
@@ -955,7 +957,7 @@ private:
         void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
     {
         CountersReader reader = CountersReader(counters_reader);
-        on_available_counter_t& callback = *reinterpret_cast<on_available_counter_t *>(clientd);
+        on_available_counter_t &callback = *reinterpret_cast<on_available_counter_t *>(clientd);
         callback(reader, registration_id, counter_id);
     }
 
@@ -969,7 +971,7 @@ private:
 
     static void onCloseClientCallback(void *clientd)
     {
-        on_close_client_t& callback = *reinterpret_cast<on_close_client_t *>(clientd);
+        on_close_client_t &callback = *reinterpret_cast<on_close_client_t *>(clientd);
         callback();
     }
 };

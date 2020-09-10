@@ -22,7 +22,8 @@
 #include "DataFrameHeader.h"
 #include "FrameDescriptor.h"
 
-namespace aeron { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer
+{
 
 class HeaderWriter
 {
@@ -36,12 +37,12 @@ public:
     /**
      * Write header in LITTLE_ENDIAN order
      */
-    inline void write(AtomicBuffer& termBuffer, util::index_t offset, util::index_t length, std::int32_t termId) const
+    inline void write(AtomicBuffer &termBuffer, util::index_t offset, util::index_t length, std::int32_t termId) const
     {
         termBuffer.putInt32Ordered(offset, -length);
         atomic::release();
 
-        auto* hdr = (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);
+        auto *hdr = (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);
 
         hdr->version = DataFrameHeader::CURRENT_VERSION;
         hdr->flags = FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG;

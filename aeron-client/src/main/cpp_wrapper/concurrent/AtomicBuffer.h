@@ -43,12 +43,12 @@ public:
      * @param buffer to be wrapped.
      * @param length of the buffer for bounds checking.
      */
-    AtomicBuffer(std::uint8_t *buffer, size_t length) :
+    AtomicBuffer(std::uint8_t *buffer, std::size_t length) :
         m_buffer(buffer),
         m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
+        if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]: length=%lld", this, static_cast<long long>(length)),
@@ -69,7 +69,7 @@ public:
         m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
+        if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]. length=%lld", this, static_cast<long long>(length)),
@@ -77,7 +77,7 @@ public:
         }
 #endif
 
-        setMemory(0, static_cast<size_t>(length), initialValue);
+        setMemory(0, static_cast<std::size_t>(length), initialValue);
     }
 
     template<size_t N>
@@ -108,7 +108,7 @@ public:
     inline void wrap(std::uint8_t *buffer, size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
+        if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]: length=%lld", this, static_cast<long long>(length)),
@@ -157,10 +157,10 @@ public:
      *
      * @param length to be used for the new capacity.
      */
-    inline void capacity(size_t length)
+    inline void capacity(std::size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
+        if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]: length=%lld", this, static_cast<long long>(length)),
@@ -391,7 +391,7 @@ public:
         ::memcpy(dst, m_buffer + index, static_cast<std::size_t>(length));
     }
 
-    inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)
+    inline void setMemory(util::index_t offset, std::size_t length, std::uint8_t value)
     {
         boundsCheck(offset, length);
         ::memset(m_buffer + offset, value, length);
@@ -404,10 +404,10 @@ public:
         boundsCheck(offset, sizeof(length));
         ::memcpy(reinterpret_cast<char *>(&length), m_buffer + offset, sizeof(length));
 
-        return getStringWithoutLength(offset + sizeof(std::int32_t), (size_t) length);
+        return getStringWithoutLength(offset + sizeof(std::int32_t), static_cast<std::size_t>(length));
     }
 
-    inline std::string getStringWithoutLength(util::index_t offset, size_t length) const
+    inline std::string getStringWithoutLength(util::index_t offset, std::size_t length) const
     {
         boundsCheck(offset, length);
         return std::string(m_buffer + offset, m_buffer + offset + length);

@@ -26,7 +26,7 @@ namespace aeron { namespace concurrent { namespace status {
 class UnsafeBufferPosition
 {
 public:
-    UnsafeBufferPosition(AtomicBuffer& buffer, std::int32_t id) :
+    UnsafeBufferPosition(AtomicBuffer &buffer, std::int32_t id) :
         m_buffer(buffer),
         m_id(id),
         m_offset(CountersReader::counterOffset(id))
@@ -39,7 +39,7 @@ public:
     {
     }
 
-    inline void wrap(const UnsafeBufferPosition& position)
+    inline void wrap(const UnsafeBufferPosition &position)
     {
         m_buffer = position.m_buffer;
         m_id = position.m_id;

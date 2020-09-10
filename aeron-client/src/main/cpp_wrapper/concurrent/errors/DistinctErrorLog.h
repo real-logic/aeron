@@ -120,7 +120,7 @@ private:
                 return (errorCode == observation.m_errorCode && description == observation.m_description);
             });
 
-        return (result != end) ? result : observations.end();
+        return result != end ? result : observations.end();
     }
 
     std::vector<DistinctObservation>::iterator newObservation(

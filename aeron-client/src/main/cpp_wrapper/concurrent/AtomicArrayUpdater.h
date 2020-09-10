@@ -23,10 +23,7 @@
 
 #include "concurrent/Atomic64.h"
 
-namespace aeron
-{
-
-namespace util
+namespace aeron { namespace util
 {
 
 template<typename E>
@@ -42,7 +39,7 @@ std::pair<E *, std::size_t> addToArray(E *oldArray, std::size_t oldLength, E ele
 
     newArray[oldLength] = element;
 
-    return {newArray, newLength};
+    return { newArray, newLength };
 }
 
 template<typename E>
@@ -59,7 +56,7 @@ std::pair<E *, std::size_t> removeFromArray(E *oldArray, std::size_t oldLength, 
         }
     }
 
-    return {newArray, newLength};
+    return { newArray, newLength };
 }
 
 }
@@ -74,7 +71,7 @@ public:
     AtomicArrayUpdater() = default;
     ~AtomicArrayUpdater() = default;
 
-    inline std::pair<E*, std::size_t> load() const
+    inline std::pair<E *, std::size_t> load() const
     {
         do
         {
@@ -93,7 +90,7 @@ public:
         while (true);
     }
 
-    inline void store(E* array, std::size_t length)
+    inline void store(E *array, std::size_t length)
     {
         std::int64_t changeNumber = m_beginChange + 1;
 
@@ -105,7 +102,7 @@ public:
         m_endChange.store(changeNumber, std::memory_order_release);
     }
 
-    std::pair<E*, std::size_t> addElement(E element)
+    std::pair<E *, std::size_t> addElement(E element)
     {
         std::pair<E*, std::size_t> oldArray = load();
         std::pair<E*, std::size_t> newArray = aeron::util::addToArray(oldArray.first, oldArray.second, element);
@@ -116,7 +113,7 @@ public:
     }
 
     template<typename F>
-    std::pair<E*, std::size_t> removeElement(F&& func)
+    std::pair<E *, std::size_t> removeElement(F &&func)
     {
         std::pair<E*, std::size_t> oldArray = load();
         const std::size_t length = oldArray.second;
@@ -125,11 +122,11 @@ public:
         {
             if (func(oldArray.first[i]))
             {
-                std::pair<E*, std::size_t> newArray = aeron::util::removeFromArray(oldArray.first, length, i);
+                std::pair<E *, std::size_t> newArray = aeron::util::removeFromArray(oldArray.first, length, i);
 
                 store(newArray.first, newArray.second);
 
-                return {oldArray.first, i};
+                return { oldArray.first, i };
             }
         }
 
@@ -137,12 +134,11 @@ public:
     }
 
 private:
-    std::atomic<std::int64_t> m_beginChange = {-1};
-    std::atomic<std::int64_t> m_endChange = {-1};
-    std::pair<E*, std::size_t> m_array = {nullptr, 0};
+    std::atomic<std::int64_t> m_beginChange = { -1 };
+    std::atomic<std::int64_t> m_endChange = { -1 };
+    std::pair<E *, std::size_t> m_array = { nullptr, 0 };
 };
 
-}
-}
+}}
 
 #endif //AERON_ATOMIC_ARRAY_UPDATER_H

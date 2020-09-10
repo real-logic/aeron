@@ -185,7 +185,7 @@ public:
         {
             throw CommandOptionException(
                 std::string("value \"") + toString(value) + "\" out of range: [" +
-                    toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
+                toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
                 SOURCEINFO);
         }
 
@@ -204,7 +204,7 @@ public:
         {
             throw CommandOptionException(
                 std::string("value \"") + toString(value) + "\" out of range: [" +
-                    toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
+                toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
                 SOURCEINFO);
         }
 

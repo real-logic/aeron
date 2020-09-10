@@ -24,33 +24,36 @@
 #include "util/Exceptions.h"
 #include "util/StringUtil.h"
 
-namespace aeron { namespace concurrent { namespace ringbuffer {
+namespace aeron { namespace concurrent { namespace ringbuffer
+{
 
 /** The read handler function signature */
-typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
+typedef std::function<void(std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)> handler_t;
 
 using namespace aeron::util::BitUtil;
 
-namespace RingBufferDescriptor {
+namespace RingBufferDescriptor
+{
 
-    static const util::index_t TAIL_POSITION_OFFSET = CACHE_LINE_LENGTH * 2;
-    static const util::index_t HEAD_CACHE_POSITION_OFFSET = CACHE_LINE_LENGTH * 4;
-    static const util::index_t HEAD_POSITION_OFFSET = CACHE_LINE_LENGTH * 6;
-    static const util::index_t CORRELATION_COUNTER_OFFSET = CACHE_LINE_LENGTH * 8;
-    static const util::index_t CONSUMER_HEARTBEAT_OFFSET = CACHE_LINE_LENGTH * 10;
+static const util::index_t TAIL_POSITION_OFFSET = CACHE_LINE_LENGTH * 2;
+static const util::index_t HEAD_CACHE_POSITION_OFFSET = CACHE_LINE_LENGTH * 4;
+static const util::index_t HEAD_POSITION_OFFSET = CACHE_LINE_LENGTH * 6;
+static const util::index_t CORRELATION_COUNTER_OFFSET = CACHE_LINE_LENGTH * 8;
+static const util::index_t CONSUMER_HEARTBEAT_OFFSET = CACHE_LINE_LENGTH * 10;
 
-    /** Total length of the trailer in bytes. */
-    static const util::index_t TRAILER_LENGTH = CACHE_LINE_LENGTH * 12;
+/** Total length of the trailer in bytes. */
+static const util::index_t TRAILER_LENGTH = CACHE_LINE_LENGTH * 12;
 
-    inline static void checkCapacity(util::index_t capacity)
+inline static void checkCapacity(util::index_t capacity)
+{
+    if (!util::BitUtil::isPowerOfTwo(capacity))
     {
-        if (!util::BitUtil::isPowerOfTwo(capacity))
-        {
-            throw util::IllegalArgumentException(
-                "Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + std::to_string(capacity),
-                SOURCEINFO);
-        }
+        throw util::IllegalArgumentException(
+            "Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + std::to_string(capacity),
+            SOURCEINFO);
     }
+}
+
 }
 
 }}}

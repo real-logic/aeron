@@ -152,7 +152,7 @@ public:
      *
      * @return a pointer to the context associated with this message.
      */
-    inline void* context() const
+    inline void *context() const
     {
         return m_context;
     }

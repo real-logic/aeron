@@ -123,7 +123,7 @@ private:
             const std::uint32_t newCapacity = findSuitableCapacity(m_capacity, requiredCapacity);
             std::unique_ptr<std::uint8_t[]> newBuffer(new std::uint8_t[newCapacity]);
 
-            ::memcpy(&newBuffer[0], &m_buffer[0], m_limit);
+            ::memcpy(&newBuffer[0], &m_buffer[0], static_cast<std::size_t>(m_limit));
             m_buffer = std::move(newBuffer);
             m_capacity = newCapacity;
         }

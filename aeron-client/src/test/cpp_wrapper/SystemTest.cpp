@@ -37,7 +37,7 @@ public:
         m_driver.stop();
     }
 
-    static int32_t typeId(CountersReader& reader, int32_t counterId)
+    static std::int32_t typeId(CountersReader &reader, std::int32_t counterId)
     {
         const index_t offset = aeron::concurrent::CountersReader::metadataOffset(counterId);
         return reader.metaDataBuffer().getInt32(offset + CountersReader::TYPE_ID_OFFSET);

@@ -152,7 +152,7 @@ public:
      */
     inline util::index_t maxMessageLength() const
     {
-        return static_cast<index_t>(m_constants.max_message_length);
+        return static_cast<util::index_t>(m_constants.max_message_length);
     }
 
     /**
@@ -164,7 +164,7 @@ public:
      */
     inline util::index_t maxPayloadLength() const
     {
-        return static_cast<index_t>(m_constants.max_message_length);
+        return static_cast<util::index_t>(m_constants.max_message_length);
     }
 
     /**
@@ -174,7 +174,7 @@ public:
      */
     inline std::int32_t termBufferLength() const
     {
-        return static_cast<int32_t>(m_constants.term_buffer_length);
+        return static_cast<std::int32_t>(m_constants.term_buffer_length);
     }
 
     /**
@@ -184,7 +184,7 @@ public:
      */
     inline std::int32_t positionBitsToShift() const
     {
-        return static_cast<int32_t>(m_constants.position_bits_to_shift);
+        return static_cast<std::int32_t>(m_constants.position_bits_to_shift);
     }
 
     /**
@@ -224,11 +224,12 @@ public:
      */
     inline std::int64_t position() const
     {
-        int64_t position = aeron_exclusive_publication_position(m_publication);
+        std::int64_t position = aeron_exclusive_publication_position(m_publication);
         if (AERON_PUBLICATION_ERROR == position)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return position;
     }
 
@@ -241,7 +242,7 @@ public:
      */
     inline std::int64_t publicationLimit() const
     {
-        int64_t limit = aeron_exclusive_publication_position_limit(m_publication);
+        std::int64_t limit = aeron_exclusive_publication_position_limit(m_publication);
         if (AERON_PUBLICATION_ERROR == limit)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -268,7 +269,7 @@ public:
      */
     inline std::int64_t availableWindow() const
     {
-        const int64_t limit = publicationLimit();
+        const std::int64_t limit = publicationLimit();
         return AERON_PUBLICATION_CLOSED != limit ? limit - position() : AERON_PUBLICATION_CLOSED;
     }
 
@@ -329,13 +330,14 @@ public:
         const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         std::int64_t position = aeron_exclusive_publication_offer(
-            m_publication, buffer.buffer() + offset, (size_t) length, reservedValueSupplierCallback,
+            m_publication, buffer.buffer() + offset, static_cast<std::size_t>(length), reservedValueSupplierCallback,
             (void *)&reservedValueSupplier);
 
         if (AERON_PUBLICATION_ERROR == position)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return position;
     }
 
@@ -380,14 +382,14 @@ public:
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
         std::vector<aeron_iovec_t> iov;
-        size_t length = 0;
+        std::size_t length = 0;
         for (BufferIterator it = startBuffer; it != lastBuffer; ++it)
         {
             if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
             {
                 throw aeron::util::IllegalStateException(
                     "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
-                        " > " + std::to_string(length + it->capacity()),
+                    " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 
@@ -397,13 +399,14 @@ public:
             iov.push_back(buf);
         }
 
-        const int64_t position = aeron_exclusive_publication_offerv(
+        const std::int64_t position = aeron_exclusive_publication_offerv(
             m_publication, iov.data(), iov.size(), reservedValueSupplierCallback, (void *)&reservedValueSupplier);
 
         if (AERON_PUBLICATION_ERROR == position)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return position;
     }
 
@@ -418,7 +421,7 @@ public:
      */
     std::int64_t offer(
         const concurrent::AtomicBuffer buffers[],
-        size_t length,
+        std::size_t length,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
         return offer(buffers, buffers + length, reservedValueSupplier);
@@ -476,13 +479,16 @@ public:
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim &bufferClaim)
     {
         aeron_buffer_claim_t temp_claim;
-        const int64_t position = aeron_exclusive_publication_try_claim(
+        const std::int64_t position = aeron_exclusive_publication_try_claim(
             m_publication, static_cast<size_t>(length), &temp_claim);
+
         if (AERON_PUBLICATION_ERROR == position)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         bufferClaim.wrap(temp_claim.data, static_cast<index_t>(temp_claim.length));
+
         return position;
     }
 
@@ -529,7 +535,8 @@ public:
     AsyncDestination *removeDestinationAsync(const std::string &endpointChannel)
     {
         AsyncDestination *async;
-        if (aeron_exclusive_publication_async_remove_destination(&async, m_aeron, m_publication, endpointChannel.c_str()) < 0)
+        if (aeron_exclusive_publication_async_remove_destination(
+            &async, m_aeron, m_publication, endpointChannel.c_str()) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -631,7 +638,7 @@ private:
     std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
     std::recursive_mutex m_adminLock;
 
-    static std::int64_t reservedValueSupplierCallback(void *clientd, uint8_t *buffer, size_t frame_length)
+    static std::int64_t reservedValueSupplierCallback(void *clientd, std::uint8_t *buffer, std::size_t frame_length)
     {
         on_reserved_value_supplier_t &supplier = *static_cast<on_reserved_value_supplier_t *>(clientd);
         AtomicBuffer atomicBuffer(buffer, frame_length);

@@ -35,7 +35,7 @@ static const std::int32_t NO_ID_ALLOCATED = -1;
 class StatusIndicatorReader
 {
 public:
-    StatusIndicatorReader(AtomicBuffer& buffer, std::int32_t id) :
+    StatusIndicatorReader(AtomicBuffer &buffer, std::int32_t id) :
         m_staticBuffer(),
         m_id(id),
         m_offset(CountersReader::counterOffset(id))
@@ -52,7 +52,7 @@ public:
         }
     }
 
-    StatusIndicatorReader(const StatusIndicatorReader& indicatorReader) :
+    StatusIndicatorReader(const StatusIndicatorReader &indicatorReader) :
         m_staticBuffer(indicatorReader.m_staticBuffer),
         m_id(indicatorReader.m_id),
         m_offset(indicatorReader.m_offset)
@@ -69,7 +69,7 @@ public:
         m_buffer.putInt64Ordered(m_offset, indicatorReader.m_buffer.getInt64Volatile(indicatorReader.m_offset));
     }
 
-    StatusIndicatorReader& operator=(const StatusIndicatorReader& indicatorReader)
+    StatusIndicatorReader &operator=(const StatusIndicatorReader &indicatorReader)
     {
         m_staticBuffer = indicatorReader.m_staticBuffer;
         m_id = indicatorReader.m_id;

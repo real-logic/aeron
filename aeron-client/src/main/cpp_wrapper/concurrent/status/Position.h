@@ -25,7 +25,7 @@ template <class X>
 class Position : public ReadablePosition<X>
 {
 public:
-    explicit Position(X& impl) : ReadablePosition<X>(impl)
+    explicit Position(X &impl) : ReadablePosition<X>(impl)
     {
     }
 

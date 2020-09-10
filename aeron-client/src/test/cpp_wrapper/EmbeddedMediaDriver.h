@@ -110,9 +110,9 @@ protected:
         if (0 != (debugTimeoutMs = EmbeddedMediaDriver::getDebugTimeoutMs()))
         {
             aeron_driver_context_set_driver_timeout_ms(m_context, debugTimeoutMs);
-            aeron_driver_context_set_client_liveness_timeout_ns(m_context, debugTimeoutMs * 1000000);
-            aeron_driver_context_set_image_liveness_timeout_ns(m_context, debugTimeoutMs * 1000000);
-            aeron_driver_context_set_publication_unblock_timeout_ns(m_context, 2 * debugTimeoutMs * 1000000);
+            aeron_driver_context_set_client_liveness_timeout_ns(m_context, debugTimeoutMs * 1000000LL);
+            aeron_driver_context_set_image_liveness_timeout_ns(m_context, debugTimeoutMs * 1000000LL);
+            aeron_driver_context_set_publication_unblock_timeout_ns(m_context, 2 * debugTimeoutMs * 1000000LL);
         }
 
         if (aeron_driver_init(&m_driver, m_context) < 0)

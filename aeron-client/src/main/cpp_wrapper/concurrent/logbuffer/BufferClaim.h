@@ -49,7 +49,7 @@ public:
      *
      * @return the referenced buffer to be used..
      */
-    inline AtomicBuffer& buffer()
+    inline AtomicBuffer &buffer()
     {
         return m_buffer;
     }
@@ -75,10 +75,10 @@ public:
     }
 
     /**
- * Get the value of the flags field.
- *
- * @return the value of the header flags field.
- */
+     * Get the value of the flags field.
+     *
+     * @return the value of the header flags field.
+     */
     inline std::uint8_t flags() const
     {
         return m_buffer.getUInt8(DataFrameHeader::FLAGS_FIELD_OFFSET);
@@ -90,7 +90,7 @@ public:
      * @param flags value to be set in the header.
      * @return this for a fluent API.
      */
-    inline this_t& flags(const std::uint8_t flags)
+    inline this_t &flags(const std::uint8_t flags)
     {
         m_buffer.putUInt8(DataFrameHeader::FLAGS_FIELD_OFFSET, flags);
 
@@ -113,7 +113,7 @@ public:
      * @param type value to be set in the header.
      * @return this for a fluent API.
      */
-    inline this_t& headerType(const std::uint16_t type)
+    inline this_t &headerType(const std::uint16_t type)
     {
         m_buffer.putUInt16(DataFrameHeader::TYPE_FIELD_OFFSET, type);
 
@@ -136,7 +136,7 @@ public:
      * @param value to be stored in the reserve space at the end of a data frame header.
      * @return this for fluent API semantics.
      */
-    inline this_t& reservedValue(const std::int64_t value)
+    inline this_t &reservedValue(const std::int64_t value)
     {
         m_buffer.putInt64(DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, value);
         return *this;

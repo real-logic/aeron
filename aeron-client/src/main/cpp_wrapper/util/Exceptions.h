@@ -170,12 +170,12 @@ inline SourcedException mapErrnoToAeronException(
     }
 }
 
-#define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                  \
-do                                                                      \
-{                                                                       \
+#define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                            \
+do                                                                                \
+{                                                                                 \
     throw mapErrnoToAeronException(aeron_errcode(), aeron_errmsg(), SOURCEINFO);  \
-}                                                                       \
-while (0)                                                               \
+}                                                                                 \
+while (0)
 
 class RegistrationException : public SourcedException
 {

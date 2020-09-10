@@ -52,7 +52,7 @@ public:
      */
     explicit ControlledFragmentAssembler(
         const controlled_poll_fragment_handler_t &delegate,
-        size_t initialBufferLength = DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
+        std::size_t initialBufferLength = DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_initialBufferLength(initialBufferLength),
         m_delegate(delegate)
     {

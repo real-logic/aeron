@@ -49,9 +49,9 @@ private:
     static const util::index_t LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID = 14;
     static const util::index_t CHANNEL_STATUS_ID_OFFSET = 0;
     static const util::index_t LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET =
-        CHANNEL_STATUS_ID_OFFSET + (std::int32_t)sizeof(std::int32_t);
+        CHANNEL_STATUS_ID_OFFSET + static_cast<util::index_t>(sizeof(std::int32_t));
     static const std::int32_t LOCAL_SOCKET_ADDRESS_STRING_OFFSET =
-        LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET + (std::int32_t)sizeof(std::int32_t);
+        LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET + static_cast<util::index_t>(sizeof(std::int32_t));
 
     static std::int32_t channelStatusIdFromKeyBuffer(const AtomicBuffer &keyBuffer)
     {

@@ -36,7 +36,7 @@ class Counter : public AtomicCounter
 {
 public:
     /// @cond HIDDEN_SYMBOLS
-    Counter(aeron_counter_t *counter, CountersReader& reader, std::int64_t registrationId) :
+    Counter(aeron_counter_t *counter, CountersReader &reader, std::int64_t registrationId) :
         AtomicCounter(counter), m_reader(reader), m_registrationId(registrationId)
     {
     }
@@ -70,7 +70,7 @@ public:
     }
 
 private:
-    CountersReader& m_reader;
+    CountersReader &m_reader;
     std::int64_t m_registrationId;
 };
 

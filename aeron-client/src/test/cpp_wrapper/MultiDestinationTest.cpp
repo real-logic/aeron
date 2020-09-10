@@ -92,8 +92,8 @@ TEST_F(MultiDestinationTest, shouldAddRemoveDestinationFromPublication)
     POLL_FOR_NON_NULL(sub2, m_aeron->findSubscription(sub2RegId), invoker());
     POLL_FOR_NON_NULL(pub, m_aeron->findPublication(pubRegId), invoker());
 
-    int64_t dest1CorrelationId = pub->addDestination(SUB1_MDC_MANUAL_URI);
-    int64_t dest2CorrelationId = pub->addDestination(SUB2_MDC_MANUAL_URI);
+    std::int64_t dest1CorrelationId = pub->addDestination(SUB1_MDC_MANUAL_URI);
+    std::int64_t dest2CorrelationId = pub->addDestination(SUB2_MDC_MANUAL_URI);
 
     POLL_FOR(pub->findDestinationResponse(dest1CorrelationId), invoker());
     POLL_FOR(pub->findDestinationResponse(dest2CorrelationId), invoker());
@@ -175,8 +175,8 @@ TEST_F(MultiDestinationTest, shouldAddAndRemoveDestinationsFromSubscription)
     POLL_FOR_NON_NULL(pub2, m_aeron->findPublication(pub2RegId), invoker());
     POLL_FOR_NON_NULL(sub, m_aeron->findSubscription(subRegId), invoker());
 
-    int64_t subDest1 = sub->addDestination(channel1);
-    int64_t subDest2 = sub->addDestination(channel2);
+    std::int64_t subDest1 = sub->addDestination(channel1);
+    std::int64_t subDest2 = sub->addDestination(channel2);
 
     POLL_FOR(sub->findDestinationResponse(subDest1), invoker());
     POLL_FOR(sub->findDestinationResponse(subDest2), invoker());

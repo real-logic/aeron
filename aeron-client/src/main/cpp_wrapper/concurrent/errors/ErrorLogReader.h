@@ -33,10 +33,7 @@ typedef std::function<void(
     std::int64_t lastObservationTimestamp,
     const std::string &encodedException)> error_consumer_t;
 
-inline static int read(
-    AtomicBuffer& buffer,
-    const error_consumer_t &consumer,
-    std::int64_t sinceTimestamp)
+inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, std::int64_t sinceTimestamp)
 {
     int entries = 0;
     int offset = 0;

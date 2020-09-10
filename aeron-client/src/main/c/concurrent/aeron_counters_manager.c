@@ -363,6 +363,22 @@ int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader
     return 0;
 }
 
+int aeron_counters_reader_counter_type_id(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *type_id)
+{
+    if (counter_id < 0 || counter_id > counters_reader->max_counter_id)
+    {
+        return -1;
+    }
+
+    aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)(
+        counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id) + AERON_COUNTER_TYPE_ID_OFFSET);
+
+    AERON_GET_VOLATILE(*type_id, metadata->state);
+
+    return 0;
+}
+
 int aeron_counters_reader_counter_label(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length)
 {

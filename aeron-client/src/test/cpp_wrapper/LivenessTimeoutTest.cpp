@@ -27,8 +27,7 @@ using namespace aeron;
 class SystemTest : public testing::Test
 {
 public:
-    SystemTest() :
-        m_livenessTimeoutNs(250 * 1000 * 1000LL)
+    SystemTest()
     {
         m_driver.livenessTimeoutNs(m_livenessTimeoutNs);
         m_driver.start();
@@ -46,7 +45,7 @@ public:
     }
 
 protected:
-    std::uint64_t m_livenessTimeoutNs;
+    std::uint64_t m_livenessTimeoutNs = 250 * 1000 * 1000LL;
     EmbeddedMediaDriver m_driver;
 };
 

@@ -47,7 +47,7 @@ public:
 protected:
     EmbeddedMediaDriver m_driver;
     std::string m_label = COUNTER_LABEL;
-    std::uint8_t m_key[COUNTER_KEY_LENGTH];
+    std::uint8_t m_key[COUNTER_KEY_LENGTH] = {};
     std::size_t m_key_length = COUNTER_KEY_LENGTH;
 };
 

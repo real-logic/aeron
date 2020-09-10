@@ -41,14 +41,6 @@ namespace aeron
 class EmbeddedMediaDriver
 {
 public:
-    EmbeddedMediaDriver() :
-        m_running(true),
-        m_context(nullptr),
-        m_driver(nullptr),
-        m_livenessTimeout(5 * 1000 * 1000 * 1000LL)
-    {
-    }
-
     ~EmbeddedMediaDriver()
     {
         aeron_driver_close(m_driver);
@@ -83,9 +75,9 @@ public:
             });
     }
 
-    void livenessTimeoutNs(uint16_t livenessTimeout)
+    void livenessTimeoutNs(std::uint64_t livenessTimeoutNs)
     {
-        m_livenessTimeout = livenessTimeout;
+        m_livenessTimeoutNs = livenessTimeoutNs;
     }
 
 protected:
@@ -103,8 +95,8 @@ protected:
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
-        aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeout / 5);
-        aeron_driver_context_set_client_liveness_timeout_ns(m_context, m_livenessTimeout);
+        aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeoutNs / 10);
+        aeron_driver_context_set_client_liveness_timeout_ns(m_context, m_livenessTimeoutNs);
 
         long long debugTimeoutMs;
         if (0 != (debugTimeoutMs = EmbeddedMediaDriver::getDebugTimeoutMs()))
@@ -131,16 +123,16 @@ protected:
     }
 
 private:
-    std::atomic<bool> m_running;
+    std::uint64_t m_livenessTimeoutNs = 5 * 1000 * 1000 * 1000LL;
+    std::atomic<bool> m_running = { true };
     std::thread m_thread;
-    aeron_driver_context_t *m_context;
-    aeron_driver_t *m_driver;
-    std::uint64_t m_livenessTimeout;
+    aeron_driver_context_t *m_context = nullptr;
+    aeron_driver_t *m_driver = nullptr;
 
     static long long getDebugTimeoutMs()
     {
-        const char* debug_timeout_str = getenv("AERON_DEBUG_TIMEOUT");
-        return NULL != debug_timeout_str ? strtoll(debug_timeout_str, NULL, 10) : 0LL;
+        const char *debug_timeout_str = getenv("AERON_DEBUG_TIMEOUT");
+        return nullptr != debug_timeout_str ? strtoll(debug_timeout_str, nullptr, 10) : 0LL;
     }
 };
 

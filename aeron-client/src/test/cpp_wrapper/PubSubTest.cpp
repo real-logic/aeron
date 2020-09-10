@@ -116,13 +116,14 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
             POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
             POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
-            on_reserved_value_supplier_t reservedValueSupplier = [=](
-                AtomicBuffer &termBuffer,
-                util::index_t termOffset,
-                util::index_t length)
-            {
-                return reservedValue;
-            };
+            on_reserved_value_supplier_t reservedValueSupplier =
+                [=](
+                    AtomicBuffer &termBuffer,
+                    util::index_t termOffset,
+                    util::index_t length)
+                {
+                    return reservedValue;
+                };
 
             std::string message = "hello world!";
             std::int32_t length = buffer.putString(0, message);
@@ -139,7 +140,8 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
                     EXPECT_EQ(streamId, header.streamId());
                     EXPECT_EQ(length, header.frameLength() - dataHeaderLength);
                     EXPECT_EQ(expectedPosition, header.position());
-                }, 1), invoker);
+                },
+                1), invoker);
         }
 
         POLL_FOR(1 == aeron::concurrent::atomic::getInt32Volatile(&imageUnavailable), invoker);
@@ -190,10 +192,11 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveSubscriptionCallbacks)
 
             POLL_FOR(
                 0 < sub->poll(
-                    [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-                    {
-                        EXPECT_EQ(message, buffer.getString(offset));
-                    }, 1),
+                [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+                {
+                    EXPECT_EQ(message, buffer.getString(offset));
+                },
+                1),
                 invoker);
         }
 
@@ -243,7 +246,8 @@ TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
                 EXPECT_EQ(termId, header.termId());
                 EXPECT_EQ(termOffset, header.termOffset());
                 EXPECT_EQ(initialTermId, header.initialTermId());
-            }, 1), invoker);
+            },
+            1), invoker);
     }
 
     invoker.invoke();
@@ -288,7 +292,8 @@ TEST_P(PubSubTest, shouldBlockPollSubscription)
                 {
                     bytesReceived += length;
                     EXPECT_EQ(pub->sessionId(), sessionId);
-                }, 100000)), invoker);
+                },
+                100000)), invoker);
 
         EXPECT_EQ(pub->position(), bytesConsumed);
         EXPECT_EQ(pub->position(), bytesReceived);
@@ -328,7 +333,8 @@ TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
                 [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
                 {
                     return ControlledPollAction::COMMIT;
-                }, 1),
+                },
+                1),
             invoker);
     }
 

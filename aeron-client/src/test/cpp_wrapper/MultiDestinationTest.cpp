@@ -63,6 +63,7 @@ protected:
     void TearDown() override
     {
         invoker().invoke();
+        m_aeron = nullptr;
     }
 
     AgentInvoker<ClientConductor> invoker()
@@ -75,7 +76,7 @@ protected:
     fragment_handler_t m_noOpHandler =
         [&](concurrent::AtomicBuffer &b, util::index_t offset, util::index_t length, Header &header) {};
     std::shared_ptr<Aeron> m_aeron;
-    std::array<std::uint8_t, 1024> buf;
+    std::array<std::uint8_t, 1024> buf = {};
     AtomicBuffer buffer{buf};
 
 };

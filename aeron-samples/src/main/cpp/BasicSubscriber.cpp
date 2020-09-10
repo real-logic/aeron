@@ -20,6 +20,7 @@
 
 #include "Configuration.h"
 #include "util/CommandOptionParser.h"
+#include "concurrent/SleepingIdleStrategy.h"
 #include "Aeron.h"
 
 using namespace aeron::util;
@@ -109,13 +110,6 @@ int main(int argc, char **argv)
             [](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
-                std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
-            });
-
-        context.unavailableImageHandler(
-            [](Image &image)
-            {
-                std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 

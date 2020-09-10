@@ -59,7 +59,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingSignalEvent.h)
 
 add_custom_command(OUTPUT ${GENERATED_CODECS}
-    COMMAND ${GRADLE_WRAPPER} -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs --no-daemon
+    COMMAND ${GRADLE_WRAPPER} -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs --no-daemon --console=plain -q
     DEPENDS ${CODEC_SCHEMA} aeron-all-jar
     WORKING_DIRECTORY ${ARCHIVE_CODEC_WORKING_DIR}
     COMMENT "Generating C++ Archive codecs")
@@ -95,10 +95,16 @@ SET(HEADERS
 
 # static library
 add_library(aeron_archive_client STATIC ${SOURCE} ${HEADERS})
+add_library(aeron_archive_client_wrapper STATIC ${SOURCE} ${HEADERS})
 
 add_dependencies(aeron_archive_client codecs)
+add_dependencies(aeron_archive_client_wrapper codecs)
 
 target_include_directories(aeron_archive_client
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
+
+target_include_directories(aeron_archive_client_wrapper
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
 
@@ -109,6 +115,10 @@ endif ()
 
 target_link_libraries(aeron_archive_client
     PRIVATE aeron_client
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(aeron_archive_client_wrapper
+    PRIVATE aeron_client_wrapper aeron
     INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)

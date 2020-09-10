@@ -1133,6 +1133,29 @@ int aeron_exclusive_publication_async_destination_poll(aeron_async_destination_t
 int aeron_publication_close(
     aeron_publication_t *publication, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
+/**
+ * Get the publication's channel
+ *
+ * @param publication this
+ * @return channel uri string
+ */
+const char *aeron_publication_channel(aeron_publication_t *publication);
+
+/**
+ * Get the publication's stream id
+ *
+ * @param publication this
+ * @return stream id
+ */
+int32_t aeron_publication_stream_id(aeron_publication_t *publication);
+
+/**
+ * Get the publication's session id
+ * @param publication this
+ * @return session id
+ */
+int32_t aeron_publication_session_id(aeron_publication_t *publication);
+
 /*
  * Exclusive Publication functions
  */

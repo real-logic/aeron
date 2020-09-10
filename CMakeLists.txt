@@ -168,13 +168,13 @@ if (UNIX)
     endif (CXX_WARNINGS_AS_ERRORS)
 
     if (SANITISE_BUILD)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -DAERON_SANITIZE_ENABLED")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -DAERON_SANITIZE_ENABLED")
     endif (SANITISE_BUILD)
 
     if (COVERAGE_BUILD)
         add_compile_options(-O0 -fno-inline --coverage -g)
-        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_fEXE_LINKER_FLAGS} --coverage")
     endif (COVERAGE_BUILD)
 
     if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS)
@@ -237,6 +237,8 @@ endif ()
 
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp")
 
+set(AERON_CLIENT_WRAPPER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp_wrapper")
+
 set(AERON_C_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/c")
 
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/main/c")
@@ -247,6 +249,7 @@ if (AERON_TESTS)
     set(AERON_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp")
     set(AERON_DRIVER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/test/c")
     set(AERON_C_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/c")
+    set(AERON_CLIENT_WRAPPER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp_wrapper")
     set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/cpp")
     set(AERON_SYSTEM_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-system-tests")
 
@@ -267,9 +270,12 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 add_subdirectory(${AERON_C_CLIENT_SOURCE_PATH})
 
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
+add_subdirectory(${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+
 if (AERON_TESTS)
     add_subdirectory(${AERON_CLIENT_TEST_PATH})
     add_subdirectory(${AERON_C_CLIENT_TEST_PATH})
+    add_subdirectory(${AERON_CLIENT_WRAPPER_TEST_PATH})
 endif ()
 if (AERON_BUILD_SAMPLES)
     add_subdirectory(${AERON_SAMPLES_PATH})
@@ -296,7 +302,7 @@ if (BUILD_AERON_ARCHIVE_API)
         "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/main/java/*.java")
 
     add_custom_command(OUTPUT ${AERON_ALL_JAR}
-        COMMAND ${GRADLE_WRAPPER} :aeron-all:clean :aeron-all:assemble --no-daemon -x javadoc
+        COMMAND ${GRADLE_WRAPPER} :aeron-all:clean :aeron-all:assemble --no-daemon -x javadoc --console=plain -q
         DEPENDS ${AERON_ALL_SOURCES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating aeron-all jar")

@@ -15,12 +15,12 @@
 #
 
 set(CLIENT_LINK_LIB "aeron_client")
+set(CLIENT_WRAPPER_LINK_LIB "aeron_client_wrapper")
+set(C_CLIENT_LINK_LIB "aeron")
 if (LINK_SAMPLES_CLIENT_SHARED)
     set(CLIENT_LINK_LIB "aeron_client_shared")
     add_definitions(-DCLIENT_SHARED)
 endif ()
-
-include_directories(${AERON_CLIENT_SOURCE_PATH})
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
@@ -28,14 +28,20 @@ set(HEADERS
     Configuration.h
     RateReporter.h)
 
-add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(BasicPublisher BasicPublisher.cpp ${HEADERS})
-add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(BasicSubscriber BasicSubscriber.cpp ${HEADERS})
 add_executable(StreamingPublisher StreamingPublisher.cpp ${HEADERS})
 add_executable(RateSubscriber RateSubscriber.cpp ${HEADERS})
 add_executable(Pong Pong.cpp ${HEADERS})
 add_executable(Ping Ping.cpp ${HEADERS})
+add_executable(BasicPublisherW BasicPublisher.cpp ${HEADERS})
+add_executable(BasicSubscriberW BasicSubscriber.cpp ${HEADERS})
+add_executable(StreamingPublisherW StreamingPublisher.cpp ${HEADERS})
+add_executable(RateSubscriberW RateSubscriber.cpp ${HEADERS})
+add_executable(PongW Pong.cpp ${HEADERS})
+add_executable(PingW Ping.cpp ${HEADERS})
+add_executable(AeronStat AeronStat.cpp ${HEADERS})
+add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(ErrorStat ErrorStat.cpp ${HEADERS})
 add_executable(LossStat LossStat.cpp ${HEADERS})
@@ -43,51 +49,112 @@ add_executable(DriverTool DriverTool.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
-target_link_libraries(AeronStat
-    ${CLIENT_LINK_LIB})
-
+target_include_directories(BasicPublisher
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(BasicPublisher
     ${CLIENT_LINK_LIB})
 
-target_link_libraries(TimeTests
-    ${CMAKE_THREAD_LIBS_INIT})
-
+target_include_directories(BasicSubscriber
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(BasicSubscriber
     ${CLIENT_LINK_LIB})
 
+target_include_directories(StreamingPublisher
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(StreamingPublisher
     ${CLIENT_LINK_LIB})
 
+target_include_directories(RateSubscriber
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(RateSubscriber
     ${CLIENT_LINK_LIB})
 
+target_include_directories(Pong
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Pong
     ${CLIENT_LINK_LIB})
 
+target_include_directories(Ping
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Ping
     ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
 
 add_dependencies(Ping hdr_histogram)
 
+target_include_directories(BasicPublisherW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(BasicPublisherW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
+
+target_include_directories(BasicSubscriberW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(BasicSubscriberW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
+
+target_include_directories(StreamingPublisherW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(StreamingPublisherW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
+
+target_include_directories(RateSubscriberW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(RateSubscriberW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
+
+target_include_directories(PongW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(PongW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
+
+target_include_directories(PingW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(PingW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
+    ${HDRHISTOGRAM_LIBS})
+
+add_dependencies(PingW hdr_histogram)
+
+target_include_directories(Throughput
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Throughput
     ${CLIENT_LINK_LIB})
 
+target_include_directories(ErrorStat
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(ErrorStat
     ${CLIENT_LINK_LIB})
 
+target_include_directories(LossStat
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(LossStat
     ${CLIENT_LINK_LIB})
 
+target_include_directories(DriverTool
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(DriverTool
     ${CLIENT_LINK_LIB})
 
+target_include_directories(ExclusiveThroughput
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(ExclusiveThroughput
     ${CLIENT_LINK_LIB})
 
+target_include_directories(PingPong
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(PingPong
     ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
+
+target_include_directories(AeronStat
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
+target_link_libraries(AeronStat
+    ${CLIENT_LINK_LIB})
+
+target_include_directories(TimeTests
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
+target_link_libraries(TimeTests
+    ${CMAKE_THREAD_LIBS_INIT})
 
 add_dependencies(PingPong hdr_histogram)
 

@@ -164,6 +164,20 @@ public:
         return state;
     }
 
+    inline std::int32_t getCounterTypeId(std::int32_t id) const
+    {
+        std::int32_t typeId;
+        if (aeron_counters_reader_counter_type_id(m_countersReader, id, &typeId) < 0)
+        {
+            throw util::IllegalArgumentException(
+                "counter id " + std::to_string(id) +
+                    " out of range: maxCounterId=" + std::to_string(maxCounterId()),
+                SOURCEINFO);
+        }
+
+        return typeId;
+    }
+
     inline std::int64_t getFreeForReuseDeadline(std::int32_t id) const
     {
         std::int64_t deadline;

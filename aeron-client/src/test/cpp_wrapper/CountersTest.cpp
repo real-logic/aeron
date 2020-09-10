@@ -84,6 +84,7 @@ TEST_F(CountersTest, shouldAddAndCloseCounterWithCallbacks)
         WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId));
         ASSERT_EQ(counter->registrationId(), aeron->countersReader().getCounterRegistrationId(counter->id()));
         ASSERT_EQ(aeron->clientId(), aeron->countersReader().getCounterOwnerId(counter->id()));
+        ASSERT_EQ(COUNTER_TYPE_ID, aeron->countersReader().getCounterTypeId(counter->id()));
 
         counter->incrementOrdered();
         counter->incrementOrdered();

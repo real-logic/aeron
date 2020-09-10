@@ -60,8 +60,6 @@ typedef struct aeron_system_counter_stct
 }
 aeron_system_counter_t;
 
-#define AERON_SYSTEM_COUNTER_TYPE_ID (0)
-
 typedef struct aeron_system_counters_stct
 {
     int32_t *counter_ids;

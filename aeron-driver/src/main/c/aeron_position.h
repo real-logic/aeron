@@ -17,6 +17,7 @@
 #define AERON_DRIVER_POSITION_H
 
 #include "concurrent/aeron_counters_manager.h"
+#include "aeron_counters.h"
 
 int32_t aeron_stream_counter_allocate(
     aeron_counters_manager_t *counters_manager,

@@ -19,6 +19,7 @@
 #include "util/aeron_error.h"
 #include "aeron_system_counters.h"
 #include "aeron_alloc.h"
+#include "aeron_counters.h"
 
 static aeron_system_counter_t system_counters[] =
     {
@@ -77,7 +78,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
     {
         if ((counters->counter_ids[i] = aeron_counters_manager_allocate(
              manager,
-             AERON_SYSTEM_COUNTER_TYPE_ID,
+             AERON_COUNTER_SYSTEM_COUNTER_TYPE_ID,
              (const uint8_t *)&(system_counters[i].id),
              sizeof(system_counters[i].id),
              system_counters[i].label,

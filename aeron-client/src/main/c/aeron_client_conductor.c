@@ -28,6 +28,7 @@
 #include "aeron_cnc_file_descriptor.h"
 #include "aeron_image.h"
 #include "aeron_counter.h"
+#include "aeron_counters.h"
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context)
 {

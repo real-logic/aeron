@@ -15,6 +15,7 @@
  */
 package io.aeron.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -34,7 +35,7 @@ public class HeartbeatTimestamp
     /**
      * Type id of a heartbeat counter.
      */
-    public static final int HEARTBEAT_TYPE_ID = 11;
+    public static final int HEARTBEAT_TYPE_ID = AeronCounters.DRIVER_HEARTBEAT_TYPE_ID;
 
     /**
      * Offset in the key meta data for the registration id of the counter.

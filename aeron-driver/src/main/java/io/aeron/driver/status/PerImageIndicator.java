@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -28,7 +29,7 @@ public class PerImageIndicator
     /**
      * Type id of a per Image indicator.
      */
-    public static final int PER_IMAGE_TYPE_ID = 10;
+    public static final int PER_IMAGE_TYPE_ID = AeronCounters.DRIVER_PER_IMAGE_TYPE_ID;
 
     /**
      * Allocate a per {@link io.aeron.driver.PublicationImage} indicator.

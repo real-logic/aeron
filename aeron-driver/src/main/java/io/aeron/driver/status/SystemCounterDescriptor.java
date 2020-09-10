@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.status.*;
 
@@ -53,7 +54,7 @@ public enum SystemCounterDescriptor
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.
      */
-    public static final int SYSTEM_COUNTER_TYPE_ID = 0;
+    public static final int SYSTEM_COUNTER_TYPE_ID = AeronCounters.DRIVER_SYSTEM_COUNTER_TYPE_ID;
 
     private static final Int2ObjectHashMap<SystemCounterDescriptor> DESCRIPTOR_BY_ID_MAP = new Int2ObjectHashMap<>();
 

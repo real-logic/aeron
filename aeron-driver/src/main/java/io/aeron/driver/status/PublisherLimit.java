@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -28,7 +29,7 @@ public class PublisherLimit
     /**
      * Type id of a publisher limit counter.
      */
-    public static final int PUBLISHER_LIMIT_TYPE_ID = 1;
+    public static final int PUBLISHER_LIMIT_TYPE_ID = AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID;
 
     /**
      * Human readable name for the counter.

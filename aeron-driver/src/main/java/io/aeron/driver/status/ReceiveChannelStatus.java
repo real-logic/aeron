@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -28,7 +29,7 @@ public class ReceiveChannelStatus
     /**
      * Type id of a receive channel status indicator.
      */
-    public static final int RECEIVE_CHANNEL_STATUS_TYPE_ID = 7;
+    public static final int RECEIVE_CHANNEL_STATUS_TYPE_ID = AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID;
 
     /**
      * Human readable name for the counter.

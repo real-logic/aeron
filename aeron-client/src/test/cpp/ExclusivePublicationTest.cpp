@@ -114,7 +114,7 @@ TEST_F(ExclusivePublicationTest, shouldReportMaxMessageLength)
 
 TEST_F(ExclusivePublicationTest, shouldReportMaxPossiblePosition)
 {
-    auto expectedPosition = (int64_t)(TERM_LENGTH * (UINT64_C(1) << 31u));
+    auto expectedPosition = static_cast<std::int64_t>(TERM_LENGTH * (UINT64_C(1) << 31u));
     createPub();
     EXPECT_EQ(m_publication->maxPossiblePosition(), expectedPosition);
 }

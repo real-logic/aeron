@@ -106,7 +106,7 @@ TEST_F(ClientConductorTest, shouldSendAddPublicationToDriver)
     static std::int32_t ADD_PUBLICATION = ControlProtocolEvents::ADD_PUBLICATION;
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const PublicationMessageFlyweight message(buffer, offset);
 
@@ -141,7 +141,7 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
     static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
 
     m_manyToOneRingBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
         });
 
@@ -155,7 +155,7 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
     }
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const RemoveMessageFlyweight message(buffer, offset);
 
@@ -250,7 +250,7 @@ TEST_F(ClientConductorTest, shouldSendAddExclusivePublicationToDriver)
     static std::int32_t ADD_EXCLUSIVE_PUBLICATION = ControlProtocolEvents::ADD_EXCLUSIVE_PUBLICATION;
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const PublicationMessageFlyweight message(buffer, offset);
 
@@ -283,9 +283,9 @@ TEST_F(ClientConductorTest, shouldReleaseExclusivePublicationAfterGoingOutOfScop
 {
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
     static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
-    
+
     m_manyToOneRingBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
         });
 
@@ -299,7 +299,7 @@ TEST_F(ClientConductorTest, shouldReleaseExclusivePublicationAfterGoingOutOfScop
     }
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const RemoveMessageFlyweight message(buffer, offset);
 
@@ -422,7 +422,7 @@ TEST_F(ClientConductorTest, shouldSendAddSubscriptionToDriver)
     static std::int32_t ADD_SUBSCRIPTION = ControlProtocolEvents::ADD_SUBSCRIPTION;
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const SubscriptionMessageFlyweight message(buffer, offset);
 
@@ -457,7 +457,7 @@ TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
     static std::int32_t REMOVE_SUBSCRIPTION = ControlProtocolEvents::REMOVE_SUBSCRIPTION;
 
     m_manyToOneRingBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
         });
 
@@ -470,7 +470,7 @@ TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
     }
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const RemoveMessageFlyweight message(buffer, offset);
 
@@ -572,7 +572,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenInterServiceTimeoutExceede
     bool called = false;
 
     m_errorHandler =
-        [&](const std::exception& exception)
+        [&](const std::exception &exception)
         {
             EXPECT_EQ(typeid(ConductorServiceTimeoutException), typeid(exception));
             called = true;
@@ -588,7 +588,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
     bool called = false;
 
     m_errorHandler =
-        [&](const std::exception& exception)
+        [&](const std::exception &exception)
         {
             EXPECT_EQ(typeid(DriverTimeoutException), typeid(exception));
             called = true;
@@ -601,7 +601,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
 TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](const std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception &exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -616,7 +616,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive
 TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](const std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception &exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -630,7 +630,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInac
 TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](const std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception &exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -645,7 +645,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactiv
 TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](const std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception &exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -663,8 +663,8 @@ TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
     EXPECT_CALL(m_handlers, onNewPub(testing::StrEq(CHANNEL), STREAM_ID, SESSION_ID, id))
         .Times(1);
 
-    m_conductor.onNewPublication(id, id,
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
+    m_conductor.onNewPublication(
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 }
 
 TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
@@ -885,8 +885,14 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
 
     m_conductor.onNewPublication(
         pubId, pubId, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
-    m_conductor.onNewExclusivePublication(exPubId, exPubId,
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID_2, CHANNEL_STATUS_INDICATOR_ID, m_logFileName2);
+    m_conductor.onNewExclusivePublication(
+        exPubId,
+        exPubId,
+        STREAM_ID,
+        SESSION_ID,
+        PUBLICATION_LIMIT_COUNTER_ID_2,
+        CHANNEL_STATUS_INDICATOR_ID,
+        m_logFileName2);
     m_conductor.onSubscriptionReady(subId, CHANNEL_STATUS_INDICATOR_ID);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(pubId);
@@ -952,7 +958,7 @@ TEST_F(ClientConductorTest, shouldSendAddCounterToDriver)
     static std::int32_t ADD_COUNTER = ControlProtocolEvents::ADD_COUNTER;
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const CounterMessageFlyweight message(buffer, offset);
 
@@ -988,7 +994,7 @@ TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
     static std::int32_t REMOVE_COUNTER = ControlProtocolEvents::REMOVE_COUNTER;
 
     m_manyToOneRingBuffer.read(
-        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        [&](std::int32_t, concurrent::AtomicBuffer &, util::index_t, util::index_t)
         {
         });
 
@@ -1001,7 +1007,7 @@ TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
     }
 
     int count = m_manyToOneRingBuffer.read(
-        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
         {
             const RemoveMessageFlyweight message(buffer, offset);
 
@@ -1111,7 +1117,7 @@ TEST_F(ClientConductorTest, shouldCallOnUnavailableCounter)
 TEST_F(ClientConductorTest, shouldThrowExceptionOnReentrantCallback)
 {
     m_conductor.addAvailableCounterHandler(
-        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        [&](CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
         });
@@ -1119,7 +1125,7 @@ TEST_F(ClientConductorTest, shouldThrowExceptionOnReentrantCallback)
     std::int64_t id = 101;
     std::int32_t counterId = 7;
     bool called = false;
-    m_errorHandler = [&](const std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception &exception) { called = true; };
 
     m_conductor.onAvailableCounter(id, counterId);
 

@@ -93,6 +93,17 @@ TEST_F(CountersTest, shouldReadCounterState)
     EXPECT_EQ(-1, aeron_counters_reader_counter_state(&m_reader, -1, &state));
 }
 
+TEST_F(CountersTest, shouldReadCounterTypeId)
+{
+    int32_t typeId;
+    int32_t expectedTypeId = 1234;
+
+    int32_t id = aeron_counters_manager_allocate(&m_manager, expectedTypeId, nullptr, 0, nullptr, 0);
+
+    EXPECT_EQ(0, aeron_counters_reader_counter_type_id(&m_reader, id, &typeId));
+    EXPECT_EQ(expectedTypeId, typeId);
+}
+
 TEST_F(CountersTest, shouldReadCounterLabel)
 {
     const char *label = "label as text";

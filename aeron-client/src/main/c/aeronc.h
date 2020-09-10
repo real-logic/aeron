@@ -727,6 +727,17 @@ int aeron_counters_reader_counter_owner_id(
 int aeron_counters_reader_counter_state(aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *state);
 
 /**
+ * Get the type id for a counter.
+ *
+ * @param counters_reader that contains the counter
+ * @param counter_id to find
+ * @param type id out pointer for the current state to be stored in.
+ * @return -1 on failure, 0 on success.
+ */
+int aeron_counters_reader_counter_type_id(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *type_id);
+
+/**
  * Get the label for a counter.
  *
  * @param counters_reader that contains the counter

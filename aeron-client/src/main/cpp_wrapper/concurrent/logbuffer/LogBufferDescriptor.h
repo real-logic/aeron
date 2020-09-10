@@ -348,7 +348,7 @@ inline void rotateLog(AtomicBuffer& logMetaDataBuffer, std::int32_t currentTermC
     const std::int32_t nextTermCount = currentTermCount + 1;
     const int nextIndex = indexByTermCount(nextTermCount);
     const std::int32_t expectedTermId = nextTermId - PARTITION_COUNT;
-    const std::int64_t newRawTail = (nextTermId * ((int64_t(1) << 32)));
+    const std::int64_t newRawTail = (nextTermId * ((INT64_C(1) << 32)));
 
     std::int64_t rawTail;
     do
@@ -366,7 +366,7 @@ inline void rotateLog(AtomicBuffer& logMetaDataBuffer, std::int32_t currentTermC
 
 inline void initializeTailWithTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)
 {
-    const std::int64_t rawTail = (termId * ((int64_t(1) << 32)));
+    const std::int64_t rawTail = (termId * ((INT64_C(1) << 32)));
     logMetaDataBuffer.putInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), rawTail);
 }
 

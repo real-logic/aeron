@@ -135,7 +135,7 @@ public:
      * @param streamId within the channel scope.
      * @return id to resolve the AsyncAddPublication for the publication
      */
-    std::int64_t addPublication(const std::string &channel, std::int32_t streamId)
+    inline std::int64_t addPublication(const std::string &channel, std::int32_t streamId)
     {
         AsyncAddPublication *addPublication = addPublicationAsync(channel, streamId);
         std::int64_t registrationId = aeron_async_add_publication_get_registration_id(addPublication);
@@ -245,7 +245,7 @@ public:
      * @param streamId within the channel scope.
      * @return id to resolve AsyncAddExclusivePublication for the publication
      */
-    std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId)
+    inline std::int64_t addExclusivePublication(const std::string &channel, std::int32_t streamId)
     {
         AsyncAddExclusivePublication *addExclusivePublication = addExclusivePublicationAsync(channel, streamId);
         std::int64_t registrationId = aeron_async_add_exclusive_exclusive_publication_get_registration_id(

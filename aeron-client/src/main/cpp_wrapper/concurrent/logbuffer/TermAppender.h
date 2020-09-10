@@ -36,12 +36,12 @@ namespace aeron { namespace concurrent { namespace logbuffer {
  * @param length of the message in bytes
  */
 typedef std::function<std::int64_t(
-    AtomicBuffer& termBuffer,
+    AtomicBuffer &termBuffer,
     util::index_t termOffset,
     util::index_t length)> on_reserved_value_supplier_t;
 
 static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
-    [](AtomicBuffer&, util::index_t, util::index_t) -> std::int64_t { return 0; };
+    [](AtomicBuffer &, util::index_t, util::index_t) -> std::int64_t { return 0; };
 
 }}}
 

@@ -28,9 +28,9 @@ namespace aeron { namespace util
  */
 typedef std::int32_t index_t;
 
-inline static index_t convertSizeToIndex(size_t size)
+inline static index_t convertSizeToIndex(std::size_t size)
 {
-    if (size > static_cast<size_t>(std::numeric_limits<index_t>::max()))
+    if (size > static_cast<std::size_t>(std::numeric_limits<index_t>::max()))
     {
         return std::numeric_limits<index_t>::max();
     }

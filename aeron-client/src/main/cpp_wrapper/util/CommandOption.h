@@ -36,15 +36,15 @@ class CLIENT_EXPORT CommandOption
 
 private:
     char m_optionChar;
-    size_t m_minParams;
-    size_t m_maxParams;
+    std::size_t m_minParams;
+    std::size_t m_maxParams;
     std::string m_helpText;
 
     bool m_isPresent;
 
     std::vector<std::string> m_params;
 
-    void checkIndex(size_t index) const
+    void checkIndex(std::size_t index) const
     {
         if (index > m_params.size())
         {
@@ -65,7 +65,7 @@ public:
     {
     }
 
-    CommandOption(char optionChar, size_t minParams, size_t maxParams, std::string helpText) :
+    CommandOption(char optionChar, std::size_t minParams, std::size_t maxParams, std::string helpText) :
         m_optionChar(optionChar),
         m_minParams(minParams),
         m_maxParams(maxParams),
@@ -119,18 +119,18 @@ public:
         m_isPresent = true;
     }
 
-    size_t getNumParams() const
+    std::size_t getNumParams() const
     {
         return m_params.size();
     }
 
-    std::string getParam(size_t index) const
+    std::string getParam(std::size_t index) const
     {
         checkIndex(index);
         return m_params[index];
     }
 
-    std::string getParam(size_t index, std::string defaultValue) const
+    std::string getParam(std::size_t index, std::string defaultValue) const
     {
         if (!isPresent())
         {
@@ -141,7 +141,7 @@ public:
     }
 
 
-    int getParamAsInt(size_t index) const
+    int getParamAsInt(std::size_t index) const
     {
         checkIndex(index);
         std::string param = m_params[index];
@@ -157,7 +157,7 @@ public:
         }
     }
 
-    long long getParamAsLong(size_t index) const
+    long long getParamAsLong(std::size_t index) const
     {
         checkIndex(index);
         std::string param = m_params[index];
@@ -173,7 +173,7 @@ public:
         }
     }
 
-    int getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue) const
+    int getParamAsInt(std::size_t index, int minValue, int maxValue, int defaultValue) const
     {
         if (!isPresent())
         {
@@ -192,7 +192,7 @@ public:
         return value;
     }
 
-    long long getParamAsLong(size_t index, long long minValue, long long maxValue, long long defaultValue) const
+    long long getParamAsLong(std::size_t index, long long minValue, long long maxValue, long long defaultValue) const
     {
         if (!isPresent())
         {

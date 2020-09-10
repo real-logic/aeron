@@ -44,7 +44,8 @@ public:
     EmbeddedMediaDriver() :
         m_running(true),
         m_context(nullptr),
-        m_driver(nullptr)
+        m_driver(nullptr),
+        m_livenessTimeout(5 * 1000 * 1000 * 1000LL)
     {
     }
 
@@ -82,9 +83,9 @@ public:
             });
     }
 
-    uint64_t livenessTimeoutNs()
+    void livenessTimeoutNs(uint16_t livenessTimeout)
     {
-        return aeron_driver_context_get_client_liveness_timeout_ns(m_context);
+        m_livenessTimeout = livenessTimeout;
     }
 
 protected:
@@ -102,8 +103,8 @@ protected:
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
-        aeron_driver_context_set_timer_interval_ns(m_context, 500000000);
-        aeron_driver_context_set_client_liveness_timeout_ns(m_context, 1000000000);
+        aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeout / 5);
+        aeron_driver_context_set_client_liveness_timeout_ns(m_context, m_livenessTimeout);
 
         long long debugTimeoutMs;
         if (0 != (debugTimeoutMs = EmbeddedMediaDriver::getDebugTimeoutMs()))
@@ -134,6 +135,7 @@ private:
     std::thread m_thread;
     aeron_driver_context_t *m_context;
     aeron_driver_t *m_driver;
+    std::uint64_t m_livenessTimeout;
 
     static long long getDebugTimeoutMs()
     {

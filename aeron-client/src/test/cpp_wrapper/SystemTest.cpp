@@ -191,23 +191,3 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
     EXPECT_EQ(1, closeCount1);
     EXPECT_EQ(0, closeCount2);
 }
-
-TEST_F(SystemTest, shouldReportClosedIfTimedOut)
-{
-    Context ctx;
-    ctx.useConductorAgentInvoker(true);
-    ctx.errorHandler([](const std::exception e)
-    {
-        // Deliberately ignored.
-    });
-
-    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
-    AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
-    invoker.start();
-    ASSERT_FALSE(aeron->isClosed());
-    invoker.invoke();
-    // Ideally we wouldn't sleep here, but didn't want to change the public API to inject a clock.
-    std::this_thread::sleep_for(std::chrono::nanoseconds(2 * m_driver.livenessTimeoutNs()));
-    invoker.invoke();
-    ASSERT_TRUE(aeron->isClosed());
-}

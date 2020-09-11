@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 
-
 #include "MockAtomicBuffer.h"
 #include "concurrent/errors/DistinctErrorLog.h"
 
@@ -55,7 +54,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16) = {};
     MockAtomicBuffer m_mockBuffer;
     TimestampClock m_clock;
     DistinctErrorLog m_errorLog;

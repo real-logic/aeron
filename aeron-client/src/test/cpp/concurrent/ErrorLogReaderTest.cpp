@@ -66,7 +66,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16) = {};
     AtomicBuffer m_mockBuffer;
     ErrorHandler m_error;
     ErrorLogReader::error_consumer_t m_consumer;

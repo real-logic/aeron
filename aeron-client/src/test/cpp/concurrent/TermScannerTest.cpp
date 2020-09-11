@@ -46,8 +46,8 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
-    AERON_DECL_ALIGNED(packet_t m_hdrBuffer, 16);
+    AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16) = {};
+    AERON_DECL_ALIGNED(packet_t m_hdrBuffer, 16) = {};
     MockAtomicBuffer m_termBuffer;
     AtomicBuffer m_packet;
 };

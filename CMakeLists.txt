@@ -174,7 +174,7 @@ if (UNIX)
 
     if (COVERAGE_BUILD)
         add_compile_options(-O0 -fno-inline --coverage -g)
-        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_fEXE_LINKER_FLAGS} --coverage")
+        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif (COVERAGE_BUILD)
 
     if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS)

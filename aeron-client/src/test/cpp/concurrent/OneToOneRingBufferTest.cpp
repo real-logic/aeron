@@ -57,8 +57,8 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
-    AERON_DECL_ALIGNED(buffer_t m_srcBuffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16) = {};
+    AERON_DECL_ALIGNED(buffer_t m_srcBuffer, 16) = {};
     AtomicBuffer m_ab;
     AtomicBuffer m_srcAb;
     OneToOneRingBuffer m_ringBuffer;

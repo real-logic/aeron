@@ -87,8 +87,8 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(term_buffer_t m_log, 16);
-    AERON_DECL_ALIGNED(src_buffer_t m_src, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_log, 16) = {};
+    AERON_DECL_ALIGNED(src_buffer_t m_src, 16) = {};
 
     AtomicBuffer m_termBuffers[3];
     AtomicBuffer m_logMetaDataBuffer;
@@ -210,7 +210,7 @@ TEST_F(ExclusivePublicationTest, shouldRotateWhenAppendTrips)
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET), 1);
 
-    int64_t nextTermId = TERM_ID_1 + 1;
+    std::int64_t nextTermId = TERM_ID_1 + 1;
     auto expectedTail = nextTermId << 32;
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(nextIndex)), expectedTail);
 
@@ -234,7 +234,7 @@ TEST_F(ExclusivePublicationTest, shouldRotateWhenClaimTrips)
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET), 1);
 
-    int64_t nextTermId = TERM_ID_1 + 1;
+    std::int64_t nextTermId = TERM_ID_1 + 1;
     auto expectedTail = nextTermId << 32;
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(nextIndex)), expectedTail);
 

@@ -125,10 +125,10 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(many_to_one_ring_buffer_t m_toDriver, 16);
-    AERON_DECL_ALIGNED(broadcast_buffer_t m_toClients, 16);
-    AERON_DECL_ALIGNED(counter_values_buffer_t m_counterValues, 16);
-    AERON_DECL_ALIGNED(counter_metadata_buffer_t m_counterMetadata, 16);
+    AERON_DECL_ALIGNED(many_to_one_ring_buffer_t m_toDriver, 16) = {};
+    AERON_DECL_ALIGNED(broadcast_buffer_t m_toClients, 16) = {};
+    AERON_DECL_ALIGNED(counter_values_buffer_t m_counterValues, 16) = {};
+    AERON_DECL_ALIGNED(counter_metadata_buffer_t m_counterMetadata, 16) = {};
 
     AtomicBuffer m_toDriverBuffer;
     AtomicBuffer m_toClientsBuffer;

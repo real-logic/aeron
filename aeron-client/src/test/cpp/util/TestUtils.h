@@ -24,7 +24,7 @@
 #include <windows.h>
 #endif
 
-#include <util/Exceptions.h>
+#include "util/Exceptions.h"
 
 namespace aeron { namespace test {
 

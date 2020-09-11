@@ -38,7 +38,7 @@ static void clearBuffer()
 TEST (atomicBufferTests, checkBounds)
 {
     clearBuffer();
-    AtomicBuffer ab (&testBuffer[0], testBuffer.size());
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
     std::string testString ("hello world!");
 
     ASSERT_NO_THROW({
@@ -173,7 +173,7 @@ TEST (atomicBufferTests, checkStructOverlay)
         ab.putInt32(20, 102);
         ab.putInt64(24, 103);
 
-        auto& s = ab.overlayStruct<testStruct>(16);
+        auto &s = ab.overlayStruct<testStruct>(16);
 
         ASSERT_EQ(s.f1, 101);
         ASSERT_EQ(s.f2, 102);

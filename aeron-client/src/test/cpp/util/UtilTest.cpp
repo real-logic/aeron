@@ -15,14 +15,13 @@
  */
 
 #include <cstdint>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "util/ScopeUtils.h"
 #include "util/StringUtil.h"
 #include "util/BitUtil.h"
 #include "TestUtils.h"
-
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 
 using namespace aeron::util;
 

@@ -67,7 +67,7 @@ public:
         m_stateBuffer.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_logBuffer.fill(0);
         m_stateBuffer.fill(0);
@@ -76,10 +76,10 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(term_buffer_t m_logBuffer, 16);
-    AERON_DECL_ALIGNED(meta_data_buffer_t m_stateBuffer, 16);
-    AERON_DECL_ALIGNED(hdr_t m_hdrBuffer, 16);
-    AERON_DECL_ALIGNED(src_buffer_t m_srcBuffer, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_logBuffer, 16) = {};
+    AERON_DECL_ALIGNED(meta_data_buffer_t m_stateBuffer, 16) = {};
+    AERON_DECL_ALIGNED(hdr_t m_hdrBuffer, 16) = {};
+    AERON_DECL_ALIGNED(src_buffer_t m_srcBuffer, 16) = {};
     MockAtomicBuffer m_termBuffer;
     MockAtomicBuffer m_metaDataBuffer;
     AtomicBuffer m_hdr;

@@ -91,7 +91,7 @@ public:
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_PAGE_SIZE_OFFSET, PAGE_SIZE);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_log.fill(0);
 
@@ -139,8 +139,8 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(term_buffer_t m_log, 16);
-    AERON_DECL_ALIGNED(src_buffer_t m_src, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_log, 16) = {};
+    AERON_DECL_ALIGNED(src_buffer_t m_src, 16) = {};
 
     AtomicBuffer m_termBuffers[3];
     AtomicBuffer m_logMetaDataBuffer;

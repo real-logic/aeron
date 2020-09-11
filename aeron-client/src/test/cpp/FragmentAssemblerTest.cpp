@@ -79,7 +79,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(fragment_buffer_t m_fragment, 16);
+    AERON_DECL_ALIGNED(fragment_buffer_t m_fragment, 16) = {};
     AtomicBuffer m_buffer;
     Header m_header;
 };

@@ -20,7 +20,7 @@
 
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
-#include "TestUtil.h"
+#include "util/TestUtils.h"
 
 using namespace aeron;
 

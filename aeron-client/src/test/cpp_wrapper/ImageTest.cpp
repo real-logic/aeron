@@ -22,9 +22,10 @@
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
 #include "ChannelUriStringBuilder.h"
-#include "TestUtil.h"
+#include "util/TestUtils.h"
 
 using namespace aeron;
+using namespace aeron::test;
 using testing::MockFunction;
 using testing::Return;
 using testing::_;

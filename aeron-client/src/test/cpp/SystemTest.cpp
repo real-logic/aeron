@@ -20,6 +20,7 @@
 
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
+#include "util/TestUtils.h"
 
 using namespace aeron;
 
@@ -46,7 +47,12 @@ protected:
     EmbeddedMediaDriver m_driver;
 };
 
+#if defined(AERON_C_CLIENT_WRAPPER_TEST)
+// TODO: We need a way to clean up unresolved aeron_client_registering_resource_t* commands
+TEST_F(SystemTest, DISABLED_shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
+#else
 TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
+#endif
 {
     std::shared_ptr<Aeron> aeron = Aeron::connect();
 
@@ -59,6 +65,13 @@ TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
         std::this_thread::yield();
         pub = aeron->findPublication(pub_reg_id);
     }
+}
+
+
+TEST_F(SystemTest, shouldGetDefaultPath)
+{
+    const std::string defaultPath = Context::defaultAeronPath();
+    EXPECT_GT(defaultPath.length(), 0U);
 }
 
 TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
@@ -123,20 +136,14 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     ::memcpy(key, &key1, sizeof(key));
     const std::int64_t regId1 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
 
-    while (1 != staticAvailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(1 == staticAvailable, invoker);
     ASSERT_EQ(1, dynamicAvailable);
 
     {
         auto counter = aeron->findCounter(regId1);
     }
 
-    while (1 != staticUnavailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(1 == staticUnavailable, invoker);
     ASSERT_EQ(1, dynamicUnavailable);
 
     aeron->removeAvailableCounterHandler(availableRegId);
@@ -146,23 +153,19 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     ::memcpy(key, &key2, sizeof(key));
     const std::int64_t regId2 = aeron->addCounter(counterTypeId, key, sizeof(key), "my label");
 
-    while (2 != staticAvailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(2 == staticAvailable, invoker);
     ASSERT_EQ(1, dynamicAvailable);
 
     {
         auto counter = aeron->findCounter(regId2);
     }
 
-    while (2 != staticUnavailable)
-    {
-        invoker.invoke();
-    }
+    POLL_FOR(2 == staticUnavailable, invoker);
     ASSERT_EQ(1, dynamicUnavailable);
 }
 
+#if !defined(AERON_C_CLIENT_WRAPPER_TEST)
+// Note, only C++ client have removed by reference api and have the need to test
 TEST_F(SystemTest, shouldNotSegfaultWhenRemovedByReference)
 {
     on_available_counter_t dynamicAvailableHandler =
@@ -188,6 +191,7 @@ TEST_F(SystemTest, shouldNotSegfaultWhenRemovedByReference)
     aeron->removeAvailableCounterHandler(dynamicAvailableHandler);
     aeron->removeUnavailableCounterHandler(dynamicUnavailableHandler);
 }
+#endif
 
 
 TEST_F(SystemTest, shouldAddRemoveCloseHandler)
@@ -197,17 +201,18 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
+    auto handler = [&]()
+    {
+        closeCount1++;
+    };
 
     {
         std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
         AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
         invoker.start();
 
-        aeron->addCloseClientHandler(
-            [&]()
-            {
-                closeCount1++;
-            });
+        aeron->addCloseClientHandler(handler);
+        invoker.invoke();
         std::int64_t regId2 = aeron->addCloseClientHandler(
             [&]()
             {

@@ -75,6 +75,11 @@ public:
             });
     }
 
+    void livenessTimeoutNs(std::uint64_t livenessTimeoutNs)
+    {
+        m_livenessTimeoutNs = livenessTimeoutNs;
+    }
+
 protected:
     int init()
     {
@@ -90,6 +95,17 @@ protected:
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleep-ns");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
+        aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeoutNs / 10);
+        aeron_driver_context_set_client_liveness_timeout_ns(m_context, m_livenessTimeoutNs);
+
+        long long debugTimeoutMs;
+        if (0 != (debugTimeoutMs = EmbeddedMediaDriver::getDebugTimeoutMs()))
+        {
+            aeron_driver_context_set_driver_timeout_ms(m_context, debugTimeoutMs);
+            aeron_driver_context_set_client_liveness_timeout_ns(m_context, debugTimeoutMs * 1000000LL);
+            aeron_driver_context_set_image_liveness_timeout_ns(m_context, debugTimeoutMs * 1000000LL);
+            aeron_driver_context_set_publication_unblock_timeout_ns(m_context, 2 * debugTimeoutMs * 1000000LL);
+        }
 
         if (aeron_driver_init(&m_driver, m_context) < 0)
         {
@@ -107,10 +123,17 @@ protected:
     }
 
 private:
+    std::uint64_t m_livenessTimeoutNs = 5 * 1000 * 1000 * 1000LL;
     std::atomic<bool> m_running = { true };
     std::thread m_thread;
     aeron_driver_context_t *m_context = nullptr;
     aeron_driver_t *m_driver = nullptr;
+
+    static long long getDebugTimeoutMs()
+    {
+        const char *debug_timeout_str = getenv("AERON_DEBUG_TIMEOUT");
+        return nullptr != debug_timeout_str ? strtoll(debug_timeout_str, nullptr, 10) : 0LL;
+    }
 };
 
 }

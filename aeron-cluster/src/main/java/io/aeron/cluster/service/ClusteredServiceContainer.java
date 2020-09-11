@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
@@ -296,17 +297,18 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Counter type id for the cluster node role.
          */
-        public static final int CLUSTER_NODE_ROLE_TYPE_ID = 201;
+        public static final int CLUSTER_NODE_ROLE_TYPE_ID = AeronCounters.CLUSTER_NODE_ROLE_TYPE_ID;
 
         /**
          * Counter type id of the commit position.
          */
-        public static final int COMMIT_POSITION_TYPE_ID = 203;
+        public static final int COMMIT_POSITION_TYPE_ID = AeronCounters.CLUSTER_COMMIT_POSITION_TYPE_ID;
 
         /**
          * Counter type id for the clustered service error count.
          */
-        public static final int CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;
+        public static final int CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID =
+            AeronCounters.CLUSTER_CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID;
 
         /**
          * The value {@link #CLUSTER_ID_DEFAULT} or system property {@link #CLUSTER_ID_PROP_NAME} if set.

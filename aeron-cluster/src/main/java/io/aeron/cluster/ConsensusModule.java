@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.Archive;
@@ -432,7 +433,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Counter type id for the consensus module state.
          */
-        public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
+        public static final int CONSENSUS_MODULE_STATE_TYPE_ID = AeronCounters.CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID;
 
         /**
          * Counter type id for the cluster node role.
@@ -459,27 +460,30 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Counter type id for count of snapshots taken.
          */
-        public static final int SNAPSHOT_COUNTER_TYPE_ID = 205;
+        public static final int SNAPSHOT_COUNTER_TYPE_ID = AeronCounters.CLUSTER_SNAPSHOT_COUNTER_TYPE_ID;
 
         /**
          * Type id for election state counter.
          */
-        public static final int ELECTION_STATE_TYPE_ID = 207;
+        public static final int ELECTION_STATE_TYPE_ID = AeronCounters.CLUSTER_ELECTION_STATE_TYPE_ID;
 
         /**
          * Counter type id for the consensus module error count.
          */
-        public static final int CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID = 212;
+        public static final int CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID =
+            AeronCounters.CLUSTER_CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID;
 
         /**
          * Counter type id for the number of cluster clients which have been timed out.
          */
-        public static final int CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID = 213;
+        public static final int CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID =
+            AeronCounters.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 
         /**
          * Counter type id for the number of invalid requests which the cluster has received.
          */
-        public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID = 214;
+        public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID =
+            AeronCounters.CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID;
 
         /**
          * The number of services in this cluster instance.

@@ -177,7 +177,7 @@ public class ClusterControl
     /**
      * Counter type id for the control toggle.
      */
-    public static final int CONTROL_TOGGLE_TYPE_ID = 202;
+    public static final int CONTROL_TOGGLE_TYPE_ID = AeronCounters.CLUSTER_CONTROL_TOGGLE_TYPE_ID;
 
     /**
      * Map a {@link CountersReader} over the provided {@link File} for the CnC file.

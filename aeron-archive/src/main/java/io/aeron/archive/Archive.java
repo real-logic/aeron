@@ -15,10 +15,7 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
-import io.aeron.CommonContext;
-import io.aeron.Counter;
-import io.aeron.Image;
+import io.aeron.*;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.AeronArchive;
@@ -389,12 +386,12 @@ public final class Archive implements AutoCloseable
         /**
          * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
          */
-        public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
+        public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = AeronCounters.ARCHIVE_ERROR_COUNT_TYPE_ID;
 
         /**
          * The type id of the {@link Counter} used for keeping track of the count of concurrent control sessions.
          */
-        public static final int ARCHIVE_CONTROL_SESSIONS_TYPE_ID = 102;
+        public static final int ARCHIVE_CONTROL_SESSIONS_TYPE_ID = AeronCounters.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
 
         /**
          * Size in bytes of the error buffer for the archive when not externally provided.

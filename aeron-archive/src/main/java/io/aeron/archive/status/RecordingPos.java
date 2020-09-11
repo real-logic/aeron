@@ -16,6 +16,7 @@
 package io.aeron.archive.status;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.Image;
 import org.agrona.BitUtil;
@@ -51,7 +52,7 @@ public class RecordingPos
     /**
      * Type id of a recording position counter.
      */
-    public static final int RECORDING_POSITION_TYPE_ID = 100;
+    public static final int RECORDING_POSITION_TYPE_ID = AeronCounters.ARCHIVE_RECORDING_POSITION_TYPE_ID;
 
     /**
      * Represents a null recording id when not found.

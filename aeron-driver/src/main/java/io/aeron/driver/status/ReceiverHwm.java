@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -28,7 +29,7 @@ public class ReceiverHwm
     /**
      * Type id of a receiver high-water-mark position counter.
      */
-    public static final int RECEIVER_HWM_TYPE_ID = 3;
+    public static final int RECEIVER_HWM_TYPE_ID = AeronCounters.DRIVER_RECEIVER_HWM_TYPE_ID;
 
     /**
      * Human readable name for the counter.

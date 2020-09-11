@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -27,7 +28,7 @@ public class SenderPos
     /**
      * Type id of a sender position counter.
      */
-    public static final int SENDER_POSITION_TYPE_ID = 2;
+    public static final int SENDER_POSITION_TYPE_ID = AeronCounters.DRIVER_SENDER_POSITION_TYPE_ID;
 
     /**
      * Human readable name for the counter.

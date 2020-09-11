@@ -145,6 +145,7 @@ set(HEADERS
     aeron_common.h
     aeron_context.h
     aeron_counter.h
+    aeron_counters.h
     aeron_exclusive_publication.h
     aeron_fragment_assembler.h
     aeron_image.h

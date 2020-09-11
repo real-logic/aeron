@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.AeronCounters;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -28,7 +29,7 @@ public class SenderBpe
     /**
      * Type id of a sender back-pressure event counter.
      */
-    public static final int SENDER_BPE_TYPE_ID = 13;
+    public static final int SENDER_BPE_TYPE_ID = AeronCounters.DRIVER_SENDER_BPE_TYPE_ID;
 
     /**
      * Human readable name for the counter.

@@ -15,7 +15,10 @@
  */
 package io.aeron.status;
 
-import org.agrona.*;
+import io.aeron.AeronCounters;
+import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -51,7 +54,8 @@ public class LocalSocketAddressStatus
     /**
      * Type of the counter used to track a local socket address and port.
      */
-    public static final int LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID = 14;
+    public static final int LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID =
+        AeronCounters.DRIVER_LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID;
 
     /**
      * Allocate a counter to represent a local socket address associated with a channel.

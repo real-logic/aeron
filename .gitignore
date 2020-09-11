@@ -5,6 +5,7 @@ GPATH
 prop
 out
 classes
+bin
 
 # OS X
 .DS_Store
@@ -28,7 +29,7 @@ classes
 # the build
 build-local.properties
 .gradle
-build
+build*
 cmake-build-debug
 cmake-build-release
 cmake-build-debug-coverage

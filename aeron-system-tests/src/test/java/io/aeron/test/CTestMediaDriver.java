@@ -178,8 +178,10 @@ public final class CTestMediaDriver implements TestMediaDriver
             final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             pb.environment().putAll(environment);
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
+            final Process process = pb.start();
+            Thread.yield();
 
-            return new CTestMediaDriver(pb.start(), context, driverOutputConsumer);
+            return new CTestMediaDriver(process, context, driverOutputConsumer);
         }
         catch (final IOException ex)
         {

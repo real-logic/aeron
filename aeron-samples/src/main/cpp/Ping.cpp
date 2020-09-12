@@ -18,7 +18,6 @@
 #include <cstdio>
 #include <csignal>
 #include <thread>
-#include <climits>
 
 extern "C"
 {
@@ -172,31 +171,30 @@ int main(int argc, char **argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        auto availableImageHandler = [&](Image &image)
-        {
-            std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image
-                .sessionId();
-            std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
-
-//            if (image.subscriptionRegistrationId() == subscriptionId)
+        context.availableImageHandler(
+            [&](Image &image)
             {
-                countDown--;
-            }
-        };
+                std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
+                std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
 
-        auto unavailableImageHandler = [](Image &image)
-        {
-            std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image
-                .sessionId();
-            std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
-        };
+                if (image.subscriptionRegistrationId() == subscriptionId)
+                {
+                    countDown--;
+                }
+            });
+
+        context.unavailableImageHandler(
+            [](Image &image)
+            {
+                std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
+                std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
+            });
 
         context.preTouchMappedMemory(true);
 
         Aeron aeron(context);
 
-        subscriptionId = aeron.addSubscription(
-            settings.pongChannel, settings.pongStreamId, availableImageHandler, unavailableImageHandler);
+        subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);
         publicationId = aeron.addExclusivePublication(settings.pingChannel, settings.pingStreamId);
 
         std::shared_ptr<Subscription> pongSubscription = aeron.findSubscription(subscriptionId);

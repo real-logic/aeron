@@ -172,12 +172,12 @@ public final class AeronCounters
     /**
      * The type id of the {@link Counter} used for the live log position counter.
      */
-    public static final int CLUSTER_LIVE_LOG_POSITION_TYPE_ID = 209;
+    public static final int CLUSTER_BACKUP_LIVE_LOG_POSITION_TYPE_ID = 209;
 
     /**
      * The type id of the {@link Counter} used for the next query deadline counter.
      */
-    public static final int CLUSTER_QUERY_DEADLINE_TYPE_ID = 210;
+    public static final int CLUSTER_BACKUP_QUERY_DEADLINE_TYPE_ID = 210;
 
     /**
      * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.

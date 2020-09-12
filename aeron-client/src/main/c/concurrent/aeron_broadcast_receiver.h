@@ -40,9 +40,9 @@ aeron_broadcast_receiver_t;
 
 typedef void (*aeron_broadcast_receiver_handler_t)(int32_t type_id, uint8_t *buffer, size_t length, void *clientd);
 
-int aeron_broadcast_receiver_init(volatile aeron_broadcast_receiver_t *receiver, void *buffer, size_t length);
+int aeron_broadcast_receiver_init(aeron_broadcast_receiver_t *receiver, void *buffer, size_t length);
 
-inline bool aeron_broadcast_receiver_validate_at(volatile aeron_broadcast_receiver_t *receiver, int64_t cursor)
+inline bool aeron_broadcast_receiver_validate_at(aeron_broadcast_receiver_t *receiver, int64_t cursor)
 {
     int64_t tail_intent_counter;
     AERON_GET_VOLATILE(tail_intent_counter, receiver->descriptor->tail_intent_counter);
@@ -50,14 +50,14 @@ inline bool aeron_broadcast_receiver_validate_at(volatile aeron_broadcast_receiv
     return (cursor + (int64_t)receiver->capacity) > tail_intent_counter;
 }
 
-inline bool aeron_broadcast_receiver_validate(volatile aeron_broadcast_receiver_t *receiver)
+inline bool aeron_broadcast_receiver_validate(aeron_broadcast_receiver_t *receiver)
 {
     aeron_acquire();
 
     return aeron_broadcast_receiver_validate_at(receiver, receiver->cursor);
 }
 
-inline bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_receiver_t *receiver)
+inline bool aeron_broadcast_receiver_receive_next(aeron_broadcast_receiver_t *receiver)
 {
     bool is_available = false;
     int64_t tail;
@@ -100,6 +100,6 @@ inline bool aeron_broadcast_receiver_receive_next(volatile aeron_broadcast_recei
 }
 
 int aeron_broadcast_receiver_receive(
-    volatile aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler, void *clientd);
+    aeron_broadcast_receiver_t *receiver, aeron_broadcast_receiver_handler_t handler, void *clientd);
 
 #endif //AERON_BROADCAST_RECEIVER_H

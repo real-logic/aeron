@@ -16,7 +16,7 @@
 
 #include "aeron_spsc_rb.h"
 
-int aeron_spsc_rb_init(volatile aeron_spsc_rb_t *ring_buffer, void *buffer, size_t length)
+int aeron_spsc_rb_init(aeron_spsc_rb_t *ring_buffer, void *buffer, size_t length)
 {
     const size_t capacity = length - AERON_RB_TRAILER_LENGTH;
     int result = -1;
@@ -34,10 +34,7 @@ int aeron_spsc_rb_init(volatile aeron_spsc_rb_t *ring_buffer, void *buffer, size
 }
 
 aeron_rb_write_result_t aeron_spsc_rb_write(
-    volatile aeron_spsc_rb_t *ring_buffer,
-    int32_t msg_type_id,
-    const void *msg,
-    size_t length)
+    aeron_spsc_rb_t *ring_buffer, int32_t msg_type_id, const void *msg, size_t length)
 {
     struct iovec vec[1];
     vec[0].iov_len = length;
@@ -47,10 +44,7 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
 }
 
 aeron_rb_write_result_t aeron_spsc_rb_writev(
-    volatile aeron_spsc_rb_t *ring_buffer,
-    int32_t msg_type_id,
-    const struct iovec *iov,
-    int iovcnt)
+    aeron_spsc_rb_t *ring_buffer, int32_t msg_type_id, const struct iovec *iov, int iovcnt)
 {
     size_t length = 0;
     for (int i = 0; i < iovcnt; i++)
@@ -141,10 +135,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
 
 
 size_t aeron_spsc_rb_read(
-    volatile aeron_spsc_rb_t *ring_buffer,
-    aeron_rb_handler_t handler,
-    void *clientd,
-    size_t message_count_limit)
+    aeron_spsc_rb_t *ring_buffer, aeron_rb_handler_t handler, void *clientd, size_t message_count_limit)
 {
     const int64_t head = ring_buffer->descriptor->head_position;
     const size_t head_index = (int32_t)(head & (ring_buffer->capacity - 1));
@@ -190,14 +181,14 @@ size_t aeron_spsc_rb_read(
     return messages_read;
 }
 
-int64_t aeron_spsc_rb_next_correlation_id(volatile aeron_spsc_rb_t *ring_buffer)
+int64_t aeron_spsc_rb_next_correlation_id(aeron_spsc_rb_t *ring_buffer)
 {
     int64_t result;
     AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
     return result;
 }
 
-void aeron_spsc_rb_consumer_heartbeat_time(volatile aeron_spsc_rb_t *ring_buffer, int64_t time_ms)
+void aeron_spsc_rb_consumer_heartbeat_time(aeron_spsc_rb_t *ring_buffer, int64_t time_ms)
 {
     AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, time_ms);
 }

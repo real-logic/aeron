@@ -114,8 +114,7 @@ inline int aeron_distinct_error_log_observation_list_alloc(
     if (result >= 0)
     {
         (*list)->observations =
-            (aeron_distinct_observation_t *)
-                ((uint8_t *)*list + sizeof(aeron_distinct_error_log_observation_list_t));
+            (aeron_distinct_observation_t *)((uint8_t *)*list + sizeof(aeron_distinct_error_log_observation_list_t));
         (*list)->num_observations = num_observations;
     }
 

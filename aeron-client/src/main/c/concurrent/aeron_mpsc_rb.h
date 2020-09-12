@@ -28,35 +28,35 @@ typedef struct aeron_mpsc_rb_stct
 }
 aeron_mpsc_rb_t;
 
-int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length);
+int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length);
 
 aeron_rb_write_result_t aeron_mpsc_rb_write(
-    volatile aeron_mpsc_rb_t *ring_buffer,
+    aeron_mpsc_rb_t *ring_buffer,
     int32_t msg_type_id,
     const void *msg,
     size_t length);
 
 size_t aeron_mpsc_rb_read(
-    volatile aeron_mpsc_rb_t *ring_buffer,
+    aeron_mpsc_rb_t *ring_buffer,
     aeron_rb_handler_t handler,
     void *clientd,
     size_t message_count_limit);
 
-int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer);
+int64_t aeron_mpsc_rb_next_correlation_id(aeron_mpsc_rb_t *ring_buffer);
 
-void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer, int64_t now_ms);
-int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(volatile aeron_mpsc_rb_t *ring_buffer);
+void aeron_mpsc_rb_consumer_heartbeat_time(aeron_mpsc_rb_t *ring_buffer, int64_t now_ms);
+int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(aeron_mpsc_rb_t *ring_buffer);
 
-bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer);
+bool aeron_mpsc_rb_unblock(aeron_mpsc_rb_t *ring_buffer);
 
-inline int64_t aeron_mpsc_rb_consumer_position(volatile aeron_mpsc_rb_t *ring_buffer)
+inline int64_t aeron_mpsc_rb_consumer_position(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t position;
     AERON_GET_VOLATILE(position, ring_buffer->descriptor->head_position);
     return position;
 }
 
-inline int64_t aeron_mpsc_rb_producer_position(volatile aeron_mpsc_rb_t *ring_buffer)
+inline int64_t aeron_mpsc_rb_producer_position(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t position;
     AERON_GET_VOLATILE(position, ring_buffer->descriptor->tail_position);

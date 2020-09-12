@@ -221,7 +221,6 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
     int result = 0;
-
     char error_message[AERON_MAX_PATH] = "\0";
 
     switch (type_id)

@@ -20,7 +20,7 @@
 #include "concurrent/aeron_atomic.h"
 #include "util/aeron_error.h"
 
-int aeron_broadcast_transmitter_init(volatile aeron_broadcast_transmitter_t *transmitter, void *buffer, size_t length)
+int aeron_broadcast_transmitter_init(aeron_broadcast_transmitter_t *transmitter, void *buffer, size_t length)
 {
     const size_t capacity = length - AERON_BROADCAST_BUFFER_TRAILER_LENGTH;
     int result = -1;
@@ -54,10 +54,7 @@ inline static void insert_padding_record(aeron_broadcast_record_descriptor_t *re
 }
 
 int aeron_broadcast_transmitter_transmit(
-    volatile aeron_broadcast_transmitter_t *transmitter,
-    int32_t msg_type_id,
-    const void *msg,
-    size_t length)
+    aeron_broadcast_transmitter_t *transmitter, int32_t msg_type_id, const void *msg, size_t length)
 {
     if (length > transmitter->max_message_length || AERON_BROADCAST_INVALID_MSG_TYPE_ID(msg_type_id))
     {

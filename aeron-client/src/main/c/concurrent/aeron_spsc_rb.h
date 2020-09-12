@@ -38,28 +38,19 @@ typedef struct aeron_spsc_rb_stct
 }
 aeron_spsc_rb_t;
 
-int aeron_spsc_rb_init(volatile aeron_spsc_rb_t *ring_buffer, void *buffer, size_t length);
+int aeron_spsc_rb_init(aeron_spsc_rb_t *ring_buffer, void *buffer, size_t length);
 
 aeron_rb_write_result_t aeron_spsc_rb_write(
-    volatile aeron_spsc_rb_t *ring_buffer,
-    int32_t msg_type_id,
-    const void *msg,
-    size_t length);
+    aeron_spsc_rb_t *ring_buffer, int32_t msg_type_id, const void *msg, size_t length);
 
 aeron_rb_write_result_t aeron_spsc_rb_writev(
-    volatile aeron_spsc_rb_t *ring_buffer,
-    int32_t msg_type_id,
-    const struct iovec* iov,
-    int iovcnt);
+    aeron_spsc_rb_t *ring_buffer, int32_t msg_type_id, const struct iovec* iov, int iovcnt);
 
 size_t aeron_spsc_rb_read(
-    volatile aeron_spsc_rb_t *ring_buffer,
-    aeron_rb_handler_t handler,
-    void *clientd,
-    size_t message_count_limit);
+    aeron_spsc_rb_t *ring_buffer, aeron_rb_handler_t handler, void *clientd, size_t message_count_limit);
 
-int64_t aeron_spsc_rb_next_correlation_id(volatile aeron_spsc_rb_t *ring_buffer);
+int64_t aeron_spsc_rb_next_correlation_id(aeron_spsc_rb_t *ring_buffer);
 
-void aeron_spsc_rb_consumer_heartbeat_time(volatile aeron_spsc_rb_t *ring_buffer, int64_t time_ms);
+void aeron_spsc_rb_consumer_heartbeat_time(aeron_spsc_rb_t *ring_buffer, int64_t time_ms);
 
 #endif //AERON_SPSC_RB_H

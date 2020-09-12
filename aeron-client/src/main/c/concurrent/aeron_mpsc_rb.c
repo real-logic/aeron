@@ -18,7 +18,7 @@
 #include "aeron_mpsc_rb.h"
 #include "util/aeron_error.h"
 
-int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length)
+int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length)
 {
     const size_t capacity = length - AERON_RB_TRAILER_LENGTH;
     int result = -1;
@@ -39,7 +39,7 @@ int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size
     return result;
 }
 
-inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *ring_buffer, size_t required_capacity)
+inline static int32_t aeron_mpsc_rb_claim_capacity(aeron_mpsc_rb_t *ring_buffer, size_t required_capacity)
 {
     const size_t mask = ring_buffer->capacity - 1;
     int64_t head = 0;
@@ -111,10 +111,7 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *rin
 }
 
 aeron_rb_write_result_t aeron_mpsc_rb_write(
-    volatile aeron_mpsc_rb_t *ring_buffer,
-    int32_t msg_type_id,
-    const void *msg,
-    size_t length)
+    aeron_mpsc_rb_t *ring_buffer, int32_t msg_type_id, const void *msg, size_t length)
 {
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
@@ -143,10 +140,7 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
 }
 
 size_t aeron_mpsc_rb_read(
-    volatile aeron_mpsc_rb_t *ring_buffer,
-    aeron_rb_handler_t handler,
-    void *clientd,
-    size_t message_count_limit)
+    aeron_mpsc_rb_t *ring_buffer, aeron_rb_handler_t handler, void *clientd, size_t message_count_limit)
 {
     const int64_t head = ring_buffer->descriptor->head_position;
     const size_t head_index = (size_t)(head & (ring_buffer->capacity - 1));
@@ -193,19 +187,19 @@ size_t aeron_mpsc_rb_read(
     return messages_read;
 }
 
-int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer)
+int64_t aeron_mpsc_rb_next_correlation_id(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t result;
     AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
     return result;
 }
 
-void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer, int64_t now_ms)
+void aeron_mpsc_rb_consumer_heartbeat_time(aeron_mpsc_rb_t *ring_buffer, int64_t now_ms)
 {
     AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, now_ms);
 }
 
-int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(volatile aeron_mpsc_rb_t *ring_buffer)
+int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t value;
     AERON_GET_VOLATILE(value, ring_buffer->descriptor->consumer_heartbeat);
@@ -234,7 +228,7 @@ inline static bool scan_back_to_confirm_still_zeroed(const uint8_t *buffer, size
     return all_zeroes;
 }
 
-bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
+bool aeron_mpsc_rb_unblock(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t head;
     AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
@@ -291,5 +285,5 @@ bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
     return unblocked;
 }
 
-extern int64_t aeron_mpsc_rb_consumer_position(volatile aeron_mpsc_rb_t *ring_buffer);
-extern int64_t aeron_mpsc_rb_producer_position(volatile aeron_mpsc_rb_t *ring_buffer);
+extern int64_t aeron_mpsc_rb_consumer_position(aeron_mpsc_rb_t *ring_buffer);
+extern int64_t aeron_mpsc_rb_producer_position(aeron_mpsc_rb_t *ring_buffer);

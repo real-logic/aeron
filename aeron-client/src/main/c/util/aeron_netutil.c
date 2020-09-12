@@ -348,8 +348,18 @@ void aeron_set_ipv4_wildcard_host_and_port(struct sockaddr_storage *sockaddr)
     struct sockaddr_in *addr = (struct sockaddr_in *)sockaddr;
 
     sockaddr->ss_family = AF_INET;
-    addr->sin_addr.s_addr = INADDR_ANY;
     addr->sin_port = htons(0);
+    addr->sin_addr.s_addr = INADDR_ANY;
+}
+
+void aeron_set_ipv6_wildcard_host_and_port(struct sockaddr_storage *sockaddr)
+{
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)sockaddr;
+    memset(addr, 0, sizeof(struct sockaddr_in6));
+
+    sockaddr->ss_family = AF_INET6;
+    addr->sin6_port = htons(0);
+    addr->sin6_addr = in6addr_any;
 }
 
 #if defined(AERON_COMPILER_GCC)

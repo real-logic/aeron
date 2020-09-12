@@ -36,7 +36,7 @@ int aeron_ipv4_multicast_control_address(struct sockaddr_in *data_addr, struct s
 
     memcpy(bytes, &(data_addr->sin_addr), addr_len);
 
-    if ((bytes[last_byte_index] & 0x1) == 0)
+    if ((bytes[last_byte_index] & 0x1u) == 0)
     {
         aeron_set_err(EINVAL, "%s", "Multicast data address must be odd");
         return -1;
@@ -58,7 +58,7 @@ int aeron_ipv6_multicast_control_address(struct sockaddr_in6 *data_addr, struct 
 
     memcpy(bytes, &(data_addr->sin6_addr), addr_len);
 
-    if ((bytes[last_byte_index] & 0x1) == 0)
+    if ((bytes[last_byte_index] & 0x1u) == 0)
     {
         aeron_set_err(EINVAL, "%s", "Multicast data address must be odd");
         return -1;
@@ -152,7 +152,7 @@ int aeron_uri_udp_canonicalise(
         }
         else
         {
-            int32_t result = 0;
+            int32_t result;
             AERON_GET_AND_ADD_INT32(result, unique_canonical_form_value, 1);
             snprintf(unique_suffix, sizeof(unique_suffix) - 1, "-%" PRId32, result);
         }
@@ -162,10 +162,7 @@ int aeron_uri_udp_canonicalise(
 }
 
 int aeron_udp_channel_parse(
-    size_t uri_length,
-    const char *uri,
-    aeron_name_resolver_t *resolver,
-    aeron_udp_channel_t **channel)
+    size_t uri_length, const char *uri, aeron_name_resolver_t *resolver, aeron_udp_channel_t **channel)
 {
     aeron_udp_channel_t *_channel = NULL;
     struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
@@ -233,6 +230,15 @@ int aeron_udp_channel_parse(
         goto error_cleanup;
     }
 
+    if (NULL != _channel->uri.params.udp.control)
+    {
+        if (aeron_name_resolver_resolve_host_and_port(
+            resolver, _channel->uri.params.udp.control, AERON_UDP_CHANNEL_CONTROL_KEY, false, &explicit_control_addr) < 0)
+        {
+            goto error_cleanup;
+        }
+    }
+
     if (NULL != _channel->uri.params.udp.endpoint)
     {
         if (aeron_name_resolver_resolve_host_and_port(
@@ -243,15 +249,13 @@ int aeron_udp_channel_parse(
     }
     else
     {
-        aeron_set_ipv4_wildcard_host_and_port(&endpoint_addr);
-    }
-
-    if (NULL != _channel->uri.params.udp.control)
-    {
-        if (aeron_name_resolver_resolve_host_and_port(
-            resolver, _channel->uri.params.udp.control, AERON_UDP_CHANNEL_CONTROL_KEY, false, &explicit_control_addr) < 0)
+        if (NULL != _channel->uri.params.udp.control && AF_INET6 == explicit_control_addr.ss_family)
         {
-            goto error_cleanup;
+            aeron_set_ipv6_wildcard_host_and_port(&endpoint_addr);
+        }
+        else
+        {
+            aeron_set_ipv4_wildcard_host_and_port(&endpoint_addr);
         }
     }
 
@@ -350,12 +354,12 @@ int aeron_udp_channel_parse(
     *channel = _channel;
     return 0;
 
-    error_cleanup:
-        *channel = NULL;
-        if (NULL != _channel)
-        {
-            aeron_udp_channel_delete(_channel);
-        }
+error_cleanup:
+    *channel = NULL;
+    if (NULL != _channel)
+    {
+        aeron_udp_channel_delete(_channel);
+    }
 
     return -1;
 }

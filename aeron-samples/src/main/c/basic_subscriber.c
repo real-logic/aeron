@@ -213,11 +213,11 @@ int main(int argc, char **argv)
     printf("Shutting down...\n");
     status = EXIT_SUCCESS;
 
-    cleanup:
-        aeron_subscription_close(subscription, NULL, NULL);
-        aeron_close(aeron);
-        aeron_context_close(context);
-        aeron_fragment_assembler_delete(fragment_assembler);
+cleanup:
+    aeron_subscription_close(subscription, NULL, NULL);
+    aeron_close(aeron);
+    aeron_context_close(context);
+    aeron_fragment_assembler_delete(fragment_assembler);
 
     return status;
 }

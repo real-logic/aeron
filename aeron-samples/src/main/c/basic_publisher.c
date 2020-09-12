@@ -238,10 +238,10 @@ int main(int argc, char **argv)
         aeron_nano_sleep(linger_ns);
     }
 
-    cleanup:
+cleanup:
     aeron_publication_close(publication, NULL, NULL);
-        aeron_close(aeron);
-        aeron_context_close(context);
+    aeron_close(aeron);
+    aeron_context_close(context);
 
     return status;
 }

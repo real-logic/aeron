@@ -257,11 +257,11 @@ int main(int argc, char **argv)
 
     status = EXIT_SUCCESS;
 
-    cleanup:
-        aeron_publication_close(publication, NULL, NULL);
-        aeron_close(aeron);
-        aeron_context_close(context);
-        aeron_free(message);
+cleanup:
+    aeron_publication_close(publication, NULL, NULL);
+    aeron_close(aeron);
+    aeron_context_close(context);
+    aeron_free(message);
 
     return status;
 }

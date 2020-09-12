@@ -290,8 +290,10 @@ int main(int argc, char **argv)
                       << toStringWithCommas(warmupSettings.messageLength) << std::endl;
 
             sendPingAndReceivePong(
-                [](AtomicBuffer &, index_t, index_t, Header &)
-                {}, *pingPublication, *pongSubscription, warmupSettings);
+                [](AtomicBuffer &, index_t, index_t, Header &){},
+                *pingPublication,
+                *pongSubscription,
+                warmupSettings);
 
             std::int64_t nanoDuration = duration<std::int64_t, std::nano>(steady_clock::now() - start).count();
 

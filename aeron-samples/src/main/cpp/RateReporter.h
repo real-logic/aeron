@@ -98,11 +98,11 @@ private:
     const nanoseconds m_reportInterval;
     const on_rate_report_t m_onReport;
 
-    char m_paddingBefore[aeron::util::BitUtil::CACHE_LINE_LENGTH]{};
+    char m_paddingBefore[aeron::util::BitUtil::CACHE_LINE_LENGTH] = {};
     std::atomic<bool> m_running = { true };
     std::atomic<std::int64_t> m_totalBytes = { 0 };
     std::atomic<std::int64_t> m_totalMessages = { 0 };
-    char m_paddingAfter[aeron::util::BitUtil::CACHE_LINE_LENGTH]{};
+    char m_paddingAfter[aeron::util::BitUtil::CACHE_LINE_LENGTH] = {};
 
     std::int64_t m_lastTotalBytes = 0;
     std::int64_t m_lastTotalMessages = 0;

@@ -41,8 +41,6 @@ namespace aeron
 class EmbeddedMediaDriver
 {
 public:
-    EmbeddedMediaDriver() = default;
-
     ~EmbeddedMediaDriver()
     {
         aeron_driver_close(m_driver);

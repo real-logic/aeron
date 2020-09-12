@@ -356,13 +356,13 @@ int main(int argc, char **argv)
     printf("Shutting down...\n");
     status = EXIT_SUCCESS;
 
-    cleanup:
-        aeron_subscription_image_release(subscription, image);
-        aeron_subscription_close(subscription, NULL, NULL);
-        aeron_exclusive_publication_close(publication, NULL, NULL);
-        aeron_close(aeron);
-        aeron_context_close(context);
-        aeron_image_fragment_assembler_delete(fragment_assembler);
+cleanup:
+    aeron_subscription_image_release(subscription, image);
+    aeron_subscription_close(subscription, NULL, NULL);
+    aeron_exclusive_publication_close(publication, NULL, NULL);
+    aeron_close(aeron);
+    aeron_context_close(context);
+    aeron_image_fragment_assembler_delete(fragment_assembler);
 
     return status;
 }

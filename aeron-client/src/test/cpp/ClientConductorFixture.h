@@ -49,7 +49,7 @@ using namespace std::placeholders;
 static const long DRIVER_TIMEOUT_MS = 10 * 1000;
 static const long RESOURCE_LINGER_TIMEOUT_MS = 5 * 1000;
 static const long long INTER_SERVICE_TIMEOUT_NS = 5 * 1000 * 1000 * 1000LL;
-static const long INTER_SERVICE_TIMEOUT_MS = INTER_SERVICE_TIMEOUT_NS / 1000000L;
+static const long INTER_SERVICE_TIMEOUT_MS = (long)(INTER_SERVICE_TIMEOUT_NS / 1000000LL);
 static const bool PRE_TOUCH_MAPPED_MEMORY = false;
 
 typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_ring_buffer_t;

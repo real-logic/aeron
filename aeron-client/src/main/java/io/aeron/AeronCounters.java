@@ -112,8 +112,97 @@ public final class AeronCounters
     public static final int DRIVER_LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID = 14;
 
     // Archive counters
+    /**
+     * The position a recording has reached when being archived.
+     */
+    public static final int ARCHIVE_RECORDING_POSITION_TYPE_ID = 100;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
+     */
+    public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count of concurrent control sessions.
+     */
+    public static final int ARCHIVE_CONTROL_SESSIONS_TYPE_ID = 102;
 
     // Cluster counters
+
+    /**
+     * Counter type id for the consensus module state.
+     */
+    public static final int CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID = 200;
+
+    /**
+     * Counter type id for the cluster node role.
+     */
+    public static final int CLUSTER_NODE_ROLE_TYPE_ID = 201;
+
+    /**
+     * Counter type id for the control toggle.
+     */
+    public static final int CLUSTER_CONTROL_TOGGLE_TYPE_ID = 202;
+
+    /**
+     * Counter type id of the commit position.
+     */
+    public static final int CLUSTER_COMMIT_POSITION_TYPE_ID = 203;
+
+    /**
+     * Counter representing the Recovery State for the cluster.
+     */
+    public static final int CLUSTER_RECOVERY_STATE_TYPE_ID = 204;
+
+    /**
+     * Counter type id for count of snapshots taken.
+     */
+    public static final int CLUSTER_SNAPSHOT_COUNTER_TYPE_ID = 205;
+
+    /**
+     * Type id for election state counter.
+     */
+    public static final int CLUSTER_ELECTION_STATE_TYPE_ID = 207;
+
+    /**
+     * The type id of the {@link Counter} used for the backup state.
+     */
+    public static final int CLUSTER_BACKUP_STATE_TYPE_ID = 208;
+
+    /**
+     * The type id of the {@link Counter} used for the live log position counter.
+     */
+    public static final int CLUSTER_BACKUP_LIVE_LOG_POSITION_TYPE_ID = 209;
+
+    /**
+     * The type id of the {@link Counter} used for the next query deadline counter.
+     */
+    public static final int CLUSTER_BACKUP_QUERY_DEADLINE_TYPE_ID = 210;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
+     */
+    public static final int CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID = 211;
+
+    /**
+     * Counter type id for the consensus module error count.
+     */
+    public static final int CLUSTER_CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID = 212;
+
+    /**
+     * Counter type id for the number of cluster clients which have been timed out.
+     */
+    public static final int CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID = 213;
+
+    /**
+     * Counter type id for the number of invalid requests which the cluster has received.
+     */
+    public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID = 214;
+
+    /**
+     * Counter type id for the clustered service error count.
+     */
+    public static final int CLUSTER_CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;
 
     private AeronCounters()
     {

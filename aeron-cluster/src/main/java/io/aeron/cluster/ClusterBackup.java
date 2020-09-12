@@ -52,22 +52,22 @@ public final class ClusterBackup implements AutoCloseable
     /**
      * The type id of the {@link Counter} used for the backup state.
      */
-    public static final int BACKUP_STATE_TYPE_ID = 208;
+    public static final int BACKUP_STATE_TYPE_ID = AeronCounters.CLUSTER_BACKUP_STATE_TYPE_ID;
 
     /**
      * The type id of the {@link Counter} used for the live log position counter.
      */
-    public static final int LIVE_LOG_POSITION_TYPE_ID = 209;
+    public static final int LIVE_LOG_POSITION_TYPE_ID = AeronCounters.CLUSTER_BACKUP_LIVE_LOG_POSITION_TYPE_ID;
 
     /**
      * The type id of the {@link Counter} used for the next query deadline counter.
      */
-    public static final int QUERY_DEADLINE_TYPE_ID = 210;
+    public static final int QUERY_DEADLINE_TYPE_ID = AeronCounters.CLUSTER_BACKUP_QUERY_DEADLINE_TYPE_ID;
 
     /**
      * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
      */
-    public static final int CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID = 211;
+    public static final int CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID = AeronCounters.CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID;
 
     enum State
     {

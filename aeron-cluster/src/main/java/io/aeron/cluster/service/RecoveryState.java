@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.*;
@@ -60,7 +61,7 @@ public class RecoveryState
     /**
      * Type id of a recovery state counter.
      */
-    public static final int RECOVERY_STATE_TYPE_ID = 204;
+    public static final int RECOVERY_STATE_TYPE_ID = AeronCounters.CLUSTER_RECOVERY_STATE_TYPE_ID;
 
     /**
      * Human readable name for the counter.

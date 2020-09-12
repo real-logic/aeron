@@ -40,6 +40,8 @@ import static java.net.InetAddress.getByAddress;
 public final class UdpChannel
 {
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
+    private static final InetSocketAddress ANY_IPV4 = new InetSocketAddress("0.0.0.0", 0);
+    private static final InetSocketAddress ANY_IPV6 = new InetSocketAddress("::", 0);
 
     private final boolean isManualControlMode;
     private final boolean isDynamicControlMode;
@@ -153,7 +155,14 @@ public final class UdpChannel
             if (null == endpointAddress)
             {
                 hasExplicitEndpoint = false;
-                endpointAddress = new InetSocketAddress("0.0.0.0", 0);
+                if (null != explicitControlAddress && explicitControlAddress.getAddress() instanceof Inet6Address)
+                {
+                    endpointAddress = ANY_IPV6;
+                }
+                else
+                {
+                    endpointAddress = ANY_IPV4;
+                }
             }
 
             final Context context = new Context()
@@ -171,7 +180,6 @@ public final class UdpChannel
 
             if (endpointAddress.getAddress().isMulticastAddress())
             {
-                final InetSocketAddress controlAddress = getMulticastControlAddress(endpointAddress);
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
                 final NetworkInterface localInterface = findInterface(searchAddress);
                 final InetSocketAddress resolvedAddress = resolveToAddressOfInterface(localInterface, searchAddress);
@@ -179,7 +187,7 @@ public final class UdpChannel
                 context
                     .isMulticast(true)
                     .localControlAddress(resolvedAddress)
-                    .remoteControlAddress(controlAddress)
+                    .remoteControlAddress(getMulticastControlAddress(endpointAddress))
                     .localDataAddress(resolvedAddress)
                     .remoteDataAddress(endpointAddress)
                     .localInterface(localInterface)
@@ -218,7 +226,6 @@ public final class UdpChannel
             else
             {
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
-
                 final InetSocketAddress localAddress = searchAddress.getInetAddress().isAnyLocalAddress() ?
                     searchAddress.getAddress() :
                     resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);

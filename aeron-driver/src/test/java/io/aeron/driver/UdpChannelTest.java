@@ -54,6 +54,31 @@ public class UdpChannelTest
     }
 
     @Test
+    public void shouldHandleExplicitLocalControlAddressAndPortFormatIPv4()
+    {
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?control=localhost:40124|control-mode=dynamic");
+
+        assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(udpChannel.remoteData(), is(new InetSocketAddress("0.0.0.0", 0)));
+        assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("0.0.0.0", 0)));
+    }
+
+    @Test
+    public void shouldHandleExplicitLocalControlAddressAndPortFormatIPv6()
+    {
+        assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
+
+        final UdpChannel udpChannel = UdpChannel.parse(
+            "aeron:udp?control=[fe80::5246:5dff:fe73:df06]:40124|control-mode=dynamic");
+
+        assertThat(udpChannel.localData(), is(new InetSocketAddress("fe80::5246:5dff:fe73:df06", 40124)));
+        assertThat(udpChannel.localControl(), is(new InetSocketAddress("fe80::5246:5dff:fe73:df06", 40124)));
+        assertThat(udpChannel.remoteData(), is(new InetSocketAddress("::", 0)));
+        assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("::", 0)));
+    }
+
+    @Test
     public void shouldNotAllowDynamicControlModeWithoutExplicitControl()
     {
         try
@@ -139,8 +164,7 @@ public class UdpChannelTest
 
     @ParameterizedTest
     @CsvSource("endpoint,interface")
-    public void shouldParseValidMulticastAddressWithAeronUri(
-        final String endpointKey, final String interfaceKey)
+    public void shouldParseValidMulticastAddressWithAeronUri(final String endpointKey, final String interfaceKey)
         throws IOException
     {
         final UdpChannel udpChannel = UdpChannel.parse(
@@ -174,8 +198,7 @@ public class UdpChannelTest
 
     @ParameterizedTest
     @CsvSource("endpoint,interface")
-    public void shouldHandleImpliedLocalPortFormatWithAeronUri(
-        final String endpointKey, final String interfaceKey)
+    public void shouldHandleImpliedLocalPortFormatWithAeronUri(final String endpointKey, final String interfaceKey)
     {
         final UdpChannel udpChannel = UdpChannel.parse(
             uri(endpointKey, "localhost:40124", interfaceKey, "localhost"));

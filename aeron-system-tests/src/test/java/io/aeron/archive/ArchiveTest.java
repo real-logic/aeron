@@ -109,12 +109,12 @@ public class ArchiveTest
 
     private void before(final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
-        IoUtil.delete(new File(CommonContext.getAeronDirectoryName()), true);
         if (threadingMode == ThreadingMode.INVOKER)
         {
             TestMediaDriver.notSupportedOnCMediaDriver("C driver does not integrate with Java Invoker");
         }
 
+        IoUtil.delete(new File(CommonContext.getAeronDirectoryName()), false);
         rnd.setSeed(seed);
         requestedInitialTermId = rnd.nextInt(1234);
 

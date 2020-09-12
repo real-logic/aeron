@@ -750,7 +750,7 @@ public class ClusterTest
 
             while (service.roleChangedTo() != FOLLOWER)
             {
-                Tests.sleep(1);
+                Tests.sleep(100);
             }
             assertEquals(FOLLOWER, leader.role());
         }
@@ -1094,22 +1094,24 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final TestNode follower = cluster.followers().get(0);
-            final TestNode follower2 = cluster.followers().get(1);
+            final TestNode followerOne = cluster.followers().get(0);
+            final TestNode followerTwo = cluster.followers().get(1);
 
+            final int messageCount = 10;
             cluster.connectClient();
-            cluster.sendMessages(10);
+            cluster.sendMessages(messageCount);
+            cluster.awaitServiceMessageCount(leader, messageCount);
 
-            cluster.stopNode(follower);
-            cluster.stopNode(follower2);
+            cluster.stopNode(followerOne);
+            cluster.stopNode(followerTwo);
 
             while (leader.role() != FOLLOWER)
             {
-                Tests.sleep(1_000);
                 cluster.sendMessages(1);
+                Tests.sleep(500);
             }
 
-            cluster.startStaticNode(follower2.index(), true);
+            cluster.startStaticNode(followerTwo.index(), true);
             cluster.awaitLeader();
         }
         catch (final Throwable ex)

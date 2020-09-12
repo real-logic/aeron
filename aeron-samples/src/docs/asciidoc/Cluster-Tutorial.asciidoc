@@ -1,3 +1,4 @@
+
 ////
 * Copyright 2014-2020 Real Logic Limited.
 *
@@ -323,9 +324,9 @@ While we don't really need 100 ports for each node (closer to 10), it does make 
 each service. Each endpoint will be an offset from the first port in a node's range. E.g. the archive control request
 port has an offset of 1, so for Node 2 it will have port 9201.
 
-To start the cluster node we are going define our own class has a main method, it will construct all contexts for the
-necessary components and then start them. As indicated above we are going to give each node of the cluster a unique id
-(0, 1, and 2). We are also going to use this value as the cluster member id.
+To start the cluster node we are going define our own class with a main method.  It will construct and start all of the
+necessary components. As indicated above we are going to give each node of the cluster a unique id (0, 1, and 2). We are
+also going to use this value as the cluster member id.
 
 [source, Java, indent=0, options="nowrap"]
 ----

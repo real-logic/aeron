@@ -27,6 +27,8 @@
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/logbuffer/Header.h"
 
+#include "aeronc.h"
+
 namespace aeron
 {
 
@@ -38,24 +40,24 @@ enum class ControlledPollAction : int
     /**
      * Abort the current polling operation and do not advance the position for this fragment.
      */
-    ABORT = 1,
+    ABORT = AERON_ACTION_ABORT,
 
     /**
      * Break from the current polling operation and commit the position as of the end of the current fragment
      * being handled.
      */
-    BREAK,
+    BREAK = AERON_ACTION_BREAK,
 
     /**
      * Continue processing but commit the position as of the end of the current fragment so that
      * flow control is applied to this point.
      */
-    COMMIT,
+    COMMIT = AERON_ACTION_COMMIT,
 
     /**
      * Continue processing taking the same approach as the in fragment_handler_t.
      */
-    CONTINUE
+    CONTINUE = AERON_ACTION_CONTINUE
 };
 
 /**
@@ -92,13 +94,7 @@ static aeron_controlled_fragment_handler_action_t doControlledPoll(
     Header headerWrapper(header, nullptr);
 
     ControlledPollAction action = handler(atomicBuffer, 0, static_cast<std::int32_t>(length), headerWrapper);
-    switch (action)
-    {
-        case ControlledPollAction::ABORT:    return AERON_ACTION_ABORT;
-        case ControlledPollAction::BREAK:    return AERON_ACTION_BREAK;
-        case ControlledPollAction::COMMIT:   return AERON_ACTION_COMMIT;
-        case ControlledPollAction::CONTINUE: return AERON_ACTION_CONTINUE;
-    }
+    return static_cast<aeron_controlled_fragment_handler_action_t>(action);
 
     throw IllegalStateException("Invalid action", SOURCEINFO);
 }

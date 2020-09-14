@@ -91,7 +91,7 @@ jobs:
 
          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-         echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Linux-x86_64/bin:${PATH}"
+         echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
@@ -181,7 +181,7 @@ jobs:
 
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Linux-x86_64/bin:${PATH}"
+          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
@@ -233,7 +233,7 @@ jobs:
 
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Linux-x86_64/bin:${PATH}"
+          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
         run: cppbuild/cppbuild --debug-build --build-archive-api
       - name: Copy test logs
@@ -277,7 +277,7 @@ jobs:
         run: |
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
-          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Darwin-x86_64/bin:${PATH}"
+          echo "::add-path::cmake-${CMAKE_VERSION}-Darwin-x86_64/bin"
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
       - name: Copy test logs

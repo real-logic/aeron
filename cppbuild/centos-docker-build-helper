@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 
 SOURCE_DIR="`pwd`"
+CMAKE_VERSION="3.6.1"
 
 # Install dev tools
+yum install -y deltarpm
 yum update -y
 yum remove -y cmake
 yum install -y centos-release-scl
 yum install -y devtoolset-${GCC_VERSION}-gcc devtoolset-${GCC_VERSION}-gcc-c++
 yum install -y epel-release
-yum install -y make cmake3 openssl-devel libbsd-devel libuuid-devel zlib-devel
-ln -s /usr/bin/cmake3 /usr/bin/cmake
-ln -s /usr/bin/ctest3 /usr/bin/ctest
+yum install -y make openssl-devel libbsd-devel libuuid-devel zlib-devel
+
+rm -rf build && mkdir build
+curl -o build/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+tar xf build/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz -C build
+export CMAKE_INSTALL_PATH=${SOURCE_DIR}/build/cmake-${CMAKE_VERSION}-Linux-x86_64
+export PATH="$PATH:$CMAKE_INSTALL_PATH/bin"
 
 # Install Java
 rpm --import http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems

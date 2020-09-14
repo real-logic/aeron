@@ -319,9 +319,9 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Install CMake
         run: |
-          Invoke-WebRequest https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-win64-x64.zip -OutFile cmake-${CMAKE_VERSION}-win64-x64.zip
-          7z x cmake-${CMAKE_VERSION}-win64-x64.zip
-          echo "::add-path::cmake-${CMAKE_VERSION}-win64-x64/bin"
+          Invoke-WebRequest https://github.com/Kitware/CMake/releases/download/v%CMAKE_VERSION%/cmake-%CMAKE_VERSION%-win64-x64.zip -OutFile cmake-%CMAKE_VERSION%-win64-x64.zip
+          7z x cmake-%CMAKE_VERSION%-win64-x64.zip
+          echo "::add-path::cmake-%CMAKE_VERSION%-win64-x64/bin"
       - name: Build
         run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs

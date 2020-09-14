@@ -23,9 +23,9 @@
 #pragma pack(4)
 typedef struct aeron_broadcast_descriptor_stct
 {
-    int64_t tail_intent_counter;
-    int64_t tail_counter;
-    int64_t latest_counter;
+    volatile int64_t tail_intent_counter;
+    volatile int64_t tail_counter;
+    volatile int64_t latest_counter;
     uint8_t pad[(2 * AERON_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
 }
 aeron_broadcast_descriptor_t;

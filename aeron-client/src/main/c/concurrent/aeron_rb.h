@@ -26,13 +26,13 @@
 typedef struct aeron_rb_descriptor_stct
 {
     uint8_t begin_pad[(2 * AERON_CACHE_LINE_LENGTH)];
-    int64_t tail_position;
+    volatile int64_t tail_position;
     uint8_t tail_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
     int64_t head_cache_position;
     uint8_t head_cache_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
-    int64_t head_position;
+    volatile int64_t head_position;
     uint8_t head_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
-    int64_t correlation_counter;
+    volatile int64_t correlation_counter;
     uint8_t correlation_counter_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
     int64_t consumer_heartbeat;
     uint8_t consumer_heartbeat_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
@@ -41,7 +41,7 @@ aeron_rb_descriptor_t;
 
 typedef struct aeron_rb_record_descriptor_stct
 {
-    int32_t length;
+    volatile int32_t length;
     int32_t msg_type_id;
 }
 aeron_rb_record_descriptor_t;

@@ -91,7 +91,7 @@ jobs:
 
          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-         export PATH="${PATH}:cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
+         echo "::set-env name=PATH::${PATH}:cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
         run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs

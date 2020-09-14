@@ -93,7 +93,7 @@ jobs:
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Linux-x86_64/bin:${PATH}"
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --build-archive-api
+        run: cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -178,6 +178,10 @@ jobs:
           sudo apt-get update
 
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
+
+          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Linux-x86_64/bin:${PATH}"
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
@@ -226,6 +230,10 @@ jobs:
           sudo apt-get update
 
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
+
+          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Linux-x86_64/bin:${PATH}"
       - name: Build
         run: cppbuild/cppbuild --debug-build --build-archive-api
       - name: Copy test logs
@@ -265,6 +273,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Install CMake
+        run: |
+          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
+          echo "::set-env name=PATH::cmake-${CMAKE_VERSION}-Darwin-x86_64/bin:${PATH}"
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
       - name: Copy test logs

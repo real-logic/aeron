@@ -578,7 +578,7 @@ public:
      * Purge a stopped recording, i.e. mark recording as 'RecordingState#INVALID' and delete the corresponding segment
      * files. The space in the Catalog will be reclaimed upon compaction.
      *
-     * @param recordingId      of the stopped recording to be truncated.
+     * @param recordingId      of the stopped recording to be purged.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.

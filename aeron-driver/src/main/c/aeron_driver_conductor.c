@@ -1939,7 +1939,7 @@ malformed_command:
     aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
 }
 
-void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)
+void aeron_driver_conductor_on_command_queue(void *clientd, void *item)
 {
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;
     cmd->func(clientd, cmd);

@@ -49,7 +49,7 @@ int aeron_spsc_concurrent_array_queue_close(aeron_spsc_concurrent_array_queue_t 
 extern aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
     aeron_spsc_concurrent_array_queue_t *queue, void *element);
 
-extern volatile void *aeron_spsc_concurrent_array_queue_poll(aeron_spsc_concurrent_array_queue_t *queue);
+extern void *aeron_spsc_concurrent_array_queue_poll(aeron_spsc_concurrent_array_queue_t *queue);
 
 extern size_t aeron_spsc_concurrent_array_queue_drain(
     aeron_spsc_concurrent_array_queue_t *queue, aeron_queue_drain_func_t func, void *clientd, size_t limit);

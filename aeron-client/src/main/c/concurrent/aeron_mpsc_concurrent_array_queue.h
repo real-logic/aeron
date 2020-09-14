@@ -78,7 +78,7 @@ inline aeron_queue_offer_result_t aeron_mpsc_concurrent_array_queue_offer(
             AERON_PUT_ORDERED(queue->producer.shared_head_cache, current_head);
         }
     }
-    while(!aeron_cmpxchgu64(&queue->producer.tail, current_tail, current_tail + 1));
+    while (!aeron_cmpxchgu64(&queue->producer.tail, current_tail, current_tail + 1));
 
     const size_t index = (size_t)(current_tail & queue->mask);
     AERON_PUT_ORDERED(queue->buffer[index], element);
@@ -107,7 +107,7 @@ inline size_t aeron_mpsc_concurrent_array_queue_drain(
         AERON_PUT_ORDERED(queue->buffer[index], NULL);
         next_sequence++;
         AERON_PUT_ORDERED(queue->consumer.head, next_sequence);
-        func(clientd, item);
+        func(clientd, (void *)item);
     }
 
     return (size_t)(next_sequence - current_head);

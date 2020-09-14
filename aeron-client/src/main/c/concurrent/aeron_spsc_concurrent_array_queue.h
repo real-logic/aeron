@@ -81,7 +81,7 @@ inline aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
     return AERON_OFFER_SUCCESS;
 }
 
-inline volatile void *aeron_spsc_concurrent_array_queue_poll(aeron_spsc_concurrent_array_queue_t *queue)
+inline void *aeron_spsc_concurrent_array_queue_poll(aeron_spsc_concurrent_array_queue_t *queue)
 {
     const uint64_t current_head = queue->consumer.head;
     const size_t index = (size_t)(current_head & queue->mask);
@@ -95,7 +95,7 @@ inline volatile void *aeron_spsc_concurrent_array_queue_poll(aeron_spsc_concurre
         AERON_PUT_ORDERED(queue->consumer.head, current_head + 1);
     }
 
-    return item;
+    return (void *)item;
 }
 
 inline size_t aeron_spsc_concurrent_array_queue_drain(
@@ -119,7 +119,7 @@ inline size_t aeron_spsc_concurrent_array_queue_drain(
         AERON_PUT_ORDERED(queue->buffer[index], NULL);
         next_sequence++;
         AERON_PUT_ORDERED(queue->consumer.head, next_sequence);
-        func(clientd, item);
+        func(clientd, (void *)item);
     }
 
     return next_sequence - current_head;

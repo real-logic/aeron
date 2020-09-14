@@ -45,7 +45,7 @@ public:
         aeron_spsc_concurrent_array_queue_close(&m_q);
     }
 
-    static void drain_func(void *clientd, volatile void *element)
+    static void drain_func(void *clientd, void *element)
     {
         auto *t = (SpscQueueTest *)clientd;
 
@@ -160,7 +160,7 @@ TEST_F(SpscQueueTest, shouldDrainingFullQueueWithLimit)
 
 #define NUM_MESSAGES (10 * 1000 * 1000)
 
-static void spsc_queue_concurrent_handler(void *clientd, volatile void *element)
+static void spsc_queue_concurrent_handler(void *clientd, void *element)
 {
     auto *counts = (size_t *)clientd;
     auto messageNumber = (uint64_t)element;

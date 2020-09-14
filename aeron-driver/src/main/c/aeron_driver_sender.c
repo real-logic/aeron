@@ -113,7 +113,7 @@ int aeron_driver_sender_init(
     return 0;
 }
 
-void aeron_driver_sender_on_command(void *clientd, volatile void *item)
+void aeron_driver_sender_on_command(void *clientd, void *item)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;

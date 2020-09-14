@@ -105,7 +105,7 @@ int aeron_driver_receiver_init(
     return 0;
 }
 
-void aeron_driver_receiver_on_command(void *clientd, volatile void *item)
+void aeron_driver_receiver_on_command(void *clientd, void *item)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;

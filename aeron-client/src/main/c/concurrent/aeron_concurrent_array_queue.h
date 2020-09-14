@@ -25,6 +25,6 @@ typedef enum aeron_queue_offer_result_stct
 }
 aeron_queue_offer_result_t;
 
-typedef void (*aeron_queue_drain_func_t)(void *clientd, volatile void *item);
+typedef void (*aeron_queue_drain_func_t)(void *clientd, void *item);
 
 #endif //AERON_CONCURRENT_ARRAY_QUEUE_H

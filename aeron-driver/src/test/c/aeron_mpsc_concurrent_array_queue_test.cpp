@@ -45,7 +45,7 @@ public:
         aeron_mpsc_concurrent_array_queue_close(&m_q);
     }
 
-    static void drain_func(void *clientd, volatile void *element)
+    static void drain_func(void *clientd, void *element)
     {
         auto *t = (MpscQueueTest *)clientd;
 
@@ -168,7 +168,7 @@ typedef struct mpsc_concurrent_test_data_stct
 }
     mpsc_concurrent_test_data_t;
 
-static void mpsc_queue_concurrent_handler(void *clientd, volatile void *element)
+static void mpsc_queue_concurrent_handler(void *clientd, void *element)
 {
     auto *counts = (uint32_t *)clientd;
     auto *data = (mpsc_concurrent_test_data_t *)element;

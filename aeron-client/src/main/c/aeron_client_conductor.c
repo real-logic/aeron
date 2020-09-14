@@ -210,7 +210,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     return 0;
 }
 
-void aeron_client_conductor_on_command(void *clientd, volatile void *item)
+void aeron_client_conductor_on_command(void *clientd, void *item)
 {
     aeron_client_command_base_t *cmd = (aeron_client_command_base_t *)item;
 

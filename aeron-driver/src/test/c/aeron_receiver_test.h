@@ -46,9 +46,9 @@ void stub_linger(void *clientd, uint8_t *resource)
 {
 }
 
-void verify_conductor_cmd_function(void *clientd, volatile void *item)
+void verify_conductor_cmd_function(void *clientd, void *item)
 {
-    aeron_command_base_t *cmd = (aeron_command_base_t *)item;
+    auto *cmd = (aeron_command_base_t *)item;
     ASSERT_EQ(clientd, (void *)cmd->func);
     aeron_free((void *)item);
 }
@@ -233,7 +233,7 @@ protected:
     static aeron_data_header_t *dataPacket(
         buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
     {
-        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer.data();
+        auto *data_header = (aeron_data_header_t *)buffer.data();
         data_header->frame_header.type = AERON_HDR_TYPE_DATA;
         data_header->stream_id = stream_id;
         data_header->session_id = session_id;
@@ -246,7 +246,7 @@ protected:
     static aeron_setup_header_t *setupPacket(
         buffer_t &buffer, int32_t stream_id, int32_t session_id, int32_t term_id = 0, int32_t term_offset = 0)
     {
-        aeron_setup_header_t *setup_header = (aeron_setup_header_t *)buffer.data();
+        auto *setup_header = (aeron_setup_header_t *)buffer.data();
         setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
         setup_header->stream_id = stream_id;
         setup_header->session_id = session_id;
@@ -260,7 +260,7 @@ protected:
 
     aeron_clock_cache_t m_cached_clock = {};
     aeron_udp_channel_transport_bindings_t m_transport_bindings;
-    aeron_driver_context_t *m_context;
+    aeron_driver_context_t *m_context = nullptr;
     aeron_counters_manager_t m_counters_manager;
     aeron_system_counters_t m_system_counters;
     aeron_name_resolver_t m_resolver;
@@ -270,9 +270,9 @@ protected:
     int64_t m_conductor_fail_counter;
     aeron_driver_receiver_t m_receiver;
     aeron_distinct_error_log_t m_error_log;
-    AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16);
-    AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16);
-    AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
+    AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
+    AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
     std::vector<aeron_receive_channel_endpoint_t *> m_endpoints;
     std::vector<aeron_udp_channel_t *> m_channels_for_tear_down;
     std::vector<aeron_publication_image_t *> m_images;

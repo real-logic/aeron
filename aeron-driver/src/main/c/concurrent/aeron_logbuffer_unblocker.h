@@ -21,8 +21,6 @@
 #include "concurrent/aeron_term_unblocker.h"
 
 bool aeron_logbuffer_unblocker_unblock(
-    aeron_mapped_buffer_t *term_buffers,
-    aeron_logbuffer_metadata_t *log_meta_data,
-    int64_t blocked_position);
+    aeron_mapped_buffer_t *term_buffers, aeron_logbuffer_metadata_t *log_meta_data, int64_t blocked_position);
 
 #endif //AERON_LOG_BUFFER_UNBLOCK_H

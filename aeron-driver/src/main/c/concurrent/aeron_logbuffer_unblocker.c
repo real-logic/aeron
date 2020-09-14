@@ -17,9 +17,7 @@
 #include "concurrent/aeron_logbuffer_unblocker.h"
 
 bool aeron_logbuffer_unblocker_unblock(
-    aeron_mapped_buffer_t *term_buffers,
-    aeron_logbuffer_metadata_t *log_meta_data,
-    int64_t blocked_position)
+    aeron_mapped_buffer_t *term_buffers, aeron_logbuffer_metadata_t *log_meta_data, int64_t blocked_position)
 {
     const size_t term_length = term_buffers[0].length;
     const size_t position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_length);

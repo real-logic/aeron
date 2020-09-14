@@ -39,13 +39,13 @@ typedef struct aeron_mpsc_concurrent_array_queue_stct
     }
     consumer;
 
-    uint64_t capacity;
-    uint64_t mask;
+    size_t capacity;
+    size_t mask;
     volatile void **buffer;
 }
 aeron_mpsc_concurrent_array_queue_t;
 
-int aeron_mpsc_concurrent_array_queue_init(aeron_mpsc_concurrent_array_queue_t *queue, uint64_t length);
+int aeron_mpsc_concurrent_array_queue_init(aeron_mpsc_concurrent_array_queue_t *queue, size_t length);
 
 int aeron_mpsc_concurrent_array_queue_close(aeron_mpsc_concurrent_array_queue_t *queue);
 
@@ -80,17 +80,14 @@ inline aeron_queue_offer_result_t aeron_mpsc_concurrent_array_queue_offer(
     }
     while(!aeron_cmpxchgu64(&queue->producer.tail, current_tail, current_tail + 1));
 
-    const uint64_t index = current_tail & queue->mask;
+    const size_t index = (size_t)(current_tail & queue->mask);
     AERON_PUT_ORDERED(queue->buffer[index], element);
 
     return AERON_OFFER_SUCCESS;
 }
 
-inline uint64_t aeron_mpsc_concurrent_array_queue_drain(
-    aeron_mpsc_concurrent_array_queue_t *queue,
-    aeron_queue_drain_func_t func,
-    void *clientd,
-    uint64_t limit)
+inline size_t aeron_mpsc_concurrent_array_queue_drain(
+    aeron_mpsc_concurrent_array_queue_t *queue, aeron_queue_drain_func_t func, void *clientd, size_t limit)
 {
     uint64_t current_head = queue->consumer.head;
     uint64_t next_sequence = current_head;
@@ -98,7 +95,7 @@ inline uint64_t aeron_mpsc_concurrent_array_queue_drain(
 
     while (next_sequence < limit_sequence)
     {
-        const uint64_t index = next_sequence & queue->mask;
+        const size_t index = (size_t)(next_sequence & queue->mask);
         volatile void *item;
         AERON_GET_VOLATILE(item, queue->buffer[index]);
 
@@ -113,13 +110,11 @@ inline uint64_t aeron_mpsc_concurrent_array_queue_drain(
         func(clientd, item);
     }
 
-    return next_sequence - current_head;
+    return (size_t)(next_sequence - current_head);
 }
 
-inline uint64_t aeron_mpsc_concurrent_array_queue_drain_all(
-    aeron_mpsc_concurrent_array_queue_t *queue,
-    aeron_queue_drain_func_t func,
-    void *clientd)
+inline size_t aeron_mpsc_concurrent_array_queue_drain_all(
+    aeron_mpsc_concurrent_array_queue_t *queue, aeron_queue_drain_func_t func, void *clientd)
 {
     uint64_t current_head = queue->consumer.head;
     uint64_t current_tail;
@@ -128,7 +123,7 @@ inline uint64_t aeron_mpsc_concurrent_array_queue_drain_all(
     return aeron_mpsc_concurrent_array_queue_drain(queue, func, clientd, current_tail - current_head);
 }
 
-inline uint64_t aeron_mpsc_concurrent_array_queue_size(aeron_mpsc_concurrent_array_queue_t *queue)
+inline size_t aeron_mpsc_concurrent_array_queue_size(aeron_mpsc_concurrent_array_queue_t *queue)
 {
     uint64_t current_head_before;
     uint64_t current_tail;
@@ -144,7 +139,7 @@ inline uint64_t aeron_mpsc_concurrent_array_queue_size(aeron_mpsc_concurrent_arr
     }
     while (current_head_after != current_head_before);
 
-    uint64_t size = current_tail - current_head_after;
+    size_t size = (size_t)(current_tail - current_head_after);
     if ((int64_t)size < 0)
     {
         return 0;

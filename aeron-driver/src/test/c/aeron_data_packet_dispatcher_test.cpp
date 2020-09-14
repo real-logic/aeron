@@ -440,13 +440,13 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
         sizeof(*setup_session1),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+    ASSERT_EQ((size_t)1, aeron_mpsc_concurrent_array_queue_drain(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
         get_on_publication_image_fptr(),
         1));
 
-    ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+    ASSERT_EQ((size_t)0, aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
 
     aeron_setup_header_t *setup_session2_ignored = setupPacket(data_buffer, stream_id, session_id2);
     aeron_data_packet_dispatcher_on_setup(
@@ -458,7 +458,7 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
         sizeof(*setup_session2_ignored),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+    ASSERT_EQ((size_t)0, aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
 }
 
 TEST_F(DataPacketDispatcherTest, shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage)

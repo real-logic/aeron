@@ -47,7 +47,7 @@ public:
 
     static void drain_func(void *clientd, volatile void *element)
     {
-        MpscQueueTest *t = (MpscQueueTest *)clientd;
+        auto *t = (MpscQueueTest *)clientd;
 
         (*t).m_drain(element);
     }
@@ -61,7 +61,7 @@ public:
     }
 
 protected:
-    aeron_mpsc_concurrent_array_queue_t m_q;
+    aeron_mpsc_concurrent_array_queue_t m_q = {};
     std::function<void(volatile void *)> m_drain;
 };
 
@@ -93,7 +93,7 @@ TEST_F(MpscQueueTest, shouldOfferAndDrainToEmptyQueue)
 
 TEST_F(MpscQueueTest, shouldFailToOfferToFullQueue)
 {
-    int64_t element = CAPACITY + 1;
+    size_t element = CAPACITY + 1;
 
     fillQueue();
     EXPECT_EQ(aeron_mpsc_concurrent_array_queue_size(&m_q), CAPACITY);
@@ -143,7 +143,7 @@ TEST_F(MpscQueueTest, shouldDrainFullQueue)
 
 TEST_F(MpscQueueTest, shouldDrainFullQueueWithLimit)
 {
-    uint64_t limit = CAPACITY / 2;
+    size_t limit = CAPACITY / 2;
     fillQueue();
 
     int64_t counter = 1;
@@ -170,8 +170,8 @@ typedef struct mpsc_concurrent_test_data_stct
 
 static void mpsc_queue_concurrent_handler(void *clientd, volatile void *element)
 {
-    uint32_t *counts = (uint32_t *)clientd;
-    mpsc_concurrent_test_data_t *data = (mpsc_concurrent_test_data_t *)element;
+    auto *counts = (uint32_t *)clientd;
+    auto *data = (mpsc_concurrent_test_data_t *)element;
 
     ASSERT_EQ(counts[data->id], data->num);
     counts[data->id]++;
@@ -211,7 +211,7 @@ TEST(MpscQueueConcurrentTest, shouldExchangeMessages)
 
                 for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
                 {
-                    mpsc_concurrent_test_data_t *data = new mpsc_concurrent_test_data_t;
+                    auto *data = new mpsc_concurrent_test_data_t;
 
                     data->id = id;
                     data->num = m;
@@ -226,7 +226,7 @@ TEST(MpscQueueConcurrentTest, shouldExchangeMessages)
 
     while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
     {
-        const uint64_t drainCount = aeron_mpsc_concurrent_array_queue_drain(
+        const size_t drainCount = aeron_mpsc_concurrent_array_queue_drain(
             &q, mpsc_queue_concurrent_handler, counts, CAPACITY);
 
         if (0 == drainCount)

@@ -68,7 +68,6 @@ jobs:
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
-      PATH: "${{PATH}}:cmake-${{CMAKE_VERSION}}-Linux-x86_64/bin"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -90,11 +89,11 @@ jobs:
 
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
 
-         curl -O -L https://github.com/Kitware/CMake/releases/download/v${{CMAKE_VERSION}}/cmake-${{CMAKE_VERSION}}-Linux-x86_64.tar.gz
-         tar xf cmake-${{CMAKE_VERSION}}-Linux-x86_64.tar.gz
-         cmake --version
+         curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+         tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+         export PATH="${PATH}:cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

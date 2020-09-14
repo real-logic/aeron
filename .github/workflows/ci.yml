@@ -93,7 +93,7 @@ jobs:
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -183,7 +183,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -279,7 +279,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Darwin-x86_64/bin"
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -318,7 +318,7 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild --build-archive-api
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

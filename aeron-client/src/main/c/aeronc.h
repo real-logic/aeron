@@ -1340,25 +1340,25 @@ typedef enum aeron_controlled_fragment_handler_action_en
     /**
      * Abort the current polling operation and do not advance the position for this fragment.
      */
-    AERON_ACTION_ABORT,
+    AERON_ACTION_ABORT = 1,
 
     /**
      * Break from the current polling operation and commit the position as of the end of the current fragment
      * being handled.
      */
-    AERON_ACTION_BREAK,
+    AERON_ACTION_BREAK = 2,
 
     /**
      * Continue processing but commit the position as of the end of the current fragment so that
      * flow control is applied to this point.
      */
-    AERON_ACTION_COMMIT,
+    AERON_ACTION_COMMIT = 3,
 
     /**
      * Continue processing until fragment limit or no fragments with position commit at end of poll as in
      * aeron_fragment_handler_t.
      */
-    AERON_ACTION_CONTINUE
+    AERON_ACTION_CONTINUE = 4
 }
 aeron_controlled_fragment_handler_action_t;
 

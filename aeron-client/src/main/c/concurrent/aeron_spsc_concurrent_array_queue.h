@@ -22,10 +22,10 @@
 
 typedef struct aeron_spsc_concurrent_array_queue_stct
 {
-    int8_t padding[AERON_CACHE_LINE_LENGTH];
+    int8_t padding[AERON_CACHE_LINE_LENGTH - sizeof(uint64_t)];
     struct
     {
-        uint64_t tail;
+        volatile uint64_t tail;
         uint64_t head_cache;
         int8_t padding[AERON_CACHE_LINE_LENGTH - (2 * sizeof(uint64_t))];
     }
@@ -33,8 +33,8 @@ typedef struct aeron_spsc_concurrent_array_queue_stct
 
     struct
     {
-        uint64_t head;
-        int8_t padding[AERON_CACHE_LINE_LENGTH - (1 * sizeof(uint64_t))];
+        volatile uint64_t head;
+        int8_t padding[AERON_CACHE_LINE_LENGTH - sizeof(uint64_t)];
     }
     consumer;
 

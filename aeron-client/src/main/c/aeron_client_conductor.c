@@ -370,10 +370,13 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
         }
 
         default:
+        {
+
             AERON_CLIENT_FORMAT_BUFFER(error_message, "response=%x unknown", type_id);
             conductor->error_handler(
                 conductor->error_handler_clientd, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, error_message);
             break;
+        }
     }
 
     if (result < 0)
@@ -388,7 +391,7 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
 
     return;
 
-    malformed_command:
+malformed_command:
     AERON_CLIENT_FORMAT_BUFFER(error_message, "command=%x too short: length=%" PRIu32, type_id, (uint32_t)length);
     conductor->error_handler(conductor->error_handler_clientd, AERON_ERROR_CODE_MALFORMED_COMMAND, error_message);
 }

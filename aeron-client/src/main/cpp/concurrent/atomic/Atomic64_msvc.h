@@ -44,9 +44,6 @@ inline void release()
     std::atomic_thread_fence(std::memory_order_release);
 }
 
-/**
-* A more jitter friendly alternate to thread:yield in spin waits.
-*/
 inline void cpu_pause()
 {
     _mm_pause();

@@ -108,6 +108,7 @@ inline void aeron_release()
 {
     volatile int64_t dummy = 0;
     (void)dummy;
+    __asm__ volatile("" ::: "memory");
 }
 
 

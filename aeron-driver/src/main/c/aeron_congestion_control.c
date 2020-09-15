@@ -94,6 +94,35 @@ int aeron_static_window_congestion_control_strategy_fini(aeron_congestion_contro
     return 0;
 }
 
+int aeron_congestion_control_default_strategy_supplier(
+        aeron_congestion_control_strategy_t **strategy,
+        size_t channel_length,
+        const char *channel,
+        int32_t stream_id,
+        int32_t session_id,
+        int64_t registration_id,
+        int32_t term_length,
+        int32_t sender_mtu_length,
+        struct sockaddr_storage *control_address,
+        struct sockaddr_storage *src_address,
+        aeron_driver_context_t *context,
+        aeron_counters_manager_t *counters_manager)
+{
+    return aeron_static_window_congestion_control_strategy_supplier(
+            strategy,
+            channel_length,
+            channel,
+            stream_id,
+            session_id,
+            registration_id,
+            term_length,
+            sender_mtu_length,
+            control_address,
+            src_address,
+            context,
+            counters_manager);
+}
+
 int aeron_static_window_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
     size_t channel_length,

@@ -513,7 +513,7 @@ int aeron_map_existing_log(aeron_mapped_raw_log_t *mapped_raw_log, const char *p
 
                 for (size_t offset = 0; offset < term_length; offset += page_size)
                 {
-                    aeron_cmpxchg32((volatile int32_t *)(base_addr + offset), value, value);
+                    aeron_cas_int32((volatile int32_t *)(base_addr + offset), value, value);
                 }
             }
         }

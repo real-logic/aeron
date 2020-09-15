@@ -92,7 +92,7 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(aeron_mpsc_rb_t *ring_buffer,
             padding = to_buffer_end_length;
         }
     }
-    while (!aeron_cmpxchg64(
+    while (!aeron_cas_int64(
         &(ring_buffer->descriptor->tail_position),
         tail,
         tail + (int32_t)required_capacity + (int32_t)padding));

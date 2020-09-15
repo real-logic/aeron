@@ -63,25 +63,25 @@ do \
 } \
 while (false)
 
-inline bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int64_t desired)
+inline bool aeron_cas_int64(volatile int64_t *dst, int64_t expected, int64_t desired)
 {
     int64_t original = _InterlockedCompareExchange64(
-        (long long volatile *)destination, (long long)desired, (long long)expected);
+        (long long volatile *)dst, (long long)desired, (long long)expected);
 
     return original == expected;
 }
 
-inline bool aeron_cmpxchgu64(volatile uint64_t *destination, uint64_t expected, uint64_t desired)
+inline bool aeron_cas_uint64(volatile uint64_t *dst, uint64_t expected, uint64_t desired)
 {
     uint64_t original = _InterlockedCompareExchange64(
-        (long long volatile *)destination, (long long)desired, (long long)expected);
+        (long long volatile *)dst, (long long)desired, (long long)expected);
 
     return original == expected;
 }
 
-inline bool aeron_cmpxchg32(volatile int32_t *destination, int32_t expected, int32_t desired)
+inline bool aeron_cas_int32(volatile int32_t *dst, int32_t expected, int32_t desired)
 {
-    int32_t original = _InterlockedCompareExchange((long volatile *)destination, (long)desired, (long)expected);
+    int32_t original = _InterlockedCompareExchange((long volatile *)dst, (long)desired, (long)expected);
 
     return original == expected;
 }

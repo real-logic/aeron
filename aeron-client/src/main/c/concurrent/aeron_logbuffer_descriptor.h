@@ -139,7 +139,7 @@ inline bool aeron_logbuffer_cas_raw_tail(
     int64_t expected_raw_tail,
     int64_t update_raw_tail)
 {
-    return aeron_cmpxchg64(&log_meta_data->term_tail_counters[partition_index], expected_raw_tail, update_raw_tail);
+    return aeron_cas_int64(&log_meta_data->term_tail_counters[partition_index], expected_raw_tail, update_raw_tail);
 }
 
 inline int32_t aeron_logbuffer_active_term_count(aeron_logbuffer_metadata_t *log_meta_data)
@@ -154,7 +154,7 @@ inline bool aeron_logbuffer_cas_active_term_count(
     int32_t expected_term_count,
     int32_t update_term_count)
 {
-    return aeron_cmpxchg32(&log_meta_data->active_term_count, expected_term_count, update_term_count);
+    return aeron_cas_int32(&log_meta_data->active_term_count, expected_term_count, update_term_count);
 }
 
 inline bool aeron_logbuffer_rotate_log(

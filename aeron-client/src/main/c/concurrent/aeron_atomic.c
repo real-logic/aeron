@@ -16,11 +16,11 @@
 
 #include "concurrent/aeron_atomic.h"
 
-extern bool aeron_cmpxchg64(volatile int64_t *destination, int64_t expected, int64_t desired);
+extern bool aeron_cas_int64(volatile int64_t *dst, int64_t expected, int64_t desired);
 
-extern bool aeron_cmpxchgu64(volatile uint64_t *destination, uint64_t expected, uint64_t desired);
+extern bool aeron_cas_uint64(volatile uint64_t *dst, uint64_t expected, uint64_t desired);
 
-extern bool aeron_cmpxchg32(volatile int32_t *destination, int32_t expected, int32_t desired);
+extern bool aeron_cas_int32(volatile int32_t *dst, int32_t expected, int32_t desired);
 
 extern void aeron_acquire();
 

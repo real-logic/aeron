@@ -138,7 +138,7 @@ TEST_F(UriTest, shouldParseCongestionControlParam)
     EXPECT_EQ(std::string(m_uri.params.udp.endpoint), "224.10.9.8");
     EXPECT_EQ(m_uri.params.udp.additional_params.length, 1u);
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].key), AERON_URI_CC_KEY);
-    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), "static");
+    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), STATIC_WINDOW_CC_PARAM_VALUE);
 }
 
 TEST_F(UriTest, shouldParseNoPublicationParams)

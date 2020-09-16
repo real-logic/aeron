@@ -26,6 +26,8 @@
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
 
+#define AERON_CUBIC_CONGESTIONCONTROL_INITIAL_RTT_NS_DEFAULT (100 * 1000LL)
+
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name)
 {
@@ -95,32 +97,52 @@ int aeron_static_window_congestion_control_strategy_fini(aeron_congestion_contro
 }
 
 int aeron_congestion_control_default_strategy_supplier(
-        aeron_congestion_control_strategy_t **strategy,
-        size_t channel_length,
-        const char *channel,
-        int32_t stream_id,
-        int32_t session_id,
-        int64_t registration_id,
-        int32_t term_length,
-        int32_t sender_mtu_length,
-        struct sockaddr_storage *control_address,
-        struct sockaddr_storage *src_address,
-        aeron_driver_context_t *context,
-        aeron_counters_manager_t *counters_manager)
+    aeron_congestion_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t registration_id,
+    int32_t term_length,
+    int32_t sender_mtu_length,
+    struct sockaddr_storage *control_address,
+    struct sockaddr_storage *src_address,
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager)
 {
-    return aeron_static_window_congestion_control_strategy_supplier(
-            strategy,
-            channel_length,
-            channel,
-            stream_id,
-            session_id,
-            registration_id,
-            term_length,
-            sender_mtu_length,
-            control_address,
-            src_address,
-            context,
-            counters_manager);
+    aeron_uri_t channel_uri;
+
+    if (aeron_uri_parse(channel_length, channel, &channel_uri) < 0)
+    {
+        aeron_uri_close(&channel_uri);
+        return -1;
+    }
+
+    const aeron_uri_params_t uri_params = AERON_URI_IPC == channel_uri.type ?
+                                     channel_uri.params.ipc.additional_params : channel_uri.params.udp.additional_params;
+
+    const char *cc_str = aeron_uri_find_param_value(&uri_params, AERON_URI_CC_KEY);
+
+    int result = -1;
+    if (NULL == cc_str || strcmp(cc_str, STATIC_WINDOW_CC_PARAM_VALUE) == 0)
+    {
+        result = aeron_static_window_congestion_control_strategy_supplier(
+                strategy,
+                channel_length,
+                channel,
+                stream_id,
+                session_id,
+                registration_id,
+                term_length,
+                sender_mtu_length,
+                control_address,
+                src_address,
+                context,
+                counters_manager);
+    }
+
+    aeron_uri_close(&channel_uri);
+    return result;
 }
 
 int aeron_static_window_congestion_control_strategy_supplier(

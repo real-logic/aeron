@@ -21,6 +21,9 @@
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 
+#define STATIC_WINDOW_CC_PARAM_VALUE "static"
+#define CUBIC_CC_PARAM_VALUE "cubic"
+
 typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_strategy_t;
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_counters_manager_stct aeron_counters_manager_t;

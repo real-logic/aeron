@@ -951,7 +951,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (expiredTimerCountByCorrelationIdMap.get(correlationId) == 0)
         {
-            timerService.scheduleTimerEvent(correlationId, deadline);
+            timerService.scheduleTimerForCorrelationId(correlationId, deadline);
         }
         else
         {
@@ -961,7 +961,7 @@ class ConsensusModuleAgent implements Agent
 
     void onCancelTimer(final long correlationId)
     {
-        timerService.cancelTimer(correlationId);
+        timerService.cancelTimerByCorrelationId(correlationId);
     }
 
     void onServiceAck(
@@ -1043,7 +1043,7 @@ class ConsensusModuleAgent implements Agent
 
     void onReplayTimerEvent(final long correlationId)
     {
-        if (!timerService.cancelTimer(correlationId))
+        if (!timerService.cancelTimerByCorrelationId(correlationId))
         {
             expiredTimerCountByCorrelationIdMap.getAndIncrement(correlationId);
         }
@@ -2523,7 +2523,7 @@ class ConsensusModuleAgent implements Agent
 
             if (appendPosition > commitPosition)
             {
-                timerService.scheduleTimerEvent(correlationId, timerService.currentTickTime());
+                timerService.scheduleTimerForCorrelationId(correlationId, timerService.currentTickTime());
             }
         }
         uncommittedTimers.clear();

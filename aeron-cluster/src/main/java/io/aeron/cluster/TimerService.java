@@ -78,7 +78,7 @@ class TimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.Time
         }
     }
 
-    void scheduleTimerEvent(final long correlationId, final long deadline)
+    void scheduleTimerForCorrelationId(final long correlationId, final long deadline)
     {
         cancelTimer(correlationId);
 
@@ -87,7 +87,7 @@ class TimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.Time
         correlationIdByTimerIdMap.put(timerId, correlationId);
     }
 
-    boolean cancelTimerEvent(final long correlationId)
+    boolean cancelTimerByCorrelationId(final long correlationId)
     {
         final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
         if (Long.MAX_VALUE != timerId)

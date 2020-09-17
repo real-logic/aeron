@@ -23,7 +23,8 @@
 namespace aeron
 {
 
-static const std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::uint32_t>::max() - 8;
+static const std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::int32_t>::max() - 8;
+static const std::uint32_t BUFFER_BUILDER_INIT_MIN_CAPACITY = 4096;
 
 class BufferBuilder
 {
@@ -86,32 +87,22 @@ private:
     std::uint32_t m_limit = 0;
     std::unique_ptr<std::uint8_t[]> m_buffer;
 
-    inline static std::uint32_t findSuitableCapacity(std::uint32_t currentCapacity, std::uint32_t requiredCapacity)
+    inline static std::uint32_t findSuitableCapacity(
+        std::uint32_t currentCapacity, std::uint32_t requiredCapacity) noexcept
     {
-        std::uint32_t capacity = currentCapacity;
+        std::uint32_t newCapacity = currentCapacity < BUFFER_BUILDER_INIT_MIN_CAPACITY ?
+            BUFFER_BUILDER_INIT_MIN_CAPACITY : currentCapacity;
 
-        do
+        while (newCapacity < requiredCapacity)
         {
-            const std::uint32_t newCapacity = capacity + (capacity / 2);
-
-            if (newCapacity < capacity || newCapacity > BUFFER_BUILDER_MAX_CAPACITY)
+            newCapacity = newCapacity + (newCapacity / 2);
+            if (newCapacity > BUFFER_BUILDER_MAX_CAPACITY)
             {
-                if (capacity == BUFFER_BUILDER_MAX_CAPACITY)
-                {
-                    throw util::IllegalStateException(
-                        "max capacity reached: " + std::to_string(BUFFER_BUILDER_MAX_CAPACITY), SOURCEINFO);
-                }
-
-                capacity = BUFFER_BUILDER_MAX_CAPACITY;
-            }
-            else
-            {
-                capacity = newCapacity;
+                newCapacity = BUFFER_BUILDER_MAX_CAPACITY;
             }
         }
-        while (capacity < requiredCapacity);
 
-        return capacity;
+        return newCapacity;
     }
 
     void ensureCapacity(std::uint32_t additionalCapacity)
@@ -120,10 +111,16 @@ private:
 
         if (requiredCapacity > m_capacity)
         {
+            if (requiredCapacity > BUFFER_BUILDER_MAX_CAPACITY)
+            {
+                throw util::IllegalStateException(
+                    "max capacity reached: " + std::to_string(BUFFER_BUILDER_MAX_CAPACITY), SOURCEINFO);
+            }
+
             const std::uint32_t newCapacity = findSuitableCapacity(m_capacity, requiredCapacity);
             std::unique_ptr<std::uint8_t[]> newBuffer(new std::uint8_t[newCapacity]);
 
-            ::memcpy(&newBuffer[0], &m_buffer[0], static_cast<std::size_t>(m_limit));
+            ::memcpy(&newBuffer[0], &m_buffer[0], m_limit);
             m_buffer = std::move(newBuffer);
             m_capacity = newCapacity;
         }

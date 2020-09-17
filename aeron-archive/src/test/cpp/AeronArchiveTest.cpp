@@ -372,7 +372,7 @@ protected:
     AeronArchive::Context_t m_context;
     pid_t m_pid = -1;
     std::ostringstream m_stream;
-    bool m_debug = false;
+    bool m_debug = true;
 };
 
 TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)

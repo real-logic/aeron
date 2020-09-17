@@ -31,7 +31,7 @@ namespace aeron { namespace test {
 #ifndef _WIN32
 bool fileExists(const char *path)
 {
-    struct stat statInfo{};
+    struct stat statInfo = {};
     return ::stat(path, &statInfo) == 0;
 }
 #else

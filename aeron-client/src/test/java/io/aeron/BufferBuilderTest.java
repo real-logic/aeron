@@ -21,7 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static io.aeron.BufferBuilder.MIN_ALLOCATED_CAPACITY;
+import static io.aeron.BufferBuilder.INIT_MIN_CAPACITY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -61,15 +61,15 @@ public class BufferBuilderTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[appendedLength]);
         builder.append(srcBuffer, 0, srcBuffer.capacity());
 
-        assertEquals(MIN_ALLOCATED_CAPACITY, builder.capacity());
-        assertEquals(MIN_ALLOCATED_CAPACITY, builder.buffer().capacity());
+        assertEquals(INIT_MIN_CAPACITY, builder.capacity());
+        assertEquals(INIT_MIN_CAPACITY, builder.buffer().capacity());
         assertEquals(appendedLength, builder.limit());
     }
 
     @Test
     public void shouldAppendNothingForZeroLength()
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MIN_ALLOCATED_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, 0);
 
@@ -79,7 +79,7 @@ public class BufferBuilderTest
     @Test
     public void shouldGrowToMultipleOfInitialCapacity()
     {
-        final int srcCapacity = MIN_ALLOCATED_CAPACITY * 5;
+        final int srcCapacity = INIT_MIN_CAPACITY * 5;
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[srcCapacity]);
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
@@ -91,7 +91,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendThenReset()
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MIN_ALLOCATED_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
 
@@ -105,7 +105,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendOneBufferWithoutResizing()
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MIN_ALLOCATED_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
         final byte[] bytes = "Hello World".getBytes(StandardCharsets.UTF_8);
         srcBuffer.putBytes(0, bytes, 0, bytes.length);
 
@@ -115,14 +115,14 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, bytes.length);
 
         assertEquals(bytes.length, bufferBuilder.limit());
-        assertEquals(MIN_ALLOCATED_CAPACITY, bufferBuilder.capacity());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
         assertArrayEquals(temp, bytes);
     }
 
     @Test
     public void shouldAppendTwoBuffersWithoutResizing()
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MIN_ALLOCATED_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
         final byte[] bytes = "1111111122222222".getBytes(StandardCharsets.UTF_8);
         srcBuffer.putBytes(0, bytes, 0, bytes.length);
 
@@ -133,7 +133,7 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, bytes.length);
 
         assertEquals(bytes.length, bufferBuilder.limit());
-        assertEquals(MIN_ALLOCATED_CAPACITY, bufferBuilder.capacity());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
         assertArrayEquals(temp, bytes);
     }
 
@@ -203,7 +203,7 @@ public class BufferBuilderTest
     @Test
     public void shouldCompactBufferToLowerLimit()
     {
-        final int bufferLength = MIN_ALLOCATED_CAPACITY / 2;
+        final int bufferLength = INIT_MIN_CAPACITY / 2;
         final byte[] buffer = new byte[bufferLength];
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 

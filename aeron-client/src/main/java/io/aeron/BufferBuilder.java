@@ -34,7 +34,7 @@ import java.util.Arrays;
 public class BufferBuilder
 {
     static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
-    static final int MIN_ALLOCATED_CAPACITY = 4096;
+    static final int INIT_MIN_CAPACITY = 4096;
 
     private final boolean isDirect;
     private int limit = 0;
@@ -150,7 +150,7 @@ public class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        resize(Math.max(MIN_ALLOCATED_CAPACITY, limit));
+        resize(Math.max(INIT_MIN_CAPACITY, limit));
 
         return this;
     }
@@ -209,7 +209,7 @@ public class BufferBuilder
 
     static int findSuitableCapacity(final int capacity, final long requiredCapacity)
     {
-        long newCapacity = Math.max(capacity, MIN_ALLOCATED_CAPACITY);
+        long newCapacity = Math.max(capacity, INIT_MIN_CAPACITY);
 
         while (newCapacity < requiredCapacity)
         {

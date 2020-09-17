@@ -20,13 +20,12 @@ import org.agrona.collections.Long2LongHashMap;
 
 import java.util.concurrent.TimeUnit;
 
-class TimerService implements DeadlineTimerWheel.TimerHandler
+class TimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler
 {
     private static final int POLL_LIMIT = 20;
 
     private boolean isAbort;
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final DeadlineTimerWheel timerWheel;
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
@@ -37,8 +36,8 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         final long tickResolution,
         final int ticksPerWheel)
     {
+        super(timeUnit, startTime, tickResolution, ticksPerWheel);
         this.consensusModuleAgent = consensusModuleAgent;
-        timerWheel = new DeadlineTimerWheel(timeUnit, startTime, tickResolution, ticksPerWheel);
     }
 
     int poll(final long now)
@@ -48,26 +47,16 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 
         do
         {
-            expired += timerWheel.poll(now, this, POLL_LIMIT);
+            expired += super.poll(now, this, POLL_LIMIT);
 
             if (isAbort)
             {
                 break;
             }
         }
-        while (expired < POLL_LIMIT && timerWheel.currentTickTime() < now);
+        while (expired < POLL_LIMIT && super.currentTickTime() < now);
 
         return expired;
-    }
-
-    long currentTickTime()
-    {
-        return timerWheel.currentTickTime();
-    }
-
-    void currentTickTime(final long timestamp)
-    {
-        timerWheel.currentTickTime(timestamp);
     }
 
     public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
@@ -89,21 +78,21 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         }
     }
 
-    void scheduleTimer(final long correlationId, final long deadline)
+    void scheduleTimerEvent(final long correlationId, final long deadline)
     {
         cancelTimer(correlationId);
 
-        final long timerId = timerWheel.scheduleTimer(deadline);
+        final long timerId = super.scheduleTimer(deadline);
         timerIdByCorrelationIdMap.put(correlationId, timerId);
         correlationIdByTimerIdMap.put(timerId, correlationId);
     }
 
-    boolean cancelTimer(final long correlationId)
+    boolean cancelTimerEvent(final long correlationId)
     {
         final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
         if (Long.MAX_VALUE != timerId)
         {
-            timerWheel.cancelTimer(timerId);
+            super.cancelTimer(timerId);
             correlationIdByTimerIdMap.remove(timerId);
 
             return true;
@@ -121,7 +110,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
             iter.next();
 
             final long correlationId = iter.getLongKey();
-            final long deadline = timerWheel.deadline(iter.getLongValue());
+            final long deadline = super.deadline(iter.getLongValue());
 
             snapshotTaker.snapshotTimer(correlationId, deadline);
         }

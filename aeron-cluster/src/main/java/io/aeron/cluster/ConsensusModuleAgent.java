@@ -951,7 +951,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (expiredTimerCountByCorrelationIdMap.get(correlationId) == 0)
         {
-            timerService.scheduleTimer(correlationId, deadline);
+            timerService.scheduleTimerEvent(correlationId, deadline);
         }
         else
         {
@@ -2523,7 +2523,7 @@ class ConsensusModuleAgent implements Agent
 
             if (appendPosition > commitPosition)
             {
-                timerService.scheduleTimer(correlationId, timerService.currentTickTime());
+                timerService.scheduleTimerEvent(correlationId, timerService.currentTickTime());
             }
         }
         uncommittedTimers.clear();

@@ -33,6 +33,9 @@ import java.util.Arrays;
  */
 public class BufferBuilder
 {
+    static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
+    static final int MIN_ALLOCATED_CAPACITY = 4096;
+
     private final boolean isDirect;
     private int limit = 0;
     private final UnsafeBuffer buffer;
@@ -63,6 +66,13 @@ public class BufferBuilder
      */
     public BufferBuilder(final int initialCapacity, final boolean isDirect)
     {
+        if (initialCapacity < 0 || initialCapacity > MAX_CAPACITY)
+        {
+            throw new IllegalArgumentException(
+                "initialCapacity outside range 0 - " + MAX_CAPACITY +
+                ": initialCapacity=" + initialCapacity);
+        }
+
         this.isDirect = isDirect;
         if (isDirect)
         {
@@ -140,7 +150,7 @@ public class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        resize(Math.max(BufferBuilderUtil.MIN_ALLOCATED_CAPACITY, limit));
+        resize(Math.max(MIN_ALLOCATED_CAPACITY, limit));
 
         return this;
     }
@@ -163,20 +173,22 @@ public class BufferBuilder
         return this;
     }
 
-    private void ensureCapacity(final int additionalCapacity)
+    private void ensureCapacity(final int additionalLength)
     {
-        final long requiredCapacity = (long)limit + additionalCapacity;
-
-        if (requiredCapacity > BufferBuilderUtil.MAX_CAPACITY)
-        {
-            throw new IllegalStateException(
-                "max capacity exceeded: limit=" + limit + " required=" + requiredCapacity);
-        }
-
+        final long requiredCapacity = (long)limit + additionalLength;
         final int capacity = buffer.capacity();
+
         if (requiredCapacity > capacity)
         {
-            resize(BufferBuilderUtil.findSuitableCapacity(capacity, (int)requiredCapacity));
+            if (requiredCapacity > MAX_CAPACITY)
+            {
+                throw new IllegalStateException(
+                    "insufficient capacity: maxCapacity=" + MAX_CAPACITY +
+                    " limit=" + limit +
+                    " additionalLength=" + additionalLength);
+            }
+
+            resize(findSuitableCapacity(capacity, requiredCapacity));
         }
     }
 
@@ -193,5 +205,21 @@ public class BufferBuilder
         {
             buffer.wrap(Arrays.copyOf(buffer.byteArray(), newCapacity));
         }
+    }
+
+    static int findSuitableCapacity(final int capacity, final long requiredCapacity)
+    {
+        long newCapacity = Math.max(capacity, MIN_ALLOCATED_CAPACITY);
+
+        while (newCapacity < requiredCapacity)
+        {
+            newCapacity = newCapacity + (newCapacity >> 1);
+            if (newCapacity > MAX_CAPACITY)
+            {
+                newCapacity = MAX_CAPACITY;
+            }
+        }
+
+        return (int)newCapacity;
     }
 }

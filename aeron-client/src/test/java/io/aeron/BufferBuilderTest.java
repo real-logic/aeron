@@ -21,7 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static io.aeron.BufferBuilderUtil.MIN_ALLOCATED_CAPACITY;
+import static io.aeron.BufferBuilder.MIN_ALLOCATED_CAPACITY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -32,6 +32,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class BufferBuilderTest
 {
     private final BufferBuilder bufferBuilder = new BufferBuilder();
+
+    @Test
+    public void shouldFindMaxCapacityWhenRequested()
+    {
+        assertEquals(
+            BufferBuilder.MAX_CAPACITY,
+            BufferBuilder.findSuitableCapacity(0, BufferBuilder.MAX_CAPACITY));
+    }
 
     @Test
     public void shouldInitialiseToDefaultValues()

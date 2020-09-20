@@ -151,7 +151,7 @@ void aeron_counters_manager_append_to_label(
     size_t copy_length = length > available_length ? available_length : length;
 
     memcpy(metadata->label + current_length, value, copy_length);
-    AERON_PUT_ORDERED(metadata->label_length, ((int32_t)(current_length + copy_length)));
+    AERON_PUT_ORDERED(metadata->label_length, (int32_t)(current_length + copy_length));
 }
 
 void aeron_counters_manager_remove_free_list_index(aeron_counters_manager_t *manager, int index)

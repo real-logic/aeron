@@ -150,7 +150,7 @@ void aeron_counters_manager_append_to_label(
     size_t available_length = sizeof(metadata->label) - current_length;
     size_t copy_length = length > available_length ? available_length : length;
 
-    memcpy(metadata->label, value, copy_length);
+    memcpy(metadata->label + current_length, value, copy_length);
     AERON_PUT_ORDERED(metadata->label_length, ((int32_t)(current_length + copy_length)));
 }
 

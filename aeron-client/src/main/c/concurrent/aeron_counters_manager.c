@@ -305,8 +305,6 @@ void aeron_counters_reader_foreach_counter(
     }
 }
 
-extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *counters_manager, int32_t counter_id);
-
 int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id)
 {
     return (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(counter_id));
@@ -417,6 +415,8 @@ extern int aeron_counters_reader_init(
     size_t metadata_length,
     uint8_t *values_buffer,
     size_t values_length);
+
+extern int64_t *aeron_counters_manager_addr(aeron_counters_manager_t *counters_manager, int32_t counter_id);
 
 extern void aeron_counter_set_ordered(volatile int64_t *addr, int64_t value);
 

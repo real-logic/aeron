@@ -214,27 +214,23 @@ int aeron_congestion_control_default_strategy_supplier(
 
 typedef struct aeron_cubic_congestion_control_strategy_state_stct
 {
-    // Config
     bool tcp_mode;
     bool measure_rtt;
-    uint64_t initial_rtt_ns;
 
-    // Static values
     int32_t min_window;
     int32_t mtu;
-    int32_t max_c_wnd;
-    int64_t window_update_timeout_ns;
+    int32_t max_cwnd;
+    int32_t cwnd;
+    int32_t w_max;
+    double k;
 
-    // Dynamic values
+    int32_t outstanding_rtt_measurements;
+    uint64_t initial_rtt_ns;
     int64_t rtt_ns;
+    int64_t window_update_timeout_ns;
     int64_t last_loss_timestamp_ns;
     int64_t last_update_timestamp_ns;
     int64_t last_rtt_timestamp_ns;
-    double k;
-    int32_t c_wnd;
-    int32_t w_max;
-
-    int32_t outstanding_rtt_measurements;
 
     int64_t *rtt_indicator;
     int64_t *window_indicator;
@@ -245,16 +241,29 @@ bool aeron_cubic_congestion_control_strategy_should_measure_rtt(void *state, int
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
             (aeron_cubic_congestion_control_strategy_state_t *) state;
-    return cubic_state->measure_rtt;
+    return cubic_state->measure_rtt &&
+           cubic_state->outstanding_rtt_measurements < AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS &&
+           (((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS) - now_ns < 0) ||
+            ((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MEASUREMENT_TIMEOUT_NS) - now_ns < 0));
 }
 
 void aeron_cubic_congestion_control_strategy_on_rttm_sent(void *state, int64_t now_ns)
 {
+    aeron_cubic_congestion_control_strategy_state_t *cubic_state =
+            (aeron_cubic_congestion_control_strategy_state_t *) state;
+    cubic_state->last_rtt_timestamp_ns = now_ns;
+    cubic_state->outstanding_rtt_measurements++;
 }
 
 void aeron_cubic_congestion_control_strategy_on_rttm(
     void *state, int64_t now_ns, int64_t rtt_ns, struct sockaddr_storage *source_address)
 {
+    aeron_cubic_congestion_control_strategy_state_t *cubic_state =
+            (aeron_cubic_congestion_control_strategy_state_t *) state;
+    cubic_state->outstanding_rtt_measurements--;
+    cubic_state->last_rtt_timestamp_ns = now_ns;
+    cubic_state->rtt_ns = rtt_ns;
+    aeron_counter_set_ordered(cubic_state->rtt_indicator, rtt_ns);
 }
 
 int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
@@ -268,8 +277,48 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
     int64_t ending_rebuild_position,
     bool loss_occurred)
 {
+    aeron_cubic_congestion_control_strategy_state_t *cubic_state =
+            (aeron_cubic_congestion_control_strategy_state_t *) state;
     *should_force_sm = false;
-    return 0;
+
+    if (loss_occurred)
+    {
+        cubic_state->w_max = cubic_state->cwnd;
+        cubic_state->k = cbrt((double)cubic_state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
+        const int32_t new_cwnd = (int32_t) (cubic_state->cwnd * (1.0 - AERON_CUBICCONGESTIONCONTROL_B));
+        cubic_state->cwnd = new_cwnd > 1 ? new_cwnd : 1;
+        cubic_state->last_loss_timestamp_ns = now_ns;
+        *should_force_sm = true;
+    }
+    else if (cubic_state->cwnd < cubic_state->max_cwnd && ((cubic_state->last_update_timestamp_ns + cubic_state->window_update_timeout_ns) - now_ns < 0))
+    {
+        // W_cubic = C(T - K)^3 + w_max
+        const double duration_since_decr = (double)(now_ns - cubic_state->last_loss_timestamp_ns) / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
+        const double diff_to_k = duration_since_decr - cubic_state->k;
+        const double incr = AERON_CUBICCONGESTIONCONTROL_C * diff_to_k * diff_to_k * diff_to_k;
+
+        const int32_t new_cwnd = cubic_state->w_max + (int32_t) incr;
+        cubic_state->cwnd = new_cwnd < cubic_state->max_cwnd ? new_cwnd : cubic_state->max_cwnd;
+
+        // if using TCP mode, then check to see if we are in the TCP region
+        if (cubic_state->tcp_mode && cubic_state->cwnd < cubic_state->w_max)
+        {
+            // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
+            const double rtt_in_seconds = (double)cubic_state->rtt_ns / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
+            const double w_tcp =
+                    (double)cubic_state->w_max * (1.0 - AERON_CUBICCONGESTIONCONTROL_B) + ((3.0 * AERON_CUBICCONGESTIONCONTROL_B / (2.0 - AERON_CUBICCONGESTIONCONTROL_B)) * (duration_since_decr / rtt_in_seconds));
+
+            const int32_t new_cwnd = (int32_t) w_tcp;
+            cubic_state->cwnd = new_cwnd > cubic_state->cwnd ? new_cwnd : cubic_state->cwnd;
+        }
+
+        cubic_state->last_update_timestamp_ns = now_ns;
+    }
+
+    const int32_t window = cubic_state->cwnd * cubic_state->mtu;
+    aeron_counter_set_ordered(cubic_state->window_indicator, window);
+
+    return window;
 }
 
 int32_t aeron_cubic_congestion_control_strategy_initial_window_length(void *state)
@@ -333,10 +382,10 @@ int aeron_cubic_congestion_control_strategy_supplier(
     const int32_t max_window =
             max_window_for_term < initial_window_length ? max_window_for_term : initial_window_length;
 
-    state->max_c_wnd = max_window / sender_mtu_length;
-    state->c_wnd = 1;
+    state->max_cwnd = max_window / sender_mtu_length;
+    state->cwnd = 1;
     // initially set w_max to max window and act in the TCP and concave region initially
-    state->w_max = state->max_c_wnd;
+    state->w_max = state->max_cwnd;
     state->k = cbrt((double)state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
 
     // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate

@@ -291,3 +291,28 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultW
     EXPECT_EQ(-1, result);
     EXPECT_EQ(nullptr, congestion_control_strategy);
 }
+
+TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValueIfInitialRttValueIsInvalid)
+{
+    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
+
+    setenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "initial_rtt wrong value", 1);
+
+    const int result = aeron_cubic_congestion_control_strategy_supplier(
+            &congestion_control_strategy,
+            strlen(channel),
+            channel,
+            2,
+            15,
+            1,
+            1024,
+            9000,
+            NULL,
+            NULL,
+            m_context,
+            &m_counters_manager);
+
+    EXPECT_EQ(-1, result);
+    EXPECT_EQ(nullptr, congestion_control_strategy);
+}

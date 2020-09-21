@@ -322,7 +322,7 @@ int aeron_cubic_congestion_control_strategy_supplier(
     {
         if (-1 == aeron_parse_duration_ns(rtt_ns, &state->initial_rtt_ns))
         {
-            // TODO: Error or continue assuming default value?
+            goto error_cleanup;
         }
     }
 

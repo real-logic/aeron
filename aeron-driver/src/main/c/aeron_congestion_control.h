@@ -21,8 +21,11 @@
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 
-#define STATIC_WINDOW_CC_PARAM_VALUE "static"
-#define CUBIC_CC_PARAM_VALUE "cubic"
+#define AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE "static"
+#define AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE "cubic"
+
+#define AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME "rcv-cc-cubic-rtt"
+#define AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME "rcv-cc-cubic-wnd"
 
 typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_strategy_t;
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
@@ -57,7 +60,7 @@ typedef struct aeron_congestion_control_strategy_stct
     aeron_congestion_control_strategy_fini_func_t fini;
     void *state;
 }
-    aeron_congestion_control_strategy_t;
+aeron_congestion_control_strategy_t;
 
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name);
@@ -77,6 +80,20 @@ int aeron_congestion_control_default_strategy_supplier(
     aeron_counters_manager_t *counters_manager);
 
 int aeron_static_window_congestion_control_strategy_supplier(
+    aeron_congestion_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t registration_id,
+    int32_t term_length,
+    int32_t sender_mtu_length,
+    struct sockaddr_storage *control_address,
+    struct sockaddr_storage *src_address,
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager);
+
+int aeron_cubic_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
     size_t channel_length,
     const char *channel,

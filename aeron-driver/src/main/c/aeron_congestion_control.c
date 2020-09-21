@@ -72,6 +72,10 @@ bool aeron_static_window_congestion_control_strategy_should_measure_rtt(void *st
     return false;
 }
 
+void aeron_static_window_congestion_control_strategy_on_rttm_sent(void *state, int64_t now_ns)
+{
+}
+
 void aeron_static_window_congestion_control_strategy_on_rttm(
     void *state, int64_t now_ns, int64_t rtt_ns, struct sockaddr_storage *source_address)
 {
@@ -129,6 +133,7 @@ int aeron_static_window_congestion_control_strategy_supplier(
     }
 
     _strategy->should_measure_rtt = aeron_static_window_congestion_control_strategy_should_measure_rtt;
+    _strategy->on_rttm_sent = aeron_static_window_congestion_control_strategy_on_rttm_sent;
     _strategy->on_rttm = aeron_static_window_congestion_control_strategy_on_rttm;
     _strategy->on_track_rebuild = aeron_static_window_congestion_control_strategy_on_track_rebuild;
     _strategy->initial_window_length = aeron_static_window_congestion_control_strategy_initial_window_length;
@@ -243,6 +248,10 @@ bool aeron_cubic_congestion_control_strategy_should_measure_rtt(void *state, int
     return cubic_state->measure_rtt;
 }
 
+void aeron_cubic_congestion_control_strategy_on_rttm_sent(void *state, int64_t now_ns)
+{
+}
+
 void aeron_cubic_congestion_control_strategy_on_rttm(
     void *state, int64_t now_ns, int64_t rtt_ns, struct sockaddr_storage *source_address)
 {
@@ -296,6 +305,7 @@ int aeron_cubic_congestion_control_strategy_supplier(
     }
 
     _strategy->should_measure_rtt = aeron_cubic_congestion_control_strategy_should_measure_rtt;
+    _strategy->on_rttm_sent = aeron_cubic_congestion_control_strategy_on_rttm_sent;
     _strategy->on_rttm = aeron_cubic_congestion_control_strategy_on_rttm;
     _strategy->on_track_rebuild = aeron_cubic_congestion_control_strategy_on_track_rebuild;
     _strategy->initial_window_length = aeron_cubic_congestion_control_strategy_initial_window_length;

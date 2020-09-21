@@ -85,18 +85,18 @@ public:
         EXPECT_NE(nullptr, congestion_control_strategy);
         void *const state = congestion_control_strategy->state;
         EXPECT_NE(nullptr, state);
+        EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
+        EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
+        EXPECT_NE(nullptr, congestion_control_strategy->should_measure_rtt);
+        EXPECT_NE(nullptr, congestion_control_strategy->initial_window_length);
+        EXPECT_NE(nullptr, congestion_control_strategy->on_track_rebuild);
+        EXPECT_NE(nullptr, congestion_control_strategy->fini);
 
         EXPECT_FALSE(congestion_control_strategy->should_measure_rtt(state, 100LL));
         EXPECT_EQ(expected_window_length, congestion_control_strategy->initial_window_length(state));
 
         congestion_control_strategy->fini(congestion_control_strategy);
     }
-
-    static bool label_starts_with(const uint8_t *label, const char *name)
-    {
-        return memcmp(label, name, strlen(name));
-    }
-
 
     typedef struct counters_clientd_stct
     {
@@ -244,6 +244,12 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
     EXPECT_NE(nullptr, congestion_control_strategy);
     void *const state = congestion_control_strategy->state;
     EXPECT_NE(nullptr, state);
+    EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
+    EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
+    EXPECT_NE(nullptr, congestion_control_strategy->should_measure_rtt);
+    EXPECT_NE(nullptr, congestion_control_strategy->initial_window_length);
+    EXPECT_NE(nullptr, congestion_control_strategy->on_track_rebuild);
+    EXPECT_NE(nullptr, congestion_control_strategy->fini);
 
     const int32_t indicator_counter_id = find_counter_by_label_prefix(
             &m_counters_manager,

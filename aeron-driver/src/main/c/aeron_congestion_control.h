@@ -33,6 +33,8 @@ typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
 
 typedef bool (*aeron_congestion_control_strategy_should_measure_rtt_func_t)(void *state, int64_t now_ns);
 
+typedef void (*aeron_congestion_control_strategy_on_rttm_sent_func_t)(void *state, int64_t now_ns);
+
 typedef void (*aeron_congestion_control_strategy_on_rttm_func_t)(
     void *state, int64_t now_ns, int64_t rtt_ns, struct sockaddr_storage *source_address);
 
@@ -54,6 +56,7 @@ typedef int (*aeron_congestion_control_strategy_fini_func_t)(aeron_congestion_co
 typedef struct aeron_congestion_control_strategy_stct
 {
     aeron_congestion_control_strategy_should_measure_rtt_func_t should_measure_rtt;
+    aeron_congestion_control_strategy_on_rttm_sent_func_t on_rttm_sent;
     aeron_congestion_control_strategy_on_rttm_func_t on_rttm;
     aeron_congestion_control_strategy_on_track_rebuild_func_t on_track_rebuild;
     aeron_congestion_control_strategy_initial_window_length_func_t initial_window_length;

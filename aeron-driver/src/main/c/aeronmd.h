@@ -322,12 +322,12 @@ typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_s
 /**
  * Should Cubic congestion control measure RTT.
  */
-#define AERON_CUBIC_CONGESTIONCONTROL_MEASURE_RTT_ENV_VAR "AERON_CUBIC_CONGESTIONCONTROL_MEASURE_RTT"
+#define AERON_CUBICCONGESTIONCONTROL_MEASURERTT_ENV_VAR "AERON_CUBICCONGESTIONCONTROL_MEASURERTT"
 
 /**
  * Initial RTT measurement in nanoseconds for Cubic congestion control.
  */
-#define AERON_CUBIC_CONGESTIONCONTROL_INITIAL_RTT_NS_ENV_VAR "AERON_CUBIC_CONGESTIONCONTROL_INITIAL_RTT_NS"
+#define AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR "AERON_CUBICCONGESTIONCONTROL_INITIALRTT"
 
 /**
  * Should Cubic congestion control account for TCP behavior in low RTT values after a loss.
@@ -335,7 +335,7 @@ typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_s
  * <b>WARNING:</b> Be aware that throughput utilization becomes important. Turning this on may drastically be off
  * the necessary throughput if utilization is low.
  */
-#define AERON_CUBIC_CONGESTIONCONTROL_TCP_MODE_ENV_VAR "AERON_CUBIC_CONGESTIONCONTROL_TCP_MODE"
+#define AERON_CUBICCONGESTIONCONTROL_TCPMODE_ENV_VAR "AERON_CUBICCONGESTIONCONTROL_TCPMODE"
 
 typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
 struct sockaddr_storage;

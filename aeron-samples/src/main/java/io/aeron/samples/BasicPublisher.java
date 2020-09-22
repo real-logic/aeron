@@ -121,6 +121,6 @@ public class BasicPublisher
             }
         }
 
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(driver);
     }
 }

@@ -160,7 +160,6 @@ public class FileReceiver
         }
     }
 
-    @SuppressWarnings("unused")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final int version = buffer.getInt(offset + VERSION_OFFSET, LITTLE_ENDIAN);

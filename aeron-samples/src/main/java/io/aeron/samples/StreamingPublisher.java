@@ -128,7 +128,7 @@ public class StreamingPublisher
 
         reporter.halt();
         executor.shutdown();
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(driver);
     }
 
     public static void printRate(

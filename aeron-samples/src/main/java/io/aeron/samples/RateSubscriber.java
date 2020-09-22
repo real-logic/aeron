@@ -81,6 +81,6 @@ public class RateSubscriber
             System.out.println("Warning: not all tasks completed promptly");
         }
 
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(driver);
     }
 }

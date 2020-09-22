@@ -76,6 +76,6 @@ public class BasicSubscriber
             System.out.println("Shutting down...");
         }
 
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(driver);
     }
 }

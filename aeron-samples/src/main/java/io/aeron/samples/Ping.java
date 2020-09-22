@@ -109,7 +109,7 @@ public class Ping
             while (barrier.await());
         }
 
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(driver);
     }
 
     private static void roundTripMessages(

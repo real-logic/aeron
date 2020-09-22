@@ -90,7 +90,7 @@ public class Pong
             System.out.println("Shutting down...");
         }
 
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(driver);
     }
 
     public static void pingHandler(

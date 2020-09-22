@@ -290,9 +290,9 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
     congestion_control_strategy->fini(congestion_control_strategy);
 }
 
-TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultWhenCcParamValueIsUnknown)
+TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultWhenCcParamValueIsUnknown)ª
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1|cc=rubbish\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1|cc=static1234\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
 
     const int result = aeron_congestion_control_default_strategy_supplier(

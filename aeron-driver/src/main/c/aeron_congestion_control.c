@@ -175,7 +175,7 @@ int aeron_congestion_control_default_strategy_supplier(
     const char *cc_str = aeron_uri_find_param_value(&channel_uri.params.udp.additional_params, AERON_URI_CC_KEY);
 
     int result = -1;
-    if (NULL == cc_str || 0 == strncmp(cc_str, AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE, strlen(AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE)))
+    if (NULL == cc_str || 0 == strncmp(cc_str, AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE, strlen(AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE) + 1))
     {
         result = aeron_static_window_congestion_control_strategy_supplier(
                 strategy,
@@ -191,7 +191,7 @@ int aeron_congestion_control_default_strategy_supplier(
                 context,
                 counters_manager);
     }
-    else if (0 == strncmp(cc_str, AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE, strlen(AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE)))
+    else if (0 == strncmp(cc_str, AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE, strlen(AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE) + 1))
     {
         result = aeron_cubic_congestion_control_strategy_supplier(
                 strategy,

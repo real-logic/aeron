@@ -1416,7 +1416,7 @@ public class DriverConductor implements Agent
 
             if (!udpChannel.isManualControlMode())
             {
-                final AtomicCounter counter = SendLocalSocketAddress.allocate(
+                final AtomicCounter counter = ReceiveLocalSocketAddress.allocate(
                     tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
 
                 channelEndpoint.localSocketAddressIndicator(counter);

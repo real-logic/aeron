@@ -28,7 +28,7 @@ public class SendLocalSocketAddress
     /**
      * The human readable name for the beginning of a label.
      */
-    public static final String NAME = "send-local-sockaddr";
+    public static final String NAME = "snd-local-sockaddr";
 
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,

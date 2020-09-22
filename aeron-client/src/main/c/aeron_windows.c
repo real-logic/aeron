@@ -215,6 +215,21 @@ char *aeron_strndup(const char *value, size_t length)
     return dup;
 }
 
+int aeron_setenv(const char *name, const char *value, int overwrite)
+{
+   if (0 != overwrite || NULL == getenv(name))
+   {
+       return _putenv_s(name, value);
+   }
+
+   return 0;
+}
+
+int aeron_unsetenv(const char *name)
+{
+    return _putenv_s(name, "");
+}
+
 #else
 
 typedef int aeron_make_into_non_empty_translation_unit_t;

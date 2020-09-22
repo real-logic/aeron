@@ -86,7 +86,7 @@ public class MultiplePublishersWithFragmentation
                             }
                             else
                             {
-                                System.out.println(" Offer failed due to unknown reason");
+                                System.out.println(" Offer failed due to unknown reason: " + result1);
                             }
 
                             offerStatus1 = false;
@@ -117,7 +117,7 @@ public class MultiplePublishersWithFragmentation
                             }
                             else
                             {
-                                System.out.println("Offer failed due to unknown reason");
+                                System.out.println("Offer failed due to unknown reason: " + result2);
                             }
                             offerStatus2 = false;
                         }

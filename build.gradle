@@ -742,6 +742,7 @@ project(':aeron-samples') {
         dependsOn(removeWikiDirectory, asciidoctorGithub)
         apiKey = project.hasProperty('aeron.ci.apiKey') ? project.property('aeron.ci.apiKey') : ''
         source = asciidoctorGithub.target
+        remoteName = project.hasProperty('aeron.ci.remoteName') ? project.property('aeron.ci.remoteName') : 'origin'
     }
 }
 

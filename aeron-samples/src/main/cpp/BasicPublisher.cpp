@@ -143,32 +143,29 @@ int main(int argc, char **argv)
 
             const std::int64_t result = publication->offer(srcBuffer, 0, messageLen);
 
-            if (result < 0)
+            if (result > 0)
             {
-                if (BACK_PRESSURED == result)
-                {
-                    std::cout << "Offer failed due to back pressure" << std::endl;
-                }
-                else if (NOT_CONNECTED == result)
-                {
-                    std::cout << "Offer failed because publisher is not connected to subscriber" << std::endl;
-                }
-                else if (ADMIN_ACTION == result)
-                {
-                    std::cout << "Offer failed because of an administration action in the system" << std::endl;
-                }
-                else if (PUBLICATION_CLOSED == result)
-                {
-                    std::cout << "Offer failed publication is closed" << std::endl;
-                }
-                else
-                {
-                    std::cout << "Offer failed due to unknown reason" << result << std::endl;
-                }
+                std::cout << "yay!" << std::endl;
+            }
+            else if (BACK_PRESSURED == result)
+            {
+                std::cout << "Offer failed due to back pressure" << std::endl;
+            }
+            else if (NOT_CONNECTED == result)
+            {
+                std::cout << "Offer failed because publisher is not connected to a subscriber" << std::endl;
+            }
+            else if (ADMIN_ACTION == result)
+            {
+                std::cout << "Offer failed because of an administration action in the system" << std::endl;
+            }
+            else if (PUBLICATION_CLOSED == result)
+            {
+                std::cout << "Offer failed publication is closed" << std::endl;
             }
             else
             {
-                std::cout << "yay!" << std::endl;
+                std::cout << "Offer failed due to unknown reason" << result << std::endl;
             }
 
             if (!publication->isConnected())

@@ -165,7 +165,7 @@ int main(int argc, char **argv)
             }
             else
             {
-                std::cout << "Offer failed due to unknown reason" << result << std::endl;
+                std::cout << "Offer failed due to unknown reason " << result << std::endl;
             }
 
             if (!publication->isConnected())

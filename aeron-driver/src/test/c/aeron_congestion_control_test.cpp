@@ -25,7 +25,6 @@ extern "C"
 #include "aeron_congestion_control.h"
 #include "aeron_driver_context.h"
 #include "aeron_counters.h"
-#include "aeron_windows.h"
 }
 
 #define CAPACITY (32 * 1024)
@@ -64,10 +63,10 @@ public:
 
     static void reset_env()
     {
-        aeron_unsetenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR);
-        aeron_unsetenv(AERON_CUBICCONGESTIONCONTROL_TCPMODE_ENV_VAR);
-        aeron_unsetenv(AERON_CUBICCONGESTIONCONTROL_MEASURERTT_ENV_VAR);
-        aeron_unsetenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR);
+        unsetenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR);
+        unsetenv(AERON_CUBICCONGESTIONCONTROL_TCPMODE_ENV_VAR);
+        unsetenv(AERON_CUBICCONGESTIONCONTROL_MEASURERTT_ENV_VAR);
+        unsetenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR);
     }
 
     void test_static_window_congestion_control(
@@ -171,8 +170,8 @@ TEST_F(CongestionControlTest, contextShouldResolveCongestionControlStrategySuppl
 {
     aeron_driver_context_close(m_context);
 
-    EXPECT_EQ(0, aeron_setenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR, "aeron_static_window_congestion_control_strategy_supplier", 1));
-    EXPECT_EQ(0, aeron_driver_context_init(&m_context));
+    setenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR, "aeron_static_window_congestion_control_strategy_supplier", 0);
+    EXPECT_EQ(aeron_driver_context_init(&m_context), 0);
 
     EXPECT_NE(nullptr, m_context->congestion_control_supplier_func);
 
@@ -318,7 +317,7 @@ TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValue
     const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
 
-    EXPECT_EQ(0, aeron_setenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "initial_rtt wrong value", 1));
+    setenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "initial_rtt wrong value", 1);
 
     const int result = aeron_cubic_congestion_control_strategy_supplier(
             &congestion_control_strategy,
@@ -341,9 +340,9 @@ TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValue
 
 TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
 {
-    EXPECT_EQ(0, aeron_setenv(AERON_CUBICCONGESTIONCONTROL_TCPMODE_ENV_VAR, "true", 1));
-    EXPECT_EQ(0, aeron_setenv(AERON_CUBICCONGESTIONCONTROL_MEASURERTT_ENV_VAR, "true", 1));
-    EXPECT_EQ(0, aeron_setenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "1s", 1));
+    setenv(AERON_CUBICCONGESTIONCONTROL_TCPMODE_ENV_VAR, "true", 1);
+    setenv(AERON_CUBICCONGESTIONCONTROL_MEASURERTT_ENV_VAR, "true", 1);
+    setenv(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "1s", 1);
 
     const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;

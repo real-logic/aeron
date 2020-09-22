@@ -25,8 +25,6 @@
 #define aeron_srand48 srand48
 #define aeron_drand48 drand48
 #define aeron_strndup strndup
-#define aeron_setenv setenv
-#define aeron_unsetenv unsetenv
 
 #elif defined(AERON_COMPILER_MSVC)
 
@@ -38,8 +36,6 @@ void aeron_srand48(uint64_t aeron_nano_clock);
 double aeron_drand48();
 char *aeron_strndup(const char *value, size_t length);
 void localtime_r(const time_t *timep, struct tm *result);
-int aeron_setenv(const char *name, const char *value, int overwrite);
-int aeron_unsetenv(const char *name);
 
 #endif
 

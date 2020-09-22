@@ -164,8 +164,7 @@ protected:
 
 TEST_F(CongestionControlTest, contextShouldUseDefaultCongestionControlStrategySupplier)
 {
-    EXPECT_EQ(&aeron_congestion_control_default_strategy_supplier,
-              m_context->congestion_control_supplier_func);
+    EXPECT_NE(nullptr, m_context->congestion_control_supplier_func);
 }
 
 TEST_F(CongestionControlTest, contextShouldResolveCongestionControlStrategySupplierFromENV)
@@ -175,8 +174,14 @@ TEST_F(CongestionControlTest, contextShouldResolveCongestionControlStrategySuppl
     EXPECT_EQ(0, aeron_setenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR, "aeron_static_window_congestion_control_strategy_supplier", 1));
     EXPECT_EQ(0, aeron_driver_context_init(&m_context));
 
-    EXPECT_EQ(&aeron_static_window_congestion_control_strategy_supplier,
-              m_context->congestion_control_supplier_func);
+    EXPECT_NE(nullptr, m_context->congestion_control_supplier_func);
+
+    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    test_static_window_congestion_control(
+        m_context->congestion_control_supplier_func,
+        channel,
+        8192,
+        4096);
 }
 
 TEST_F(CongestionControlTest, shouldSetExplicitCongestionControlStrategySupplier)
@@ -192,8 +197,13 @@ TEST_F(CongestionControlTest, shouldSetExplicitCongestionControlStrategySupplier
 
 TEST_F(CongestionControlTest, shouldReturnDefaultCongestionControlStrategySupplierWhenContextIsNull)
 {
-    EXPECT_EQ(&aeron_congestion_control_default_strategy_supplier,
-              aeron_driver_context_get_congestioncontrol_supplier(NULL));
+    const aeron_congestion_control_strategy_supplier_func_t supplier =
+            aeron_driver_context_get_congestioncontrol_supplier(NULL);
+
+    EXPECT_NE(nullptr, supplier);
+
+    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    test_static_window_congestion_control(supplier, channel, 8192, 4096);
 }
 
 TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlStrategyWhenNoCcParamValue)

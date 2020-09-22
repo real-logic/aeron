@@ -21,11 +21,11 @@
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 
-#define AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE "static"
-#define AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE "cubic"
+#define AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE ("static")
+#define AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE ("cubic")
 
-#define AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME "rcv-cc-cubic-rtt"
-#define AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME "rcv-cc-cubic-wnd"
+#define AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME ("rcv-cc-cubic-rtt")
+#define AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME ("rcv-cc-cubic-wnd")
 
 typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_strategy_t;
 typedef struct aeron_driver_context_stct aeron_driver_context_t;

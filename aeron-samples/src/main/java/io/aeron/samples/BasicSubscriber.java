@@ -57,7 +57,7 @@ public class BasicSubscriber
             ctx.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
-        final FragmentHandler fragmentHandler = SamplesUtil.printStringMessage(STREAM_ID);
+        final FragmentHandler fragmentHandler = SamplesUtil.printAsciiMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
         // Register a SIGINT handler for graceful shutdown.

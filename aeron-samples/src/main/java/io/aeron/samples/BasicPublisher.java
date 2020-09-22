@@ -42,7 +42,6 @@ public class BasicPublisher
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
 
     public static void main(final String[] args) throws Exception
     {
@@ -65,48 +64,44 @@ public class BasicPublisher
         try (Aeron aeron = Aeron.connect(ctx);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
+            final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
+
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                final String message = "Hello World! " + i;
-                final byte[] messageBytes = message.getBytes();
-                BUFFER.putBytes(0, messageBytes);
-
                 System.out.print("Offering " + i + "/" + NUMBER_OF_MESSAGES + " - ");
 
-                final long result = publication.offer(BUFFER, 0, messageBytes.length);
+                final int length = buffer.putStringWithoutLengthAscii(0, "Hello World! " + i);
+                final long result = publication.offer(buffer, 0, length);
 
-                if (result < 0L)
+                if (result > 0)
                 {
-                    if (result == Publication.BACK_PRESSURED)
-                    {
-                        System.out.println("Offer failed due to back pressure");
-                    }
-                    else if (result == Publication.NOT_CONNECTED)
-                    {
-                        System.out.println("Offer failed because publisher is not connected to subscriber");
-                    }
-                    else if (result == Publication.ADMIN_ACTION)
-                    {
-                        System.out.println("Offer failed because of an administration action in the system");
-                    }
-                    else if (result == Publication.CLOSED)
-                    {
-                        System.out.println("Offer failed publication is closed");
-                        break;
-                    }
-                    else if (result == Publication.MAX_POSITION_EXCEEDED)
-                    {
-                        System.out.println("Offer failed due to publication reaching max position");
-                        break;
-                    }
-                    else
-                    {
-                        System.out.println("Offer failed due to unknown reason: " + result);
-                    }
+                    System.out.println("yay!");
+                }
+                else if (result == Publication.BACK_PRESSURED)
+                {
+                    System.out.println("Offer failed due to back pressure");
+                }
+                else if (result == Publication.NOT_CONNECTED)
+                {
+                    System.out.println("Offer failed because publisher is not connected to a subscriber");
+                }
+                else if (result == Publication.ADMIN_ACTION)
+                {
+                    System.out.println("Offer failed because of an administration action in the system");
+                }
+                else if (result == Publication.CLOSED)
+                {
+                    System.out.println("Offer failed publication is closed");
+                    break;
+                }
+                else if (result == Publication.MAX_POSITION_EXCEEDED)
+                {
+                    System.out.println("Offer failed due to publication reaching its max position");
+                    break;
                 }
                 else
                 {
-                    System.out.println("yay!");
+                    System.out.println("Offer failed due to unknown reason: " + result);
                 }
 
                 if (!publication.isConnected())

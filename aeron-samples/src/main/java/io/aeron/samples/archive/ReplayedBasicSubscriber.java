@@ -44,7 +44,7 @@ public class ReplayedBasicSubscriber
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream id " + STREAM_ID);
 
-        final FragmentHandler fragmentHandler = SamplesUtil.printStringMessage(STREAM_ID);
+        final FragmentHandler fragmentHandler = SamplesUtil.printAsciiMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
         SigInt.register(() -> running.set(false));

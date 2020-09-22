@@ -88,16 +88,14 @@ public class SamplesUtil
      * @param streamId to show when printing.
      * @return subscription data handler function that prints the message contents.
      */
-    public static FragmentHandler printStringMessage(final int streamId)
+    public static FragmentHandler printAsciiMessage(final int streamId)
     {
         return (buffer, offset, length, header) ->
         {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
-
+            final String msg = buffer.getStringWithoutLengthAscii(offset, length);
             System.out.printf(
                 "Message to stream %d from session %d (%d@%d) <<%s>>%n",
-                streamId, header.sessionId(), length, offset, new String(data));
+                streamId, header.sessionId(), length, offset, msg);
         };
     }
 

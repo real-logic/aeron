@@ -66,7 +66,14 @@ public class MultiplePublishersWithFragmentation
                     if (j <= 5000)
                     {
                         result1 = publication1.offer(BUFFER_1, 0, BUFFER_1.capacity());
-                        if (result1 < 0L)
+                        if (result1 > 0)
+                        {
+                            j++;
+                            offerStatus1 = true;
+                            System.out.println("Successfully sent data on stream id " +
+                                STREAM_ID_1 + " and data length " + BUFFER_1.capacity() + " at offset " + result1);
+                        }
+                        else
                         {
                             if (result1 == Publication.BACK_PRESSURED)
                             {
@@ -84,19 +91,19 @@ public class MultiplePublishersWithFragmentation
 
                             offerStatus1 = false;
                         }
-                        else
-                        {
-                            j++;
-                            offerStatus1 = true;
-                            System.out.println("Successfully sent data on stream id " +
-                                STREAM_ID_1 + " and data length " + BUFFER_1.capacity() + " at offset " + result1);
-                        }
                     }
 
                     if (k <= 5000)
                     {
                         result2 = publication2.offer(BUFFER_2, 0, BUFFER_2.capacity());
-                        if (result2 < 0L)
+                        if (result2 > 0)
+                        {
+                            k++;
+                            offerStatus2 = true;
+                            System.out.println("Successfully sent data on stream id " + STREAM_ID_2 +
+                                " and data length " + BUFFER_2.capacity() + " at offset " + result2);
+                        }
+                        else
                         {
                             if (result2 == Publication.BACK_PRESSURED)
                             {
@@ -113,13 +120,6 @@ public class MultiplePublishersWithFragmentation
                                 System.out.println("Offer failed due to unknown reason");
                             }
                             offerStatus2 = false;
-                        }
-                        else
-                        {
-                            k++;
-                            offerStatus2 = true;
-                            System.out.println("Successfully sent data on stream id " + STREAM_ID_2 +
-                                " and data length " + BUFFER_2.capacity() + " at offset " + result2);
                         }
                     }
                 }

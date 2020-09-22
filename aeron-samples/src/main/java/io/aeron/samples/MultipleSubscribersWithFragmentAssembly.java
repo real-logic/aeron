@@ -52,8 +52,8 @@ public class MultipleSubscribersWithFragmentAssembly
             .availableImageHandler(MultipleSubscribersWithFragmentAssembly::eventAvailableImage)
             .unavailableImageHandler(MultipleSubscribersWithFragmentAssembly::eventUnavailableImage);
 
-        final FragmentAssembler dataHandler1 = new FragmentAssembler(reassembledStringMessage1(STREAM_ID_1));
-        final FragmentAssembler dataHandler2 = new FragmentAssembler(reassembledStringMessage2(STREAM_ID_2));
+        final FragmentAssembler assembler1 = new FragmentAssembler(reassembledMessage1(STREAM_ID_1));
+        final FragmentAssembler assembler2 = new FragmentAssembler(reassembledMessage2(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
@@ -69,8 +69,8 @@ public class MultipleSubscribersWithFragmentAssembly
 
             while (running.get())
             {
-                final int fragmentsRead1 = subscription1.poll(dataHandler1, FRAGMENT_COUNT_LIMIT);
-                final int fragmentsRead2 = subscription2.poll(dataHandler2, FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead1 = subscription1.poll(assembler1, FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead2 = subscription2.poll(assembler2, FRAGMENT_COUNT_LIMIT);
 
                 if ((fragmentsRead1 + fragmentsRead2) == 0)
                 {
@@ -118,13 +118,10 @@ public class MultipleSubscribersWithFragmentAssembly
      * @param streamId to show when printing.
      * @return subscription data handler function that prints the message contents.
      */
-    public static FragmentHandler reassembledStringMessage1(final int streamId)
+    public static FragmentHandler reassembledMessage1(final int streamId)
     {
         return (buffer, offset, length, header) ->
         {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
-
             System.out.format(
                 "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
                 streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
@@ -145,13 +142,10 @@ public class MultipleSubscribersWithFragmentAssembly
      * @param streamId to show when printing.
      * @return subscription data handler function that prints the message contents.
      */
-    public static FragmentHandler reassembledStringMessage2(final int streamId)
+    public static FragmentHandler reassembledMessage2(final int streamId)
     {
         return (buffer, offset, length, header) ->
         {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
-
             System.out.format(
                 "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
                 streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);

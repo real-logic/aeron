@@ -72,7 +72,8 @@ abstract class SubscriptionFields extends SubscriptionLhsPadding
 
 /**
  * Aeron Subscriber API for receiving a reconstructed {@link Image} for a stream of messages from publishers on
- * a given channel and streamId pair. {@link Image}s are aggregated under a {@link Subscription}.
+ * a given channel and streamId pair, i.e. a {@link Publication}. {@link Image}s are aggregated under a
+ * {@link Subscription}.
  * <p>
  * {@link Subscription}s are created via an {@link Aeron} object, and received messages are delivered
  * to the {@link FragmentHandler}.

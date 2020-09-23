@@ -166,13 +166,13 @@ public class ExtendRecordingTest
 
             try
             {
-                offer(publication, 0, messageCount, MESSAGE_PREFIX);
+                offer(publication, 0, messageCount);
 
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                consume(subscription, 0, messageCount, MESSAGE_PREFIX);
+                consume(subscription, 0, messageCount);
 
                 stopOne = publication.position();
                 awaitPosition(counters, counterId, stopOne);
@@ -200,12 +200,12 @@ public class ExtendRecordingTest
 
             try
             {
-                offer(publication, messageCount, messageCount, MESSAGE_PREFIX);
+                offer(publication, messageCount, messageCount);
 
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
 
-                consume(subscription, messageCount, messageCount, MESSAGE_PREFIX);
+                consume(subscription, messageCount, messageCount);
 
                 stopTwo = publication.position();
                 awaitPosition(counters, counterId, stopTwo);
@@ -239,19 +239,18 @@ public class ExtendRecordingTest
         try (Subscription subscription = aeronArchive.replay(
             recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
-            consume(subscription, 0, messageCount * 2, MESSAGE_PREFIX);
+            consume(subscription, 0, messageCount * 2);
             assertEquals(secondStopPosition, subscription.imageAtIndex(0).position());
         }
     }
 
-    private static void offer(
-        final Publication publication, final int startIndex, final int count, final String prefix)
+    private static void offer(final Publication publication, final int startIndex, final int count)
     {
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         for (int i = startIndex; i < (startIndex + count); i++)
         {
-            final int length = buffer.putStringWithoutLengthAscii(0, prefix + i);
+            final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + i);
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
@@ -260,15 +259,14 @@ public class ExtendRecordingTest
         }
     }
 
-    private static void consume(
-        final Subscription subscription, final int startIndex, final int count, final String prefix)
+    private static void consume(final Subscription subscription, final int startIndex, final int count)
     {
         final MutableInteger received = new MutableInteger(startIndex);
 
         final FragmentHandler fragmentHandler = new FragmentAssembler(
             (buffer, offset, length, header) ->
             {
-                final String expected = prefix + received.value;
+                final String expected = MESSAGE_PREFIX + received.value;
                 final String actual = buffer.getStringWithoutLengthAscii(offset, length);
 
                 assertEquals(expected, actual);

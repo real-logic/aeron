@@ -151,12 +151,10 @@ public class ExtendRecordingTest
         final long stopOne;
         final long stopTwo;
         final long recordingId;
-        final int initialTermId;
 
         try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
             Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
-            initialTermId = publication.initialTermId();
             recordingSignalAdapter = new RecordingSignalAdapter(
                 controlSessionId,
                 controlEventListener,
@@ -189,13 +187,14 @@ public class ExtendRecordingTest
 
         final RecordingDescriptorCollector collector = new RecordingDescriptorCollector();
         assertEquals(1L, aeronArchive.listRecordingsForUri(0, 1, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector));
-        assertEquals(recordingId, collector.descriptors.get(0).recordingId);
+        final RecordingDescriptor recording = collector.descriptors.get(0);
+        assertEquals(recordingId, recording.recordingId);
 
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .initialPosition(stopOne, initialTermId, ArchiveSystemTests.TERM_LENGTH)
-            .mtu(MTU_LENGTH)
+            .initialPosition(recording.stopPosition, recording.initialTermId, recording.termBufferLength)
+            .mtu(recording.mtuLength)
             .alias(MY_ALIAS)
             .build();
 

@@ -158,9 +158,9 @@ public:
     }
 
 private:
-    aeron_header_t *m_header;
-    aeron_header_values_t m_headerValues;
-    void *m_context;
+    aeron_header_t *m_header = nullptr;
+    aeron_header_values_t m_headerValues = {};
+    void *m_context = nullptr;
 };
 
 }}}

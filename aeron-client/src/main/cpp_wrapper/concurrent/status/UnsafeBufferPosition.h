@@ -19,7 +19,7 @@
 
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/CountersReader.h"
-#include "Position.h"
+#include "concurrent/status/Position.h"
 
 namespace aeron { namespace concurrent { namespace status {
 

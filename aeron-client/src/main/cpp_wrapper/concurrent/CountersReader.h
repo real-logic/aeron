@@ -20,7 +20,7 @@
 
 #include "util/Exceptions.h"
 #include "util/BitUtil.h"
-#include "AtomicBuffer.h"
+#include "concurrent/AtomicBuffer.h"
 
 #include "aeronc.h"
 

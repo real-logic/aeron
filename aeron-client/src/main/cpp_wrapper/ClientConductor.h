@@ -28,7 +28,7 @@ typedef std::function<long long()> nano_clock_t;
 class ClientConductor
 {
 public:
-    ClientConductor(aeron_t *aeron) : m_aeron(aeron)
+    explicit ClientConductor(aeron_t *aeron) : m_aeron(aeron)
     {
     }
 

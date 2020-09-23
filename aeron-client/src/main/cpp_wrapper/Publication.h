@@ -82,7 +82,7 @@ public:
 
     ~Publication()
     {
-        aeron_publication_close(m_publication, NULL, NULL);
+        aeron_publication_close(m_publication, nullptr, nullptr);
     }
 
     /**

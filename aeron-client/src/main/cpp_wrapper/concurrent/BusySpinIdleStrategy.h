@@ -17,7 +17,7 @@
 #ifndef AERON_BUSY_SPIN_IDLE_STRATEGY_H
 #define AERON_BUSY_SPIN_IDLE_STRATEGY_H
 
-#include "Atomic64.h"
+#include "concurrent/Atomic64.h"
 
 namespace aeron { namespace concurrent {
 

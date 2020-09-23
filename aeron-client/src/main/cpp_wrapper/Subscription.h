@@ -40,20 +40,19 @@ private:
     AsyncAddSubscription(
         const on_available_image_t &onAvailableImage,
         const on_unavailable_image_t &onUnavailableImage) :
-        m_async(nullptr),
         m_onAvailableImage(onAvailableImage),
         m_onUnavailableImage(onUnavailableImage)
     {
     }
 
-    aeron_async_add_subscription_t *m_async;
+    aeron_async_add_subscription_t *m_async = nullptr;
     const on_available_image_t m_onAvailableImage;
     const on_unavailable_image_t m_onUnavailableImage;
 
 public:
     void static remove(void *clientd)
     {
-        AsyncAddSubscription *addSubscription = static_cast<AsyncAddSubscription *>(clientd);
+        auto *addSubscription = static_cast<AsyncAddSubscription *>(clientd);
         delete addSubscription;
     }
 };
@@ -85,8 +84,7 @@ public:
         m_aeron(aeron),
         m_subscription(subscription),
         m_addSubscription(addSubscription),
-        m_countersReader(countersReader),
-        m_channel()
+        m_countersReader(countersReader)
     {
         if (aeron_subscription_constants(m_subscription, &m_constants) < 0)
         {
@@ -506,10 +504,10 @@ public:
     /// @endcond
 
 private:
-    aeron_t *m_aeron;
-    aeron_subscription_t *m_subscription;
-    AsyncAddSubscription *m_addSubscription;
-    aeron_subscription_constants_t m_constants;
+    aeron_t *m_aeron = nullptr;
+    aeron_subscription_t *m_subscription = nullptr;
+    AsyncAddSubscription *m_addSubscription = nullptr;
+    aeron_subscription_constants_t m_constants = {};
     CountersReader& m_countersReader;
     std::string m_channel;
     std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;

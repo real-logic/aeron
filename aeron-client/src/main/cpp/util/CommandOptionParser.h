@@ -21,7 +21,7 @@
 #include <map>
 #include <iostream>
 
-#include "CommandOption.h"
+#include "util/CommandOption.h"
 #include "util/Export.h"
 
 namespace aeron { namespace util

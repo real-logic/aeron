@@ -21,7 +21,7 @@
 #include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
 #include "util/BitUtil.h"
-#include "ErrorLogDescriptor.h"
+#include "concurrent/errors/ErrorLogDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace errors {
 

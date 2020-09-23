@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-#include "CommandOptionParser.h"
-#include "StringUtil.h"
+#include "util/CommandOptionParser.h"
+#include "util/StringUtil.h"
 
 namespace aeron { namespace util
 {
-
-CommandOption::CommandOption() :
-    m_optionChar('-'),
-    m_minParams(0),
-    m_maxParams(0),
-    m_isPresent(false)
-{
-}
 
 CommandOption::CommandOption(char optionChar, std::size_t minParams, std::size_t maxParams, std::string helpText) :
     m_optionChar(optionChar),
     m_minParams(minParams),
     m_maxParams(maxParams),
-    m_helpText(std::move(helpText)),
-    m_isPresent(false)
+    m_helpText(std::move(helpText))
 {
 }
 

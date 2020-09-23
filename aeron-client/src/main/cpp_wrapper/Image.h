@@ -479,9 +479,9 @@ public:
     }
 
 private:
-    aeron_subscription_t *m_subscription;
-    aeron_image_t *m_image;
-    aeron_image_constants_t m_constants;
+    aeron_subscription_t *m_subscription = nullptr;
+    aeron_image_t *m_image = nullptr;
+    aeron_image_constants_t m_constants = {};
     std::string m_sourceIdentity;
 };
 

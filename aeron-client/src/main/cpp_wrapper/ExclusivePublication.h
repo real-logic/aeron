@@ -71,7 +71,7 @@ public:
 
     ~ExclusivePublication()
     {
-        aeron_exclusive_publication_close(m_publication, NULL, NULL);
+        aeron_exclusive_publication_close(m_publication, nullptr, nullptr);
     }
 
     /**
@@ -625,7 +625,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
-        aeron_exclusive_publication_close(m_publication, NULL, NULL);
+        aeron_exclusive_publication_close(m_publication, nullptr, nullptr);
     }
     /// @endcond
 

@@ -25,8 +25,8 @@
 #include "util/LangUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/Atomic64.h"
-#include "RingBufferDescriptor.h"
-#include "RecordDescriptor.h"
+#include "concurrent/ringbuffer/RingBufferDescriptor.h"
+#include "concurrent/ringbuffer/RecordDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace ringbuffer
 {

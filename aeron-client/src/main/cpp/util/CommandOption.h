@@ -34,12 +34,12 @@ class CLIENT_EXPORT CommandOption
 {
 
 private:
-    char m_optionChar;
-    size_t m_minParams;
-    size_t m_maxParams;
+    char m_optionChar = '-';
+    size_t m_minParams = 0;
+    size_t m_maxParams = 0;
     std::string m_helpText;
 
-    bool m_isPresent;
+    bool m_isPresent = false;
 
     std::vector<std::string> m_params;
 
@@ -48,7 +48,7 @@ private:
 public:
     static const char UNNAMED = -1;
 
-    CommandOption();
+    CommandOption() = default;
 
     CommandOption(char optionChar, std::size_t minParams, std::size_t maxParams, std::string helpText);
 

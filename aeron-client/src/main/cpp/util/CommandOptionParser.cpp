@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "CommandOptionParser.h"
+#include "util/CommandOptionParser.h"
 
 namespace aeron { namespace util
 {

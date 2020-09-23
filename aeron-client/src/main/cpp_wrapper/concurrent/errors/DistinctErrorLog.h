@@ -24,9 +24,9 @@
 #include <atomic>
 
 #include "util/Index.h"
-#include "concurrent/AtomicBuffer.h"
 #include "util/BitUtil.h"
-#include "ErrorLogDescriptor.h"
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/errors/ErrorLogDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace errors {
 
@@ -38,9 +38,7 @@ public:
     inline DistinctErrorLog(AtomicBuffer &buffer, clock_t clock) :
         m_buffer(buffer),
         m_clock(clock),
-        m_observations(buffer.capacity() / ErrorLogDescriptor::HEADER_LENGTH),
-        m_numObservations(0),
-        m_nextOffset(0)
+        m_observations(buffer.capacity() / ErrorLogDescriptor::HEADER_LENGTH)
     {
     }
 
@@ -94,10 +92,10 @@ private:
     clock_t m_clock;
     std::recursive_mutex m_lock;
 
-    std::vector<DistinctObservation> m_observations;
-    std::atomic<std::size_t> m_numObservations;
+    std::vector<DistinctObservation> m_observations = {};
+    std::atomic<std::size_t> m_numObservations = { 0 };
 
-    util::index_t m_nextOffset;
+    util::index_t m_nextOffset = 0;
 
     static std::string encodeObservation(
         std::size_t errorCode, const std::string &description, const std::string &message)

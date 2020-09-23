@@ -21,7 +21,7 @@
 
 #include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
-#include "Header.h"
+#include "concurrent/logbuffer/Header.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

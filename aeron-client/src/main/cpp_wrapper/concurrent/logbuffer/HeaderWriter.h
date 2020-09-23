@@ -19,8 +19,8 @@
 
 #include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
-#include "DataFrameHeader.h"
-#include "FrameDescriptor.h"
+#include "concurrent/logbuffer/DataFrameHeader.h"
+#include "concurrent/logbuffer/FrameDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer
 {

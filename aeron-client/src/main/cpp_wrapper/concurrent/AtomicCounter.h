@@ -22,21 +22,21 @@
 #include "aeronc.h"
 
 #include "util/Index.h"
-#include "AtomicBuffer.h"
-#include "CountersReader.h"
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/CountersReader.h"
 
 namespace aeron { namespace concurrent {
 
 class AtomicCounter
 {
 public:
-    AtomicCounter(aeron_counter_t *counter) : m_counter(counter), m_ptr(aeron_counter_addr(counter))
+    explicit AtomicCounter(aeron_counter_t *counter) : m_counter(counter), m_ptr(aeron_counter_addr(counter))
     {
         aeron_counter_constants(m_counter, &m_constants);
     }
 
     AtomicCounter(std::int64_t *ptr, std::int64_t registrationId, std::int32_t counterId) :
-        m_counter(nullptr), m_ptr(ptr)
+        m_ptr(ptr)
     {
         m_constants.registration_id = registrationId;
         m_constants.counter_id = counterId;
@@ -46,7 +46,7 @@ public:
     {
         if (nullptr != m_counter)
         {
-            aeron_counter_close(m_counter, NULL, NULL);
+            aeron_counter_close(m_counter, nullptr, nullptr);
         }
     }
 
@@ -123,9 +123,9 @@ protected:
     }
 
 private:
-    aeron_counter_t *m_counter;
-    std::int64_t *m_ptr;
-    aeron_counter_constants_t m_constants;
+    aeron_counter_t *m_counter = nullptr;
+    std::int64_t *m_ptr = nullptr;
+    aeron_counter_constants_t m_constants = {};
 };
 
 }}

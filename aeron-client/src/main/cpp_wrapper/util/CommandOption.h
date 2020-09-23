@@ -22,7 +22,7 @@
 #include <vector>
 #include <map>
 
-#include "Exceptions.h"
+#include "util/Exceptions.h"
 #include "util/Export.h"
 #include "util/StringUtil.h"
 
@@ -35,12 +35,12 @@ class CLIENT_EXPORT CommandOption
 {
 
 private:
-    char m_optionChar;
-    std::size_t m_minParams;
-    std::size_t m_maxParams;
+    char m_optionChar = '-';
+    std::size_t m_minParams = 0;
+    std::size_t m_maxParams = 0;
     std::string m_helpText;
 
-    bool m_isPresent;
+    bool m_isPresent = false;
 
     std::vector<std::string> m_params;
 
@@ -56,21 +56,13 @@ private:
 public:
     static const char UNNAMED = -1;
 
-    CommandOption() :
-        m_optionChar('-'),
-        m_minParams(0),
-        m_maxParams(0),
-        m_helpText(""),
-        m_isPresent(false)
-    {
-    }
+    CommandOption() = default;
 
     CommandOption(char optionChar, std::size_t minParams, std::size_t maxParams, std::string helpText) :
         m_optionChar(optionChar),
         m_minParams(minParams),
         m_maxParams(maxParams),
-        m_helpText(std::move(helpText)),
-        m_isPresent(false)
+        m_helpText(std::move(helpText))
     {
     }
 

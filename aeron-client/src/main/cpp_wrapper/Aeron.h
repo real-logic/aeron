@@ -173,7 +173,7 @@ public:
             throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
         }
 
-        const std::shared_ptr<Publication> publication = findPublication(search->second);
+        std::shared_ptr<Publication> publication = findPublication(search->second);
         if (nullptr != publication)
         {
             m_pendingPublications.erase(registrationId);
@@ -285,7 +285,7 @@ public:
             throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
         }
 
-        const std::shared_ptr<ExclusivePublication> publication = findExclusivePublication(search->second);
+        std::shared_ptr<ExclusivePublication> publication = findExclusivePublication(search->second);
         if (nullptr != publication)
         {
             m_pendingExclusivePublications.erase(registrationId);
@@ -421,7 +421,7 @@ public:
             throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
         }
 
-        const std::shared_ptr<Subscription> subscription = findSubscription(search->second);
+        std::shared_ptr<Subscription> subscription = findSubscription(search->second);
         if (nullptr != subscription)
         {
             m_pendingSubscriptions.erase(registrationId);
@@ -447,8 +447,7 @@ public:
         const on_available_image_t &onAvailableImageHandler,
         const on_unavailable_image_t &onUnavailableImageHandler)
     {
-        AsyncAddSubscription *addSubscription = new AsyncAddSubscription(
-            onAvailableImageHandler, onUnavailableImageHandler);
+        auto *addSubscription = new AsyncAddSubscription(onAvailableImageHandler, onUnavailableImageHandler);
         void *availableClientd =
             const_cast<void *>(reinterpret_cast<const void *>(&addSubscription->m_onAvailableImage));
         void *unavailableClientd =
@@ -585,7 +584,7 @@ public:
             throw IllegalArgumentException("Unknown registration id", SOURCEINFO);
         }
 
-        const std::shared_ptr<Counter> counter = findCounter(search->second);
+        std::shared_ptr<Counter> counter = findCounter(search->second);
 
         if (nullptr != counter)
         {

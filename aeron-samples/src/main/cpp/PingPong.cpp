@@ -115,19 +115,15 @@ void sendPingAndReceivePong(
         {
             // timestamps in the message are relative to this app, so just send the timestamp directly.
             steady_clock::time_point start = steady_clock::now();
-
             srcBuffer.putBytes(0, (std::uint8_t *)&start, sizeof(steady_clock::time_point));
         }
         while ((position = publication.offer(srcBuffer, 0, settings.messageLength)) < 0L);
 
-        do
+        while (image.position() < position)
         {
-            while (image.poll(fragmentHandler, settings.fragmentCountLimit) <= 0)
-            {
-                idleStrategy.idle();
-            }
+            int fragments = image.poll(fragmentHandler, settings.fragmentCountLimit);
+            idleStrategy.idle(fragments);
         }
-        while (image.position() < position);
     }
 }
 

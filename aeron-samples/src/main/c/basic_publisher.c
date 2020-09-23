@@ -194,32 +194,29 @@ int main(int argc, char **argv)
         int64_t result = aeron_publication_offer(
             publication, (const uint8_t *)message, message_len, NULL, NULL);
 
-        if (result < 0)
+        if (result > 0)
         {
-            if (AERON_PUBLICATION_BACK_PRESSURED == result)
-            {
-                printf("Offer failed due to back pressure\n");
-            }
-            else if (AERON_PUBLICATION_NOT_CONNECTED == result)
-            {
-                printf("Offer failed because publisher is not connected to subscriber\n");
-            }
-            else if (AERON_PUBLICATION_ADMIN_ACTION == result)
-            {
-                printf("Offer failed because of an administration action in the system\n");
-            }
-            else if (AERON_PUBLICATION_CLOSED == result)
-            {
-                printf("Offer failed publication is closed\n");
-            }
-            else
-            {
-                printf("Offer failed due to unknown reason %" PRId64 "\n", result);
-            }
+            printf("yay!\n");
+        }
+        else if (AERON_PUBLICATION_BACK_PRESSURED == result)
+        {
+            printf("Offer failed due to back pressure\n");
+        }
+        else if (AERON_PUBLICATION_NOT_CONNECTED == result)
+        {
+            printf("Offer failed because publisher is not connected to a subscriber\n");
+        }
+        else if (AERON_PUBLICATION_ADMIN_ACTION == result)
+        {
+            printf("Offer failed because of an administration action in the system\n");
+        }
+        else if (AERON_PUBLICATION_CLOSED == result)
+        {
+            printf("Offer failed because publication is closed\n");
         }
         else
         {
-            printf("yay!\n");
+            printf("Offer failed due to unknown reason %" PRId64 "\n", result);
         }
 
         if (!aeron_publication_is_connected(publication))

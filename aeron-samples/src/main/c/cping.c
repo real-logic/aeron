@@ -108,14 +108,13 @@ void send_ping_and_receive_pong(
         while ((position = aeron_exclusive_publication_offer(
             publication, message, message_length, NULL, NULL)) < 0);
 
-        do
+        while (aeron_image_position(image) < position)
         {
             while (aeron_image_poll(image, fragment_handler, poll_clientd, DEFAULT_FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 aeron_idle_strategy_busy_spinning_idle(NULL, 0);
             }
         }
-        while (aeron_image_position(image) < position);
     }
 }
 

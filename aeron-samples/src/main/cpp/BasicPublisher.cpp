@@ -161,7 +161,7 @@ int main(int argc, char **argv)
             }
             else if (PUBLICATION_CLOSED == result)
             {
-                std::cout << "Offer failed publication is closed" << std::endl;
+                std::cout << "Offer failed because publication is closed" << std::endl;
             }
             else
             {

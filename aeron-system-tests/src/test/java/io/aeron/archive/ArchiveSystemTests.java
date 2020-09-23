@@ -32,7 +32,7 @@ import org.agrona.concurrent.status.CountersReader;
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class Common
+class ArchiveSystemTests
 {
     static final long MAX_CATALOG_ENTRIES = 128;
     static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;

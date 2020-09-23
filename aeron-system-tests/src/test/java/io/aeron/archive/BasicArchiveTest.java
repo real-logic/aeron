@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.archive.Common.*;
+import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,7 +46,7 @@ public class BasicArchiveTest
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(Common.TERM_LENGTH)
+        .termLength(ArchiveSystemTests.TERM_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -55,7 +55,7 @@ public class BasicArchiveTest
         .endpoint("localhost:6666")
         .build();
 
-    private TestMediaDriver mediaDriver;
+    private TestMediaDriver driver;
     private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
@@ -68,7 +68,7 @@ public class BasicArchiveTest
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        mediaDriver = TestMediaDriver.launch(
+        driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
@@ -80,7 +80,7 @@ public class BasicArchiveTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
+                .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
@@ -99,10 +99,10 @@ public class BasicArchiveTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
 
         archive.context().deleteDirectory();
-        mediaDriver.context().deleteDirectory();
+        driver.context().deleteDirectory();
     }
 
     @Test
@@ -197,7 +197,7 @@ public class BasicArchiveTest
             Publication publication = aeronArchive.addRecordedPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
@@ -238,7 +238,7 @@ public class BasicArchiveTest
             Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);

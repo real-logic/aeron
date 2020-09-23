@@ -63,7 +63,6 @@ public class ArchiveTest
             arguments(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED));
     }
 
-    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final String CONTROL_RESPONSE_URI = CommonContext.IPC_CHANNEL;
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
     private static final String REPLAY_URI = CommonContext.IPC_CHANNEL;
@@ -148,7 +147,7 @@ public class ArchiveTest
             testWatcher);
 
         final Archive.Context archiveContext = new Archive.Context()
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
             .fileSyncLevel(SYNC_LEVEL)
             .deleteArchiveOnStart(true)
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))

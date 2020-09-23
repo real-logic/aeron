@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ArchiveDeleteAndRestartTest
 {
-    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int SYNC_LEVEL = 0;
     private static final int PUBLISH_STREAM_ID = 1;
 
@@ -62,9 +61,9 @@ public class ArchiveDeleteAndRestartTest
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
-    private Aeron client;
-    private Archive archive;
     private TestMediaDriver driver;
+    private Archive archive;
+    private Aeron client;
 
     private Archive.Context archiveContext;
 
@@ -87,7 +86,7 @@ public class ArchiveDeleteAndRestartTest
             testWatcher);
 
         archiveContext = new Archive.Context()
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
             .fileSyncLevel(SYNC_LEVEL)
             .deleteArchiveOnStart(true)
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))

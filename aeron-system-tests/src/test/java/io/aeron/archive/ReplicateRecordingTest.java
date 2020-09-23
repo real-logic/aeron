@@ -42,7 +42,7 @@ import java.io.File;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.generateRandomDirName;
-import static io.aeron.archive.Common.*;
+import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -68,9 +68,9 @@ public class ReplicateRecordingTest
         .termLength(TERM_LENGTH)
         .build();
 
-    private TestMediaDriver srcMediaDriver;
+    private TestMediaDriver srcDriver;
     private Archive srcArchive;
-    private TestMediaDriver dstMediaDriver;
+    private TestMediaDriver dstDriver;
     private Archive dstArchive;
     private Aeron srcAeron;
     private Aeron dstAeron;
@@ -86,7 +86,7 @@ public class ReplicateRecordingTest
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();
 
-        srcMediaDriver = TestMediaDriver.launch(
+        srcDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(srcAeronDirectoryName)
                 .termBufferSparseFile(true)
@@ -108,7 +108,7 @@ public class ReplicateRecordingTest
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
-        dstMediaDriver = TestMediaDriver.launch(
+        dstDriver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(dstAeronDirectoryName)
                 .termBufferSparseFile(true)
@@ -163,13 +163,13 @@ public class ReplicateRecordingTest
             dstAeron,
             srcArchive,
             dstArchive,
-            dstMediaDriver,
-            srcMediaDriver);
+            dstDriver,
+            srcDriver);
 
         dstArchive.context().deleteDirectory();
-        dstMediaDriver.context().deleteDirectory();
+        dstDriver.context().deleteDirectory();
         srcArchive.context().deleteDirectory();
-        srcMediaDriver.context().deleteDirectory();
+        srcDriver.context().deleteDirectory();
     }
 
     @Test

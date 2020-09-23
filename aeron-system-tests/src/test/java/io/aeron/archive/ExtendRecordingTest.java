@@ -45,7 +45,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,7 +61,8 @@ public class ExtendRecordingTest
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(TERM_LENGTH)
+        .mtu(MTU_LENGTH)
+        .termLength(ArchiveSystemTests.TERM_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -76,7 +76,7 @@ public class ExtendRecordingTest
         .endpoint("localhost:3333")
         .build();
 
-    private TestMediaDriver archivingMediaDriver;
+    private TestMediaDriver driver;
     private Archive archive;
     private Aeron aeron;
     private File archiveDir;
@@ -100,7 +100,7 @@ public class ExtendRecordingTest
             archiveDir = new File(SystemUtil.tmpDirName(), "archive");
         }
 
-        archivingMediaDriver = TestMediaDriver.launch(
+        driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
@@ -112,7 +112,7 @@ public class ExtendRecordingTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .archiveDir(archiveDir)
                 .fileSyncLevel(0)
@@ -130,10 +130,10 @@ public class ExtendRecordingTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archive, archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
 
         archive.context().deleteDirectory();
-        archivingMediaDriver.context().deleteDirectory();
+        driver.context().deleteDirectory();
     }
 
     @Test
@@ -159,10 +159,10 @@ public class ExtendRecordingTest
                 controlEventListener,
                 recordingSignalConsumer,
                 aeronArchive.controlResponsePoller().subscription(),
-                FRAGMENT_LIMIT);
+                ArchiveSystemTests.FRAGMENT_LIMIT);
 
             subscriptionIdOne = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-            pollForSignal(recordingSignalAdapter);
+            ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
 
             try
             {
@@ -175,28 +175,27 @@ public class ExtendRecordingTest
                 consume(subscription, 0, messageCount);
 
                 stopOne = publication.position();
-                awaitPosition(counters, counterId, stopOne);
+                ArchiveSystemTests.awaitPosition(counters, counterId, stopOne);
             }
             finally
             {
                 aeronArchive.stopRecording(subscriptionIdOne);
-                pollForSignal(recordingSignalAdapter);
+                ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
             }
         }
 
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .initialPosition(stopOne, initialTermId, TERM_LENGTH)
+            .initialPosition(stopOne, initialTermId, ArchiveSystemTests.TERM_LENGTH)
             .mtu(MTU_LENGTH)
             .build();
 
         try (Subscription subscription = Tests.reAddSubscription(aeron, EXTEND_CHANNEL, RECORDED_STREAM_ID);
             Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID))
         {
-            subscriptionIdTwo = aeronArchive
-                .extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-            pollForSignal(recordingSignalAdapter);
+            subscriptionIdTwo = aeronArchive.extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+            ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
 
             try
             {
@@ -208,12 +207,12 @@ public class ExtendRecordingTest
                 consume(subscription, messageCount, messageCount);
 
                 stopTwo = publication.position();
-                awaitPosition(counters, counterId, stopTwo);
+                ArchiveSystemTests.awaitPosition(counters, counterId, stopTwo);
             }
             finally
             {
                 aeronArchive.stopRecording(subscriptionIdTwo);
-                pollForSignal(recordingSignalAdapter);
+                ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
             }
         }
 
@@ -276,7 +275,7 @@ public class ExtendRecordingTest
 
         while (received.value < (startIndex + count))
         {
-            if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
+            if (0 == subscription.poll(fragmentHandler, ArchiveSystemTests.FRAGMENT_LIMIT))
             {
                 Tests.yield();
             }

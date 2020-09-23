@@ -38,7 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 
-import static io.aeron.archive.Common.*;
+import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.security.NullCredentialsSupplier.NULL_CREDENTIAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +51,7 @@ public class ArchiveAuthenticationTest
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(Common.TERM_LENGTH)
+        .termLength(ArchiveSystemTests.TERM_LENGTH)
         .build();
 
     private static final String CREDENTIALS_STRING = "username=\"admin\"|password=\"secret\"";
@@ -61,7 +61,7 @@ public class ArchiveAuthenticationTest
     private final byte[] encodedCredentials = CREDENTIALS_STRING.getBytes();
     private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
 
-    private TestMediaDriver mediaDriver;
+    private TestMediaDriver driver;
     private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
@@ -74,10 +74,10 @@ public class ArchiveAuthenticationTest
     @AfterEach
     public void after()
     {
-        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
 
         archive.context().deleteDirectory();
-        mediaDriver.context().deleteDirectory();
+        driver.context().deleteDirectory();
     }
 
     @Test
@@ -346,7 +346,7 @@ public class ArchiveAuthenticationTest
 
     private void launchArchivingMediaDriver(final AuthenticatorSupplier authenticatorSupplier)
     {
-        mediaDriver = TestMediaDriver.launch(
+        driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
@@ -358,7 +358,7 @@ public class ArchiveAuthenticationTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
+                .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
@@ -378,7 +378,7 @@ public class ArchiveAuthenticationTest
             Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);

@@ -40,7 +40,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
 
-import static io.aeron.archive.Common.*;
+import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -102,7 +102,7 @@ public class ReplayMergeTest
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
     private final DataCollector dataCollector = new DataCollector();
 
-    private TestMediaDriver mediaDriver;
+    private TestMediaDriver driver;
     private Archive archive;
     private Aeron aeron;
     private AeronArchive aeronArchive;
@@ -127,7 +127,7 @@ public class ReplayMergeTest
     {
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
-        mediaDriver = TestMediaDriver.launch(
+        driver = TestMediaDriver.launch(
             mediaDriverContext
                 .termBufferSparseFile(true)
                 .publicationTermBufferLength(TERM_LENGTH)
@@ -170,10 +170,10 @@ public class ReplayMergeTest
                 ", total " + (MIN_MESSAGES_PER_TERM * 6));
         }
 
-        CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
 
         archive.context().deleteDirectory();
-        mediaDriver.context().deleteDirectory();
+        driver.context().deleteDirectory();
     }
 
     @Test

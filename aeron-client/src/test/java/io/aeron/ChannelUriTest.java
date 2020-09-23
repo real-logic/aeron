@@ -147,6 +147,7 @@ public class ChannelUriTest
         final ChannelUri channelUri = ChannelUri.parse(
             "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16");
 
+        //noinspection AssertBetweenInconvertibleTypes
         assertNotEquals(channelUri, 123);
     }
 

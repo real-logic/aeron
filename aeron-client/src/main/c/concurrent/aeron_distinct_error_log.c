@@ -211,7 +211,7 @@ int aeron_distinct_error_log_record(
 bool aeron_error_log_exists(const uint8_t *buffer, size_t buffer_size)
 {
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)buffer;
-    int32_t length = 0;
+    int32_t length;
 
     AERON_GET_VOLATILE(length, entry->length);
 
@@ -231,7 +231,7 @@ size_t aeron_error_log_read(
     while (offset < buffer_size)
     {
         aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(buffer + offset);
-        int32_t length = 0;
+        int32_t length;
 
         AERON_GET_VOLATILE(length, entry->length);
 
@@ -240,7 +240,7 @@ size_t aeron_error_log_read(
             break;
         }
 
-        int64_t last_observation_timestamp = 0;
+        int64_t last_observation_timestamp;
         AERON_GET_VOLATILE(last_observation_timestamp, entry->last_observation_timestamp);
 
         if (last_observation_timestamp >= since_timestamp)

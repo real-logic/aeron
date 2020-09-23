@@ -146,7 +146,7 @@ void aeron_counters_manager_append_to_label(
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
-    size_t current_length = metadata->label_length;
+    size_t current_length = (size_t)metadata->label_length;
     size_t available_length = sizeof(metadata->label) - current_length;
     size_t copy_length = length > available_length ? available_length : length;
 

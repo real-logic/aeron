@@ -256,7 +256,7 @@ int aeron_properties_parse_file(const char *filename, aeron_properties_file_hand
 int aeron_properties_buffer_load(const char *buffer)
 {
     char line[AERON_PROPERTIES_MAX_LENGTH];
-    int line_length = 0, cursor = 0, lineno = 1;
+    int line_length, cursor = 0, lineno = 1;
     aeron_properties_parser_state_t state;
 
     aeron_properties_parse_init(&state);

@@ -48,7 +48,7 @@ static const char optFrags    = 'f';
 
 struct Settings
 {
-    std::string dirPrefix = "";
+    std::string dirPrefix;
     std::string channel = samples::configuration::DEFAULT_CHANNEL;
     std::int32_t streamId = samples::configuration::DEFAULT_STREAM_ID;
     long long numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;

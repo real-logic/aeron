@@ -43,7 +43,7 @@ static const int FRAGMENTS_LIMIT = 10;
 
 struct Settings
 {
-    std::string dirPrefix = "";
+    std::string dirPrefix;
     std::string channel = samples::configuration::DEFAULT_CHANNEL;
     std::int32_t streamId = samples::configuration::DEFAULT_STREAM_ID;
 };

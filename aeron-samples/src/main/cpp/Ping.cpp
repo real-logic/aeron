@@ -54,7 +54,7 @@ static const char optWarmupMessages = 'w';
 
 struct Settings
 {
-    std::string dirPrefix = "";
+    std::string dirPrefix;
     std::string pingChannel = samples::configuration::DEFAULT_PING_CHANNEL;
     std::string pongChannel = samples::configuration::DEFAULT_PONG_CHANNEL;
     std::int32_t pingStreamId = samples::configuration::DEFAULT_PING_STREAM_ID;
@@ -109,20 +109,15 @@ void sendPingAndReceivePong(
         {
             // timestamps in the message are relative to this app, so just send the timestamp directly.
             steady_clock::time_point start = steady_clock::now();
-
             srcBuffer.putBytes(0, (std::uint8_t *)&start, sizeof(steady_clock::time_point));
         }
         while ((position = publication.offer(srcBuffer, 0, settings.messageLength)) < 0L);
 
-        idleStrategy.reset();
-        do
+        while (image.position() < position)
         {
-            while (image.poll(fragmentHandler, settings.fragmentCountLimit) <= 0)
-            {
-                idleStrategy.idle();
-            }
+            int fragments = image.poll(fragmentHandler, settings.fragmentCountLimit);
+            idleStrategy.idle(fragments);
         }
-        while (image.position() < position);
     }
 }
 

@@ -44,7 +44,7 @@ static const char optFrags        = 'f';
 
 struct Settings
 {
-    std::string dirPrefix = "";
+    std::string dirPrefix;
     std::string pingChannel = samples::configuration::DEFAULT_PING_CHANNEL;
     std::string pongChannel = samples::configuration::DEFAULT_PONG_CHANNEL;
     std::int32_t pingStreamId = samples::configuration::DEFAULT_PING_STREAM_ID;

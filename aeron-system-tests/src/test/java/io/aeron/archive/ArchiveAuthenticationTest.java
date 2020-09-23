@@ -362,6 +362,7 @@ public class ArchiveAuthenticationTest
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
+                .errorHandler(Tests::onError)
                 .fileSyncLevel(0)
                 .authenticatorSupplier(authenticatorSupplier)
                 .threadingMode(ArchiveThreadingMode.SHARED));

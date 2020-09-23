@@ -85,6 +85,7 @@ public class BasicArchiveTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
+                .errorHandler(Tests::onError)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
         aeron = Aeron.connect(

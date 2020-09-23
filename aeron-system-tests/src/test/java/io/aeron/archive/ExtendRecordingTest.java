@@ -115,6 +115,7 @@ public class ExtendRecordingTest
                 .maxCatalogEntries(ArchiveSystemTests.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .archiveDir(archiveDir)
+                .errorHandler(Tests::onError)
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 

@@ -91,7 +91,7 @@ public class BasicPublisher
                 }
                 else if (result == Publication.CLOSED)
                 {
-                    System.out.println("Offer failed publication is closed");
+                    System.out.println("Offer failed because publication is closed");
                     break;
                 }
                 else if (result == Publication.MAX_POSITION_EXCEEDED)

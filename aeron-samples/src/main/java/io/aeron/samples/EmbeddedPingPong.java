@@ -179,15 +179,11 @@ public class EmbeddedPingPong
             }
             while ((offeredPosition = pingPublication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null)) < 0L);
 
-            PONG_HANDLER_IDLE_STRATEGY.reset();
-            do
+            while (image.position() < offeredPosition)
             {
-                while (image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
-                {
-                    PONG_HANDLER_IDLE_STRATEGY.idle();
-                }
+                final int fragments = image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                PONG_HANDLER_IDLE_STRATEGY.idle(fragments);
             }
-            while (image.position() < offeredPosition);
         }
     }
 

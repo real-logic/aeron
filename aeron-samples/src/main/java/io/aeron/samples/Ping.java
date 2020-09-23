@@ -135,16 +135,11 @@ public class Ping
             }
             while ((offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null)) < 0L);
 
-            POLLING_IDLE_STRATEGY.reset();
-
-            do
+            while (image.position() < offeredPosition)
             {
-                while (image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
-                {
-                    POLLING_IDLE_STRATEGY.idle();
-                }
+                final int fragments = image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                POLLING_IDLE_STRATEGY.idle(fragments);
             }
-            while (image.position() < offeredPosition);
         }
     }
 

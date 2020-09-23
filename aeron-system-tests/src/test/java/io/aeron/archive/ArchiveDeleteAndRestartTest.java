@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -39,8 +38,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -137,21 +134,21 @@ public class ArchiveDeleteAndRestartTest
         }
 
         final long position1 = recordedPublication1.position();
-        final RecordingDescriptorLoader loader = new RecordingDescriptorLoader();
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector();
 
-        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, loader) < 1)
+        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
         {
             Tests.yieldingWait("Didn't find recording");
         }
 
-        while (position1 != aeronArchive.getRecordingPosition(loader.descriptors.get(0).recordingId))
+        while (position1 != aeronArchive.getRecordingPosition(collector.descriptors.get(0).recordingId))
         {
             Tests.yieldingWait("Failed to record data");
         }
 
         recordedPublication1.close();
 
-        while (position1 != aeronArchive.getStopPosition(loader.descriptors.get(0).recordingId))
+        while (position1 != aeronArchive.getStopPosition(collector.descriptors.get(0).recordingId))
         {
             Tests.yieldingWait("Failed to stop recording");
         }
@@ -190,68 +187,12 @@ public class ArchiveDeleteAndRestartTest
             }
         }
 
-        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, loader) < 1)
+        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
         {
             Tests.yieldingWait("Didn't find recording");
         }
 
-        loader.descriptors.clear();
-        assertEquals(1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, loader), loader.descriptors::toString);
-    }
-
-    static final class RecordingDescriptor
-    {
-        final long recordingId;
-        final String channel;
-        final int streamId;
-        final int sessionId;
-
-        private RecordingDescriptor(
-            final long recordingId,
-            final String channel,
-            final int streamId,
-            final int sessionId)
-        {
-            this.recordingId = recordingId;
-            this.channel = channel;
-            this.streamId = streamId;
-            this.sessionId = sessionId;
-        }
-
-        public String toString()
-        {
-            return "RecordingDescriptor{" +
-                "recordingId=" + recordingId +
-                ", channel='" + channel + '\'' +
-                ", streamId=" + streamId +
-                ", sessionId=" + sessionId +
-                '}';
-        }
-    }
-
-    static final class RecordingDescriptorLoader implements RecordingDescriptorConsumer
-    {
-        final List<RecordingDescriptor> descriptors = new ArrayList<>();
-
-        public void onRecordingDescriptor(
-            final long controlSessionId,
-            final long correlationId,
-            final long recordingId,
-            final long startTimestamp,
-            final long stopTimestamp,
-            final long startPosition,
-            final long stopPosition,
-            final int initialTermId,
-            final int segmentFileLength,
-            final int termBufferLength,
-            final int mtuLength,
-            final int sessionId,
-            final int streamId,
-            final String strippedChannel,
-            final String originalChannel,
-            final String sourceIdentity)
-        {
-            descriptors.add(new RecordingDescriptor(recordingId, originalChannel, streamId, sessionId));
-        }
+        collector.descriptors.clear();
+        assertEquals(1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector), collector.descriptors::toString);
     }
 }

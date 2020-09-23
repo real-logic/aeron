@@ -54,6 +54,7 @@ import static org.mockito.Mockito.mock;
 
 public class ExtendRecordingTest
 {
+    private static final String MY_ALIAS = "my-log";
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
     private static final int MTU_LENGTH = Configuration.mtuLength();
 
@@ -63,6 +64,7 @@ public class ExtendRecordingTest
         .endpoint("localhost:3333")
         .mtu(MTU_LENGTH)
         .termLength(ArchiveSystemTests.TERM_LENGTH)
+        .alias(MY_ALIAS)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -185,11 +187,16 @@ public class ExtendRecordingTest
             }
         }
 
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector();
+        assertEquals(1L, aeronArchive.listRecordingsForUri(0, 1, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector));
+        assertEquals(recordingId, collector.descriptors.get(0).recordingId);
+
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
             .initialPosition(stopOne, initialTermId, ArchiveSystemTests.TERM_LENGTH)
             .mtu(MTU_LENGTH)
+            .alias(MY_ALIAS)
             .build();
 
         try (Subscription subscription = Tests.reAddSubscription(aeron, EXTEND_CHANNEL, RECORDED_STREAM_ID);

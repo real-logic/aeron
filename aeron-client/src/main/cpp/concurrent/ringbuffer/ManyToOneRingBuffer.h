@@ -22,8 +22,8 @@
 #include <algorithm>
 #include "util/LangUtil.h"
 #include "concurrent/AtomicBuffer.h"
-#include "RingBufferDescriptor.h"
-#include "RecordDescriptor.h"
+#include "concurrent/ringbuffer/RingBufferDescriptor.h"
+#include "concurrent/ringbuffer/RecordDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 
@@ -54,8 +54,7 @@ public:
         return m_capacity;
     }
 
-    bool write(
-        std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
+    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         bool isSuccessful = false;
 

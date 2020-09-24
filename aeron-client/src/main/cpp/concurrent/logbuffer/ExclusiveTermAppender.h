@@ -18,11 +18,11 @@
 #define AERON_CONCURRENT_EXCLUSIVE_TERM_APPENDER_H
 
 #include <functional>
-#include "HeaderWriter.h"
-#include "LogBufferDescriptor.h"
-#include "BufferClaim.h"
-#include "DataFrameHeader.h"
-#include "TermAppender.h"
+#include "concurrent/logbuffer/HeaderWriter.h"
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
+#include "concurrent/logbuffer/BufferClaim.h"
+#include "concurrent/logbuffer/DataFrameHeader.h"
+#include "concurrent/logbuffer/TermAppender.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

@@ -18,8 +18,9 @@
 #define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
 #include <functional>
-#include "LogBufferDescriptor.h"
-#include "Header.h"
+
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
+#include "concurrent/logbuffer/Header.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

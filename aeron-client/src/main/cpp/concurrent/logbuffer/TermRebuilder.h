@@ -17,7 +17,7 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_TERM_REBUILDER_H
 #define AERON_CONCURRENT_LOGBUFFER_TERM_REBUILDER_H
 
-#include "FrameDescriptor.h"
+#include "concurrent/logbuffer/FrameDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer
 {

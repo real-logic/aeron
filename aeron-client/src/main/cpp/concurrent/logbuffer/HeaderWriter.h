@@ -17,8 +17,8 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_HEADER_WRITER_H
 #define AERON_CONCURRENT_LOGBUFFER_HEADER_WRITER_H
 
-#include "DataFrameHeader.h"
-#include "FrameDescriptor.h"
+#include "concurrent/logbuffer/DataFrameHeader.h"
+#include "concurrent/logbuffer/FrameDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <thread>
+#include <cstdint>
 
 // Implement all operations using C++11 standard library atomics and GCC intrinsics.
 // Not as fast as the x64 specializations, but allows Aeron to work on other platforms (e.g. ARM).

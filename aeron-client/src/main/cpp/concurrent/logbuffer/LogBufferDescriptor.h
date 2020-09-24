@@ -18,8 +18,8 @@
 #define AERON_CONCURRENT_LOGBUFFER_DESCRIPTOR_H
 
 #include "util/BitUtil.h"
-#include "FrameDescriptor.h"
-#include "DataFrameHeader.h"
+#include "concurrent/logbuffer/FrameDescriptor.h"
+#include "concurrent/logbuffer/DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

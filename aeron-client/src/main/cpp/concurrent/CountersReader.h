@@ -19,7 +19,7 @@
 #include <functional>
 
 #include "util/BitUtil.h"
-#include "AtomicBuffer.h"
+#include "concurrent/AtomicBuffer.h"
 
 namespace aeron { namespace concurrent {
 

@@ -30,6 +30,8 @@
 
 namespace aeron { namespace concurrent { namespace errors {
 
+using namespace aeron::concurrent;
+
 class DistinctErrorLog
 {
 public:

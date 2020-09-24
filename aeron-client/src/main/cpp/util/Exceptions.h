@@ -20,6 +20,7 @@
 #include <string>
 #include <stdexcept>
 #include <functional>
+
 #include "util/MacroUtil.h"
 
 namespace aeron { namespace util

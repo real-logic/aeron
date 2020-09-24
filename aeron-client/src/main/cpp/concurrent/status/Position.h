@@ -17,7 +17,7 @@
 #ifndef AERON_POSITION_H
 #define AERON_POSITION_H
 
-#include "ReadablePosition.h"
+#include "concurrent/status/ReadablePosition.h"
 
 namespace aeron { namespace concurrent { namespace status {
 

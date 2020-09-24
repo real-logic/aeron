@@ -20,7 +20,7 @@
 #include <array>
 #include <functional>
 
-#include "BroadcastReceiver.h"
+#include "concurrent/broadcast/BroadcastReceiver.h"
 
 namespace aeron { namespace concurrent { namespace broadcast {
 
@@ -75,7 +75,7 @@ public:
     }
 
 private:
-    AERON_DECL_ALIGNED(scratch_buffer_t m_scratch, 16);
+    AERON_DECL_ALIGNED(scratch_buffer_t m_scratch, 16) = {};
     BroadcastReceiver &m_receiver;
     AtomicBuffer m_scratchBuffer;
 };

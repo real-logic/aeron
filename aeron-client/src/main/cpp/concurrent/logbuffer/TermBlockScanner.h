@@ -18,9 +18,10 @@
 #define AERON_CONCURRENT_TERM_BLOCK_SCANNER_H
 
 #include <functional>
+
 #include "concurrent/AtomicBuffer.h"
-#include "LogBufferDescriptor.h"
-#include "Header.h"
+#include "concurrent/logbuffer/LogBufferDescriptor.h"
+#include "concurrent/logbuffer/Header.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 

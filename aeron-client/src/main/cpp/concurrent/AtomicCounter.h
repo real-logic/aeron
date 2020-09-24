@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include "CountersManager.h"
+#include "concurrent/CountersManager.h"
 
 namespace aeron { namespace concurrent {
 

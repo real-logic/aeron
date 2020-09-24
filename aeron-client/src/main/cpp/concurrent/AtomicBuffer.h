@@ -25,7 +25,7 @@
 #include "util/Exceptions.h"
 #include "util/StringUtil.h"
 #include "util/MacroUtil.h"
-#include "Atomic64.h"
+#include "concurrent/Atomic64.h"
 
 namespace aeron { namespace concurrent {
 

@@ -23,7 +23,8 @@
 #include <iomanip>
 #include <locale>
 #include <cstdarg>
-#include "Exceptions.h"
+
+#include "util/Exceptions.h"
 
 namespace aeron { namespace util
 {

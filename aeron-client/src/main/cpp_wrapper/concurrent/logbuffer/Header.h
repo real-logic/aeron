@@ -21,7 +21,7 @@
 #include "util/BitUtil.h"
 #include "util/Exceptions.h"
 #include "concurrent/AtomicBuffer.h"
-#include "DataFrameHeader.h"
+#include "concurrent/logbuffer/DataFrameHeader.h"
 
 #include "aeronc.h"
 

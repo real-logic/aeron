@@ -17,13 +17,15 @@
 #define AERON_CONCURRENT_ERROR_LOG_READER_H
 
 #include <functional>
-#include "concurrent/AtomicBuffer.h"
 #include "util/BitUtil.h"
-#include "ErrorLogDescriptor.h"
+#include "concurrent/AtomicBuffer.h"
+#include "concurrent/errors/ErrorLogDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace errors {
 
 namespace ErrorLogReader {
+
+using namespace aeron::concurrent;
 
 typedef std::function<void(
     std::int32_t observationCount,

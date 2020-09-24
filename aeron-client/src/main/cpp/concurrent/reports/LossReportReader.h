@@ -17,6 +17,7 @@
 #define AERON_LOSS_REPORT_READER_H
 
 #include <functional>
+
 #include "util/BitUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/reports/LossReportDescriptor.h"

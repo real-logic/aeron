@@ -17,6 +17,8 @@
 #ifndef AERON_HEARTBEAT_TIMESTAMP_H
 #define AERON_HEARTBEAT_TIMESTAMP_H
 
+#include "concurrent/CountersReader.h"
+
 namespace aeron
 {
 

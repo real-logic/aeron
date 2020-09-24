@@ -19,21 +19,22 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 endif ()
 
 SET(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Image.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Aeron.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Publication.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Subscription.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BufferBuilder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/FragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ImageFragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ImageControlledFragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUri.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/FragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/HeartbeatTimestamp.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Image.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImageControlledFragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImageFragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Publication.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Subscription.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/AgentRunner.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/AgentInvoker.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/Atomic64.h

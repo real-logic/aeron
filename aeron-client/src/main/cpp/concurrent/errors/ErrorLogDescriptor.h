@@ -18,6 +18,8 @@
 
 #include <cstddef>
 
+#include "util/Index.h"
+
 namespace aeron { namespace concurrent { namespace errors {
 
 /**

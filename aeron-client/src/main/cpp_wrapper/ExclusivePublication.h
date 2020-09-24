@@ -26,8 +26,8 @@
 #include "concurrent/logbuffer/BufferClaim.h"
 #include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
-#include "Publication.h"
 #include "util/Exceptions.h"
+#include "Publication.h"
 
 #include "aeronc.h"
 

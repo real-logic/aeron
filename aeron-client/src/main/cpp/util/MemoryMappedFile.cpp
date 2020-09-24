@@ -30,9 +30,9 @@
 #include <string>
 #include <cstring>
 
-#include "MemoryMappedFile.h"
-#include "Exceptions.h"
-#include "ScopeUtils.h"
+#include "util/MemoryMappedFile.h"
+#include "util/Exceptions.h"
+#include "util/ScopeUtils.h"
 
 namespace aeron { namespace util
 {

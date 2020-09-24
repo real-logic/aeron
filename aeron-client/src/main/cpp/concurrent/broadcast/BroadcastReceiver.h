@@ -18,8 +18,8 @@
 #define AERON_CONCURRENT_BROADCAST_RECEIVER_H
 
 #include "concurrent/AtomicBuffer.h"
-#include "BroadcastBufferDescriptor.h"
-#include "RecordDescriptor.h"
+#include "concurrent/broadcast/BroadcastBufferDescriptor.h"
+#include "concurrent/broadcast/RecordDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace broadcast {
 

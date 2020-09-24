@@ -32,25 +32,26 @@ SET(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/util/CommandOptionParser.cpp)
 
 SET(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/ClientConductor.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Image.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Aeron.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Publication.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Subscription.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/DriverProxy.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/DriverListenerAdapter.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/LogBuffers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BufferBuilder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/FragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ImageFragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ImageControlledFragmentAssembler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUri.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientConductor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/DriverListenerAdapter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/DriverProxy.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/FragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Image.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/HeartbeatTimestamp.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImageControlledFragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImageFragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/LogBuffers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Publication.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Subscription.h
     ${CMAKE_CURRENT_SOURCE_DIR}/command/ImageMessageFlyweight.h
     ${CMAKE_CURRENT_SOURCE_DIR}/command/ImageBuffersReadyFlyweight.h
     ${CMAKE_CURRENT_SOURCE_DIR}/command/ControlProtocolEvents.h

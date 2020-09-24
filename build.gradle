@@ -199,10 +199,10 @@ subprojects {
         }
 
         systemProperties(
-            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.shared.idle.strategy': 'yield',
+            'aeron.conductor.idle.strategy': 'yield',
+            'aeron.sender.idle.strategy': 'yield',
+            'aeron.receiver.idle.strategy': 'yield',
             'aeron.use.windows.high.res.timer': 'true',
             'aeron.timer.interval': '10000000',
             'aeron.dir.delete.on.start': 'true',

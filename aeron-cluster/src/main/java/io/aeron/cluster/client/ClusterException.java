@@ -46,6 +46,16 @@ public class ClusterException extends AeronException
         super(cause);
     }
 
+    public ClusterException(final Throwable cause, final Category category)
+    {
+        super(cause, category);
+    }
+
+    public ClusterException(final String message, final Throwable cause, final Category category)
+    {
+        super(message, cause, category);
+    }
+
     public ClusterException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {

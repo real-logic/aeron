@@ -1658,7 +1658,7 @@ class ConsensusModuleAgent implements Agent
                     }
                     catch (final Exception ex)
                     {
-                        ctx.countedErrorHandler().onError(ex);
+                        ctx.countedErrorHandler().onError(new ClusterException("catchup already stopped", ex, WARN));
                     }
                 }
 

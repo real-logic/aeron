@@ -314,12 +314,9 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
+        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows() && !wasHighResTimerEnabled)
         {
-            if (!wasHighResTimerEnabled)
-            {
-                HighResolutionTimer.disable();
-            }
+            HighResolutionTimer.disable();
         }
 
         CloseHelper.closeAll(

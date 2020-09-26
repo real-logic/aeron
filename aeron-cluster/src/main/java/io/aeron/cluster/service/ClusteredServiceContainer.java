@@ -1467,12 +1467,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public void close()
         {
             final ErrorHandler errorHandler = countedErrorHandler();
-            CloseHelper.close(errorHandler, markFile);
-
             if (ownsAeronClient)
             {
-                CloseHelper.close(aeron);
+                CloseHelper.close(errorHandler, aeron);
             }
+
+            CloseHelper.close(errorHandler, markFile);
         }
 
         CountDownLatch abortLatch()

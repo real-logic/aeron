@@ -155,11 +155,10 @@ public class DriverConductor implements Agent
 
     public void onClose()
     {
+        CloseHelper.close(ctx.errorHandler(), driverNameResolver);
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
-
-        CloseHelper.close(ctx.errorHandler(), driverNameResolver);
         toDriverCommands.consumerHeartbeatTime(Aeron.NULL_VALUE);
         ctx.close();
     }

@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11', '14' ]
+        java: [ '8', '11', '15' ]
         os: [ 'ubuntu-latest', 'windows-latest' ]
     steps:
       - name: Checkout code
@@ -49,7 +49,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -86,9 +85,7 @@ jobs:
       - name: Install compiler
         run: |
          sudo apt-get update
-
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
-
          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
@@ -99,7 +96,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -174,11 +170,8 @@ jobs:
       - name: Install compiler
         run: |
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
-
           sudo apt-get update
-
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
-
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
@@ -189,8 +182,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
-          ./gradlew copyTestLogs
+         ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
@@ -226,11 +218,8 @@ jobs:
       - name: Install compiler
         run: |
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
-
           sudo apt-get update
-
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
-
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
@@ -241,7 +230,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -285,7 +273,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -330,7 +317,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'

@@ -1012,6 +1012,7 @@ int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t 
 
     context->bindings_clientd_entries = _entries;
     context->num_bindings_clientd_entries = num_entries;
+
     return 0;
 }
 
@@ -1031,8 +1032,8 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_driver_context_free_bindings(context->udp_channel_outgoing_interceptor_bindings);
     aeron_driver_context_free_bindings(context->udp_channel_incoming_interceptor_bindings);
 
-    aeron_unmap(&context->cnc_map);
     aeron_unmap(&context->loss_report);
+    aeron_unmap(&context->cnc_map);
 
     aeron_free((void *)context->aeron_dir);
     aeron_free(context->conductor_idle_strategy_state);
@@ -1734,6 +1735,7 @@ int aeron_driver_context_set_sender_idle_strategy(aeron_driver_context_t *contex
     }
 
     context->sender_idle_strategy_name = aeron_strndup(value, AERON_MAX_PATH);
+
     return 0;
 }
 
@@ -1760,6 +1762,7 @@ int aeron_driver_context_set_conductor_idle_strategy(aeron_driver_context_t *con
     }
 
     context->conductor_idle_strategy_name = aeron_strndup(value, AERON_MAX_PATH);
+
     return 0;
 }
 
@@ -1786,6 +1789,7 @@ int aeron_driver_context_set_receiver_idle_strategy(aeron_driver_context_t *cont
     }
 
     context->receiver_idle_strategy_name = aeron_strndup(value, AERON_MAX_PATH);
+
     return 0;
 }
 
@@ -1812,6 +1816,7 @@ int aeron_driver_context_set_sharednetwork_idle_strategy(aeron_driver_context_t 
     }
 
     context->shared_network_idle_strategy_name = aeron_strndup(value, AERON_MAX_PATH);
+
     return 0;
 }
 
@@ -1838,6 +1843,7 @@ int aeron_driver_context_set_shared_idle_strategy(aeron_driver_context_t *contex
     }
 
     context->shared_idle_strategy_name = aeron_strndup(value, AERON_MAX_PATH);
+
     return 0;
 }
 
@@ -1928,6 +1934,7 @@ int aeron_driver_context_set_agent_on_start_function(
 
     context->agent_on_start_func = value;
     context->agent_on_start_state = state;
+
     return 0;
 }
 
@@ -1955,8 +1962,7 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
 }
 
 int aeron_driver_context_set_flow_control_receiver_timeout_ns(
-    aeron_driver_context_t *context,
-    uint64_t value)
+    aeron_driver_context_t *context,  uint64_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -2342,10 +2348,8 @@ const char *aeron_driver_context_get_resolver_bootstrap_neighbor(aeron_driver_co
     return NULL != context ? context->resolver_bootstrap_neighbor : NULL;
 }
 
-
 int aeron_driver_context_set_name_resolver_supplier(
-    aeron_driver_context_t *context,
-    aeron_name_resolver_supplier_func_t value)
+    aeron_driver_context_t *context, aeron_name_resolver_supplier_func_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 

@@ -49,6 +49,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
+
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -96,6 +97,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
+
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -182,7 +184,8 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-         ./gradlew copyTestLogs
+
+          ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
@@ -230,6 +233,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
+
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -273,6 +277,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
+
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -317,6 +322,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
+
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'

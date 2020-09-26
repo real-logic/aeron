@@ -101,10 +101,27 @@ public class StartFromTruncatedRecordingLogTest
     public void after()
     {
         CloseHelper.closeAll(client, clientMediaDriver);
-        CloseHelper.closeAll(clusteredMediaDrivers);
+
+        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
+        {
+            if (null != driver)
+            {
+                driver.consensusModule().close();
+            }
+        }
+
         CloseHelper.closeAll(containers);
+        CloseHelper.closeAll(clusteredMediaDrivers);
 
         clientMediaDriver.context().deleteDirectory();
+
+        for (final ClusteredServiceContainer container : containers)
+        {
+            if (null != container)
+            {
+                container.context().deleteDirectory();
+            }
+        }
 
         for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
         {
@@ -113,14 +130,6 @@ public class StartFromTruncatedRecordingLogTest
                 driver.consensusModule().context().deleteDirectory();
                 driver.archive().context().deleteDirectory();
                 driver.mediaDriver().context().deleteDirectory();
-            }
-        }
-
-        for (final ClusteredServiceContainer container : containers)
-        {
-            if (null != container)
-            {
-                container.context().deleteDirectory();
             }
         }
     }

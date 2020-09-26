@@ -2090,6 +2090,7 @@ void aeron_driver_conductor_on_close(void *clientd)
 
     aeron_str_to_ptr_hash_map_delete(&conductor->send_channel_endpoint_by_channel_map);
     aeron_str_to_ptr_hash_map_delete(&conductor->receive_channel_endpoint_by_channel_map);
+    aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, AERON_NULL_VALUE);
 }
 
 int aeron_driver_subscribable_add_position(

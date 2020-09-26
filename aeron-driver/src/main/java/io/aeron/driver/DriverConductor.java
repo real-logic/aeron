@@ -15,8 +15,7 @@
  */
 package io.aeron.driver;
 
-import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
+import io.aeron.*;
 import io.aeron.CommonContext.InferableBoolean;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
@@ -161,6 +160,7 @@ public class DriverConductor implements Agent
         ipcPublications.forEach(IpcPublication::free);
 
         CloseHelper.close(ctx.errorHandler(), driverNameResolver);
+        toDriverCommands.consumerHeartbeatTime(Aeron.NULL_VALUE);
         ctx.close();
     }
 

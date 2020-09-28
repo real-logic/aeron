@@ -44,6 +44,11 @@ public class SendReceiveUdpPing
         {
             numChannels = Integer.parseInt(args[0]);
         }
+        String remoteHost = "localhost";
+        if (2 == args.length)
+        {
+            remoteHost = args[1];
+        }
 
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
@@ -54,10 +59,10 @@ public class SendReceiveUdpPing
         {
             receiveChannels[i] = DatagramChannel.open();
             init(receiveChannels[i]);
-            receiveChannels[i].bind(new InetSocketAddress("localhost", Common.PONG_PORT + i));
+            receiveChannels[i].bind(new InetSocketAddress("0.0.0.0", Common.PONG_PORT + i));
         }
 
-        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
+        final InetSocketAddress sendAddress = new InetSocketAddress(remoteHost, Common.PING_PORT);
         final DatagramChannel sendChannel = DatagramChannel.open();
         init(sendChannel);
 

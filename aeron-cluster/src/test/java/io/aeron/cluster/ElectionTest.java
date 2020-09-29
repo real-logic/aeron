@@ -224,7 +224,6 @@ public class ElectionTest
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
             .thenReturn(mock(Subscription.class));
-        when(consensusModuleAgent.logSubscriptionTags()).thenReturn("3,4");
         final long t3 = 3;
         election.doWork(t3);
         election.doWork(t3);
@@ -393,7 +392,6 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
 
-        when(consensusModuleAgent.logSubscriptionTags()).thenReturn("");
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(any())).thenReturn(mock(Subscription.class));
 
         final Election election = newElection(

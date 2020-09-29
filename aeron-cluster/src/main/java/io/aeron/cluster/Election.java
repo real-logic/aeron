@@ -178,12 +178,17 @@ class Election
         }
         catch (final Exception ex)
         {
-            ctx.countedErrorHandler().onError(ex);
-            logPosition = ctx.commitPositionCounter().getWeak();
-            state(INIT, nowNs);
+            handleError(nowNs, ex);
         }
 
         return workCount;
+    }
+
+    void handleError(final long nowNs, final Exception ex)
+    {
+        ctx.countedErrorHandler().onError(ex);
+        logPosition = ctx.commitPositionCounter().getWeak();
+        state(INIT, nowNs);
     }
 
     void onMembershipChange(
@@ -301,7 +306,7 @@ class Election
         final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
-        @SuppressWarnings("unused") final long timestamp,
+        final long timestamp,
         final int leaderMemberId,
         final int logSessionId,
         final boolean isStartup)
@@ -845,12 +850,14 @@ class Election
 
     private void createFollowerSubscription()
     {
+        final String tagsValue = ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId();
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.GROUP_PARAM_NAME, "true");
+        channelUri.put(CommonContext.REJOIN_PARAM_NAME, "false");
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        channelUri.put(CommonContext.TAGS_PARAM_NAME, consensusModuleAgent.logSubscriptionTags());
+        channelUri.put(CommonContext.TAGS_PARAM_NAME, tagsValue);
         channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
 
         final String logChannel = channelUri.toString();

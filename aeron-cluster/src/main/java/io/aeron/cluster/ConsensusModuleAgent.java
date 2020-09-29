@@ -84,8 +84,6 @@ class ConsensusModuleAgent implements Agent
     private int pendingMemberRemovals = 0;
     private int logPublicationTag;
     private int logPublicationChannelTag;
-    private final int logSubscriptionTag;
-    private final int logSubscriptionChannelTag;
     private ReadableCounter appendPosition;
     private final Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -177,9 +175,7 @@ class ConsensusModuleAgent implements Agent
         this.serviceAckQueues = ServiceAck.newArray(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(clusterMembers);
         this.logPublicationChannelTag = (int)aeron.nextCorrelationId();
-        this.logSubscriptionChannelTag = (int)aeron.nextCorrelationId();
         this.logPublicationTag = (int)aeron.nextCorrelationId();
-        this.logSubscriptionTag = (int)aeron.nextCorrelationId();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -874,11 +870,6 @@ class ConsensusModuleAgent implements Agent
     Cluster.Role role()
     {
         return role;
-    }
-
-    String logSubscriptionTags()
-    {
-        return logSubscriptionChannelTag + "," + logSubscriptionTag;
     }
 
     long prepareForNewLeadership(final long logPosition)
@@ -1722,7 +1713,7 @@ class ConsensusModuleAgent implements Agent
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        checkForArchiveErrors();
+        checkForArchiveErrors(nowNs);
 
         if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
         {
@@ -1781,38 +1772,45 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    private void checkForArchiveErrors()
+    private void checkForArchiveErrors(final long nowNs)
     {
         if (null != archive && null == dynamicJoin)
         {
-            final ControlResponsePoller controlResponsePoller = archive.controlResponsePoller();
-            if (!controlResponsePoller.subscription().isConnected())
+            final ControlResponsePoller poller = archive.controlResponsePoller();
+            if (!poller.subscription().isConnected())
             {
                 throw new AgentTerminationException("local archive not connected");
             }
-            else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            else if (poller.poll() != 0 && poller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == archive.controlSessionId() &&
-                    controlResponsePoller.code() == ControlResponseCode.ERROR)
+                if (poller.controlSessionId() == archive.controlSessionId() &&
+                    poller.code() == ControlResponseCode.ERROR)
                 {
                     for (final ClusterMember member : clusterMembers)
                     {
                         if (member.catchupReplayCorrelationId() != NULL_VALUE &&
-                            member.catchupReplayCorrelationId() == controlResponsePoller.correlationId())
+                            member.catchupReplayCorrelationId() == poller.correlationId())
                         {
                             member.catchupReplaySessionId(NULL_VALUE);
                             member.catchupReplayCorrelationId(NULL_VALUE);
 
                             ctx.countedErrorHandler().onError(new ClusterException(
-                                "catchup replay failed - " + controlResponsePoller.errorMessage(), WARN));
+                                "catchup replay failed - " + poller.errorMessage(), WARN));
                             return;
                         }
                     }
 
-                    ctx.countedErrorHandler().onError(new ArchiveException(
-                        controlResponsePoller.errorMessage(),
-                        (int)controlResponsePoller.relevantId(),
-                        controlResponsePoller.correlationId()));
+                    final ArchiveException ex = new ArchiveException(
+                        poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
+
+                    if (null != election)
+                    {
+                        election.handleError(nowNs, ex);
+                    }
+                    else
+                    {
+                        ctx.countedErrorHandler().onError(ex);
+                    }
                 }
             }
         }

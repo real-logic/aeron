@@ -2908,10 +2908,10 @@ class ConsensusModuleAgent implements Agent
 
     private void stopLogRecording()
     {
-        if (NULL_VALUE != logSubscriptionId)
+        if (null != liveLogDestination)
         {
-            archive.tryStopRecording(logSubscriptionId);
-            logSubscriptionId = NULL_VALUE;
+            logAdapter.asyncRemoveDestination(liveLogDestination);
+            liveLogDestination = null;
         }
 
         if (null != replayLogDestination)
@@ -2920,10 +2920,10 @@ class ConsensusModuleAgent implements Agent
             replayLogDestination = null;
         }
 
-        if (null != liveLogDestination)
+        if (NULL_VALUE != logSubscriptionId)
         {
-            logAdapter.asyncRemoveDestination(liveLogDestination);
-            liveLogDestination = null;
+            archive.tryStopRecording(logSubscriptionId);
+            logSubscriptionId = NULL_VALUE;
         }
     }
 

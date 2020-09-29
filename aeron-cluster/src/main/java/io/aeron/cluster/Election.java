@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
+import org.agrona.CloseHelper;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.AgentTerminationException;
 
@@ -427,6 +428,9 @@ class Election
             resetCatchup();
             cleanupReplay();
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
+            CloseHelper.close(logSubscription);
+            logSubscription = null;
+            liveLogDestination = null;
         }
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
@@ -843,9 +847,10 @@ class Election
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
 
-        liveLogDestination = channelUri.toString();
-        logSubscription.asyncAddDestination(liveLogDestination);
-        consensusModuleAgent.liveLogDestination(liveLogDestination);
+        final String dstUri = channelUri.toString();
+        logSubscription.asyncAddDestination(dstUri);
+        consensusModuleAgent.liveLogDestination(dstUri);
+        liveLogDestination = dstUri;
     }
 
     private void createFollowerSubscription()

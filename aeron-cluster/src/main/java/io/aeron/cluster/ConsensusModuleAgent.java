@@ -1713,7 +1713,7 @@ class ConsensusModuleAgent implements Agent
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        checkForArchiveErrors(nowNs);
+        checkForArchiveErrors(true);
 
         if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
         {
@@ -1772,7 +1772,7 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    private void checkForArchiveErrors(final long nowNs)
+    private void checkForArchiveErrors(final boolean isSlowTick)
     {
         if (null != archive && null == dynamicJoin)
         {
@@ -1805,7 +1805,12 @@ class ConsensusModuleAgent implements Agent
 
                     if (null != election)
                     {
-                        election.handleError(nowNs, ex);
+                        if (!isSlowTick)
+                        {
+                            throw ex;
+                        }
+
+                        election.handleError(clusterClock.timeNanos(), ex);
                     }
                     else
                     {
@@ -2576,7 +2581,7 @@ class ConsensusModuleAgent implements Agent
         }
 
         idleStrategy.idle();
-        archive.checkForErrorResponse();
+        checkForArchiveErrors(false);
     }
 
     private void idle(final int workCount)
@@ -2592,7 +2597,7 @@ class ConsensusModuleAgent implements Agent
 
         if (0 == workCount)
         {
-            archive.checkForErrorResponse();
+            checkForArchiveErrors(false);
         }
     }
 

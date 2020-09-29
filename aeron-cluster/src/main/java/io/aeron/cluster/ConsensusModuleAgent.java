@@ -1713,7 +1713,10 @@ class ConsensusModuleAgent implements Agent
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        checkForArchiveErrors(true);
+        if (null == dynamicJoin)
+        {
+            checkForArchiveError(true);
+        }
 
         if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
         {
@@ -1772,9 +1775,9 @@ class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    private void checkForArchiveErrors(final boolean isSlowTick)
+    private void checkForArchiveError(final boolean isSlowTick)
     {
-        if (null != archive && null == dynamicJoin)
+        if (null != archive)
         {
             final ControlResponsePoller poller = archive.controlResponsePoller();
             if (!poller.subscription().isConnected())
@@ -1803,18 +1806,13 @@ class ConsensusModuleAgent implements Agent
                     final ArchiveException ex = new ArchiveException(
                         poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
 
-                    if (null != election)
+                    if (null != election && isSlowTick)
                     {
-                        if (!isSlowTick)
-                        {
-                            throw ex;
-                        }
-
                         election.handleError(clusterClock.timeNanos(), ex);
                     }
                     else
                     {
-                        ctx.countedErrorHandler().onError(ex);
+                        throw ex;
                     }
                 }
             }
@@ -2581,7 +2579,7 @@ class ConsensusModuleAgent implements Agent
         }
 
         idleStrategy.idle();
-        checkForArchiveErrors(false);
+        checkForArchiveError(false);
     }
 
     private void idle(final int workCount)
@@ -2597,7 +2595,7 @@ class ConsensusModuleAgent implements Agent
 
         if (0 == workCount)
         {
-            checkForArchiveErrors(false);
+            checkForArchiveError(false);
         }
     }
 

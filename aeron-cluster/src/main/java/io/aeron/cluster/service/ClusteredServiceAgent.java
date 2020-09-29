@@ -650,6 +650,11 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         try
         {
+            memberId = activeLog.memberId;
+            ctx.clusterMarkFile().memberId(memberId);
+            sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
+            role(Role.get(roleCounter.get()));
+
             final long id = ackId++;
             idleStrategy.reset();
             while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
@@ -658,13 +663,8 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             }
 
             logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
-            logSubscription = null;
-
             logAdapter.maxLogPosition(activeLog.maxLogPosition);
-            sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
-            memberId = activeLog.memberId;
-            ctx.clusterMarkFile().memberId(memberId);
-            role(Role.get(roleCounter.get()));
+            logSubscription = null;
         }
         finally
         {

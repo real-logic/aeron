@@ -106,5 +106,5 @@ endif ()
 target_link_libraries(aeron_client_wrapper INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)
-   install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
+   install(DIRECTORY . DESTINATION include/wrapper FILES_MATCHING PATTERN "*.h")
 endif ()

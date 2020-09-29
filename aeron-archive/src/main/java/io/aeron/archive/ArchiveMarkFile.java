@@ -164,80 +164,79 @@ public class ArchiveMarkFile implements AutoCloseable
             new UnsafeBuffer(buffer, 0, 0);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(markFile);
     }
 
+    /**
+     * Signal the archive has concluded successfully and ready to start.
+     */
     public void signalReady()
     {
         markFile.signalReady(SEMANTIC_VERSION);
     }
 
+    /**
+     * Update the activity timestamp as a proof of life.
+     *
+     * @param nowMs activity timestamp as a proof of life.
+     */
     public void updateActivityTimestamp(final long nowMs)
     {
         markFile.timestampOrdered(nowMs);
     }
 
+    /**
+     * Read the activity timestamp of the archive with volatile semantics.
+     *
+     * @return the activity timestamp of the archive with volatile semantics.
+     */
     public long activityTimestampVolatile()
     {
         return markFile.timestampVolatile();
     }
 
+    /**
+     * The encoder for writing the {@link MarkFile} header.
+     *
+     * @return the encoder for writing the {@link MarkFile} header.
+     */
     public MarkFileHeaderEncoder encoder()
     {
         return headerEncoder;
     }
 
+    /**
+     * The decoder for reading the {@link MarkFile} header.
+     *
+     * @return the decoder for reading the {@link MarkFile} header.
+     */
     public MarkFileHeaderDecoder decoder()
     {
         return headerDecoder;
     }
 
-    public UnsafeBuffer buffer()
-    {
-        return buffer;
-    }
-
-    public UnsafeBuffer errorBuffer()
+    /**
+     * The direct buffer which wraps the region of the {@link MarkFile} which contains the error log.
+     *
+     * @return the direct buffer which wraps the region of the {@link MarkFile} which contains the error log.
+     */
+    public AtomicBuffer errorBuffer()
     {
         return errorBuffer;
     }
 
-    public void encode(final Archive.Context ctx)
-    {
-        headerEncoder
-            .startTimestamp(ctx.epochClock().time())
-            .controlStreamId(ctx.controlStreamId())
-            .localControlStreamId(ctx.localControlStreamId())
-            .eventsStreamId(ctx.recordingEventsStreamId())
-            .headerLength(HEADER_LENGTH)
-            .errorBufferLength(ctx.errorBufferLength())
-            .controlChannel(ctx.controlChannel())
-            .localControlChannel(ctx.localControlChannel())
-            .eventsChannel(ctx.recordingEventsChannel())
-            .aeronDirectory(ctx.aeronDirectoryName());
-    }
-
-    public static int alignedTotalFileLength(final Archive.Context ctx)
-    {
-        final int headerContentLength =
-            MarkFileHeaderEncoder.BLOCK_LENGTH +
-            (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-            ctx.controlChannel().length() +
-            ctx.localControlChannel().length() +
-            ctx.recordingEventsChannel().length() +
-            ctx.aeronDirectoryName().length();
-
-        if (headerContentLength > HEADER_LENGTH)
-        {
-            throw new ArchiveException(
-                "MarkFile length required " + headerContentLength + " greater than " + HEADER_LENGTH);
-        }
-
-        return HEADER_LENGTH + ctx.errorBufferLength();
-    }
-
+    /**
+     * Save the existing errors from a {@link MarkFile} to a {@link PrintStream} for logging.
+     *
+     * @param markFile    which contains the error buffer.
+     * @param errorBuffer which wraps the error log.
+     * @param logger      to which the existing errors will be printed.
+     */
     public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
     {
         try
@@ -265,5 +264,38 @@ public class ArchiveMarkFile implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    private static int alignedTotalFileLength(final Archive.Context ctx)
+    {
+        final int headerLength =
+            MarkFileHeaderEncoder.BLOCK_LENGTH +
+            (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
+            ctx.controlChannel().length() +
+            ctx.localControlChannel().length() +
+            ctx.recordingEventsChannel().length() +
+            ctx.aeronDirectoryName().length();
+
+        if (headerLength > HEADER_LENGTH)
+        {
+            throw new ArchiveException("ArchiveMarkFile required headerLength=" + headerLength + " > " + HEADER_LENGTH);
+        }
+
+        return HEADER_LENGTH + ctx.errorBufferLength();
+    }
+
+    private void encode(final Archive.Context ctx)
+    {
+        headerEncoder
+            .startTimestamp(ctx.epochClock().time())
+            .controlStreamId(ctx.controlStreamId())
+            .localControlStreamId(ctx.localControlStreamId())
+            .eventsStreamId(ctx.recordingEventsStreamId())
+            .headerLength(HEADER_LENGTH)
+            .errorBufferLength(ctx.errorBufferLength())
+            .controlChannel(ctx.controlChannel())
+            .localControlChannel(ctx.localControlChannel())
+            .eventsChannel(ctx.recordingEventsChannel())
+            .aeronDirectory(ctx.aeronDirectoryName());
     }
 }

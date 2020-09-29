@@ -61,6 +61,15 @@ public class ClusterMarkFile implements AutoCloseable
     private final UnsafeBuffer buffer;
     private final UnsafeBuffer errorBuffer;
 
+    /**
+     * Create new {@link MarkFile} for a cluster service but check if an existing service is active.
+     *
+     * @param file              full qualified file to the {@link MarkFile}.
+     * @param type              of cluster component the {@link MarkFile} represents.
+     * @param errorBufferLength for storing the error log.
+     * @param epochClock        for checking liveness against.
+     * @param timeoutMs         for the activity check on an existing {@link MarkFile}.
+     */
     public ClusterMarkFile(
         final File file,
         final ClusterComponentType type,
@@ -129,6 +138,15 @@ public class ClusterMarkFile implements AutoCloseable
         headerEncoder.startTimestamp(epochClock.time());
     }
 
+    /**
+     * Construct to read the status of an existing {@link MarkFile} for a cluster component.
+     *
+     * @param directory  in which the mark file exists.
+     * @param filename   for the {@link MarkFile}.
+     * @param epochClock to be used for checking liveness.
+     * @param timeoutMs  to wait for file to exist.
+     * @param logger     to which debug information will be written if an issue occurs.
+     */
     public ClusterMarkFile(
         final File directory,
         final String filename,
@@ -158,6 +176,9 @@ public class ClusterMarkFile implements AutoCloseable
         errorBuffer = new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(markFile);
@@ -189,66 +210,119 @@ public class ClusterMarkFile implements AutoCloseable
         }
     }
 
+    /**
+     * Cluster member id either assigned statically or as the result of dynamic membership join.
+     *
+     * @return cluster member id either assigned statically or as the result of dynamic membership join.
+     */
     public int memberId()
     {
-        return buffer.getIntVolatile(MarkFileHeaderDecoder.memberIdEncodingOffset());
+        return buffer.getInt(MarkFileHeaderDecoder.memberIdEncodingOffset());
     }
 
+    /**
+     * Member id assigned as part of dynamic join of a cluster.
+     *
+     * @param memberId assigned as part of dynamic join of a cluster.
+     */
     public void memberId(final int memberId)
     {
-        buffer.putIntVolatile(MarkFileHeaderEncoder.memberIdEncodingOffset(), memberId);
+        buffer.putInt(MarkFileHeaderEncoder.memberIdEncodingOffset(), memberId);
     }
 
+    /**
+     * Identity of the cluster instance so multiple clusters can run on the same driver.
+     *
+     * @return id of the cluster instance so multiple clusters can run on the same driver.
+     */
     public int clusterId()
     {
         return buffer.getInt(MarkFileHeaderDecoder.clusterIdEncodingOffset());
     }
 
+    /**
+     * Identity of the cluster instance so multiple clusters can run on the same driver.
+     *
+     * @param clusterId of the cluster instance so multiple clusters can run on the same driver.
+     */
     public void clusterId(final int clusterId)
     {
         buffer.putInt(MarkFileHeaderEncoder.clusterIdEncodingOffset(), clusterId);
     }
 
+    /**
+     * Signal the cluster component has concluded successfully and ready to start.
+     */
     public void signalReady()
     {
         markFile.signalReady(SEMANTIC_VERSION);
     }
 
+    /**
+     * Signal the cluster component has failed to conclude and cannot start.
+     */
     public void signalFailedStart()
     {
         markFile.signalReady(VERSION_FAILED);
     }
 
+    /**
+     * Update the activity timestamp as a proof of life.
+     *
+     * @param nowMs activity timestamp as a proof of life.
+     */
     public void updateActivityTimestamp(final long nowMs)
     {
         markFile.timestampOrdered(nowMs);
     }
 
+    /**
+     * Read the activity timestamp of the cluster component with volatile semantics.
+     *
+     * @return the activity timestamp of the cluster component with volatile semantics.
+     */
     public long activityTimestampVolatile()
     {
         return markFile.timestampVolatile();
     }
 
+    /**
+     * The encoder for writing the {@link MarkFile} header.
+     *
+     * @return the encoder for writing the {@link MarkFile} header.
+     */
     public MarkFileHeaderEncoder encoder()
     {
         return headerEncoder;
     }
 
+    /**
+     * The decoder for reading the {@link MarkFile} header.
+     *
+     * @return the decoder for reading the {@link MarkFile} header.
+     */
     public MarkFileHeaderDecoder decoder()
     {
         return headerDecoder;
     }
 
-    public UnsafeBuffer buffer()
-    {
-        return buffer;
-    }
-
-    public UnsafeBuffer errorBuffer()
+    /**
+     * The direct buffer which wraps the region of the {@link MarkFile} which contains the error log.
+     *
+     * @return the direct buffer which wraps the region of the {@link MarkFile} which contains the error log.
+     */
+    public AtomicBuffer errorBuffer()
     {
         return errorBuffer;
     }
 
+    /**
+     * Save the existing errors from a {@link MarkFile} to a {@link PrintStream} for logging.
+     *
+     * @param markFile    which contains the error buffer.
+     * @param errorBuffer which wraps the error log.
+     * @param logger      to which the existing errors will be printed.
+     */
     public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
     {
         try
@@ -278,6 +352,15 @@ public class ClusterMarkFile implements AutoCloseable
         }
     }
 
+    /**
+     * Check if the header length is sufficient for encoding the provided properties.
+     *
+     * @param aeronDirectory for the media driver.
+     * @param controlChannel for the consensus module.
+     * @param ingressChannel from the cluster clients.
+     * @param serviceName    for the application service.
+     * @param authenticator  for the application service.
+     */
     public static void checkHeaderLength(
         final String aeronDirectory,
         final String controlChannel,
@@ -285,7 +368,7 @@ public class ClusterMarkFile implements AutoCloseable
         final String serviceName,
         final String authenticator)
     {
-        final int lengthRequired =
+        final int length =
             MarkFileHeaderEncoder.BLOCK_LENGTH +
             (5 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
             (null == aeronDirectory ? 0 : aeronDirectory.length()) +
@@ -294,17 +377,28 @@ public class ClusterMarkFile implements AutoCloseable
             (null == serviceName ? 0 : serviceName.length()) +
             (null == authenticator ? 0 : authenticator.length());
 
-        if (lengthRequired > HEADER_LENGTH)
+        if (length > HEADER_LENGTH)
         {
-            throw new ClusterException("MarkFile header length " + lengthRequired + " > " + HEADER_LENGTH);
+            throw new ClusterException("ClusterMarkFile required headerLength=" + length + " > " + HEADER_LENGTH);
         }
     }
 
+    /**
+     * The filename to be used for the mark file given a service id.
+     *
+     * @param serviceId of the service the {@link ClusterMarkFile} represents.
+     * @return the filename to be used for the mark file given a service id.
+     */
     public static String markFilenameForService(final int serviceId)
     {
         return SERVICE_FILENAME_PREFIX + serviceId + FILE_EXTENSION;
     }
 
+    /**
+     * The control properties for communicating between the consensus module and the services.
+     *
+     * @return the control properties for communicating between the consensus module and the services.
+     */
     public ClusterNodeControlProperties loadControlProperties()
     {
         final MarkFileHeaderDecoder decoder = new MarkFileHeaderDecoder();

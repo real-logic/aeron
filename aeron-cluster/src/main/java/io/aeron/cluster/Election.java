@@ -933,7 +933,6 @@ class Election
         return null == ClusterMember.findMember(clusterMembers, thisMember.id());
     }
 
-    @SuppressWarnings("unused")
     void stateChange(final ElectionState oldState, final ElectionState newState, final int memberId)
     {
         /*

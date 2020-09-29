@@ -851,7 +851,6 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    @SuppressWarnings("unused")
     void stateChange(final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
     {
         //System.out.println("CM State memberId=" + memberId + " " + oldState + " -> " + newState);
@@ -867,7 +866,6 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    @SuppressWarnings("unused")
     void roleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
     {
         //System.out.println("CM Role memberId=" + memberId + " " + oldRole + " -> " + newRole);
@@ -1236,29 +1234,27 @@ class ConsensusModuleAgent implements Agent
 
     void onLoadClusterMembers(final int memberId, final int highMemberId, final String members)
     {
-        if (ctx.clusterMembersIgnoreSnapshot() || null != dynamicJoin)
+        if (null == dynamicJoin && !ctx.clusterMembersIgnoreSnapshot())
         {
-            return;
-        }
+            if (NULL_VALUE == this.memberId)
+            {
+                this.memberId = memberId;
+                ctx.clusterMarkFile().memberId(memberId);
+            }
 
-        if (NULL_VALUE == this.memberId)
-        {
-            this.memberId = memberId;
-            ctx.clusterMarkFile().memberId(memberId);
-        }
+            if (ClusterMember.EMPTY_MEMBERS == clusterMembers)
+            {
+                clusterMembers = ClusterMember.parse(members);
+                this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);
+                rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+                thisMember = clusterMemberByIdMap.get(memberId);
 
-        if (ClusterMember.EMPTY_MEMBERS == clusterMembers)
-        {
-            clusterMembers = ClusterMember.parse(members);
-            this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);
-            rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
-            thisMember = clusterMemberByIdMap.get(memberId);
+                final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
+                consensusUri.put(ENDPOINT_PARAM_NAME, thisMember.consensusEndpoint());
 
-            final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
-            consensusUri.put(ENDPOINT_PARAM_NAME, thisMember.consensusEndpoint());
-
-            ClusterMember.addConsensusPublications(
-                clusterMembers, thisMember, consensusUri, ctx.consensusStreamId(), aeron);
+                ClusterMember.addConsensusPublications(
+                    clusterMembers, thisMember, consensusUri, ctx.consensusStreamId(), aeron);
+            }
         }
     }
 

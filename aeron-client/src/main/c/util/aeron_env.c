@@ -24,18 +24,18 @@
 
 int aeron_env_set(const char *key, const char *val)
 {
-#if !defined(WIN32)
-    return setenv(key, val, 1);
-#else
+#if defined(WIN32)
     return _putenv_s(key, val);
+#else
+    return setenv(key, val, 1);
 #endif
 }
 
 int aeron_env_unset(const char *key)
 {
-#if !defined(WIN32)
-    return unsetenv(key);
-#else
+#if defined(WIN32)
     return _putenv_s(key, "");
+#else
+    return unsetenv(key);
 #endif
 }

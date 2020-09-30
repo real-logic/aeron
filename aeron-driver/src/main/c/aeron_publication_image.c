@@ -701,6 +701,10 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
                         work_count = send_rttm_result;
                         break;
                     }
+                    else
+                    {
+                        image->congestion_control->on_rttm_sent(image->congestion_control->state, now_ns);
+                    }
 
                     work_count++;
                 }

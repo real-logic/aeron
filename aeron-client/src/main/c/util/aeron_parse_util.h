@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define AERON_MAX_HOST_LENGTH (384)
 #define AERON_MAX_PORT_LENGTH (8)

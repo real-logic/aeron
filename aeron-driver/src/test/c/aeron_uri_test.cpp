@@ -131,6 +131,16 @@ TEST_F(UriTest, shouldParseWithMultipleParams)
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), "4567");
 }
 
+TEST_F(UriTest, shouldParseCongestionControlParam)
+{
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|cc=static", &m_uri), 0);
+    ASSERT_EQ(m_uri.type, AERON_URI_UDP);
+    EXPECT_EQ(std::string(m_uri.params.udp.endpoint), "224.10.9.8");
+    EXPECT_EQ(m_uri.params.udp.additional_params.length, 1u);
+    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].key), AERON_URI_CC_KEY);
+    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE);
+}
+
 TEST_F(UriTest, shouldParseNoPublicationParams)
 {
     aeron_uri_publication_params_t params;

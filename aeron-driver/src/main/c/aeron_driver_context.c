@@ -274,7 +274,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
 #define AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_unicast_flow_control_strategy_supplier")
-#define AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT ("aeron_static_window_congestion_control_strategy_supplier")
+#define AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT ("aeron_congestion_control_default_strategy_supplier")
 #define AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
 #define AERON_RCV_INITIAL_WINDOW_LENGTH_DEFAULT (128 * 1024)
 #define AERON_LOSS_REPORT_BUFFER_LENGTH_DEFAULT (1024 * 1024)

@@ -25,7 +25,7 @@ for %%o in (%*) do (
     )
 
     if "%%o"=="--build-aeron-driver" (
-        echo "Enabling building of aeron driver is now the default"
+        echo "Enabling building of Aeron driver is now the default"
     )
 
     if "%%o"=="--link-samples-client-shared" (
@@ -33,7 +33,7 @@ for %%o in (%*) do (
     )
 
     if "%%o"=="--build-archive-api" (
-        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DBUILD_AERON_ARCHIVE_API=ON"
+        echo "Enabling building of Aeron Archive API is now the default"
     )
 
     if "%%o"=="--skip-rmdir" (

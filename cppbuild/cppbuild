@@ -31,7 +31,7 @@ do
       shift
       ;;
     -a|--build-archive-api)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DBUILD_AERON_ARCHIVE_API=ON"
+      echo "Enabling building of Aeron Archive API is now the default"
       shift
       ;;
     --slow-system-tests)
@@ -45,7 +45,7 @@ do
       shift
       ;;
     -b|--build-aeron-driver)
-      echo "Enabling building of aeron driver is now the default"
+      echo "Enabling building of Aeron driver is now the default"
       shift
       ;;
     --no-parallel)

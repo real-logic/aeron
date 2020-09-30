@@ -91,7 +91,7 @@ jobs:
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -178,7 +178,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -227,7 +227,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --debug-build --build-archive-api
+        run: cmake --version && cppbuild/cppbuild --debug-build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -271,7 +271,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           echo "::add-path::cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin"
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -316,7 +316,7 @@ jobs:
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
           echo "::add-path::cmake-$Env:CMAKE_VERSION-win64-x64/bin"
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --build-archive-api
+        run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

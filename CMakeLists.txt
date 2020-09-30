@@ -29,7 +29,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
 
 option(BUILD_AERON_DRIVER "Build Aeron driver" ON)
-option(BUILD_AERON_ARCHIVE_API "Build Aeron Archive API" OFF)
+option(BUILD_AERON_ARCHIVE_API "Build Aeron Archive API" ON)
 
 option(C_WARNINGS_AS_ERRORS "Enable warnings as errors for C" OFF)
 option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)

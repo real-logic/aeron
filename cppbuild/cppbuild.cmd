@@ -80,6 +80,8 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 cmake --build . --config Release --target install
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DZLIB_HOME=%ZLIB_INSTALL_DIR%"
+
 pushd %BUILD_DIR%
 cmake %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

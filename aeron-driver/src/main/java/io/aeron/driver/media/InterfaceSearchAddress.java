@@ -59,9 +59,9 @@ class InterfaceSearchAddress
         return WILDCARD;
     }
 
-    static InterfaceSearchAddress parse(final String s) throws UnknownHostException
+    static InterfaceSearchAddress parse(final String addressAndPort) throws UnknownHostException
     {
-        if (Strings.isEmpty(s))
+        if (Strings.isEmpty(addressAndPort))
         {
             throw new IllegalArgumentException("search address string is null or empty");
         }
@@ -70,9 +70,9 @@ class InterfaceSearchAddress
         int colonIndex = -1;
         int rightAngleBraceIndex = -1;
 
-        for (int i = 0, length = s.length(); i < length; i++)
+        for (int i = 0, length = addressAndPort.length(); i < length; i++)
         {
-            switch (s.charAt(i))
+            switch (addressAndPort.charAt(i))
             {
                 case '/':
                     slashIndex = i;
@@ -88,11 +88,11 @@ class InterfaceSearchAddress
             }
         }
 
-        final String addressString = getAddress(s, slashIndex, colonIndex, rightAngleBraceIndex);
+        final String addressString = getAddress(addressAndPort, slashIndex, colonIndex, rightAngleBraceIndex);
         final InetAddress hostAddress = InetAddress.getByName(addressString);
-        final int port = getPort(s, slashIndex, colonIndex, rightAngleBraceIndex);
+        final int port = getPort(addressAndPort, slashIndex, colonIndex, rightAngleBraceIndex);
         final int defaultSubnetPrefix = hostAddress.getAddress().length * 8;
-        final int subnetPrefix = getSubnet(s, slashIndex, defaultSubnetPrefix);
+        final int subnetPrefix = getSubnet(addressAndPort, slashIndex, defaultSubnetPrefix);
 
         return new InterfaceSearchAddress(new InetSocketAddress(hostAddress, port), subnetPrefix);
     }

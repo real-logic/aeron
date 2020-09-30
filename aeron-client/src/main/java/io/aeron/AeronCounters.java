@@ -104,6 +104,16 @@ public final class AeronCounters
     public static final int DRIVER_SENDER_BPE_TYPE_ID = 13;
 
     /**
+     * Count of media driver neighbors for name resolution.
+     */
+    public static final int NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID = 15;
+
+    /**
+     * Count of entries in the name resolver cache.
+     */
+    public static final int NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID = 16;
+
+    /**
      * Counter used to store the status of a bind address and port for the local end of a channel.
      * <p>
      * When the value is {@link ChannelEndpointStatus#ACTIVE} then the key value and label will be updated with the

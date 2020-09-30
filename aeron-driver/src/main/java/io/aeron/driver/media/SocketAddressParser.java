@@ -36,15 +36,16 @@ class SocketAddressParser
     }
 
     /**
-     * Parse socket addresses from a {@link String}. Supports
-     * hostname:port, ipV4Address:port, [ipV6Address]:port, and name
+     * Parse socket addresses from a {@link String}.
+     * <p>
+     * Supports hostname:port, ipV4Address:port, [ipV6Address]:port, and name.
      *
      * @param value          to be parsed for the socket address.
      * @param uriParamName   for the parse.
      * @param isReResolution for the parse.
      * @param nameResolver   to be used for resolving hostnames.
      * @return An {@link InetSocketAddress} for the parsed input.
-     * @throws UnknownHostException if address cannot be resolved
+     * @throws UnknownHostException if address cannot be resolved.
      */
     static InetSocketAddress parse(
         final String value, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.AeronCounters;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.media.UdpNameResolutionTransport;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -40,6 +41,9 @@ import static io.aeron.driver.DriverNameResolverCache.byteSubsetEquals;
 import static io.aeron.protocol.ResolutionEntryFlyweight.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
+/**
+ * Default {@link NameResolver} for the {@link MediaDriver}.
+ */
 class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrameHandler, NameResolver
 {
     // TODO: make these configurable
@@ -47,9 +51,6 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
     private static final long NEIGHBOR_RESOLUTION_INTERVAL_MS = TimeUnit.SECONDS.toMillis(2);
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long DUTY_CYCLE_INTERVAL_MS = 10;
-
-    public static final int NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID = 15;
-    public static final int NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID = 16;
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
@@ -118,42 +119,25 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, ctx);
 
         neighborsCounter = ctx.countersManager().newCounter(
-            "Resolver neighbors", NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
+            "Resolver neighbors", AeronCounters.NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
         cacheEntriesCounter = ctx.countersManager().newCounter(
-            "Resolver cache entries: name=" + localDriverName, NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
+            "Resolver cache entries: name=" + localDriverName,
+            AeronCounters.NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
+
+        openDatagramChannel();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.closeAll(transport, cache);
     }
 
-    public void openDatagramChannel()
-    {
-        transport.openDatagramChannel(null);
-
-        final InetSocketAddress boundAddress = transport.boundAddress();
-        if (null != boundAddress)
-        {
-            localSocketAddress = boundAddress;
-            localAddress = boundAddress.getAddress().getAddress();
-
-            final StringBuilder builder = new StringBuilder(": bound ");
-            builder.append(transport.bindAddressAndPort());
-
-            if (null != bootstrapNeighborAddress)
-            {
-                builder
-                    .append(" bootstrap ")
-                    .append(bootstrapNeighborAddress.getHostString())
-                    .append(':')
-                    .append(bootstrapNeighborAddress.getPort());
-            }
-
-            neighborsCounter.appendToLabel(builder.toString());
-        }
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     public int doWork(final long nowMs)
     {
         int workCount = 0;
@@ -180,6 +164,9 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
         DriverNameResolverCache.CacheEntry entry;
@@ -217,13 +204,89 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String lookup(final String name, final String uriParamName, final boolean isReLookup)
     {
         // here we would lookup advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
         return delegateResolver.lookup(name, uriParamName, isReLookup);
     }
 
-    public int timeoutNeighbors(final long nowMs)
+    /**
+     * {@inheritDoc}
+     */
+    public int onFrame(
+        final UnsafeBuffer unsafeBuffer, final int length, final InetSocketAddress srcAddress, final long nowMs)
+    {
+        if (headerFlyweight.headerType() == HDR_TYPE_RES)
+        {
+            int offset = MIN_HEADER_LENGTH;
+
+            while (length > offset)
+            {
+                resolutionEntryFlyweight.wrap(unsafeBuffer, offset, length - offset);
+
+                if ((length - offset) < resolutionEntryFlyweight.entryLength())
+                {
+                    invalidPackets.increment();
+                    return 0;
+                }
+
+                onResolutionEntry(resolutionEntryFlyweight, srcAddress, nowMs);
+
+                offset += resolutionEntryFlyweight.entryLength();
+            }
+
+            return length;
+        }
+
+        return 0;
+    }
+
+    static String getCanonicalName()
+    {
+        String canonicalName = null;
+
+        try
+        {
+            canonicalName = InetAddress.getLocalHost().getHostName();
+        }
+        catch (final UnknownHostException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return canonicalName;
+    }
+
+    private void openDatagramChannel()
+    {
+        transport.openDatagramChannel(null);
+
+        final InetSocketAddress boundAddress = transport.boundAddress();
+        if (null != boundAddress)
+        {
+            localSocketAddress = boundAddress;
+            localAddress = boundAddress.getAddress().getAddress();
+
+            final StringBuilder builder = new StringBuilder(": bound ");
+            builder.append(transport.bindAddressAndPort());
+
+            if (null != bootstrapNeighborAddress)
+            {
+                builder
+                    .append(" bootstrap ")
+                    .append(bootstrapNeighborAddress.getHostString())
+                    .append(':')
+                    .append(bootstrapNeighborAddress.getPort());
+            }
+
+            neighborsCounter.appendToLabel(builder.toString());
+        }
+    }
+
+    private int timeoutNeighbors(final long nowMs)
     {
         int workCount = 0;
 
@@ -244,7 +307,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return workCount;
     }
 
-    public void sendSelfResolutions(final long nowMs)
+    private void sendSelfResolutions(final long nowMs)
     {
         byteBuffer.clear();
 
@@ -296,56 +359,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         selfResolutionDeadlineMs = nowMs + selfResolutionIntervalMs;
     }
 
-    public void sendNeighborResolutions(final long nowMs)
-    {
-        for (final DriverNameResolverCache.Iterator iter = cache.resetIterator(); iter.hasNext();)
-        {
-            byteBuffer.clear();
-
-            int currentOffset = HeaderFlyweight.MIN_HEADER_LENGTH;
-
-            headerFlyweight
-                .headerType(HeaderFlyweight.HDR_TYPE_RES)
-                .flags((short)0)
-                .version(HeaderFlyweight.CURRENT_VERSION);
-
-            while (iter.hasNext())
-            {
-                final DriverNameResolverCache.CacheEntry entry = iter.next();
-
-                if (currentOffset + entryLengthRequired(entry.type, entry.name.length) > mtuLength)
-                {
-                    iter.rewindNext();
-                    break;
-                }
-
-                resolutionEntryFlyweight.wrap(unsafeBuffer, currentOffset, unsafeBuffer.capacity() - currentOffset);
-                resolutionEntryFlyweight
-                    .resType(entry.type)
-                    .flags((short)0)
-                    .udpPort((short)entry.port)
-                    .ageInMs((int)(nowMs - entry.timeOfLastActivityMs))
-                    .putAddress(entry.address)
-                    .putName(entry.name);
-
-                final int length = resolutionEntryFlyweight.entryLength();
-                currentOffset += length;
-            }
-
-            headerFlyweight.frameLength(currentOffset);
-            byteBuffer.limit(currentOffset);
-
-            for (int i = 0, size = neighborList.size(); i < size; i++)
-            {
-                final Neighbor neighbor = neighborList.get(i);
-                sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
-            }
-        }
-
-        neighborResolutionDeadlineMs = nowMs + neighborResolutionIntervalMs;
-    }
-
-    public int sendResolutionFrameTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
+    private void sendResolutionFrameTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
         buffer.position(0);
 
@@ -356,42 +370,9 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         {
             shortSends.increment();
         }
-
-        return bytesSent;
     }
 
-    public int onFrame(
-        final UnsafeBuffer unsafeBuffer,
-        final int length,
-        final InetSocketAddress srcAddress,
-        final long nowMs)
-    {
-        if (headerFlyweight.headerType() == HDR_TYPE_RES)
-        {
-            int offset = MIN_HEADER_LENGTH;
-
-            while (length > offset)
-            {
-                resolutionEntryFlyweight.wrap(unsafeBuffer, offset, length - offset);
-
-                if ((length - offset) < resolutionEntryFlyweight.entryLength())
-                {
-                    invalidPackets.increment();
-                    return 0;
-                }
-
-                onResolutionEntry(resolutionEntryFlyweight, srcAddress, nowMs);
-
-                offset += resolutionEntryFlyweight.entryLength();
-            }
-
-            return length;
-        }
-
-        return 0;
-    }
-
-    void onResolutionEntry(
+    private void onResolutionEntry(
         final ResolutionEntryFlyweight resolutionEntry, final InetSocketAddress srcAddress, final long nowMs)
     {
         final byte resType = resolutionEntry.resType();
@@ -439,7 +420,7 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         }
     }
 
-    int findNeighborByAddress(final byte[] address, final int addressLength, final int port)
+    private int findNeighborByAddress(final byte[] address, final int addressLength, final int port)
     {
         for (int i = 0, size = neighborList.size(); i < size; i++)
         {
@@ -455,20 +436,53 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return -1;
     }
 
-    static String getCanonicalName()
+    private void sendNeighborResolutions(final long nowMs)
     {
-        String canonicalName = null;
-
-        try
+        for (final DriverNameResolverCache.Iterator iter = cache.resetIterator(); iter.hasNext();)
         {
-            canonicalName = InetAddress.getLocalHost().getHostName();
-        }
-        catch (final UnknownHostException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
+            byteBuffer.clear();
+
+            int currentOffset = HeaderFlyweight.MIN_HEADER_LENGTH;
+
+            headerFlyweight
+                .headerType(HeaderFlyweight.HDR_TYPE_RES)
+                .flags((short)0)
+                .version(HeaderFlyweight.CURRENT_VERSION);
+
+            while (iter.hasNext())
+            {
+                final DriverNameResolverCache.CacheEntry entry = iter.next();
+
+                if (currentOffset + entryLengthRequired(entry.type, entry.name.length) > mtuLength)
+                {
+                    iter.rewindNext();
+                    break;
+                }
+
+                resolutionEntryFlyweight.wrap(unsafeBuffer, currentOffset, unsafeBuffer.capacity() - currentOffset);
+                resolutionEntryFlyweight
+                    .resType(entry.type)
+                    .flags((short)0)
+                    .udpPort((short)entry.port)
+                    .ageInMs((int)(nowMs - entry.timeOfLastActivityMs))
+                    .putAddress(entry.address)
+                    .putName(entry.name);
+
+                final int length = resolutionEntryFlyweight.entryLength();
+                currentOffset += length;
+            }
+
+            headerFlyweight.frameLength(currentOffset);
+            byteBuffer.limit(currentOffset);
+
+            for (int i = 0, size = neighborList.size(); i < size; i++)
+            {
+                final Neighbor neighbor = neighborList.get(i);
+                sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
+            }
         }
 
-        return canonicalName;
+        neighborResolutionDeadlineMs = nowMs + neighborResolutionIntervalMs;
     }
 
     static class Neighbor

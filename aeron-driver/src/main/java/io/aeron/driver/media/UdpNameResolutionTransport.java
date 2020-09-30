@@ -26,15 +26,27 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
+/**
+ * {@link UdpChannelTransport} specialised for for name resolution between {@link MediaDriver}s.
+ */
 public class UdpNameResolutionTransport extends UdpChannelTransport
 {
+    /**
+     * Handler for processing the received frames.
+     */
+    @FunctionalInterface
     public interface UdpFrameHandler
     {
-        int onFrame(
-            UnsafeBuffer unsafeBuffer,
-            int length,
-            InetSocketAddress srcAddress,
-            long nowMs);
+        /**
+         * Callback for processing the received frames.
+         *
+         * @param unsafeBuffer containing the received frame.
+         * @param length       of the frame in the buffer.
+         * @param srcAddress   the frame came from.
+         * @param nowMs        current time.
+         * @return the number of bytes received.
+         */
+        int onFrame(UnsafeBuffer unsafeBuffer, int length, InetSocketAddress srcAddress, long nowMs);
     }
 
     private final UnsafeBuffer unsafeBuffer;
@@ -42,16 +54,23 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
 
     public UdpNameResolutionTransport(
         final UdpChannel udpChannel,
-        final InetSocketAddress resolverAddr,
+        final InetSocketAddress resolverAddress,
         final UnsafeBuffer unsafeBuffer,
         final MediaDriver.Context context)
     {
-        super(udpChannel, null, resolverAddr, null, context);
+        super(udpChannel, null, resolverAddress, null, context);
 
         this.unsafeBuffer = unsafeBuffer;
         this.byteBuffer = unsafeBuffer.byteBuffer();
     }
 
+    /**
+     * Poll the transport for received frames to be delivered to a {@link UdpFrameHandler}.
+     *
+     * @param handler for processing the frames.
+     * @param nowMs   current time.
+     * @return number of bytes received.
+     */
     public int poll(final UdpFrameHandler handler, final long nowMs)
     {
         int bytesReceived = 0;
@@ -101,6 +120,11 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
         return bytesSent;
     }
 
+    /**
+     * The {@link InetSocketAddress} which the resolver is bound to for listening to requests.
+     *
+     * @return the {@link InetSocketAddress} which the resolver is bound to for listening to requests.
+     */
     public InetSocketAddress boundAddress()
     {
         try
@@ -113,11 +137,17 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
         }
     }
 
-    public static InetSocketAddress getInterfaceAddress(final String interfaceString)
+    /**
+     * Get {@link InetSocketAddress} for for an interface of an address and port.
+     *
+     * @param addressAndPort for the endpoint.
+     * @return the {@link InetSocketAddress} if successful or null if not.
+     */
+    public static InetSocketAddress getInterfaceAddress(final String addressAndPort)
     {
         try
         {
-            return InterfaceSearchAddress.parse(interfaceString).getAddress();
+            return InterfaceSearchAddress.parse(addressAndPort).getAddress();
         }
         catch (final UnknownHostException ex)
         {
@@ -126,6 +156,12 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
         }
     }
 
+    /**
+     * Get the {@link InetSocketAddress} for a host and port endpoint using the default name resolver.
+     *
+     * @param hostAndPort to parse.
+     * @return the resolved {@link InetSocketAddress} if successful or null if not.
+     */
     public static InetSocketAddress getInetSocketAddress(final String hostAndPort)
     {
         try
@@ -133,9 +169,9 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
             return SocketAddressParser.parse(
                 hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, DefaultNameResolver.INSTANCE);
         }
-        catch (final UnknownHostException e)
+        catch (final UnknownHostException ex)
         {
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
             return null;
         }
     }

@@ -327,15 +327,20 @@ TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
         POLL_FOR(0 < pub->tryClaim(16, claim), invoker);
         claim.buffer().putString(claim.offset(), message);
         claim.commit();
+        bool seen = false;
 
         POLL_FOR(
             0 < sub->controlledPoll(
                 [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
                 {
-                    return ControlledPollAction::COMMIT;
+                    seen = true;
+                    return message == buffer.getString(offset) ?
+                        ControlledPollAction::COMMIT : ControlledPollAction::ABORT;
                 },
                 1),
             invoker);
+
+        EXPECT_TRUE(seen);
     }
 
     invoker.invoke();

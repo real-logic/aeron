@@ -64,6 +64,7 @@ public class MultiDestinationCastTest
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR = SystemUtil.tmpDirName() + "aeron-system-tests" + File.separator;
+    private static final int FRAGMENT_LIMIT = 10;
 
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
 
@@ -299,7 +300,7 @@ public class MultiDestinationCastTest
             }
             else
             {
-                subscriptionB.poll(fragmentHandlerB, 10);
+                subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT);
                 Tests.yield();
             }
 
@@ -355,11 +356,11 @@ public class MultiDestinationCastTest
                 Tests.yieldingWait(positionSupplier);
             }
 
-            subscriptionA.poll(fragmentHandlerA, 10);
+            subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT);
 
             if (messagesSent.value > (numMessagesToSend - numMessageForSub2))
             {
-                subscriptionB.poll(fragmentHandlerB, 10);
+                subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT);
             }
 
             if (messagesSent.value == (numMessagesToSend - numMessageForSub2))
@@ -369,7 +370,7 @@ public class MultiDestinationCastTest
                 // then B will receive more than the expected `numMessageForSub2`.
                 while (fragmentHandlerA.notDone(published))
                 {
-                    if (subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+                    if (subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT) <= 0)
                     {
                         Tests.yieldingWait(messageSupplierA);
                     }
@@ -382,12 +383,12 @@ public class MultiDestinationCastTest
 
         while (fragmentHandlerA.notDone(numMessagesToSend) || fragmentHandlerB.notDone(numMessageForSub2))
         {
-            if (fragmentHandlerA.notDone(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, 10) <= 0)
+            if (fragmentHandlerA.notDone(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT) <= 0)
             {
                 Tests.yieldingWait(messageSupplierA);
             }
 
-            if (fragmentHandlerB.notDone(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, 10) <= 0)
+            if (fragmentHandlerB.notDone(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT) <= 0)
             {
                 Tests.yieldingWait(messageSupplierB);
             }
@@ -396,7 +397,25 @@ public class MultiDestinationCastTest
 
     private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)
     {
-        Tests.pollForFragments(subscription, handler, 1, TimeUnit.MILLISECONDS.toNanos(500));
+        final long startNs = System.nanoTime();
+        long nowNs = startNs;
+        int totalFragments = 0;
+
+        do
+        {
+            final int numFragments = subscription.poll(handler, FRAGMENT_LIMIT);
+            if (numFragments <= 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                nowNs = System.nanoTime();
+            }
+            else
+            {
+                totalFragments += numFragments;
+            }
+        }
+        while (totalFragments < 1 && ((nowNs - startNs) < TimeUnit.MILLISECONDS.toNanos(5000)));
     }
 
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)

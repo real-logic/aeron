@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -206,15 +205,6 @@ public class Tests
             }).when(mock).close();
     }
 
-    public static void yieldUntilDone(final BooleanSupplier isDone)
-    {
-        while (!isDone.getAsBoolean())
-        {
-            Thread.yield();
-            checkInterruptStatus();
-        }
-    }
-
     public static void wait(final IdleStrategy idleStrategy, final Supplier<String> messageSupplier)
     {
         idleStrategy.idle();
@@ -273,35 +263,6 @@ public class Tests
             nowNs = System.nanoTime();
         }
         while (!condition.getAsBoolean() && ((nowNs - startNs) < timeoutNs) && i++ < maxIterations);
-    }
-
-    public static int pollForFragments(
-        final Subscription subscription,
-        final FragmentHandler handler,
-        final int minFragments,
-        final long timeoutNs)
-    {
-        final long startNs = System.nanoTime();
-
-        long nowNs = startNs;
-        int totalFragments = 0;
-        do
-        {
-            final int numFragments = subscription.poll(handler, 10);
-            if (numFragments <= 0)
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-                nowNs = System.nanoTime();
-            }
-            else
-            {
-                totalFragments += numFragments;
-            }
-        }
-        while (totalFragments < minFragments && ((nowNs - startNs) < timeoutNs));
-
-        return totalFragments;
     }
 
     public static void await(final BooleanSupplier conditionSupplier, final long timeoutNs)

@@ -383,12 +383,14 @@ public class MultiDestinationCastTest
 
         while (fragmentHandlerA.notDone(numMessagesToSend) || fragmentHandlerB.notDone(numMessageForSub2))
         {
-            if (fragmentHandlerA.notDone(numMessagesToSend) && subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT) <= 0)
+            if (fragmentHandlerA.notDone(numMessagesToSend) &&
+                subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT) <= 0)
             {
                 Tests.yieldingWait(messageSupplierA);
             }
 
-            if (fragmentHandlerB.notDone(numMessageForSub2) && subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT) <= 0)
+            if (fragmentHandlerB.notDone(numMessageForSub2) &&
+                subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT) <= 0)
             {
                 Tests.yieldingWait(messageSupplierB);
             }

@@ -48,9 +48,9 @@ public:
     }
 
 protected:
-    aeron_uri_t m_uri;
+    aeron_uri_t m_uri = {};
     aeron_driver_context_t *m_context = nullptr;
-    aeron_driver_conductor_t m_conductor;
+    aeron_driver_conductor_t m_conductor = {};
 };
 
 #define AERON_URI_PARSE(uri_str, uri) aeron_uri_parse(strlen(uri_str), uri_str, uri)
@@ -374,8 +374,7 @@ class UriResolverTest : public testing::Test
 public:
     UriResolverTest() :
         addr_in((struct sockaddr_in *)&m_addr),
-        addr_in6((struct sockaddr_in6 *)&m_addr),
-        m_prefixlen(0)
+        addr_in6((struct sockaddr_in6 *)&m_addr)
     {
         aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
     }
@@ -435,12 +434,12 @@ public:
     }
 
 protected:
-    aeron_uri_t m_uri;
-    struct sockaddr_storage m_addr;
-    struct sockaddr_in *addr_in;
-    struct sockaddr_in6 *addr_in6;
-    size_t m_prefixlen;
-    aeron_name_resolver_t m_resolver;
+    aeron_uri_t m_uri = {};
+    struct sockaddr_storage m_addr = {};
+    struct sockaddr_in *addr_in = nullptr;
+    struct sockaddr_in6 *addr_in6 = nullptr;
+    size_t m_prefixlen = 0;
+    aeron_name_resolver_t m_resolver = {};
 };
 
 TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)

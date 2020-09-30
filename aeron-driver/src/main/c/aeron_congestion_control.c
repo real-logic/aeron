@@ -93,7 +93,6 @@ int32_t aeron_static_window_congestion_control_strategy_on_track_rebuild(
     bool loss_occurred)
 {
     *should_force_sm = false;
-
     return ((aeron_static_window_congestion_control_strategy_state_t *)state)->window_length;
 }
 
@@ -173,39 +172,41 @@ int aeron_congestion_control_default_strategy_supplier(
     }
 
     const char *cc_str = aeron_uri_find_param_value(&channel_uri.params.udp.additional_params, AERON_URI_CC_KEY);
-
+    size_t scc_length = sizeof(AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE) + 1;
+    size_t ccc_length = sizeof(AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE) + 1;
     int result = -1;
-    if (NULL == cc_str || 0 == strncmp(cc_str, AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE, strlen(AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE) + 1))
+
+    if (NULL == cc_str || 0 == strncmp(cc_str, AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE, scc_length))
     {
         result = aeron_static_window_congestion_control_strategy_supplier(
-                strategy,
-                channel_length,
-                channel,
-                stream_id,
-                session_id,
-                registration_id,
-                term_length,
-                sender_mtu_length,
-                control_address,
-                src_address,
-                context,
-                counters_manager);
+            strategy,
+            channel_length,
+            channel,
+            stream_id,
+            session_id,
+            registration_id,
+            term_length,
+            sender_mtu_length,
+            control_address,
+            src_address,
+            context,
+            counters_manager);
     }
-    else if (0 == strncmp(cc_str, AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE, strlen(AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE) + 1))
+    else if (0 == strncmp(cc_str, AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE, ccc_length))
     {
         result = aeron_cubic_congestion_control_strategy_supplier(
-                strategy,
-                channel_length,
-                channel,
-                stream_id,
-                session_id,
-                registration_id,
-                term_length,
-                sender_mtu_length,
-                control_address,
-                src_address,
-                context,
-                counters_manager);
+            strategy,
+            channel_length,
+            channel,
+            stream_id,
+            session_id,
+            registration_id,
+            term_length,
+            sender_mtu_length,
+            control_address,
+            src_address,
+            context,
+            counters_manager);
     }
 
     aeron_uri_close(&channel_uri);
@@ -240,17 +241,18 @@ aeron_cubic_congestion_control_strategy_state_t;
 bool aeron_cubic_congestion_control_strategy_should_measure_rtt(void *state, int64_t now_ns)
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
-            (aeron_cubic_congestion_control_strategy_state_t *) state;
+        (aeron_cubic_congestion_control_strategy_state_t *)state;
+
     return cubic_state->measure_rtt &&
-           cubic_state->outstanding_rtt_measurements < AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS &&
-           (((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS) - now_ns < 0) ||
-            ((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MEASUREMENT_TIMEOUT_NS) - now_ns < 0));
+        cubic_state->outstanding_rtt_measurements < AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS &&
+        (((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS) - now_ns < 0) ||
+        ((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MEASUREMENT_TIMEOUT_NS) - now_ns < 0));
 }
 
 void aeron_cubic_congestion_control_strategy_on_rttm_sent(void *state, int64_t now_ns)
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
-            (aeron_cubic_congestion_control_strategy_state_t *) state;
+        (aeron_cubic_congestion_control_strategy_state_t *)state;
     cubic_state->last_rtt_timestamp_ns = now_ns;
     cubic_state->outstanding_rtt_measurements++;
 }
@@ -259,7 +261,7 @@ void aeron_cubic_congestion_control_strategy_on_rttm(
     void *state, int64_t now_ns, int64_t rtt_ns, struct sockaddr_storage *source_address)
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
-            (aeron_cubic_congestion_control_strategy_state_t *) state;
+        (aeron_cubic_congestion_control_strategy_state_t *)state;
     cubic_state->outstanding_rtt_measurements--;
     cubic_state->last_rtt_timestamp_ns = now_ns;
     cubic_state->rtt_ns = rtt_ns;
@@ -278,26 +280,27 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
     bool loss_occurred)
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
-            (aeron_cubic_congestion_control_strategy_state_t *) state;
+        (aeron_cubic_congestion_control_strategy_state_t *)state;
     *should_force_sm = false;
 
     if (loss_occurred)
     {
         cubic_state->w_max = cubic_state->cwnd;
         cubic_state->k = cbrt((double)cubic_state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
-        const int32_t new_cwnd = (int32_t) (cubic_state->cwnd * (1.0 - AERON_CUBICCONGESTIONCONTROL_B));
+        const int32_t new_cwnd = (int32_t)(cubic_state->cwnd * (1.0 - AERON_CUBICCONGESTIONCONTROL_B));
         cubic_state->cwnd = new_cwnd > 1 ? new_cwnd : 1;
         cubic_state->last_loss_timestamp_ns = now_ns;
         *should_force_sm = true;
     }
-    else if (cubic_state->cwnd < cubic_state->max_cwnd && ((cubic_state->last_update_timestamp_ns + cubic_state->window_update_timeout_ns) - now_ns < 0))
+    else if (cubic_state->cwnd < cubic_state->max_cwnd &&
+        ((cubic_state->last_update_timestamp_ns + cubic_state->window_update_timeout_ns) - now_ns < 0))
     {
         // W_cubic = C(T - K)^3 + w_max
         const double duration_since_decr = (double)(now_ns - cubic_state->last_loss_timestamp_ns) / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
         const double diff_to_k = duration_since_decr - cubic_state->k;
         const double incr = AERON_CUBICCONGESTIONCONTROL_C * diff_to_k * diff_to_k * diff_to_k;
 
-        const int32_t new_cwnd = cubic_state->w_max + (int32_t) incr;
+        const int32_t new_cwnd = cubic_state->w_max + (int32_t)incr;
         cubic_state->cwnd = new_cwnd < cubic_state->max_cwnd ? new_cwnd : cubic_state->max_cwnd;
 
         // if using TCP mode, then check to see if we are in the TCP region
@@ -306,9 +309,10 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
             // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
             const double rtt_in_seconds = (double)cubic_state->rtt_ns / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
             const double w_tcp =
-                    (double)cubic_state->w_max * (1.0 - AERON_CUBICCONGESTIONCONTROL_B) + ((3.0 * AERON_CUBICCONGESTIONCONTROL_B / (2.0 - AERON_CUBICCONGESTIONCONTROL_B)) * (duration_since_decr / rtt_in_seconds));
+                (double)cubic_state->w_max * (1.0 - AERON_CUBICCONGESTIONCONTROL_B) +
+                ((3.0 * AERON_CUBICCONGESTIONCONTROL_B / (2.0 - AERON_CUBICCONGESTIONCONTROL_B)) * (duration_since_decr / rtt_in_seconds));
 
-            const int32_t new_cwnd = (int32_t) w_tcp;
+            const int32_t new_cwnd = (int32_t)w_tcp;
             cubic_state->cwnd = new_cwnd > cubic_state->cwnd ? new_cwnd : cubic_state->cwnd;
         }
 
@@ -323,7 +327,7 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
 
 int32_t aeron_cubic_congestion_control_strategy_initial_window_length(void *state)
 {
-    return ((aeron_cubic_congestion_control_strategy_state_t *) state)->min_window;
+    return ((aeron_cubic_congestion_control_strategy_state_t *)state)->min_window;
 }
 
 int aeron_cubic_congestion_control_strategy_supplier(
@@ -379,8 +383,8 @@ int aeron_cubic_congestion_control_strategy_supplier(
     state->min_window = sender_mtu_length;
     const int32_t initial_window_length = (int32_t)context->initial_window_length;
     const int32_t max_window_for_term = term_length / 2;
-    const int32_t max_window =
-            max_window_for_term < initial_window_length ? max_window_for_term : initial_window_length;
+    const int32_t max_window = max_window_for_term < initial_window_length ?
+        max_window_for_term : initial_window_length;
 
     state->max_cwnd = max_window / sender_mtu_length;
     state->cwnd = 1;
@@ -393,30 +397,30 @@ int aeron_cubic_congestion_control_strategy_supplier(
     state->window_update_timeout_ns = state->rtt_ns;
 
     const int32_t rtt_indicator_counter_id = aeron_stream_counter_allocate(
-            counters_manager,
-            AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME,
-            AERON_COUNTER_PER_IMAGE_TYPE_ID,
-            registration_id,
-            session_id,
-            stream_id,
-            channel_length,
-            channel,
-            "");
+        counters_manager,
+        AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME,
+        AERON_COUNTER_PER_IMAGE_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        "");
     if (rtt_indicator_counter_id < 0)
     {
         goto error_cleanup;
     }
 
     const int32_t window_indicator_counter_id = aeron_stream_counter_allocate(
-            counters_manager,
-            AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME,
-            AERON_COUNTER_PER_IMAGE_TYPE_ID,
-            registration_id,
-            session_id,
-            stream_id,
-            channel_length,
-            channel,
-            "");
+        counters_manager,
+        AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME,
+        AERON_COUNTER_PER_IMAGE_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        "");
     if (window_indicator_counter_id < 0)
     {
         aeron_counters_manager_free(counters_manager, rtt_indicator_counter_id);

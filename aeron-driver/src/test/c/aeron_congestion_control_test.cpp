@@ -90,7 +90,7 @@ public:
 
         EXPECT_EQ(result, 0);
         EXPECT_NE(nullptr, congestion_control_strategy);
-        void *const state = congestion_control_strategy->state;
+        void * const state = congestion_control_strategy->state;
         EXPECT_NE(nullptr, state);
         EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
         EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
@@ -109,7 +109,7 @@ public:
     {
         const aeron_counters_manager_t *counters;
         int32_t type_id;
-        char *label_prefix;
+        const char *label_prefix;
         int32_t id;
         int64_t value;
     }
@@ -136,7 +136,7 @@ public:
     }
 
     static int32_t find_counter_by_label_prefix(
-        const aeron_counters_manager_t *counters, const int32_t type_id, char *label_prefix)
+        const aeron_counters_manager_t *counters, const int32_t type_id, const char *label_prefix)
     {
         counters_clientd_t clientd;
         clientd.counters = counters;
@@ -205,7 +205,7 @@ TEST_F(CongestionControlTest, shouldReturnDefaultCongestionControlStrategySuppli
 TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlStrategyWhenNoCcParamValue)
 {
     const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
-    const size_t initial_window_length = m_context->initial_window_length;
+    const auto initial_window_length = (int32_t)m_context->initial_window_length;
     test_static_window_congestion_control(
         aeron_congestion_control_default_strategy_supplier,
         channel,
@@ -259,7 +259,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
 
     EXPECT_EQ(result, 0);
     EXPECT_NE(nullptr, congestion_control_strategy);
-    void *const state = congestion_control_strategy->state;
+    void * const state = congestion_control_strategy->state;
     EXPECT_NE(nullptr, state);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
@@ -271,7 +271,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
     const int32_t rtt_indicator_counter_id = find_counter_by_label_prefix(
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
-        (char *)AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME);
+        AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME);
     EXPECT_EQ(0, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, rtt_indicator_counter_id)));
 
     const int32_t window_counter_id = find_counter_by_label_prefix(
@@ -365,7 +365,7 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
 
     EXPECT_EQ(result, 0);
     EXPECT_NE(nullptr, congestion_control_strategy);
-    void *const state = congestion_control_strategy->state;
+    void * const state = congestion_control_strategy->state;
     EXPECT_NE(nullptr, state);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);

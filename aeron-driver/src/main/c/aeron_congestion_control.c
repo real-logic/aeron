@@ -286,9 +286,11 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
     if (loss_occurred)
     {
         cubic_state->w_max = cubic_state->cwnd;
-        cubic_state->k = cbrt((double)cubic_state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
-        const int32_t new_cwnd = (int32_t)(cubic_state->cwnd * (1.0 - AERON_CUBICCONGESTIONCONTROL_B));
-        cubic_state->cwnd = new_cwnd > 1 ? new_cwnd : 1;
+        cubic_state->k = cbrt(
+            (double)cubic_state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
+
+        const int32_t cwnd = (int32_t)(cubic_state->cwnd * (1.0 - AERON_CUBICCONGESTIONCONTROL_B));
+        cubic_state->cwnd = cwnd > 1 ? cwnd : 1;
         cubic_state->last_loss_timestamp_ns = now_ns;
         *should_force_sm = true;
     }
@@ -296,21 +298,23 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
         ((cubic_state->last_update_timestamp_ns + cubic_state->window_update_timeout_ns) - now_ns < 0))
     {
         // W_cubic = C(T - K)^3 + w_max
-        const double duration_since_decr = (double)(now_ns - cubic_state->last_loss_timestamp_ns) / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
+        const double duration_since_decr =
+            (double)(now_ns - cubic_state->last_loss_timestamp_ns) / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
         const double diff_to_k = duration_since_decr - cubic_state->k;
         const double incr = AERON_CUBICCONGESTIONCONTROL_C * diff_to_k * diff_to_k * diff_to_k;
 
-        const int32_t new_cwnd = cubic_state->w_max + (int32_t)incr;
-        cubic_state->cwnd = new_cwnd < cubic_state->max_cwnd ? new_cwnd : cubic_state->max_cwnd;
+        const int32_t cwnd = cubic_state->w_max + (int32_t)incr;
+        cubic_state->cwnd = cwnd < cubic_state->max_cwnd ? cwnd : cubic_state->max_cwnd;
 
         // if using TCP mode, then check to see if we are in the TCP region
         if (cubic_state->tcp_mode && cubic_state->cwnd < cubic_state->w_max)
         {
             // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
-            const double rtt_in_seconds = (double)cubic_state->rtt_ns / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
-            const double w_tcp =
-                (double)cubic_state->w_max * (1.0 - AERON_CUBICCONGESTIONCONTROL_B) +
-                ((3.0 * AERON_CUBICCONGESTIONCONTROL_B / (2.0 - AERON_CUBICCONGESTIONCONTROL_B)) * (duration_since_decr / rtt_in_seconds));
+            const double rtt_in_seconds =
+                (double)cubic_state->rtt_ns / (double)AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS;
+            const double w_tcp = (double)cubic_state->w_max * (1.0 - AERON_CUBICCONGESTIONCONTROL_B) +
+                ((3.0 * AERON_CUBICCONGESTIONCONTROL_B / (2.0 - AERON_CUBICCONGESTIONCONTROL_B)) *
+                    (duration_since_decr / rtt_in_seconds));
 
             const int32_t new_cwnd = (int32_t)w_tcp;
             cubic_state->cwnd = new_cwnd > cubic_state->cwnd ? new_cwnd : cubic_state->cwnd;

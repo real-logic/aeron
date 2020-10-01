@@ -5,7 +5,6 @@ set "DIR=%~dp0"
 set "SOURCE_DIR=%DIR%\.."
 set "BUILD_DIR=%DIR%\Release"
 set "BUILD_CONFIG=Release"
-set "ZLIB_ZIP=%DIR%\zlib1211.zip"
 set "EXTRA_CMAKE_ARGS="
 set "AERON_SKIP_RMDIR="
 
@@ -62,27 +61,9 @@ if "%AERON_SKIP_RMDIR%" equ "yes" goto :start_build
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
 :start_build
 
-set "ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build"
-set "ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64"
-
 md %BUILD_DIR%
 pushd %BUILD_DIR%
-md %ZLIB_BUILD_DIR%
-pushd %ZLIB_BUILD_DIR%
-7z x %ZLIB_ZIP%
-pushd zlib-1.2.11
-md build
-pushd build
 
-cmake -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-cmake --build . --config Release --target install
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DZLIB_HOME=%ZLIB_INSTALL_DIR%"
-
-pushd %BUILD_DIR%
 cmake %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 

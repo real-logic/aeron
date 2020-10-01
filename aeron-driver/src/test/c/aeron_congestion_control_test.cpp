@@ -277,7 +277,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
     const int32_t window_counter_id = find_counter_by_label_prefix(
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
-        (char *)AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
+        AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
     EXPECT_EQ(sender_mtu_length, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
 
     EXPECT_FALSE(congestion_control_strategy->should_measure_rtt(state, 777LL));
@@ -377,13 +377,13 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
     const int32_t rtt_indicator_counter_id = find_counter_by_label_prefix(
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
-        (char *)AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME);
+        AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME);
     EXPECT_EQ(0, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, rtt_indicator_counter_id)));
 
     const int32_t window_counter_id = find_counter_by_label_prefix(
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
-        (char *)AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
+        AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
     EXPECT_EQ(sender_mtu_length, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
 
     EXPECT_TRUE(congestion_control_strategy->should_measure_rtt(state, 10000000000LL));

@@ -84,18 +84,12 @@ Full clean and build of all modules
 
 You require the following to build the C++ API for Aeron:
 
-* 3.1.3 or higher of [CMake](http://www.cmake.org/)
+* 3.6.1 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
 * C11 supported compiler for the supported platform
-* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires
-  `zlib.h` currently. So on Ubuntu:
+* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). 
 
-```shell
-    $ sudo apt-get install libz-dev
-```
-
-__Note__: 64-bit Linux, OSX, and Windows are supported. A Windows build requires Visual Studio 64-bit plus
-[7z](https://www.7-zip.org/download.html) to unzip the `zlib` source archive.
+__Note__: Aeron support is available for 64-bit Linux, OSX, and Windows. 
 
 For convenience, the `cppbuild` script does a full clean, build, and test of all targets as a Release build.
 

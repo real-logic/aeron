@@ -93,7 +93,7 @@ public class MultiNodeTest
             cluster.stopNode(cluster.node(0));
 
             cluster.sendMessages(postCatchupMessageCount);
-            cluster.awaitResponseMessageCount(postCatchupMessageCount);
+            cluster.awaitResponseMessageCount(totalMessageCount);
 
             cluster.stopAllNodes();
             cluster.restartAllNodes(false);

@@ -288,4 +288,21 @@ inline size_t aeron_publication_image_subscriber_count(aeron_publication_image_t
     return image->conductor_fields.subscribable.length;
 }
 
+inline int64_t aeron_publication_image_join_position(aeron_publication_image_t *image)
+{
+    int64_t position = *image->rcv_pos_position.value_addr;
+
+    for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
+    {
+        int64_t sub_pos = aeron_counter_get_volatile(image->conductor_fields.subscribable.array[i].value_addr);
+
+        if (sub_pos < position)
+        {
+            position = sub_pos;
+        }
+    }
+
+    return position;
+}
+
 #endif //AERON_PUBLICATION_IMAGE_H

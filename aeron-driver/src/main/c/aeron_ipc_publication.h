@@ -149,9 +149,21 @@ inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *
         publication->initial_term_id);
 }
 
-inline int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication)
+inline int64_t aeron_ipc_publication_join_position(aeron_ipc_publication_t *publication)
 {
-    return publication->conductor_fields.consumer_position;
+    int64_t position = publication->conductor_fields.consumer_position;
+
+    for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
+    {
+        int64_t sub_pos = aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
+
+        if (sub_pos < position)
+        {
+            position = sub_pos;
+        }
+    }
+
+    return position;
 }
 
 inline bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication)

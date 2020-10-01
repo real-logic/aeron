@@ -458,7 +458,7 @@ extern bool aeron_ipc_publication_is_possibly_blocked(
 
 extern int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication);
 
-extern int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication);
+extern int64_t aeron_ipc_publication_join_position(aeron_ipc_publication_t *publication);
 
 extern bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication);
 

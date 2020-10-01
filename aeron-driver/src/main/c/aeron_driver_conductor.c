@@ -1236,7 +1236,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     link->registration_id = registration_id;
                     client->publication_links.length++;
 
-                    conductor->network_publications.array[conductor->network_publications.length++].publication = publication;
+                    conductor->network_publications.array[conductor->network_publications.length++].publication =
+                        publication;
                     publication->conductor_fields.managed_resource.time_of_last_state_change_ns =
                         aeron_clock_cached_nano_time(conductor->context->cached_clock);
                 }
@@ -2289,7 +2290,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
                 publication->conductor_fields.managed_resource.registration_id,
                 publication->session_id,
                 publication->stream_id,
-                aeron_ipc_publication_joining_position(publication),
+                aeron_ipc_publication_join_position(publication),
                 now_ns,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
@@ -2412,7 +2413,7 @@ int aeron_driver_conductor_on_add_network_publication(
                 publication->conductor_fields.managed_resource.registration_id,
                 publication->session_id,
                 publication->stream_id,
-                aeron_network_publication_consumer_position(publication),
+                aeron_network_publication_join_position(publication),
                 now_ns,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
@@ -2527,7 +2528,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
                 publication->conductor_fields.managed_resource.registration_id,
                 publication->session_id,
                 publication->stream_id,
-                aeron_ipc_publication_joining_position(publication),
+                aeron_ipc_publication_join_position(publication),
                 now_ns,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
@@ -2621,7 +2622,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
                 publication->conductor_fields.managed_resource.registration_id,
                 publication->session_id,
                 publication->stream_id,
-                aeron_network_publication_consumer_position(publication),
+                aeron_network_publication_join_position(publication),
                 now_ns,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,

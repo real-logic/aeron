@@ -945,3 +945,5 @@ extern const char *aeron_publication_image_log_file_name(aeron_publication_image
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
 
 extern size_t aeron_publication_image_subscriber_count(aeron_publication_image_t *image);
+
+extern int64_t aeron_publication_image_join_position(aeron_publication_image_t *image);

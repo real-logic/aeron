@@ -211,7 +211,7 @@ inline int64_t aeron_network_publication_producer_position(aeron_network_publica
         publication->initial_term_id);
 }
 
-inline int64_t aeron_network_publication_consumer_position(aeron_network_publication_t *publication)
+inline int64_t aeron_network_publication_join_position(aeron_network_publication_t *publication)
 {
     return aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 }

@@ -128,15 +128,6 @@ allprojects {
     configurations.all {
         resolutionStrategy {
             failOnVersionConflict()
-
-            // Enforce dependency versions used by Aeron
-            force "org.agrona:agrona:${agronaVersion}",
-                  "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
-                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "org.junit.jupiter:junit-jupiter-api:${junitVersion}",
-                  "org.junit.jupiter:junit-jupiter-params:${junitVersion}",
-                  "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-
         }
     }
 }
@@ -148,10 +139,18 @@ subprojects {
 
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
-        testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation ("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
+            exclude group: 'org.junit.jupiter'
+            exclude group: 'net.bytebuddy'
+        }
+        testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
+            exclude group: 'org.junit.jupiter'
+            exclude group: 'net.bytebuddy'
+        }
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     group = aeronGroup
@@ -766,7 +765,10 @@ project(':aeron-test-support') {
     dependencies {
         api project(':aeron-client')
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        implementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+        implementation ("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
+            exclude group: 'org.junit.jupiter'
+            exclude group: 'net.bytebuddy'
+        }
     }
 
     javadoc.enabled = false

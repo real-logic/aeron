@@ -126,7 +126,7 @@ class CatalogWithJumboRecordingsAndGapsTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .catalogCapacity(Common.CATALOG_CAPACITY)
+                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
                 .aeronDirectoryName(aeronDirectoryName)
                 .errorHandler(Tests::onError)
                 .archiveDir(archiveDir)

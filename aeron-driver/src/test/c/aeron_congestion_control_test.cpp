@@ -54,6 +54,7 @@ public:
     ~CongestionControlTest() override
     {
         aeron_driver_context_close(m_context);
+        aeron_counters_manager_close(&m_counters_manager);
         reset_env();
     }
 

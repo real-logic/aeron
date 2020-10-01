@@ -724,9 +724,7 @@ public class PublicationImage
      * @param srcAddress     from the sender requesting the measurement
      */
     void onRttMeasurement(
-        final RttMeasurementFlyweight header,
-        @SuppressWarnings("unused") final int transportIndex,
-        final InetSocketAddress srcAddress)
+        final RttMeasurementFlyweight header, final int transportIndex, final InetSocketAddress srcAddress)
     {
         final long nowNs = nanoClock.nanoTime();
         final long rttInNs = nowNs - header.echoTimestampNs() - header.receptionDelta();
@@ -744,14 +742,16 @@ public class PublicationImage
         return subscriberPositions.length > 0 && (state == ACTIVE || state == INIT);
     }
 
-    /**
-     * The position up to which the current stream rebuild is complete for reception.
-     *
-     * @return the position up to which the current stream rebuild is complete for reception.
-     */
-    long rebuildPosition()
+    long joinPosition()
     {
-        return rebuildPosition.get();
+        long position = rebuildPosition.get();
+
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        {
+            position = Math.min(subscriberPosition.getVolatile(), position);
+        }
+
+        return position;
     }
 
     /**
@@ -959,7 +959,7 @@ public class PublicationImage
                             sessionId,
                             untethered.subscriptionLink,
                             untethered.position.id(),
-                            rebuildPosition.get(),
+                            joinPosition(),
                             rawLog.fileName(),
                             Configuration.sourceIdentity(sourceAddress));
                         untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);

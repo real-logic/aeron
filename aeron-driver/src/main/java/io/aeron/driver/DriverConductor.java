@@ -1316,7 +1316,7 @@ public class DriverConductor implements Agent
             final PublicationImage image = publicationImages.get(i);
             if (subscription.matches(image) && image.isAcceptingSubscriptions())
             {
-                final long rebuildPosition = image.rebuildPosition();
+                final long joinPosition = image.joinPosition();
                 final int sessionId = image.sessionId();
                 final Position position = SubscriberPos.allocate(
                     tempBuffer,
@@ -1326,9 +1326,9 @@ public class DriverConductor implements Agent
                     sessionId,
                     streamId,
                     channel,
-                    rebuildPosition);
+                    joinPosition);
 
-                position.setOrdered(rebuildPosition);
+                position.setOrdered(joinPosition);
                 subscription.link(image, position);
                 image.addSubscriber(subscription, position);
 

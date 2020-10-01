@@ -324,7 +324,14 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     long joinPosition()
     {
-        return consumerPosition;
+        long position = consumerPosition;
+
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        {
+            position = Math.min(subscriberPosition.getVolatile(), position);
+        }
+
+        return position;
     }
 
     long producerPosition()
@@ -382,7 +389,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                         sessionId,
                         untethered.subscriptionLink,
                         untethered.position.id(),
-                        consumerPosition,
+                        joinPosition(),
                         rawLog.fileName(),
                         CommonContext.IPC_CHANNEL);
                     untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);

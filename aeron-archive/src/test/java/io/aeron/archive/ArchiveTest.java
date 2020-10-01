@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.mock;
 
+@Timeout(10)
 public class ArchiveTest
 {
     @Test

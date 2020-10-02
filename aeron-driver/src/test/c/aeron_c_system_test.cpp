@@ -473,6 +473,58 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessagesWithTryClaim)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
+TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessagesWithExclusivePublicationTryClaim)
+{
+    aeron_async_add_publication_t *async_pub;
+    aeron_exclusive_publication_t *publication;
+    aeron_async_add_subscription_t *async_sub;
+    aeron_subscription_t *subscription;
+    const char message[1024] = "message";
+    size_t num_messages = 64 * 3 + 1;
+    const char *uri = std::get<0>(GetParam());
+    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|term-length=64k";
+
+    ASSERT_TRUE(connect());
+    ASSERT_EQ(aeron_async_add_exclusive_publication(&async_pub, m_aeron, pubUri.c_str(), STREAM_ID), 0);
+    ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async_pub))) << aeron_errmsg();
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, uri, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    ASSERT_TRUE((subscription = awaitSubscriptionOrError(async_sub))) << aeron_errmsg();
+    awaitConnected(subscription);
+
+    for (size_t i = 0; i < num_messages; i++)
+    {
+        aeron_buffer_claim_t buffer_claim;
+
+        while (aeron_exclusive_publication_try_claim(publication, sizeof(message), &buffer_claim) < 0)
+        {
+            std::this_thread::yield();
+        }
+
+        memcpy(buffer_claim.data, message, sizeof(message));
+        ASSERT_EQ(aeron_buffer_claim_commit(&buffer_claim), 0);
+
+        int poll_result;
+        bool called = false;
+        poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+        {
+            EXPECT_EQ(length, sizeof(message));
+            called = true;
+        };
+
+        while ((poll_result = poll(subscription, handler, 1)) == 0)
+        {
+            std::this_thread::yield();
+        }
+        EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+        EXPECT_TRUE(called);
+    }
+
+    EXPECT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+}
+
 TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
 {
     aeron_async_add_publication_t *async_pub;

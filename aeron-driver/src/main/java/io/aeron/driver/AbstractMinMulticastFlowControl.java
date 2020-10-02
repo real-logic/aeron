@@ -19,6 +19,8 @@ import io.aeron.CommonContext;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
 
+import java.util.Arrays;
+
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 import static org.agrona.AsciiEncoding.parseLongAscii;
@@ -191,9 +193,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         }
         else
         {
-            final Receiver[] newElements = new Receiver[newLength];
-            System.arraycopy(receivers, 0, newElements, 0, newLength);
-            return newElements;
+            return Arrays.copyOf(receivers, newLength);
         }
     }
 

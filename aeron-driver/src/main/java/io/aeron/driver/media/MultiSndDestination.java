@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.Arrays;
 
 import static io.aeron.driver.media.SendChannelEndpoint.DESTINATION_TIMEOUT;
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
@@ -289,9 +290,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
         }
         else
         {
-            final Destination[] newElements = new Destination[newLength];
-            System.arraycopy(destinations, 0, newElements, 0, newLength);
-            destinations = newElements;
+            destinations = Arrays.copyOf(destinations, newLength);
         }
     }
 }

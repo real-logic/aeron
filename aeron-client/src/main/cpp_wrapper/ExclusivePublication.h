@@ -487,7 +487,7 @@ public:
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        bufferClaim.wrap(temp_claim.data, static_cast<index_t>(temp_claim.length));
+        bufferClaim.wrap(temp_claim.frame_header, DataFrameHeader::LENGTH + length);
 
         return position;
     }

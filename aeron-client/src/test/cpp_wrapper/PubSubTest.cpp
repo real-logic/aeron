@@ -346,3 +346,47 @@ TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
     invoker.invoke();
 }
 
+
+TEST_P(PubSubTest, shouldExclusivePublicationTryClaimAndControlledPollSubscription)
+{
+    std::int32_t streamId = 982375;
+    ChannelUriStringBuilder uriBuilder;
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+    std::int64_t pubId = aeron->addExclusivePublication(channel, streamId);
+
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        POLL_FOR_NON_NULL(pub, aeron->findExclusivePublication(pubId), invoker);
+        POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
+
+        std::string message = "hello world!";
+
+        BufferClaim claim;
+        POLL_FOR(0 < pub->tryClaim(16, claim), invoker);
+        claim.buffer().putString(claim.offset(), message);
+        claim.commit();
+        bool seen = false;
+
+        POLL_FOR(
+            0 < sub->controlledPoll(
+                [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+                {
+                    seen = true;
+                    return message == buffer.getString(offset) ?
+                        ControlledPollAction::COMMIT : ControlledPollAction::ABORT;
+                },
+                1),
+            invoker);
+
+        EXPECT_TRUE(seen);
+    }
+
+    invoker.invoke();
+}

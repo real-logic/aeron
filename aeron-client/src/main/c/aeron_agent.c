@@ -154,8 +154,8 @@ void aeron_idle_strategy_backoff_idle(void *state, int work_count)
             default:
                 aeron_nano_sleep(backoff_state->park_period_ns);
                 backoff_state->park_period_ns =
-                    ((backoff_state->park_period_ns << 1) < backoff_state->max_park_period_ns) ?
-                        backoff_state->park_period_ns << 1 : backoff_state->max_park_period_ns;
+                    ((backoff_state->park_period_ns * 2) < backoff_state->max_park_period_ns) ?
+                        backoff_state->park_period_ns * 2 : backoff_state->max_park_period_ns;
                 break;
         }
     }
@@ -292,10 +292,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *env_var,
     const char *init_args)
 {
-    char idle_func_name[AERON_MAX_PATH];
     aeron_idle_strategy_func_t idle_func = NULL;
-    aeron_idle_strategy_init_func_t idle_init_func = NULL;
-    void *idle_state = NULL;
 
     if (NULL == idle_strategy_name || NULL == idle_strategy_state)
     {
@@ -305,41 +302,42 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 
     *idle_strategy_state = NULL;
 
-    if (strncmp(idle_strategy_name, "sleep-ns", sizeof("sleep-ns") - 1) == 0 ||
-        strncmp(idle_strategy_name, "sleeping", sizeof("sleeping") - 1) == 0)
+    if (strncmp(idle_strategy_name, "sleep-ns", strlen("sleep-ns")) == 0 ||
+        strncmp(idle_strategy_name, "sleeping", strlen("sleeping")) == 0)
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "yield", sizeof("yield") - 1) == 0)
+    else if (strncmp(idle_strategy_name, "yield", strlen("yield")) == 0)
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "spin", sizeof("spin") - 1) == 0)
+    else if (strncmp(idle_strategy_name, "spin", strlen("spin")) == 0)
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "noop", sizeof("noop") - 1) == 0)
+    else if (strncmp(idle_strategy_name, "noop", strlen("noop")) == 0)
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "backoff", sizeof("backoff") - 1) == 0)
+    else if (strncmp(idle_strategy_name, "backoff", strlen("backoff")) == 0)
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
     }
     else
     {
-        aeron_idle_strategy_t *idle_strat = NULL;
+        char idle_func_name[AERON_MAX_PATH];
+        aeron_idle_strategy_t *idle_strategy = NULL;
 
         snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
-        if ((idle_strat = (aeron_idle_strategy_t *)aeron_dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
+        if ((idle_strategy = (aeron_idle_strategy_t *)aeron_dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
         {
             aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, aeron_dlerror());
             return NULL;
         }
+        idle_func = idle_strategy->idle;
+        aeron_idle_strategy_init_func_t idle_init_func = idle_strategy->init;
 
-        idle_func = idle_strat->idle;
-        idle_init_func = idle_strat->init;
-
+        void *idle_state = NULL;
         if (idle_init_func(&idle_state, env_var, init_args) < 0)
         {
             return NULL;
@@ -381,8 +379,6 @@ int aeron_agent_init(
     aeron_idle_strategy_func_t idle_strategy_func,
     void *idle_strategy_state)
 {
-    size_t role_name_length = strlen(role_name);
-
     if (NULL == runner || NULL == do_work || NULL == idle_strategy_func)
     {
         aeron_set_err(EINVAL, "%s", "invalid argument");
@@ -394,6 +390,8 @@ int aeron_agent_init(
     runner->on_start_state = on_start_state;
     runner->do_work = do_work;
     runner->on_close = on_close;
+
+    size_t role_name_length = strlen(role_name);
     if (aeron_alloc((void **)&runner->role_name, role_name_length + 1) < 0)
     {
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
@@ -430,15 +428,14 @@ static void *agent_main(void *arg)
 
 int aeron_agent_start(aeron_agent_runner_t *runner)
 {
-    pthread_attr_t attr;
-    int pthread_result = 0;
-
     if (NULL == runner)
     {
         aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
+    pthread_attr_t attr;
+    int pthread_result;
     if ((pthread_result = aeron_thread_attr_init(&attr)) != 0)
     {
         aeron_set_err(pthread_result, "aeron_thread_attr_init: %s", strerror(pthread_result));
@@ -458,8 +455,6 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
 
 int aeron_agent_stop(aeron_agent_runner_t *runner)
 {
-    int pthread_result = 0;
-
     if (NULL == runner)
     {
         aeron_set_err(EINVAL, "%s", "invalid argument");
@@ -472,6 +467,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
     {
         runner->state = AERON_AGENT_STATE_STOPPING;
 
+        int pthread_result;
         if ((pthread_result = aeron_thread_join(runner->thread, NULL)))
         {
             aeron_set_err(pthread_result, "aeron_thread_join: %s", strerror(pthread_result));

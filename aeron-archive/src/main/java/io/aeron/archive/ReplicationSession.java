@@ -439,15 +439,22 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         if (NULL_VALUE == activeCorrelationId)
         {
-            final String endpoint = recordingSubscription.resolvedEndpoint();
-            if (null == endpoint)
+            final String resolvedEndpoint = recordingSubscription.resolvedEndpoint();
+            if (null == resolvedEndpoint)
             {
                 return workCount;
             }
 
             final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, endpoint);
+
+            final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+            if (null != endpoint && endpoint.endsWith(":0"))
+            {
+                final int i = resolvedEndpoint.lastIndexOf(':');
+                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME,
+                    endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i));
+            }
 
             if (null != liveDestination)
             {

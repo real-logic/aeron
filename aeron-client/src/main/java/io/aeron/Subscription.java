@@ -548,9 +548,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
                 {
                     final String resolvedEndpoint = localSocketAddresses.get(0);
                     final int i = resolvedEndpoint.lastIndexOf(':');
-                    final String newEndpoint =
-                        endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i);
-                    uri.put(CommonContext.ENDPOINT_PARAM_NAME, newEndpoint);
+                    uri.put(CommonContext.ENDPOINT_PARAM_NAME,
+                        endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i));
 
                     return uri.toString();
                 }

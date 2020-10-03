@@ -67,6 +67,17 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
         return -1;
     }
 
+#if defined(__linux__) || defined(Darwin)
+    int alloc_result;
+    if ((alloc_result = posix_memalign(ptr, alignment, size)) < 0)
+    {
+        errno = alloc_result;
+        return -1;
+    }
+
+    memset(*ptr, 0, size);
+    *offset = 0;
+#else
     int result = aeron_alloc(ptr, size + alignment);
     if (result < 0)
     {
@@ -75,7 +86,7 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
 
     intptr_t addr = (intptr_t)*ptr;
     *offset = alignment - (addr & (alignment - 1));
-
+#endif
     return 0;
 }
 

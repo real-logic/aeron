@@ -221,7 +221,6 @@ public class Receiver implements Agent
     public void onRemoveDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
     {
         final int transportIndex = channelEndpoint.destination(udpChannel);
-
         if (ArrayUtil.UNKNOWN_INDEX != transportIndex)
         {
             final ReceiveDestinationTransport transport = channelEndpoint.destination(transportIndex);

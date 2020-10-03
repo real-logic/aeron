@@ -85,7 +85,7 @@ public final class UdpChannel
     }
 
     /**
-     * Parse channel URI and create a {@link UdpChannel}.
+     * Parse channel URI and create a {@link UdpChannel} using the default name resolver..
      *
      * @param channelUriString to parse.
      * @return a new {@link UdpChannel} as the result of parsing.
@@ -93,19 +93,34 @@ public final class UdpChannel
      */
     public static UdpChannel parse(final String channelUriString)
     {
-        return parse(channelUriString, DefaultNameResolver.INSTANCE);
+        return parse(channelUriString, DefaultNameResolver.INSTANCE, false);
     }
 
     /**
      * Parse channel URI and create a {@link UdpChannel}.
      *
      * @param channelUriString to parse.
-     * @param nameResolver     to use for resolving names
+     * @param nameResolver     to use for resolving names.
+     * @return a new {@link UdpChannel} as the result of parsing.
+     * @throws InvalidChannelException if an error occurs.
+     */
+    public static UdpChannel parse(final String channelUriString, final NameResolver nameResolver)
+    {
+        return parse(channelUriString, nameResolver, false);
+    }
+
+    /**
+     * Parse channel URI and create a {@link UdpChannel}.
+     *
+     * @param channelUriString to parse.
+     * @param nameResolver     to use for resolving names.
+     * @param isDestination    to identify if it is a destination within a channel.
      * @return a new {@link UdpChannel} as the result of parsing.
      * @throws InvalidChannelException if an error occurs.
      */
     @SuppressWarnings("MethodLength")
-    public static UdpChannel parse(final String channelUriString, final NameResolver nameResolver)
+    public static UdpChannel parse(
+        final String channelUriString, final NameResolver nameResolver, final boolean isDestination)
     {
         try
         {
@@ -120,10 +135,10 @@ public final class UdpChannel
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
 
-            final boolean requiresAdditionalSuffix =
-                null == endpointAddress && null == explicitControlAddress ||
+            final boolean requiresAdditionalSuffix = !isDestination &&
+                (null == endpointAddress && null == explicitControlAddress ||
                 (null != endpointAddress && endpointAddress.getPort() == 0) ||
-                (null != explicitControlAddress && explicitControlAddress.getPort() == 0);
+                (null != explicitControlAddress && explicitControlAddress.getPort() == 0));
 
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
@@ -208,7 +223,7 @@ public final class UdpChannel
                 String suffix = "";
                 if (requiresAdditionalSuffix)
                 {
-                    suffix = (null != tagIdStr) ? "#" + tagIdStr : ("-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1));
+                    suffix = null != tagIdStr ? "#" + tagIdStr : "-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1);
                 }
 
                 final String canonicalForm = canonicalise(

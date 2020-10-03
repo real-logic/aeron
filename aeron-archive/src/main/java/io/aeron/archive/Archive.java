@@ -370,7 +370,7 @@ public final class Archive implements AutoCloseable
          *
          * @see #REPLICATION_CHANNEL_PROP_NAME
          */
-        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8040";
+        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the archive.

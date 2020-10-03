@@ -142,7 +142,7 @@ public class LocalSocketAddressStatus
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
             final int counterState = countersReader.getCounterState(i);
-            if (counterState == RECORD_ALLOCATED)
+            if (RECORD_ALLOCATED == counterState)
             {
                 if (countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
                 {
@@ -168,5 +168,57 @@ public class LocalSocketAddressStatus
         }
 
         return bindings;
+    }
+
+    /**
+     * Find the currently bound socket address for the channel. There is an expectation that only one exists when
+     * searching.
+     *
+     * @param countersReader  for the connected driver.
+     * @param channelStatus   value for the channel which aggregates the transports.
+     * @param channelStatusId identity of the counter for the channel which aggregates the transports.
+     * @return the endpoint representing the bound socket address or null if not found.
+     */
+    public static String findAddress(
+        final CountersReader countersReader, final long channelStatus, final int channelStatusId)
+    {
+        String endpoint = null;
+
+        if (channelStatus == ChannelEndpointStatus.ACTIVE)
+        {
+            final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+            for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+            {
+                final int counterState = countersReader.getCounterState(i);
+                if (RECORD_ALLOCATED == counterState)
+                {
+                    if (countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
+                    {
+                        final int recordOffset = CountersReader.metaDataOffset(i);
+                        final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
+
+                        if (channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
+                            ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
+                        {
+                            final int length = buffer.getInt(keyIndex + LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
+                            if (length > 0)
+                            {
+                                endpoint = buffer.getStringWithoutLengthAscii(
+                                    keyIndex + LOCAL_SOCKET_ADDRESS_STRING_OFFSET, length);
+                            }
+
+                            break;
+                        }
+                    }
+                }
+                else if (RECORD_UNUSED == counterState)
+                {
+                    break;
+                }
+            }
+        }
+
+        return endpoint;
     }
 }

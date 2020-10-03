@@ -922,8 +922,7 @@ public class DriverConductor implements Agent
         final ReceiveChannelEndpoint receiveChannelEndpoint = subscriptionLink.channelEndpoint();
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
-        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
-
+        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
         final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
             tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounterId());
 
@@ -954,8 +953,8 @@ public class DriverConductor implements Agent
         }
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
-
-        receiverProxy.removeDestination(receiveChannelEndpoint, UdpChannel.parse(destinationChannel, nameResolver));
+        receiverProxy.removeDestination(
+            receiveChannelEndpoint, UdpChannel.parse(destinationChannel, nameResolver, true));
         clientProxy.operationSucceeded(correlationId);
     }
 

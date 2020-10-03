@@ -42,8 +42,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         CONNECT,
         REPLICATE_DESCRIPTOR,
         SRC_RECORDING_POSITION,
-        REPLAY,
         EXTEND,
+        REPLAY,
         AWAIT_IMAGE,
         REPLICATE,
         CATCHUP,
@@ -178,12 +178,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     workCount += srcRecordingPosition();
                     break;
 
-                case REPLAY:
-                    workCount += replay();
-                    break;
-
                 case EXTEND:
                     workCount += extend();
+                    break;
+
+                case REPLAY:
+                    workCount += replay();
                     break;
 
                 case AWAIT_IMAGE:
@@ -256,7 +256,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             signal(startPosition, REPLICATE);
         }
 
-        State nextState = State.REPLAY;
+        State nextState = State.EXTEND;
 
         if (null != liveDestination)
         {
@@ -381,7 +381,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     throw new ArchiveException("cannot live merge without active source recording");
                 }
 
-                state(State.REPLAY);
+                state(State.EXTEND);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -392,21 +392,70 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
+    private int extend()
+    {
+        final boolean isMds = isTagged || null != liveDestination;
+        final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
+        final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media(channelUri)
+            .alias(channelUri)
+            .rejoin(false);
+
+        if (isMds)
+        {
+            builder.tags(channelTagId + "," + subscriptionTagId).controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
+        }
+        else
+        {
+            builder.endpoint(endpoint).sessionId(replaySessionId);
+        }
+
+        final String channel = builder.build();
+        recordingSubscription = conductor.extendRecording(
+            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, true, channel, controlSession);
+
+        if (null == recordingSubscription)
+        {
+            state(State.DONE);
+        }
+        else
+        {
+            if (isMds)
+            {
+                replayDestination = "aeron:udp?endpoint=" + endpoint + "|session-id=" + replaySessionId;
+                recordingSubscription.asyncAddDestination(replayDestination);
+            }
+
+            state(State.REPLAY);
+        }
+
+        return 1;
+    }
+
     private int replay()
     {
         int workCount = 0;
 
         if (NULL_VALUE == activeCorrelationId)
         {
-            final long correlationId = aeron.nextCorrelationId();
+            final String endpoint = recordingSubscription.resolvedEndpoint();
+            if (null == endpoint)
+            {
+                return workCount;
+            }
+
             final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, endpoint);
+
             if (null != liveDestination)
             {
-                channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
                 channelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
                 channelUri.put(CommonContext.EOS_PARAM_NAME, "false");
             }
 
+            final long correlationId = aeron.nextCorrelationId();
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
@@ -431,7 +480,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (hasResponse(poller))
             {
                 srcReplaySessionId = poller.relevantId();
-                state(State.EXTEND);
+                state(State.AWAIT_IMAGE);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -442,52 +491,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
-    private int extend()
-    {
-        final boolean isMds = isTagged || null != liveDestination;
-        final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
-        final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
-            .media(channelUri)
-            .alias(channelUri)
-            .rejoin(false);
-
-        if (isMds)
-        {
-            builder.tags(channelTagId + "," + subscriptionTagId).controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
-        }
-        else
-        {
-            builder.endpoint(endpoint).sessionId((int)srcReplaySessionId);
-        }
-
-        final String channel = builder.build();
-        recordingSubscription = conductor.extendRecording(
-            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, true, channel, controlSession);
-
-        if (null == recordingSubscription)
-        {
-            state(State.DONE);
-        }
-        else
-        {
-            if (isMds)
-            {
-                replayDestination = "aeron:udp?endpoint=" + endpoint + "|session-id=" + ((int)srcReplaySessionId);
-                recordingSubscription.asyncAddDestination(replayDestination);
-            }
-
-            state(State.AWAIT_IMAGE);
-        }
-
-        return 1;
-    }
-
     private int awaitImage()
     {
         int workCount = 0;
 
-        image = recordingSubscription.imageBySessionId((int)srcReplaySessionId);
+        image = recordingSubscription.imageBySessionId(replaySessionId);
         if (null != image)
         {
             state(null == liveDestination ? State.REPLICATE : State.CATCHUP);
@@ -496,7 +504,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
         {
             throw new TimeoutException(
-                "failed get replay image for sessionId " + (int)srcReplaySessionId +
+                "failed get replay image for sessionId " + replaySessionId +
                 " on channel " + recordingSubscription.channel());
         }
 
@@ -591,6 +599,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 else if (shouldStopReplay(position))
                 {
                     recordingSubscription.asyncRemoveDestination(replayDestination);
+                    replayDestination = null;
                     recordingSubscription = null;
                     signal(position, MERGE);
                     state(State.DONE);
@@ -697,9 +706,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         activeCorrelationId = NULL_VALUE;
     }
 
-    @SuppressWarnings("unused")
     void stateChange(final State oldState, final State newState, final long replicationId)
     {
-//        System.out.println("ReplicationSession: " + timeOfLastActionMs + ": " + oldState + " -> " + newState);
+        //System.out.println("ReplicationSession: " + timeOfLastActionMs + ": " + oldState + " -> " + newState);
     }
 }

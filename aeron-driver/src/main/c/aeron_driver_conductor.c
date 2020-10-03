@@ -2324,7 +2324,7 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_uri_publication_params_t params;
     int64_t tag_id;
 
-    if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
         aeron_udp_channel_delete(udp_channel);
@@ -2557,7 +2557,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     aeron_uri_subscription_params_t params;
 
     if (aeron_udp_channel_parse(
-        command->channel_length - strlen(AERON_SPY_PREFIX), uri, &conductor->name_resolver, &udp_channel) < 0 ||
+        command->channel_length - strlen(AERON_SPY_PREFIX), uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         return -1;
@@ -2647,7 +2647,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         aeron_udp_channel_delete(udp_channel);
@@ -3037,7 +3037,8 @@ int aeron_driver_conductor_on_add_receive_destination(
     const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
     aeron_udp_channel_t *udp_channel;
-    if (aeron_udp_channel_parse(command->channel_length, command_uri, &conductor->name_resolver, &udp_channel) < 0)
+    if (aeron_udp_channel_parse(
+        command->channel_length, command_uri, &conductor->name_resolver, &udp_channel, true) < 0)
     {
         // TODO-MDS: should the error be set here or can we just use the lower down value...
         return -1;
@@ -3097,15 +3098,16 @@ int aeron_driver_conductor_on_remove_receive_destination(
     const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
     aeron_udp_channel_t *udp_channel;
 
-    if (aeron_udp_channel_parse(command->channel_length, command_uri, &conductor->name_resolver, &udp_channel) < 0)
+    if (aeron_udp_channel_parse(
+        command->channel_length, command_uri, &conductor->name_resolver, &udp_channel, true) < 0)
     {
         // TODO-MDS: should the error be set here or can we just use the lower down value...
         return -1;
     }
 
     aeron_driver_receiver_proxy_on_remove_destination(conductor->context->receiver_proxy, endpoint, udp_channel);
-
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
     return 0;
 }
 
@@ -3331,6 +3333,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;
     bool treat_as_multicast = AERON_INFER == group_subscription ?
         endpoint->conductor_fields.udp_channel->is_multicast : AERON_FORCE_TRUE == group_subscription;
+    bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(
+        conductor, endpoint, command->stream_id, command->session_id, registration_id);
 
     aeron_publication_image_t *image = NULL;
     if (aeron_publication_image_create(
@@ -3353,8 +3357,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         command->mtu_length,
         &conductor->loss_reporter,
         is_reliable,
-        aeron_driver_conductor_is_oldest_subscription_sparse(
-            conductor, endpoint, command->stream_id, command->session_id, registration_id),
+        is_oldest_subscription_sparse,
         treat_as_multicast,
         &conductor->system_counters) < 0)
     {

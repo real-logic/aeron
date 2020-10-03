@@ -59,7 +59,7 @@ public:
     {
         uint8_t msg[1024];
         auto *sm = (aeron_status_message_header_t *)msg;
-        auto *sm_optional = (aeron_status_message_optional_header_t *) (msg + sizeof(aeron_status_message_header_t));
+        auto *sm_optional = (aeron_status_message_optional_header_t *)(msg + sizeof(aeron_status_message_header_t));
 
         sm->frame_header.frame_length = send_gtag ?
             sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
@@ -97,16 +97,16 @@ public:
 
     void initialise_channel(const char *uri)
     {
-        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &m_channel);
+        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &m_channel, false);
         m_channels.push_back(m_channel);
     }
 
-    struct sockaddr_storage address{};
-    aeron_udp_channel_t *m_channel{};
-    aeron_driver_context_t *context{};
-    aeron_distinct_error_log_t error_log{};
-    buffer_t buffer{};
-    aeron_name_resolver_t m_resolver{};
+    struct sockaddr_storage address = {};
+    aeron_udp_channel_t *m_channel = nullptr;
+    aeron_driver_context_t *context = nullptr;
+    aeron_distinct_error_log_t error_log = {};
+    buffer_t buffer = {};
+    aeron_name_resolver_t m_resolver= {};
     aeron_flow_control_strategy_t *m_strategy = nullptr;
     std::vector<aeron_udp_channel_t *> m_channels;
 
@@ -376,13 +376,17 @@ TEST_F(TaggedFlowControlTest, shouldTimeout)
         1001, 1001, 0, 64 * 1024));
     ASSERT_FALSE(nullptr == m_strategy);
 
-    ASSERT_EQ(position_recv_1 + WINDOW_LENGTH, apply_status_message(m_strategy, 1, position_recv_1, 123, 100 * 1000000));
-    ASSERT_EQ(position_recv_1 + WINDOW_LENGTH, apply_status_message(m_strategy, 2, position_recv_2, 123, 200 * 1000000));
+    ASSERT_EQ(position_recv_1 + WINDOW_LENGTH,
+              apply_status_message(m_strategy, 1, position_recv_1, 123, 100 * 1000000));
+    ASSERT_EQ(position_recv_1 + WINDOW_LENGTH,
+              apply_status_message(m_strategy, 2, position_recv_2, 123, 200 * 1000000));
 
     ASSERT_EQ(
-        position_recv_1 + WINDOW_LENGTH, m_strategy->on_idle(m_strategy->state, 599 * 1000000, sender_position, 0, false));
+        position_recv_1 + WINDOW_LENGTH,
+        m_strategy->on_idle(m_strategy->state, 599 * 1000000, sender_position, 0, false));
     ASSERT_EQ(
-        position_recv_2 + WINDOW_LENGTH, m_strategy->on_idle(m_strategy->state, 601 * 1000000, sender_position, 0, false));
+        position_recv_2 + WINDOW_LENGTH,
+        m_strategy->on_idle(m_strategy->state, 601 * 1000000, sender_position, 0, false));
     ASSERT_EQ(sender_position, m_strategy->on_idle(m_strategy->state, 701 * 1000000, sender_position, 0, false));
 }
 
@@ -492,7 +496,8 @@ TEST_F(MinFlowControlTest, shouldUseSenderLimitWhenRequiredReceiverNotMet)
     ASSERT_EQ(sender_limit, apply_status_message(m_strategy, 2, term_offset, -1, 0, false, sender_limit));
     ASSERT_EQ(sender_limit, m_strategy->on_idle(m_strategy->state, 0, sender_limit, 0, false));
 
-    ASSERT_EQ(term_offset + WINDOW_LENGTH, apply_status_message(m_strategy, 3, term_offset, -1, 0, false, sender_limit));
+    ASSERT_EQ(term_offset + WINDOW_LENGTH,
+              apply_status_message(m_strategy, 3, term_offset, -1, 0, false, sender_limit));
     ASSERT_EQ(term_offset + WINDOW_LENGTH, m_strategy->on_idle(m_strategy->state, 0, sender_limit, 0, false));
 }
 
@@ -514,7 +519,9 @@ TEST_F(TaggedFlowControlTest, shouldUseSenderLimitWhenRequiredReceiversNotMet)
     ASSERT_EQ(sender_limit, apply_status_message(m_strategy, 2, term_offset, gtag, 0, true, sender_limit));
     ASSERT_EQ(sender_limit, m_strategy->on_idle(m_strategy->state, 0, sender_limit, 0, false));
 
-    ASSERT_EQ(term_offset + WINDOW_LENGTH, apply_status_message(m_strategy, 3, term_offset, gtag, 0, true, sender_limit));
+    ASSERT_EQ(
+        term_offset + WINDOW_LENGTH,
+        apply_status_message(m_strategy, 3, term_offset, gtag, 0, true, sender_limit));
     ASSERT_EQ(term_offset + WINDOW_LENGTH, m_strategy->on_idle(m_strategy->state, 0, sender_limit, 0, false));
 }
 
@@ -555,7 +562,7 @@ TEST_F(FlowControlTest, shouldParseNull)
     ASSERT_EQ(0, aeron_flow_control_parse_tagged_options(0, nullptr, &options));
 
     ASSERT_EQ(0U, options.strategy_name_length);
-    ASSERT_EQ(NULL, options.strategy_name);
+    ASSERT_EQ(nullptr, options.strategy_name);
     ASSERT_EQ(false, options.timeout_ns.is_present);
     ASSERT_EQ(0U, options.timeout_ns.value);
     ASSERT_EQ(false, options.group_tag.is_present);

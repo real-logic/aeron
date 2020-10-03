@@ -162,7 +162,7 @@ protected:
     aeron_receive_channel_endpoint_t *createEndpoint(const char *uri)
     {
         aeron_udp_channel_t *channel = nullptr;
-        if (0 != aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel))
+        if (0 != aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel, false))
         {
             return nullptr;
         }
@@ -178,7 +178,7 @@ protected:
     aeron_udp_channel_t *createChannel(const char *uri, std::vector<aeron_udp_channel_t *> *tracker = nullptr)
     {
         aeron_udp_channel_t *channel = nullptr;
-        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel);
+        aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel, false);
 
         if (nullptr != tracker)
         {

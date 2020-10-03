@@ -44,7 +44,7 @@ typedef struct delegate_recv_state_stct
     int messages_received;
     int bytes_received;
 }
-    delegate_recv_state_t;
+delegate_recv_state_t;
 
 void aeron_udp_channel_interceptor_loss_incoming_delegate(
     void *interceptor_state,
@@ -73,9 +73,9 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
     uint8_t data_1[1024];
     aeron_frame_header_t *frame_header;
 
-    frame_header = (aeron_frame_header_t *)(data_0);
+    frame_header = (aeron_frame_header_t *)data_0;
     frame_header->type = msg_type;
-    frame_header = (aeron_frame_header_t *)(data_1);
+    frame_header = (aeron_frame_header_t *)data_1;
     frame_header->type = msg_type;
 
     params.rate = 1.0;
@@ -106,9 +106,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
     uint8_t data_1[1024];
     aeron_frame_header_t *frame_header;
 
-    frame_header = (aeron_frame_header_t *)(data_0);
+    frame_header = (aeron_frame_header_t *)data_0;
     frame_header->type = data_msg_type;
-    frame_header = (aeron_frame_header_t *)(data_1);
+    frame_header = (aeron_frame_header_t *)data_1;
     frame_header->type = data_msg_type;
 
     params.rate = 1.0;
@@ -138,9 +138,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
     uint8_t data_1[1024];
     aeron_frame_header_t *frame_header;
 
-    frame_header = (aeron_frame_header_t *)(data_0);
+    frame_header = (aeron_frame_header_t *)data_0;
     frame_header->type = loss_msg_type;
-    frame_header = (aeron_frame_header_t *)(data_1);
+    frame_header = (aeron_frame_header_t *)data_1;
     frame_header->type = loss_msg_type;
 
     params.rate = 0.0;

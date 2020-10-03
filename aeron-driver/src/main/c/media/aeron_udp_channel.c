@@ -162,7 +162,11 @@ int aeron_uri_udp_canonicalise(
 }
 
 int aeron_udp_channel_parse(
-    size_t uri_length, const char *uri, aeron_name_resolver_t *resolver, aeron_udp_channel_t **channel)
+    size_t uri_length,
+    const char *uri,
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_t **channel,
+    bool is_destination)
 {
     aeron_udp_channel_t *_channel = NULL;
     struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
@@ -263,6 +267,8 @@ int aeron_udp_channel_parse(
         (NULL == _channel->uri.params.udp.endpoint && NULL == _channel->uri.params.udp.control) ||
         (NULL != _channel->uri.params.udp.endpoint && aeron_is_wildcard_port(&endpoint_addr)) ||
         (NULL != _channel->uri.params.udp.control && aeron_is_wildcard_port(&explicit_control_addr));
+
+    requires_additional_suffix = requires_additional_suffix && !is_destination;
 
     if (NULL != _channel->uri.params.udp.channel_tag)
     {

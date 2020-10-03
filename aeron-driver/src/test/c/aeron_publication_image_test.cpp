@@ -107,7 +107,7 @@ TEST_F(PublicationImageTest, shouldAddAndRemoveDestination)
 
 TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
 {
-    struct sockaddr_storage addr; // Don't really care what value this is.
+    struct sockaddr_storage addr{}; // Don't really care what value this is.
     uint8_t data[128];
     auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
@@ -122,8 +122,8 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
     aeron_udp_channel_t *channel_2;
     aeron_receive_destination_t *dest_2;
 
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
+    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
     ASSERT_LE(0, aeron_receive_destination_create(
         &dest_1, channel_1, m_context, &m_counters_manager, registration_id, endpoint->channel_status.counter_id));
@@ -177,7 +177,7 @@ TEST_F(PublicationImageTest, shouldSendControlMessagesToAllDestinations)
 
 TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
 {
-    struct sockaddr_storage addr; // Don't really care what value this is.
+    struct sockaddr_storage addr{}; // Don't really care what value this is.
     uint8_t data[128];
     memset(data, 0, sizeof(data));
 
@@ -194,8 +194,8 @@ TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
     aeron_udp_channel_t *channel_2;
     aeron_receive_destination_t *dest_2;
 
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
+    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
     ASSERT_LE(0, aeron_receive_destination_create(
         &dest_1, channel_1, m_context, &m_counters_manager, registration_id, endpoint->channel_status.counter_id));
@@ -236,7 +236,7 @@ TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
 
 TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHaveNotBeenActive)
 {
-    struct sockaddr_storage addr; // Don't really care what value this is.
+    struct sockaddr_storage addr{}; // Don't really care what value this is.
     uint8_t data[128];
     auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
@@ -256,8 +256,8 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
     aeron_udp_channel_t *channel_2;
     aeron_receive_destination_t *dest_2;
 
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
+    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
     aeron_clock_update_cached_time(m_context->cached_clock, t0_ms, t0_ns);
 
@@ -310,7 +310,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
 
 TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
 {
-    struct sockaddr_storage addr; // Don't really care what value this is.
+    struct sockaddr_storage addr{}; // Don't really care what value this is.
     uint8_t data[128];
     auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
@@ -328,8 +328,8 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
     aeron_udp_channel_t *channel_2;
     aeron_receive_destination_t *dest_2;
 
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
+    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
     aeron_clock_update_cached_time(m_context->cached_clock, t0_ms, t0_ns);
 
@@ -378,7 +378,7 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
 
 TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndReceiverWindowLength)
 {
-    struct sockaddr_storage addr; // Don't really care what value this is.
+    struct sockaddr_storage addr{}; // Don't really care what value this is.
     uint8_t data[128];
     auto *message = reinterpret_cast<aeron_data_header_t *>(data);
     const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
@@ -397,8 +397,8 @@ TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndRecei
     aeron_udp_channel_t *channel_2;
     aeron_receive_destination_t *dest_2;
 
-    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1);
-    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2);
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
+    aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
     aeron_clock_update_cached_time(m_context->cached_clock, t0_ns / (1000 * 1000), t0_ns);
 

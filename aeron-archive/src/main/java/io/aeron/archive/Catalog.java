@@ -721,7 +721,6 @@ class Catalog implements AutoCloseable
         catalogResized(oldMaxEntries, catalogLength, newMaxEntries, newCatalogLength);
     }
 
-    @SuppressWarnings("unused")
     void catalogResized(
         final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
     {
@@ -742,16 +741,10 @@ class Catalog implements AutoCloseable
     {
         if (fixOnRefresh)
         {
-            final UnsafeBuffer segmentFileBuffer = null != buffer ?
+            final UnsafeBuffer tmpBuffer = null != buffer ?
                 buffer : new UnsafeBuffer(ByteBuffer.allocateDirect(FILE_IO_MAX_LENGTH_DEFAULT));
             forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                refreshAndFixDescriptor(
-                headerEncoder,
-                headerDecoder,
-                descriptorEncoder,
-                descriptorDecoder,
-                checksum,
-                segmentFileBuffer));
+                refreshAndFixDescriptor(headerDecoder, descriptorEncoder, descriptorDecoder, checksum, tmpBuffer));
         }
         else
         {
@@ -761,7 +754,6 @@ class Catalog implements AutoCloseable
     }
 
     private void refreshAndFixDescriptor(
-        @SuppressWarnings("unused") final RecordingDescriptorHeaderEncoder unused,
         final RecordingDescriptorHeaderDecoder headerDecoder,
         final RecordingDescriptorEncoder encoder,
         final RecordingDescriptorDecoder decoder,

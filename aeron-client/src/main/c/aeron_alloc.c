@@ -77,14 +77,6 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
 
     memset(*ptr, 0, size);
     *offset = 0;
-#elif defined(AERON_COMPILER_MSVC)
-    if (NULL == (*ptr = _aligned_malloc(size, alignment)))
-    {
-        return -1;
-    }
-
-    memset(*ptr, 0, size);
-    *offset = 0;
 #else
     int result = aeron_alloc(ptr, size + alignment);
     if (result < 0)

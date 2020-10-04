@@ -58,6 +58,8 @@ public class ReplicateRecordingTest
     private static final String SRC_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8091";
     private static final String DST_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8095";
     private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8096";
+    private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
 
     private static final int LIVE_STREAM_ID = 1033;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()
@@ -100,6 +102,7 @@ public class ReplicateRecordingTest
                 .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsEnabled(false)
+                .replicationChannel(SRC_REPLICATION_CHANNEL)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
                 .fileSyncLevel(0)
@@ -122,6 +125,7 @@ public class ReplicateRecordingTest
                 .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsEnabled(false)
+                .replicationChannel(DST_REPLICATION_CHANNEL)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "dst-archive"))
                 .fileSyncLevel(0)

@@ -164,7 +164,6 @@ public class ClusterTimerTest
 
         final ClusteredService service = new StubClusteredService()
         {
-            @Override
             public void onSessionOpen(final ClientSession session, final long timestamp)
             {
                 schedule(1, timestamp + 10);
@@ -172,16 +171,6 @@ public class ClusterTimerTest
                 schedule(2, timestamp + 30);
             }
 
-            private void schedule(final long correlationId, final long deadlineMs)
-            {
-                idleStrategy.reset();
-                while (!cluster.scheduleTimer(correlationId, deadlineMs))
-                {
-                    idleStrategy.idle();
-                }
-            }
-
-            @Override
             public void onTimerEvent(final long correlationId, final long timestamp)
             {
                 if (correlationId == 1)
@@ -191,6 +180,15 @@ public class ClusterTimerTest
                 else
                 {
                     timerCounter2.incrementAndGet();
+                }
+            }
+
+            private void schedule(final long correlationId, final long deadlineMs)
+            {
+                idleStrategy.reset();
+                while (!cluster.scheduleTimer(correlationId, deadlineMs))
+                {
+                    idleStrategy.idle();
                 }
             }
         };
@@ -204,7 +202,6 @@ public class ClusterTimerTest
         connectClient();
 
         Tests.awaitValue(timerCounter2, 1);
-
         assertEquals(1, timerCounter1.get());
 
         ClusterTests.failOnClusterError();

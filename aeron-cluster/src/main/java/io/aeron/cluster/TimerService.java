@@ -80,7 +80,7 @@ class TimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.Time
 
     void scheduleTimerForCorrelationId(final long correlationId, final long deadline)
     {
-        cancelTimer(correlationId);
+        cancelTimerByCorrelationId(correlationId);
 
         final long timerId = super.scheduleTimer(deadline);
         timerIdByCorrelationIdMap.put(correlationId, timerId);

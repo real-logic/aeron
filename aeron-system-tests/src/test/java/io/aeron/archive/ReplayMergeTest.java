@@ -56,7 +56,7 @@ public class ReplayMergeTest
     private static final String CONTROL_ENDPOINT = "localhost:23265";
     private static final String RECORDING_ENDPOINT = "localhost:23266";
     private static final String LIVE_ENDPOINT = "localhost:23267";
-    private static final String REPLAY_ENDPOINT = "localhost:23268";
+    private static final String REPLAY_ENDPOINT = "localhost:0";
     private static final long GROUP_TAG = 99901L;
 
     private static final int INITIAL_MESSAGE_COUNT = MIN_MESSAGES_PER_TERM * 3;
@@ -93,8 +93,7 @@ public class ReplayMergeTest
     private final ChannelUriStringBuilder replayChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .isSessionIdTagged(true)
-        .sessionId(PUBLICATION_TAG)
-        .endpoint(REPLAY_ENDPOINT);
+        .sessionId(PUBLICATION_TAG);
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     private final MutableLong receivedMessageCount = new MutableLong();

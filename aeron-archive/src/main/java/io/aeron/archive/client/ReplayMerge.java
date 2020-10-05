@@ -133,7 +133,7 @@ public class ReplayMerge implements AutoCloseable
         replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 
         replayEndpoint = ChannelUri.parse(replayDestination).get(ENDPOINT_PARAM_NAME);
-        this.state = replayEndpoint.endsWith(":0") ? State.RESOLVE_REPLAY_PORT : State.GET_RECORDING_POSITION;
+        state = replayEndpoint.endsWith(":0") ? State.RESOLVE_REPLAY_PORT : State.GET_RECORDING_POSITION;
         subscription.asyncAddDestination(replayDestination);
     }
 

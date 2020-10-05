@@ -125,7 +125,6 @@ public class ReplayMerge implements AutoCloseable
         this.liveDestination = liveDestination;
         this.recordingId = recordingId;
         this.startPosition = startPosition;
-        this.timeOfLastProgressMs = epochClock.time();
         this.mergeProgressTimeoutMs = mergeProgressTimeoutMs;
 
         replayChannelUri = ChannelUri.parse(replayChannel);
@@ -133,8 +132,18 @@ public class ReplayMerge implements AutoCloseable
         replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 
         replayEndpoint = ChannelUri.parse(replayDestination).get(ENDPOINT_PARAM_NAME);
-        state = replayEndpoint.endsWith(":0") ? State.RESOLVE_REPLAY_PORT : State.GET_RECORDING_POSITION;
+        if (replayEndpoint.endsWith(":0"))
+        {
+            state = State.RESOLVE_REPLAY_PORT;
+        }
+        else
+        {
+            replayChannelUri.put(ENDPOINT_PARAM_NAME, replayEndpoint);
+            state = State.GET_RECORDING_POSITION;
+        }
+
         subscription.asyncAddDestination(replayDestination);
+        timeOfLastProgressMs = epochClock.time();
     }
 
     /**
@@ -222,7 +231,7 @@ public class ReplayMerge implements AutoCloseable
             switch (state)
             {
                 case RESOLVE_REPLAY_PORT:
-                    workCount += resolveReplayPort();
+                    workCount += resolveReplayPort(nowMs);
                     checkProgress(nowMs);
                     break;
 
@@ -310,7 +319,7 @@ public class ReplayMerge implements AutoCloseable
         return isLiveAdded;
     }
 
-    private int resolveReplayPort()
+    private int resolveReplayPort(final long nowMs)
     {
         int workCount = 0;
 
@@ -321,6 +330,7 @@ public class ReplayMerge implements AutoCloseable
             replayChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME,
                 replayEndpoint.substring(0, replayEndpoint.length() - 2) + resolvedEndpoint.substring(i));
 
+            timeOfLastProgressMs = nowMs;
             state(State.GET_RECORDING_POSITION);
             workCount += 1;
         }

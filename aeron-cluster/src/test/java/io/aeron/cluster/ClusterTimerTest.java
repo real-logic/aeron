@@ -20,6 +20,7 @@ import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -149,6 +151,61 @@ public class ClusterTimerTest
         launchReschedulingService(triggeredTimersCounter);
 
         Tests.awaitValue(triggeredTimersCounter, triggeredSinceStart + 4);
+
+        ClusterTests.failOnClusterError();
+    }
+
+    @Test
+    @Timeout(10)
+    void shouldRescheduleTimerWhenSchedulingWithExistingCorrelationId()
+    {
+        final AtomicLong timerCounter1 = new AtomicLong();
+        final AtomicLong timerCounter2 = new AtomicLong();
+
+        final ClusteredService service = new StubClusteredService()
+        {
+            @Override
+            public void onSessionOpen(final ClientSession session, final long timestamp)
+            {
+                schedule(1, timestamp + 10);
+                schedule(1, timestamp + 20);
+                schedule(2, timestamp + 30);
+            }
+
+            private void schedule(final long correlationId, final long deadlineMs)
+            {
+                idleStrategy.reset();
+                while (!cluster.scheduleTimer(correlationId, deadlineMs))
+                {
+                    idleStrategy.idle();
+                }
+            }
+
+            @Override
+            public void onTimerEvent(final long correlationId, final long timestamp)
+            {
+                if (correlationId == 1)
+                {
+                    timerCounter1.incrementAndGet();
+                }
+                else
+                {
+                    timerCounter2.incrementAndGet();
+                }
+            }
+        };
+
+        container = ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .clusteredService(service)
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
+
+        connectClient();
+
+        Tests.awaitValue(timerCounter2, 1);
+
+        assertEquals(1, timerCounter1.get());
 
         ClusterTests.failOnClusterError();
     }

@@ -399,6 +399,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media(channelUri)
+            .sessionId(replaySessionId)
             .alias(channelUri)
             .rejoin(false);
 
@@ -408,7 +409,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else
         {
-            builder.endpoint(endpoint).sessionId(replaySessionId);
+            builder.endpoint(endpoint);
         }
 
         final String channel = builder.build();
@@ -423,7 +424,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             if (isMds)
             {
-                replayDestination = "aeron:udp?endpoint=" + endpoint + "|session-id=" + replaySessionId;
+                replayDestination = "aeron:udp?endpoint=" + endpoint;
                 recordingSubscription.asyncAddDestination(replayDestination);
             }
 
@@ -596,7 +597,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 }
 
                 final long position = image.position();
-
                 if (shouldAddLiveDestination(position))
                 {
                     final String liveChannel = ChannelUri.addSessionId(liveDestination, replaySessionId);

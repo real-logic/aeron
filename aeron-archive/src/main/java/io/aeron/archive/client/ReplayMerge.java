@@ -118,10 +118,6 @@ public class ReplayMerge implements AutoCloseable
                 "Subscription URI must have 'control-mode=manual' uri=" + subscription.channel());
         }
 
-        replayChannelUri = ChannelUri.parse(replayChannel);
-        replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
-        replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
-
         this.archive = archive;
         this.subscription = subscription;
         this.epochClock = epochClock;
@@ -131,6 +127,10 @@ public class ReplayMerge implements AutoCloseable
         this.startPosition = startPosition;
         this.timeOfLastProgressMs = epochClock.time();
         this.mergeProgressTimeoutMs = mergeProgressTimeoutMs;
+
+        replayChannelUri = ChannelUri.parse(replayChannel);
+        replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
+        replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 
         replayEndpoint = ChannelUri.parse(replayDestination).get(ENDPOINT_PARAM_NAME);
         this.state = replayEndpoint.endsWith(":0") ? State.RESOLVE_REPLAY_PORT : State.GET_RECORDING_POSITION;

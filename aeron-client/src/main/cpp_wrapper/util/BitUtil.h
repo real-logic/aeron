@@ -35,7 +35,7 @@ namespace aeron { namespace util
 namespace BitUtil
 {
 /** Length of the data blocks used by the CPU cache sub-system in bytes. */
-static const size_t CACHE_LINE_LENGTH = 64;
+static const std::size_t CACHE_LINE_LENGTH = 64;
 
 template<typename value_t>
 inline bool isPowerOfTwo(value_t value) noexcept
@@ -144,7 +144,7 @@ inline int numberOfTrailingZeroes(value_t value) noexcept
         return 32;
     }
 
-    uint32_t index = static_cast<uint32_t>((value & -value) * 0x04D7651F);
+    std::uint32_t index = static_cast<std::uint32_t>((value & -value) * 0x04D7651F);
 
     return table[index >> 27u];
 #endif

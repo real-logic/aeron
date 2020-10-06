@@ -466,7 +466,7 @@ public:
             std::string errMsg = std::string("Failed to get default path, result: ") += std::to_string(result);
             throw IllegalStateException(errMsg, SOURCEINFO);
         }
-        else if (length <= static_cast<size_t>(result))
+        else if (length <= static_cast<std::size_t>(result))
         {
             std::string errMsg = std::string("Path information was truncated, buffer length: ");
             errMsg += std::to_string(length);
@@ -564,9 +564,9 @@ private:
         void *clientd,
         aeron_async_add_publication_t *async,
         const char *channel,
-        int32_t stream_id,
-        int32_t session_id,
-        int64_t correlation_id)
+        std::int32_t stream_id,
+        std::int32_t session_id,
+        std::int64_t correlation_id)
     {
         on_new_publication_t &handler = *reinterpret_cast<on_new_publication_t *>(clientd);
         handler(std::string(channel), stream_id, session_id, correlation_id);
@@ -576,15 +576,15 @@ private:
         void *clientd,
         aeron_async_add_subscription_t *async,
         const char *channel,
-        int32_t stream_id,
-        int64_t correlation_id)
+        std::int32_t stream_id,
+        std::int64_t correlation_id)
     {
         on_new_subscription_t &handler = *reinterpret_cast<on_new_subscription_t *>(clientd);
         handler(std::string(channel), stream_id, correlation_id);
     }
 
     static void availableCounterHandlerCallback(
-        void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
+        void *clientd, aeron_counters_reader_t *counters_reader, std::int64_t registration_id, std::int32_t counter_id)
     {
         on_available_counter_t &handler = *reinterpret_cast<on_available_counter_t *>(clientd);
         CountersReader countersReader(counters_reader);

@@ -46,7 +46,7 @@ typedef std::function<long long()> nano_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
-static const size_t static_handler_token = 0;
+static const std::size_t static_handler_token = 0;
 
 class CLIENT_EXPORT ClientConductor
 {

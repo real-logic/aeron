@@ -32,9 +32,7 @@ Subscription::Subscription(
     m_channel(channel),
     m_channelStatusId(channelStatusId),
     m_streamId(streamId),
-    m_registrationId(registrationId),
-    m_imageArray(),
-    m_isClosed(false)
+    m_registrationId(registrationId)
 {
     static_cast<void>(m_paddingBefore);
     static_cast<void>(m_paddingAfter);
@@ -90,7 +88,7 @@ std::vector<std::string> Subscription::localSocketAddresses() const
 
 std::string Subscription::tryResolveChannelEndpointPort() const
 {
-    const int64_t currentChannelStatus = channelStatus();
+    const std::int64_t currentChannelStatus = channelStatus();
 
     if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus)
     {
@@ -118,4 +116,9 @@ std::string Subscription::tryResolveChannelEndpointPort() const
     }
 
     return {};
+}
+
+std::string Subscription::resolvedEndpoint() const
+{
+    return LocalSocketAddressStatus::findAddress(m_conductor.countersReader(), channelStatus(), m_channelStatusId);
 }

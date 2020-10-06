@@ -295,7 +295,7 @@ public:
         std::size_t totalMessageCount,
         std::size_t &messagesPublished,
         std::size_t &receivedMessageCount,
-        std::int64_t receivedPosition)
+        std::int64_t receivedPosition) const
     {
         aeron::concurrent::YieldingIdleStrategy idleStrategy;
         std::shared_ptr<Subscription> subscription = addSubscription(
@@ -811,7 +811,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::string controlEndpoint = "localhost:23265";
     const std::string recordingEndpoint = "localhost:23266";
     const std::string liveEndpoint = "localhost:23267";
-    const std::string replayEndpoint = "localhost:23268";
+    const std::string replayEndpoint = "localhost:0";
 
     ChannelUriStringBuilder publicationChannel, recordingChannel, subscriptionChannel;
     ChannelUriStringBuilder liveDestination, replayDestination, replayChannel;
@@ -846,8 +846,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     replayChannel
         .media(UDP_MEDIA)
         .isSessionIdTagged(true)
-        .sessionId(2)
-        .endpoint(replayEndpoint);
+        .sessionId(2);
 
     const std::size_t initialMessageCount = minMessagesPerTerm * 3;
     const std::size_t subsequentMessageCount = minMessagesPerTerm * 3;

@@ -953,7 +953,7 @@ private:
     }
 
     static void onAvailableCounterCallback(
-        void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
+        void *clientd, aeron_counters_reader_t *counters_reader, std::int64_t registration_id, std::int32_t counter_id)
     {
         CountersReader reader = CountersReader(counters_reader);
         on_available_counter_t &callback = *reinterpret_cast<on_available_counter_t *>(clientd);
@@ -961,7 +961,7 @@ private:
     }
 
     static void onUnavailableCounterCallback(
-        void *clientd, aeron_counters_reader_t *counters_reader, int64_t registration_id, int32_t counter_id)
+        void *clientd, aeron_counters_reader_t *counters_reader, std::int64_t registration_id, std::int32_t counter_id)
     {
         CountersReader reader = CountersReader(counters_reader);
         on_unavailable_counter_t &callback = *reinterpret_cast<on_unavailable_counter_t *>(clientd);

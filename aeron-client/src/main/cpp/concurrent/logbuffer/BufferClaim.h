@@ -38,14 +38,14 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void wrap(std::uint8_t *buffer, util::index_t length)
     {
-        m_buffer.wrap(buffer, static_cast<size_t>(length));
+        m_buffer.wrap(buffer, static_cast<std::size_t>(length));
     }
     /// @endcond
 
     /// @cond HIDDEN_SYMBOLS
     inline void wrap(AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
-        m_buffer.wrap(buffer.buffer() + offset, static_cast<size_t>(length));
+        m_buffer.wrap(buffer.buffer() + offset, static_cast<std::size_t>(length));
     }
     /// @endcond
 

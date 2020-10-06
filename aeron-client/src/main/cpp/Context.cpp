@@ -37,8 +37,8 @@ bool Context::requestDriverTermination(
     if (MemoryMappedFile::getFileSize(cncFilename.c_str()) > minLength)
     {
         MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(cncFilename.c_str());
-        size_t fileLength = cncFile->getMemorySize();
-        if (fileLength > static_cast<size_t>(minLength))
+        std::size_t fileLength = cncFile->getMemorySize();
+        if (fileLength > static_cast<std::size_t>(minLength))
         {
             const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
             if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))

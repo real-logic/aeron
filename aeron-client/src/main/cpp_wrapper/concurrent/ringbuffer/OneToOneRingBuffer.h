@@ -136,7 +136,7 @@ public:
             {
                 if (bytesRead != 0)
                 {
-                    m_buffer.setMemory(headIndex, static_cast<size_t>(bytesRead), 0);
+                    m_buffer.setMemory(headIndex, static_cast<std::size_t>(bytesRead), 0);
                     m_buffer.putInt64Ordered(m_headPositionIndex, head + bytesRead);
                 }
             }};
@@ -220,7 +220,7 @@ public:
         }
         while (headAfter != headBefore);
 
-        int64_t size = tail - headAfter;
+        std::int64_t size = tail - headAfter;
         if (size < 0)
         {
             return 0;

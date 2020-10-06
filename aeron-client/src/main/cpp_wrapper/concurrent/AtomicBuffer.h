@@ -64,7 +64,7 @@ public:
      * @param length       of the buffer for bounds checking.
      * @param initialValue to set the memory too.
      */
-    AtomicBuffer(std::uint8_t *buffer, size_t length, std::uint8_t initialValue) :
+    AtomicBuffer(std::uint8_t *buffer, std::size_t length, std::uint8_t initialValue) :
         m_buffer(buffer),
         m_length(static_cast<util::index_t>(length))
     {
@@ -80,13 +80,13 @@ public:
         setMemory(0, static_cast<std::size_t>(length), initialValue);
     }
 
-    template<size_t N>
+    template<std::size_t N>
     explicit AtomicBuffer(std::array<std::uint8_t, N> &buffer)
     {
         wrap(buffer);
     }
 
-    template<size_t N>
+    template<std::size_t N>
     AtomicBuffer(std::array<std::uint8_t, N> &buffer, std::uint8_t initialValue)
     {
         wrap(buffer);
@@ -105,7 +105,7 @@ public:
      * @param buffer to be wrapped.
      * @param length of the buffer for bounds checking.
      */
-    inline void wrap(std::uint8_t *buffer, size_t length)
+    inline void wrap(std::uint8_t *buffer, std::size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
@@ -131,7 +131,7 @@ public:
         m_length = buffer.m_length;
     }
 
-    template<size_t N>
+    template<std::size_t N>
     inline void wrap(std::array<std::uint8_t, N> &buffer)
     {
         static_assert(

@@ -58,7 +58,7 @@ protected:
 
     inline std::string stringGetWithoutLength(util::index_t offset, std::int32_t size) const
     {
-        return m_buffer.getStringWithoutLength(m_baseOffset + offset, static_cast<size_t>(size));
+        return m_buffer.getStringWithoutLength(m_baseOffset + offset, static_cast<std::size_t>(size));
     }
 
     inline std::int32_t getInt32(util::index_t offset) const
@@ -71,17 +71,17 @@ protected:
         m_buffer.putInt32(m_baseOffset + offset, value);
     }
 
-    inline const uint8_t *bytesAt(util::index_t offset) const
+    inline const std::uint8_t *bytesAt(util::index_t offset) const
     {
         return m_buffer.buffer() + m_baseOffset + offset;
     }
 
-    inline void putBytes(util::index_t offset, const uint8_t *src, util::index_t length)
+    inline void putBytes(util::index_t offset, const std::uint8_t *src, util::index_t length)
     {
         m_buffer.putBytes(m_baseOffset + offset, src, length);
     }
 
-    inline void getBytes(util::index_t offset, uint8_t *dest, util::index_t length) const
+    inline void getBytes(util::index_t offset, std::uint8_t *dest, util::index_t length) const
     {
         m_buffer.getBytes(m_baseOffset + offset, dest, length);
     }

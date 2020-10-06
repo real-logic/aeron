@@ -22,7 +22,7 @@ namespace aeron
 {
 
 template<typename T, typename... U>
-static size_t getAddress(const std::function<T(U...)> &f)
+static std::size_t getAddress(const std::function<T(U...)> &f)
 {
     typedef T(fnType)(U...);
     auto fnPointer = f.template target<fnType *>();
@@ -545,7 +545,7 @@ std::int64_t ClientConductor::addAvailableCounterHandler(const on_available_coun
     ensureNotReentrant();
     ensureOpen();
 
-    const int64_t registrationId = m_driverProxy.nextCorrelationId();
+    const std::int64_t registrationId = m_driverProxy.nextCorrelationId();
     m_onAvailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
 
     return registrationId;
@@ -561,8 +561,8 @@ void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t
     auto predicate =
         [handler](const std::pair<std::int64_t, on_available_counter_t> &item)
         {
-            size_t itemAddress = getAddress(item.second);
-            size_t handlerAddress = getAddress(handler);
+            std::size_t itemAddress = getAddress(item.second);
+            std::size_t handlerAddress = getAddress(handler);
             return itemAddress != 0 && itemAddress == handlerAddress;
         };
 
@@ -607,8 +607,8 @@ void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_count
     auto predicate =
         [handler](const std::pair<std::int64_t, on_unavailable_counter_t> &item)
         {
-            size_t itemAddress = getAddress(item.second);
-            size_t handlerAddress = getAddress(handler);
+            std::size_t itemAddress = getAddress(item.second);
+            std::size_t handlerAddress = getAddress(handler);
             return itemAddress != 0 && itemAddress == handlerAddress;
         };
 
@@ -653,8 +653,8 @@ void ClientConductor::removeCloseClientHandler(const on_close_client_t &handler)
     auto predicate =
         [handler](const std::pair<std::int64_t, on_close_client_t> &item)
         {
-            size_t itemAddress = getAddress(item.second);
-            size_t handlerAddress = getAddress(handler);
+            std::size_t itemAddress = getAddress(item.second);
+            std::size_t handlerAddress = getAddress(handler);
             return itemAddress != 0 && itemAddress == handlerAddress;
         };
 

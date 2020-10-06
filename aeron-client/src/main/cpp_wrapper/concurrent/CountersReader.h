@@ -113,12 +113,12 @@ public:
     inline std::int64_t getCounterValue(std::int32_t id) const
     {
         validateCounterId(id);
-        int64_t *counter_addr = getCounterAddress(id);
+        std::int64_t *counter_addr = getCounterAddress(id);
         return *counter_addr;
     }
 
     /// @cond HIDDEN_SYMBOLS
-    inline int64_t *getCounterAddress(std::int32_t id) const
+    inline std::int64_t *getCounterAddress(std::int32_t id) const
     {
         return aeron_counters_reader_addr(m_countersReader, id);
     }
@@ -265,22 +265,21 @@ protected:
 
     template<typename H>
     static void forEachCounter(
-        int64_t value,
-        int32_t id,
-        int32_t typeId,
-        const uint8_t *key,
-        size_t key_length,
+        std::int64_t value,
+        std::int32_t id,
+        std::int32_t typeId,
+        const std::uint8_t *key,
+        std::size_t key_length,
         const char *label,
-        size_t label_length,
+        std::size_t label_length,
         void *clientd)
     {
         H &handler = *reinterpret_cast<H *>(clientd);
-        AtomicBuffer keyBuffer = { const_cast<uint8_t *>(key), key_length };
+        AtomicBuffer keyBuffer = { const_cast<std::uint8_t *>(key), key_length };
         std::string labelStr = { const_cast<char *>(label), label_length };
 
         handler(id, typeId, keyBuffer, labelStr);
     }
-
 };
 
 }}

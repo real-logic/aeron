@@ -80,6 +80,11 @@ public:
         {
             switch (m_state)
             {
+                case State::RESOLVE_REPLAY_PORT:
+                    workCount += resolveReplayPort(nowMs);
+                    checkProgress(nowMs);
+                    break;
+
                 case State::GET_RECORDING_POSITION:
                     workCount += getRecordingPosition(nowMs);
                     checkProgress(nowMs);
@@ -171,6 +176,7 @@ public:
 private:
     enum State : std::int8_t
     {
+        RESOLVE_REPLAY_PORT,
         GET_RECORDING_POSITION,
         REPLAY,
         CATCHUP,
@@ -182,7 +188,6 @@ private:
 
     const std::shared_ptr<Subscription> m_subscription;
     const std::shared_ptr<AeronArchive> m_archive;
-    const std::string m_replayChannel;
     const std::string m_replayDestination;
     const std::string m_liveDestination;
     const std::int64_t m_recordingId;
@@ -190,6 +195,8 @@ private:
     const long long m_mergeProgressTimeoutMs;
 
     State m_state = GET_RECORDING_POSITION;
+    std::string m_replayEndpoint;
+    std::shared_ptr<ChannelUri> m_replayChannelUri = nullptr;
     std::shared_ptr<Image> m_image = nullptr;
     epoch_clock_t m_epochClock;
     std::int64_t m_activeCorrelationId = aeron::NULL_VALUE;
@@ -202,7 +209,7 @@ private:
 
     inline void state(State state)
     {
-        //std::cout << m_state << " -> " << state << std::endl;
+        //std::cout << (int)m_state << " -> " << (int)state << std::endl;
         m_state = state;
     }
 
@@ -219,6 +226,8 @@ private:
             (m_nextTargetPosition - position) <= REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD &&
                 m_image->activeTransportCount() >= 2;
     }
+
+    int resolveReplayPort(long long nowMs);
 
     int getRecordingPosition(long long nowMs);
 

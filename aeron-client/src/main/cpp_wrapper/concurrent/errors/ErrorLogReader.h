@@ -64,7 +64,7 @@ inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, s
                 lastObservationTimestamp,
                 buffer.getStringWithoutLength(
                     offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET,
-                    static_cast<size_t>(length - ErrorLogDescriptor::HEADER_LENGTH)));
+                    static_cast<std::size_t>(length - ErrorLogDescriptor::HEADER_LENGTH)));
         }
 
         offset += util::BitUtil::align(length, ErrorLogDescriptor::RECORD_ALIGNMENT);

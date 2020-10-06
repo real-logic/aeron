@@ -327,11 +327,11 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, std::size_t leng
     {
         struct stat statInfo{};
         ::fstat(fd.handle, &statInfo);
-        length = static_cast<size_t>(statInfo.st_size);
+        length = static_cast<std::size_t>(statInfo.st_size);
     }
 
     m_memorySize = length;
-    m_memory = doMapping(m_memorySize, fd, static_cast<size_t>(offset), readOnly);
+    m_memory = doMapping(m_memorySize, fd, static_cast<std::size_t>(offset), readOnly);
 }
 
 MemoryMappedFile::~MemoryMappedFile()

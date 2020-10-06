@@ -111,7 +111,7 @@ public:
     inline std::uint16_t type() const
     {
         // C and Java API declare this as int16_t.
-        return static_cast<uint16_t>(m_headerValues.frame.type);
+        return static_cast<std::uint16_t>(m_headerValues.frame.type);
     }
 
     /**

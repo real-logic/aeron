@@ -31,23 +31,13 @@ ReplayMerge::ReplayMerge(
     std::int64_t mergeProgressTimeoutMs) :
     m_subscription(std::move(subscription)),
     m_archive(std::move(archive)),
-    m_replayChannel(replayChannel),
     m_replayDestination(replayDestination),
     m_liveDestination(liveDestination),
     m_recordingId(recordingId),
     m_startPosition(startPosition),
     m_mergeProgressTimeoutMs(mergeProgressTimeoutMs),
-    m_epochClock(std::move(epochClock)),
-    m_timeOfLastProgressMs(m_epochClock())
+    m_epochClock(std::move(epochClock))
 {
-    std::shared_ptr<ChannelUri> subscriptionChannelUri = ChannelUri::parse(m_subscription->channel());
-
-    if (subscriptionChannelUri->get(MDC_CONTROL_MODE_PARAM_NAME) != MDC_CONTROL_MODE_MANUAL)
-    {
-        throw util::IllegalArgumentException("subscription channel must be manual control mode: mode=" +
-            subscriptionChannelUri->get(MDC_CONTROL_MODE_PARAM_NAME), SOURCEINFO);
-    }
-
     if (m_subscription->channel().compare(0, 9, IPC_CHANNEL) == 0 ||
         replayChannel.compare(0, 9, IPC_CHANNEL) == 0 ||
         replayDestination.compare(0, 9, IPC_CHANNEL) == 0 ||
@@ -56,7 +46,29 @@ ReplayMerge::ReplayMerge(
         throw util::IllegalArgumentException("IPC merging is not supported", SOURCEINFO);
     }
 
+    if (m_subscription->channel().find("control-mode=manual") == std::string::npos)
+    {
+        throw util::IllegalArgumentException(
+            "Subscription URI must have 'control-mode=manual' uri=" + m_subscription->channel(), SOURCEINFO);
+    }
+
+    m_replayChannelUri = ChannelUri::parse(replayChannel);
+    m_replayChannelUri->put(LINGER_PARAM_NAME, "0");
+    m_replayChannelUri->put(EOS_PARAM_NAME, "false");
+
+    m_replayEndpoint = ChannelUri::parse(m_replayDestination)->get(ENDPOINT_PARAM_NAME);
+    if (aeron::util::endsWith(m_replayEndpoint, std::string(":0")))
+    {
+        m_state = RESOLVE_REPLAY_PORT;
+    }
+    else
+    {
+        m_replayChannelUri->put(ENDPOINT_PARAM_NAME, m_replayEndpoint);
+        m_state = GET_RECORDING_POSITION;
+    }
+
     m_subscription->addDestination(m_replayDestination);
+    m_timeOfLastProgressMs = m_epochClock();
 }
 
 ReplayMerge::~ReplayMerge()
@@ -78,6 +90,28 @@ ReplayMerge::~ReplayMerge()
 
         state(State::CLOSED);
     }
+}
+
+int ReplayMerge::resolveReplayPort(long long nowMs)
+{
+    int workCount = 0;
+
+    const std::string resolvedEndpoint = m_subscription->resolvedEndpoint();
+    if (!resolvedEndpoint.empty())
+    {
+        std::cout << resolvedEndpoint << std::endl;
+        std::size_t i = resolvedEndpoint.find_last_of(':');
+
+        m_replayChannelUri->put(
+            ENDPOINT_PARAM_NAME,
+            m_replayEndpoint.substr(0, m_replayEndpoint.length() - 2) + resolvedEndpoint.substr(i));
+
+        m_timeOfLastProgressMs = nowMs;
+        state(GET_RECORDING_POSITION);
+        workCount += 1;
+    }
+
+    return workCount;
 }
 
 int ReplayMerge::getRecordingPosition(long long nowMs)
@@ -130,15 +164,12 @@ int ReplayMerge::replay(long long nowMs)
     if (aeron::NULL_VALUE == m_activeCorrelationId)
     {
         const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
-        std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(m_replayChannel);
-        channelUri->put(LINGER_PARAM_NAME, "0");
-        channelUri->put(EOS_PARAM_NAME, "false");
 
         if (m_archive->archiveProxy().replay(
             m_recordingId,
             m_startPosition,
             std::numeric_limits<std::int64_t>::max(),
-            channelUri->toString(),
+            m_replayChannelUri->toString(),
             m_subscription->streamId(),
             correlationId,
             m_archive->controlSessionId()))
@@ -288,10 +319,12 @@ bool ReplayMerge::pollForResponse(AeronArchive &archive, std::int64_t correlatio
         {
             if (poller.isCodeError())
             {
-                throw ArchiveException(static_cast<std::int32_t>(poller.relevantId()),
+                throw ArchiveException(
+                    static_cast<std::int32_t>(poller.relevantId()),
                     poller.correlationId(),
                     "archive response for correlationId=" + std::to_string(poller.correlationId()) +
-                    ", error: " + poller.errorMessage(), SOURCEINFO);
+                    ", error: " + poller.errorMessage(),
+                    SOURCEINFO);
             }
 
             return poller.correlationId() == correlationId;

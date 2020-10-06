@@ -77,7 +77,7 @@ public:
         return *this;
     }
 
-    inline const uint8_t *keyBuffer() const
+    inline const std::uint8_t *keyBuffer() const
     {
         return bytesAt(keyLengthOffset() + sizeof(std::int32_t));
     }
@@ -86,15 +86,15 @@ public:
     {
         std::int32_t length;
 
-        getBytes(keyLengthOffset(), reinterpret_cast<uint8_t *>(&length), sizeof(length));
+        getBytes(keyLengthOffset(), reinterpret_cast<std::uint8_t *>(&length), sizeof(length));
         return length;
     }
 
-    inline this_t &keyBuffer(const uint8_t *key, size_t keyLength)
+    inline this_t &keyBuffer(const std::uint8_t *key, std::size_t keyLength)
     {
         auto length = static_cast<std::int32_t>(keyLength);
 
-        putBytes(keyLengthOffset(), reinterpret_cast<const uint8_t *>(&length), sizeof(length));
+        putBytes(keyLengthOffset(), reinterpret_cast<const std::uint8_t *>(&length), sizeof(length));
 
         if (length > 0)
         {

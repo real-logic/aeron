@@ -77,7 +77,7 @@ public:
     }
 
     inline std::int32_t allocate(
-        std::int32_t typeId, const std::uint8_t *key, size_t keyLength, const std::string &label)
+        std::int32_t typeId, const std::uint8_t *key, std::size_t keyLength, const std::string &label)
     {
         if (label.length() > MAX_LABEL_LENGTH)
         {

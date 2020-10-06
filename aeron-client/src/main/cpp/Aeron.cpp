@@ -106,7 +106,7 @@ MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
         }
 
         cncBuffer = MemoryMappedFile::mapExisting(filename.c_str());
-        if (cncBuffer->getMemorySize() <= static_cast<size_t>(minLength))
+        if (cncBuffer->getMemorySize() <= static_cast<std::size_t>(minLength))
         {
             cncBuffer = nullptr;
             std::this_thread::sleep_for(IDLE_SLEEP_MS_1);

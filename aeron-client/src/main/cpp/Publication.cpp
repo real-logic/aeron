@@ -38,7 +38,7 @@ Publication::Publication(
     m_channel(channel),
     m_registrationId(registrationId),
     m_originalRegistrationId(originalRegistrationId),
-    m_maxPossiblePosition(static_cast<int64_t>(logBuffers->atomicBuffer(0).capacity()) << 31),
+    m_maxPossiblePosition(static_cast<std::int64_t>(logBuffers->atomicBuffer(0).capacity()) << 31),
     m_streamId(streamId),
     m_sessionId(sessionId),
     m_initialTermId(LogBufferDescriptor::initialTermId(m_logMetaDataBuffer)),

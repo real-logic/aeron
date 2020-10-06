@@ -44,7 +44,7 @@ LogBuffers::LogBuffers(const char *filename, bool preTouch)
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        m_buffers[i].wrap(basePtr + (i * termLength), static_cast<size_t>(termLength));
+        m_buffers[i].wrap(basePtr + (i * termLength), static_cast<std::size_t>(termLength));
     }
 
     if (preTouch)
@@ -71,7 +71,7 @@ LogBuffers::LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        m_buffers[i].wrap(address + (i * termLength), static_cast<size_t>(termLength));
+        m_buffers[i].wrap(address + (i * termLength), static_cast<std::size_t>(termLength));
     }
 }
 

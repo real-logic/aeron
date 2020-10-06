@@ -435,7 +435,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<size_t N>
+    template<std::size_t N>
     std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
@@ -480,7 +480,7 @@ public:
     {
         aeron_buffer_claim_t temp_claim;
         const std::int64_t position = aeron_exclusive_publication_try_claim(
-            m_publication, static_cast<size_t>(length), &temp_claim);
+            m_publication, static_cast<std::size_t>(length), &temp_claim);
 
         if (AERON_PUBLICATION_ERROR == position)
         {

@@ -416,7 +416,7 @@ public:
             iov.push_back(buf);
         }
 
-        const int64_t position = aeron_publication_offerv(
+        const std::int64_t position = aeron_publication_offerv(
             m_publication, iov.data(), iov.size(), reservedValueSupplierCallback, (void *)&reservedValueSupplier);
 
         if (AERON_PUBLICATION_ERROR == position)
@@ -452,7 +452,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<size_t N>
+    template<std::size_t N>
     std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)

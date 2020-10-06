@@ -173,6 +173,18 @@ public:
             m_countersReader, channelStatus(), channelStatusId());
     }
 
+    /**
+     * Resolve channel endpoint and replace it with the port from the ephemeral range when 0 was provided. If there are
+     * no addresses, or if there is more than one, returned from {@link #localSocketAddresses()} then the original
+     * {@link #channel()} is returned.
+     * <p>
+     * If the channel is not {@link aeron::concurrent::status::ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE}, then an
+     * empty string will be returned.
+     *
+     * @return channel URI string with an endpoint being resolved to the allocated port.
+     * @see #channelStatus()
+     * @see #localSocketAddresses()
+     */
     std::string tryResolveChannelEndpointPort() const
     {
         const std::int64_t currentChannelStatus = channelStatus();
@@ -203,6 +215,23 @@ public:
         }
 
         return {};
+    }
+
+    /**
+     * Find the resolved endpoint for the channel. This may be null of MDS is used and no destination is yet added.
+     * The result will similar to taking the first element returned from {@link #localSocketAddresses()}. If more than
+     * one destination is added then the first found is returned.
+     * <p>
+     * If the channel is not {@link aeron::concurrent::status::ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE}, then an
+     * empty string will be returned.
+     *
+     * @return The resolved endpoint or an empty string if not found.
+     * @see #channelStatus()
+     * @see #localSocketAddresses()
+     */
+    std::string resolvedEndpoint() const
+    {
+        return LocalSocketAddressStatus::findAddress(m_countersReader, channelStatus(), channelStatusId());
     }
 
     AsyncDestination *addDestinationAsync(const std::string &endpointChannel)

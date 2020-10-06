@@ -35,8 +35,8 @@ class CLIENT_EXPORT CommandOption
 
 private:
     char m_optionChar = '-';
-    size_t m_minParams = 0;
-    size_t m_maxParams = 0;
+    std::size_t m_minParams = 0;
+    std::size_t m_maxParams = 0;
     std::string m_helpText;
 
     bool m_isPresent = false;
@@ -79,7 +79,7 @@ public:
         m_isPresent = true;
     }
 
-    size_t getNumParams() const
+    std::size_t getNumParams() const
     {
         return m_params.size();
     }

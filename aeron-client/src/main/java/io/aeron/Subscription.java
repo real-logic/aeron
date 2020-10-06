@@ -574,14 +574,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public String resolvedEndpoint()
     {
-        final long channelStatus = channelStatus();
-
-        if (ChannelEndpointStatus.ACTIVE == channelStatus)
-        {
-            return LocalSocketAddressStatus.findAddress(conductor.countersReader(), channelStatus, channelStatusId);
-        }
-
-        return null;
+        return LocalSocketAddressStatus.findAddress(conductor.countersReader(), channelStatus(), channelStatusId);
     }
 
     void channelStatusId(final int id)

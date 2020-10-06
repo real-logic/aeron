@@ -128,6 +128,7 @@ int aeron_publication_image_create(
         return -1;
     }
     _image->raw_log_close_func = context->raw_log_close_func;
+    _image->raw_log_free_func = context->raw_log_free_func;
     _image->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     _image->nano_clock = context->nano_clock;

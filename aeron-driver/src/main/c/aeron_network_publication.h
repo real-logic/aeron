@@ -100,6 +100,7 @@ typedef struct aeron_network_publication_stct
     bool track_sender_limits;
     bool has_sender_released;
     aeron_raw_log_close_func_t raw_log_close_func;
+    aeron_raw_log_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     int64_t *short_sends_counter;

@@ -896,6 +896,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_usable_fs_space : aeron_usable_fs_space_disabled;
     _context->raw_log_map_func = aeron_raw_log_map;
     _context->raw_log_close_func = aeron_raw_log_close;
+    _context->raw_log_free_func = aeron_map_raw_log_free;
 
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;

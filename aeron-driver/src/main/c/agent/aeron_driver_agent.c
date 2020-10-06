@@ -232,6 +232,22 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
     return hdr->map_raw.map_raw_log_close.result;
 }
 
+bool aeron_driver_agent_map_raw_log_free_interceptor(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
+{
+    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
+    aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+
+    hdr->time_ms = aeron_epoch_clock();
+    hdr->map_raw.map_raw_log_free.addr = (uintptr_t)mapped_raw_log;
+    memcpy(&hdr->map_raw.map_raw_log_free.log, mapped_raw_log, sizeof(hdr->map_raw.map_raw_log_free.log));
+    hdr->map_raw.map_raw_log_free.result = aeron_map_raw_log_free(mapped_raw_log, filename);
+
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb, AERON_MAP_RAW_LOG_OP_FREE, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
+
+    return hdr->map_raw.map_raw_log_free.result;
+}
+
 void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
 {
@@ -470,7 +486,16 @@ int aeron_init_logging_events_interceptors(aeron_driver_context_t *context)
     if (mask & AERON_MAP_RAW_LOG_OP)
     {
         context->raw_log_map_func = aeron_driver_agent_map_raw_log_interceptor;
+    }
+
+    if (mask & AERON_MAP_RAW_LOG_OP_CLOSE)
+    {
         context->raw_log_close_func = aeron_driver_agent_map_raw_log_close_interceptor;
+    }
+
+    if (mask & AERON_MAP_RAW_LOG_OP_FREE)
+    {
+        context->raw_log_free_func = aeron_driver_agent_map_raw_log_free_interceptor;
     }
 
     if (mask & AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)

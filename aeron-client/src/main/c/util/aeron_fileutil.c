@@ -518,25 +518,33 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 
 int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
-    int result = 0;
-
-    if (mapped_raw_log->mapped_file.addr != NULL)
+    if (!aeron_map_raw_log_free(mapped_raw_log, filename))
     {
-        if ((result = aeron_unmap(&mapped_raw_log->mapped_file)) < 0)
-        {
-            return -1;
-        }
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        return -1;
+    }
 
-        if (NULL != filename && remove(filename) < 0)
+    return 0;
+}
+
+bool aeron_map_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
+{
+    if (NULL != mapped_raw_log->mapped_file.addr)
+    {
+        if (aeron_unmap(&mapped_raw_log->mapped_file) < 0)
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
-            return -1;
+            return false;
         }
 
         mapped_raw_log->mapped_file.addr = NULL;
     }
 
-    return result;
+    if (NULL != filename && remove(filename) < 0)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 #if defined(__clang__)

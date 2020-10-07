@@ -172,6 +172,7 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Install compiler
         run: |
+          curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev

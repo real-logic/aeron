@@ -53,7 +53,8 @@ public:
         {
             for (std::int32_t i = 0, size = countersReader.maxCounterId(); i < size; i++)
             {
-                if (CountersReader::RECORD_ALLOCATED == countersReader.getCounterState(i))
+                const std::int32_t counterState = countersReader.getCounterState(i);
+                if (CountersReader::RECORD_ALLOCATED == counterState)
                 {
                     std::uint8_t *keyPtr = countersReader.metaDataBuffer().buffer() +
                         static_cast<std::size_t>(countersReader.metadataOffset(i)) +
@@ -70,6 +71,10 @@ public:
                             return endpoint;
                         }
                     }
+                }
+                else if (CountersReader::RECORD_UNUSED == counterState)
+                {
+                    break;
                 }
             }
         }

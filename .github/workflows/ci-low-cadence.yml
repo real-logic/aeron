@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '14' ]
-        os: [ 'ubuntu-latest', 'windows-latest' ]
+        os: [ 'ubuntu-20.04', 'windows-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -54,7 +54,7 @@ jobs:
 
   c-driver-slow-system-test-gcc-build:
     name: C++ Slow System Tests GCC ${{ matrix.version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -139,7 +139,7 @@ jobs:
 
   cpp-gcc-sanitize-build:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:

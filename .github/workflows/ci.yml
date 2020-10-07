@@ -85,6 +85,7 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Install compiler
         run: |
+         sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ bionic main universe"
          sudo apt-get update
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz

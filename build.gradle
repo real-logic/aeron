@@ -23,7 +23,7 @@ buildscript {
 plugins {
     id 'java-library'
     id 'idea'
-    id 'com.github.johnrengelman.shadow' version '6.0.0' apply false
+    id 'com.github.johnrengelman.shadow' version '6.1.0' apply false
     id 'biz.aQute.bnd.builder' version '5.1.2' apply false
     id "com.github.ben-manes.versions" version "0.33.0"
 }
@@ -40,7 +40,7 @@ def checkstyleVersion = '8.36'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.0'
 def mockitoVersion = '3.5.13'
-def byteBuddyVersion = '1.10.16'
+def byteBuddyVersion = '1.10.17'
 def hdrHistogramVersion = '2.1.12'
 
 ext {

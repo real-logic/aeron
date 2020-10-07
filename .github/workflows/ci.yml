@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '15' ]
-        os: [ 'ubuntu-latest', 'windows-latest' ]
+        os: [ 'ubuntu-20.04', 'windows-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -60,7 +60,7 @@ jobs:
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +108,7 @@ jobs:
 
   cpp-gcc-centos-build:
     name: C++ GCC ${{ matrix.version }} (CentOS)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -146,7 +146,7 @@ jobs:
 
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -195,7 +195,7 @@ jobs:
 
   cpp-clang-debug-build:
     name: C++ Clang ${{ matrix.version }} debug build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:

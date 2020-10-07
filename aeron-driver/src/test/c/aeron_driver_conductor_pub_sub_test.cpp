@@ -454,7 +454,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
 TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecifiedSessionIdAndSameMtu)
 {
     char channel[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel, AERON_MAX_PATH, SESSION_ID_1, _MTU_1);
+    GetParam()->channelWithParams(channel, AERON_MAX_PATH, SESSION_ID_1, MTU_1);
 
     int64_t client_id1 = nextCorrelationId();
     int64_t pub_id1 = nextCorrelationId();
@@ -483,8 +483,8 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
 {
     char channel1[AERON_MAX_PATH];
     char channel2[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, _MTU_1);
-    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, _MTU_2);
+    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, MTU_1);
+    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, MTU_2);
 
 
     int64_t client_id1 = nextCorrelationId();
@@ -511,7 +511,7 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
 TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecifiedSessionIdAndSameTermLength)
 {
     char channel[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel, AERON_MAX_PATH, SESSION_ID_1, _MTU_1, TERM_LENGTH);
+    GetParam()->channelWithParams(channel, AERON_MAX_PATH, SESSION_ID_1, MTU_1, TERM_LENGTH);
 
     int64_t client_id1 = nextCorrelationId();
     int64_t pub_id1 = nextCorrelationId();
@@ -538,8 +538,8 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
 {
     char channel1[AERON_MAX_PATH];
     char channel2[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, _MTU_1, TERM_LENGTH);
-    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, _MTU_1, TERM_LENGTH * 2);
+    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, MTU_1, TERM_LENGTH);
+    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, MTU_1, TERM_LENGTH * 2);
 
 
     int64_t client_id1 = nextCorrelationId();

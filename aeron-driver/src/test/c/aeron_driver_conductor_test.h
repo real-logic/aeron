@@ -55,8 +55,8 @@ extern "C"
 
 #define SESSION_ID_1_ 1000
 
-#define _MTU_1 4096
-#define _MTU_2 8192
+#define MTU_1 (4096)
+#define MTU_2 (8192)
 
 #define CHANNEL_1_WITH_TAG_1001 "aeron:udp?endpoint=localhost:40001|tags=1001"
 #define CHANNEL_TAG_1001 "aeron:udp?tags=1001"
@@ -268,10 +268,10 @@ struct TestDriverConductor
         m_conductor.next_session_id = nextSessionId;
     }
 
-    aeron_driver_conductor_t m_conductor;
-    aeron_driver_sender_t m_sender;
-    aeron_driver_receiver_t m_receiver;
-    aeron_receive_destination_t m_destination;
+    aeron_driver_conductor_t m_conductor = {};
+    aeron_driver_sender_t m_sender = {};
+    aeron_driver_receiver_t m_receiver = {};
+    aeron_receive_destination_t m_destination = {};
 };
 
 class DriverConductorTest
@@ -574,18 +574,18 @@ public:
     }
 
 protected:
-    uint8_t m_command_buffer[AERON_MAX_PATH];
-    TestDriverContext m_context;
+    uint8_t m_command_buffer[AERON_MAX_PATH] = {};
+    TestDriverContext m_context = {};
     TestDriverConductor m_conductor;
-    aeron_broadcast_receiver_t m_broadcast_receiver;
-    aeron_mpsc_rb_t m_to_driver;
-    MockDriverCallbacks m_mockCallbacks;
+    aeron_broadcast_receiver_t m_broadcast_receiver = {};
+    aeron_mpsc_rb_t m_to_driver = {};
+    MockDriverCallbacks m_mockCallbacks = {};
 };
 
 void aeron_image_buffers_ready_get_log_file_name(
     const aeron_image_buffers_ready_t *msg, const char **log_file_name, int32_t *log_file_name_len)
 {
-    uint8_t *log_file_name_ptr = ((uint8_t *) msg) + sizeof(aeron_image_buffers_ready_t);
+    uint8_t *log_file_name_ptr = ((uint8_t *)msg) + sizeof(aeron_image_buffers_ready_t);
     memcpy(log_file_name_len, log_file_name_ptr, sizeof(int32_t));
     *log_file_name = reinterpret_cast<const char *>(log_file_name_ptr + sizeof(int32_t));
 }
@@ -594,13 +594,13 @@ void aeron_publication_buffers_ready_get_log_file_name(
     const aeron_publication_buffers_ready_t *msg, const char **log_file_name, int32_t *log_file_name_len)
 {
     *log_file_name_len = msg->log_file_length;
-    *log_file_name = ((char *) msg) + sizeof(aeron_publication_buffers_ready_t);
+    *log_file_name = ((char *)msg) + sizeof(aeron_publication_buffers_ready_t);
 }
 
 void aeron_image_buffers_ready_get_source_identity(
     const aeron_image_buffers_ready_t *msg, const char **source_identity, int32_t *source_identity_len)
 {
-    uint8_t *log_file_name_ptr = ((uint8_t *) msg) + sizeof(aeron_image_buffers_ready_t);
+    uint8_t *log_file_name_ptr = ((uint8_t *)msg) + sizeof(aeron_image_buffers_ready_t);
     int32_t log_file_name_len;
     memcpy(&log_file_name_len, log_file_name_ptr, sizeof(int32_t));
     int32_t aligned_log_file_name_len = AERON_ALIGN(log_file_name_len, sizeof(int32_t));
@@ -612,7 +612,7 @@ void aeron_image_buffers_ready_get_source_identity(
 void aeron_image_message_get_channel(
     const aeron_image_message_t *msg, const char **channel, int32_t *channel_len)
 {
-    uint8_t *channel_ptr = ((uint8_t *) msg) + sizeof(aeron_image_message_t);
+    uint8_t *channel_ptr = ((uint8_t *)msg) + sizeof(aeron_image_message_t);
     *channel_len = msg->channel_length;
     *channel = reinterpret_cast<const char *>(channel_ptr);
 }
@@ -708,7 +708,7 @@ MATCHER_P5(
 {
     const aeron_publication_buffers_ready_t *response = reinterpret_cast<aeron_publication_buffers_ready_t *>(
         std::get<1>(arg));
-    bool result = true; 
+    bool result = true;
     result &= testing::Value(response->stream_id, stream_id);
     result &= testing::Value(response->session_id, session_id);
     result &= testing::Value(response->correlation_id, correlation_id);
@@ -856,7 +856,6 @@ MATCHER_P5(
     return result;
 }
 
-
 MATCHER_P4(
     IsUnavailableImage,
     stream_id,
@@ -936,14 +935,14 @@ MATCHER_P2(
     bool result = true;
     result &= testing::Value(counter_id, id);
     result &= testing::Value(counter_label, label);
-    
+
     if (!result)
     {
         *result_listener <<
             "counter.id = " << counter_id <<
             "counter.label = " << counter_label;
     }
-    
+
     return result;
 }
 

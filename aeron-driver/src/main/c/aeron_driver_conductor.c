@@ -595,7 +595,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
     client->heartbeat_timestamp.value_addr = NULL;
 }
 
-bool aeron_client_free(aeron_driver_conductor_t *conductor, aeron_client_t *client)
+bool aeron_client_free(aeron_client_t *client)
 {
     return true;
 }
@@ -671,9 +671,16 @@ void aeron_ipc_publication_entry_delete(
     entry->publication = NULL;
 }
 
-bool aeron_ipc_publication_entry_free(aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
+bool aeron_ipc_publication_entry_free(aeron_ipc_publication_entry_t *entry)
 {
-    return true;
+    aeron_ipc_publication_t *publication = entry->publication;
+    if (publication->map_raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    {
+        aeron_free(publication->log_file_name);
+        publication->log_file_name = NULL;
+        return true;
+    }
+    return false;
 }
 
 void aeron_network_publication_entry_on_time_event(
@@ -713,9 +720,16 @@ void aeron_network_publication_entry_delete(
     }
 }
 
-bool aeron_network_publication_entry_free(aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry)
+bool aeron_network_publication_entry_free(aeron_network_publication_entry_t *entry)
 {
-    return true;
+    aeron_network_publication_t *publication = entry->publication;
+    if (publication->map_raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    {
+        aeron_free(publication->log_file_name);
+        publication->log_file_name = NULL;
+        return true;
+    }
+    return false;
 }
 
 void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
@@ -763,8 +777,7 @@ void aeron_send_channel_endpoint_entry_delete(
     aeron_send_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
-bool aeron_send_channel_endpoint_entry_free(
-        aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry)
+bool aeron_send_channel_endpoint_entry_free(aeron_send_channel_endpoint_entry_t *entry)
 {
     return true;
 }
@@ -797,8 +810,7 @@ void aeron_receive_channel_endpoint_entry_delete(
     aeron_receive_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
-bool aeron_receive_channel_endpoint_entry_free(
-        aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_entry_t *entry)
+bool aeron_receive_channel_endpoint_entry_free(aeron_receive_channel_endpoint_entry_t *entry)
 {
     return true;
 }
@@ -828,9 +840,16 @@ void aeron_publication_image_entry_delete(
     entry->image = NULL;
 }
 
-bool aeron_publication_image_entry_free(aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
+bool aeron_publication_image_entry_free(aeron_publication_image_entry_t *entry)
 {
-    return true;
+    aeron_publication_image_t *image = entry->image;
+    if (image->map_raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
+    {
+        aeron_free(image->log_file_name);
+        image->log_file_name = NULL;
+        return true;
+    }
+    return false;
 }
 
 void aeron_linger_resource_entry_on_time_event(
@@ -853,7 +872,7 @@ void aeron_linger_resource_entry_delete(aeron_driver_conductor_t *conductor, aer
     aeron_free(entry->buffer);
 }
 
-bool aeron_linger_resource_entry_free(aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry)
+bool aeron_linger_resource_entry_free(aeron_linger_resource_entry_t *entry)
 {
     return true;
 }
@@ -898,7 +917,7 @@ for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
     l.on_time_event(c, elem, now_ns, now_ms); \
     if (l.has_reached_end_of_life(c, elem)) \
     { \
-        if (l.free_func(c, elem)) \
+        if (l.free_func(elem)) \
         { \
             l.delete_func(c, elem); \
             aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \

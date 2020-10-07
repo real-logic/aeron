@@ -129,7 +129,15 @@ static int test_malloc_map_raw_log(
 static int test_malloc_map_raw_log_close(aeron_mapped_raw_log_t *log, const char *filename)
 {
     free(log->mapped_file.addr);
+    log->mapped_file.addr = nullptr;
     return 0;
+}
+
+static bool test_malloc_map_raw_log_free(aeron_mapped_raw_log_t *log, const char *filename)
+{
+    free(log->mapped_file.addr);
+    log->mapped_file.addr = nullptr;
+    return true;
 }
 
 static uint64_t test_uint64_max_usable_fs_space(const char *path)
@@ -215,6 +223,7 @@ struct TestDriverContext
         m_context->usable_fs_space_func = test_uint64_max_usable_fs_space;
         m_context->raw_log_map_func = test_malloc_map_raw_log;
         m_context->raw_log_close_func = test_malloc_map_raw_log_close;
+        m_context->raw_log_free_func = test_malloc_map_raw_log_free;
     }
 
     virtual ~TestDriverContext()

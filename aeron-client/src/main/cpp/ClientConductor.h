@@ -82,12 +82,9 @@ public:
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
         m_preTouchMappedMemory(preTouchMappedMemory),
-        m_driverActive(true),
-        m_isClosed(false),
         m_timeOfLastDoWorkMs(m_epochClock()),
         m_timeOfLastKeepaliveMs(m_timeOfLastDoWorkMs),
-        m_timeOfLastCheckManagedResourcesMs(m_timeOfLastDoWorkMs),
-        m_padding()
+        m_timeOfLastCheckManagedResourcesMs(m_timeOfLastDoWorkMs)
     {
         static_cast<void>(m_padding);
 
@@ -420,8 +417,8 @@ private:
     long m_interServiceTimeoutMs;
     bool m_preTouchMappedMemory;
     bool m_isInCallback = false;
-    std::atomic<bool> m_driverActive;
-    std::atomic<bool> m_isClosed;
+    std::atomic<bool> m_driverActive = { true };
+    std::atomic<bool> m_isClosed = { false };
     std::recursive_mutex m_adminLock;
     std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
 
@@ -429,7 +426,7 @@ private:
     long long m_timeOfLastKeepaliveMs;
     long long m_timeOfLastCheckManagedResourcesMs;
 
-    char m_padding[util::BitUtil::CACHE_LINE_LENGTH];
+    char m_padding[util::BitUtil::CACHE_LINE_LENGTH] = {};
 
     inline int onHeartbeatCheckTimeouts()
     {

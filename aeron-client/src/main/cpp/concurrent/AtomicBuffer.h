@@ -45,7 +45,7 @@ public:
      */
     AtomicBuffer(std::uint8_t *buffer, std::size_t length) :
         m_buffer(buffer),
-        m_length(static_cast<util::index_t>(length))
+        m_length(static_cast<length_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
@@ -66,7 +66,7 @@ public:
      */
     AtomicBuffer(std::uint8_t *buffer, std::size_t length, std::uint8_t initialValue) :
         m_buffer(buffer),
-        m_length(static_cast<util::index_t>(length))
+        m_length(static_cast<length_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))
@@ -117,7 +117,7 @@ public:
 #endif
 
         m_buffer = buffer;
-        m_length = static_cast<util::index_t>(length);
+        m_length = static_cast<length_t>(length);
     }
 
     /**
@@ -139,7 +139,7 @@ public:
             "requires the array to have a size that fits in an index_t");
 
         m_buffer = buffer.data();
-        m_length = static_cast<util::index_t>(N);
+        m_length = static_cast<length_t>(N);
     }
 
     /**
@@ -149,7 +149,7 @@ public:
      */
     inline util::index_t capacity() const
     {
-        return m_length;
+        return static_cast<util::index_t>(m_length);
     }
 
     /**
@@ -168,7 +168,7 @@ public:
         }
 #endif
 
-        m_length = static_cast<util::index_t>(length);
+        m_length = static_cast<length_t>(length);
     }
 
     /**
@@ -410,7 +410,8 @@ public:
     inline std::string getStringWithoutLength(util::index_t offset, std::size_t length) const
     {
         boundsCheck(offset, length);
-        return std::string(m_buffer + offset, m_buffer + offset + length);
+        return std::string(
+            m_buffer + static_cast<std::size_t>(offset), m_buffer + static_cast<std::size_t>(offset) + length);
     }
 
     inline std::int32_t getStringLength(util::index_t offset) const

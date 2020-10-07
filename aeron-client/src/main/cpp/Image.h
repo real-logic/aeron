@@ -119,7 +119,6 @@ public:
             LogBufferDescriptor::initialTermId(m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
             m_logBuffers->atomicBuffer(0).capacity(),
             this),
-        m_isClosed(false),
         m_sessionId(sessionId),
         m_subscriptionRegistrationId(subscriptionRegistrationId),
         m_correlationId(correlationId)
@@ -135,7 +134,6 @@ public:
         m_finalPosition = m_joinPosition;
         m_termLengthMask = capacity - 1;
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
-        m_isEos = false;
     }
 
     Image(const Image &image) :
@@ -857,8 +855,8 @@ private:
     std::array<AtomicBuffer, LogBufferDescriptor::PARTITION_COUNT> m_termBuffers;
     Position<UnsafeBufferPosition> m_subscriberPosition;
     Header m_header;
-    std::atomic<bool> m_isClosed;
-    bool m_isEos;
+    std::atomic<bool> m_isClosed = { false };
+    bool m_isEos = false;
 
     std::int32_t m_termLengthMask;
     std::int32_t m_positionBitsToShift;

@@ -19,7 +19,6 @@
 
 #include <functional>
 
-#include "util/Index.h"
 #include "concurrent/AtomicBuffer.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {

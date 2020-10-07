@@ -89,7 +89,6 @@ public:
     inline std::int64_t getAndAddOrdered(std::int64_t increment)
     {
         std::int64_t currentValue = m_buffer.getInt64(m_offset);
-
         m_buffer.putInt64Ordered(m_offset, currentValue + increment);
         return currentValue;
     }
@@ -97,7 +96,6 @@ public:
     inline std::int64_t getAndSet(std::int64_t value)
     {
         std::int64_t currentValue = m_buffer.getInt64(m_offset);
-
         m_buffer.putInt64Atomic(m_offset, value);
         return currentValue;
     }

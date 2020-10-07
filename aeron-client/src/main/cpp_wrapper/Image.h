@@ -95,8 +95,6 @@ static aeron_controlled_fragment_handler_action_t doControlledPoll(
 
     ControlledPollAction action = handler(atomicBuffer, 0, static_cast<std::int32_t>(length), headerWrapper);
     return static_cast<aeron_controlled_fragment_handler_action_t>(action);
-
-    throw IllegalStateException("Invalid action", SOURCEINFO);
 }
 
 template<typename H>

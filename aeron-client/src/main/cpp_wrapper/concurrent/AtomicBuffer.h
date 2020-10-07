@@ -410,7 +410,8 @@ public:
     inline std::string getStringWithoutLength(util::index_t offset, std::size_t length) const
     {
         boundsCheck(offset, length);
-        return std::string(m_buffer + offset, m_buffer + offset + length);
+        return std::string(
+            m_buffer + static_cast<std::size_t>(offset), m_buffer + static_cast<std::size_t>(offset) + length);
     }
 
     inline std::int32_t getStringLength(util::index_t offset) const

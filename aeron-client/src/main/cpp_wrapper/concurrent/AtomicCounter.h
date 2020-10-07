@@ -96,7 +96,7 @@ public:
     inline std::int64_t getAndSet(std::int64_t value)
     {
         std::int64_t currentValue = *m_ptr;
-        atomic::putInt64Atomic(m_ptr, currentValue);
+        atomic::putInt64Atomic(m_ptr, value);
         return currentValue;
     }
 

@@ -19,7 +19,7 @@
 
 #include <functional>
 
-#include "util/Index.h"
+#include "concurrent/AtomicBuffer.h"
 #include "util/BitUtil.h"
 #include "util/Exceptions.h"
 #include "util/StringUtil.h"

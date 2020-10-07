@@ -40,7 +40,7 @@ public:
     inline DistinctErrorLog(AtomicBuffer &buffer, clock_t clock) :
         m_buffer(buffer),
         m_clock(clock),
-        m_observations(buffer.capacity() / ErrorLogDescriptor::HEADER_LENGTH)
+        m_observations(static_cast<std::size_t>(buffer.capacity() / ErrorLogDescriptor::HEADER_LENGTH))
     {
     }
 

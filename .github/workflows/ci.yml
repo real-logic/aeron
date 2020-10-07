@@ -89,7 +89,7 @@ jobs:
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-         echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
+         echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
         run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
@@ -176,7 +176,7 @@ jobs:
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
+          echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
         run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
@@ -225,7 +225,7 @@ jobs:
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
+          echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
         run: cmake --version && cppbuild/cppbuild --debug-build
       - name: Copy test logs
@@ -269,7 +269,7 @@ jobs:
         run: |
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
-          echo "::add-path::cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin"
+          echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
       - name: Build
         run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs
@@ -314,7 +314,7 @@ jobs:
           $client = new-object System.Net.WebClient
           $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$Env:CMAKE_VERSION/cmake-$Env:CMAKE_VERSION-win64-x64.zip","cmake-$Env:CMAKE_VERSION-win64-x64.zip")
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
-          echo "::add-path::cmake-$Env:CMAKE_VERSION-win64-x64/bin"
+          echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Build
         run: cmake --version && cppbuild/cppbuild
       - name: Copy test logs

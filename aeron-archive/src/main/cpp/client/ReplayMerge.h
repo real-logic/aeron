@@ -34,6 +34,9 @@ constexpr const std::int64_t REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = 10 * 100
  * parent Subscription. If an exception occurs or progress stops, the merge will fail and
  * #hasErrored() will be true.
  * <p>
+ * If the endpoint on the replay destination uses a port of 0, then the OS will assign a port from the ephemeral
+ * range and this will be added to the replay channel for instructing the archive.
+ * <p>
  * NOTE: Merging is only supported with UDP streams.
  */
 class ReplayMerge

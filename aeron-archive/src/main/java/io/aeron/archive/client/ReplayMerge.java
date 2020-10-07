@@ -34,6 +34,9 @@ import static io.aeron.CommonContext.*;
  * parent {@link Subscription}. If an exception occurs or progress stops, the merge will fail and
  * {@link #hasFailed()} will be {@code true}.
  * <p>
+ * If the endpoint on the replay destination uses a port of 0, then the OS will assign a port from the ephemeral
+ * range and this will be added to the replay channel for instructing the archive.
+ * <p>
  * NOTE: Merging is only supported with UDP streams.
  */
 public class ReplayMerge implements AutoCloseable
@@ -85,7 +88,7 @@ public class ReplayMerge implements AutoCloseable
      *
      * @param subscription           to use for the replay and live stream. Must be a multi-destination subscription.
      * @param archive                to use for the replay.
-     * @param replayChannel          to use for the replay.
+     * @param replayChannel          to as a template for the what the archive will use.
      * @param replayDestination      to send the replay to and the destination added by the {@link Subscription}.
      * @param liveDestination        for the live stream and the destination added by the {@link Subscription}.
      * @param recordingId            for the replay.
@@ -152,7 +155,7 @@ public class ReplayMerge implements AutoCloseable
      *
      * @param subscription      to use for the replay and live stream. Must be a multi-destination subscription.
      * @param archive           to use for the replay.
-     * @param replayChannel     to use for the replay.
+     * @param replayChannel     to use as a template for the what the archive will use.
      * @param replayDestination to send the replay to and the destination added by the {@link Subscription}.
      * @param liveDestination   for the live stream and the destination added by the {@link Subscription}.
      * @param recordingId       for the replay.

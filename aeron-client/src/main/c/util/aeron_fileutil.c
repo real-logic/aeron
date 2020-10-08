@@ -339,11 +339,7 @@ uint64_t aeron_usable_fs_space_disabled(const char *path)
     return UINT64_MAX;
 }
 
-int aeron_ipc_publication_location(
-    char *dst,
-    size_t length,
-    const char *aeron_dir,
-    int64_t correlation_id)
+int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id)
 {
     return snprintf(
         dst, length,
@@ -351,11 +347,7 @@ int aeron_ipc_publication_location(
         aeron_dir, correlation_id);
 }
 
-int aeron_network_publication_location(
-    char *dst,
-    size_t length,
-    const char *aeron_dir,
-    int64_t correlation_id)
+int aeron_network_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id)
 {
     return snprintf(
         dst, length,
@@ -363,11 +355,7 @@ int aeron_network_publication_location(
         aeron_dir, correlation_id);
 }
 
-int aeron_publication_image_location(
-    char *dst,
-    size_t length,
-    const char *aeron_dir,
-    int64_t correlation_id)
+int aeron_publication_image_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id)
 {
     return snprintf(
         dst, length,
@@ -403,7 +391,7 @@ size_t aeron_temp_filename(char *filename, size_t length)
 #endif
 }
 
-int aeron_map_raw_log(
+int aeron_raw_log_map(
     aeron_mapped_raw_log_t *mapped_raw_log,
     const char *path,
     bool use_sparse_files,
@@ -458,7 +446,7 @@ int aeron_map_raw_log(
     return result;
 }
 
-int aeron_map_existing_log(aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool pre_touch)
+int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool pre_touch)
 {
     struct stat sb;
     int fd, result = -1;
@@ -528,7 +516,7 @@ int aeron_map_existing_log(aeron_mapped_raw_log_t *mapped_raw_log, const char *p
     return result;
 }
 
-int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
+int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
     int result = 0;
 

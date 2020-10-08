@@ -176,8 +176,8 @@ typedef struct aeron_driver_context_stct
     const char *receiver_idle_strategy_name;
 
     aeron_usable_fs_space_func_t usable_fs_space_func;
-    aeron_map_raw_log_func_t map_raw_log_func;
-    aeron_map_raw_log_close_func_t map_raw_log_close_func;
+    aeron_raw_log_map_func_t raw_log_map_func;
+    aeron_raw_log_close_func_t raw_log_close_func;
 
     aeron_flow_control_strategy_supplier_func_t unicast_flow_control_supplier_func;
     aeron_flow_control_strategy_supplier_func_t multicast_flow_control_supplier_func;

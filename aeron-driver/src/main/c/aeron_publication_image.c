@@ -119,7 +119,7 @@ int aeron_publication_image_create(
         return -1;
     }
 
-    if (context->map_raw_log_func(
+    if (context->raw_log_map_func(
         &_image->mapped_raw_log, path, is_sparse, (uint64_t)term_buffer_length, context->file_page_size) < 0)
     {
         aeron_free(_image->log_file_name);
@@ -127,7 +127,7 @@ int aeron_publication_image_create(
         aeron_set_err(aeron_errcode(), "error mapping network raw log %s: %s", path, aeron_errmsg());
         return -1;
     }
-    _image->map_raw_log_close_func = context->map_raw_log_close_func;
+    _image->raw_log_close_func = context->raw_log_close_func;
     _image->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     _image->nano_clock = context->nano_clock;
@@ -251,7 +251,7 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
         aeron_free(subscribable->array);
         aeron_free(image->connections.array);
 
-        image->map_raw_log_close_func(&image->mapped_raw_log, image->log_file_name);
+        image->raw_log_close_func(&image->mapped_raw_log, image->log_file_name);
         image->congestion_control->fini(image->congestion_control);
         aeron_free(image->log_file_name);
     }

@@ -34,7 +34,7 @@ int aeron_log_buffer_create(
         return -1;
     }
 
-    if (aeron_map_existing_log(&_log_buffer->mapped_raw_log, log_file, pre_touch) < 0)
+    if (aeron_raw_log_map_existing(&_log_buffer->mapped_raw_log, log_file, pre_touch) < 0)
     {
         aeron_set_err(aeron_errcode(), "could not map existing file %s: %s", log_file, aeron_errmsg());
         aeron_free(_log_buffer);
@@ -52,7 +52,7 @@ int aeron_log_buffer_delete(aeron_log_buffer_t *log_buffer)
 {
     if (NULL != log_buffer)
     {
-        aeron_map_raw_log_close(&log_buffer->mapped_raw_log, NULL);
+        aeron_raw_log_close(&log_buffer->mapped_raw_log, NULL);
         aeron_free(log_buffer);
     }
 

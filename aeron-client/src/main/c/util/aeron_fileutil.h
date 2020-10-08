@@ -85,41 +85,26 @@ aeron_mapped_raw_log_t;
 #define AERON_PUBLICATIONS_DIR "publications"
 #define AERON_IMAGES_DIR "images"
 
-int aeron_ipc_publication_location(
-    char *dst,
-    size_t length,
-    const char *aeron_dir,
-    int64_t correlation_id);
+int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id);
 
-int aeron_network_publication_location(
-    char *dst,
-    size_t length,
-    const char *aeron_dir,
-    int64_t correlation_id);
+int aeron_network_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id);
 
-int aeron_publication_image_location(
-    char *dst,
-    size_t length,
-    const char *aeron_dir,
-    int64_t correlation_id);
+int aeron_publication_image_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id);
 
 size_t aeron_temp_filename(char *filename, size_t length);
 
-typedef int (*aeron_map_raw_log_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t, uint64_t);
-typedef int (*aeron_map_raw_log_close_func_t)(aeron_mapped_raw_log_t *, const char *filename);
+typedef int (*aeron_raw_log_map_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t, uint64_t);
+typedef int (*aeron_raw_log_close_func_t)(aeron_mapped_raw_log_t *, const char *filename);
 
-int aeron_map_raw_log(
+int aeron_raw_log_map(
     aeron_mapped_raw_log_t *mapped_raw_log,
     const char *path,
     bool use_sparse_files,
     uint64_t term_length,
     uint64_t page_size);
 
-int aeron_map_existing_log(
-    aeron_mapped_raw_log_t *mapped_raw_log,
-    const char *path,
-    bool pre_touch);
+int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool pre_touch);
 
-int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename);
+int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename);
 
 #endif //AERON_FILEUTIL_H

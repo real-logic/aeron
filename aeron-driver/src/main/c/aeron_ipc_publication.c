@@ -67,7 +67,7 @@ int aeron_ipc_publication_create(
         return -1;
     }
 
-    if (context->map_raw_log_func(
+    if (context->raw_log_map_func(
         &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
     {
         aeron_free(_pub->log_file_name);
@@ -75,7 +75,7 @@ int aeron_ipc_publication_create(
         aeron_set_err(aeron_errcode(), "error mapping IPC raw log %s: %s", path, aeron_errmsg());
         return -1;
     }
-    _pub->map_raw_log_close_func = context->map_raw_log_close_func;
+    _pub->raw_log_close_func = context->raw_log_close_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
@@ -180,7 +180,7 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
     if (NULL != publication)
     {
-        publication->map_raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
+        publication->raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         aeron_free(publication->log_file_name);
     }
 

@@ -213,8 +213,8 @@ struct TestDriverContext
 
         /* control files */
         m_context->usable_fs_space_func = test_uint64_max_usable_fs_space;
-        m_context->map_raw_log_func = test_malloc_map_raw_log;
-        m_context->map_raw_log_close_func = test_malloc_map_raw_log_close;
+        m_context->raw_log_map_func = test_malloc_map_raw_log;
+        m_context->raw_log_close_func = test_malloc_map_raw_log_close;
     }
 
     virtual ~TestDriverContext()

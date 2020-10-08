@@ -64,7 +64,7 @@ typedef struct aeron_ipc_publication_stct
     size_t log_file_name_length;
     size_t position_bits_to_shift;
     bool is_exclusive;
-    aeron_map_raw_log_close_func_t map_raw_log_close_func;
+    aeron_raw_log_close_func_t raw_log_close_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     int64_t *unblocked_publications_counter;

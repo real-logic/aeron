@@ -3090,7 +3090,7 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        @SuppressWarnings("MethodLength")
+        @SuppressWarnings({ "MethodLength", "deprecation" })
         void concludeNullProperties()
         {
             if (null == tempBuffer)

@@ -1316,6 +1316,7 @@ public class Configuration
         return ThreadingMode.valueOf(propertyValue);
     }
 
+    @Deprecated
     public static byte[] applicationSpecificFeedback()
     {
         final String propertyValue = getProperty(SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME);

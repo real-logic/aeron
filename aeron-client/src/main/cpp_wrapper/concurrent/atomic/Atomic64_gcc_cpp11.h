@@ -136,12 +136,16 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t 
 
 inline std::int32_t xchg(volatile std::int32_t *address, std::int32_t value)
 {
-    return 0;
+    std::int32_t original;
+    __atomic_exchange(address, &value, &original, __ATOMIC_SEQ_CST);
+    return original;
 }
 
 inline std::int64_t xchg(volatile std::int64_t *address, std::int64_t value)
 {
-    return 0;
+    std::int64_t original;
+    __atomic_exchange(address, &value, &original, __ATOMIC_SEQ_CST);
+    return original;
 }
 
 inline std::int32_t cmpxchg(volatile std::int32_t *address, std::int32_t expected, std::int32_t desired)

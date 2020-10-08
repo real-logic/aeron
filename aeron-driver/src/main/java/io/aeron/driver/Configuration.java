@@ -84,7 +84,7 @@ public class Configuration
     public static final String USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME = "aeron.use.windows.high.res.timer";
 
     /**
-     * Property name for default boolean value for if subscriptions should have a tether for flow control.
+     * Property name for default boolean value for if subscriptions should have a tether for local flow control.
      */
     public static final String TETHER_SUBSCRIPTIONS_PROP_NAME = "aeron.tether.subscriptions";
 
@@ -139,12 +139,12 @@ public class Configuration
     public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;
 
     /**
-     * Property name low file storage warning threshold.
+     * Property name low file storage warning threshold in bytes.
      */
     public static final String LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME = "aeron.low.file.store.warning.threshold";
 
     /**
-     * Default value for low file storage warning threshold.
+     * Default value in bytes for low file storage warning threshold.
      */
     public static final long LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT = TERM_BUFFER_LENGTH_DEFAULT * 10L;
 
@@ -169,12 +169,14 @@ public class Configuration
     public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
     /**
-     * Property name for length of the error buffer for the system counters.
+     * Property name for length of the buffer for the counters.
+     * <p>
+     * Each counter uses {@link org.agrona.concurrent.status.CountersReader#COUNTER_LENGTH} bytes.
      */
     public static final String COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
 
     /**
-     * Default length of the memory mapped buffers for the system counters file.
+     * Default length of the buffer for the counters file.
      */
     public static final int COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
@@ -298,7 +300,7 @@ public class Configuration
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /**
-     * Property name for window limit on {@link Publication} side.
+     * Property name for window limit on {@link Publication} side by which the publisher can get ahead of consumers.
      */
     public static final String PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.publication.term.window.length";
 
@@ -465,12 +467,12 @@ public class Configuration
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
 
     /**
-     * Interval in between checks for timers and timeouts.
+     * Interval between checks for timers and timeouts.
      */
     public static final String TIMER_INTERVAL_PROP_NAME = "aeron.timer.interval";
 
     /**
-     * Default interval in between checks for timers and timeouts.
+     * Default interval between checks for timers and timeouts.
      */
     public static final long DEFAULT_TIMER_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -668,31 +670,32 @@ public class Configuration
     public static final long FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(2);
 
     /**
-     * Property name for flow control timeouts.
+     * Property name for flow control timeout after which with no status messages the receiver is consider gone.
      */
-    public static final String FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME =
-        "aeron.flow.control.receiver.timeout";
+    public static final String FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME = "aeron.flow.control.receiver.timeout";
 
     private static final String MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME =
         "aeron.MinMulticastFlowControl.receiverTimeout";
 
     /**
-     * Property name for resolver name of the Media Driver.
+     * Property name for resolver name of the Media Driver used in name resolution.
      */
     public static final String RESOLVER_NAME_PROP_NAME = "aeron.driver.resolver.name";
 
     /**
-     * Property name for resolver interface.
+     * Property name for resolver interface to which network connections are made.
+     * @see #RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
      */
     public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
 
     /**
-     * Property name for resolver bootstrap neighbor.
+     * Property name for resolver bootstrap neighbor for which it can bootstrap naming, format is hostname:port.
+     * @see #RESOLVER_INTERFACE_PROP_NAME
      */
     public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";
 
     /**
-     * Property name for re-resolution check interval.
+     * Property name for re-resolution check interval for resolving names to IP address.
      */
     public static final String RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME = "aeron.driver.reresolution.check.interval";
 
@@ -701,133 +704,298 @@ public class Configuration
      */
     public static final long RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
+    /**
+     * Should the driver configuration be printed on start.
+     *
+     * @return true if the driver configuration be printed on start.
+     * @see #PRINT_CONFIGURATION_ON_START_PROP_NAME
+     */
     public static boolean printConfigurationOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
     }
 
+    /**
+     * Should the high-resolution timer be used when running on Windows.
+     *
+     * @return true if the high-resolution timer be used when running on Windows.
+     * @see #USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME
+     */
     public static boolean useWindowsHighResTimer()
     {
         return "true".equalsIgnoreCase(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME, "false"));
     }
 
+    /**
+     * Should a warning be printed if the aeron directory exist when starting.
+     *
+     * @return true if a warning be printed if the aeron directory exist when starting.
+     * @see #DIR_WARN_IF_EXISTS_PROP_NAME
+     */
     public static boolean warnIfDirExists()
     {
         return "true".equalsIgnoreCase(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "false"));
     }
 
+    /**
+     * Should driver attempt to an immediate forced delete of {@link CommonContext#AERON_DIR_PROP_NAME} on start
+     * if it exists.
+     *
+     * @return true if the aeron directory be deleted on start without checking if active.
+     * @see #DIR_DELETE_ON_START_PROP_NAME
+     */
     public static boolean dirDeleteOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));
     }
 
+    /**
+     * Should driver attempt to delete {@link CommonContext#AERON_DIR_PROP_NAME} on shutdown.
+     *
+     * @return true if driver should attempt to delete {@link CommonContext#AERON_DIR_PROP_NAME} on shutdown.
+     * @see #DIR_DELETE_ON_SHUTDOWN_PROP_NAME
+     */
     public static boolean dirDeleteOnShutdown()
     {
         return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME, "false"));
     }
 
+    /**
+     * Should term buffers be created as sparse files. This can save space at the expense of latency when required.
+     *
+     * @return true if term buffers should be created as sparse files.
+     * @see #TERM_BUFFER_SPARSE_FILE_PROP_NAME
+     */
     public static boolean termBufferSparseFile()
     {
         return "true".equalsIgnoreCase(getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME, "false"));
     }
 
+    /**
+     * Default for if subscriptions should be tethered.
+     *
+     * @return true if the default subscriptions should be tethered.
+     * @see #TETHER_SUBSCRIPTIONS_PROP_NAME
+     */
     public static boolean tetherSubscriptions()
     {
         return "true".equalsIgnoreCase(getProperty(TETHER_SUBSCRIPTIONS_PROP_NAME, "true"));
     }
 
+    /**
+     * Default boolean value for if a stream is reliable. True to NAK, false to gap fill.
+     *
+     * @return true if NAK is default or false to gap fill.
+     * @see #RELIABLE_STREAM_PROP_NAME
+     */
     public static boolean reliableStream()
     {
         return "true".equalsIgnoreCase(getProperty(RELIABLE_STREAM_PROP_NAME, "true"));
     }
 
+    /**
+     * Should storage checks should be performed before allocating files.
+     *
+     * @return true of storage checks should be performed before allocating files.
+     * @see #PERFORM_STORAGE_CHECKS_PROP_NAME
+     */
     public static boolean performStorageChecks()
     {
         return "true".equalsIgnoreCase(getProperty(PERFORM_STORAGE_CHECKS_PROP_NAME, "true"));
     }
 
+    /**
+     * Should spy subscriptions simulate a connection to a network publication.
+     * <p>
+     * If true then this will override the min group size of the min and tagged flow control strategies.
+     * @return true if spy subscriptions should simulate a connection to a network publication.
+     * @see #SPIES_SIMULATE_CONNECTION_PROP_NAME
+     */
     public static boolean spiesSimulateConnection()
     {
         return "true".equalsIgnoreCase(getProperty(SPIES_SIMULATE_CONNECTION_PROP_NAME, "false"));
     }
 
+    /**
+     * Should subscriptions should be considered a group member or individual connection, e.g. multicast vs unicast.
+     *
+     * @return true if subscriptions should be considered a group member or false if individual.
+     * @see #GROUP_RECEIVER_CONSIDERATION_PROP_NAME
+     */
     public static CommonContext.InferableBoolean receiverGroupConsideration()
     {
         return CommonContext.InferableBoolean.parse(getProperty(GROUP_RECEIVER_CONSIDERATION_PROP_NAME));
     }
 
+    /**
+     * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
+     *
+     * @return length (in bytes) of the conductor buffer for control commands from the clients to the media driver.
+     * @see #CONDUCTOR_BUFFER_LENGTH_PROP_NAME
+     */
     public static int conductorBufferLength()
     {
         return getSizeAsInt(CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     }
 
+    /**
+     * Length (in bytes) of the broadcast buffers from the media driver to the clients.
+     *
+     * @return length (in bytes) of the broadcast buffers from the media driver to the clients.
+     * @see #TO_CLIENTS_BUFFER_LENGTH_PROP_NAME
+     */
     public static int toClientsBufferLength()
     {
         return getSizeAsInt(TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
     }
 
+    /**
+     * Length of the buffer for the counters.
+     * <p>
+     * Each counter uses {@link org.agrona.concurrent.status.CountersReader#COUNTER_LENGTH} bytes.
+     *
+     * @return Length of the buffer for the counters.
+     * @see #COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME
+     */
     public static int counterValuesBufferLength()
     {
         return getSizeAsInt(COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
     }
 
+    /**
+     * Length of the memory mapped buffer for the distinct error log.
+     *
+     * @return length of the memory mapped buffer for the distinct error log.
+     */
     public static int errorBufferLength()
     {
         return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     }
 
+    /**
+     * Expected size of typical multicast receiver groups.
+     *
+     * @return expected size of typical multicast receiver groups.
+     * @see #NAK_MULTICAST_GROUP_SIZE_PROP_NAME
+     */
     public static int nakMulticastGroupSize()
     {
         return getInteger(NAK_MULTICAST_GROUP_SIZE_PROP_NAME, NAK_MULTICAST_GROUP_SIZE_DEFAULT);
     }
 
+    /**
+     * Max backoff time for multicast NAK delay randomisation in nanoseconds.
+     *
+     * @return max backoff time for multicast NAK delay randomisation in nanoseconds.
+     * @see #NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
+     */
     public static long nakMulticastMaxBackoffNs()
     {
         return getDurationInNanos(NAK_MULTICAST_MAX_BACKOFF_PROP_NAME, NAK_MAX_BACKOFF_DEFAULT_NS);
     }
 
+    /**
+     * Unicast NAK delay in nanoseconds.
+     *
+     * @return unicast NAK delay in nanoseconds.
+     * @see #NAK_UNICAST_DELAY_PROP_NAME
+     */
     public static long nakUnicastDelayNs()
     {
         return getDurationInNanos(NAK_UNICAST_DELAY_PROP_NAME, NAK_UNICAST_DELAY_DEFAULT_NS);
     }
 
+    /**
+     * Interval between checks for timers and timeouts.
+     *
+     * @return interval between checks for timers and timeouts.
+     * @see #TIMER_INTERVAL_PROP_NAME
+     */
     public static long timerIntervalNs()
     {
         return getDurationInNanos(TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
     }
 
+    /**
+     * Low file storage warning threshold in bytes for when performing storage checks.
+     *
+     * @return Low file storage warning threshold for when performing storage checks.
+     * @see #LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME
+     * @see #PERFORM_STORAGE_CHECKS_PROP_NAME
+     */
     public static long lowStorageWarningThreshold()
     {
         return getSizeAsLong(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
     }
 
+    /**
+     * The window limit on UDP {@link Publication} side by which the publisher can get ahead of consumers.
+     *
+     * @return window limit on UDP {@link Publication} side by which the publisher can get ahead of consumers.
+     * @see #PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
+     */
     public static int publicationTermWindowLength()
     {
         return getSizeAsInt(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
     }
 
+    /**
+     * The window limit on IPC {@link Publication} side by which the publisher can get ahead of consumers.
+     *
+     * @return window limit on IPC {@link Publication} side by which the publisher can get ahead of consumers.
+     * @see #IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
+     */
     public static int ipcPublicationTermWindowLength()
     {
         return getSizeAsInt(IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
     }
 
+    /**
+     * The timeout for when an untethered subscription that is outside the window limit will participate in local
+     * flow control.
+     *
+     * @return the timeout for when an untethered subscription that is outside the window limit will be included.
+     * @see #UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME
+     * @see #UNTETHERED_RESTING_TIMEOUT_PROP_NAME
+     * @see #TETHER_SUBSCRIPTIONS_PROP_NAME
+     */
     public static long untetheredWindowLimitTimeoutNs()
     {
         return getDurationInNanos(
             UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME, UNTETHERED_WINDOW_LIMIT_TIMEOUT_DEFAULT_NS);
     }
 
+    /**
+     * The timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
+     * to rejoin a stream.
+     *
+     * @return The timeout for when an untethered subscription is resting before rejoining a stream.
+     * @see #UNTETHERED_RESTING_TIMEOUT_PROP_NAME
+     * @see #UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME
+     * @see #TETHER_SUBSCRIPTIONS_PROP_NAME
+     */
     public static long untetheredRestingTimeoutNs()
     {
-        return getDurationInNanos(
-            UNTETHERED_RESTING_TIMEOUT_PROP_NAME, UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS);
+        return getDurationInNanos(UNTETHERED_RESTING_TIMEOUT_PROP_NAME, UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS);
     }
 
+    /**
+     * Default boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     *
+     * @return boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * @see #REJOIN_STREAM_PROP_NAME
+     */
     public static boolean rejoinStream()
     {
         return "true".equalsIgnoreCase(getProperty(REJOIN_STREAM_PROP_NAME, "true"));
     }
 
+    /**
+     * Default group tag (gtag) to send in all Status Messages. If not provided then no gtag is sent.
+     *
+     * @return Default group tag (gtag) to send in all Status Messages.
+     * @see #RECEIVER_GROUP_TAG_PROP_NAME
+     */
     public static Long groupTag()
     {
         return getLong(RECEIVER_GROUP_TAG_PROP_NAME, null);
@@ -843,11 +1011,23 @@ public class Configuration
         return getLong(FLOW_CONTROL_GROUP_TAG_PROP_NAME, legacyAsfValue);
     }
 
+    /**
+     * Default minimum group size used by flow control strategies to determine connectivity.
+     *
+     * @return default minimum group size used by flow control strategies to determine connectivity.
+     * @see #FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME
+     */
     public static int flowControlGroupMinSize()
     {
         return getInteger(FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME, 0);
     }
 
+    /**
+     * Flow control timeout after which with no status messages the receiver is consider gone.
+     *
+     * @return flow control timeout after which with no status messages the receiver is consider gone.
+     * @see #FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME
+     */
     public static long flowControlReceiverTimeoutNs()
     {
         return getDurationInNanos(
@@ -855,21 +1035,46 @@ public class Configuration
             getDurationInNanos(MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME, FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS));
     }
 
+    /**
+     * Resolver name of the Media Driver used in name resolution.
+     *
+     * @return resolver name of the Media Driver used in name resolution.
+     * @see #RESOLVER_NAME_PROP_NAME
+     */
     public static String resolverName()
     {
         return getProperty(RESOLVER_NAME_PROP_NAME);
     }
 
+    /**
+     * Property name for resolver interface to which network connections are made, format is hostname:port.
+     *
+     * @return resolver interface to which network connections are made, format is hostname:port.
+     * @see #RESOLVER_INTERFACE_PROP_NAME
+     */
     public static String resolverInterface()
     {
         return getProperty(RESOLVER_INTERFACE_PROP_NAME);
     }
 
+    /**
+     * Resolver bootstrap neighbor for which it can bootstrap naming, format is hostname:port.
+     *
+     * @return resolver bootstrap neighbor for which it can bootstrap naming, format is hostname:port.
+     * @see #RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
+     * @see #RESOLVER_INTERFACE_PROP_NAME
+     */
     public static String resolverBootstrapNeighbor()
     {
         return getProperty(RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME);
     }
 
+    /**
+     * Re-resolution check interval for resolving names to IP address when they may have changed.
+     *
+     * @return re-resolution check interval for resolving names to IP address when they may have changed.
+     * @see #RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME
+     */
     public static long reResolutionCheckIntervalNs()
     {
         return getDurationInNanos(RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME, RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS);

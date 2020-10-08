@@ -108,14 +108,24 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t 
     return _InterlockedExchangeAdd((volatile long *)address, value);
 }
 
-inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
+inline std::int32_t xchg(volatile std::int32_t *address, std::int32_t value)
 {
-    return _InterlockedCompareExchange((volatile long *)destination, desired, expected);
+    return _InterlockedExchange((volatile long *)address, value);
 }
 
-inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
+inline std::int64_t xchg(volatile std::int64_t *address, std::int64_t value)
 {
-    return _InterlockedCompareExchange64(destination, desired, expected);
+    return _InterlockedExchange64(address, value);
+}
+
+inline std::int32_t cmpxchg(volatile std::int32_t *address, std::int32_t expected, std::int32_t desired)
+{
+    return _InterlockedCompareExchange((volatile long *)address, desired, expected);
+}
+
+inline std::int64_t cmpxchg(volatile std::int64_t *address, std::int64_t expected, std::int64_t desired)
+{
+    return _InterlockedCompareExchange64(address, desired, expected);
 }
 
 //-------------------------------------

@@ -56,8 +56,7 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
 
 inline void putInt32Volatile(volatile std::int32_t *address, std::int32_t value)
 {
-    asm volatile(
-        "xchgl (%2), %0"
+    asm volatile("xchgl (%2), %0"
         : "=r" (value)
         : "0" (value), "r" (address)
         : "memory");
@@ -71,8 +70,7 @@ inline void putInt32Ordered(volatile std::int32_t *address, std::int32_t value)
 
 inline void putInt32Atomic(volatile std::int32_t *address, std::int32_t value)
 {
-    asm volatile(
-        "xchgl (%2), %0"
+    asm volatile("xchgl (%2), %0"
         : "=r" (value)
         : "0" (value), "r" (address)
         : "memory");
@@ -97,8 +95,7 @@ inline volatile T *getValueVolatile(volatile T **source)
 
 inline void putInt64Volatile(volatile std::int64_t *address, std::int64_t value)
 {
-    asm volatile(
-        "xchgq (%2), %0"
+    asm volatile("xchgq (%2), %0"
         : "=r" (value)
         : "0" (value), "r" (address)
         : "memory");
@@ -129,8 +126,7 @@ inline void putValueOrdered(volatile T **address, volatile T *value)
 
 inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 {
-    asm volatile(
-        "xchgq (%2), %0"
+    asm volatile("xchgq (%2), %0"
         : "=r" (value)
         : "0" (value), "r" (address)
         : "memory");
@@ -139,8 +135,7 @@ inline void putInt64Atomic(volatile std::int64_t *address, std::int64_t value)
 inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t value)
 {
     std::int64_t original;
-    asm volatile(
-        "lock; xaddq %0, %1"
+    asm volatile("lock; xaddq %0, %1"
         : "=r"(original), "+m"(*address)
         : "0"(value));
 
@@ -150,31 +145,48 @@ inline std::int64_t getAndAddInt64(volatile std::int64_t *address, std::int64_t 
 inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t value)
 {
     std::int32_t original;
-    asm volatile(
-        "lock; xaddl %0, %1"
+    asm volatile("lock; xaddl %0, %1"
         : "=r" (original), "+m" (*address)
         : "0" (value));
 
     return original;
 }
 
-inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
+inline std::int32_t xchg(volatile std::int32_t *address, std::int32_t value)
+{
+    asm volatile("xchgl %1, %0"
+        : "=r" (value)
+        : "m" (*address), "0" (value)
+        : "memory");
+
+    return value;
+}
+
+inline std::int64_t xchg(volatile std::int64_t *address, std::int64_t value)
+{
+    asm volatile("xchgq %1, %0"
+        : "=r" (value)
+        : "m" (*address), "0" (value)
+        : "memory");
+
+    return value;
+}
+
+inline std::int32_t cmpxchg(volatile std::int32_t *address, std::int32_t expected, std::int32_t desired)
 {
     std::int32_t original;
-    asm volatile(
-        "lock; cmpxchgl %2, %1"
-        : "=a" (original), "+m" (*destination)
+    asm volatile("lock; cmpxchgl %2, %1"
+        : "=a" (original), "+m" (*address)
         : "q" (desired), "0" (expected));
 
     return original;
 }
 
-inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
+inline std::int64_t cmpxchg(volatile std::int64_t *address, std::int64_t expected, std::int64_t desired)
 {
     std::int64_t original;
-    asm volatile(
-        "lock; cmpxchgq %2, %1"
-        : "=a" (original), "+m" (*destination)
+    asm volatile("lock; cmpxchgq %2, %1"
+        : "=a" (original), "+m" (*address)
         : "q" (desired), "0" (expected));
 
     return original;

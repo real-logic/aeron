@@ -95,9 +95,7 @@ public:
 
     inline std::int64_t getAndSet(std::int64_t value)
     {
-        std::int64_t currentValue = *m_ptr;
-        atomic::putInt64Atomic(m_ptr, value);
-        return currentValue;
+        return atomic::xchg(m_ptr, value);
     }
 
     inline bool compareAndSet(std::int64_t expectedValue, std::int64_t updateValue)

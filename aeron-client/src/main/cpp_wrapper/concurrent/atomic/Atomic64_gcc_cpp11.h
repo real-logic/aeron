@@ -48,7 +48,6 @@ inline void release()
 
 inline void cpu_pause()
 {
-    std::this_thread::yield();
 }
 
 inline std::int32_t getInt32Volatile(volatile std::int32_t *source)
@@ -135,27 +134,37 @@ inline std::int32_t getAndAddInt32(volatile std::int32_t *address, std::int32_t 
     return __atomic_fetch_add(address, value, __ATOMIC_SEQ_CST);
 }
 
-inline std::int32_t cmpxchg(volatile std::int32_t *destination, std::int32_t expected, std::int32_t desired)
+inline std::int32_t xchg(volatile std::int32_t *address, std::int32_t value)
 {
-    if (__atomic_compare_exchange(destination, &expected, &desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+    return 0;
+}
+
+inline std::int64_t xchg(volatile std::int64_t *address, std::int64_t value)
+{
+    return 0;
+}
+
+inline std::int32_t cmpxchg(volatile std::int32_t *address, std::int32_t expected, std::int32_t desired)
+{
+    if (__atomic_compare_exchange(address, &expected, &desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
     {
         return expected;
     }
     else
     {
-        return *destination;
+        return *address;
     }
 }
 
-inline std::int64_t cmpxchg(volatile std::int64_t *destination, std::int64_t expected, std::int64_t desired)
+inline std::int64_t cmpxchg(volatile std::int64_t *address, std::int64_t expected, std::int64_t desired)
 {
-    if (__atomic_compare_exchange(destination, &expected, &desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+    if (__atomic_compare_exchange(address, &expected, &desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
     {
         return expected;
     }
     else
     {
-        return *destination;
+        return *address;
     }
 }
 

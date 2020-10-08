@@ -324,6 +324,18 @@ public:
         return original == expectedValue;
     }
 
+    inline std::int64_t getAndSetInt64(util::index_t offset, std::int64_t value)
+    {
+        boundsCheck(offset, sizeof(std::int64_t));
+        return atomic::xchg((volatile std::int64_t *)(m_buffer + offset), value);
+    }
+
+    inline std::int32_t getAndSetInt32(util::index_t offset, std::int32_t value)
+    {
+        boundsCheck(offset, sizeof(std::int32_t));
+        return atomic::xchg((volatile std::int32_t *)(m_buffer + offset), value);
+    }
+
     /**
      * Multi threaded increment.
      *

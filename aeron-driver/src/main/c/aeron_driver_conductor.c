@@ -674,7 +674,7 @@ void aeron_ipc_publication_entry_delete(
 bool aeron_ipc_publication_entry_free(aeron_ipc_publication_entry_t *entry)
 {
     aeron_ipc_publication_t *publication = entry->publication;
-    if (publication->map_raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    if (publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
     {
         aeron_free(publication->log_file_name);
         publication->log_file_name = NULL;
@@ -723,7 +723,7 @@ void aeron_network_publication_entry_delete(
 bool aeron_network_publication_entry_free(aeron_network_publication_entry_t *entry)
 {
     aeron_network_publication_t *publication = entry->publication;
-    if (publication->map_raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    if (publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
     {
         aeron_free(publication->log_file_name);
         publication->log_file_name = NULL;
@@ -843,7 +843,7 @@ void aeron_publication_image_entry_delete(
 bool aeron_publication_image_entry_free(aeron_publication_image_entry_t *entry)
 {
     aeron_publication_image_t *image = entry->image;
-    if (image->map_raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
+    if (image->raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
     {
         aeron_free(image->log_file_name);
         image->log_file_name = NULL;

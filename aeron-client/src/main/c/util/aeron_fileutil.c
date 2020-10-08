@@ -518,7 +518,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 
 int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
-    if (!aeron_map_raw_log_free(mapped_raw_log, filename))
+    if (!aeron_raw_log_free(mapped_raw_log, filename))
     {
         aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
@@ -527,7 +527,7 @@ int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
     return 0;
 }
 
-bool aeron_map_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
+bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
     if (NULL != mapped_raw_log->mapped_file.addr)
     {

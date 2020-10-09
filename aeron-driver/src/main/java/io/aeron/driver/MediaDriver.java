@@ -1160,9 +1160,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * The delay for lingering after a retransmission.
+         * How long to linger after delay on a NAK before responding to another NAK.
          *
-         * @return delay before retransmitting after a NAK.
+         * @return how long to linger after delay on a NAK before responding to another NAK.
          * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
          */
         public long retransmitUnicastLingerNs()
@@ -1171,9 +1171,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * The delay for lingering after a retransmission.
+         * How long to linger after delay on a NAK before responding to another NAK.
          *
-         * @param retransmitUnicastLingerNs delay before retransmitting after a NAK.
+         * @param retransmitUnicastLingerNs how long to linger after delay on a NAK before responding to another NAK.
          * @return this for a fluent API.
          * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
          */

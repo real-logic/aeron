@@ -600,7 +600,7 @@ public class Configuration
     public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
 
     /**
-     * Property for setting how long to linger after delay on a NAK.
+     * Property for setting how long to linger after delay on a NAK before responding to another NAK.
      */
     public static final String RETRANSMIT_UNICAST_LINGER_PROP_NAME = "aeron.retransmit.unicast.linger";
 
@@ -1330,9 +1330,9 @@ public class Configuration
     }
 
     /**
-     * Setting how long to linger after delay on a NAK.
+     * Setting how long to linger after delay on a NAK before responding to another NAK.
      *
-     * @return setting how long to linger after delay on a NAK.
+     * @return setting how long to linger after delay on a NAK before responding to another NAK.
      * @see #RETRANSMIT_UNICAST_LINGER_PROP_NAME
      */
     public static long retransmitUnicastLingerNs()

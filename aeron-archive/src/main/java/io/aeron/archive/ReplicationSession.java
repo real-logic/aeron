@@ -524,7 +524,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         int workCount = 0;
 
         final long position = image.position();
-        if ((NULL_VALUE != srcStopPosition && position >= srcStopPosition) || image.isClosed())
+        if (image.isEndOfStream() || image.isClosed() || (NULL_VALUE != srcStopPosition && position >= srcStopPosition))
         {
             if ((NULL_VALUE != srcStopPosition && position >= srcStopPosition) ||
                 (NULL_VALUE == srcStopPosition && image.isEndOfStream()))
@@ -544,15 +544,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         int workCount = 0;
 
-        if (image.isClosed())
-        {
-            throw new ArchiveException("replication image closed unexpectedly");
-        }
-
         if (image.position() >= srcRecordingPosition)
         {
             state(State.ATTEMPT_LIVE_JOIN);
             workCount += 1;
+        }
+        else if (image.isClosed())
+        {
+            throw new ArchiveException("replication image closed unexpectedly");
         }
 
         return workCount;
@@ -561,11 +560,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private int attemptLiveJoin()
     {
         int workCount = 0;
-
-        if (image.isClosed())
-        {
-            throw new ArchiveException("replication image closed unexpectedly");
-        }
 
         if (NULL_VALUE == activeCorrelationId)
         {
@@ -613,6 +607,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 }
 
                 workCount += 1;
+            }
+            else if (image.isClosed())
+            {
+                throw new ArchiveException("replication image closed unexpectedly");
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {

@@ -119,7 +119,7 @@ public class Configuration
     public static final String PERFORM_STORAGE_CHECKS_PROP_NAME = "aeron.perform.storage.checks";
 
     /**
-     * Length (in bytes) of the log buffers for publication terms.
+     * Length (in bytes) of the log buffers for UDP publication terms.
      */
     public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
 
@@ -129,7 +129,7 @@ public class Configuration
     public static final int TERM_BUFFER_LENGTH_DEFAULT = 16 * 1024 * 1024;
 
     /**
-     * Property name for term buffer length (in bytes) for IPC buffers.
+     * Length (in bytes) of the log buffers for IPC publication terms.
      */
     public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
 
@@ -191,22 +191,22 @@ public class Configuration
     public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
     /**
-     * Property name for length of the memory mapped buffer for the loss report buffer.
+     * Property name for length of the memory mapped buffer for the {@link io.aeron.driver.reports.LossReport}.
      */
     public static final String LOSS_REPORT_BUFFER_LENGTH_PROP_NAME = "aeron.loss.report.buffer.length";
 
     /**
-     * Default buffer length for the loss report buffer.
+     * Default buffer length for the {@link io.aeron.driver.reports.LossReport}.
      */
     public static final int LOSS_REPORT_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
     /**
-     * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).
+     * Property name for length of the initial window which must be sufficient for Bandwidth Delay Product (BDP).
      */
     public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
 
     /**
-     * Default initial window length for flow control sender to receiver purposes.
+     * Default initial window length for flow control sender to receiver purposes. This assumes a system free of pauses.
      * <p>
      * Length of Initial Window:
      * <p>
@@ -220,22 +220,22 @@ public class Configuration
     public static final int INITIAL_WINDOW_LENGTH_DEFAULT = 128 * 1024;
 
     /**
-     * Property name for status message timeout in nanoseconds after which one will be sent.
+     * Status message timeout in nanoseconds after which one will be sent when data flow does has not triggered one.
      */
     public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 
     /**
-     * Max timeout between SMs.
+     * Max timeout between Status messages (SM)s.
      */
     public static final long STATUS_MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
-     * Property name for ratio of sending data to polling status messages in the Sender.
+     * Property name for ratio of sending data to polling status messages in the {@link Sender}.
      */
     public static final String SEND_TO_STATUS_POLL_RATIO_PROP_NAME = "aeron.send.to.status.poll.ratio";
 
     /**
-     * The ratio for sending data to polling status messages in the Sender.
+     * The ratio for sending data to polling status messages in the Sender. This may be reduced for smaller windows.
      */
     public static final int SEND_TO_STATUS_POLL_RATIO_DEFAULT = 6;
 
@@ -250,7 +250,7 @@ public class Configuration
     public static final int SOCKET_RCVBUF_LENGTH_DEFAULT = 128 * 1024;
 
     /**
-     * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
+     * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
      */
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
@@ -270,7 +270,7 @@ public class Configuration
     public static final int SOCKET_MULTICAST_TTL_DEFAULT = 0;
 
     /**
-     * Property name for linger timeout after draining on {@link Publication}s.
+     * Property name for linger timeout after draining on {@link Publication}s so they can respond to NAKs.
      */
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
@@ -290,12 +290,13 @@ public class Configuration
     public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
 
     /**
-     * Property name for {@link Image} liveness timeout for how long it lingers around after being drained.
+     * {@link Image} liveness timeout for how long it stays active without heartbeats or lingers around after being
+     * drained.
      */
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
-     * Default timeout for {@link Image} liveness timeout for how long it lingers around after being drained.
+     * Default timeout for {@link Image} liveness timeout..
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -311,7 +312,7 @@ public class Configuration
         "aeron.ipc.publication.term.window.length";
 
     /**
-     * Property name for {@link Publication} unblock timeout.
+     * {@link Publication} unblock timeout due to client crash or untimely commit.
      * <p>
      * A publication can become blocked if the client crashes while publishing or if
      * {@link io.aeron.Publication#tryClaim(int, BufferClaim)} is used without following up by calling
@@ -325,7 +326,7 @@ public class Configuration
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /**
-     * Property name for {@link Publication} connection timeout.
+     * Property name for {@link Publication} timeout due to lack of status messages which indicate a connection.
      */
     public static final String PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME = "aeron.publication.connection.timeout";
 
@@ -379,15 +380,15 @@ public class Configuration
     public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
 
     /**
+     * Property name for {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
+     */
+    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
+
+    /**
      * Property name for {@link IdleStrategy} to be employed by {@link DriverConductor} for
      * {@link ThreadingMode#DEDICATED} and {@link ThreadingMode#SHARED_NETWORK}.
      */
     public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
-
-    /**
-     * Property name for {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
-     */
-    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
 
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
@@ -450,14 +451,15 @@ public class Configuration
 
     /**
      * The default is conservative to avoid fragmentation on IPv4 or IPv6 over Ethernet with PPPoE header,
-     * or for clouds such as Google, Oracle, and AWS.
+     * or for clouds such as Google, Azure, and AWS.
      * <p>
      * On networks that suffer little congestion then a larger value can be used to reduce syscall costs.
      */
     public static final int MTU_LENGTH_DEFAULT = 1408;
 
     /**
-     * Length of the maximum transmission unit of the media driver's protocol for IPC.
+     * Length of the maximum transmission unit of the media driver's protocol for IPC. This can be larger than the
+     * UDP version but if recorded replay needs to be considered.
      */
     public static final String IPC_MTU_LENGTH_PROP_NAME = "aeron.ipc.mtu.length";
 
@@ -477,12 +479,12 @@ public class Configuration
     public static final long DEFAULT_TIMER_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
-     *  Timeout between a counter being freed and being available to be reused.
+     * Timeout between a counter being freed and being available to be reused.
      */
     public static final String COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME = "aeron.counters.free.to.reuse.timeout";
 
     /**
-     *  Timeout between a counter being freed and being available to be reused.
+     * Default timeout between a counter being freed and being available to be reused.
      */
     public static final long DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -517,18 +519,18 @@ public class Configuration
         "aeron.publication.reserved.session.id.low";
 
     /**
-     * Low end of the publication reserved session-id range which will not be automatically assigned.
+     * Low-end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final int PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT = -1;
 
     /**
-     * Property name for high end of the publication reserved session-id range which will not be automatically assigned.
+     * High-end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final String PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME =
         "aeron.publication.reserved.session.id.high";
 
     /**
-     * High end of the publication reserved session-id range which will not be automatically assigned.
+     * High-end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final int PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT = 1000;
 
@@ -588,7 +590,7 @@ public class Configuration
     public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
-     * Property for setting how long to delay before sending a retransmit following a NAK.
+     * Property for setting how long to delay before sending a retransmit after receiving a NAK.
      */
     public static final String RETRANSMIT_UNICAST_DELAY_PROP_NAME = "aeron.retransmit.unicast.delay";
 
@@ -1100,6 +1102,274 @@ public class Configuration
     }
 
     /**
+     * Length (in bytes) of the log buffers for UDP publication terms.
+     *
+     * @return length (in bytes) of the log buffers for UDP publication terms.
+     * @see #TERM_BUFFER_LENGTH_PROP_NAME
+     */
+    public static int termBufferLength()
+    {
+        return getSizeAsInt(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
+    }
+
+    /**
+     * Length (in bytes) of the log buffers for IPC publication terms.
+     *
+     * @return length (in bytes) of the log buffers for IPC publication terms.
+     * @see #IPC_TERM_BUFFER_LENGTH_PROP_NAME
+     */
+    public static int ipcTermBufferLength()
+    {
+        return getSizeAsInt(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
+    }
+
+    /**
+     * Length of the initial window which must be sufficient for Bandwidth Delay Product (BDP).
+     *
+     * @return length of the initial window which must be sufficient for Bandwidth Delay Product (BDP).
+     * @see #INITIAL_WINDOW_LENGTH_PROP_NAME
+     */
+    public static int initialWindowLength()
+    {
+        return getSizeAsInt(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
+    }
+
+    /**
+     * SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
+     *
+     * @return SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
+     * @see #SOCKET_SNDBUF_LENGTH_PROP_NAME
+     */
+    public static int socketSndbufLength()
+    {
+        return getSizeAsInt(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
+    }
+
+    /**
+     * SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
+     *
+     * @return SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
+     * @see #SOCKET_RCVBUF_LENGTH_PROP_NAME
+     */
+    public static int socketRcvbufLength()
+    {
+        return getSizeAsInt(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
+    }
+
+    /**
+     * Length of the maximum transmission unit of the media driver's protocol. If this is greater
+     * than the network MTU for UDP then the packet will be fragmented and can amplify the impact of loss.
+     *
+     * @return length of the maximum transmission unit of the media driver's protocol.
+     * @see #MTU_LENGTH_PROP_NAME
+     */
+    public static int mtuLength()
+    {
+        return getSizeAsInt(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    }
+
+    /**
+     * Length of the maximum transmission unit of the media driver's protocol for IPC. This can be larger than the
+     * UDP version but if recorded replay needs to be considered.
+     *
+     * @return length of the maximum transmission unit of the media driver's protocol for IPC.
+     * @see #IPC_MTU_LENGTH_PROP_NAME
+     */
+    public static int ipcMtuLength()
+    {
+        return getSizeAsInt(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    }
+
+    /**
+     * IP_MULTICAST_TTL setting on UDP sockets.
+     *
+     * @return IP_MULTICAST_TTL setting on UDP sockets.
+     * @see #SOCKET_MULTICAST_TTL_PROP_NAME
+     */
+    public static int socketMulticastTtl()
+    {
+        return getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
+    }
+
+    /**
+     * Page size in bytes to align all files to. The file system must support the requested size.
+     *
+     * @return page size in bytes to align all files to.
+     * @see #FILE_PAGE_SIZE_PROP_NAME
+     */
+    public static int filePageSize()
+    {
+        return getSizeAsInt(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
+    }
+
+    /**
+     * Low-end of the publication reserved session-id range which will not be automatically assigned.
+     *
+     * @return low-end of the publication reserved session-id range which will not be automatically assigned.
+     * @see #PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
+     */
+    public static int publicationReservedSessionIdLow()
+    {
+        return getInteger(PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME, PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT);
+    }
+
+    /**
+     * High-end of the publication reserved session-id range which will not be automatically assigned.
+     *
+     * @return high-end of the publication reserved session-id range which will not be automatically assigned.
+     * @see #PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
+     */
+    public static int publicationReservedSessionIdHigh()
+    {
+        return getInteger(PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME, PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT);
+    }
+
+    /**
+     * Status message timeout in nanoseconds after which one will be sent when data flow does has not triggered one.
+     *
+     * @return status message timeout in nanoseconds after which one will be sent.
+     * @see #STATUS_MESSAGE_TIMEOUT_PROP_NAME
+     */
+    public static long statusMessageTimeoutNs()
+    {
+        return getDurationInNanos(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
+    }
+
+    /**
+     * Ratio of sending data to polling status messages in the {@link Sender}.
+     *
+     * @return ratio of sending data to polling status messages in the {@link Sender}.
+     * @see #SEND_TO_STATUS_POLL_RATIO_PROP_NAME
+     */
+    public static int sendToStatusMessagePollRatio()
+    {
+        return getInteger(SEND_TO_STATUS_POLL_RATIO_PROP_NAME, SEND_TO_STATUS_POLL_RATIO_DEFAULT);
+    }
+
+    /**
+     * Timeout between a counter being freed and being available to be reused.
+     *
+     * @return timeout between a counter being freed and being available to be reused.
+     * @see #COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME
+     */
+    public static long counterFreeToReuseTimeoutNs()
+    {
+        return getDurationInNanos(COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME, DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS);
+    }
+
+    /**
+     * {@link Aeron} client liveness timeout after which it is considered not alive.
+     *
+     * @return {@link Aeron} client liveness timeout after which it is considered not alive.
+     * @see #CLIENT_LIVENESS_TIMEOUT_PROP_NAME
+     */
+    public static long clientLivenessTimeoutNs()
+    {
+        return getDurationInNanos(CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
+    }
+
+    /**
+     * {@link Image} liveness timeout for how long it stays active without heartbeats or lingers around after being
+     * drained.
+     *
+     * @return {@link Image} liveness timeout for how long it stays active without heartbeats or lingers around after
+     * being drained.
+     * @see #IMAGE_LIVENESS_TIMEOUT_PROP_NAME
+     */
+    public static long imageLivenessTimeoutNs()
+    {
+        return getDurationInNanos(IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
+    }
+
+    /**
+     * {@link Publication} unblock timeout due to client crash or untimely commit.
+     * <p>
+     * A publication can become blocked if the client crashes while publishing or if
+     * {@link io.aeron.Publication#tryClaim(int, BufferClaim)} is used without following up by calling
+     * {@link BufferClaim#commit()} or {@link BufferClaim#abort()}.
+     *
+     * @return {@link Publication} unblock timeout due to client crash or untimely commit.
+     * @see #PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME
+     */
+    public static long publicationUnblockTimeoutNs()
+    {
+        return getDurationInNanos(PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
+    }
+
+    /**
+     * {@link Publication} timeout due to lack of status messages which indicate a connection.
+     *
+     * @return {@link Publication} timeout due to lack of status messages which indicate a connection.
+     * @see #PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME
+     */
+    public static long publicationConnectionTimeoutNs()
+    {
+        return getDurationInNanos(PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME, PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS);
+    }
+
+    /**
+     * Linger timeout after draining on {@link Publication}s so they can respond to NAKs.
+     *
+     * @return linger timeout after draining on {@link Publication}s so they can respond to NAKs.
+     * @see #PUBLICATION_LINGER_PROP_NAME
+     */
+    public static long publicationLingerTimeoutNs()
+    {
+        return getDurationInNanos(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
+    }
+
+    /**
+     * Setting how long to delay before sending a retransmit after receiving a NAK.
+     *
+     * @return setting how long to delay before sending a retransmit after receiving a NAK.
+     * @see #RETRANSMIT_UNICAST_DELAY_PROP_NAME
+     */
+    public static long retransmitUnicastDelayNs()
+    {
+        return getDurationInNanos(RETRANSMIT_UNICAST_DELAY_PROP_NAME, RETRANSMIT_UNICAST_DELAY_DEFAULT_NS);
+    }
+
+    /**
+     * Setting how long to linger after delay on a NAK.
+     *
+     * @return setting how long to linger after delay on a NAK.
+     * @see #RETRANSMIT_UNICAST_LINGER_PROP_NAME
+     */
+    public static long retransmitUnicastLingerNs()
+    {
+        return getDurationInNanos(RETRANSMIT_UNICAST_LINGER_PROP_NAME, RETRANSMIT_UNICAST_LINGER_DEFAULT_NS);
+    }
+
+    /**
+     * Length of the memory mapped buffer for the {@link io.aeron.driver.reports.LossReport}.
+     *
+     * @return length of the memory mapped buffer for the {@link io.aeron.driver.reports.LossReport}.
+     * @see #LOSS_REPORT_BUFFER_LENGTH_PROP_NAME
+     */
+    public static int lossReportBufferLength()
+    {
+        return getSizeAsInt(LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
+    }
+
+    /**
+     * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}. This allow for CPU resource to be traded
+     * against throughput and latency.
+     *
+     * @return {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}.
+     * @see #THREADING_MODE_PROP_NAME
+     */
+    public static ThreadingMode threadingMode()
+    {
+        final String propertyValue = getProperty(THREADING_MODE_PROP_NAME);
+        if (null == propertyValue)
+        {
+            return DEDICATED;
+        }
+
+        return ThreadingMode.valueOf(propertyValue);
+    }
+
+    /**
      * Get the {@link IdleStrategy} that should be applied to {@link org.agrona.concurrent.Agent}s.
      *
      * @param strategyName       of the class to be created.
@@ -1165,155 +1435,75 @@ public class Configuration
         return idleStrategy;
     }
 
+    /**
+     * {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
+     *
+     * @param controllableStatus to allow control of {@link ControllableIdleStrategy}, which can be null if not used.
+     * @return {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
+     * @see #SENDER_IDLE_STRATEGY_PROP_NAME
+     */
     public static IdleStrategy senderIdleStrategy(final StatusIndicator controllableStatus)
     {
         return agentIdleStrategy(
             getProperty(SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
-    public static IdleStrategy conductorIdleStrategy(final StatusIndicator controllableStatus)
-    {
-        return agentIdleStrategy(
-            getProperty(CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
-    }
-
+    /**
+     * {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
+     *
+     * @param controllableStatus to allow control of {@link ControllableIdleStrategy}, which can be null if not used.
+     * @return {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
+     * @see #RECEIVER_IDLE_STRATEGY_PROP_NAME
+     */
     public static IdleStrategy receiverIdleStrategy(final StatusIndicator controllableStatus)
     {
         return agentIdleStrategy(
             getProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
+    /**
+     * {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED} and
+     * {@link ThreadingMode#SHARED_NETWORK}.
+     *
+     * @param controllableStatus to allow control of {@link ControllableIdleStrategy}, which can be null if not used.
+     * @return {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
+     * and {@link ThreadingMode#SHARED_NETWORK}..
+     * @see #CONDUCTOR_IDLE_STRATEGY_PROP_NAME
+     */
+    public static IdleStrategy conductorIdleStrategy(final StatusIndicator controllableStatus)
+    {
+        return agentIdleStrategy(
+            getProperty(CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
+    }
+
+    /**
+     * {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
+     * {@link ThreadingMode#SHARED_NETWORK}.
+     *
+     * @param controllableStatus to allow control of {@link ControllableIdleStrategy}, which can be null if not used.
+     * @return {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
+     * {@link ThreadingMode#SHARED_NETWORK}.
+     * @see #SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME
+     */
     public static IdleStrategy sharedNetworkIdleStrategy(final StatusIndicator controllableStatus)
     {
         return agentIdleStrategy(
             getProperty(SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
+    /**
+     * {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor} for
+     * {@link ThreadingMode#SHARED}.
+     *
+     * @param controllableStatus to allow control of {@link ControllableIdleStrategy}, which can be null if not used.
+     * @return {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor} for
+     * {@link ThreadingMode#SHARED}.
+     * @see #SHARED_IDLE_STRATEGY_PROP_NAME
+     */
     public static IdleStrategy sharedIdleStrategy(final StatusIndicator controllableStatus)
     {
         return agentIdleStrategy(
             getProperty(SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
-    }
-
-    public static int termBufferLength()
-    {
-        return getSizeAsInt(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
-    }
-
-    public static int ipcTermBufferLength()
-    {
-        return getSizeAsInt(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
-    }
-
-    public static int initialWindowLength()
-    {
-        return getSizeAsInt(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
-    }
-
-    public static int socketMulticastTtl()
-    {
-        return getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
-    }
-
-    public static int socketSndbufLength()
-    {
-        return getSizeAsInt(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
-    }
-
-    public static int socketRcvbufLength()
-    {
-        return getSizeAsInt(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
-    }
-
-    public static int mtuLength()
-    {
-        return getSizeAsInt(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
-    }
-
-    public static int ipcMtuLength()
-    {
-        return getSizeAsInt(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
-    }
-
-    public static int filePageSize()
-    {
-        return getSizeAsInt(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
-    }
-
-    public static int publicationReservedSessionIdLow()
-    {
-        return getInteger(PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME, PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT);
-    }
-
-    public static int publicationReservedSessionIdHigh()
-    {
-        return getInteger(PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME, PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT);
-    }
-
-    public static long statusMessageTimeoutNs()
-    {
-        return getDurationInNanos(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static int sendToStatusMessagePollRatio()
-    {
-        return getInteger(SEND_TO_STATUS_POLL_RATIO_PROP_NAME, SEND_TO_STATUS_POLL_RATIO_DEFAULT);
-    }
-
-    public static long counterFreeToReuseTimeoutNs()
-    {
-        return getDurationInNanos(COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME, DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS);
-    }
-
-    public static long clientLivenessTimeoutNs()
-    {
-        return getDurationInNanos(CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static long imageLivenessTimeoutNs()
-    {
-        return getDurationInNanos(IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static long publicationUnblockTimeoutNs()
-    {
-        return getDurationInNanos(PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static long publicationConnectionTimeoutNs()
-    {
-        return getDurationInNanos(PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME, PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static long publicationLingerTimeoutNs()
-    {
-        return getDurationInNanos(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
-    }
-
-    public static long retransmitUnicastDelayNs()
-    {
-        return getDurationInNanos(RETRANSMIT_UNICAST_DELAY_PROP_NAME, RETRANSMIT_UNICAST_DELAY_DEFAULT_NS);
-    }
-
-    public static long retransmitUnicastLingerNs()
-    {
-        return getDurationInNanos(RETRANSMIT_UNICAST_LINGER_PROP_NAME, RETRANSMIT_UNICAST_LINGER_DEFAULT_NS);
-    }
-
-    public static int lossReportBufferLength()
-    {
-        return getSizeAsInt(LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
-    }
-
-    public static ThreadingMode threadingMode()
-    {
-        final String propertyValue = getProperty(THREADING_MODE_PROP_NAME);
-        if (null == propertyValue)
-        {
-            return DEDICATED;
-        }
-
-        return ThreadingMode.valueOf(propertyValue);
     }
 
     @Deprecated

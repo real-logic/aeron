@@ -992,7 +992,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 }
 
                 aeron_counters_manager_counter_owner_id(
-                    &conductor->counters_manager, pub_pos_position.counter_id, client->client_id);
+                    &conductor->counters_manager, pub_lmt_position.counter_id, client->client_id);
 
                 if (params->has_position)
                 {
@@ -1186,7 +1186,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 }
 
                 aeron_counters_manager_counter_owner_id(
-                    &conductor->counters_manager, pub_pos_position.counter_id, client->client_id);
+                    &conductor->counters_manager, pub_lmt_position.counter_id, client->client_id);
 
                 pub_pos_position.value_addr = aeron_counters_manager_addr(
                     &conductor->counters_manager, pub_pos_position.counter_id);

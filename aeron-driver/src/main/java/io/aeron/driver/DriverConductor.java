@@ -402,7 +402,7 @@ public class DriverConductor implements Agent
             }
 
             publication = newNetworkPublication(
-                correlationId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
+                correlationId, clientId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
         }
         else
         {
@@ -575,7 +575,8 @@ public class DriverConductor implements Agent
         final long clientId,
         final boolean isExclusive)
     {
-        final IpcPublication ipcPublication = getOrAddIpcPublication(correlationId, streamId, channel, isExclusive);
+        final IpcPublication ipcPublication = getOrAddIpcPublication(
+            correlationId, clientId, streamId, channel, isExclusive);
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), ipcPublication));
 
         final ArrayList<SubscriberPosition> subscriberPositions = linkIpcSubscriptions(ipcPublication);
@@ -1053,6 +1054,7 @@ public class DriverConductor implements Agent
 
     private NetworkPublication newNetworkPublication(
         final long registrationId,
+        final long clientId,
         final int streamId,
         final String channel,
         final UdpChannel udpChannel,
@@ -1077,6 +1079,8 @@ public class DriverConductor implements Agent
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+
+        countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
 
         if (params.hasPosition)
         {
@@ -1474,7 +1478,11 @@ public class DriverConductor implements Agent
     }
 
     private IpcPublication getOrAddIpcPublication(
-        final long correlationId, final int streamId, final String channel, final boolean isExclusive)
+        final long correlationId,
+        final long clientId,
+        final int streamId,
+        final String channel,
+        final boolean isExclusive)
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = ChannelUri.parse(channel);
@@ -1493,7 +1501,7 @@ public class DriverConductor implements Agent
             }
 
             validateMtuForMaxMessage(params);
-            publication = addIpcPublication(correlationId, streamId, channel, isExclusive, params);
+            publication = addIpcPublication(correlationId, clientId, streamId, channel, isExclusive, params);
         }
         else
         {
@@ -1505,6 +1513,7 @@ public class DriverConductor implements Agent
 
     private IpcPublication addIpcPublication(
         final long registrationId,
+        final long clientId,
         final int streamId,
         final String channel,
         final boolean isExclusive,
@@ -1518,6 +1527,8 @@ public class DriverConductor implements Agent
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition publisherLimit = PublisherLimit.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+
+        countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
 
         if (params.hasPosition)
         {

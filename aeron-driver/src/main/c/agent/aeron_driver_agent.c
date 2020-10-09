@@ -542,7 +542,7 @@ const char *aeron_driver_agent_dissect_timestamp(int64_t time_ms)
 {
     static char buffer[80];
 
-    snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 ".%" PRId64, time_ms / 1000, time_ms % 1000);
+    snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 ".%03" PRId64, time_ms / 1000, time_ms % 1000);
     return buffer;
 }
 

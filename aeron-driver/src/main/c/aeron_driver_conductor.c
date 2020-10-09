@@ -991,6 +991,9 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     return NULL;
                 }
 
+                aeron_counters_manager_counter_owner_id(
+                    &conductor->counters_manager, pub_pos_position.counter_id, client->client_id);
+
                 if (params->has_position)
                 {
                     int64_t position = aeron_logbuffer_compute_position(
@@ -1182,16 +1185,19 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     return NULL;
                 }
 
+                aeron_counters_manager_counter_owner_id(
+                    &conductor->counters_manager, pub_pos_position.counter_id, client->client_id);
+
                 pub_pos_position.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, pub_pos_position.counter_id);
+                    &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, pub_lmt_position.counter_id);
+                    &conductor->counters_manager, pub_lmt_position.counter_id);
                 snd_pos_position.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, snd_pos_position.counter_id);
+                    &conductor->counters_manager, snd_pos_position.counter_id);
                 snd_lmt_position.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, snd_lmt_position.counter_id);
+                    &conductor->counters_manager, snd_lmt_position.counter_id);
                 snd_bpe_counter.value_addr = aeron_counters_manager_addr(
-                &conductor->counters_manager, snd_bpe_counter.counter_id);
+                    &conductor->counters_manager, snd_bpe_counter.counter_id);
 
                 if (params->has_position)
                 {
@@ -3001,8 +3007,7 @@ int aeron_driver_conductor_on_remove_destination(
 }
 
 int aeron_driver_conductor_on_add_receive_destination(
-    aeron_driver_conductor_t *conductor,
-    aeron_destination_command_t *command)
+    aeron_driver_conductor_t *conductor, aeron_destination_command_t *command)
 {
     aeron_receive_channel_endpoint_t *endpoint = NULL;
 

@@ -80,11 +80,11 @@ typedef struct aeron_driver_context_stct
     bool rejoin_stream;                                     /* aeron.rejoin.stream = true */
     bool ats_enabled;
     uint64_t driver_timeout_ms;                             /* aeron.driver.timeout = 10s */
-    uint64_t client_liveness_timeout_ns;                    /* aeron.client.liveness.timeout = 5s */
+    uint64_t client_liveness_timeout_ns;                    /* aeron.client.liveness.timeout = 10s */
     uint64_t publication_linger_timeout_ns;                 /* aeron.publication.linger.timeout = 5s */
     uint64_t status_message_timeout_ns;                     /* aeron.rcv.status.message.timeout = 200ms */
     uint64_t image_liveness_timeout_ns;                     /* aeron.image.liveness.timeout = 10s */
-    uint64_t publication_unblock_timeout_ns;                /* aeron.publication.unblock.timeout = 10s */
+    uint64_t publication_unblock_timeout_ns;                /* aeron.publication.unblock.timeout = 15s */
     uint64_t publication_connection_timeout_ns;             /* aeron.publication.connection.timeout = 5s */
     uint64_t timer_interval_ns;                             /* aeron.timer.interval = 1s */
     uint64_t counter_free_to_reuse_ns;                      /* aeron.counters.free.to.reuse.timeout = 1s */

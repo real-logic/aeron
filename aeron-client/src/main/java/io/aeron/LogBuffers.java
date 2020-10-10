@@ -209,6 +209,9 @@ public class LogBuffers implements AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         Throwable error = null;
@@ -244,21 +247,41 @@ public class LogBuffers implements AutoCloseable
         return termLength;
     }
 
+    /**
+     * Increment reference count.
+     *
+     * @return current reference count after increment.
+     */
     public int incRef()
     {
         return ++refCount;
     }
 
+    /**
+     * Decrement reference count.
+     *
+     * @return current reference counter after decrement.
+     */
     public int decRef()
     {
         return --refCount;
     }
 
+    /**
+     * Set the deadline for how long to linger around once unreferenced.
+     *
+     * @param timeNs the deadline for how long to linger around once unreferenced.
+     */
     public void lingerDeadlineNs(final long timeNs)
     {
         lingerDeadlineNs = timeNs;
     }
 
+    /**
+     * The deadline for how long to linger around once unreferenced.
+     *
+     * @return the deadline for how long to linger around once unreferenced.
+     */
     public long lingerDeadlineNs()
     {
         return lingerDeadlineNs;

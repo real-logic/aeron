@@ -24,9 +24,9 @@ import java.util.Arrays;
  */
 public final class DirectBufferVector
 {
-    public DirectBuffer buffer;
-    public int offset;
-    public int length;
+    private DirectBuffer buffer;
+    private int offset;
+    private int length;
 
     /**
      * Default constructor so the fluent API can be used.

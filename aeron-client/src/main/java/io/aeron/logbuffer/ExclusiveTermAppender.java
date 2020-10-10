@@ -291,8 +291,8 @@ public final class ExclusiveTermAppender
             int offset = termOffset + HEADER_LENGTH;
             for (final DirectBufferVector vector : vectors)
             {
-                termBuffer.putBytes(offset, vector.buffer, vector.offset, vector.length);
-                offset += vector.length;
+                termBuffer.putBytes(offset, vector.buffer(), vector.offset(), vector.length());
+                offset += vector.length();
             }
 
             if (null != reservedValueSupplier)
@@ -557,10 +557,10 @@ public final class ExclusiveTermAppender
                 do
                 {
                     final DirectBufferVector vector = vectors[vectorIndex];
-                    final int vectorRemaining = vector.length - vectorOffset;
+                    final int vectorRemaining = vector.length() - vectorOffset;
                     final int numBytes = Math.min(bytesToWrite - bytesWritten, vectorRemaining);
 
-                    termBuffer.putBytes(payloadOffset, vector.buffer, vector.offset + vectorOffset, numBytes);
+                    termBuffer.putBytes(payloadOffset, vector.buffer(), vector.offset() + vectorOffset, numBytes);
 
                     bytesWritten += numBytes;
                     payloadOffset += numBytes;

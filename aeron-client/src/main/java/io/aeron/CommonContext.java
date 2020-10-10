@@ -64,8 +64,19 @@ public class CommonContext implements Cloneable
      */
     public enum InferableBoolean
     {
+        /**
+         * Force the conditional to be false.
+         */
         FORCE_FALSE,
+
+        /**
+         * Force the conditional to be true.
+         */
         FORCE_TRUE,
+
+        /**
+         * Try to infer if true or false is most appropriate.
+         */
         INFER;
 
         public static InferableBoolean parse(final String value)

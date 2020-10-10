@@ -27,6 +27,9 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
  */
 public class TermUnblocker
 {
+    /**
+     * Status result of an {@link #unblock(UnsafeBuffer, UnsafeBuffer, int, int, int)} operation.
+     */
     public enum Status
     {
         /**

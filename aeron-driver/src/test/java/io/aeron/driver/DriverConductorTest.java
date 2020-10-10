@@ -549,7 +549,7 @@ public class DriverConductorTest
         assertEquals(NetworkPublication.State.ACTIVE, publication.state());
 
         doWorkUntil(
-            () -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2,
+            () -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 1.25,
             (timeNs) ->
             {
                 publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));

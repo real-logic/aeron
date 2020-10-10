@@ -245,12 +245,13 @@ class ConsensusModuleAgent implements Agent
 
         if (null == (dynamicJoin = requiresDynamicJoin()))
         {
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-            if (null != recoveryPlan.log)
+            final long lastTermRecordingId = recordingLog.findLastTermRecordingId();
+            if (NULL_VALUE != lastTermRecordingId)
             {
-                archive.tryStopRecordingByIdentity(recoveryPlan.log.recordingId);
+                archive.tryStopRecordingByIdentity(lastTermRecordingId);
             }
 
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
             try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
             {
                 if (!recoveryPlan.snapshots.isEmpty())

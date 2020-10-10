@@ -81,3 +81,20 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateReplayUdpChannel)
         builder.build(),
         "aeron:udp?endpoint=localhost:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64");
 }
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateInitialPosition)
+{
+    ChannelUriStringBuilder builder;
+
+    std::uint32_t termLength = 1024 * 128;
+    std::int64_t position = (termLength * 3) + 64;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .initialPosition(position, 777, termLength);
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|term-length=131072|init-term-id=777|term-id=780|term-offset=64");
+}

@@ -295,6 +295,25 @@ public:
         return *this;
     }
 
+    inline this_t &initialPosition(std::int64_t position, std::int32_t initialTermId, std::int32_t termLength)
+    {
+        if (position < 0 || 0 != (position & (aeron::concurrent::logbuffer::FrameDescriptor::FRAME_ALIGNMENT - 1)))
+        {
+            throw IllegalArgumentException(
+                "position not multiple of FRAME_ALIGNMENT: " + std::to_string(position), SOURCEINFO);
+        }
+
+        aeron::concurrent::logbuffer::LogBufferDescriptor::checkTermLength(termLength);
+        int bitsToShift = BitUtil::numberOfTrailingZeroes(termLength);
+
+        m_termLength.reset(new Value(termLength));
+        m_initialTermId.reset(new Value(initialTermId));
+        m_termId.reset(new Value(static_cast<std::uint32_t>((position >> bitsToShift) + initialTermId)));
+        m_termOffset.reset(new Value(static_cast<std::uint32_t>(position & (termLength - 1))));
+
+        return *this;
+    }
+
     std::string build()
     {
         std::ostringstream sb;

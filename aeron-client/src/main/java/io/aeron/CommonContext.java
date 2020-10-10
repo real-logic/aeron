@@ -79,6 +79,12 @@ public class CommonContext implements Cloneable
          */
         INFER;
 
+        /**
+         * Parse the string looking for {@code true}, {@code false}, or {@code infer}.
+         *
+         * @param value to be parsed.
+         * @return {@link InferableBoolean} which matches the string.
+         */
         public static InferableBoolean parse(final String value)
         {
             if (null == value || "infer".equals(value))

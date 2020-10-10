@@ -246,6 +246,11 @@ class ConsensusModuleAgent implements Agent
         if (null == (dynamicJoin = requiresDynamicJoin()))
         {
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+            if (null != recoveryPlan.log)
+            {
+                archive.tryStopRecordingByIdentity(recoveryPlan.log.recordingId);
+            }
+
             try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
             {
                 if (!recoveryPlan.snapshots.isEmpty())
@@ -263,11 +268,6 @@ class ConsensusModuleAgent implements Agent
             }
 
             state(ConsensusModule.State.ACTIVE);
-
-            if (null != recoveryPlan.log)
-            {
-                archive.tryStopRecordingByIdentity(recoveryPlan.log.recordingId);
-            }
 
             election = new Election(
                 true,
@@ -2925,14 +2925,22 @@ class ConsensusModuleAgent implements Agent
 
         if (NULL_VALUE != logSubscriptionId)
         {
-            archive.tryStopRecording(logSubscriptionId);
+            try
+            {
+                archive.tryStopRecording(logSubscriptionId);
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(ex);
+            }
+
             logSubscriptionId = NULL_VALUE;
         }
     }
 
     private void asyncStopLogRecording()
     {
-        if (NULL_VALUE != logSubscriptionId)
+        if (NULL_VALUE != logSubscriptionId && archive.archiveProxy().publication().isConnected())
         {
             try
             {
@@ -2941,7 +2949,7 @@ class ConsensusModuleAgent implements Agent
             }
             catch (final Exception ex)
             {
-                ctx.countedErrorHandler().onError(ex);
+                ctx.countedErrorHandler().onError(new ClusterException(ex, WARN));
             }
 
             logSubscriptionId = NULL_VALUE;

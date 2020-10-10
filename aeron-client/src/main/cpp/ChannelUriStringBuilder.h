@@ -308,8 +308,8 @@ public:
 
         m_termLength.reset(new Value(termLength));
         m_initialTermId.reset(new Value(initialTermId));
-        m_termId.reset(new Value(static_cast<std::uint32_t>((position >> bitsToShift) + initialTermId)));
-        m_termOffset.reset(new Value(static_cast<std::uint32_t>(position & (termLength - 1))));
+        m_termId.reset(new Value((position >> bitsToShift) + initialTermId));
+        m_termOffset.reset(new Value(position & (termLength - 1)));
 
         return *this;
     }

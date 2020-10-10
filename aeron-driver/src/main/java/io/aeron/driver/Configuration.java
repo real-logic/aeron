@@ -287,7 +287,7 @@ public class Configuration
     /**
      * Default timeout for client liveness timeout after which it is considered not alive.
      */
-    public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
+    public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /**
      * {@link Image} liveness timeout for how long it stays active without heartbeats or lingers around after being
@@ -323,7 +323,7 @@ public class Configuration
     /**
      * Timeout for {@link Publication} unblock in nanoseconds.
      */
-    public static final long PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+    public static final long PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(15);
 
     /**
      * Property name for {@link Publication} timeout due to lack of status messages which indicate a connection.

@@ -31,7 +31,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
  * <p>
  * <b>Note:</b> this class is not thread safe and is expecting to be called within {@link Aeron.Context#clientLock()}.
  */
-public class DriverProxy
+public final class DriverProxy
 {
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer(1024);
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
@@ -43,6 +43,12 @@ public class DriverProxy
     private final TerminateDriverFlyweight terminateDriver = new TerminateDriverFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
+    /**
+     * Create a proxy to a media driver which sends commands via a {@link RingBuffer}.
+     *
+     * @param toDriverCommandBuffer to send commands via.
+     * @param clientId              to represent the client.
+     */
     public DriverProxy(final RingBuffer toDriverCommandBuffer, final long clientId)
     {
         this.toDriverCommandBuffer = toDriverCommandBuffer;
@@ -58,11 +64,23 @@ public class DriverProxy
         correlatedMessage.clientId(clientId);
     }
 
+    /**
+     * Time of the last heartbeat to indicate the driver is alive.
+     *
+     * @return time of the last heartbeat to indicate the driver is alive.
+     */
     public long timeOfLastDriverKeepaliveMs()
     {
         return toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
+    /**
+     * Instruct the driver to add a concurrent publication.
+     *
+     * @param channel  uri in string format.
+     * @param streamId within the channel.
+     * @return the correlation id for the command.
+     */
     public long addPublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -80,6 +98,13 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Instruct the driver to add a non-concurrent, i.e. exclusive, publication.
+     *
+     * @param channel  uri in string format.
+     * @param streamId within the channel.
+     * @return the correlation id for the command.
+     */
     public long addExclusivePublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -97,6 +122,12 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Instruct the driver to remove a publication by its registration id.
+     *
+     * @param registrationId for the publication to be removed.
+     * @return the correlation id for the command.
+     */
     public long removePublication(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -113,6 +144,13 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Instruct the driver to add a subscription.
+     *
+     * @param channel  uri in string format.
+     * @param streamId within the channel.
+     * @return the correlation id for the command.
+     */
     public long addSubscription(final String channel, final int streamId)
     {
         final long registrationId = Aeron.NULL_VALUE;
@@ -132,6 +170,12 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Instruct the driver to remove a subscription by its registration id.
+     *
+     * @param registrationId for the subscription to be removed.
+     * @return the correlation id for the command.
+     */
     public long removeSubscription(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -148,6 +192,13 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Add a destination to the send channel of an existing MDC Publication.
+     *
+     * @param registrationId  of the Publication.
+     * @param endpointChannel for the destination.
+     * @return the correlation id for the command.
+     */
     public long addDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -165,6 +216,13 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Remove a destination from the send channel of an existing MDC Publication.
+     *
+     * @param registrationId  of the Publication.
+     * @param endpointChannel used for the {@link #addDestination(long, String)} command.
+     * @return the correlation id for the command.
+     */
     public long removeDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -182,6 +240,13 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Add a destination to the receive channel of an existing MDS Subscription.
+     *
+     * @param registrationId  of the Subscription.
+     * @param endpointChannel for the destination.
+     * @return the correlation id for the command.
+     */
     public long addRcvDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -199,6 +264,14 @@ public class DriverProxy
         return correlationId;
     }
 
+
+    /**
+     * Remove a destination from the receive channel of an existing MDS Subscription.
+     *
+     * @param registrationId  of the Subscription.
+     * @param endpointChannel used for the {@link #addRcvDestination(long, String)} command.
+     * @return the correlation id for the command.
+     */
     public long removeRcvDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -216,6 +289,18 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Add a new counter with a type id plus the label and key are provided in buffers.
+     *
+     * @param typeId      for associating with the counter.
+     * @param keyBuffer   containing the metadata key.
+     * @param keyOffset   offset at which the key begins.
+     * @param keyLength   length in bytes for the key.
+     * @param labelBuffer containing the label.
+     * @param labelOffset offset at which the label begins.
+     * @param labelLength length in bytes for the label.
+     * @return the correlation id for the command.
+     */
     public long addCounter(
         final int typeId,
         final DirectBuffer keyBuffer,
@@ -241,6 +326,13 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Add a new counter with a type id and label, the key will be blank.
+     *
+     * @param typeId for associating with the counter.
+     * @param label  that is human readable for the counter.
+     * @return the correlation id for the command.
+     */
     public long addCounter(final int typeId, final String label)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -259,6 +351,12 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Instruct the media driver to remove an existing counter by its registration id.
+     *
+     * @param registrationId of counter to remove.
+     * @return the correlation id for the command.
+     */
     public long removeCounter(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -275,12 +373,23 @@ public class DriverProxy
         return correlationId;
     }
 
+    /**
+     * Notify the media driver that this client is closing.
+     */
     public void clientClose()
     {
         correlatedMessage.correlationId(Aeron.NULL_VALUE);
         toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
+    /**
+     * Instruct the media driver to terminate.
+     *
+     * @param tokenBuffer containing the authentication token.
+     * @param tokenOffset at which the token begins.
+     * @param tokenLength in bytes.
+     * @return true is successfully sent.
+     */
     public boolean terminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {
         correlatedMessage.correlationId(Aeron.NULL_VALUE);

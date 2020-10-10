@@ -17,6 +17,9 @@ package io.aeron.driver.exceptions;
 
 import io.aeron.exceptions.AeronException;
 
+/**
+ * Indicates a currently active driver has been detected in {@code aeron.dir} during startup.
+ */
 public class ActiveDriverException extends AeronException
 {
     public ActiveDriverException(final String message)

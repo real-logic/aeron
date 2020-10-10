@@ -18,6 +18,9 @@ package io.aeron.driver.exceptions;
 import io.aeron.ErrorCode;
 import io.aeron.exceptions.ControlProtocolException;
 
+/**
+ * Indicates an invalid URI for a channel has been received by the driver from a client.
+ */
 public class InvalidChannelException extends ControlProtocolException
 {
     public InvalidChannelException(final String msg)

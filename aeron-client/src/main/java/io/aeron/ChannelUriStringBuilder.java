@@ -24,7 +24,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static org.agrona.SystemUtil.*;
 
 /**
- * Type safe means of building a channel URI associated with a {@link Publication} or {@link Subscription}.
+ * Typesafe means of building a channel URI associated with a {@link Publication} or {@link Subscription}.
  *
  * @see Aeron#addPublication(String, int)
  * @see Aeron#addSubscription(String, int)
@@ -32,6 +32,11 @@ import static org.agrona.SystemUtil.*;
  */
 public class ChannelUriStringBuilder
 {
+    /**
+     * Can be used when the likes of session-id wants to reference another entity such as a tagged publication.
+     * <p>
+     * For example {@code session-id=tag:777} where the publication uses {@code tags=777}.
+     */
     public static final String TAG_PREFIX = "tag:";
 
     private final StringBuilder sb = new StringBuilder(64);

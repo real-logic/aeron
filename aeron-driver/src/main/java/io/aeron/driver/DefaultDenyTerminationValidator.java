@@ -19,8 +19,14 @@ import org.agrona.DirectBuffer;
 
 import java.io.File;
 
+/**
+ * Default implementation of {@link TerminationValidator} that always denies termination.
+ */
 public class DefaultDenyTerminationValidator implements TerminationValidator
 {
+    /**
+     * {@inheritDoc}
+     */
     public boolean allowTermination(
         final File aeronDir, final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {

@@ -17,6 +17,9 @@ package io.aeron.driver.exceptions;
 
 import io.aeron.exceptions.AeronException;
 
+/**
+ * Indicates the subscription is unknown to the driver when a request to remove it has been received.
+ */
 public class UnknownSubscriptionException extends AeronException
 {
     public UnknownSubscriptionException(final String message)

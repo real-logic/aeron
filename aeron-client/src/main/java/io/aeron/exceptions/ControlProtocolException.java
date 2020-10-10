@@ -17,6 +17,9 @@ package io.aeron.exceptions;
 
 import io.aeron.ErrorCode;
 
+/**
+ * Indicates an invalid use of the control protocol when sending commands from the client to driver.
+ */
 public class ControlProtocolException extends AeronException
 {
     private final ErrorCode code;

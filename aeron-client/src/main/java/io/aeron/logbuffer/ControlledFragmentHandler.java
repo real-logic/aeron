@@ -24,6 +24,9 @@ import org.agrona.DirectBuffer;
 @FunctionalInterface
 public interface ControlledFragmentHandler
 {
+    /**
+     * Action to be taken on return from {@link ControlledFragmentHandler#onFragment(DirectBuffer, int, int, Header)}.
+     */
     enum Action
     {
         /**

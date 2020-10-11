@@ -86,12 +86,15 @@ public class ReceiveSendUdpPong
                 }
             }
 
+            buffer.flip();
+            final int length = buffer.remaining();
             final long receivedSequenceNumber = buffer.getLong(0);
             final long receivedTimestamp = buffer.getLong(SIZE_OF_LONG);
 
             buffer.clear();
             buffer.putLong(receivedSequenceNumber);
             buffer.putLong(receivedTimestamp);
+            buffer.position(length);
             buffer.flip();
 
             sendChannel.send(buffer, sendAddress);

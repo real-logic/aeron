@@ -49,7 +49,7 @@ public class ClientTimeoutFlyweight
      *
      * @param buffer to wrap
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public final ClientTimeoutFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
@@ -60,9 +60,9 @@ public class ClientTimeoutFlyweight
     }
 
     /**
-     * return client id field
+     * Get client id field.
      *
-     * @return client id field
+     * @return client id field.
      */
     public long clientId()
     {
@@ -70,10 +70,10 @@ public class ClientTimeoutFlyweight
     }
 
     /**
-     * set client id field
+     * Set client id field.
      *
-     * @param clientId field value
-     * @return for fluent API
+     * @param clientId field value.
+     * @return this for a fluent API.
      */
     public ClientTimeoutFlyweight clientId(final long clientId)
     {

@@ -53,9 +53,9 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
     private int lengthOfChannel;
 
     /**
-     * return correlation id used in registration field
+     * return correlation id used in registration field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long registrationCorrelationId()
     {
@@ -63,10 +63,10 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * set registration correlation id field
+     * set registration correlation id field.
      *
-     * @param correlationId field value
-     * @return flyweight
+     * @param correlationId field value.
+     * @return this for a fluent API.
      */
     public DestinationMessageFlyweight registrationCorrelationId(final long correlationId)
     {
@@ -76,9 +76,9 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the channel field in ASCII
+     * Get the channel field in ASCII.
      *
-     * @return channel field
+     * @return channel field.
      */
     public String channel()
     {
@@ -99,7 +99,7 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
      * Set channel field in ASCII
      *
      * @param channel field value
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public DestinationMessageFlyweight channel(final String channel)
     {

@@ -72,7 +72,7 @@ public class OperationSucceededFlyweight
      * Set the correlation id field.
      *
      * @param correlationId field value.
-     * @return for fluent API
+     * @return this for a fluent API
      */
     public OperationSucceededFlyweight correlationId(final long correlationId)
     {

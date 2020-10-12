@@ -116,7 +116,7 @@ public class ImageMessageFlyweight
     /**
      * The stream id field.
      *
-     * @return stream id field
+     * @return stream id field.
      */
     public int streamId()
     {

@@ -30,7 +30,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class SetupFlyweight extends HeaderFlyweight
 {
     /**
-     * Length of the Setup Message Frame
+     * Length of the Setup Message Frame.
      */
     public static final int HEADER_LENGTH = 40;
 
@@ -71,9 +71,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term offset field
+     * Get term offset field.
      *
-     * @return term offset field
+     * @return term offset field.
      */
     public int termOffset()
     {
@@ -81,10 +81,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set term offset field
+     * Set term offset field.
      *
-     * @param termOffset field value
-     * @return flyweight
+     * @param termOffset field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight termOffset(final int termOffset)
     {
@@ -94,9 +94,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return session id field
+     * Get session id field.
      *
-     * @return session id field
+     * @return session id field.
      */
     public int sessionId()
     {
@@ -104,10 +104,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set session id field
+     * Set session id field.
      *
-     * @param sessionId field value
-     * @return flyweight
+     * @param sessionId field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight sessionId(final int sessionId)
     {
@@ -117,9 +117,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return stream id field
+     * Get stream id field.
      *
-     * @return stream id field
+     * @return stream id field.
      */
     public int streamId()
     {
@@ -127,10 +127,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set stream id field
+     * Set stream id field.
      *
-     * @param streamId field value
-     * @return flyweight
+     * @param streamId field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight streamId(final int streamId)
     {
@@ -140,9 +140,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return initial term id field
+     * Get initial term id field.
      *
-     * @return initial term id field
+     * @return initial term id field.
      */
     public int initialTermId()
     {
@@ -150,10 +150,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set initial term id field
+     * Set initial term id field.
      *
-     * @param termId field value
-     * @return flyweight
+     * @param termId field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight initialTermId(final int termId)
     {
@@ -163,9 +163,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return active term id field
+     * Get active term id field.
      *
-     * @return term id field
+     * @return term id field.
      */
     public int activeTermId()
     {
@@ -173,10 +173,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set active term id field
+     * Set active term id field.
      *
-     * @param termId field value
-     * @return flyweight
+     * @param termId field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight activeTermId(final int termId)
     {
@@ -186,9 +186,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term length field
+     * Get term length field.
      *
-     * @return term length field value
+     * @return term length field value.
      */
     public int termLength()
     {
@@ -196,10 +196,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set term length field
+     * Set term length field.
      *
-     * @param termLength field value
-     * @return flyweight
+     * @param termLength field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight termLength(final int termLength)
     {
@@ -209,9 +209,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Return MTU length field
+     * Get MTU length field.
      *
-     * @return MTU length field value
+     * @return MTU length field value.
      */
     public int mtuLength()
     {
@@ -219,10 +219,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Set MTU length field
+     * Set MTU length field.
      *
-     * @param mtuLength field value
-     * @return flyweight
+     * @param mtuLength field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight mtuLength(final int mtuLength)
     {
@@ -232,9 +232,9 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Return the TTL field
+     * Get the TTL field.
      *
-     * @return TTL field value
+     * @return TTL field value.
      */
     public int ttl()
     {
@@ -242,10 +242,10 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Set the TTL field
+     * Set the TTL field.
      *
-     * @param ttl field value
-     * @return flyweight
+     * @param ttl field value.
+     * @return this for a fluent API.
      */
     public SetupFlyweight ttl(final int ttl)
     {

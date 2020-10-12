@@ -56,9 +56,9 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     private static final int MINIMUM_LENGTH = KEY_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
-     * return type id field
+     * Get type id field.
      *
-     * @return type id field
+     * @return type id field.
      */
     public int typeId()
     {
@@ -66,10 +66,10 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * set counter type id field
+     * Set counter type id field.
      *
-     * @param typeId field value
-     * @return flyweight
+     * @param typeId field value.
+     * @return this for a fluent API.
      */
     public CounterMessageFlyweight typeId(final long typeId)
     {
@@ -79,9 +79,9 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Relative offset of the key buffer
+     * Relative offset of the key buffer.
      *
-     * @return relative offset of the key buffer
+     * @return relative offset of the key buffer.
      */
     public int keyBufferOffset()
     {
@@ -89,9 +89,9 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Length of the key buffer in bytes
+     * Length of the key buffer in bytes.
      *
-     * @return length of key buffer in bytes
+     * @return length of key buffer in bytes.
      */
     public int keyBufferLength()
     {
@@ -104,7 +104,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param keyBuffer containing the optional key for the counter.
      * @param keyOffset within the keyBuffer at which the key begins.
      * @param keyLength of the key in the keyBuffer.
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public CounterMessageFlyweight keyBuffer(final DirectBuffer keyBuffer, final int keyOffset, final int keyLength)
     {
@@ -120,7 +120,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     /**
      * Relative offset of label buffer.
      *
-     * @return relative offset of label buffer
+     * @return relative offset of label buffer.
      */
     public int labelBufferOffset()
     {
@@ -130,7 +130,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     /**
      * Length of label buffer in bytes.
      *
-     * @return length of label buffer in bytes
+     * @return length of label buffer in bytes.
      */
     public int labelBufferLength()
     {
@@ -143,7 +143,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param labelBuffer containing the mandatory label for the counter.
      * @param labelOffset within the labelBuffer at which the label begins.
      * @param labelLength of the label in the labelBuffer.
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public CounterMessageFlyweight labelBuffer(
         final DirectBuffer labelBuffer, final int labelOffset, final int labelLength)
@@ -160,8 +160,8 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     /**
      * Fill the label.
      *
-     * @param label for the counter
-     * @return flyweight
+     * @param label for the counter.
+     * @return this for a fluent API.
      */
     public CounterMessageFlyweight label(final String label)
     {

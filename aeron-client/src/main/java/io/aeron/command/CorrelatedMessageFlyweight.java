@@ -62,9 +62,9 @@ public class CorrelatedMessageFlyweight
     }
 
     /**
-     * return client id field
+     * Get client id field.
      *
-     * @return client id field
+     * @return client id field.
      */
     public long clientId()
     {
@@ -75,7 +75,7 @@ public class CorrelatedMessageFlyweight
      * set client id field
      *
      * @param clientId field value
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public CorrelatedMessageFlyweight clientId(final long clientId)
     {
@@ -85,9 +85,9 @@ public class CorrelatedMessageFlyweight
     }
 
     /**
-     * return correlation id field
+     * Get correlation id field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long correlationId()
     {
@@ -95,10 +95,10 @@ public class CorrelatedMessageFlyweight
     }
 
     /**
-     * set correlation id field
+     * Set correlation id field.
      *
-     * @param correlationId field value
-     * @return for fluent API
+     * @param correlationId field value.
+     * @return this for a fluent API.
      */
     public CorrelatedMessageFlyweight correlationId(final long correlationId)
     {

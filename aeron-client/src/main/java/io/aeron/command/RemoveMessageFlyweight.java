@@ -43,9 +43,9 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
     private static final int MINIMUM_LENGTH = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
 
     /**
-     * Get the registration id field
+     * Get the registration id field.
      *
-     * @return registration id field
+     * @return registration id field.
      */
     public long registrationId()
     {
@@ -65,6 +65,11 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
         return this;
     }
 
+    /**
+     * Length of the message in bytes.
+     *
+     * @return length of the message in bytes.
+     */
     public static int length()
     {
         return LENGTH + SIZE_OF_LONG;

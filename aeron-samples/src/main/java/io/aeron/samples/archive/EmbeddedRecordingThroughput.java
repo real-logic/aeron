@@ -78,7 +78,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
         }
     }
 
-    public EmbeddedRecordingThroughput()
+    EmbeddedRecordingThroughput()
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();
         final File archiveDir = ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
@@ -109,7 +109,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
             () -> archivingMediaDriver.mediaDriver().context().deleteDirectory());
     }
 
-    public long streamMessagesForRecording()
+    private long streamMessagesForRecording()
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
@@ -156,12 +156,12 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
         }
     }
 
-    public void startRecording()
+    private void startRecording()
     {
         aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
     }
 
-    public void truncateRecording(final long previousRecordingId)
+    private void truncateRecording(final long previousRecordingId)
     {
         aeronArchive.truncateRecording(previousRecordingId, 0L);
     }

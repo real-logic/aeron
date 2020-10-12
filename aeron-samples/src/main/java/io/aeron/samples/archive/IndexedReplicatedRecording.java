@@ -88,7 +88,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
     private final AeronArchive srcAeronArchive;
     private final AeronArchive dstAeronArchive;
 
-    public IndexedReplicatedRecording()
+    IndexedReplicatedRecording()
     {
         final String srcAeronDirectoryName = getAeronDirectoryName() + "-src";
         System.out.println("srcAeronDirectoryName=" + srcAeronDirectoryName);
@@ -287,7 +287,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
         }
     }
 
-    public static void assertEquals(final String type, final long srcValue, final long dstValue)
+    static void assertEquals(final String type, final long srcValue, final long dstValue)
     {
         if (srcValue != dstValue)
         {
@@ -295,7 +295,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
         }
     }
 
-    public static void assertEquals(final String type, final LongArrayList srcList, final LongArrayList dstList)
+    static void assertEquals(final String type, final LongArrayList srcList, final LongArrayList dstList)
     {
         final int srcSize = srcList.size();
         final int dstSize = dstList.size();
@@ -433,17 +433,17 @@ public class IndexedReplicatedRecording implements AutoCloseable
             return nextMessageIndex;
         }
 
-        private LongArrayList messagePositions()
+        LongArrayList messagePositions()
         {
             return messagePositions;
         }
 
-        private LongArrayList timestamps()
+        LongArrayList timestamps()
         {
             return timestamps;
         }
 
-        private LongArrayList timestampPositions()
+        LongArrayList timestampPositions()
         {
             return timestampPositions;
         }

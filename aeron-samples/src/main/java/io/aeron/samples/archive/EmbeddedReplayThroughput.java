@@ -114,7 +114,7 @@ public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputValue impl
         }
     }
 
-    public EmbeddedReplayThroughput()
+    EmbeddedReplayThroughput()
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();
         final File archiveDir = ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?

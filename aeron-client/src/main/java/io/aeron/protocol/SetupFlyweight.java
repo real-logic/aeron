@@ -43,15 +43,28 @@ public class SetupFlyweight extends HeaderFlyweight
     private static final int MTU_LENGTH_FIELD_OFFSET = 32;
     private static final int TTL_FIELD_OFFSET = 36;
 
+    /**
+     * Default constructor which can later be use to wrap a frame.
+     */
     public SetupFlyweight()
     {
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public SetupFlyweight(final UnsafeBuffer buffer)
     {
         super(buffer);
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public SetupFlyweight(final ByteBuffer buffer)
     {
         super(buffer);

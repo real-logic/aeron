@@ -62,6 +62,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static final short BEGIN_END_AND_EOS_FLAGS = BEGIN_FLAG | END_FLAG | EOS_FLAG;
 
+    /**
+     * Default value to be placed in the reserved value field.
+     */
     public static final long DEFAULT_RESERVE_VALUE = 0L;
 
     public static final int TERM_OFFSET_FIELD_OFFSET = 8;
@@ -71,15 +74,28 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static final int RESERVED_VALUE_OFFSET = 24;
     public static final int DATA_OFFSET = HEADER_LENGTH;
 
+    /**
+     * Default constructor which can later be use to wrap a frame.
+     */
     public DataHeaderFlyweight()
     {
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public DataHeaderFlyweight(final UnsafeBuffer buffer)
     {
         super(buffer);
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public DataHeaderFlyweight(final ByteBuffer buffer)
     {
         super(buffer);

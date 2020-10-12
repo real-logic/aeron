@@ -105,7 +105,7 @@ abstract class ArchiveConductor
     private int replayId = 1;
     private volatile boolean isAbort;
 
-    protected final Archive.Context ctx;
+    final Archive.Context ctx;
     SessionWorker<ReplaySession> replayer;
     SessionWorker<RecordingSession> recorder;
 

@@ -38,8 +38,8 @@ public class OperationSucceededFlyweight
 
     public static final int LENGTH = SIZE_OF_LONG;
 
-    protected MutableDirectBuffer buffer;
-    protected int offset;
+    private MutableDirectBuffer buffer;
+    private int offset;
 
     /**
      * Wrap the buffer at a given offset for updates.

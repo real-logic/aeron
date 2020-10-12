@@ -52,15 +52,28 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
 
     public static final int MAX_NAME_LENGTH = 512;
 
+    /**
+     * Default constructor which can later be use to wrap a frame.
+     */
     public ResolutionEntryFlyweight()
     {
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public ResolutionEntryFlyweight(final UnsafeBuffer buffer)
     {
         super(buffer);
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public ResolutionEntryFlyweight(final ByteBuffer buffer)
     {
         super(buffer);

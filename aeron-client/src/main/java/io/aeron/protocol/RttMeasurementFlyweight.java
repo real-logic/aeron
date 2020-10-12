@@ -30,7 +30,14 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class RttMeasurementFlyweight extends HeaderFlyweight
 {
+    /**
+     * Flag set to indicate this is a reply message.
+     */
     public static final short REPLY_FLAG = 0x80;
+
+    /**
+     * Length of the header of the frame.
+     */
     public static final int HEADER_LENGTH = 40;
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
@@ -39,15 +46,28 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
     private static final int RECEPTION_DELTA_FIELD_OFFSET = 24;
     private static final int RECEIVER_ID_FIELD_OFFSET = 32;
 
+    /**
+     * Default constructor which can later be use to wrap a frame.
+     */
     public RttMeasurementFlyweight()
     {
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public RttMeasurementFlyweight(final ByteBuffer buffer)
     {
         super(buffer);
     }
 
+    /**
+     * Construct the flyweight over a frame.
+     *
+     * @param buffer containing the frame.
+     */
     public RttMeasurementFlyweight(final UnsafeBuffer buffer)
     {
         super(buffer);

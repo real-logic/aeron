@@ -40,8 +40,8 @@ public class CorrelatedMessageFlyweight
     public static final int CORRELATION_ID_FIELD_OFFSET = CLIENT_ID_FIELD_OFFSET + SIZE_OF_LONG;
     public static final int LENGTH = 2 * SIZE_OF_LONG;
 
-    protected MutableDirectBuffer buffer;
-    protected int offset;
+    MutableDirectBuffer buffer;
+    int offset;
 
     /**
      * Wrap the buffer at a given offset for updates.

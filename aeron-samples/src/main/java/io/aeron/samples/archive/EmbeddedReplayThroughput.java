@@ -52,7 +52,7 @@ abstract class EmbeddedReplayThroughputLhsPadding
 
 abstract class EmbeddedReplayThroughputValue extends EmbeddedReplayThroughputLhsPadding
 {
-    protected long messageCount;
+    long messageCount;
 }
 
 /**

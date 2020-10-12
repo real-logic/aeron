@@ -20,14 +20,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 abstract class AbstractListRecordingsSession implements Session
 {
-    protected static final int MAX_SCANS_PER_WORK_CYCLE = 256;
+    static final int MAX_SCANS_PER_WORK_CYCLE = 256;
 
-    protected final UnsafeBuffer descriptorBuffer;
-    protected final Catalog catalog;
-    protected final ControlSession controlSession;
-    protected final ControlResponseProxy proxy;
-    protected final long correlationId;
-    protected boolean isDone = false;
+    final UnsafeBuffer descriptorBuffer;
+    final Catalog catalog;
+    final ControlSession controlSession;
+    final ControlResponseProxy proxy;
+    final long correlationId;
+    boolean isDone = false;
 
     AbstractListRecordingsSession(
         final long correlationId,
@@ -75,5 +75,5 @@ abstract class AbstractListRecordingsSession implements Session
         controlSession.activeListing(null);
     }
 
-    protected abstract int sendDescriptors();
+    abstract int sendDescriptors();
 }

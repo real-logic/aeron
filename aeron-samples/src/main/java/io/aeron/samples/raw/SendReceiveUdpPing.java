@@ -44,6 +44,7 @@ public class SendReceiveUdpPing
         {
             numChannels = Integer.parseInt(args[0]);
         }
+
         String remoteHost = "localhost";
         if (2 <= args.length)
         {
@@ -53,7 +54,6 @@ public class SendReceiveUdpPing
         System.out.printf("Number of channels: %d, Remote host: %s%n", numChannels, remoteHost);
 
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-
         final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
 
         final DatagramChannel[] receiveChannels = new DatagramChannel[numChannels];
@@ -77,7 +77,7 @@ public class SendReceiveUdpPing
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1000_000_000);
+            LockSupport.parkNanos(1_000_000_000);
         }
     }
 

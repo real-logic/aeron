@@ -46,11 +46,13 @@ public class BurstSendReceiveUdpPing
         {
             remoteHost = args[0];
         }
+
         int packetSize = 16;
         if (2 <= args.length)
         {
             packetSize = min(Configuration.MTU_LENGTH_DEFAULT, max(packetSize, Integer.parseInt(args[1])));
         }
+
         int burstSize = 1;
         if (3 <= args.length)
         {
@@ -62,7 +64,7 @@ public class BurstSendReceiveUdpPing
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
         final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
-        for (int i = 0; i < buffer.capacity(); i++)
+        for (int i = 0, length = buffer.capacity(); i < length; i++)
         {
             buffer.put(i, (byte)0xFF);
         }
@@ -84,7 +86,7 @@ public class BurstSendReceiveUdpPing
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1000_000_000);
+            LockSupport.parkNanos(1_000_000_000);
         }
     }
 

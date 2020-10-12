@@ -78,27 +78,27 @@ public abstract class Publication implements AutoCloseable
      */
     public static final long MAX_POSITION_EXCEEDED = -5;
 
-    protected final long originalRegistrationId;
-    protected final long registrationId;
-    protected final long maxPossiblePosition;
-    protected final int channelStatusId;
-    protected final int streamId;
-    protected final int sessionId;
-    protected final int maxMessageLength;
-    protected final int initialTermId;
-    protected final int maxPayloadLength;
-    protected final int positionBitsToShift;
-    protected final int termBufferLength;
-    protected volatile boolean isClosed = false;
+    final long originalRegistrationId;
+    final long registrationId;
+    final long maxPossiblePosition;
+    final int channelStatusId;
+    final int streamId;
+    final int sessionId;
+    final int maxMessageLength;
+    final int initialTermId;
+    final int maxPayloadLength;
+    final int positionBitsToShift;
+    final int termBufferLength;
+    volatile boolean isClosed = false;
 
-    protected final ReadablePosition positionLimit;
-    protected final UnsafeBuffer logMetaDataBuffer;
-    protected final HeaderWriter headerWriter;
-    protected final LogBuffers logBuffers;
-    protected final ClientConductor conductor;
-    protected final String channel;
+    final ReadablePosition positionLimit;
+    final UnsafeBuffer logMetaDataBuffer;
+    final HeaderWriter headerWriter;
+    final LogBuffers logBuffers;
+    final ClientConductor conductor;
+    final String channel;
 
-    protected Publication(
+    Publication(
         final ClientConductor clientConductor,
         final String channel,
         final int streamId,

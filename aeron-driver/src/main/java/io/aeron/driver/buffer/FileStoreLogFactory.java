@@ -47,6 +47,15 @@ public class FileStoreLogFactory implements LogFactory
     private final RandomAccessFile blankFile;
     private final FileChannel blankChannel;
 
+    /**
+     * Construct a {@link LogFactory} over a file store.
+     *
+     * @param dataDirectoryName          where the log buffers will be created.
+     * @param filePageSize               of the filesystem.
+     * @param checkStorage               for sufficient space before allocating files.
+     * @param lowStorageWarningThreshold when warnings about remaining space will begin.
+     * @param errorHandler               to call when an error is encountered.
+     */
     public FileStoreLogFactory(
         final String dataDirectoryName,
         final int filePageSize,
@@ -79,6 +88,9 @@ public class FileStoreLogFactory implements LogFactory
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(blankChannel);

@@ -39,20 +39,20 @@ abstract class SubscriptionLhsPadding
 
 abstract class SubscriptionFields extends SubscriptionLhsPadding
 {
-    protected static final Image[] EMPTY_IMAGES = new Image[0];
+    static final Image[] EMPTY_IMAGES = new Image[0];
 
-    protected final long registrationId;
-    protected final int streamId;
-    protected int roundRobinIndex = 0;
-    protected volatile boolean isClosed = false;
-    protected volatile Image[] images = EMPTY_IMAGES;
-    protected final ClientConductor conductor;
-    protected final String channel;
-    protected final AvailableImageHandler availableImageHandler;
-    protected final UnavailableImageHandler unavailableImageHandler;
-    protected int channelStatusId = ChannelEndpointStatus.NO_ID_ALLOCATED;
+    final long registrationId;
+    final int streamId;
+    int roundRobinIndex = 0;
+    volatile boolean isClosed = false;
+    volatile Image[] images = EMPTY_IMAGES;
+    final ClientConductor conductor;
+    final String channel;
+    final AvailableImageHandler availableImageHandler;
+    final UnavailableImageHandler unavailableImageHandler;
+    int channelStatusId = ChannelEndpointStatus.NO_ID_ALLOCATED;
 
-    protected SubscriptionFields(
+    SubscriptionFields(
         final long registrationId,
         final int streamId,
         final ClientConductor clientConductor,

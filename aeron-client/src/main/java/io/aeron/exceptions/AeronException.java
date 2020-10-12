@@ -21,7 +21,7 @@ package io.aeron.exceptions;
 public class AeronException extends RuntimeException
 {
     /**
-     * Type of exception.
+     * Category of {@link Exception}.
      */
     public enum Category
     {
@@ -45,52 +45,104 @@ public class AeronException extends RuntimeException
 
     private final Category category;
 
+    /**
+     * Default Aeron exception of {@link Category#ERROR}.
+     */
     public AeronException()
     {
         this.category = Category.ERROR;
     }
 
+    /**
+     * Default Aeron exception with provided {@link Category}.
+     *
+     * @param category of this exception.
+     */
     public AeronException(final Category category)
     {
         this.category = category;
     }
 
+    /**
+     * Aeron exception with provided message and {@link Category#ERROR}.
+     *
+     * @param message to detail the exception.
+     */
     public AeronException(final String message)
     {
         super(message);
         this.category = Category.ERROR;
     }
 
-    public AeronException(final String message, final Category category)
-    {
-        super(message);
-        this.category = category;
-    }
-
-    public AeronException(final String message, final Throwable cause)
-    {
-        super(message, cause);
-        this.category = Category.ERROR;
-    }
-
-    public AeronException(final String message, final Throwable cause, final Category category)
-    {
-        super(message, cause);
-        this.category = category;
-    }
-
+    /**
+     * Aeron exception with provided cause and {@link Category#ERROR}.
+     *
+     * @param cause   of the error.
+     */
     public AeronException(final Throwable cause)
     {
         super(cause);
         this.category = Category.ERROR;
     }
 
+    /**
+     * Aeron exception with a detailed message and provided {@link Category}.
+     *
+     * @param message  providing detail on the error.
+     * @param category of the exception.
+     */
+    public AeronException(final String message, final Category category)
+    {
+        super(message);
+        this.category = category;
+    }
+
+    /**
+     * Aeron exception with a detailed message and cause.
+     *
+     * @param message providing detail on the error.
+     * @param cause   of the error.
+     */
+    public AeronException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+        this.category = Category.ERROR;
+    }
+
+    /**
+     * Aeron exception with cause and provided {@link Category}.
+     *
+     * @param cause    of the error.
+     * @param category of the exception.
+     */
     public AeronException(final Throwable cause, final Category category)
     {
         super(cause);
         this.category = category;
     }
 
+    /**
+     * Aeron exception with a detailed message, cause, and {@link Category}.
+     *
+     * @param message  providing detail on the error.
+     * @param cause    of the error.
+     * @param category of the exception.
+     */
+    public AeronException(final String message, final Throwable cause, final Category category)
+    {
+        super(message, cause);
+        this.category = category;
+    }
+
+    /**
+     * Constructs a new Aeron exception with the a detail message, cause, suppression enabled or disabled,
+     * and writable stack trace enabled or disabled, in the category {@link Category#ERROR}.
+     *
+     * @param message            providing detail on the error.
+     * @param cause              of the error.
+     * @param enableSuppression  is suppression enabled or not.
+     * @param writableStackTrace is the stack trace writable or not.
+     */
     public AeronException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {
@@ -98,6 +150,16 @@ public class AeronException extends RuntimeException
         this.category = Category.ERROR;
     }
 
+    /**
+     * Constructs a new Aeron exception with the a detail message, cause, suppression enabled or disabled,
+     * writable stack trace enabled or disabled, an {@link Category}.
+     *
+     * @param message            providing detail on the error.
+     * @param cause              of the error.
+     * @param enableSuppression  is suppression enabled or not.
+     * @param writableStackTrace is the stack trace writable or not.
+     * @param category           of the exception.
+     */
     public AeronException(
         final String message,
         final Throwable cause,
@@ -109,6 +171,11 @@ public class AeronException extends RuntimeException
         this.category = category;
     }
 
+    /**
+     * {@link Category} of exception for determining what follow up action can be taken.
+     *
+     * @return {@link Category} of exception for determining what follow up action can be taken.
+     */
     public Category category()
     {
         return category;

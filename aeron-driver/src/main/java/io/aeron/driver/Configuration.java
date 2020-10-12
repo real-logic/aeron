@@ -1003,6 +1003,12 @@ public class Configuration
         return getLong(RECEIVER_GROUP_TAG_PROP_NAME, null);
     }
 
+    /**
+     * Default group tag (gtag) used by the tagged flow control strategy to group receivers.
+     *
+     * @return group tag (gtag) used by the tagged flow control strategy to group receivers.
+     * @see #FLOW_CONTROL_GROUP_TAG_PROP_NAME
+     */
     @SuppressWarnings("deprecation")
     public static long flowControlGroupTag()
     {
@@ -1506,6 +1512,11 @@ public class Configuration
             getProperty(SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
+    /**
+     * @return Application Specific Feedback added to Status Messages by the driver for flow control.
+     * @see #SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
+     * @deprecated see {@link #groupTag()}.
+     */
     @Deprecated
     public static byte[] applicationSpecificFeedback()
     {

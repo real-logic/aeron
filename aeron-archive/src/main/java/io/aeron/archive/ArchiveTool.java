@@ -444,6 +444,12 @@ public class ArchiveTool
         private static final Map<String, VerifyOption> BY_FLAG = Stream.of(values())
             .collect(toMap((opt) -> opt.flag, (opt) -> opt));
 
+        /**
+         * Lookup the {@link VerifyOption} by string format of the command line flag.
+         *
+         * @param flag command line option.
+         * @return the {@link VerifyOption} which matches the flag or null if not found.
+         */
         public static VerifyOption byFlag(final String flag)
         {
             return BY_FLAG.get(flag);

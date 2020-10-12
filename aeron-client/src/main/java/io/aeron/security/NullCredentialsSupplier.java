@@ -22,6 +22,9 @@ import org.agrona.collections.ArrayUtil;
  */
 public class NullCredentialsSupplier implements CredentialsSupplier
 {
+    /**
+     * Null credentials are an empty array of bytes.
+     */
     public static final byte[] NULL_CREDENTIAL = ArrayUtil.EMPTY_BYTE_ARRAY;
 
     public byte[] encodedCredentials()

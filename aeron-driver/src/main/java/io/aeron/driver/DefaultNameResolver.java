@@ -19,16 +19,18 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
- * Use the default host name resolver via {@link InetAddress}
+ * Use the default host name resolver via {@link InetAddress}.
  */
 public class DefaultNameResolver implements NameResolver
 {
+    /**
+     * Singleton instance which can be used to avoid allocation.
+     */
     public static final DefaultNameResolver INSTANCE = new DefaultNameResolver();
 
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("unused")
     public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
         try

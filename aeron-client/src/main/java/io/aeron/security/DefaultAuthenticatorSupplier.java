@@ -22,7 +22,14 @@ import org.agrona.collections.ArrayUtil;
  */
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
+    /**
+     * The null encoded principal is an empty array of bytes.
+     */
     public static final byte[] NULL_ENCODED_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+
+    /**
+     * Singleton instance which can be used to avoid allocation.
+     */
     public static final DefaultAuthenticator DEFAULT_AUTHENTICATOR = new DefaultAuthenticator();
 
     public Authenticator get()

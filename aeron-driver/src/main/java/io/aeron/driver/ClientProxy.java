@@ -27,7 +27,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Proxy for communicating from the driver to the client conductor.
  */
-public class ClientProxy
+class ClientProxy
 {
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer(1024);
     private final BroadcastTransmitter transmitter;
@@ -41,7 +41,7 @@ public class ClientProxy
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
 
-    public ClientProxy(final BroadcastTransmitter transmitter)
+    ClientProxy(final BroadcastTransmitter transmitter)
     {
         this.transmitter = transmitter;
 
@@ -55,7 +55,7 @@ public class ClientProxy
         clientTimeout.wrap(buffer, 0);
     }
 
-    public void onError(final long correlationId, final ErrorCode errorCode, final String errorMessage)
+    void onError(final long correlationId, final ErrorCode errorCode, final String errorMessage)
     {
         errorResponse
             .offendingCommandCorrelationId(correlationId)
@@ -65,7 +65,7 @@ public class ClientProxy
         transmit(ON_ERROR, buffer, 0, errorResponse.length());
     }
 
-    public void onAvailableImage(
+    void onAvailableImage(
         final long correlationId,
         final int streamId,
         final int sessionId,
@@ -86,7 +86,7 @@ public class ClientProxy
         transmit(ON_AVAILABLE_IMAGE, buffer, 0, imageReady.length());
     }
 
-    public void onPublicationReady(
+    void onPublicationReady(
         final long correlationId,
         final long registrationId,
         final int streamId,
@@ -109,8 +109,7 @@ public class ClientProxy
         transmit(msgTypeId, buffer, 0, publicationReady.length());
     }
 
-    public void onSubscriptionReady(
-        final long correlationId, final int channelStatusCounterId)
+    void onSubscriptionReady(final long correlationId, final int channelStatusCounterId)
     {
         subscriptionReady
             .correlationId(correlationId)
@@ -119,14 +118,14 @@ public class ClientProxy
         transmit(ON_SUBSCRIPTION_READY, buffer, 0, SubscriptionReadyFlyweight.LENGTH);
     }
 
-    public void operationSucceeded(final long correlationId)
+    void operationSucceeded(final long correlationId)
     {
         operationSucceeded.correlationId(correlationId);
 
         transmit(ON_OPERATION_SUCCESS, buffer, 0, OperationSucceededFlyweight.LENGTH);
     }
 
-    public void onUnavailableImage(
+    void onUnavailableImage(
         final long correlationId, final long subscriptionRegistrationId, final int streamId, final String channel)
     {
         imageMessage
@@ -138,7 +137,7 @@ public class ClientProxy
         transmit(ON_UNAVAILABLE_IMAGE, buffer, 0, imageMessage.length());
     }
 
-    public void onCounterReady(final long correlationId, final int counterId)
+    void onCounterReady(final long correlationId, final int counterId)
     {
         counterUpdate
             .correlationId(correlationId)
@@ -147,7 +146,7 @@ public class ClientProxy
         transmit(ON_COUNTER_READY, buffer, 0, CounterUpdateFlyweight.LENGTH);
     }
 
-    public void onUnavailableCounter(final long registrationId, final int counterId)
+    void onUnavailableCounter(final long registrationId, final int counterId)
     {
         counterUpdate
             .correlationId(registrationId)
@@ -156,7 +155,7 @@ public class ClientProxy
         transmit(ON_UNAVAILABLE_COUNTER, buffer, 0, CounterUpdateFlyweight.LENGTH);
     }
 
-    public void onClientTimeout(final long clientId)
+    void onClientTimeout(final long clientId)
     {
         clientTimeout.clientId(clientId);
 

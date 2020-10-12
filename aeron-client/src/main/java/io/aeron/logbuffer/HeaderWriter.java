@@ -35,11 +35,11 @@ import static io.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
  */
 public class HeaderWriter
 {
-    protected final long versionFlagsType;
-    protected final long sessionId;
-    protected final long streamId;
+    final long versionFlagsType;
+    final long sessionId;
+    final long streamId;
 
-    protected HeaderWriter(final long versionFlagsType, final long sessionId, final long streamId)
+    HeaderWriter(final long versionFlagsType, final long sessionId, final long streamId)
     {
         this.versionFlagsType = versionFlagsType;
         this.sessionId = sessionId;
@@ -53,6 +53,12 @@ public class HeaderWriter
         streamId = defaultHeader.getInt(STREAM_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
     }
 
+    /**
+     * Create a new {@link HeaderWriter} that is {@link ByteOrder} specific to the platform.
+     *
+     * @param defaultHeader for the stream.
+     * @return a new {@link HeaderWriter} that is {@link ByteOrder} specific to the platform.
+     */
     public static HeaderWriter newInstance(final UnsafeBuffer defaultHeader)
     {
         if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)

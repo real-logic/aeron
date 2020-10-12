@@ -37,10 +37,10 @@ class SenderLhsPadding
 
 class SenderHotFields extends SenderLhsPadding
 {
-    protected long controlPollDeadlineNs;
-    protected long reResolutionDeadlineNs;
-    protected int dutyCycleCounter;
-    protected int roundRobinIndex = 0;
+    long controlPollDeadlineNs;
+    long reResolutionDeadlineNs;
+    int dutyCycleCounter;
+    int roundRobinIndex = 0;
 }
 
 class SenderRhsPadding extends SenderHotFields

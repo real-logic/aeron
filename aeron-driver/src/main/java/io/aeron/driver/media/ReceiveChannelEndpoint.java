@@ -45,7 +45,7 @@ import static io.aeron.status.ChannelEndpointStatus.status;
 
 abstract class ReceiveChannelEndpointHotFields extends UdpChannelTransport
 {
-    protected long timeOfLastActivityNs;
+    long timeOfLastActivityNs;
 
     ReceiveChannelEndpointHotFields(
         final UdpChannel udpChannel,

@@ -59,14 +59,14 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    protected static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
+    static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
-    protected long cleanPosition;
-    protected long timeOfLastActivityNs;
-    protected long lastSenderPosition;
-    protected int refCount = 0;
-    protected ReadablePosition[] spyPositions = EMPTY_POSITIONS;
-    protected final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
+    long cleanPosition;
+    long timeOfLastActivityNs;
+    long lastSenderPosition;
+    int refCount = 0;
+    ReadablePosition[] spyPositions = EMPTY_POSITIONS;
+    final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
 }
 
 @SuppressWarnings("unused")
@@ -80,11 +80,11 @@ class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 
 class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
-    protected long timeOfLastSendOrHeartbeatNs;
-    protected long timeOfLastSetupNs;
-    protected long timeOfLastStatusMessageNs;
-    protected boolean trackSenderLimits = false;
-    protected boolean shouldSendSetupFrame = true;
+    long timeOfLastSendOrHeartbeatNs;
+    long timeOfLastSetupNs;
+    long timeOfLastStatusMessageNs;
+    boolean trackSenderLimits = false;
+    boolean shouldSendSetupFrame = true;
 }
 
 @SuppressWarnings("unused")

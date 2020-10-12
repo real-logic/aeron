@@ -22,6 +22,9 @@ import java.net.InetSocketAddress;
  */
 public interface CongestionControl extends AutoCloseable
 {
+    /**
+     * Bit flag for if a status message should be forced out.
+     */
     int FORCE_STATUS_MESSAGE_BIT = 0x1;
 
     /**
@@ -126,5 +129,8 @@ public interface CongestionControl extends AutoCloseable
      */
     int initialWindowLength();
 
+    /**
+     * {@inheritDoc}
+     */
     void close();
 }

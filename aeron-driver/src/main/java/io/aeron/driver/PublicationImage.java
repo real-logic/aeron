@@ -62,11 +62,11 @@ class PublicationImagePadding1
 
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
-    protected long cleanPosition;
-    protected final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
-    protected ReadablePosition[] subscriberPositions;
-    protected LossReport lossReport;
-    protected LossReport.ReportEntry reportEntry;
+    long cleanPosition;
+    final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
+    ReadablePosition[] subscriberPositions;
+    LossReport lossReport;
+    LossReport.ReportEntry reportEntry;
 }
 
 @SuppressWarnings("unused")
@@ -80,9 +80,9 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 
 class PublicationImageReceiverFields extends PublicationImagePadding2
 {
-    protected boolean isEndOfStream = false;
-    protected long timeOfLastPacketNs;
-    protected ImageConnection[] imageConnections = new ImageConnection[1];
+    boolean isEndOfStream = false;
+    long timeOfLastPacketNs;
+    ImageConnection[] imageConnections = new ImageConnection[1];
 }
 
 @SuppressWarnings("unused")

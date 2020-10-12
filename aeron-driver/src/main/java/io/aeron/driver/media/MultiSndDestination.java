@@ -36,8 +36,8 @@ abstract class MultiSndDestination
 {
     static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
 
-    protected Destination[] destinations = EMPTY_DESTINATIONS;
-    protected final CachedNanoClock nanoClock;
+    Destination[] destinations = EMPTY_DESTINATIONS;
+    final CachedNanoClock nanoClock;
 
     MultiSndDestination(final CachedNanoClock nanoClock)
     {

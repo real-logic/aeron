@@ -233,7 +233,7 @@ public class ClusterBackupAgent implements Agent
         return "cluster-backup";
     }
 
-    public void reset()
+    private void reset()
     {
         clusterMembers = null;
         leaderMember = null;

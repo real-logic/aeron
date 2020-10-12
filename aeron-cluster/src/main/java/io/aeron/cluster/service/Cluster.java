@@ -44,6 +44,9 @@ import java.util.function.Consumer;
  */
 public interface Cluster
 {
+    /**
+     * Role of the node in the cluster.
+     */
     enum Role
     {
         /**

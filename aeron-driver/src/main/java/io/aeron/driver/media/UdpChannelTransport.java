@@ -302,11 +302,24 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return isFrameValid;
     }
 
+    /**
+     * Send packet hook that can be used for logging.
+     *
+     * @param buffer  containing the packet.
+     * @param address to which the packet will be sent.
+     */
     @SuppressWarnings("unused")
     public void sendHook(final ByteBuffer buffer, final InetSocketAddress address)
     {
     }
 
+    /**
+     * Receive packet hook that can be usef for logging.
+     *
+     * @param buffer  containing the packet.
+     * @param length  length of the packet in bytes.
+     * @param address from which the packet came.
+     */
     @SuppressWarnings("unused")
     public void receiveHook(final UnsafeBuffer buffer, final int length, final InetSocketAddress address)
     {

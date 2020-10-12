@@ -150,7 +150,7 @@ public class ErrorResponseFlyweight
     /**
      * Length of the error response in bytes.
      *
-     * @return length of the error response
+     * @return length of the error response in bytes.
      */
     public int length()
     {

@@ -49,9 +49,9 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     private int lengthOfChannel;
 
     /**
-     * Get the stream id field
+     * Get the stream id field.
      *
-     * @return stream id field
+     * @return stream id field.
      */
     public int streamId()
     {
@@ -59,10 +59,10 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Set the stream id field
+     * Set the stream id field.
      *
-     * @param streamId field value
-     * @return flyweight
+     * @param streamId field value.
+     * @return this for a fluent API.
      */
     public PublicationMessageFlyweight streamId(final int streamId)
     {
@@ -72,9 +72,9 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the channel field in ASCII
+     * Get the channel field in ASCII.
      *
-     * @return channel field
+     * @return channel field.
      */
     public String channel()
     {
@@ -92,10 +92,10 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Set the channel field in ASCII
+     * Set the channel field in ASCII.
      *
-     * @param channel field value
-     * @return flyweight
+     * @param channel field value.
+     * @return this for a fluent API.
      */
     public PublicationMessageFlyweight channel(final String channel)
     {
@@ -105,11 +105,11 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the length of the current message
+     * Get the length of the current message.
      * <p>
      * NB: must be called after the data is written in order to be accurate.
      *
-     * @return the length of the current message
+     * @return the length of the current message.
      */
     public int length()
     {

@@ -36,9 +36,12 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class CorrelatedMessageFlyweight
 {
-    public static final int CLIENT_ID_FIELD_OFFSET = 0;
-    public static final int CORRELATION_ID_FIELD_OFFSET = CLIENT_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    /**
+     * Length of the header.
+     */
     public static final int LENGTH = 2 * SIZE_OF_LONG;
+    private static final int CLIENT_ID_FIELD_OFFSET = 0;
+    static final int CORRELATION_ID_FIELD_OFFSET = CLIENT_ID_FIELD_OFFSET + SIZE_OF_LONG;
 
     MutableDirectBuffer buffer;
     int offset;

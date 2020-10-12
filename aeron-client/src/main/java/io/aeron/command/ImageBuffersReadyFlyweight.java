@@ -70,9 +70,9 @@ public class ImageBuffersReadyFlyweight
     /**
      * Wrap the buffer at a given offset for updates.
      *
-     * @param buffer to wrap
+     * @param buffer to wrap.
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public final ImageBuffersReadyFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
@@ -83,9 +83,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * return correlation id field
+     * The correlation id field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long correlationId()
     {
@@ -93,10 +93,10 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * set correlation id field
+     * Set correlation id field.
      *
-     * @param correlationId field value
-     * @return flyweight
+     * @param correlationId field value.
+     * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight correlationId(final long correlationId)
     {
@@ -106,9 +106,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * return session id field
+     * Get the session id field.
      *
-     * @return session id field
+     * @return session id field.
      */
     public int sessionId()
     {
@@ -116,10 +116,10 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * set session id field
+     * Set session id field.
      *
-     * @param sessionId field value
-     * @return flyweight
+     * @param sessionId field value.
+     * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight sessionId(final int sessionId)
     {
@@ -129,9 +129,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * return stream id field
+     * The stream id field.
      *
-     * @return stream id field
+     * @return stream id field.
      */
     public int streamId()
     {
@@ -139,10 +139,10 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * set stream id field
+     * Set stream id field.
      *
-     * @param streamId field value
-     * @return flyweight
+     * @param streamId field value.
+     * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight streamId(final int streamId)
     {
@@ -152,10 +152,10 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Set the position Id for the subscriber
+     * Set the position counter Id for the subscriber
      *
-     * @param id for the subscriber position
-     * @return flyweight
+     * @param id for the subscriber position counter
+     * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight subscriberPositionId(final int id)
     {
@@ -165,9 +165,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Return the position Id for the subscriber
+     * The position counter Id for the subscriber.
      *
-     * @return position Id for the subscriber
+     * @return position counter Id for the subscriber.
      */
     public int subscriberPositionId()
     {
@@ -175,10 +175,10 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Set the registration Id for the Subscription
+     * Set the registration Id for the Subscription.
      *
-     * @param id for the Subscription
-     * @return flyweight
+     * @param id for the Subscription.
+     * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight subscriptionRegistrationId(final long id)
     {
@@ -188,9 +188,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Return the registration Id for the Subscription
+     * Return the registration Id for the Subscription.
      *
-     * @return registration Id for the Subscription
+     * @return registration Id for the Subscription.
      */
     public long subscriptionRegistrationId()
     {
@@ -198,7 +198,7 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Return the Log Filename in ASCII
+     * The Log Filename in ASCII.
      *
      * @return log filename
      */
@@ -220,8 +220,8 @@ public class ImageBuffersReadyFlyweight
     /**
      * Set the log filename in ASCII
      *
-     * @param logFileName for the image
-     * @return flyweight
+     * @param logFileName for the image.
+     * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight logFileName(final String logFileName)
     {
@@ -230,9 +230,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Return the source identity string in ASCII
+     * The source identity string in ASCII.
      *
-     * @return source identity string
+     * @return source identity string.
      */
     public String sourceIdentity()
     {
@@ -253,8 +253,8 @@ public class ImageBuffersReadyFlyweight
      * Set the source identity string in ASCII.
      * <p>Note: Can be called only after log file name was set!</p>
      *
-     * @param value for the source identity
-     * @return flyweight
+     * @param value for the source identity.
+     * @return this for a fluent API.
      * @see #logFileName(String)
      */
     public ImageBuffersReadyFlyweight sourceIdentity(final String value)

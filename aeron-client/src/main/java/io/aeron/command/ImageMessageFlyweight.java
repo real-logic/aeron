@@ -57,7 +57,7 @@ public class ImageMessageFlyweight
      *
      * @param buffer to wrap
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public final ImageMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
@@ -68,9 +68,9 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * return correlation id field
+     * The correlation id field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long correlationId()
     {
@@ -78,10 +78,10 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * set correlation id field
+     * Set the correlation id field.
      *
      * @param correlationId field value
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public ImageMessageFlyweight correlationId(final long correlationId)
     {
@@ -104,7 +104,7 @@ public class ImageMessageFlyweight
      * Set the registration ID for the subscription.
      *
      * @param registrationId for the subscription
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public ImageMessageFlyweight subscriptionRegistrationId(final long registrationId)
     {
@@ -114,7 +114,7 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * return stream id field
+     * The stream id field.
      *
      * @return stream id field
      */
@@ -124,10 +124,10 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * set stream id field
+     * Set the stream id field.
      *
-     * @param streamId field value
-     * @return flyweight
+     * @param streamId field value.
+     * @return this for a fluent API.
      */
     public ImageMessageFlyweight streamId(final int streamId)
     {
@@ -137,9 +137,9 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * Get the channel field as ASCII
+     * Get the channel field as ASCII.
      *
-     * @return channel field
+     * @return channel field.
      */
     public String channel()
     {
@@ -166,7 +166,7 @@ public class ImageMessageFlyweight
      * Set the channel field as ASCII
      *
      * @param channel field value
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public ImageMessageFlyweight channel(final String channel)
     {

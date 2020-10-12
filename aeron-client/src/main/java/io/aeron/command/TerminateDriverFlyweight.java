@@ -89,7 +89,7 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
     /**
      * Get the length of the current message.
      * <p>
-     * NB: must be called after the data is written in order to be accurate.
+     * NB: must be called after the data is written in order to be correct.
      *
      * @return the length of the current message
      */

@@ -52,9 +52,9 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     private int lengthOfChannel;
 
     /**
-     * return correlation id used in registration field
+     * The correlation id used in registration field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long registrationCorrelationId()
     {
@@ -62,10 +62,10 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * set registration correlation id field
+     * Set the registration correlation id field.
      *
-     * @param correlationId field value
-     * @return flyweight
+     * @param correlationId field value.
+     * @return this for a fluent API.
      */
     public SubscriptionMessageFlyweight registrationCorrelationId(final long correlationId)
     {
@@ -75,9 +75,9 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * return the stream id
+     * Get the stream id.
      *
-     * @return the stream id
+     * @return the stream id.
      */
     public int streamId()
     {
@@ -85,10 +85,10 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Set the stream id
+     * Set the stream id.
      *
-     * @param streamId the channel id
-     * @return flyweight
+     * @param streamId the channel id.
+     * @return this for a fluent API.
      */
     public SubscriptionMessageFlyweight streamId(final int streamId)
     {
@@ -98,9 +98,9 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the channel field in ASCII
+     * Get the channel field in ASCII.
      *
-     * @return channel field
+     * @return channel field.
      */
     public String channel()
     {
@@ -118,10 +118,10 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Set channel field in ASCII
+     * Set channel field in ASCII.
      *
-     * @param channel field value
-     * @return flyweight
+     * @param channel field value.
+     * @return this for a fluent API.
      */
     public SubscriptionMessageFlyweight channel(final String channel)
     {
@@ -130,6 +130,11 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
         return this;
     }
 
+    /**
+     * Length of the message in bytes. Only valid after the channel is set.
+     *
+     * @return length of the message in bytes.
+     */
     public int length()
     {
         return CHANNEL_OFFSET + lengthOfChannel;

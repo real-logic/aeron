@@ -53,10 +53,10 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Set registration id field
+     * Set registration id field.
      *
-     * @param registrationId field value
-     * @return flyweight
+     * @param registrationId field value.
+     * @return this for a fluent API.
      */
     public RemoveMessageFlyweight registrationId(final long registrationId)
     {

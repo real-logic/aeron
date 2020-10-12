@@ -34,9 +34,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class OperationSucceededFlyweight
 {
-    private static final int CORRELATION_ID_FIELD_OFFSET = 0;
-
+    /**
+     * Length of the header.
+     */
     public static final int LENGTH = SIZE_OF_LONG;
+    private static final int CORRELATION_ID_FIELD_OFFSET = 0;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -44,7 +46,7 @@ public class OperationSucceededFlyweight
     /**
      * Wrap the buffer at a given offset for updates.
      *
-     * @param buffer to wrap
+     * @param buffer to wrap.
      * @param offset at which the message begins.
      * @return for fluent API
      */
@@ -57,9 +59,9 @@ public class OperationSucceededFlyweight
     }
 
     /**
-     * return correlation id field
+     * The correlation id field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long correlationId()
     {
@@ -67,9 +69,9 @@ public class OperationSucceededFlyweight
     }
 
     /**
-     * set correlation id field
+     * Set the correlation id field.
      *
-     * @param correlationId field value
+     * @param correlationId field value.
      * @return for fluent API
      */
     public OperationSucceededFlyweight correlationId(final long correlationId)

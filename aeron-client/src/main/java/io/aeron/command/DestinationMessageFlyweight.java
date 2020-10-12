@@ -108,6 +108,11 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
         return this;
     }
 
+    /**
+     * Length of the frame in bytes.
+     *
+     * @return length of the frame in bytes.
+     */
     public int length()
     {
         return CHANNEL_OFFSET + lengthOfChannel;

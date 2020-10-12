@@ -37,10 +37,12 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class SubscriptionReadyFlyweight
 {
+    /**
+     * Length of the header.
+     */
+    public static final int LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int CHANNEL_STATUS_INDICATOR_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-
-    public static final int LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -50,7 +52,7 @@ public class SubscriptionReadyFlyweight
      *
      * @param buffer to wrap
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public final SubscriptionReadyFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
@@ -61,9 +63,9 @@ public class SubscriptionReadyFlyweight
     }
 
     /**
-     * Get the correlation id field
+     * Get the correlation id field.
      *
-     * @return correlation id field
+     * @return correlation id field.
      */
     public long correlationId()
     {
@@ -71,10 +73,10 @@ public class SubscriptionReadyFlyweight
     }
 
     /**
-     * Set the correlation id field
+     * Set the correlation id field.
      *
-     * @param correlationId field value
-     * @return flyweight
+     * @param correlationId field value.
+     * @return this for a fluent API.
      */
     public SubscriptionReadyFlyweight correlationId(final long correlationId)
     {
@@ -96,8 +98,8 @@ public class SubscriptionReadyFlyweight
     /**
      * Set channel status counter id field
      *
-     * @param counterId field value
-     * @return flyweight
+     * @param counterId field value.
+     * @return this for a fluent API.
      */
     public SubscriptionReadyFlyweight channelStatusCounterId(final int counterId)
     {

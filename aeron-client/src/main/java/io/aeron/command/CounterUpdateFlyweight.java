@@ -37,10 +37,12 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class CounterUpdateFlyweight
 {
+    /**
+     * Length of the header.
+     */
+    public static final int LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int COUNTER_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-
-    public static final int LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
 
     private MutableDirectBuffer buffer;
     private int offset;

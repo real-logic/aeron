@@ -47,6 +47,12 @@ public class EgressPoller implements ControlledFragmentHandler
     private String detail = "";
     private byte[] encodedChallenge;
 
+    /**
+     * Construct a poller on the egress subscription.
+     *
+     * @param subscription  for egress from the cluster.
+     * @param fragmentLimit for each poll operation.
+     */
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
         this.subscription = subscription;
@@ -173,6 +179,11 @@ public class EgressPoller implements ControlledFragmentHandler
         return ChallengeDecoder.TEMPLATE_ID == templateId;
     }
 
+    /**
+     * Reset last captured value and poll the egress subscription for output.
+     *
+     * @return number of fragments consumed.
+     */
     public int poll()
     {
         clusterSessionId = Aeron.NULL_VALUE;
@@ -189,6 +200,9 @@ public class EgressPoller implements ControlledFragmentHandler
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {

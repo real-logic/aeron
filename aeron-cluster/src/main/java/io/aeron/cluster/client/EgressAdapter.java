@@ -39,6 +39,15 @@ public class EgressAdapter implements FragmentHandler
     private final EgressListener listener;
     private final Subscription subscription;
 
+    /**
+     * Construct an adapter for cluster egress which consumes from the subscription and dispatches to the
+     * {@link EgressListener}.
+     *
+     * @param listener         to dispatch events to.
+     * @param clusterSessionId for the egress.
+     * @param subscription     over the egress stream.
+     * @param fragmentLimit    to poll on each {@link #poll()} operation.
+     */
     public EgressAdapter(
         final EgressListener listener,
         final long clusterSessionId,
@@ -51,11 +60,19 @@ public class EgressAdapter implements FragmentHandler
         this.fragmentLimit = fragmentLimit;
     }
 
+    /**
+     * Poll the egress subscription and dispatch assembled events to the {@link EgressListener}.
+     *
+     * @return the number of fragments consumed.
+     */
     public int poll()
     {
         return subscription.poll(fragmentAssembler, fragmentLimit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);

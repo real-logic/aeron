@@ -16,7 +16,6 @@
 package io.aeron.test;
 
 import org.agrona.IoUtil;
-import org.agrona.collections.Object2ObjectHashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -26,11 +25,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer, AfterTestExecutionCallback
 {
-    private final Map<String, ProcessDetails> outputFilesByAeronDirectoryName = new Object2ObjectHashMap<>();
+    private final Map<String, ProcessDetails> outputFilesByAeronDirectoryName = new LinkedHashMap<>();
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {

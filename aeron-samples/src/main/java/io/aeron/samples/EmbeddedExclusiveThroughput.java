@@ -108,7 +108,7 @@ public class EmbeddedExclusiveThroughput
         }
     }
 
-    public static void printRate(
+    private static void printRate(
         final double messagesPerSec, final double bytesPerSec, final long totalFragments, final long totalBytes)
     {
         if (printingActive)

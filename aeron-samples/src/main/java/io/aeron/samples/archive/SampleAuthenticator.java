@@ -22,6 +22,9 @@ import org.agrona.collections.Long2ObjectHashMap;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * A sample {@link Authenticator} to demonstrate usage based on some hardcoded credentials.
+ */
 public class SampleAuthenticator implements Authenticator
 {
     private static final String CREDENTIALS_STRING_NO_CHALLENGE = "admin:admin";
@@ -36,6 +39,13 @@ public class SampleAuthenticator implements Authenticator
 
     private final Long2ObjectHashMap<SessionState> sessionIdToStateMap = new Long2ObjectHashMap<>();
 
+    /**
+     * Client is attempting to connect.
+     *
+     * @param sessionId          to identify the client session connecting.
+     * @param encodedCredentials from the Connect Request. Will not be null, but may be 0 length.
+     * @param nowMs              current epoch time in milliseconds.
+     */
     public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
     {
         final String credentialsString = new String(encodedCredentials, StandardCharsets.US_ASCII);
@@ -54,6 +64,13 @@ public class SampleAuthenticator implements Authenticator
         }
     }
 
+    /**
+     * Client has returned a response to a challenge.
+     *
+     * @param sessionId          to identify the client session connecting.
+     * @param encodedCredentials from the Challenge Response. Will not be null, but may be 0 length.
+     * @param nowMs              current epoch time in milliseconds.
+     */
     public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
     {
         final String credentialsString = new String(encodedCredentials, StandardCharsets.US_ASCII);
@@ -69,6 +86,12 @@ public class SampleAuthenticator implements Authenticator
         }
     }
 
+    /**
+     * Client session is now connected so a response can be sent.
+     *
+     * @param sessionProxy to use to inform client of status.
+     * @param nowMs        current epoch time in milliseconds.
+     */
     public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
     {
         final SessionState sessionState = sessionIdToStateMap.get(sessionProxy.sessionId());
@@ -92,6 +115,12 @@ public class SampleAuthenticator implements Authenticator
         }
     }
 
+    /**
+     * The client has been challenged and is awaiting a response.
+     *
+     * @param sessionProxy to use to inform client of status.
+     * @param nowMs        current epoch time in milliseconds.
+     */
     public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
     {
         final SessionState sessionState = sessionIdToStateMap.get(sessionProxy.sessionId());

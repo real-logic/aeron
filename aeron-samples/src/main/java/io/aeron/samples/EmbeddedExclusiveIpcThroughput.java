@@ -31,11 +31,11 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  */
 public class EmbeddedExclusiveIpcThroughput
 {
-    public static final int BURST_LENGTH = 1_000_000;
-    public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
-    public static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    public static final String CHANNEL = CommonContext.IPC_CHANNEL;
-    public static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    private static final int BURST_LENGTH = 1_000_000;
+    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
+    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final String CHANNEL = CommonContext.IPC_CHANNEL;
+    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
 
     public static void main(final String[] args) throws Exception
     {
@@ -70,12 +70,12 @@ public class EmbeddedExclusiveIpcThroughput
         }
     }
 
-    public static final class Publisher implements Runnable
+    static final class Publisher implements Runnable
     {
         private final AtomicBoolean running;
         private final ExclusivePublication publication;
 
-        public Publisher(final AtomicBoolean running, final ExclusivePublication publication)
+        Publisher(final AtomicBoolean running, final ExclusivePublication publication)
         {
             this.running = running;
             this.publication = publication;

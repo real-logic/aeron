@@ -120,7 +120,6 @@ public class SamplesUtil
      * @param message   indicating what the error was.
      * @param cause     of the error.
      */
-    @SuppressWarnings("unused")
     public static void printError(
         final String channel,
         final int streamId,

@@ -137,6 +137,9 @@ public final class CncFileReader implements AutoCloseable
         return System.currentTimeMillis() - driverHeartbeatMs();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         if (!isClosed)

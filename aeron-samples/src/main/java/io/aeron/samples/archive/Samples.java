@@ -20,11 +20,26 @@ import io.aeron.logbuffer.FragmentHandler;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Common constants and functions used in the Archive samples.
+ */
 class Samples
 {
+    /**
+     * One MB constant for using in calculations.
+     */
     public static final double MEGABYTE = 1024.0d * 1024.0d;
+
+    /**
+     * A {@link FragmentHandler} that consumes fragments with no side effects.
+     */
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
 
+    /**
+     * Create a temporary directory for storing a sample archive.
+     *
+     * @return a temporary directory for storing a sample archive.
+     */
     public static File createTempDir()
     {
         final File tempDirForTest;

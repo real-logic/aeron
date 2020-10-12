@@ -187,7 +187,6 @@ public class EmbeddedPingPong
         }
     }
 
-    @SuppressWarnings("unused")
     private static void pongHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final long pingTimestamp = buffer.getLong(offset);

@@ -93,20 +93,20 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class FileReceiver
 {
-    public static final int VERSION = 0;
-    public static final int FILE_CREATE_TYPE = 1;
-    public static final int FILE_CHUNK_TYPE = 2;
+    static final int VERSION = 0;
+    static final int FILE_CREATE_TYPE = 1;
+    static final int FILE_CHUNK_TYPE = 2;
 
-    public static final int VERSION_OFFSET = 0;
-    public static final int TYPE_OFFSET = VERSION_OFFSET + SIZE_OF_INT;
-    public static final int CORRELATION_ID_OFFSET = TYPE_OFFSET + SIZE_OF_INT;
-    public static final int FILE_LENGTH_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    static final int VERSION_OFFSET = 0;
+    static final int TYPE_OFFSET = VERSION_OFFSET + SIZE_OF_INT;
+    static final int CORRELATION_ID_OFFSET = TYPE_OFFSET + SIZE_OF_INT;
+    static final int FILE_LENGTH_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
 
-    public static final int FILE_NAME_OFFSET = FILE_LENGTH_OFFSET + SIZE_OF_LONG;
+    static final int FILE_NAME_OFFSET = FILE_LENGTH_OFFSET + SIZE_OF_LONG;
 
-    public static final int CHUNK_OFFSET_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    public static final int CHUNK_LENGTH_OFFSET = CHUNK_OFFSET_OFFSET + SIZE_OF_LONG;
-    public static final int CHUNK_PAYLOAD_OFFSET = CHUNK_LENGTH_OFFSET + SIZE_OF_LONG;
+    static final int CHUNK_OFFSET_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    static final int CHUNK_LENGTH_OFFSET = CHUNK_OFFSET_OFFSET + SIZE_OF_LONG;
+    static final int CHUNK_PAYLOAD_OFFSET = CHUNK_LENGTH_OFFSET + SIZE_OF_LONG;
 
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
@@ -160,7 +160,7 @@ public class FileReceiver
         }
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final int version = buffer.getInt(offset + VERSION_OFFSET, LITTLE_ENDIAN);
         if (VERSION != version)

@@ -25,6 +25,7 @@ import static io.aeron.driver.status.StreamCounter.REGISTRATION_ID_OFFSET;
 import static io.aeron.driver.status.StreamCounter.SESSION_ID_OFFSET;
 import static io.aeron.driver.status.StreamCounter.STREAM_ID_OFFSET;
 
+import io.aeron.Aeron;
 import io.aeron.driver.status.PublisherLimit;
 import io.aeron.driver.status.PublisherPos;
 import io.aeron.driver.status.ReceiverHwm;
@@ -61,6 +62,11 @@ public class BacklogStat
         backlogStat.print(System.out);
     }
 
+    /**
+     * Construct by using a {@link CountersReader} which can be obtained from {@link Aeron#countersReader()}.
+     *
+     * @param counters to read for tracking positions.
+     */
     public BacklogStat(final CountersReader counters)
     {
         this.counters = counters;

@@ -15,6 +15,7 @@
  */
 package io.aeron.samples;
 
+import io.aeron.Aeron;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.PrintStream;
@@ -48,6 +49,11 @@ public class StreamStat
         streamStat.print(System.out);
     }
 
+    /**
+     * Construct by using a {@link CountersReader} which can be obtained from {@link Aeron#countersReader()}.
+     *
+     * @param counters to read for tracking positions.
+     */
     public StreamStat(final CountersReader counters)
     {
         this.counters = counters;

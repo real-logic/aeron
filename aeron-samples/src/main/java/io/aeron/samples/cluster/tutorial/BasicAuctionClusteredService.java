@@ -31,6 +31,9 @@ import org.agrona.concurrent.IdleStrategy;
 
 import java.util.Objects;
 
+/**
+ * Auction service implementing the business logic.
+ */
 // tag::new_service[]
 public class BasicAuctionClusteredService implements ClusteredService
 // end::new_service[]

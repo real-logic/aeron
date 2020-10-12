@@ -34,6 +34,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredService.*;
 import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode.calculatePort;
 
+/**
+ * Client for communicating with {@link BasicAuctionClusteredService}.
+ */
 // tag::client[]
 public class BasicAuctionClusterClient implements EgressListener
 // end::client[]

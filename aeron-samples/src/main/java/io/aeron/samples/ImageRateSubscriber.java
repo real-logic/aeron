@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-@SuppressWarnings("unused")
 class ImageRateSubscriberLhsPadding
 {
     byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
@@ -52,7 +51,6 @@ class ImageRateSubscriberValues extends ImageRateSubscriberLhsPadding
     volatile long totalBytes;
 }
 
-@SuppressWarnings("unused")
 class ImageRateSubscriberRhsPadding extends ImageRateSubscriberValues
 {
     byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;

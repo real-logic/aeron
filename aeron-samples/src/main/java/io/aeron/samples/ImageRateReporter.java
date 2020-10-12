@@ -18,6 +18,9 @@ package io.aeron.samples;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
+/**
+ * Report the rate received to an {@link io.aeron.Image} and print to {@link System#out}.
+ */
 public final class ImageRateReporter implements Runnable
 {
     private final int messageLength;

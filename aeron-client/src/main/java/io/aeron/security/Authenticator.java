@@ -42,7 +42,7 @@ public interface Authenticator
 
     /**
      * Called when a client's response channel has been connected. This method may be called multiple times until the
-     * session is timeouts, is challenged, authenticated, or rejected.
+     * session timeouts, is challenged, authenticated, or rejected.
      *
      * @param sessionProxy to use to inform client of status.
      * @param nowMs        current epoch time in milliseconds.

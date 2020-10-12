@@ -28,7 +28,7 @@ import static io.aeron.CommonContext.AERON_DIR_PROP_NAME;
 import static java.lang.System.getProperty;
 
 /**
- * Application that prints a report of loss observed by stream to STDOUT.
+ * Application that prints a report of loss observed by stream to {@link System#out}.
  */
 public class LossStat
 {

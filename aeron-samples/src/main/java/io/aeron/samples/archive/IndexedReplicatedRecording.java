@@ -316,7 +316,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
         }
     }
 
-    public static class Sequencer implements AutoCloseable
+    static class Sequencer implements AutoCloseable
     {
         private static final int MAX_MESSAGE_LENGTH = 1000;
 
@@ -326,7 +326,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
         private final Random random = new Random();
         private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH + MAX_MESSAGE_LENGTH]);
 
-        public Sequencer(final int burstLength, final Publication publication)
+        Sequencer(final int burstLength, final Publication publication)
         {
             this.burstLength = burstLength;
             this.publication = publication;
@@ -338,12 +338,12 @@ public class IndexedReplicatedRecording implements AutoCloseable
             CloseHelper.close(publication);
         }
 
-        public long nextMessageIndex()
+        long nextMessageIndex()
         {
             return nextMessageIndex;
         }
 
-        public void sendBurst() throws InterruptedException
+        void sendBurst() throws InterruptedException
         {
             for (int i = 0; i < burstLength; i++)
             {
@@ -370,7 +370,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
         }
     }
 
-    public static class Indexer implements AutoCloseable, Runnable, ControlledFragmentHandler
+    static class Indexer implements AutoCloseable, Runnable, ControlledFragmentHandler
     {
         private static final int FRAGMENT_LIMIT = 10;
         private static final int INDEX_BUFFER_CAPACITY = 1024;
@@ -388,7 +388,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
         private final LongArrayList timestampPositions = new LongArrayList();
         private final UnsafeBuffer indexBuffer = new UnsafeBuffer(new byte[INDEX_BUFFER_CAPACITY]);
 
-        public static Thread start(final Indexer indexer)
+        static Thread start(final Indexer indexer)
         {
             final Thread thread = new Thread(indexer);
             thread.setName("indexer");
@@ -398,7 +398,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
             return thread;
         }
 
-        public Indexer(final Subscription subscription, final Publication publication, final int sessionId)
+        Indexer(final Subscription subscription, final Publication publication, final int sessionId)
         {
             this.subscription = subscription;
             this.publication = publication;
@@ -410,7 +410,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
             CloseHelper.close(subscription);
         }
 
-        public long position()
+        long position()
         {
             if (null == image)
             {
@@ -420,7 +420,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
             return image.position();
         }
 
-        public void awaitPosition(final long position)
+        void awaitPosition(final long position)
         {
             while (position() < position)
             {
@@ -428,7 +428,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
             }
         }
 
-        public long nextMessageIndex()
+        long nextMessageIndex()
         {
             return nextMessageIndex;
         }

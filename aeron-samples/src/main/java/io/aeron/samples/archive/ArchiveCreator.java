@@ -36,6 +36,11 @@ import java.io.File;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 
+/**
+ * Command line utility for creating a new Archive for migration testing and replay.
+ * <p>
+ * Creates 2 recordings, one starts at position 0 and the other starts in the second term.
+ */
 public class ArchiveCreator
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";

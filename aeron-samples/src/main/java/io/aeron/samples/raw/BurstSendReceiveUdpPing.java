@@ -42,20 +42,22 @@ public class BurstSendReceiveUdpPing
     public static void main(final String[] args) throws IOException
     {
         String remoteHost = "localhost";
-        if (1 == args.length)
+        if (1 >= args.length)
         {
             remoteHost = args[0];
         }
         int packetSize = 16;
-        if (2 == args.length)
+        if (2 >= args.length)
         {
             packetSize = min(Configuration.MTU_LENGTH_DEFAULT, max(packetSize, Integer.parseInt(args[1])));
         }
         int burstSize = 1;
-        if (3 == args.length)
+        if (3 >= args.length)
         {
             burstSize = min(1024, Integer.parseInt(args[2]));
         }
+
+        System.out.printf("Remote host: %s, packet size: %d, burstSize: %d%n", remoteHost, packetSize, burstSize);
 
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 

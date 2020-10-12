@@ -40,15 +40,17 @@ public class SendReceiveUdpPing
     public static void main(final String[] args) throws IOException
     {
         int numChannels = 1;
-        if (1 == args.length)
+        if (1 >= args.length)
         {
             numChannels = Integer.parseInt(args[0]);
         }
         String remoteHost = "localhost";
-        if (2 == args.length)
+        if (2 >= args.length)
         {
             remoteHost = args[1];
         }
+
+        System.out.printf("Number of channels: %d, Remote host: %s%n", numChannels, remoteHost);
 
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 

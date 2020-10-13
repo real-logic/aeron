@@ -1178,8 +1178,8 @@ class ClientConductor implements Agent
     {
         if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - nowNs < 0)
         {
-            final long lastKeepAliveMs = driverProxy.timeOfLastDriverKeepaliveMs();
             final long nowMs = epochClock.time();
+            final long lastKeepAliveMs = driverProxy.timeOfLastDriverKeepaliveMs();
 
             if (nowMs > (lastKeepAliveMs + driverTimeoutMs))
             {

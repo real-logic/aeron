@@ -27,11 +27,11 @@ extern "C"
 
 class FileUtilTest : public testing::Test {
 public:
-    FileUtilTest() {
-    }
+    FileUtilTest() = default;
 };
 
-TEST_F(FileUtilTest, rawLogCloseShouldUnmapAndDeleteLogFile) {
+TEST_F(FileUtilTest, rawLogCloseShouldUnmapAndDeleteLogFile)
+{
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_close_unused_file.log";
     const size_t file_length = 16384;
@@ -48,7 +48,8 @@ TEST_F(FileUtilTest, rawLogCloseShouldUnmapAndDeleteLogFile) {
     EXPECT_EQ(-1, aeron_file_length(file));
 }
 
-TEST_F(FileUtilTest, rawLogFreeShouldUnmapAndDeleteLogFile) {
+TEST_F(FileUtilTest, rawLogFreeShouldUnmapAndDeleteLogFile)
+{
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_free_unused_file.log";
     const size_t file_length = 16384;
@@ -65,7 +66,8 @@ TEST_F(FileUtilTest, rawLogFreeShouldUnmapAndDeleteLogFile) {
     EXPECT_EQ(-1, aeron_file_length(file));
 }
 
-TEST_F(FileUtilTest, rawLogCloseShouldNotDeleteFileIfUnmapFails) {
+TEST_F(FileUtilTest, rawLogCloseShouldNotDeleteFileIfUnmapFails)
+{
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_close_unmap_fails.log";
     const size_t file_length = 16384;
@@ -81,7 +83,8 @@ TEST_F(FileUtilTest, rawLogCloseShouldNotDeleteFileIfUnmapFails) {
     EXPECT_EQ(-1, aeron_file_length(file));
 }
 
-TEST_F(FileUtilTest, rawLogFreeShouldNotDeleteFileIfUnmapFails) {
+TEST_F(FileUtilTest, rawLogFreeShouldNotDeleteFileIfUnmapFails)
+{
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_free_unmap_fails.log";
     const size_t file_length = 16384;
@@ -97,7 +100,8 @@ TEST_F(FileUtilTest, rawLogFreeShouldNotDeleteFileIfUnmapFails) {
     EXPECT_EQ(-1, aeron_file_length(file));
 }
 
-TEST_F(FileUtilTest, rawLogCloseShouldReturnErrorIfFileDeleteFailsAndSetError) {
+TEST_F(FileUtilTest, rawLogCloseShouldReturnErrorIfFileDeleteFailsAndSetError)
+{
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_close_delete_unknown_file.log";
     aeron_set_err(0, "");
@@ -109,7 +113,8 @@ TEST_F(FileUtilTest, rawLogCloseShouldReturnErrorIfFileDeleteFailsAndSetError) {
     EXPECT_NE(std::string(""), std::string(aeron_errmsg()));
 }
 
-TEST_F(FileUtilTest, rawLogFreeShouldReturnErrorIfFileDeleteFails) {
+TEST_F(FileUtilTest, rawLogFreeShouldReturnErrorIfFileDeleteFails)
+{
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_free_delete_unknown_file.log";
     aeron_set_err(0, "");

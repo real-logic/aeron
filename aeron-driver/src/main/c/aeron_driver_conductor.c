@@ -678,8 +678,10 @@ bool aeron_ipc_publication_entry_free(aeron_ipc_publication_entry_t *entry)
     {
         aeron_free(publication->log_file_name);
         publication->log_file_name = NULL;
+
         return true;
     }
+
     return false;
 }
 
@@ -727,8 +729,10 @@ bool aeron_network_publication_entry_free(aeron_network_publication_entry_t *ent
     {
         aeron_free(publication->log_file_name);
         publication->log_file_name = NULL;
+
         return true;
     }
+
     return false;
 }
 
@@ -847,8 +851,10 @@ bool aeron_publication_image_entry_free(aeron_publication_image_entry_t *entry)
     {
         aeron_free(image->log_file_name);
         image->log_file_name = NULL;
+
         return true;
     }
+
     return false;
 }
 

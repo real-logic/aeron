@@ -24,7 +24,6 @@ using testing::Args;
 using testing::Mock;
 using testing::AnyNumber;
 
-
 class DriverConductorNetworkTest : public DriverConductorTest, public testing::Test
 {
 };
@@ -268,6 +267,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 0u);
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+
     doWork();
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
@@ -288,11 +288,11 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeoutAfte
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
     const int64_t image_timeout = m_context.m_context->image_liveness_timeout_ns +
-                (m_context.m_context->client_liveness_timeout_ns * 2) + (m_context.m_context->timer_interval_ns * 3);
+        (m_context.m_context->client_liveness_timeout_ns * 2) + (m_context.m_context->timer_interval_ns * 3);
 
     free_map_raw_log = false;
-    int64_t *free_fails_counter =
-            aeron_system_counter_addr(&m_conductor.m_conductor.system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
+    int64_t *free_fails_counter = aeron_system_counter_addr(
+        &m_conductor.m_conductor.system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
     const int64_t free_fails = aeron_counter_get(free_fails_counter);
     EXPECT_EQ(free_fails, 0);
 
@@ -326,6 +326,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeoutAfte
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 0u);
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+
     doWork();
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
@@ -388,7 +389,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
 
     int64_t image_registration_id = aeron_publication_image_registration_id(image);
     const char *log_file_name = aeron_publication_image_log_file_name(image);
-    
+
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
     {
         testing::InSequence sequenced;

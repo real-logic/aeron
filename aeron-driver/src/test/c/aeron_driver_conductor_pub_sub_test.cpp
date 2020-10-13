@@ -90,11 +90,11 @@ public:
 class NetworkTestParam : public ConductorTestParam
 {
 public:
-    NetworkTestParam(const char *channel) : ConductorTestParam("UDP", channel, '|') {}
+    explicit NetworkTestParam(const char *channel) : ConductorTestParam("UDP", channel, '|') {}
 
     static NetworkTestParam *instance()
     {
-        static NetworkTestParam instance{CHANNEL_1};
+        static NetworkTestParam instance{ CHANNEL_1 };
         return &instance;
     }
 
@@ -165,7 +165,7 @@ public:
 class IpcTestParam : public ConductorTestParam
 {
 public:
-    IpcTestParam(const char *channel) : ConductorTestParam("IPC", channel, '?') {}
+    explicit IpcTestParam(const char *channel) : ConductorTestParam("IPC", channel, '?') {}
 
     static IpcTestParam *instance()
     {
@@ -486,7 +486,6 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
     GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, MTU_1);
     GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, MTU_2);
 
-
     int64_t client_id1 = nextCorrelationId();
     int64_t pub_id1 = nextCorrelationId();
     int64_t client_id2 = nextCorrelationId();
@@ -540,7 +539,6 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
     char channel2[AERON_MAX_PATH];
     GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, MTU_1, TERM_LENGTH);
     GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, MTU_1, TERM_LENGTH * 2);
-
 
     int64_t client_id1 = nextCorrelationId();
     int64_t pub_id1 = nextCorrelationId();
@@ -697,7 +695,6 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleNetworkSubscriptionsW
     ASSERT_TRUE(GetParam()->receiveEndpointExists(&m_conductor.m_conductor, channel));
     ASSERT_TRUE(GetParam()->hasReceiveEndpointCount(&m_conductor.m_conductor, 1u));
     ASSERT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 4u);
-
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 }
@@ -900,8 +897,8 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutSendChannelEndpointWithCl
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     free_map_raw_log = false;
-    int64_t *free_fails_counter =
-            aeron_system_counter_addr(&m_conductor.m_conductor.system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
+    int64_t *free_fails_counter = aeron_system_counter_addr(
+        &m_conductor.m_conductor.system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
     const int64_t free_fails = aeron_counter_get(free_fails_counter);
     EXPECT_EQ(free_fails, 0);
 

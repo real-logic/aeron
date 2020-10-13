@@ -31,10 +31,11 @@
 #define AERON_FRAME_IN (0x04)
 #define AERON_FRAME_IN_DROPPED (0x08)
 #define AERON_FRAME_OUT (0x10)
-#define AERON_MAP_RAW_LOG_OP (0x20)
-#define AERON_MAP_RAW_LOG_OP_CLOSE (0x40)
+#define AERON_RAW_LOG_MAP_OP (0x20)
+#define AERON_RAW_LOG_CLOSE_OP (0x40)
 #define AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE (0x80)
 #define AERON_DYNAMIC_DISSECTOR_EVENT (0x100)
+#define AERON_RAW_LOG_FREE_OP (0x200)
 
 /* commands only (not mask values) */
 #define AERON_ADD_DYNAMIC_DISSECTOR (0x010000)
@@ -76,6 +77,14 @@ typedef struct aeron_driver_agent_map_raw_log_op_header_stct
             uintptr_t addr;
         }
         map_raw_log_close;
+
+        struct map_raw_log_free_stct
+        {
+            aeron_mapped_raw_log_t log;
+            bool result;
+            uintptr_t addr;
+        }
+        map_raw_log_free;
     }
     map_raw;
 }

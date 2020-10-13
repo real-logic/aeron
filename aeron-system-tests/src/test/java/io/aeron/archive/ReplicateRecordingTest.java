@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.generateRandomDirName;
@@ -60,6 +61,7 @@ public class ReplicateRecordingTest
     private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8096";
     private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    private static final long TIMER_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(15);
 
     private static final int LIVE_STREAM_ID = 1033;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()
@@ -93,6 +95,7 @@ public class ReplicateRecordingTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
+                .timerIntervalNs(TIMER_INTERVAL_NS)
                 .dirDeleteOnStart(true), testWatcher);
 
         srcArchive = Archive.launch(
@@ -116,6 +119,7 @@ public class ReplicateRecordingTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(true)
+                .timerIntervalNs(TIMER_INTERVAL_NS)
                 .dirDeleteOnStart(true), testWatcher);
 
         dstArchive = Archive.launch(

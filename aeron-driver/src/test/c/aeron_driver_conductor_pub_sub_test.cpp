@@ -882,6 +882,60 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutSendChannelEndpointWithCl
     EXPECT_TRUE(GetParam()->hasSendEndpointCount(&m_conductor.m_conductor, 0u));
 }
 
+TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutSendChannelEndpointWithClientKeepaliveAfterRemovePublicationAfterRetryingFreeOperation)
+{
+    const char *channel = GetParam()->m_channel;
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
+    ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
+    doWork();
+    readAllBroadcastsFromConductor(null_broadcast_handler);
+
+    const int64_t timeout =
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
+
+    free_map_raw_log = false;
+    int64_t *free_fails_counter =
+            aeron_system_counter_addr(&m_conductor.m_conductor.system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
+    const int64_t free_fails = aeron_counter_get(free_fails_counter);
+    EXPECT_EQ(free_fails, 0);
+
+    doWorkForNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    const int64_t free_fails_new = aeron_counter_get(free_fails_counter);
+    EXPECT_GE(free_fails_new, 1);
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
+    EXPECT_TRUE(GetParam()->hasSendEndpointCount(&m_conductor.m_conductor, 1u));
+
+    const int64_t resource_check_interval = m_context.m_context->timer_interval_ns * 2;
+    free_map_raw_log = true;
+
+    doWorkForNs(
+        resource_check_interval,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_GE(aeron_counter_get(free_fails_counter), free_fails_new);
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 0u);
+    EXPECT_TRUE(GetParam()->hasSendEndpointCount(&m_conductor.m_conductor, 0u));
+}
+
 TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutReceiveChannelEndpointWithClientKeepaliveAfterRemoveSubscription)
 {
     const char *channel = GetParam()->m_channel;

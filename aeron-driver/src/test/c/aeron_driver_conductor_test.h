@@ -81,6 +81,7 @@ extern "C"
 #define CONTROL_UDP_PORT (43657)
 
 static int64_t nano_time = 0;
+static bool free_map_raw_log = true;
 
 static int64_t test_nano_clock()
 {
@@ -102,7 +103,7 @@ static void test_increment_nano_time(int64_t delta_ns)
     nano_time += delta_ns;
 }
 
-static int test_malloc_map_raw_log(
+static int test_malloc_raw_log_map(
     aeron_mapped_raw_log_t *log, const char *path, bool use_sparse_file, uint64_t term_length, uint64_t page_size)
 {
     uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
@@ -126,10 +127,21 @@ static int test_malloc_map_raw_log(
     return 0;
 }
 
-static int test_malloc_map_raw_log_close(aeron_mapped_raw_log_t *log, const char *filename)
+static int test_malloc_raw_log_close(aeron_mapped_raw_log_t *log, const char *filename)
 {
     free(log->mapped_file.addr);
+    log->mapped_file.addr = nullptr;
     return 0;
+}
+
+static bool test_malloc_raw_log_free(aeron_mapped_raw_log_t *log, const char *filename)
+{
+    if (free_map_raw_log)
+    {
+        test_malloc_raw_log_close(log, filename);
+        return true;
+    }
+    return false;
 }
 
 static uint64_t test_uint64_max_usable_fs_space(const char *path)
@@ -213,8 +225,9 @@ struct TestDriverContext
 
         /* control files */
         m_context->usable_fs_space_func = test_uint64_max_usable_fs_space;
-        m_context->raw_log_map_func = test_malloc_map_raw_log;
-        m_context->raw_log_close_func = test_malloc_map_raw_log_close;
+        m_context->raw_log_map_func = test_malloc_raw_log_map;
+        m_context->raw_log_close_func = test_malloc_raw_log_close;
+        m_context->raw_log_free_func = test_malloc_raw_log_free;
     }
 
     virtual ~TestDriverContext()

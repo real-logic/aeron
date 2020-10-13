@@ -273,6 +273,64 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeoutAfterRetryingFreeOperation)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1), 0);
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
+
+    createPublicationImage(endpoint, STREAM_ID_1, 1000);
+
+    const int64_t image_timeout = m_context.m_context->image_liveness_timeout_ns +
+                (m_context.m_context->client_liveness_timeout_ns * 2) + (m_context.m_context->timer_interval_ns * 3);
+
+    free_map_raw_log = false;
+    int64_t *free_fails_counter =
+            aeron_system_counter_addr(&m_conductor.m_conductor.system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
+    const int64_t free_fails = aeron_counter_get(free_fails_counter);
+    EXPECT_EQ(free_fails, 0);
+
+    doWorkForNs(
+        image_timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    readAllBroadcastsFromConductor(null_broadcast_handler);
+    const int64_t free_fails_new = aeron_counter_get(free_fails_counter);
+    EXPECT_GE(free_fails_new, 2);
+    EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
+
+    const int64_t resource_check_interval = m_context.m_context->timer_interval_ns * 2;
+    free_map_raw_log = true;
+
+    doWorkForNs(
+        resource_check_interval,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    readAllBroadcastsFromConductor(null_broadcast_handler);
+    EXPECT_EQ(aeron_counter_get(free_fails_counter), free_fails_new);
+    EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 0u);
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+    doWork();
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscriptions)
 {
     int64_t client_id = nextCorrelationId();

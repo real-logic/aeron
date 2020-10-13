@@ -110,6 +110,7 @@ int aeron_network_publication_create(
         return -1;
     }
     _pub->raw_log_close_func = context->raw_log_close_func;
+    _pub->raw_log_free_func = context->raw_log_free_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
@@ -927,20 +928,20 @@ void aeron_network_publication_on_time_event(
     bool has_receivers;
     AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
 
-    bool current_connected_status = aeron_network_publication_has_required_receivers(publication) ||
-        (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
-
-    aeron_network_publication_update_connected_status(publication, current_connected_status);
-
-    int64_t producer_position = aeron_network_publication_producer_position(publication);
-
-    aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
-
     switch (publication->conductor_fields.state)
     {
         case AERON_NETWORK_PUBLICATION_STATE_ACTIVE:
         {
             aeron_network_publication_check_untethered_subscriptions(conductor, publication, now_ns);
+
+            const bool current_connected_status =
+                    aeron_network_publication_has_required_receivers(publication) ||
+                    (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
+            aeron_network_publication_update_connected_status(publication, current_connected_status);
+
+            const int64_t producer_position = aeron_network_publication_producer_position(publication);
+            aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
+
             if (!publication->is_exclusive)
             {
                 aeron_network_publication_check_for_blocked_publisher(
@@ -954,7 +955,10 @@ void aeron_network_publication_on_time_event(
 
         case AERON_NETWORK_PUBLICATION_STATE_DRAINING:
         {
-            int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
+            const int64_t producer_position = aeron_network_publication_producer_position(publication);
+            aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
+
+            const int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 
             if (producer_position > sender_position)
             {

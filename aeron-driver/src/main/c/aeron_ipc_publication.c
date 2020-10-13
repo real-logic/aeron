@@ -76,6 +76,7 @@ int aeron_ipc_publication_create(
         return -1;
     }
     _pub->raw_log_close_func = context->raw_log_close_func;
+    _pub->raw_log_free_func = context->raw_log_free_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
@@ -344,20 +345,27 @@ void aeron_ipc_publication_check_untethered_subscriptions(
 void aeron_ipc_publication_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms)
 {
-    const int64_t producer_position = aeron_ipc_publication_producer_position(publication);
-    aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
-
     switch (publication->conductor_fields.state)
     {
         case AERON_IPC_PUBLICATION_STATE_ACTIVE:
+        {
             aeron_ipc_publication_check_untethered_subscriptions(conductor, publication, now_ns);
+
+            const int64_t producer_position = aeron_ipc_publication_producer_position(publication);
+            aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
+
             if (!publication->is_exclusive)
             {
                 aeron_ipc_publication_check_for_blocked_publisher(publication, producer_position, now_ns);
             }
             break;
+        }
 
         case AERON_IPC_PUBLICATION_STATE_DRAINING:
+        {
+            const int64_t producer_position = aeron_ipc_publication_producer_position(publication);
+            aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
+
             if (aeron_ipc_publication_is_drained(publication))
             {
                 publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_LINGER;
@@ -387,10 +395,13 @@ void aeron_ipc_publication_on_time_event(
                 aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
             }
             break;
+        }
 
         case AERON_IPC_PUBLICATION_STATE_LINGER:
+        {
             publication->conductor_fields.has_reached_end_of_life = true;
             break;
+        }
 
         default:
             break;

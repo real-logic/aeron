@@ -19,6 +19,7 @@ import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.SigInt;
+import org.agrona.hints.ThreadHints;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -105,6 +106,7 @@ public class SendReceiveUdpPing
             boolean available = false;
             while (!available)
             {
+                ThreadHints.onSpinWait();
                 if (!running.get())
                 {
                     return;

@@ -16,6 +16,7 @@
 package io.aeron.samples.raw;
 
 import io.aeron.driver.Configuration;
+import org.agrona.hints.ThreadHints;
 import org.agrona.nio.NioSelectedKeySet;
 import org.agrona.concurrent.SigInt;
 
@@ -97,6 +98,7 @@ public class HackSelectReceiveSendUdpPong
                 {
                     return;
                 }
+                ThreadHints.onSpinWait();
             }
 
             keySet.forEach(handler);

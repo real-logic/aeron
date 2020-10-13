@@ -16,6 +16,7 @@ package io.aeron.samples.raw;
 
 import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.SigInt;
+import org.agrona.hints.ThreadHints;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -98,6 +99,7 @@ public class WriteReceiveUdpPing
             boolean available = false;
             while (!available)
             {
+                ThreadHints.onSpinWait();
                 if (!running.get())
                 {
                     return;

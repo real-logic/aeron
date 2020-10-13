@@ -17,6 +17,7 @@ package io.aeron.samples.raw;
 
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
+import org.agrona.hints.ThreadHints;
 import org.agrona.nio.NioSelectedKeySet;
 import org.agrona.concurrent.SigInt;
 
@@ -132,6 +133,7 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
                 {
                     return;
                 }
+                ThreadHints.onSpinWait();
             }
 
             keySet.forEach(this);

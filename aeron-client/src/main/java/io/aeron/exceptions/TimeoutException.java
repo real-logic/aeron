@@ -20,35 +20,77 @@ package io.aeron.exceptions;
  */
 public class TimeoutException extends AeronException
 {
+    /**
+     * Default timeout exception of {@link Category#ERROR}.
+     */
     public TimeoutException()
     {
     }
 
+    /**
+     * Timeout exception with provided message and {@link Category#ERROR}.
+     *
+     * @param message to detail the exception.
+     */
     public TimeoutException(final String message)
     {
         super(message);
     }
 
+    /**
+     * Timeout Aeron exception with provided {@link Category}.
+     *
+     * @param category of this exception.
+     */
     public TimeoutException(final Category category)
     {
         super(category);
     }
 
+    /**
+     * Timeout exception with a detailed message and provided {@link Category}.
+     *
+     * @param message  providing detail on the error.
+     * @param category of the exception.
+     */
     public TimeoutException(final String message, final Category category)
     {
         super(message, category);
     }
 
-    public TimeoutException(final String message, final Throwable cause, final Category category)
-    {
-        super(message, cause, category);
-    }
-
+    /**
+     * AerTimeouton exception with cause and provided {@link Category}.
+     *
+     * @param cause    of the error.
+     * @param category of the exception.
+     */
     public TimeoutException(final Throwable cause, final Category category)
     {
         super(cause, category);
     }
 
+    /**
+     * Timeout exception with a detailed message, cause, and {@link Category}.
+     *
+     * @param message  providing detail on the error.
+     * @param cause    of the error.
+     * @param category of the exception.
+     */
+    public TimeoutException(final String message, final Throwable cause, final Category category)
+    {
+        super(message, cause, category);
+    }
+
+    /**
+     * Constructs a new timeout exception with the a detail message, cause, suppression enabled or disabled,
+     * writable stack trace enabled or disabled, an {@link Category}.
+     *
+     * @param message            providing detail on the error.
+     * @param cause              of the error.
+     * @param enableSuppression  is suppression enabled or not.
+     * @param writableStackTrace is the stack trace writable or not.
+     * @param category           of the exception.
+     */
     protected TimeoutException(
         final String message,
         final Throwable cause,

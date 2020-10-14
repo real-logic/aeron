@@ -77,7 +77,7 @@ public class AeronException extends RuntimeException
     /**
      * Aeron exception with provided cause and {@link Category#ERROR}.
      *
-     * @param cause   of the error.
+     * @param cause of the error.
      */
     public AeronException(final Throwable cause)
     {

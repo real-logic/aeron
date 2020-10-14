@@ -22,26 +22,54 @@ import io.aeron.exceptions.AeronException;
  */
 public class AuthenticationException extends AeronException
 {
+    /**
+     * Default exception of {@link Category#ERROR}.
+     */
     public AuthenticationException()
     {
         super();
     }
 
+    /**
+     * Authentication exception with provided message and {@link Category#ERROR}.
+     *
+     * @param message to detail the exception.
+     */
     public AuthenticationException(final String message)
     {
         super(message);
     }
 
-    public AuthenticationException(final String message, final Throwable cause)
-    {
-        super(message, cause);
-    }
-
+    /**
+     * Authentication exception with provided cause and {@link Category#ERROR}.
+     *
+     * @param cause of the error.
+     */
     public AuthenticationException(final Throwable cause)
     {
         super(cause);
     }
 
+    /**
+     * Authentication exception with a detailed message and cause.
+     *
+     * @param message providing detail on the error.
+     * @param cause   of the error.
+     */
+    public AuthenticationException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+    }
+
+    /**
+     * Constructs a new Authentication exception with the a detail message, cause, suppression enabled or disabled,
+     * and writable stack trace enabled or disabled, in the category {@link Category#ERROR}.
+     *
+     * @param message            providing detail on the error.
+     * @param cause              of the error.
+     * @param enableSuppression  is suppression enabled or not.
+     * @param writableStackTrace is the stack trace writable or not.
+     */
     protected AuthenticationException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {

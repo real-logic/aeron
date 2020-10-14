@@ -40,10 +40,29 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
      */
     public static final int HEADER_LENGTH = 40;
 
+    /**
+     * Offset in the frame at which the session-id field begins.
+     */
     private static final int SESSION_ID_FIELD_OFFSET = 8;
+
+    /**
+     * Offset in the frame at which the stream-id field begins.
+     */
     private static final int STREAM_ID_FIELD_OFFSET = 12;
+
+    /**
+     * Offset in the frame at which the echo timestamp field begins.
+     */
     private static final int ECHO_TIMESTAMP_FIELD_OFFSET = 16;
+
+    /**
+     * Offset in the frame at which the reception delta field begins.
+     */
     private static final int RECEPTION_DELTA_FIELD_OFFSET = 24;
+
+    /**
+     * Offset in the frame at which the receiver-id field begins.
+     */
     private static final int RECEIVER_ID_FIELD_OFFSET = 32;
 
     /**

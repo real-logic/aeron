@@ -67,11 +67,34 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static final long DEFAULT_RESERVE_VALUE = 0L;
 
+    /**
+     * Offset in the frame at which the term-offset field begins.
+     */
     public static final int TERM_OFFSET_FIELD_OFFSET = 8;
+
+    /**
+     * Offset in the frame at which the session-id field begins.
+     */
     public static final int SESSION_ID_FIELD_OFFSET = 12;
+
+    /**
+     * Offset in the frame at which the stream-id field begins.
+     */
     public static final int STREAM_ID_FIELD_OFFSET = 16;
+
+    /**
+     * Offset in the frame at which the term-id field begins.
+     */
     public static final int TERM_ID_FIELD_OFFSET = 20;
+
+    /**
+     * Offset in the frame at which the reserved value field begins.
+     */
     public static final int RESERVED_VALUE_OFFSET = 24;
+
+    /**
+     * Offset in the frame at which the data payload begins.
+     */
     public static final int DATA_OFFSET = HEADER_LENGTH;
 
     /**

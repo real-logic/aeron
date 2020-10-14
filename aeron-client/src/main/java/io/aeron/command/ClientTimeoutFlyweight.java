@@ -38,7 +38,6 @@ public class ClientTimeoutFlyweight
      * Length of the header.
      */
     public static final int LENGTH = SIZE_OF_LONG;
-
     static final int CLIENT_ID_FIELD_OFFSET = 0;
 
     private MutableDirectBuffer buffer;

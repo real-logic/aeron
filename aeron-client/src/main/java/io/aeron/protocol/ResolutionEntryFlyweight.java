@@ -58,10 +58,29 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
      */
     public static final short SELF_FLAG = 0x80;
 
+    /**
+     * Offset in the frame at which the res-type (resolution type) field begins.
+     */
     public static final int RES_TYPE_FIELD_OFFSET = 0;
+
+    /**
+     * Offset in the frame at which the res-flags field begins.
+     */
     public static final int RES_FLAGS_FIELD_OFFSET = 1;
+
+    /**
+     * Offset in the frame at which the UDP port field begins.
+     */
     public static final int UDP_PORT_FIELD_OFFSET = 2;
+
+    /**
+     * Offset in the frame at which the age field begins.
+     */
     public static final int AGE_IN_MS_FIELD_OFFSET = 4;
+
+    /**
+     * Offset in the frame at which the IP address field begins.
+     */
     public static final int ADDRESS_FIELD_OFFSET = 8;
 
     /**

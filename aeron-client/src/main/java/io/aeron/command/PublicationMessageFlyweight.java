@@ -43,7 +43,6 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int STREAM_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-
     private static final int MINIMUM_LENGTH = CHANNEL_OFFSET + SIZE_OF_INT;
 
     private int lengthOfChannel;

@@ -37,10 +37,29 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public static final int HEADER_LENGTH = 28;
 
+    /**
+     * Offset in the frame at which the session-id field begins.
+     */
     private static final int SESSION_ID_FIELD_OFFSET = 8;
+
+    /**
+     * Offset in the frame at which the stream-id field begins.
+     */
     private static final int STREAM_ID_FIELD_OFFSET = 12;
+
+    /**
+     * Offset in the frame at which the term-id field begins.
+     */
     private static final int TERM_ID_FIELD_OFFSET = 16;
+
+    /**
+     * Offset in the frame at which the term-offset field begins.
+     */
     private static final int TERM_OFFSET_FIELD_OFFSET = 20;
+
+    /**
+     * Offset in the frame at which the length of the NAK range field begins.
+     */
     private static final int LENGTH_FIELD_OFFSET = 24;
 
     /**

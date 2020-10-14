@@ -89,10 +89,29 @@ public class HeaderFlyweight extends UnsafeBuffer
      */
     public static final byte CURRENT_VERSION = 0x0;
 
+    /**
+     * Offset in the frame at which the frame length field begins.
+     */
     public static final int FRAME_LENGTH_FIELD_OFFSET = 0;
+
+    /**
+     * Offset in the frame at which the version field begins.
+     */
     public static final int VERSION_FIELD_OFFSET = 4;
+
+    /**
+     * Offset in the frame at which the flags field begins.
+     */
     public static final int FLAGS_FIELD_OFFSET = 5;
+
+    /**
+     * Offset in the frame at which the frame type field begins.
+     */
     public static final int TYPE_FIELD_OFFSET = 6;
+
+    /**
+     * Minimum length of any Aeron frame.
+     */
     public static final int MIN_HEADER_LENGTH = TYPE_FIELD_OFFSET + SIZE_OF_SHORT;
 
     /**

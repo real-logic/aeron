@@ -215,7 +215,7 @@ class ClientConductor implements Agent
         return isTerminating;
     }
 
-    public void onError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
+    void onError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
         driverException = new RegistrationException(correlationId, codeValue, errorCode, message);
 
@@ -228,13 +228,12 @@ class ClientConductor implements Agent
         }
     }
 
-    public void onAsyncError(
-        final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
+    void onAsyncError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
         handleError(new RegistrationException(correlationId, codeValue, errorCode, message));
     }
 
-    public void onChannelEndpointError(final int statusIndicatorId, final String message)
+    void onChannelEndpointError(final int statusIndicatorId, final String message)
     {
         for (final Object resource : resourceByRegIdMap.values())
         {
@@ -259,7 +258,7 @@ class ClientConductor implements Agent
         }
     }
 
-    public void onNewPublication(
+    void onNewPublication(
         final long correlationId,
         final long registrationId,
         final int streamId,
@@ -282,7 +281,7 @@ class ClientConductor implements Agent
         resourceByRegIdMap.put(correlationId, publication);
     }
 
-    public void onNewExclusivePublication(
+    void onNewExclusivePublication(
         final long correlationId,
         final long registrationId,
         final int streamId,
@@ -311,13 +310,13 @@ class ClientConductor implements Agent
         resourceByRegIdMap.put(correlationId, publication);
     }
 
-    public void onNewSubscription(final long correlationId, final int statusIndicatorId)
+    void onNewSubscription(final long correlationId, final int statusIndicatorId)
     {
         final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
         subscription.channelStatusId(statusIndicatorId);
     }
 
-    public void onAvailableImage(
+    void onAvailableImage(
         final long correlationId,
         final int sessionId,
         final long subscriptionRegistrationId,
@@ -359,7 +358,7 @@ class ClientConductor implements Agent
         }
     }
 
-    public void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId)
+    void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId)
     {
         final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
         if (null != subscription)
@@ -376,13 +375,13 @@ class ClientConductor implements Agent
         }
     }
 
-    public void onNewCounter(final long correlationId, final int counterId)
+    void onNewCounter(final long correlationId, final int counterId)
     {
         resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
         onAvailableCounter(correlationId, counterId);
     }
 
-    public void onAvailableCounter(final long registrationId, final int counterId)
+    void onAvailableCounter(final long registrationId, final int counterId)
     {
         for (final AvailableCounterHandler handler : availableCounterHandlerById.values())
         {
@@ -390,12 +389,12 @@ class ClientConductor implements Agent
         }
     }
 
-    public void onUnavailableCounter(final long registrationId, final int counterId)
+    void onUnavailableCounter(final long registrationId, final int counterId)
     {
         notifyUnavailableCounterHandlers(registrationId, counterId);
     }
 
-    public void onClientTimeout()
+    void onClientTimeout()
     {
         if (!isClosed)
         {

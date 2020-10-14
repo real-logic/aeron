@@ -161,7 +161,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 
 #define AERON_DATA_HEADER_UNFRAGMENTED ((uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG))
 
-#define AERON_DATA_HEADER_DEFAULT_RESERVED_VALUE (0L)
+#define AERON_DATA_HEADER_DEFAULT_RESERVED_VALUE (INT64_C(0))
 
 #define AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG ((uint8_t)(0x80))
 
@@ -169,7 +169,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 
 #define AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD (0x01)
 #define AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD (0x02)
-#define AERON_RES_HEADER_SELF_FLAG UINT8_C(0x80)
+#define AERON_RES_HEADER_SELF_FLAG ((uint8_t)(0x80))
 
 #define AERON_FRAME_MAX_MESSAGE_LENGTH (16u * 1024u * 1024u)
 
@@ -194,8 +194,7 @@ inline size_t aeron_compute_max_message_length(size_t term_length)
 {
     size_t max_length_for_term = term_length / 8;
 
-    return max_length_for_term < AERON_FRAME_MAX_MESSAGE_LENGTH ?
-        max_length_for_term : AERON_FRAME_MAX_MESSAGE_LENGTH;
+    return max_length_for_term < AERON_FRAME_MAX_MESSAGE_LENGTH ? max_length_for_term : AERON_FRAME_MAX_MESSAGE_LENGTH;
 }
 
 size_t aeron_res_header_entry_length_ipv4(aeron_resolution_header_ipv4_t *header);

@@ -95,8 +95,7 @@ inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_
 }
 
 inline int64_t aeron_exclusive_publication_new_position(
-    aeron_exclusive_publication_t *publication,
-    int32_t resulting_offset)
+    aeron_exclusive_publication_t *publication, int32_t resulting_offset)
 {
     if (resulting_offset > 0)
     {

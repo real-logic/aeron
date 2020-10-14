@@ -44,10 +44,7 @@ int aeron_name_resolver_cache_close(aeron_name_resolver_cache_t *cache)
 }
 
 int aeron_name_resolver_cache_find_index_by_name_and_type(
-    aeron_name_resolver_cache_t *cache,
-    const char *name,
-    size_t name_length,
-    int8_t res_type)
+    aeron_name_resolver_cache_t *cache, const char *name, size_t name_length, int8_t res_type)
 {
     for (size_t i = 0; i < cache->entries.length; i++)
     {
@@ -136,9 +133,7 @@ int aeron_name_resolver_cache_lookup_by_name(
 }
 
 int aeron_name_resolver_cache_timeout_old_entries(
-    aeron_name_resolver_cache_t *cache,
-    int64_t now_ms,
-    int64_t *cache_entries_counter)
+    aeron_name_resolver_cache_t *cache, int64_t now_ms, int64_t *cache_entries_counter)
 {
     int num_removed = 0;
     for (int last_index = (int)cache->entries.length - 1, i = last_index; i >= 0; i--)
@@ -163,4 +158,3 @@ int aeron_name_resolver_cache_timeout_old_entries(
 
     return num_removed;
 }
-

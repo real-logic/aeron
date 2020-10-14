@@ -44,9 +44,7 @@ int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, 
 }
 
 int aeron_default_name_resolver_supplier(
-    aeron_name_resolver_t *resolver,
-    const char *args,
-    aeron_driver_context_t *context)
+    aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
 {
     resolver->lookup_func = aeron_default_name_resolver_lookup;
     resolver->resolve_func = aeron_default_name_resolver_resolve;
@@ -196,10 +194,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 }
 
 static void aeron_name_resolver_set_err(
-    aeron_name_resolver_t *resolver,
-    const char *name,
-    const char *uri_param_name,
-    const char *address_str)
+    aeron_name_resolver_t *resolver, const char *name, const char *uri_param_name, const char *address_str)
 {
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
@@ -207,6 +202,7 @@ static void aeron_name_resolver_set_err(
 #endif
     char dl_name_buffer[128];
     const char *address_or_null = NULL != address_str ? address_str : "null";
+
     aeron_set_err(
         EINVAL,
         "Unresolved - %s=%s, name-and-port=%s, name-resolver-lookup=%s, name-resolver-resolve=%s",

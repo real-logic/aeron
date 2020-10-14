@@ -207,8 +207,6 @@ subprojects {
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
-
-        reports.html.enabled = false // Disable individual test reports
     }
 
     task slowTest(type: Test) {

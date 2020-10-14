@@ -579,8 +579,7 @@ int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_diss
 void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length)
 {
     uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
-    aeron_driver_agent_dynamic_event_header_t *hdr =
-        (aeron_driver_agent_dynamic_event_header_t *)buffer;
+    aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
     size_t copy_length = length < MAX_FRAME_LENGTH ? length : MAX_FRAME_LENGTH;
 
     hdr->time_ms = aeron_epoch_clock();
@@ -1077,7 +1076,10 @@ static const char *dissect_frame(const void *message, size_t length)
             const uint8_t *message_bytes = (uint8_t *)message;
             const int buffer_available = sizeof(buffer) - 1;
 
-            int buffer_used = snprintf(buffer, buffer_available, "%s 0x%x len %d",
+            int buffer_used = snprintf(
+                buffer,
+                buffer_available,
+                "%s 0x%x len %d",
                 dissect_frame_type(hdr->type),
                 hdr->flags,
                 hdr->frame_length);

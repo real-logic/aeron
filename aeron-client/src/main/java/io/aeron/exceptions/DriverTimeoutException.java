@@ -20,6 +20,11 @@ package io.aeron.exceptions;
  */
 public class DriverTimeoutException extends TimeoutException
 {
+    /**
+     * Construct the exception for driver timeout due to lack of heartbeat.
+     *
+     * @param message detail for the exception.
+     */
     public DriverTimeoutException(final String message)
     {
         super(message, Category.FATAL);

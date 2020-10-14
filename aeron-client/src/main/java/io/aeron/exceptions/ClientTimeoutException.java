@@ -23,6 +23,11 @@ package io.aeron.exceptions;
  */
 public class ClientTimeoutException extends TimeoutException
 {
+    /**
+     * Construct the client timeout exception with detail message.
+     *
+     * @param message detail for the exception.
+     */
     public ClientTimeoutException(final String message)
     {
         super(message, Category.FATAL);

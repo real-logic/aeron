@@ -20,6 +20,11 @@ package io.aeron.exceptions;
  */
 public class ConfigurationException extends AeronException
 {
+    /**
+     * Construct an exception with detail for the configuration error.
+     *
+     * @param message detail for the configuration error.
+     */
     public ConfigurationException(final String message)
     {
         super(message);

@@ -23,6 +23,12 @@ public class ChannelEndpointException extends AeronException
 {
     private final int statusIndicatorId;
 
+    /**
+     * Construct an exception with a given status indicator counter id and detail message.
+     *
+     * @param statusIndicatorId counter id for the channel.
+     * @param message           for the exception.
+     */
     public ChannelEndpointException(final int statusIndicatorId, final String message)
     {
         super(message);

@@ -24,18 +24,35 @@ public class ControlProtocolException extends AeronException
 {
     private final ErrorCode code;
 
+    /**
+     * Construct an exception to indicate an invalid command has been sent to the media driver.
+     *
+     * @param code for the type of error.
+     * @param msg  providing more detail.
+     */
     public ControlProtocolException(final ErrorCode code, final String msg)
     {
         super(msg);
         this.code = code;
     }
 
+    /**
+     * Construct an exception to indicate an invalid command has been sent to the media driver.
+     *
+     * @param code      for the type of error.
+     * @param rootCause of the error.
+     */
     public ControlProtocolException(final ErrorCode code, final Exception rootCause)
     {
         super(rootCause);
         this.code = code;
     }
 
+    /**
+     * The {@link ErrorCode} indicating more specific issue experienced by the media driver.
+     *
+     * @return {@link ErrorCode} indicating more specific issue experienced by the media driver.
+     */
     public ErrorCode errorCode()
     {
         return code;

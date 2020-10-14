@@ -27,6 +27,15 @@ public class RegistrationException extends AeronException
     private final int errorCodeValue;
     private final ErrorCode errorCode;
 
+    /**
+     * Construct a exception to represent an error which occurred during registration of a resource such as a
+     * Publication, Subscription, or Counter.
+     *
+     * @param correlationId  of the command to register the resource.
+     * @param errorCodeValue in case the {@link ErrorCode} is unknown to the client version.
+     * @param errorCode      indicating type of error experienced by the media driver.
+     * @param msg            proving more detail.
+     */
     public RegistrationException(
         final long correlationId, final int errorCodeValue, final ErrorCode errorCode, final String msg)
     {
@@ -67,6 +76,9 @@ public class RegistrationException extends AeronException
         return errorCodeValue;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String getMessage()
     {
         return "correlationId=" + correlationId + ", errorCodeValue=" + errorCodeValue + ", " + super.getMessage();

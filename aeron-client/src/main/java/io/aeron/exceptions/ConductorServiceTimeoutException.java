@@ -23,6 +23,11 @@ package io.aeron.exceptions;
  */
 public class ConductorServiceTimeoutException extends TimeoutException
 {
+    /**
+     * Construct the exception for the service interval timeout with detailed message.
+     *
+     * @param message detail for the exception.
+     */
     public ConductorServiceTimeoutException(final String message)
     {
         super(message, Category.FATAL);

@@ -82,6 +82,17 @@ final class DriverEventEncoder
         encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength, value);
     }
 
+    static void encode(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final InetSocketAddress address)
+    {
+        final int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodeSocketAddress(encodingBuffer, offset + relativeOffset, address);
+    }
+
     static void encodePublicationRemoval(
         final UnsafeBuffer encodingBuffer,
         final int offset,

@@ -580,6 +580,20 @@ class DriverEventDissectorTest
             builder.toString());
     }
 
+    @Test
+    void dissectAddress()
+    {
+        final int offset = 24;
+        internalEncodeLogHeader(buffer, offset, 17, 27, () -> 2_500_000_000L);
+        encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH + offset, new InetSocketAddress("localhost", 4848));
+
+        DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOUR_ADDED, buffer, offset, builder);
+
+        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOUR_ADDED.name() +
+            " [17/27]: 127.0.0.1:4848", builder.toString());
+    }
+
     private DirectBuffer newBuffer(final byte[] bytes)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(allocate(bytes.length));

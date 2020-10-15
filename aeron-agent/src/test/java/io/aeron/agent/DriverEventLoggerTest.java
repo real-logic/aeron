@@ -255,4 +255,20 @@ class DriverEventLoggerTest
         assertEquals(from.name() + STATE_SEPARATOR + to.name(), logBuffer.getStringAscii(
             encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG), LITTLE_ENDIAN));
     }
+
+    @Test
+    void logAddress()
+    {
+        final int recordOffset = 64;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        final DriverEventCode eventCode = NAME_RESOLUTION_NEIGHBOUR_ADDED;
+        final int captureLength = 12;
+
+        logger.logAddress(eventCode, new InetSocketAddress("localhost", 5656));
+
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, captureLength);
+        assertEquals(5656, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(4, logBuffer.getInt(
+            encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+    }
 }

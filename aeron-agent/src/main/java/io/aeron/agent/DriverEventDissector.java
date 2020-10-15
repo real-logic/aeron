@@ -20,8 +20,8 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.*;
 import org.agrona.MutableDirectBuffer;
 
+import static io.aeron.agent.CommonEventDissector.*;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
-import static io.aeron.agent.CommonEventDissector.dissectSocketAddress;
 import static io.aeron.agent.DriverEventCode.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -292,6 +292,21 @@ final class DriverEventDissector
 
         builder.append(", ");
         buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectAddress(
+        final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, code, buffer, absoluteOffset, builder);
+
+        builder.append(": ");
+        dissectSocketAddress(buffer, absoluteOffset, builder);
+    }
+
+    static int frameType(final MutableDirectBuffer buffer, final int termOffset)
+    {
+        return buffer.getShort(FrameDescriptor.typeOffset(termOffset), LITTLE_ENDIAN) & 0xFFFF;
     }
 
     private static void dissectDataFrame(final StringBuilder builder)
@@ -625,10 +640,5 @@ final class DriverEventDissector
     private static void dissectTerminateDriver(final StringBuilder builder)
     {
         builder.append(TERMINATE_DRIVER.clientId()).append(' ').append(TERMINATE_DRIVER.tokenBufferLength());
-    }
-
-    static int frameType(final MutableDirectBuffer buffer, final int termOffset)
-    {
-        return buffer.getShort(FrameDescriptor.typeOffset(termOffset), LITTLE_ENDIAN) & 0xFFFF;
     }
 }

@@ -49,7 +49,7 @@ public:
 
             if ((argStr.size() >= 2) && (argStr[0] == '-'))
             {
-                for (size_t argNum = 1; argNum < argStr.size(); argNum++)
+                for (std::size_t argNum = 1; argNum < argStr.size(); argNum++)
                 {
                     currentOption = argStr[argNum];
 

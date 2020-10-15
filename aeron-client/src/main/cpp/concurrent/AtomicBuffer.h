@@ -157,7 +157,7 @@ public:
      *
      * @param length to be used for the new capacity.
      */
-    inline void capacity(size_t length)
+    inline void capacity(std::size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT(length > static_cast<std::size_t>(std::numeric_limits<util::index_t>::max()), true))

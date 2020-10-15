@@ -162,7 +162,7 @@ inline value_t findNextPowerOfTwo(value_t value) noexcept
 
     // Set all bits below the leading one using binary expansion
     // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-    for (size_t i = 1; i < sizeof(value) * 8; i = i * 2)
+    for (std::size_t i = 1; i < sizeof(value) * 8; i = i * 2)
     {
         value |= (value >> i);
     }

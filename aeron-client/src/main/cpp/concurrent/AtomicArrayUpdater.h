@@ -35,7 +35,7 @@ std::pair<E *, std::size_t> addToArray(E *oldArray, std::size_t oldLength, E ele
     std::size_t newLength = oldLength + 1;
     E *newArray = new E[newLength];
 
-    for (size_t i = 0; i < oldLength; i++)
+    for (std::size_t i = 0; i < oldLength; i++)
     {
         newArray[i] = oldArray[i];
     }
@@ -51,7 +51,7 @@ std::pair<E *, std::size_t> removeFromArray(E *oldArray, std::size_t oldLength, 
     std::size_t newLength = oldLength - 1;
     E *newArray = new E[newLength];
 
-    for (size_t i = 0, j = 0; i < oldLength; i++)
+    for (std::size_t i = 0, j = 0; i < oldLength; i++)
     {
         if (i != index)
         {

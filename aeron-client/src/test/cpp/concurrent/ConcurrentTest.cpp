@@ -35,7 +35,7 @@ static void clearBuffer()
 }
 
 #if !defined(DISABLE_BOUNDS_CHECKS)
-TEST (atomicBufferTests, checkBounds)
+TEST(atomicBufferTests, checkBounds)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
@@ -79,7 +79,7 @@ TEST (atomicBufferTests, checkBounds)
 }
 #endif
 
-TEST (atomicBufferTests, stringStore)
+TEST(atomicBufferTests, stringStore)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
@@ -87,14 +87,14 @@ TEST (atomicBufferTests, stringStore)
 
     ab.putString(256, testString);
 
-    ASSERT_EQ((size_t)ab.getInt32(256), testString.length());
+    ASSERT_EQ(static_cast<std::size_t>(ab.getInt32(256)), testString.length());
 
-    std::string result(reinterpret_cast<char *>(&testBuffer[256] + sizeof (std::int32_t)));
+    std::string result(reinterpret_cast<char *>(&testBuffer[256] + sizeof(std::int32_t)));
 
     ASSERT_EQ(testString, result);
 }
 
-TEST (atomicBufferTests, stringRead)
+TEST(atomicBufferTests, stringRead)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
@@ -107,22 +107,55 @@ TEST (atomicBufferTests, stringRead)
     ASSERT_EQ(testString, result);
 }
 
-TEST (atomicBufferTests, concurrentTest)
+TEST(atomicBufferTests, getAndSet32Test)
+{
+    clearBuffer();
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
+
+    index_t offset = 256;
+    std::int32_t valueOne = 777;
+    std::int32_t valueTwo = 333;
+
+    ab.putInt32(offset, valueOne);
+
+    ASSERT_EQ(valueOne, ab.getInt32(offset));
+    ASSERT_EQ(valueOne, ab.getAndSetInt32(offset, valueTwo));
+    ASSERT_EQ(valueTwo, ab.getInt32(offset));
+}
+
+TEST(atomicBufferTests, getAndSet64Test)
+{
+    clearBuffer();
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
+
+    index_t offset = 256;
+    std::int64_t valueOne = 777;
+    std::int64_t valueTwo = 333;
+
+    ab.putInt64(offset, valueOne);
+
+    ASSERT_EQ(valueOne, ab.getInt64(offset));
+    ASSERT_EQ(valueOne, ab.getAndSetInt64(offset, valueTwo));
+    ASSERT_EQ(valueTwo, ab.getInt64(offset));
+}
+
+TEST(atomicBufferTests, concurrentTest)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
 
     std::vector<std::thread> threads;
-    const size_t incCount = 10000000;
+    const std::size_t incCount = 10000000;
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 4; i++)
     {
         threads.push_back(std::thread(
             [&]()
             {
-                for (size_t n = 0; n < incCount; n++)
+                for (std::size_t n = 0; n < incCount; n++)
                 {
                     ab.getAndAddInt64(0, 1);
+                    ab.getAndAddInt32(256, 1);
                 }
             }));
     }
@@ -132,7 +165,8 @@ TEST (atomicBufferTests, concurrentTest)
         t.join();
     }
 
-    ASSERT_EQ((size_t)ab.getInt64(0), incCount * threads.size());
+    ASSERT_EQ(static_cast<std::size_t>(ab.getInt64(0)), incCount * threads.size());
+    ASSERT_EQ(static_cast<std::size_t>(ab.getInt32(256)), incCount * threads.size());
 }
 
 #pragma pack(push)
@@ -145,7 +179,7 @@ struct testStruct
 };
 #pragma pack(pop)
 
-TEST (atomicBufferTests, checkStructOverlay)
+TEST(atomicBufferTests, checkStructOverlay)
 {
     testBuffer.fill(0xff);
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());

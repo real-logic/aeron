@@ -63,7 +63,7 @@ final class DriverEventDissector
     {
     }
 
-    static void dissectAsFrame(
+    static void dissectFrame(
         final DriverEventCode eventCode,
         final MutableDirectBuffer buffer,
         final int offset,
@@ -118,7 +118,7 @@ final class DriverEventDissector
     }
 
     @SuppressWarnings("MethodLength")
-    static void dissectAsCommand(
+    static void dissectCommand(
         final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(CONTEXT, code, buffer, offset, builder);
@@ -216,7 +216,7 @@ final class DriverEventDissector
         }
     }
 
-    static void dissectAsString(
+    static void dissectString(
         final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(CONTEXT, code, buffer, offset, builder);

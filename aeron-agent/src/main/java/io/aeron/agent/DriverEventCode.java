@@ -26,18 +26,18 @@ import static io.aeron.agent.DriverEventDissector.*;
  */
 public enum DriverEventCode implements EventCode
 {
-    FRAME_IN(1, DriverEventDissector::dissectAsFrame),
-    FRAME_OUT(2, DriverEventDissector::dissectAsFrame),
-    CMD_IN_ADD_PUBLICATION(3, DriverEventDissector::dissectAsCommand),
-    CMD_IN_REMOVE_PUBLICATION(4, DriverEventDissector::dissectAsCommand),
-    CMD_IN_ADD_SUBSCRIPTION(5, DriverEventDissector::dissectAsCommand),
+    FRAME_IN(1, DriverEventDissector::dissectFrame),
+    FRAME_OUT(2, DriverEventDissector::dissectFrame),
+    CMD_IN_ADD_PUBLICATION(3, DriverEventDissector::dissectCommand),
+    CMD_IN_REMOVE_PUBLICATION(4, DriverEventDissector::dissectCommand),
+    CMD_IN_ADD_SUBSCRIPTION(5, DriverEventDissector::dissectCommand),
 
-    CMD_IN_REMOVE_SUBSCRIPTION(6, DriverEventDissector::dissectAsCommand),
-    CMD_OUT_PUBLICATION_READY(7, DriverEventDissector::dissectAsCommand),
-    CMD_OUT_AVAILABLE_IMAGE(8, DriverEventDissector::dissectAsCommand),
+    CMD_IN_REMOVE_SUBSCRIPTION(6, DriverEventDissector::dissectCommand),
+    CMD_OUT_PUBLICATION_READY(7, DriverEventDissector::dissectCommand),
+    CMD_OUT_AVAILABLE_IMAGE(8, DriverEventDissector::dissectCommand),
 
-    CMD_OUT_ON_OPERATION_SUCCESS(12, DriverEventDissector::dissectAsCommand),
-    CMD_IN_KEEPALIVE_CLIENT(13, DriverEventDissector::dissectAsCommand),
+    CMD_OUT_ON_OPERATION_SUCCESS(12, DriverEventDissector::dissectCommand),
+    CMD_IN_KEEPALIVE_CLIENT(13, DriverEventDissector::dissectCommand),
     REMOVE_PUBLICATION_CLEANUP(14,
         (code, buffer, offset, builder) -> dissectRemovePublicationCleanup(buffer, offset, builder)),
     REMOVE_SUBSCRIPTION_CLEANUP(15,
@@ -45,33 +45,33 @@ public enum DriverEventCode implements EventCode
 
     REMOVE_IMAGE_CLEANUP(16,
         (code, buffer, offset, builder) -> dissectRemoveImageCleanup(buffer, offset, builder)),
-    CMD_OUT_ON_UNAVAILABLE_IMAGE(17, DriverEventDissector::dissectAsCommand),
+    CMD_OUT_ON_UNAVAILABLE_IMAGE(17, DriverEventDissector::dissectCommand),
 
-    SEND_CHANNEL_CREATION(23, DriverEventDissector::dissectAsString),
-    RECEIVE_CHANNEL_CREATION(24, DriverEventDissector::dissectAsString),
-    SEND_CHANNEL_CLOSE(25, DriverEventDissector::dissectAsString),
-    RECEIVE_CHANNEL_CLOSE(26, DriverEventDissector::dissectAsString),
+    SEND_CHANNEL_CREATION(23, DriverEventDissector::dissectString),
+    RECEIVE_CHANNEL_CREATION(24, DriverEventDissector::dissectString),
+    SEND_CHANNEL_CLOSE(25, DriverEventDissector::dissectString),
+    RECEIVE_CHANNEL_CLOSE(26, DriverEventDissector::dissectString),
 
-    CMD_IN_ADD_DESTINATION(30, DriverEventDissector::dissectAsCommand),
-    CMD_IN_REMOVE_DESTINATION(31, DriverEventDissector::dissectAsCommand),
-    CMD_IN_ADD_EXCLUSIVE_PUBLICATION(32, DriverEventDissector::dissectAsCommand),
-    CMD_OUT_EXCLUSIVE_PUBLICATION_READY(33, DriverEventDissector::dissectAsCommand),
+    CMD_IN_ADD_DESTINATION(30, DriverEventDissector::dissectCommand),
+    CMD_IN_REMOVE_DESTINATION(31, DriverEventDissector::dissectCommand),
+    CMD_IN_ADD_EXCLUSIVE_PUBLICATION(32, DriverEventDissector::dissectCommand),
+    CMD_OUT_EXCLUSIVE_PUBLICATION_READY(33, DriverEventDissector::dissectCommand),
 
-    CMD_OUT_ERROR(34, DriverEventDissector::dissectAsCommand),
+    CMD_OUT_ERROR(34, DriverEventDissector::dissectCommand),
 
-    CMD_IN_ADD_COUNTER(35, DriverEventDissector::dissectAsCommand),
-    CMD_IN_REMOVE_COUNTER(36, DriverEventDissector::dissectAsCommand),
-    CMD_OUT_SUBSCRIPTION_READY(37, DriverEventDissector::dissectAsCommand),
-    CMD_OUT_COUNTER_READY(38, DriverEventDissector::dissectAsCommand),
-    CMD_OUT_ON_UNAVAILABLE_COUNTER(39, DriverEventDissector::dissectAsCommand),
+    CMD_IN_ADD_COUNTER(35, DriverEventDissector::dissectCommand),
+    CMD_IN_REMOVE_COUNTER(36, DriverEventDissector::dissectCommand),
+    CMD_OUT_SUBSCRIPTION_READY(37, DriverEventDissector::dissectCommand),
+    CMD_OUT_COUNTER_READY(38, DriverEventDissector::dissectCommand),
+    CMD_OUT_ON_UNAVAILABLE_COUNTER(39, DriverEventDissector::dissectCommand),
 
-    CMD_IN_CLIENT_CLOSE(40, DriverEventDissector::dissectAsCommand),
+    CMD_IN_CLIENT_CLOSE(40, DriverEventDissector::dissectCommand),
 
-    CMD_IN_ADD_RCV_DESTINATION(41, DriverEventDissector::dissectAsCommand),
-    CMD_IN_REMOVE_RCV_DESTINATION(42, DriverEventDissector::dissectAsCommand),
+    CMD_IN_ADD_RCV_DESTINATION(41, DriverEventDissector::dissectCommand),
+    CMD_IN_REMOVE_RCV_DESTINATION(42, DriverEventDissector::dissectCommand),
 
-    CMD_OUT_ON_CLIENT_TIMEOUT(43, DriverEventDissector::dissectAsCommand),
-    CMD_IN_TERMINATE_DRIVER(44, DriverEventDissector::dissectAsCommand),
+    CMD_OUT_ON_CLIENT_TIMEOUT(43, DriverEventDissector::dissectCommand),
+    CMD_IN_TERMINATE_DRIVER(44, DriverEventDissector::dissectCommand),
 
     UNTETHERED_SUBSCRIPTION_STATE_CHANGE(45,
         (code, buffer, offset, builder) -> dissectUntetheredSubscriptionStateChange(buffer, offset, builder)),

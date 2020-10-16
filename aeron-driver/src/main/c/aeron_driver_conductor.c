@@ -25,7 +25,7 @@
 #include "aeron_driver_receiver.h"
 #include "collections/aeron_bit_set.h"
 
-#define STATIC_BIT_SET_U64_LEN (512)
+#define STATIC_BIT_SET_U64_LEN (512u)
 
 static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
 {

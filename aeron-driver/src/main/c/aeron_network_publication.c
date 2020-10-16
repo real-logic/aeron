@@ -925,9 +925,6 @@ void aeron_network_publication_check_untethered_subscriptions(
 void aeron_network_publication_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication, int64_t now_ns, int64_t now_ms)
 {
-    bool has_receivers;
-    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
-
     switch (publication->conductor_fields.state)
     {
         case AERON_NETWORK_PUBLICATION_STATE_ACTIVE:
@@ -969,6 +966,8 @@ void aeron_network_publication_on_time_event(
                     break;
                 }
 
+                bool has_receivers;
+                AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
                 if (has_receivers)
                 {
                     break;
@@ -992,12 +991,12 @@ void aeron_network_publication_on_time_event(
             if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);
-                publication->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_CLOSING;
+                publication->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_DONE;
             }
             break;
         }
 
-        case AERON_NETWORK_PUBLICATION_STATE_CLOSING:
+        case AERON_NETWORK_PUBLICATION_STATE_DONE:
             break;
     }
 }

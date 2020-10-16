@@ -870,8 +870,6 @@ void aeron_publication_image_on_time_event(
     {
         case AERON_PUBLICATION_IMAGE_STATE_ACTIVE:
         {
-            aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
-
             int64_t last_packet_timestamp_ns;
             AERON_GET_VOLATILE(last_packet_timestamp_ns, image->time_of_last_packet_ns);
             bool is_end_of_stream;
@@ -889,6 +887,8 @@ void aeron_publication_image_on_time_event(
                 aeron_driver_receiver_proxy_on_remove_publication_image(
                     conductor->context->receiver_proxy, image->endpoint, image);
             }
+
+            aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
             break;
         }
 
@@ -915,7 +915,7 @@ void aeron_publication_image_on_time_event(
             break;
         }
 
-        default:
+        case AERON_PUBLICATION_IMAGE_STATE_DONE:
             break;
     }
 }

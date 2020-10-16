@@ -103,7 +103,7 @@ public class DriverConductor implements Agent
     private final NameResolver nameResolver;
     private final DriverNameResolver driverNameResolver;
 
-    public DriverConductor(final Context ctx)
+    DriverConductor(final Context ctx)
     {
         this.ctx = ctx;
         timerIntervalNs = ctx.timerIntervalNs();
@@ -182,7 +182,7 @@ public class DriverConductor implements Agent
         return workCount;
     }
 
-    public void onCreatePublicationImage(
+    void onCreatePublicationImage(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -460,17 +460,18 @@ public class DriverConductor implements Agent
 
     void cleanupPublication(final NetworkPublication publication)
     {
-        final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
-        final String channel = channelEndpoint.udpChannel().canonicalForm();
-        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), channel));
         senderProxy.removeNetworkPublication(publication);
 
+        final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
         if (channelEndpoint.shouldBeClosed())
         {
             senderProxy.closeSendChannelEndpoint(channelEndpoint);
             channelEndpoint.closeStatusIndicator();
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
         }
+
+        final String channel = channelEndpoint.udpChannel().canonicalForm();
+        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), channel));
     }
 
     void cleanupSubscriptionLink(final SubscriptionLink subscription)

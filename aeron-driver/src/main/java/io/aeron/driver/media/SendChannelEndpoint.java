@@ -177,8 +177,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void registerForSend(final NetworkPublication publication)
     {
-        final long key = compoundKey(publication.sessionId(), publication.streamId());
-        publicationBySessionAndStreamId.put(key, publication);
+        publicationBySessionAndStreamId.put(compoundKey(publication.sessionId(), publication.streamId()), publication);
     }
 
     /**
@@ -188,8 +187,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void unregisterForSend(final NetworkPublication publication)
     {
-        final long key = compoundKey(publication.sessionId(), publication.streamId());
-        publicationBySessionAndStreamId.remove(key);
+        publicationBySessionAndStreamId.remove(compoundKey(publication.sessionId(), publication.streamId()));
     }
 
     /**

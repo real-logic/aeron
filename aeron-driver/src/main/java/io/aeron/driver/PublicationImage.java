@@ -51,7 +51,6 @@ import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-@SuppressWarnings("unused")
 class PublicationImagePadding1
 {
     byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
@@ -69,7 +68,6 @@ class PublicationImageConductorFields extends PublicationImagePadding1
     LossReport.ReportEntry reportEntry;
 }
 
-@SuppressWarnings("unused")
 class PublicationImagePadding2 extends PublicationImageConductorFields
 {
     byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
@@ -85,7 +83,6 @@ class PublicationImageReceiverFields extends PublicationImagePadding2
     ImageConnection[] imageConnections = new ImageConnection[1];
 }
 
-@SuppressWarnings("unused")
 class PublicationImagePadding3 extends PublicationImageReceiverFields
 {
     byte p128, p129, p130, p131, p132, p133, p134, p135, p136, p137, p138, p139, p140, p142, p143, p144;
@@ -768,9 +765,9 @@ public class PublicationImage
             case DRAINING:
                 if (isDrained())
                 {
-                    state = State.LINGER;
-                    timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
+                    timeOfLastStateChangeNs = timeNs;
+                    state = State.LINGER;
                 }
                 break;
 

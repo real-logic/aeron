@@ -41,7 +41,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 {
     enum State
     {
-        ACTIVE, DRAINING, LINGER
+        ACTIVE, DRAINING, LINGER, DONE
     }
 
     private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
@@ -77,7 +77,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final RawLog rawLog;
     private final AtomicCounter unblockedPublications;
 
-    public IpcPublication(
+    IpcPublication(
         final long registrationId,
         final MediaDriver.Context ctx,
         final long tag,
@@ -228,13 +228,13 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         {
             case ACTIVE:
             {
-                checkUntetheredSubscriptions(timeNs, conductor);
                 final long producerPosition = producerPosition();
                 publisherPos.setOrdered(producerPosition);
                 if (!isExclusive)
                 {
                     checkForBlockedPublisher(producerPosition, timeNs);
                 }
+                checkUntetheredSubscriptions(timeNs, conductor);
                 break;
             }
 
@@ -244,8 +244,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 publisherPos.setOrdered(producerPosition);
                 if (isDrained(producerPosition))
                 {
-                    state = State.LINGER;
                     conductor.transitionToLinger(this);
+                    state = State.LINGER;
                 }
                 else if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {
@@ -255,8 +255,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             }
 
             case LINGER:
-                reachedEndOfLife = true;
                 conductor.cleanupIpcPublication(this);
+                reachedEndOfLife = true;
+                state = State.DONE;
                 break;
         }
     }
@@ -275,10 +276,10 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     {
         if (0 == --refCount)
         {
-            state = State.DRAINING;
             final long producerPosition = producerPosition();
             publisherLimit.setOrdered(producerPosition);
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition);
+            state = State.DRAINING;
         }
     }
 

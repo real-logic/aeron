@@ -563,11 +563,11 @@ public class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= endTime, publication::updateHasReceivers);
 
         assertThat(publication.state(),
-            Matchers.anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
+            Matchers.anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.DONE)));
 
         nanoClock.advance(DEFAULT_TIMER_INTERVAL_NS + PUBLICATION_LINGER_TIMEOUT_NS);
         driverConductor.doWork();
-        assertEquals(NetworkPublication.State.CLOSING, publication.state());
+        assertEquals(NetworkPublication.State.DONE, publication.state());
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
         verify(senderProxy).registerSendChannelEndpoint(any());

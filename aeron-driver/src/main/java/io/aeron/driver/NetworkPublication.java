@@ -48,7 +48,6 @@ import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_AND_END_FLAGS;
 import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-@SuppressWarnings("unused")
 class NetworkPublicationPadding1
 {
     byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
@@ -69,7 +68,6 @@ class NetworkPublicationConductorFields extends NetworkPublicationPadding1
     final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
 }
 
-@SuppressWarnings("unused")
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 {
     byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
@@ -87,7 +85,6 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     boolean shouldSendSetupFrame = true;
 }
 
-@SuppressWarnings("unused")
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
 {
     byte p128, p129, p130, p131, p132, p133, p134, p135, p136, p137, p138, p139, p140, p142, p143, p144;
@@ -105,7 +102,7 @@ public class NetworkPublication
 {
     enum State
     {
-        ACTIVE, DRAINING, LINGER, CLOSING
+        ACTIVE, DRAINING, LINGER, DONE
     }
 
     private final long registrationId;
@@ -159,7 +156,7 @@ public class NetworkPublication
     private final AtomicCounter shortSends;
     private final AtomicCounter unblockedPublications;
 
-    public NetworkPublication(
+    NetworkPublication(
         final long registrationId,
         final MediaDriver.Context ctx,
         final PublicationParams params,
@@ -474,8 +471,7 @@ public class NetworkPublication
         }
     }
 
-    public void onRttMeasurement(
-        final RttMeasurementFlyweight msg, @SuppressWarnings("unused") final InetSocketAddress srcAddress)
+    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
     {
         if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
         {
@@ -811,7 +807,6 @@ public class NetworkPublication
         {
             case ACTIVE:
             {
-                checkUntetheredSubscriptions(timeNs, conductor);
                 updateConnectedStatus();
                 final long producerPosition = producerPosition();
                 publisherPos.setOrdered(producerPosition);
@@ -819,6 +814,7 @@ public class NetworkPublication
                 {
                     checkForBlockedPublisher(producerPosition, senderPosition.getVolatile(), timeNs);
                 }
+                checkUntetheredSubscriptions(timeNs, conductor);
                 break;
             }
 
@@ -858,7 +854,7 @@ public class NetworkPublication
                 {
                     channelEndpoint.decRef();
                     conductor.cleanupPublication(this);
-                    state = State.CLOSING;
+                    state = State.DONE;
                 }
                 break;
         }
@@ -873,9 +869,6 @@ public class NetworkPublication
     {
         if (0 == --refCount)
         {
-            state = State.DRAINING;
-            timeOfLastActivityNs = nanoClock.nanoTime();
-
             final long producerPosition = producerPosition();
             publisherLimit.setOrdered(producerPosition);
             endOfStreamPosition(metaDataBuffer, producerPosition);
@@ -884,6 +877,9 @@ public class NetworkPublication
             {
                 isEndOfStream = true;
             }
+
+            timeOfLastActivityNs = nanoClock.nanoTime();
+            state = State.DRAINING;
         }
     }
 

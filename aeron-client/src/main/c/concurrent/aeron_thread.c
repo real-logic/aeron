@@ -25,6 +25,8 @@
 #include <unistd.h>
 #else
 #include <windows.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 struct aeron_thread_stct
 {
@@ -41,10 +43,12 @@ struct aeron_thread_stct
 void aeron_nano_sleep(uint64_t nanoseconds)
 {
 #ifdef AERON_COMPILER_MSVC
+    timeBeginPeriod(1);
+
     HANDLE timer = CreateWaitableTimer(NULL, TRUE, NULL);
     if (!timer)
     {
-        return;
+        goto cleanup;
     }
 
     LARGE_INTEGER li;
@@ -53,11 +57,14 @@ void aeron_nano_sleep(uint64_t nanoseconds)
     if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE))
     {
         CloseHandle(timer);
-        return;
+        goto cleanup;
     }
 
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
+
+cleanup:
+    timeEndPeriod(1);
 #else
     time_t seconds = nanoseconds / SECOND_AS_NANOSECONDS;
     struct timespec ts =

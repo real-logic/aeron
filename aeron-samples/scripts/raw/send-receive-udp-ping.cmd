@@ -26,4 +26,5 @@ set /p VERSION=<..\..\..\version.txt
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:+UseParallelOldGC ^
+    -Djava.net.preferIPv4Stack=true ^
     %JVM_OPTS% io.aeron.samples.raw.SendReceiveUdpPing %*

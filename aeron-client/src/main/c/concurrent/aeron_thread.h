@@ -25,7 +25,7 @@
 void aeron_thread_set_name(const char *role_name);
 
 void aeron_nano_sleep(uint64_t nanoseconds);
-void aeron_micro_sleep(size_t microseconds);
+void aeron_micro_sleep(unsigned int microseconds);
 
 #if defined(AERON_COMPILER_GCC)
 

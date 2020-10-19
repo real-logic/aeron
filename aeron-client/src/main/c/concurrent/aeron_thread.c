@@ -77,10 +77,10 @@ cleanup:
 #endif
 }
 
-void aeron_micro_sleep(size_t microseconds)
+void aeron_micro_sleep(unsigned int microseconds)
 {
 #ifdef _WIN32
-    aeron_nano_sleep(1000 * microseconds);
+    aeron_nano_sleep(UINT64_C(1000) * microseconds);
 #else
     usleep(microseconds);
 #endif

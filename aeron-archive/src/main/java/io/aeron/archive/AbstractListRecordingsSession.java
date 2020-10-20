@@ -22,12 +22,6 @@ abstract class AbstractListRecordingsSession implements Session
 {
     static final int MAX_SCANS_PER_WORK_CYCLE = 256;
 
-    final UnsafeBuffer descriptorBuffer;
-    final Catalog catalog;
-    final ControlSession controlSession;
-    final ControlResponseProxy proxy;
-    final long correlationId;
-    boolean isDone = false;
     private final UnsafeBuffer descriptorBuffer;
     private final Catalog catalog;
     private final int count;
@@ -142,5 +136,5 @@ abstract class AbstractListRecordingsSession implements Session
         controlSession.activeListing(null);
     }
 
-    protected abstract boolean acceptDescriptor(UnsafeBuffer descriptorBuffer);
+    abstract boolean acceptDescriptor(UnsafeBuffer descriptorBuffer);
 }

@@ -39,7 +39,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         );
     }
 
-    protected boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)
+    boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)
     {
         return true;
     }

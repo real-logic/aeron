@@ -56,39 +56,39 @@ typedef struct aeron_driver_agent_frame_log_header_stct
 }
 aeron_driver_agent_frame_log_header_t;
 
-typedef struct aeron_driver_agent_map_raw_log_op_header_stct
+typedef struct aeron_driver_agent_raw_log_op_header_stct
 {
     int64_t time_ms;
-    union map_raw_log_un
+    union raw_log_un
     {
-        struct map_raw_log_stct
+        struct raw_log_map_stct
         {
             aeron_mapped_raw_log_t log;
             int result;
             uintptr_t addr;
             int32_t path_len;
         }
-        map_raw_log;
+        raw_log_map;
 
-        struct map_raw_log_close_stct
+        struct raw_log_close_stct
         {
             aeron_mapped_raw_log_t log;
             int result;
             uintptr_t addr;
         }
-        map_raw_log_close;
+        raw_log_close;
 
-        struct map_raw_log_free_stct
+        struct raw_log_free_stct
         {
             aeron_mapped_raw_log_t log;
             bool result;
             uintptr_t addr;
         }
-        map_raw_log_free;
+        raw_log_free;
     }
-    map_raw;
+    raw_log;
 }
-aeron_driver_agent_map_raw_log_op_header_t;
+aeron_driver_agent_raw_log_op_header_t;
 
 typedef struct aeron_driver_agent_untethered_subscription_state_change_log_header_stct
 {
@@ -156,7 +156,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 void aeron_driver_agent_conductor_to_client_interceptor(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 
-int aeron_driver_agent_map_raw_log_interceptor(
+int aeron_driver_agent_raw_log_map_interceptor(
     aeron_mapped_raw_log_t *mapped_raw_log,
     const char *path,
     bool use_sparse_files,

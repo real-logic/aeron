@@ -313,7 +313,7 @@ TEST_F(DriverAgentTest, shouldLogMapRawLogCommand)
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *path = ":unknown/path";
 
-    EXPECT_EQ(-1, aeron_driver_agent_map_raw_log_interceptor(&mapped_raw_log, path, false, 1024, 4096));
+    EXPECT_EQ(-1, aeron_driver_agent_raw_log_map_interceptor(&mapped_raw_log, path, false, 1024, 4096));
 
     auto message_handler =
             [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -321,16 +321,16 @@ TEST_F(DriverAgentTest, shouldLogMapRawLogCommand)
                 size_t *count = (size_t *)clientd;
                 (*count)++;
 
-                EXPECT_EQ(msg_type_id, AERON_MAP_RAW_LOG_OP);
+                EXPECT_EQ(msg_type_id, AERON_RAW_LOG_MAP_OP);
 
                 char *buffer = (char *)msg;
-                aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+                aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
                 EXPECT_NE(hdr->time_ms, 0);
-                EXPECT_EQ(hdr->map_raw.map_raw_log.path_len, 13);
-                EXPECT_NE(hdr->map_raw.map_raw_log.addr, (uint64_t)0);
-                EXPECT_EQ(hdr->map_raw.map_raw_log.result, -1);
+                EXPECT_EQ(hdr->raw_log.raw_log_map.path_len, 13);
+                EXPECT_NE(hdr->raw_log.raw_log_map.addr, (uint64_t)0);
+                EXPECT_EQ(hdr->raw_log.raw_log_map.result, -1);
                 EXPECT_EQ(
-                        strcmp(":unknown/path", buffer + sizeof(aeron_driver_agent_map_raw_log_op_header_t)),
+                        strcmp(":unknown/path", buffer + sizeof(aeron_driver_agent_raw_log_op_header_t)),
                         0);
             };
 
@@ -352,7 +352,7 @@ TEST_F(DriverAgentTest, shouldLogMapRawLogCommandBigMessage)
     path[path_length - 1] = 'X';
     path[path_length] = '\0';
 
-    EXPECT_EQ(-1, aeron_driver_agent_map_raw_log_interceptor(&mapped_raw_log, path, false, 1024, 4096));
+    EXPECT_EQ(-1, aeron_driver_agent_raw_log_map_interceptor(&mapped_raw_log, path, false, 1024, 4096));
 
     auto message_handler =
             [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -360,16 +360,16 @@ TEST_F(DriverAgentTest, shouldLogMapRawLogCommandBigMessage)
                 size_t *count = (size_t *)clientd;
                 (*count)++;
 
-                EXPECT_EQ(msg_type_id, AERON_MAP_RAW_LOG_OP);
+                EXPECT_EQ(msg_type_id, AERON_RAW_LOG_MAP_OP);
 
                 char *buffer = (char *)msg;
-                aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+                aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
                 EXPECT_NE(hdr->time_ms, 0);
-                EXPECT_EQ(hdr->map_raw.map_raw_log.path_len, MAX_FRAME_LENGTH * 11);
-                EXPECT_NE(hdr->map_raw.map_raw_log.addr, (uint64_t)0);
-                EXPECT_EQ(hdr->map_raw.map_raw_log.result, -1);
+                EXPECT_EQ(hdr->raw_log.raw_log_map.path_len, MAX_FRAME_LENGTH * 11);
+                EXPECT_NE(hdr->raw_log.raw_log_map.addr, (uint64_t)0);
+                EXPECT_EQ(hdr->raw_log.raw_log_map.result, -1);
                 EXPECT_EQ(
-                        memcmp(":", buffer + sizeof(aeron_driver_agent_map_raw_log_op_header_t), 1),
+                        memcmp(":", buffer + sizeof(aeron_driver_agent_raw_log_op_header_t), 1),
                         0);
                 EXPECT_EQ(memcmp("X", buffer + length -1, 1), 0);
             };

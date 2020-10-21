@@ -939,7 +939,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
-    if (getenv(AERON_AGENT_MASK_ENV_VAR))
+    if (getenv(AERON_EVENT_LOG_ENV_VAR))
     {
         if (aeron_driver_agent_context_init(_context) < 0)
         {

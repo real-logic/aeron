@@ -20,25 +20,111 @@
 #include "aeron_driver_conductor.h"
 #include "command/aeron_control_protocol.h"
 
-#define AERON_AGENT_MASK_ENV_VAR "AERON_EVENT_LOG"
+#define AERON_EVENT_LOG_ENV_VAR "AERON_EVENT_LOG"
 #define AERON_EVENT_LOG_FILENAME_ENV_VAR "AERON_EVENT_LOG_FILENAME"
 #define RING_BUFFER_LENGTH (8 * 1024 * 1024)
 #define MAX_CMD_LENGTH (512)
 #define MAX_FRAME_LENGTH (1408)
 
-#define AERON_CMD_IN (0x01)
-#define AERON_CMD_OUT (0x02)
-#define AERON_FRAME_IN (0x04)
-#define AERON_FRAME_IN_DROPPED (0x08)
-#define AERON_FRAME_OUT (0x10)
-#define AERON_RAW_LOG_MAP_OP (0x20)
-#define AERON_RAW_LOG_CLOSE_OP (0x40)
-#define AERON_UNTETHERED_SUBSCRIPTION_STATE_CHANGE (0x80)
-#define AERON_DYNAMIC_DISSECTOR_EVENT (0x100)
-#define AERON_RAW_LOG_FREE_OP (0x200)
+#define AERON_DRIVER_AGENT_LOG_CONTEXT "DRIVER"
+#define AERON_DRIVER_AGENT_ALL_EVENTS "all"
+#define AERON_DRIVER_AGENT_ADMIN_EVENTS "admin"
+#define AERON_DRIVER_AGENT_EVENT_SEPARATOR ", "
+#define AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME "unknown"
 
-/* commands only (not mask values) */
-#define AERON_ADD_DYNAMIC_DISSECTOR (0x010000)
+typedef enum aeron_driver_agent_event_enum
+{
+    AERON_DRIVER_EVENT_FRAME_IN = 1,
+    AERON_DRIVER_EVENT_FRAME_OUT = 2,
+    AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION = 3,
+    AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION = 4,
+    AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION = 5,
+    AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION = 6,
+    AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY = 7,
+    AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE = 8,
+    AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS = 12,
+    AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT = 13,
+    AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP = 14,
+    AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP = 15,
+    AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP = 16,
+    AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE = 17,
+    AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION = 23,
+    AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION = 24,
+    AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE = 25,
+    AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE = 26,
+    AERON_DRIVER_EVENT_CMD_IN_ADD_DESTINATION = 30,
+    AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION = 31,
+    AERON_DRIVER_EVENT_CMD_IN_ADD_EXCLUSIVE_PUBLICATION = 32,
+    AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY = 33,
+    AERON_DRIVER_EVENT_CMD_OUT_ERROR = 34,
+    AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER = 35,
+    AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER = 36,
+    AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY = 37,
+    AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY = 38,
+    AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER = 39,
+    AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE = 40,
+    AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION = 41,
+    AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION = 42,
+    AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT = 43,
+    AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER = 44,
+    AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE = 45,
+    AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_ADDED = 46,
+    AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_REMOVED = 47,
+
+    AERON_DRIVER_EVENT_NUM_ELEMENTS // number of elements in this enum (including gaps)
+} aeron_driver_agent_event_t;
+
+static const char aeron_driver_agent_event_names[AERON_DRIVER_EVENT_NUM_ELEMENTS][64] =
+{
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        "FRAME_IN",
+        "FRAME_OUT",
+        "CMD_IN_ADD_PUBLICATION",
+        "CMD_IN_REMOVE_PUBLICATION",
+        "CMD_IN_ADD_SUBSCRIPTION",
+        "CMD_IN_REMOVE_SUBSCRIPTION",
+        "CMD_OUT_PUBLICATION_READY",
+        "CMD_OUT_AVAILABLE_IMAGE",
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        "CMD_OUT_ON_OPERATION_SUCCESS",
+        "CMD_IN_KEEPALIVE_CLIENT",
+        "REMOVE_PUBLICATION_CLEANUP",
+        "REMOVE_SUBSCRIPTION_CLEANUP",
+        "REMOVE_IMAGE_CLEANUP",
+        "CMD_OUT_ON_UNAVAILABLE_IMAGE",
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        "SEND_CHANNEL_CREATION",
+        "RECEIVE_CHANNEL_CREATION",
+        "SEND_CHANNEL_CLOSE",
+        "RECEIVE_CHANNEL_CLOSE",
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+        "CMD_IN_ADD_DESTINATION",
+        "CMD_IN_REMOVE_DESTINATION",
+        "CMD_IN_ADD_EXCLUSIVE_PUBLICATION",
+        "CMD_OUT_EXCLUSIVE_PUBLICATION_READY",
+        "CMD_OUT_ERROR",
+        "CMD_IN_ADD_COUNTER",
+        "CMD_IN_REMOVE_COUNTER",
+        "CMD_OUT_SUBSCRIPTION_READY",
+        "CMD_OUT_COUNTER_READY",
+        "CMD_OUT_ON_UNAVAILABLE_COUNTER",
+        "CMD_IN_CLIENT_CLOSE",
+        "CMD_IN_ADD_RCV_DESTINATION",
+        "CMD_IN_REMOVE_RCV_DESTINATION",
+        "CMD_OUT_ON_CLIENT_TIMEOUT",
+        "CMD_IN_TERMINATE_DRIVER",
+        "UNTETHERED_SUBSCRIPTION_STATE_CHANGE",
+        "NAME_RESOLUTION_NEIGHBOUR_ADDED",
+        "NAME_RESOLUTION_NEIGHBOUR_REMOVED"
+};
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
@@ -56,40 +142,6 @@ typedef struct aeron_driver_agent_frame_log_header_stct
 }
 aeron_driver_agent_frame_log_header_t;
 
-typedef struct aeron_driver_agent_raw_log_op_header_stct
-{
-    int64_t time_ms;
-    union raw_log_un
-    {
-        struct raw_log_map_stct
-        {
-            aeron_mapped_raw_log_t log;
-            int result;
-            uintptr_t addr;
-            int32_t path_len;
-        }
-        raw_log_map;
-
-        struct raw_log_close_stct
-        {
-            aeron_mapped_raw_log_t log;
-            int result;
-            uintptr_t addr;
-        }
-        raw_log_close;
-
-        struct raw_log_free_stct
-        {
-            aeron_mapped_raw_log_t log;
-            bool result;
-            uintptr_t addr;
-        }
-        raw_log_free;
-    }
-    raw_log;
-}
-aeron_driver_agent_raw_log_op_header_t;
-
 typedef struct aeron_driver_agent_untethered_subscription_state_change_log_header_stct
 {
     int64_t time_ms;
@@ -101,24 +153,6 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
-typedef void (*aeron_driver_agent_generic_dissector_func_t)(
-    FILE *fpout, const char *time_str, const void *message, size_t len);
-
-typedef struct aeron_driver_agent_add_dissector_header_stct
-{
-    int64_t time_ms;
-    int64_t index;
-    aeron_driver_agent_generic_dissector_func_t dissector_func;
-}
-aeron_driver_agent_add_dissector_header_t;
-
-typedef struct aeron_driver_agent_dynamic_event_header_stct
-{
-    int64_t time_ms;
-    int64_t index;
-}
-aeron_driver_agent_dynamic_event_header_t;
-
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
@@ -129,19 +163,19 @@ const char *aeron_driver_agent_dissect_timestamp(int64_t time_ms);
 
 const char *aeron_driver_agent_dissect_log_start(int64_t time_ms);
 
-int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_dissector_func_t func);
-
-void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length);
-
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
-int aeron_init_logging_events_interceptors(aeron_driver_context_t *context);
+int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *context);
 
-void aeron_init_logging_ring_buffer();
+void aeron_driver_agent_logging_ring_buffer_init();
 
-void aeron_free_logging_ring_buffer();
+void aeron_driver_agent_logging_ring_buffer_free();
 
-void aeron_set_logging_mask(uint64_t new_mask);
+bool aeron_driver_agent_logging_events_init(const char *event_log);
+
+void aeron_driver_agent_logging_events_free();
+
+bool aeron_driver_agent_is_event_enabled(aeron_driver_agent_event_t id);
 
 void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     aeron_tetherable_position_t *tetherable_position,
@@ -156,16 +190,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 void aeron_driver_agent_conductor_to_client_interceptor(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 
-int aeron_driver_agent_raw_log_map_interceptor(
-    aeron_mapped_raw_log_t *mapped_raw_log,
-    const char *path,
-    bool use_sparse_files,
-    uint64_t term_length,
-    uint64_t page_size);
-
 void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len);
-
-void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length);
 
 #endif //AERON_DRIVER_AGENT_H

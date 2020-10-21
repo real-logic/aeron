@@ -471,7 +471,7 @@ TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking
     frame->frame_length = (int32_t)res_offset;
     log_header->message_len = frame->frame_length;
 
-    aeron_env_set(AERON_AGENT_MASK_ENV_VAR, "0xFFFF");
+    aeron_env_set(AERON_EVENT_LOG_ENV_VAR, AERON_DRIVER_AGENT_ALL_EVENTS);
     aeron_driver_agent_context_init(m_a.context);
-    aeron_driver_agent_log_dissector(AERON_FRAME_IN, buffer, res_offset, nullptr);
+    aeron_driver_agent_log_dissector(AERON_DRIVER_EVENT_FRAME_IN, buffer, res_offset, nullptr);
 }

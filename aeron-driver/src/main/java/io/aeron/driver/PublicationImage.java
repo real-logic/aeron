@@ -30,10 +30,7 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.CachedEpochClock;
-import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -98,6 +95,23 @@ public class PublicationImage
     extends PublicationImagePadding3
     implements LossHandler, DriverManagedResource, Subscribable
 {
+    private static final long BEGIN_SM_CHANGE_OFFSET;
+    private static final long END_SM_CHANGE_OFFSET;
+
+    static
+    {
+        try
+        {
+            BEGIN_SM_CHANGE_OFFSET = UNSAFE.objectFieldOffset(
+                PublicationImage.class.getDeclaredField("beginSmChange"));
+            END_SM_CHANGE_OFFSET = UNSAFE.objectFieldOffset(PublicationImage.class.getDeclaredField("endSmChange"));
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
+
     enum State
     {
         INIT, ACTIVE, DRAINING, LINGER, DONE
@@ -894,13 +908,13 @@ public class PublicationImage
     private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
     {
         final long changeNumber = beginSmChange + 1;
-        beginSmChange = changeNumber;
+        UNSAFE.putOrderedLong(this, BEGIN_SM_CHANGE_OFFSET, changeNumber);
+        UNSAFE.storeFence();
 
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
 
-        endSmChange = changeNumber;
-
+        UNSAFE.putOrderedLong(this, END_SM_CHANGE_OFFSET, changeNumber);
         timeOfLastStatusMessageScheduleNs = nowNs;
     }
 

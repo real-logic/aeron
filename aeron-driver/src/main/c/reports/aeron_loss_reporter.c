@@ -39,8 +39,8 @@ aeron_loss_reporter_entry_offset_t aeron_loss_reporter_create_entry(
     aeron_loss_reporter_entry_offset_t entry_offset = -1;
     const size_t required_capacity =
         sizeof(aeron_loss_reporter_entry_t) +
-            AERON_ALIGN((sizeof(int32_t) + channel_length), sizeof(int32_t)) +
-            (sizeof(int32_t) + source_length);
+        AERON_ALIGN((sizeof(int32_t) + channel_length), sizeof(int32_t)) +
+        (sizeof(int32_t) + source_length);
 
     if (required_capacity <= (reporter->capacity - reporter->next_record_offset))
     {

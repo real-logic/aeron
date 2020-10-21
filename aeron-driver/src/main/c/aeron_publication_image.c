@@ -292,6 +292,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     const int64_t change_number = image->begin_loss_change + 1;
 
     AERON_PUT_ORDERED(image->begin_loss_change, change_number);
+    aeron_release();
 
     image->loss_term_id = term_id;
     image->loss_term_offset = term_offset;

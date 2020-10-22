@@ -127,8 +127,8 @@ TEST_F(StrUtilTest, nullStringsAreEqual)
 
 TEST_F(StrUtilTest, emptyStringsAreEqual)
 {
-    char str1[] = { '\0' };
-    char str2[] = { '\0' };
+    char str1[] = "";
+    char str2[] = "";
 
     EXPECT_TRUE(aeron_strn_equals(str1, str2, 3));
 }

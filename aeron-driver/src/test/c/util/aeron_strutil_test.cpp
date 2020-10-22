@@ -127,10 +127,17 @@ TEST_F(StrUtilTest, nullStringsAreEqual)
 
 TEST_F(StrUtilTest, emptyStringsAreEqual)
 {
-    char str1[1];
-    char str2[1];
+    char str1[] = { '\0' };
+    char str2[] = { '\0' };
 
     EXPECT_TRUE(aeron_strn_equals(str1, str2, 3));
+}
+
+TEST_F(StrUtilTest, stringIsEqualToItself)
+{
+    const char *str1 = "test";
+
+    EXPECT_TRUE(aeron_strn_equals(str1, str1, 40));
 }
 
 TEST_F(StrUtilTest, nullTerminatedStringsAreEqual)

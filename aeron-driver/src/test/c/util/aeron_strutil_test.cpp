@@ -119,3 +119,70 @@ TEST_F(StrUtilTest, shouldHandleNull)
 
     EXPECT_EQ(num_tokens, -EINVAL);
 }
+
+TEST_F(StrUtilTest, nullStringsAreEqual)
+{
+    EXPECT_TRUE(aeron_strn_equals(nullptr, nullptr, 10));
+}
+
+TEST_F(StrUtilTest, emptyStringsAreEqual)
+{
+    char str1[1];
+    char str2[1];
+
+    EXPECT_TRUE(aeron_strn_equals(str1, str2, 3));
+}
+
+TEST_F(StrUtilTest, nullTerminatedStringsAreEqual)
+{
+    std::string input = "This is the string to match";
+    const char *str1 = input.c_str();
+    char *str2 = new char[input.length() + 1];
+    strcpy(str2, input.c_str());
+    
+    ASSERT_EQ('\0', str1[input.length()]);
+    ASSERT_EQ('\0', str2[input.length()]);
+
+    EXPECT_TRUE(aeron_strn_equals(str1, str2, 100));
+    EXPECT_TRUE(aeron_strn_equals(str2, str1, 10000));
+
+    aeron_free(str2);
+}
+
+TEST_F(StrUtilTest, nonNullTerminatedStringsAreNotEqual)
+{
+    std::string input = "There will be no match here!";
+    const char *str1 = input.c_str();
+    char *str2 = new char[input.length() + 1];
+    strncpy(str2, input.c_str(), input.length());
+    str2[input.length()] = -1;
+
+    EXPECT_FALSE(aeron_strn_equals(str1, str2, 100));
+    EXPECT_FALSE(aeron_strn_equals(str2, str1, 222));
+
+    aeron_free(str2);
+}
+
+TEST_F(StrUtilTest, prefixMatchBasedOnTheGivenLength)
+{
+    const char *str1 = "abc";
+    const char *str2 = "abcDEF";
+
+    EXPECT_TRUE(aeron_strn_equals(str1, str2, 3));
+    EXPECT_TRUE(aeron_strn_equals(str2, str1, 3));
+
+    EXPECT_FALSE(aeron_strn_equals(str1, str2, 4));
+    EXPECT_FALSE(aeron_strn_equals(str2, str1, 4));
+}
+
+TEST_F(StrUtilTest, prefixMatchNonNullTerminatedStrings)
+{
+    const char str1[] = {'h', 'e', 'l', 'l', 'o', -1};
+    const char str2[] = {'h', 'e', 'l', 'l', 'o', ',', 'w', 'o', 'r', 'l', 'd', -1};
+
+    EXPECT_TRUE(aeron_strn_equals(str1, str2, 5));
+    EXPECT_TRUE(aeron_strn_equals(str2, str1, 5));
+
+    EXPECT_FALSE(aeron_strn_equals(str1, str2, 6));
+    EXPECT_FALSE(aeron_strn_equals(str2, str1, 6));
+}

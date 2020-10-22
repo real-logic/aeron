@@ -19,6 +19,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
+#include <string.h>
+#include <assert.h>
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp);
 
@@ -57,6 +60,64 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
  * ERANGE: number of tokens is greater than max_tokens.
  */
 int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char **tokens);
+
+/**
+ * Compare two strings for equality up to the specified length. The comparison stops upon first non-equal character,
+ * if the null-character is found in one of the strings or the max length reached.
+ *
+ * @param str1 first string to compare.
+ * @param str2 second string to compare.
+ * @param length number of characters to compare.
+ * @return true if strings are equal up to the specified length.
+ */
+inline bool aeron_strn_equals(const char *str1, const char *str2, const size_t length)
+{
+    if (str1 == str2)
+    {
+        return true;
+    }
+    else if (NULL == str1 || NULL == str2)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < length; i++)
+    {
+        if (str1[i] != str2[i])
+        {
+            return false;
+        }
+        else if (str1[i] == '\0')
+        {
+           return true;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Compare two null-terminated strings for equality. The comparison stops upon first non-equal character found or
+ * upon null-character is found in one of the strings.
+ *
+ * Note: if strings are not null-terminated or longer than 1024 characters the comparison will stop after 1024
+ * iterations. Calling this method is equivalent of calling:
+ * <pre>
+ *      aeron_strn_equals(str1, str2, 1024);
+ * </pre>
+ *
+ * @param str1 first string.
+ * @param str2 second string.
+ * @return true if strings are equal (or if first 1024 characters are equal in case of very long strings).
+ */
+inline bool aeron_str_equals(const char *str1, const char *str2)
+{
+    static const size_t max_length = 1024;
+    assert (strlen(str1) <= max_length);
+    assert (strlen(str2) <= max_length);
+
+    return aeron_strn_equals(str1, str2, max_length);
+}
 
 #if defined(AERON_DLL_EXPORTS)
 #define AERON_EXPORT __declspec(dllexport)

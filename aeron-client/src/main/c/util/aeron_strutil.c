@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
-#include <string.h>
 
 #define AERON_DLL_EXPORTS
 
@@ -175,3 +174,5 @@ int getopt(int argc, char *const argv[], const char *optstring)
 #endif
 
 extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);
+extern bool aeron_strn_equals(const char *str1, const char *str2, size_t length);
+extern bool aeron_str_equals(const char *str1, const char *str2);

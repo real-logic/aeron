@@ -593,7 +593,7 @@ inline size_t aeron_driver_conductor_num_active_network_subscriptions(
         aeron_udp_channel_t *udp_channel = link->endpoint->conductor_fields.udp_channel;
 
         if (stream_id == link->stream_id &&
-            strncmp(original_uri, udp_channel->original_uri, udp_channel->uri_length) == 0)
+            aeron_strn_equals(original_uri, udp_channel->original_uri, udp_channel->uri_length))
         {
             num += link->subscribable_list.length;
         }
@@ -613,7 +613,7 @@ inline size_t aeron_driver_conductor_num_active_spy_subscriptions(
         aeron_udp_channel_t *udp_channel = link->spy_channel;
 
         if (stream_id == link->stream_id &&
-            strncmp(original_uri, udp_channel->original_uri, udp_channel->uri_length) == 0)
+            aeron_strn_equals(original_uri, udp_channel->original_uri, udp_channel->uri_length))
         {
             num += link->subscribable_list.length;
         }
@@ -630,7 +630,7 @@ inline aeron_send_channel_endpoint_t * aeron_driver_conductor_find_send_channel_
         aeron_send_channel_endpoint_t *endpoint = conductor->send_channel_endpoints.array[i].endpoint;
         const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
-        if (strncmp(original_uri, udp_channel->original_uri, udp_channel->uri_length) == 0)
+        if (aeron_strn_equals(original_uri, udp_channel->original_uri, udp_channel->uri_length))
         {
             return endpoint;
         }
@@ -647,7 +647,7 @@ inline aeron_receive_channel_endpoint_t * aeron_driver_conductor_find_receive_ch
         aeron_receive_channel_endpoint_t *endpoint = conductor->receive_channel_endpoints.array[i].endpoint;
         aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
-        if (strncmp(original_uri, udp_channel->original_uri, udp_channel->uri_length) == 0)
+        if (aeron_strn_equals(original_uri, udp_channel->original_uri, udp_channel->uri_length))
         {
             return endpoint;
         }

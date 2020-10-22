@@ -35,6 +35,7 @@ extern "C"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_client_conductor.h"
+#include "util/aeron_strutil.h"
 }
 
 #define CAPACITY (1024)
@@ -615,7 +616,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationAndHandleOnNewPublication)
         int32_t session_id,
         int64_t correlation_id)
     {
-        EXPECT_EQ(strcmp(channel, PUB_URI), 0);
+        EXPECT_TRUE(aeron_str_equals(channel, PUB_URI));
         EXPECT_EQ(stream_id, STREAM_ID);
         EXPECT_EQ(session_id, SESSION_ID);
         EXPECT_EQ(correlation_id, async->registration_id);
@@ -652,7 +653,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationAndHandleOnNewPublicati
         int32_t session_id,
         int64_t correlation_id)
     {
-        EXPECT_EQ(strcmp(channel, PUB_URI), 0);
+        EXPECT_TRUE(aeron_str_equals(channel, PUB_URI));
         EXPECT_EQ(stream_id, STREAM_ID);
         EXPECT_EQ(session_id, SESSION_ID);
         EXPECT_EQ(correlation_id, async->registration_id);
@@ -690,7 +691,7 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionAndHandleOnNewSubscription)
         int32_t stream_id,
         int64_t correlation_id)
     {
-        EXPECT_EQ(strcmp(channel, SUB_URI), 0);
+        EXPECT_TRUE(aeron_str_equals(channel, SUB_URI));
         EXPECT_EQ(stream_id, STREAM_ID);
         EXPECT_EQ(correlation_id, async->registration_id);
 

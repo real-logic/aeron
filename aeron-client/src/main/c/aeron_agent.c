@@ -30,6 +30,7 @@
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_strutil.h"
 
 void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {
@@ -302,24 +303,24 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 
     *idle_strategy_state = NULL;
 
-    if (strncmp(idle_strategy_name, "sleep-ns", strlen("sleep-ns")) == 0 ||
-        strncmp(idle_strategy_name, "sleeping", strlen("sleeping")) == 0)
+    if (aeron_str_equals(idle_strategy_name, "sleep-ns") ||
+        aeron_str_equals(idle_strategy_name, "sleeping"))
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "yield", strlen("yield")) == 0)
+    else if (aeron_str_equals(idle_strategy_name, "yield"))
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "spin", strlen("spin")) == 0)
+    else if (aeron_str_equals(idle_strategy_name, "spin"))
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "noop", strlen("noop")) == 0)
+    else if (aeron_str_equals(idle_strategy_name, "noop"))
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
     }
-    else if (strncmp(idle_strategy_name, "backoff", strlen("backoff")) == 0)
+    else if (aeron_str_equals(idle_strategy_name, "backoff"))
     {
         return aeron_idle_strategy_load("aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
     }

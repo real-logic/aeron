@@ -25,6 +25,7 @@
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_strutil.h"
 #include "aeron_socket.h"
 
 #if defined(AERON_COMPILER_GCC)
@@ -186,7 +187,7 @@ int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
         prefixlen++;
     }
 
-    if (strcmp("0", prefixlen) == 0)
+    if (aeron_str_equals("0", prefixlen))
     {
         return 0;
     }

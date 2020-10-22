@@ -63,7 +63,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         return NULL;
     }
 
-    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
+    if (aeron_str_equals(bindings_name, "default"))
     {
         return aeron_udp_channel_transport_bindings_load_media("aeron_udp_channel_transport_bindings_default");
     }
@@ -92,7 +92,7 @@ static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_int
         return NULL;
     }
 
-    if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
+    if (aeron_str_equals(interceptor_name, "loss"))
     {
         return aeron_udp_channel_interceptor_bindings_load_interceptor("aeron_udp_channel_interceptor_loss_load");
     }

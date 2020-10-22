@@ -180,19 +180,19 @@ aeron_threading_mode_t aeron_config_parse_threading_mode(const char *threading_m
 
     if (NULL != threading_mode)
     {
-        if (strncmp(threading_mode, "SHARED", sizeof("SHARED")) == 0)
+        if (aeron_str_equals(threading_mode, "SHARED"))
         {
             result = AERON_THREADING_MODE_SHARED;
         }
-        else if (strncmp(threading_mode, "SHARED_NETWORK", sizeof("SHARED_NETWORK")) == 0)
+        else if (aeron_str_equals(threading_mode, "SHARED_NETWORK"))
         {
             result = AERON_THREADING_MODE_SHARED_NETWORK;
         }
-        else if (strncmp(threading_mode, "DEDICATED", sizeof("DEDICATED")) == 0)
+        else if (aeron_str_equals(threading_mode, "DEDICATED"))
         {
             result = AERON_THREADING_MODE_DEDICATED;
         }
-        else if (strncmp(threading_mode, "INVOKER", sizeof("INVOKER")) == 0)
+        else if (aeron_str_equals(threading_mode, "INVOKER"))
         {
             result = AERON_THREADING_MODE_INVOKER;
         }
@@ -212,11 +212,11 @@ aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
 
     if (NULL != inferable_boolean)
     {
-        if (strncmp(inferable_boolean, "true", sizeof("true")) == 0)
+        if (aeron_str_equals(inferable_boolean, "true"))
         {
             result = AERON_FORCE_TRUE;
         }
-        else if (strncmp(inferable_boolean, "infer", sizeof("infer")) == 0)
+        else if (aeron_str_equals(inferable_boolean, "infer"))
         {
             result = AERON_INFER;
         }

@@ -448,7 +448,7 @@ static int aeron_driver_name_resolver_on_resolution_entry(
     // Ignore own records that match me...
     if (cache_addr->port == aeron_driver_name_resolver_get_port(resolver) &&
         name_length && resolver->name_length &&
-        0 == strncmp(resolver->name, name, name_length))
+        aeron_strn_equals(resolver->name, name, name_length))
     {
         return 0;
     }
@@ -970,7 +970,7 @@ int aeron_driver_name_resolver_resolve(
     if (aeron_name_resolver_cache_lookup_by_name(
         &driver_resolver->cache, name, strlen(name), res_type, &cache_entry) < 0)
     {
-        if (0 == strncmp(name, driver_resolver->name, driver_resolver->name_length + 1))
+        if (aeron_strn_equals(name, driver_resolver->name, driver_resolver->name_length + 1))
         {
             memcpy(sock_addr, &driver_resolver->local_socket_addr, sizeof(struct sockaddr_storage));
             return 0;

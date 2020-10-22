@@ -534,7 +534,7 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     ASSERT_EQ(1, aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
 
     ASSERT_EQ(strlen(strategy), options.strategy_name_length);
-    ASSERT_TRUE(0 == strncmp(strategy, options.strategy_name, options.strategy_name_length));
+    ASSERT_TRUE(aeron_strn_equals(strategy, options.strategy_name, options.strategy_name_length));
     ASSERT_EQ(std::get<2>(GetParam()), options.timeout_ns.value);
     ASSERT_EQ(std::get<3>(GetParam()), options.group_tag.is_present);
     ASSERT_EQ(std::get<4>(GetParam()), options.group_tag.value);

@@ -20,6 +20,7 @@
 #include "aeron_socket.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
+#include "util/aeron_strutil.h"
 #include "aeron_name_resolver.h"
 
 typedef struct aeron_udp_channel_stct
@@ -62,7 +63,7 @@ inline bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel)
 
 inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b)
 {
-    return a == b || (a != NULL && 0 == strncmp(a->canonical_form, b->canonical_form, AERON_MAX_PATH));
+    return a == b || (a != NULL && b != NULL && aeron_strn_equals(a->canonical_form, b->canonical_form, AERON_MAX_PATH));
 }
 
 #endif //AERON_UDP_CHANNEL_H

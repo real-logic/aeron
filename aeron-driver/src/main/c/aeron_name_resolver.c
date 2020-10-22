@@ -26,6 +26,7 @@
 #include "util/aeron_parse_util.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_strutil.h"
 #include "aeron_name_resolver.h"
 
 #ifdef _MSC_VER
@@ -162,15 +163,15 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
         return NULL;
     }
 
-    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, sizeof(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)))
+    if (aeron_str_equals(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT))
     {
         supplier_func = aeron_default_name_resolver_supplier;
     }
-    else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, sizeof(AERON_NAME_RESOLVER_CSV_TABLE)))
+    else if (aeron_str_equals(name, AERON_NAME_RESOLVER_CSV_TABLE))
     {
         supplier_func = aeron_name_resolver_supplier_load("aeron_csv_table_name_resolver_supplier");
     }
-    else if (0 == strncmp(name, AERON_NAME_RESOLVER_DRIVER, sizeof(AERON_NAME_RESOLVER_DRIVER)))
+    else if (aeron_str_equals(name, AERON_NAME_RESOLVER_DRIVER))
     {
         supplier_func = aeron_name_resolver_supplier_load("aeron_driver_name_resolver_supplier");
     }

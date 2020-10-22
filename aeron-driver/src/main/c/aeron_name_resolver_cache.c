@@ -19,6 +19,7 @@
 
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_strutil.h"
 #include "aeron_name_resolver_cache.h"
 
 int aeron_name_resolver_cache_init(aeron_name_resolver_cache_t *cache, int64_t timeout_ms)
@@ -52,7 +53,7 @@ int aeron_name_resolver_cache_find_index_by_name_and_type(
 
         if (res_type == entry->cache_addr.res_type &&
             name_length == entry->name_length &&
-            0 == strncmp(name, entry->name, name_length))
+            aeron_strn_equals(name, entry->name, name_length))
         {
             return (int)i;
         }

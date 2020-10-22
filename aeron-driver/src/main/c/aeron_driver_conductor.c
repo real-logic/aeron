@@ -1771,7 +1771,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             correlation_id = command->correlated.correlation_id;
             const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
 
-            if (strncmp(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0)
+            if (aeron_strn_equals(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN))
             {
                 result = aeron_driver_conductor_on_add_ipc_publication(conductor, command, false);
             }
@@ -1795,7 +1795,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             correlation_id = command->correlated.correlation_id;
             const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
 
-            if (strncmp(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0)
+            if (aeron_strn_equals(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN))
             {
                 result = aeron_driver_conductor_on_add_ipc_publication(conductor, command, true);
             }
@@ -1834,11 +1834,11 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             correlation_id = command->correlated.correlation_id;
             const char *channel = (const char *)message + sizeof(aeron_subscription_command_t);
 
-            if (strncmp(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0)
+            if (aeron_strn_equals(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN))
             {
                 result = aeron_driver_conductor_on_add_ipc_subscription(conductor, command);
             }
-            else if (strncmp(channel, AERON_SPY_PREFIX, AERON_SPY_PREFIX_LEN) == 0)
+            else if (aeron_strn_equals(channel, AERON_SPY_PREFIX, AERON_SPY_PREFIX_LEN))
             {
                 result = aeron_driver_conductor_on_add_spy_subscription(conductor, command);
             }
@@ -2482,7 +2482,7 @@ int aeron_driver_conductor_on_add_network_publication(
             subscription_link->spy_channel->tag_id == tag_id : false;
 
         if (command->stream_id == subscription_link->stream_id &&
-            (0 == strncmp(
+            (aeron_strn_equals(
                 subscription_link->spy_channel->canonical_form,
                 endpoint_udp_channel->canonical_form,
                 subscription_link->spy_channel->canonical_length) || is_same_channel_tag) &&

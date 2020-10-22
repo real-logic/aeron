@@ -211,9 +211,9 @@ int aeron_udp_channel_parse(
     if (NULL != _channel->uri.params.udp.control_mode)
     {
         _channel->is_manual_control_mode =
-            strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE) == 0;
+            aeron_str_equals(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE);
         _channel->is_dynamic_control_mode =
-            strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE) == 0;
+            aeron_str_equals(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE);
     }
 
     if (_channel->is_dynamic_control_mode && NULL == _channel->uri.params.udp.control)

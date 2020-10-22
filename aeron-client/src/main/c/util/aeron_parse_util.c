@@ -22,6 +22,7 @@
 #include <string.h>
 #include "util/aeron_parse_util.h"
 #include "util/aeron_error.h"
+#include "util/aeron_strutil.h"
 
 const uint64_t AERON_MAX_G_VALUE = 8589934591ULL;
 const uint64_t AERON_MAX_M_VALUE = 8796093022207ULL;
@@ -193,12 +194,12 @@ bool aeron_parse_bool(const char *str, bool def)
 {
     if (NULL != str)
     {
-        if (strncmp(str, "1", 1) == 0 || strncmp(str, "on", 2) == 0 || strncmp(str, "true", 4) == 0)
+        if (aeron_str_equals(str, "1") || aeron_str_equals(str, "on") || aeron_str_equals(str, "true"))
         {
             return true;
         }
 
-        if (strncmp(str, "0", 1) == 0 || strncmp(str, "off", 3) == 0 || strncmp(str, "false", 5) == 0)
+        if (aeron_str_equals(str, "0") || aeron_str_equals(str, "off") || aeron_str_equals(str, "false"))
         {
             return false;
         }

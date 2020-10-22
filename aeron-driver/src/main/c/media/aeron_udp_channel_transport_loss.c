@@ -26,6 +26,7 @@
 #include "concurrent/aeron_thread.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"
+#include "util/aeron_strutil.h"
 #include "aeron_alloc.h"
 #include "aeron_windows.h"
 #include "aeron_udp_channel_transport_loss.h"
@@ -173,7 +174,7 @@ int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char 
     aeron_udp_channel_interceptor_loss_params_t *loss_params = clientd;
     int result = 0;
 
-    if (strncmp(key, "rate", sizeof("rate")) == 0)
+    if (aeron_str_equals(key, "rate"))
     {
         errno = 0;
         char *endptr;
@@ -185,7 +186,7 @@ int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char 
             result = -1;
         }
     }
-    else if (strncmp(key, "seed", sizeof("seed")) == 0)
+    else if (aeron_str_equals(key, "seed"))
     {
         errno = 0;
         char *endptr;
@@ -197,7 +198,7 @@ int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char 
             result = -1;
         }
     }
-    else if (strncmp(key, "recv-msg-mask", sizeof("recv-msg-mask")) == 0)
+    else if (aeron_str_equals(key, "recv-msg-mask"))
     {
         errno = 0;
         char *endptr;

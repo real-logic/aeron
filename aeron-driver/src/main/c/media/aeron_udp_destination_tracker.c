@@ -343,9 +343,7 @@ void aeron_udp_destination_tracker_resolution_change(
         for (size_t i = 0; i < tracker->destinations.length; i++)
         {
             aeron_udp_destination_entry_t *destination = &tracker->destinations.array[i];
-            const size_t endpoint_name_len = strlen(endpoint_name);
-
-            if (0 == strncmp(endpoint_name, destination->uri->params.udp.endpoint, endpoint_name_len + 1))
+            if (aeron_str_equals(endpoint_name, destination->uri->params.udp.endpoint))
             {
                 memcpy(&destination->addr, addr, sizeof(destination->addr));
             }

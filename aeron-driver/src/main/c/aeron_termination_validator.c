@@ -23,6 +23,7 @@
 #include <string.h>
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_strutil.h"
 #include "aeron_termination_validator.h"
 
 bool aeron_driver_termination_validator_default_allow(void *state, uint8_t *token_buffer, int32_t token_length)
@@ -39,11 +40,11 @@ aeron_driver_termination_validator_func_t aeron_driver_termination_validator_loa
 {
     aeron_driver_termination_validator_func_t func = NULL;
 
-    if (strncmp(validator_name, "allow", sizeof("allow")) == 0)
+    if (aeron_str_equals(validator_name, "allow"))
     {
         return aeron_driver_termination_validator_load("aeron_driver_termination_validator_default_allow");
     }
-    else if (strncmp(validator_name, "deny", sizeof("deny")) == 0)
+    else if (aeron_str_equals(validator_name, "deny"))
     {
         return aeron_driver_termination_validator_load("aeron_driver_termination_validator_default_deny");
     }

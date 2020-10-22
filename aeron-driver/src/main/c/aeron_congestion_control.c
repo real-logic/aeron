@@ -24,6 +24,7 @@
 #include "util/aeron_parse_util.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_strutil.h"
 #include "aeron_congestion_control.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
@@ -172,11 +173,9 @@ int aeron_congestion_control_default_strategy_supplier(
     }
 
     const char *cc_str = aeron_uri_find_param_value(&channel_uri.params.udp.additional_params, AERON_URI_CC_KEY);
-    size_t scc_length = sizeof(AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE) + 1;
-    size_t ccc_length = sizeof(AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE) + 1;
     int result = -1;
 
-    if (NULL == cc_str || 0 == strncmp(cc_str, AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE, scc_length))
+    if (NULL == cc_str || aeron_str_equals(cc_str, AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE))
     {
         result = aeron_static_window_congestion_control_strategy_supplier(
             strategy,
@@ -192,7 +191,7 @@ int aeron_congestion_control_default_strategy_supplier(
             context,
             counters_manager);
     }
-    else if (0 == strncmp(cc_str, AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE, ccc_length))
+    else if (aeron_str_equals(cc_str, AERON_CUBICCONGESTIONCONTROL_CC_PARAM_VALUE))
     {
         result = aeron_cubic_congestion_control_strategy_supplier(
             strategy,

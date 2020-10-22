@@ -24,6 +24,7 @@ extern "C"
 {
 #include "concurrent/aeron_atomic.h"
 #include "aeronc.h"
+#include "util/aeron_strutil.h"
 }
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"
@@ -382,7 +383,7 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessages)
     const char message[1024] = "message";
     size_t num_messages = 64 * 3 + 1;
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    bool isIpc = aeron_str_equals(AERON_IPC_CHANNEL, uri);
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|term-length=64k";
 
     ASSERT_TRUE(connect());
@@ -430,7 +431,7 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessagesWithTryClaim)
     const char message[1024] = "message";
     size_t num_messages = 64 * 3 + 1;
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    bool isIpc = aeron_str_equals(AERON_IPC_CHANNEL, uri);
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|term-length=64k";
 
     ASSERT_TRUE(connect());
@@ -482,7 +483,7 @@ TEST_P(CSystemTest, shouldOfferAndPollThreeTermsOfMessagesWithExclusivePublicati
     const char message[1024] = "message";
     size_t num_messages = 64 * 3 + 1;
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    bool isIpc = aeron_str_equals(AERON_IPC_CHANNEL, uri);
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|term-length=64k";
 
     ASSERT_TRUE(connect());
@@ -535,7 +536,7 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithNoPollAfter)
     size_t num_messages = 11;
     std::atomic<bool> on_unavailable_image_called = { false };
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    bool isIpc = aeron_str_equals(AERON_IPC_CHANNEL, uri);
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|linger=0";
 
     m_onUnavailableImage = [&](aeron_subscription_t *, aeron_image_t *)
@@ -595,7 +596,7 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
     size_t num_messages = 11;
     std::atomic<bool> on_unavailable_image_called = { false };
     const char *uri = std::get<0>(GetParam());
-    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    bool isIpc = aeron_str_equals(AERON_IPC_CHANNEL, uri);
     std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|linger=0";
 
     m_onUnavailableImage = [&](aeron_subscription_t *, aeron_image_t *)

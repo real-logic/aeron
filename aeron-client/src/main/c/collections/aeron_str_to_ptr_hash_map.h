@@ -56,7 +56,7 @@ inline bool aeron_str_to_ptr_hash_map_compare(
 {
     return (key->hash_code == key_hash_code &&
         key->str_length == key_str_len &&
-        strncmp(key->str, key_str, key_str_len) == 0);
+        aeron_strn_equals(key->str, key_str, key_str_len));
 }
 
 inline int aeron_str_to_ptr_hash_map_init(aeron_str_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor)

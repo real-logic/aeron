@@ -140,27 +140,27 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
 {
     aeron_udp_channel_params_t *params = (aeron_udp_channel_params_t *)clientd;
 
-    if (strcmp(key, AERON_UDP_CHANNEL_ENDPOINT_KEY) == 0)
+    if (aeron_str_equals(key, AERON_UDP_CHANNEL_ENDPOINT_KEY))
     {
         params->endpoint = value;
     }
-    else if (strcmp(key, AERON_UDP_CHANNEL_INTERFACE_KEY) == 0)
+    else if (aeron_str_equals(key, AERON_UDP_CHANNEL_INTERFACE_KEY))
     {
         params->bind_interface = value;
     }
-    else if (strcmp(key, AERON_UDP_CHANNEL_TTL_KEY) == 0)
+    else if (aeron_str_equals(key, AERON_UDP_CHANNEL_TTL_KEY))
     {
         params->ttl = value;
     }
-    else if (strcmp(key, AERON_UDP_CHANNEL_CONTROL_KEY) == 0)
+    else if (aeron_str_equals(key, AERON_UDP_CHANNEL_CONTROL_KEY))
     {
         params->control = value;
     }
-    else if (strcmp(key, AERON_UDP_CHANNEL_CONTROL_MODE_KEY) == 0)
+    else if (aeron_str_equals(key, AERON_UDP_CHANNEL_CONTROL_MODE_KEY))
     {
         params->control_mode = value;
     }
-    else if (strcmp(key, AERON_URI_TAGS_KEY) == 0)
+    else if (aeron_str_equals(key, AERON_URI_TAGS_KEY))
     {
         char *ptr = strchr(value, ',');
 
@@ -207,7 +207,7 @@ static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char 
 {
     aeron_ipc_channel_params_t *params = (aeron_ipc_channel_params_t *)clientd;
 
-    if (strcmp(key, AERON_URI_TAGS_KEY) == 0)
+    if (aeron_str_equals(key, AERON_URI_TAGS_KEY))
     {
         char *ptr = strchr(value, ',');
 
@@ -463,11 +463,11 @@ int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *re
     const char *value_str = aeron_uri_find_param_value(uri_params, key);
     if (value_str != NULL)
     {
-        if (strncmp("true", value_str, strlen("true")) == 0)
+        if (aeron_str_equals("true", value_str))
         {
             *retval = true;
         }
-        else if (strncmp("false", value_str, strlen("false")) == 0)
+        else if (aeron_str_equals("false", value_str))
         {
             *retval = false;
         }
@@ -487,11 +487,11 @@ int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *ur
     *uri_ats_status = AERON_URI_ATS_STATUS_DEFAULT;
     if (value_str != NULL)
     {
-        if (strncmp("true", value_str, strlen("true")) == 0)
+        if (aeron_str_equals("true", value_str))
         {
             *uri_ats_status = AERON_URI_ATS_STATUS_ENABLED;
         }
-        else if (strncmp("false", value_str, strlen("false")) == 0)
+        else if (aeron_str_equals("false", value_str))
         {
             *uri_ats_status = AERON_URI_ATS_STATUS_DISABLED;
         }

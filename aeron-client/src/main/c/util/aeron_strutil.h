@@ -68,7 +68,8 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
  * @param str1 first string to compare.
  * @param str2 second string to compare.
  * @param length number of characters to compare.
- * @return true if strings are equal up to the specified length.
+ * @return true if strings are equal up to the specified length, i.e. both strings have the same characters and are
+ *         either shorter then the specified length or are same up to the length.
  */
 inline bool aeron_strn_equals(const char *str1, const char *str2, const size_t length)
 {

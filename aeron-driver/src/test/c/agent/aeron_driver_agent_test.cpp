@@ -141,7 +141,7 @@ TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByValue)
 
 TEST_F(DriverAgentTest, shouldEnableMultipleEventsSplitByComma)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_REMOVE_COUNTER,33, NAME_RESOLUTION_NEIGHBOUR_ADDED,CMD_OUT_ERROR ,FRAME_OUT, "));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOUR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));

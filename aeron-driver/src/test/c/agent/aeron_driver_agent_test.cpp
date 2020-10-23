@@ -46,6 +46,15 @@ public:
 protected:
     aeron_driver_context_t *m_context = nullptr;
 
+    static void assert_all_events_disabled()
+    {
+        for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+        {
+            const auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
+            EXPECT_FALSE(aeron_driver_agent_is_event_enabled(event_id));
+        }
+    }
+
     static void assert_all_events_enabled()
     {
         for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
@@ -53,9 +62,10 @@ protected:
             const auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
             const auto event_name = aeron_driver_agent_event_name(event_id);
             const bool expected = 0 != strncmp(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
-            EXPECT_EQ(expected,aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(i)));
+            EXPECT_EQ(expected,aeron_driver_agent_is_event_enabled(event_id));
         }
 
+        EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NUM_ELEMENTS));
         EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNKNOWN_EVENT));
     }
 
@@ -89,7 +99,44 @@ protected:
         EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE));
         EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE));
     }
+
+    static void assert_cmd_id_events_enabled()
+    {
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_DESTINATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_EXCLUSIVE_PUBLICATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER));
+    }
+
+    static void assert_cmd_out_events_enabled()
+    {
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ERROR));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER));
+        EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT));
+    }
 };
+
+TEST_F(DriverAgentTest, shouldHaveAllEventsDisabledByDefault)
+{
+    assert_all_events_disabled();
+}
 
 TEST_F(DriverAgentTest, shouldEnabledAllLoggingEvents)
 {
@@ -174,6 +221,81 @@ TEST_F(DriverAgentTest, shouldAllowSpecialEventNamesInTheList)
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_ADDED));
     assert_admin_events_enabled();
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
+}
+
+TEST_F(DriverAgentTest, shouldEnableAllEventsUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0xFFFF"));
+
+    assert_all_events_enabled();
+}
+
+TEST_F(DriverAgentTest, shouldEnableAllCmdInEventsUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x1"));
+
+    assert_cmd_id_events_enabled();
+}
+
+TEST_F(DriverAgentTest, shouldEnableAllCmdOutEventsUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x2"));
+
+    assert_cmd_out_events_enabled();
+}
+
+TEST_F(DriverAgentTest, shouldEnableFrameInEventUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x4"));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
+}
+
+TEST_F(DriverAgentTest, shouldEnableFrameOutEventUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x8"));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
+}
+
+TEST_F(DriverAgentTest, shouldEnableFrameOutEventUsingMaskSecondValue)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x10"));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
+}
+
+TEST_F(DriverAgentTest, shouldEnableUntetheredStateChangeEventUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x80"));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE));
+}
+
+TEST_F(DriverAgentTest, shouldEnableMultipleEventsUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x8F"));
+
+    assert_cmd_id_events_enabled();
+    assert_cmd_out_events_enabled();
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE));
+}
+
+TEST_F(DriverAgentTest, shouldStopWhenMaskIsDetected)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x4,CMD_OUT_ON_UNAVAILABLE_COUNTER"));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER));
+}
+
+TEST_F(DriverAgentTest, shouldNotEnableAnyEventsIfInvalidMask)
+{
+    EXPECT_FALSE(aeron_driver_agent_logging_events_init("0x100,REMOVE_IMAGE_CLEANUP,FRAME_IN"));
+
+    assert_all_events_disabled();
 }
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)

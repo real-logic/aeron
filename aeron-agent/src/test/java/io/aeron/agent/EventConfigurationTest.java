@@ -68,13 +68,13 @@ public class EventConfigurationTest
             DriverEventCode.CMD_IN_CLIENT_CLOSE,
             DriverEventCode.UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
         assertEquals(expectedCodes,
-            getEnabledDriverEventCodes("FRAME_OUT,FRAME_IN, CMD_IN_CLIENT_CLOSE,UNTETHERED_SUBSCRIPTION_STATE_CHANGE ,"));
+            getEnabledDriverEventCodes("FRAME_OUT,FRAME_IN,CMD_IN_CLIENT_CLOSE,UNTETHERED_SUBSCRIPTION_STATE_CHANGE,"));
     }
 
     @Test
     public void allClusterEventsShouldBeEnabled()
     {
-        assertEquals(EnumSet.allOf(ClusterEventCode.class), getEnabledClusterEventCodes("all "));
+        assertEquals(EnumSet.allOf(ClusterEventCode.class), getEnabledClusterEventCodes("all"));
     }
 
     @Test
@@ -84,7 +84,7 @@ public class EventConfigurationTest
             ClusterEventCode.STATE_CHANGE,
             ClusterEventCode.NEW_LEADERSHIP_TERM,
             ClusterEventCode.ROLE_CHANGE),
-            getEnabledClusterEventCodes("STATE_CHANGE, NEW_LEADERSHIP_TERM,ROLE_CHANGE, "));
+            getEnabledClusterEventCodes("STATE_CHANGE,NEW_LEADERSHIP_TERM,ROLE_CHANGE,"));
     }
 
     @Test
@@ -97,6 +97,6 @@ public class EventConfigurationTest
     public void archiveEventsShouldBeParsedAsListOfEventCodes()
     {
         assertEquals(EnumSet.of(ArchiveEventCode.CATALOG_RESIZE, ArchiveEventCode.CMD_IN_TAGGED_REPLICATE),
-            getEnabledArchiveEventCodes("CATALOG_RESIZE, CMD_IN_TAGGED_REPLICATE   "));
+            getEnabledArchiveEventCodes("CATALOG_RESIZE,CMD_IN_TAGGED_REPLICATE,"));
     }
 }

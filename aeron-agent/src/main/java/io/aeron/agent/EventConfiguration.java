@@ -211,9 +211,8 @@ final class EventConfiguration
         final EnumSet<DriverEventCode> eventCodeSet = EnumSet.noneOf(DriverEventCode.class);
         final String[] codeIds = enabledEventCodes.split(",");
 
-        for (final String c : codeIds)
+        for (final String codeId : codeIds)
         {
-            final String codeId = c.trim();
             switch (codeId)
             {
                 case "all":
@@ -269,9 +268,8 @@ final class EventConfiguration
         final EnumSet<E> eventCodeSet = EnumSet.noneOf(eventCodeType);
         final String[] codeIds = enabledEventCodes.split(",");
 
-        for (final String c : codeIds)
+        for (final String codeId : codeIds)
         {
-            final String codeId = c.trim();
             if ("all".equals(codeId))
             {
                 return EnumSet.allOf(eventCodeType);

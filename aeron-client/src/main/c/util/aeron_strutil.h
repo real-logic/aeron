@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include "util/aeron_assert.h"
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp);
 
@@ -114,8 +115,8 @@ inline bool aeron_strn_equals(const char *str1, const char *str2, const size_t l
  */
 inline bool aeron_str_equals(const char *str1, const char *str2)
 {
-    assert (strlen(str1) <= AERON_STR_EQUAL_MAX_LENGTH);
-    assert (strlen(str2) <= AERON_STR_EQUAL_MAX_LENGTH);
+    AERON_ASSERT (strlen(str1) <= AERON_STR_EQUAL_MAX_LENGTH);
+    AERON_ASSERT (strlen(str2) <= AERON_STR_EQUAL_MAX_LENGTH);
     return aeron_strn_equals(str1, str2, AERON_STR_EQUAL_MAX_LENGTH);
 }
 

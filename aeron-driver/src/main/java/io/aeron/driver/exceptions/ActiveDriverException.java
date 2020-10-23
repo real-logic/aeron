@@ -22,6 +22,11 @@ import io.aeron.exceptions.AeronException;
  */
 public class ActiveDriverException extends AeronException
 {
+    /**
+     * Exception with provided message and {@link Category#ERROR}.
+     *
+     * @param message to detail the exception.
+     */
     public ActiveDriverException(final String message)
     {
         super(message);

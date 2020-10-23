@@ -37,7 +37,7 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
      */
     public static final String FC_PARAM_VALUE = "tagged";
 
-    public TaggedMulticastFlowControl()
+    TaggedMulticastFlowControl()
     {
         super(true);
     }

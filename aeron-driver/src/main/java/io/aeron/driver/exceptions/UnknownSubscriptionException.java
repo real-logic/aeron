@@ -22,6 +22,11 @@ import io.aeron.exceptions.AeronException;
  */
 public class UnknownSubscriptionException extends AeronException
 {
+    /**
+     * Exception with provided message and {@link Category#ERROR}.
+     *
+     * @param message to detail the exception.
+     */
     public UnknownSubscriptionException(final String message)
     {
         super(message);

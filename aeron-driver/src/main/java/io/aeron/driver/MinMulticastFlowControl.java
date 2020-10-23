@@ -30,7 +30,7 @@ public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl
      */
     public static final String FC_PARAM_VALUE = "min";
 
-    public MinMulticastFlowControl()
+    MinMulticastFlowControl()
     {
         super(false);
     }

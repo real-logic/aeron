@@ -70,60 +70,9 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_ADDED = 46,
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_REMOVED = 47,
 
-    AERON_DRIVER_EVENT_NUM_ELEMENTS // number of elements in this enum (including gaps)
+    AERON_DRIVER_EVENT_NUM_ELEMENTS, // number of elements in this enum (including gaps)
+    AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1
 } aeron_driver_agent_event_t;
-
-static const char aeron_driver_agent_event_names[AERON_DRIVER_EVENT_NUM_ELEMENTS][64] =
-{
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        "FRAME_IN",
-        "FRAME_OUT",
-        "CMD_IN_ADD_PUBLICATION",
-        "CMD_IN_REMOVE_PUBLICATION",
-        "CMD_IN_ADD_SUBSCRIPTION",
-        "CMD_IN_REMOVE_SUBSCRIPTION",
-        "CMD_OUT_PUBLICATION_READY",
-        "CMD_OUT_AVAILABLE_IMAGE",
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        "CMD_OUT_ON_OPERATION_SUCCESS",
-        "CMD_IN_KEEPALIVE_CLIENT",
-        "REMOVE_PUBLICATION_CLEANUP",
-        "REMOVE_SUBSCRIPTION_CLEANUP",
-        "REMOVE_IMAGE_CLEANUP",
-        "CMD_OUT_ON_UNAVAILABLE_IMAGE",
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        "SEND_CHANNEL_CREATION",
-        "RECEIVE_CHANNEL_CREATION",
-        "SEND_CHANNEL_CLOSE",
-        "RECEIVE_CHANNEL_CLOSE",
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
-        "CMD_IN_ADD_DESTINATION",
-        "CMD_IN_REMOVE_DESTINATION",
-        "CMD_IN_ADD_EXCLUSIVE_PUBLICATION",
-        "CMD_OUT_EXCLUSIVE_PUBLICATION_READY",
-        "CMD_OUT_ERROR",
-        "CMD_IN_ADD_COUNTER",
-        "CMD_IN_REMOVE_COUNTER",
-        "CMD_OUT_SUBSCRIPTION_READY",
-        "CMD_OUT_COUNTER_READY",
-        "CMD_OUT_ON_UNAVAILABLE_COUNTER",
-        "CMD_IN_CLIENT_CLOSE",
-        "CMD_IN_ADD_RCV_DESTINATION",
-        "CMD_IN_REMOVE_RCV_DESTINATION",
-        "CMD_OUT_ON_CLIENT_TIMEOUT",
-        "CMD_IN_TERMINATE_DRIVER",
-        "UNTETHERED_SUBSCRIPTION_STATE_CHANGE",
-        "NAME_RESOLUTION_NEIGHBOUR_ADDED",
-        "NAME_RESOLUTION_NEIGHBOUR_REMOVED"
-};
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
@@ -175,6 +124,8 @@ bool aeron_driver_agent_logging_events_init(const char *event_log);
 void aeron_driver_agent_logging_events_free();
 
 bool aeron_driver_agent_is_event_enabled(aeron_driver_agent_event_t id);
+
+const char *aeron_driver_agent_event_name(aeron_driver_agent_event_t id);
 
 void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     aeron_tetherable_position_t *tetherable_position,

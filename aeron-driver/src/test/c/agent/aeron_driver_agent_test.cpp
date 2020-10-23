@@ -50,10 +50,13 @@ protected:
     {
         for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
         {
-            const auto event_name = aeron_driver_agent_event_names[i];
+            const auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
+            const auto event_name = aeron_driver_agent_event_name(event_id);
             const bool expected = 0 != strncmp(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
             EXPECT_EQ(expected,aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(i)));
         }
+
+        EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNKNOWN_EVENT));
     }
 
     static void assert_admin_events_enabled()
@@ -149,6 +152,12 @@ TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByValue)
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(9)));
 }
 
+TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByResersedValue)
+{
+    EXPECT_FALSE(aeron_driver_agent_logging_events_init("-1"));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNKNOWN_EVENT));
+}
+
 TEST_F(DriverAgentTest, shouldEnableMultipleEventsSplitByComma)
 {
     EXPECT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOUR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
@@ -172,7 +181,7 @@ TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
     aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
     EXPECT_EQ(true, aeron_driver_agent_logging_events_init(
-            aeron_driver_agent_event_names[AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE]));
+            aeron_driver_agent_event_name(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)));
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
     EXPECT_NE(m_context->untethered_subscription_state_change_func, func);

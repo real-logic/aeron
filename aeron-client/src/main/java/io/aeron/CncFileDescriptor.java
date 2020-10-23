@@ -84,14 +84,49 @@ public class CncFileDescriptor
      */
     public static final int CNC_VERSION = SemanticVersion.compose(0, 2, 0);
 
+    /**
+     * Offset at which the version field can be found.
+     */
     public static final int CNC_VERSION_FIELD_OFFSET;
+
+    /**
+     * Offset at which the length field can be found for the command ring buffer to the driver.
+     */
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;
+
+    /**
+     * Offset at which the length field can be found for the broadcast buffer to the clients can be found.
+     */
     public static final int TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET;
+
+    /**
+     * Offset at which the length field can be found for the counters metadata, e.g. labels, can be found.
+     */
     public static final int COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET;
+
+    /**
+     * Offset at which the length field can be found for the counters values can be found.
+     */
     public static final int COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET;
+
+    /**
+     * Offset at which the client liveness timeout value can be found.
+     */
     public static final int CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET;
+
+    /**
+     * Offset at which the length field can be found for buffer containing the error log can be found.
+     */
     public static final int ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
+
+    /**
+     * Offset at which the start timestamp value for the driver can be found.
+     */
     public static final int START_TIMESTAMP_FIELD_OFFSET;
+
+    /**
+     * Offset at which the PID value for the driver can be found.
+     */
     public static final int PID_FIELD_OFFSET;
 
     static

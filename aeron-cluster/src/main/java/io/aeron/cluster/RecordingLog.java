@@ -100,6 +100,7 @@ public class RecordingLog implements AutoCloseable
 
         /**
          * A new entry in the recording log.
+         *
          * @param recordingId         of the entry in an archive.
          * @param leadershipTermId    of this entry.
          * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
@@ -426,6 +427,9 @@ public class RecordingLog implements AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(fileChannel);

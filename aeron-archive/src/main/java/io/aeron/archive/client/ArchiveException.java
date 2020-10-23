@@ -81,6 +81,9 @@ public class ArchiveException extends AeronException
     private final int errorCode;
     private final long correlationId;
 
+    /**
+     * Default ArchiveException exception of {@link Category#ERROR} and {@link #errorCode()} = {@link #GENERIC}.
+     */
     public ArchiveException()
     {
         super();
@@ -88,6 +91,11 @@ public class ArchiveException extends AeronException
         correlationId = Aeron.NULL_VALUE;
     }
 
+    /**
+     * ArchiveException exception of {@link Category#ERROR} and {@link #errorCode()} = {@link #GENERIC}, plus detail.
+     *
+     * @param message providing detail.
+     */
     public ArchiveException(final String message)
     {
         super(message);
@@ -95,6 +103,12 @@ public class ArchiveException extends AeronException
         correlationId = Aeron.NULL_VALUE;
     }
 
+    /**
+     * ArchiveException exception of {@link Category#ERROR}, plus detail and error code.
+     *
+     * @param message   providing detail.
+     * @param errorCode for type.
+     */
     public ArchiveException(final String message, final int errorCode)
     {
         super(message);
@@ -102,6 +116,13 @@ public class ArchiveException extends AeronException
         correlationId = Aeron.NULL_VALUE;
     }
 
+    /**
+     * ArchiveException exception of {@link Category#ERROR}, plus detail, cause, and error code.
+     *
+     * @param message   providing detail.
+     * @param cause     of the error.
+     * @param errorCode for type.
+     */
     public ArchiveException(final String message, final Throwable cause, final int errorCode)
     {
         super(message, cause);
@@ -109,6 +130,14 @@ public class ArchiveException extends AeronException
         correlationId = Aeron.NULL_VALUE;
     }
 
+    /**
+     * ArchiveException exception of {@link Category#ERROR}, plus detail, error code, and correlation if of the
+     * control request.
+     *
+     * @param message       providing detail.
+     * @param errorCode     for type.
+     * @param correlationId of the control request.
+     */
     public ArchiveException(final String message, final int errorCode, final long correlationId)
     {
         super(message);
@@ -116,6 +145,12 @@ public class ArchiveException extends AeronException
         this.correlationId = correlationId;
     }
 
+    /**
+     * ArchiveException exception {@link #errorCode()} = {@link #GENERIC}, plus detail and {@link Category}.
+     *
+     * @param message  providing detail.
+     * @param category for type.
+     */
     public ArchiveException(final String message, final Category category)
     {
         super(message, category);
@@ -123,6 +158,14 @@ public class ArchiveException extends AeronException
         this.correlationId = Aeron.NULL_VALUE;
     }
 
+    /**
+     * ArchiveException exception {@link #errorCode()} = {@link #GENERIC}, plus detail, correlation id of control
+     * request, and {@link Category}.
+     *
+     * @param message       providing detail.
+     * @param correlationId of the control request.
+     * @param category      for type.
+     */
     public ArchiveException(final String message, final long correlationId, final Category category)
     {
         super(message, category);
@@ -130,6 +173,14 @@ public class ArchiveException extends AeronException
         this.correlationId = correlationId;
     }
 
+    /**
+     * ArchiveException exception, plus detail, error code, correlation id of control request, and {@link Category}.
+     *
+     * @param message       providing detail.
+     * @param errorCode     for type.
+     * @param correlationId of the control request.
+     * @param category      for type.
+     */
     public ArchiveException(
         final String message, final int errorCode, final long correlationId, final Category category)
     {

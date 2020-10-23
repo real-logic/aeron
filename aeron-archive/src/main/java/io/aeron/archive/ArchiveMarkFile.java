@@ -39,12 +39,36 @@ import java.util.function.IntConsumer;
  */
 public class ArchiveMarkFile implements AutoCloseable
 {
+    /**
+     * Major version for the archive files stored on disk. A change to this requires migration.
+     */
     public static final int MAJOR_VERSION = 2;
+
+    /**
+     * Minor version for the archive files stored on disk. A change to this indicates new features.
+     */
     public static final int MINOR_VERSION = 1;
+
+    /**
+     * Patch version for the archive files stored on disk. A change to this indicates feature parity bug fixes.
+     */
     public static final int PATCH_VERSION = 0;
+
+    /**
+     * Combined semantic version for the stored files.
+     *
+     * @see SemanticVersion
+     */
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
+    /**
+     * Header length for the {@link MarkFile} containing the metadata.
+     */
     public static final int HEADER_LENGTH = 8 * 1024;
+
+    /**
+     * Name for the archive {@link MarkFile} stored in the {@link Archive.Configuration#ARCHIVE_DIR_PROP_NAME}.
+     */
     public static final String FILENAME = "archive-mark.dat";
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
@@ -53,7 +77,7 @@ public class ArchiveMarkFile implements AutoCloseable
     private final UnsafeBuffer buffer;
     private final UnsafeBuffer errorBuffer;
 
-    public ArchiveMarkFile(final Archive.Context ctx)
+    ArchiveMarkFile(final Archive.Context ctx)
     {
         this(
             new File(ctx.archiveDir(), FILENAME),
@@ -66,7 +90,7 @@ public class ArchiveMarkFile implements AutoCloseable
         updateActivityTimestamp(ctx.epochClock().time());
     }
 
-    public ArchiveMarkFile(
+    ArchiveMarkFile(
         final File file,
         final int totalFileLength,
         final int errorBufferLength,
@@ -96,8 +120,7 @@ public class ArchiveMarkFile implements AutoCloseable
         buffer = markFile.buffer();
 
         errorBuffer = errorBufferLength > 0 ?
-            new UnsafeBuffer(buffer, HEADER_LENGTH, errorBufferLength) :
-            new UnsafeBuffer(buffer, 0, 0);
+            new UnsafeBuffer(buffer, HEADER_LENGTH, errorBufferLength) : new UnsafeBuffer(buffer, 0, 0);
 
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
@@ -114,6 +137,15 @@ public class ArchiveMarkFile implements AutoCloseable
         headerEncoder.pid(SystemUtil.getPid());
     }
 
+    /**
+     * Construct the {@link MarkFile} based on an existing directory containing a mark file of a running archive.
+     *
+     * @param directory  containing the archive files.
+     * @param filename   for the mark file.
+     * @param epochClock to be used for checking liveness.
+     * @param timeoutMs  after which the opening will be aborted if no archive starts.
+     * @param logger     to detail any discoveries.
+     */
     public ArchiveMarkFile(
         final File directory,
         final String filename,
@@ -137,6 +169,16 @@ public class ArchiveMarkFile implements AutoCloseable
             logger);
     }
 
+    /**
+     * Open an existing {@link MarkFile} or create a new one to be used in migration.
+     *
+     * @param directory    containing the archive files.
+     * @param filename     for the mark file.
+     * @param epochClock   to be used for checking liveness.
+     * @param timeoutMs    after which the opening will be aborted if no archive starts.
+     * @param versionCheck for confirming the correct version.
+     * @param logger       to detail any discoveries.
+     */
     public ArchiveMarkFile(
         final File directory,
         final String filename,

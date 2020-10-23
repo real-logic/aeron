@@ -109,9 +109,7 @@ public class ClusterTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(cluster.node(0), 1);
-            cluster.awaitSnapshotCount(cluster.node(1), 1);
-            cluster.awaitSnapshotCount(cluster.node(2), 1);
+            cluster.awaitSnapshotCount(1);
 
             cluster.stopAllNodes();
 
@@ -1136,13 +1134,13 @@ public class ClusterTest
             cluster.awaitServicesMessageCount(numMessages);
 
             cluster.takeSnapshot(leader0);
-            cluster.awaitSnapshotCount(leader0, 1);
+            cluster.awaitSnapshotCount(1);
 
             cluster.sendMessages(numMessages);
             cluster.awaitServicesMessageCount(numMessages * 2);
 
             cluster.takeSnapshot(leader0);
-            cluster.awaitSnapshotCount(leader0, 2);
+            cluster.awaitSnapshotCount(2);
 
             cluster.stopNode(leader0);
             cluster.awaitLeader(leader0.index());
@@ -1233,7 +1231,7 @@ public class ClusterTest
             cluster.awaitServicesMessageCount(numMessages * 2);
 
             cluster.takeSnapshot(leader1);
-            cluster.awaitSnapshotCount(leader1, 1);
+            cluster.awaitSnapshotCount(1);
 
             cluster.stopNode(leader1);
             cluster.awaitLeader(leader1.index());

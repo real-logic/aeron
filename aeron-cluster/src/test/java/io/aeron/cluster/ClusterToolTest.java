@@ -52,9 +52,7 @@ class ClusterToolTest
                 containsString("SNAPSHOT applied successfully"));
 
             final long expectedSnapshotCount = initialSnapshotCount + 1;
-            cluster.awaitSnapshotCount(leader, expectedSnapshotCount);
-            cluster.awaitSnapshotCount(cluster.followers().get(0), expectedSnapshotCount);
-            cluster.awaitSnapshotCount(cluster.followers().get(1), expectedSnapshotCount);
+            cluster.awaitSnapshotCount(expectedSnapshotCount);
 
             for (final TestNode follower : cluster.followers())
             {

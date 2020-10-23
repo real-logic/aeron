@@ -146,9 +146,7 @@ public class DynamicMembershipTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(cluster.node(0), 1);
-            cluster.awaitSnapshotCount(cluster.node(1), 1);
-            cluster.awaitSnapshotCount(cluster.node(2), 1);
+            cluster.awaitSnapshotCount(1);
 
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
@@ -179,9 +177,7 @@ public class DynamicMembershipTest
             cluster.awaitResponseMessageCount(messageCount);
 
             cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(cluster.node(0), 1);
-            cluster.awaitSnapshotCount(cluster.node(1), 1);
-            cluster.awaitSnapshotCount(cluster.node(2), 1);
+            cluster.awaitSnapshotCount(1);
 
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
@@ -215,9 +211,7 @@ public class DynamicMembershipTest
             cluster.awaitResponseMessageCount(preSnapshotMessageCount);
 
             cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(cluster.node(0), 1);
-            cluster.awaitSnapshotCount(cluster.node(1), 1);
-            cluster.awaitSnapshotCount(cluster.node(2), 1);
+            cluster.awaitSnapshotCount(1);
 
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 

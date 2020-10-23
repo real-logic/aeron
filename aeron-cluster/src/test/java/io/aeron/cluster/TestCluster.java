@@ -657,7 +657,14 @@ public class TestCluster implements AutoCloseable
         for (int i = 0; i < messageCount; i++)
         {
             msgBuffer.putInt(0, i);
-            pollUntilMessageSent(BitUtil.SIZE_OF_INT);
+            try
+            {
+                pollUntilMessageSent(BitUtil.SIZE_OF_INT);
+            }
+            catch (final Throwable ex)
+            {
+                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+            }
         }
     }
 
@@ -666,7 +673,14 @@ public class TestCluster implements AutoCloseable
         final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
         for (int i = 0; i < messageCount; i++)
         {
-            pollUntilMessageSent(length);
+            try
+            {
+                pollUntilMessageSent(length);
+            }
+            catch (final Throwable ex)
+            {
+                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+            }
         }
     }
 
@@ -866,6 +880,17 @@ public class TestCluster implements AutoCloseable
     {
         final AtomicCounter controlToggle = getControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
+    }
+
+    void awaitSnapshotCount(final long value)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitSnapshotCount(node, value);
+            }
+        }
     }
 
     void awaitSnapshotCount(final TestNode node, final long value)

@@ -97,6 +97,7 @@ inline bool aeron_strn_equals(const char *str1, const char *str2, const size_t l
     return true;
 }
 
+#define AERON_STR_EQUAL_MAX_LENGTH (1024)
 /**
  * Compare two null-terminated strings for equality. The comparison stops upon first non-equal character found or
  * upon null-character is found in one of the strings.
@@ -113,11 +114,9 @@ inline bool aeron_strn_equals(const char *str1, const char *str2, const size_t l
  */
 inline bool aeron_str_equals(const char *str1, const char *str2)
 {
-    static const size_t max_length = 1024;
-    assert (strlen(str1) <= max_length);
-    assert (strlen(str2) <= max_length);
-
-    return aeron_strn_equals(str1, str2, max_length);
+    assert (strlen(str1) <= AERON_STR_EQUAL_MAX_LENGTH);
+    assert (strlen(str2) <= AERON_STR_EQUAL_MAX_LENGTH);
+    return aeron_strn_equals(str1, str2, AERON_STR_EQUAL_MAX_LENGTH);
 }
 
 #if defined(AERON_DLL_EXPORTS)

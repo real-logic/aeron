@@ -29,7 +29,6 @@
 #define AERON_DRIVER_AGENT_LOG_CONTEXT "DRIVER"
 #define AERON_DRIVER_AGENT_ALL_EVENTS "all"
 #define AERON_DRIVER_AGENT_ADMIN_EVENTS "admin"
-#define AERON_DRIVER_AGENT_EVENT_SEPARATOR ","
 #define AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME "unknown"
 
 typedef enum aeron_driver_agent_event_enum

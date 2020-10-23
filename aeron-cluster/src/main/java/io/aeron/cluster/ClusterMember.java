@@ -564,6 +564,14 @@ public final class ClusterMember
         return members;
     }
 
+    /**
+     * Parse a string containing the endpoints for a cluster node and passing to
+     * {@link #ClusterMember(int, String, String, String, String, String, String)}.
+     *
+     * @param id        of the member node.
+     * @param endpoints comma separated.
+     * @return the {@link ClusterMember} with the endpoints set.
+     */
     public static ClusterMember parseEndpoints(final int id, final String endpoints)
     {
         final String[] memberAttributes = endpoints.split(",");

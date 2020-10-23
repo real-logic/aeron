@@ -68,7 +68,10 @@ public final class ClusterBackup implements AutoCloseable
      */
     public static final int CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID = AeronCounters.CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID;
 
-    enum State
+    /**
+     * State of the cluster backup state machine.
+     */
+    public enum State
     {
         INIT(0),
         BACKUP_QUERY(1),
@@ -93,11 +96,22 @@ public final class ClusterBackup implements AutoCloseable
             this.code = code;
         }
 
+        /**
+         * Code which represents the {@link State} as an int.
+         *
+         * @return code which represents the {@link State} as an int.
+         */
         public int code()
         {
             return code;
         }
 
+        /**
+         * Get the {@link State} with matching {@link #code()}.
+         *
+         * @param code to lookup.
+         * @return the {@link State} with matching {@link #code()}.
+         */
         public static State get(final long code)
         {
             if (code < 0 || code > (STATES.length - 1))
@@ -389,6 +403,9 @@ public final class ClusterBackup implements AutoCloseable
             }
         }
 
+        /**
+         * Conclude configuration by setting up defaults when specifics are not provided.
+         */
         @SuppressWarnings("MethodLength")
         public void conclude()
         {

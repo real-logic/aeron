@@ -595,6 +595,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
             }
         }
 
+        /**
+         * Conclude configuration by setting up defaults when specifics are not provided.
+         */
         @SuppressWarnings("MethodLength")
         public void conclude()
         {

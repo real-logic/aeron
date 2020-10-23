@@ -770,9 +770,29 @@ public final class AeronCluster implements AutoCloseable
      */
     public static class Configuration
     {
+        /**
+         * Major version of the network protocol from client to consensus module. If these don't match then client
+         * and archive consensus module are not compatible.
+         */
         public static final int PROTOCOL_MAJOR_VERSION = 0;
+
+        /**
+         * Minor version of the network protocol from client to consensus module. If these don't match then some
+         * features may not be available.
+         */
         public static final int PROTOCOL_MINOR_VERSION = 1;
+
+        /**
+         * Patch version of the network protocol from client to consensus module. If these don't match then bug fixes
+         * may not been applied.
+         */
         public static final int PROTOCOL_PATCH_VERSION = 1;
+
+        /**
+         * Combined semantic version for the client to consensus module protocol.
+         *
+         * @see SemanticVersion
+         */
         public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
             PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);
 
@@ -963,6 +983,9 @@ public final class AeronCluster implements AutoCloseable
             }
         }
 
+        /**
+         * Conclude configuration by setting up defaults when specifics are not provided.
+         */
         public void conclude()
         {
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))

@@ -167,9 +167,7 @@ public class ClusterBackupTest
 
             cluster.shutdownCluster(leader);
 
-            cluster.awaitNodeTermination(cluster.node(0));
-            cluster.awaitNodeTermination(cluster.node(1));
-            cluster.awaitNodeTermination(cluster.node(2));
+            cluster.awaitNodeTerminations();
 
             assertTrue(cluster.node(0).service().wasSnapshotTaken());
             assertTrue(cluster.node(1).service().wasSnapshotTaken());

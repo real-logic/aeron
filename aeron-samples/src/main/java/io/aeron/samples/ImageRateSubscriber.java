@@ -59,12 +59,23 @@ class ImageRateSubscriberRhsPadding extends ImageRateSubscriberValues
     byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 }
 
+/**
+ * {@link Runnable} which picks up a single {@link Image} from a {@link Subscription} and reports the rate of
+ * consumption.
+ */
 public final class ImageRateSubscriber extends ImageRateSubscriberRhsPadding implements Runnable
 {
     private final int fragmentLimit;
     private final AtomicBoolean running;
     private final Subscription subscription;
 
+    /**
+     * Construct the rate subscriber over a {@link Subscription}.
+     *
+     * @param fragmentLimit per poll operation.
+     * @param running       atomic flag to indicate if it should keep running.
+     * @param subscription  to pick up the {@link Image} with.
+     */
     public ImageRateSubscriber(final int fragmentLimit, final AtomicBoolean running, final Subscription subscription)
     {
         this.fragmentLimit = fragmentLimit;
@@ -72,6 +83,11 @@ public final class ImageRateSubscriber extends ImageRateSubscriberRhsPadding imp
         this.subscription = subscription;
     }
 
+    /**
+     * Total bytes consumed.
+     *
+     * @return total bytes consumed.
+     */
     public long totalBytes()
     {
         return totalBytes;

@@ -143,9 +143,7 @@ public class ClusterTest
             cluster.node(2).terminationExpected(true);
 
             cluster.shutdownCluster(leader);
-            cluster.awaitNodeTermination(cluster.node(0));
-            cluster.awaitNodeTermination(cluster.node(1));
-            cluster.awaitNodeTermination(cluster.node(2));
+            cluster.awaitNodeTerminations();
 
             assertTrue(cluster.node(0).service().wasSnapshotTaken());
             assertTrue(cluster.node(1).service().wasSnapshotTaken());
@@ -183,9 +181,7 @@ public class ClusterTest
             cluster.node(2).terminationExpected(true);
 
             cluster.abortCluster(leader);
-            cluster.awaitNodeTermination(cluster.node(0));
-            cluster.awaitNodeTermination(cluster.node(1));
-            cluster.awaitNodeTermination(cluster.node(2));
+            cluster.awaitNodeTerminations();
 
             assertFalse(cluster.node(0).service().wasSnapshotTaken());
             assertFalse(cluster.node(1).service().wasSnapshotTaken());
@@ -911,9 +907,7 @@ public class ClusterTest
             followerB.terminationExpected(true);
 
             cluster.shutdownCluster(leader);
-            cluster.awaitNodeTermination(cluster.node(0));
-            cluster.awaitNodeTermination(cluster.node(1));
-            cluster.awaitNodeTermination(cluster.node(2));
+            cluster.awaitNodeTerminations();
 
             assertTrue(cluster.node(0).service().wasSnapshotTaken());
             assertTrue(cluster.node(1).service().wasSnapshotTaken());
@@ -968,9 +962,7 @@ public class ClusterTest
             cluster.node(2).terminationExpected(true);
 
             cluster.abortCluster(leader);
-            cluster.awaitNodeTermination(cluster.node(0));
-            cluster.awaitNodeTermination(cluster.node(1));
-            cluster.awaitNodeTermination(cluster.node(2));
+            cluster.awaitNodeTerminations();
 
             cluster.stopAllNodes();
 
@@ -1032,9 +1024,7 @@ public class ClusterTest
 
             cluster.awaitNeutralControlToggle(leader);
             cluster.shutdownCluster(leader);
-            cluster.awaitNodeTermination(cluster.node(0));
-            cluster.awaitNodeTermination(cluster.node(1));
-            cluster.awaitNodeTermination(cluster.node(2));
+            cluster.awaitNodeTerminations();
 
             assertTrue(cluster.node(0).service().wasSnapshotTaken());
             assertTrue(cluster.node(1).service().wasSnapshotTaken());

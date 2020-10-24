@@ -914,6 +914,17 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void awaitNodeTerminations()
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitNodeTermination(node);
+            }
+        }
+    }
+
     void awaitServicesMessageCount(final int messageCount)
     {
         for (final TestNode node : nodes)

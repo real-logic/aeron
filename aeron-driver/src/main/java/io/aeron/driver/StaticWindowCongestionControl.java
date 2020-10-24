@@ -34,6 +34,21 @@ public class StaticWindowCongestionControl implements CongestionControl
 
     private final long ccOutcome;
 
+    /**
+     * Construct a new {@link CongestionControl} instance for a received stream image using a static window algorithm.
+     *
+     * @param registrationId  for the publication image.
+     * @param udpChannel      for the publication image.
+     * @param streamId        for the publication image.
+     * @param sessionId       for the publication image.
+     * @param termLength      for the publication image.
+     * @param senderMtuLength for the publication image.
+     * @param controlAddress  for the publication image.
+     * @param sourceAddress   for the publication image.
+     * @param nanoClock       for the precise timing.
+     * @param context         for configuration options applied in the driver.
+     * @param countersManager for the driver.
+     */
     public StaticWindowCongestionControl(
         final long registrationId,
         final UdpChannel udpChannel,
@@ -43,7 +58,7 @@ public class StaticWindowCongestionControl implements CongestionControl
         final int senderMtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
-        final NanoClock clock,
+        final NanoClock nanoClock,
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {

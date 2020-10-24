@@ -84,7 +84,7 @@ public class CubicCongestionControl implements CongestionControl
     private final AtomicCounter windowIndicator;
 
     /**
-     * Construct a new {@link CongestionControl} instance for a received stream image.
+     * Construct a new {@link CongestionControl} instance for a received stream image using the Cubic algorithm.
      *
      * @param registrationId  for the publication image.
      * @param udpChannel      for the publication image.

@@ -784,7 +784,7 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Patch version of the network protocol from client to consensus module. If these don't match then bug fixes
-         * may not been applied.
+         * may not have been applied.
          */
         public static final int PROTOCOL_PATCH_VERSION = 1;
 

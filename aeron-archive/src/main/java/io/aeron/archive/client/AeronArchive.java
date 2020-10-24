@@ -2048,7 +2048,7 @@ public class AeronArchive implements AutoCloseable
 
         /**
          * Patch version of the network protocol from client to archive. If these don't match then bug fixes may not
-         * been applied.
+         * have been applied.
          */
         public static final int PROTOCOL_PATCH_VERSION = 0;
 

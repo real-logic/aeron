@@ -82,6 +82,25 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t *source)
     return sequence;
 }
 
+template<typename T>
+inline volatile T *getValueVolatile(volatile T **source)
+{
+    volatile T *t = *reinterpret_cast<volatile T **>(source);
+    acquire();
+
+    return t;
+}
+
+template<typename T>
+inline void putValueVolatile(volatile T *address, T value)
+{
+    static_assert(sizeof(T) <= 8, "Requires size <= 8 bytes");
+
+    release();
+    *reinterpret_cast<volatile T *>(address) = value;
+    fence();
+}
+
 inline void putInt64Ordered(volatile std::int64_t *address, std::int64_t value)
 {
     release();

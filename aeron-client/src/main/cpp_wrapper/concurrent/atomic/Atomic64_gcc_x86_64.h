@@ -109,8 +109,8 @@ inline void putValueVolatile(volatile T *address, T value)
 {
     static_assert(sizeof(T) <= 8, "Requires size <= 8 bytes");
 
-    thread_fence();
-    *reinterpret_cast<volatile std::int64_t *>(address) = value;
+    release();
+    *reinterpret_cast<volatile T *>(address) = value;
     fence();
 }
 

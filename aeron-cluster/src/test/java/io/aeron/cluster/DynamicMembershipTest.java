@@ -408,10 +408,7 @@ public class DynamicMembershipTest
             final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(1), messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(3), messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.stopNode(dynamicMember);
             final TestNode staticMember = cluster.startStaticNodeFromDynamicNode(3);

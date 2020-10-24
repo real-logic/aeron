@@ -48,7 +48,7 @@ public class MultiNodeTest
 
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            TestNode leader = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
             assertEquals(appointedLeaderIndex, leader.index());
             assertEquals(Cluster.Role.LEADER, leader.role());
@@ -62,10 +62,8 @@ public class MultiNodeTest
             cluster.stopAllNodes();
             cluster.restartAllNodes(false);
 
-            leader = cluster.awaitLeader();
-            cluster.awaitServiceMessageCount(leader, messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+            cluster.awaitLeader();
+            cluster.awaitServicesMessageCount(messageCount);
         }
     }
 
@@ -77,7 +75,7 @@ public class MultiNodeTest
 
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            TestNode leader = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
             assertEquals(appointedLeaderIndex, leader.index());
             assertEquals(Cluster.Role.LEADER, leader.role());
@@ -98,10 +96,8 @@ public class MultiNodeTest
             cluster.stopAllNodes();
             cluster.restartAllNodes(false);
 
-            leader = cluster.awaitLeader();
-            cluster.awaitServiceMessageCount(leader, totalMessageCount);
-            cluster.awaitServiceMessageCount(cluster.node(0), totalMessageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), totalMessageCount);
+            cluster.awaitLeader();
+            cluster.awaitServicesMessageCount(totalMessageCount);
         }
     }
 }

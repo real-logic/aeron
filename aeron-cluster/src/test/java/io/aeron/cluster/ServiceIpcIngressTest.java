@@ -39,9 +39,7 @@ public class ServiceIpcIngressTest
             }
 
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(1), messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
         }
     }
 }

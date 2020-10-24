@@ -62,16 +62,17 @@ public class SingleNodeTest
         {
             final TestNode leader = cluster.awaitLeader();
 
+            final int messageCount = 10;
             cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(leader, 10);
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(leader, messageCount);
 
             cluster.stopNode(leader);
 
             cluster.startStaticNode(0, false);
             final TestNode newLeader = cluster.awaitLeader();
-            cluster.awaitServiceMessageCount(newLeader, 10);
+            cluster.awaitServiceMessageCount(newLeader, messageCount);
         }
     }
 }

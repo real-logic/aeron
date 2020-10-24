@@ -263,9 +263,7 @@ public class ClusterTest
 
             cluster.sendMessages(preFailureMessageCount);
             cluster.awaitResponseMessageCount(preFailureMessageCount);
-            cluster.awaitServiceMessageCount(cluster.node(0), preFailureMessageCount);
-            cluster.awaitServiceMessageCount(cluster.node(1), preFailureMessageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), preFailureMessageCount);
+            cluster.awaitServicesMessageCount(preFailureMessageCount);
 
             assertEquals(originalLeader.index(), cluster.client().leaderMemberId());
 
@@ -525,9 +523,8 @@ public class ClusterTest
             cluster.sendMessages(10);
             cluster.awaitResponseMessageCount(messageCount + 10);
 
-            cluster.awaitServiceMessageCount(leader, messageCount + 10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), messageCount + 10);
-            cluster.awaitServiceMessageCount(cluster.followers().get(1), messageCount + 10);
+            cluster.awaitServicesMessageCount(messageCount + 10);
+
         }
         catch (final Throwable ex)
         {
@@ -681,9 +678,7 @@ public class ClusterTest
             cluster.sendMessages(messageCount);
 
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(followerA, messageCount);
-            cluster.awaitServiceMessageCount(followerB, messageCount);
-            cluster.awaitServiceMessageCount(oldLeader, messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
         }
         catch (final Throwable ex)
         {
@@ -1068,14 +1063,7 @@ public class ClusterTest
             cluster.sendMessages(msgCountAfterStart);
             cluster.awaitResponseMessageCount(totalMsgCount);
 
-            cluster.awaitServiceMessageCount(newLeader, totalMsgCount);
-            assertEquals(totalMsgCount, newLeader.service().messageCount());
-
-            cluster.awaitServiceMessageCount(cluster.followers().get(0), totalMsgCount);
-            assertEquals(totalMsgCount, cluster.followers().get(0).service().messageCount());
-
-            cluster.awaitServiceMessageCount(cluster.followers().get(1), totalMsgCount);
-            assertEquals(totalMsgCount, cluster.followers().get(1).service().messageCount());
+            cluster.awaitServicesMessageCount(totalMsgCount);
         }
         catch (final Throwable ex)
         {

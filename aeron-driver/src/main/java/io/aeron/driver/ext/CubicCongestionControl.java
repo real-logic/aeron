@@ -56,9 +56,6 @@ public class CubicCongestionControl implements CongestionControl
      */
     public static final String CC_PARAM_VALUE = "cubic";
 
-    private static final boolean RTT_MEASUREMENT = CubicCongestionControlConfiguration.MEASURE_RTT;
-    private static final boolean TCP_MODE = CubicCongestionControlConfiguration.TCP_MODE;
-
     private static final long RTT_MEASUREMENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final long SECOND_IN_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RTT_MAX_TIMEOUT_NS = SECOND_IN_NS;
@@ -86,6 +83,21 @@ public class CubicCongestionControl implements CongestionControl
     private final AtomicCounter rttIndicator;
     private final AtomicCounter windowIndicator;
 
+    /**
+     * Construct a new {@link CongestionControl} instance for a received stream image.
+     *
+     * @param registrationId  for the publication image.
+     * @param udpChannel      for the publication image.
+     * @param streamId        for the publication image.
+     * @param sessionId       for the publication image.
+     * @param termLength      for the publication image.
+     * @param senderMtuLength for the publication image.
+     * @param controlAddress  for the publication image.
+     * @param sourceAddress   for the publication image.
+     * @param nanoClock       for the precise timing.
+     * @param context         for configuration options applied in the driver.
+     * @param countersManager for the driver.
+     */
     public CubicCongestionControl(
         final long registrationId,
         final UdpChannel udpChannel,
@@ -95,7 +107,7 @@ public class CubicCongestionControl implements CongestionControl
         final int senderMtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
-        final NanoClock clock,
+        final NanoClock nanoClock,
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
@@ -133,7 +145,7 @@ public class CubicCongestionControl implements CongestionControl
         rttIndicator.setOrdered(0);
         windowIndicator.setOrdered(minWindow);
 
-        lastLossTimestampNs = clock.nanoTime();
+        lastLossTimestampNs = nanoClock.nanoTime();
         lastUpdateTimestampNs = lastLossTimestampNs;
 
         errorHandler = context.errorHandler();
@@ -141,7 +153,7 @@ public class CubicCongestionControl implements CongestionControl
 
     public boolean shouldMeasureRtt(final long nowNs)
     {
-        return RTT_MEASUREMENT &&
+        return CubicCongestionControlConfiguration.MEASURE_RTT &&
             outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS &&
             (((lastRttTimestampNs + RTT_MAX_TIMEOUT_NS) - nowNs < 0) ||
                 ((lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS) - nowNs < 0));
@@ -190,7 +202,7 @@ public class CubicCongestionControl implements CongestionControl
             cwnd = Math.min(maxCwnd, w_max + (int)incr);
 
             // if using TCP mode, then check to see if we are in the TCP region
-            if (TCP_MODE && cwnd < w_max)
+            if (CubicCongestionControlConfiguration.TCP_MODE && cwnd < w_max)
             {
                 // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
 

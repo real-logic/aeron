@@ -79,8 +79,9 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            std::atomic_thread_fence(std::memory_order_acquire);
 
-            if (changeNumber == m_beginChange.load(std::memory_order_acq_rel))
+            if (changeNumber == m_beginChange.load(std::memory_order_relaxed))
             {
                 return { array, length };
             }
@@ -92,8 +93,9 @@ public:
     {
         std::int64_t changeNumber = m_beginChange + 1;
 
-        m_beginChange.store(changeNumber, std::memory_order_acq_rel);
+        m_beginChange.store(changeNumber, std::memory_order_relaxed);
 
+        std::atomic_thread_fence(std::memory_order_release);
         m_array.first = array;
         m_array.second = length;
 

@@ -35,7 +35,7 @@ public class CubicCongestionControlConfiguration
     public static final String INITIAL_RTT_NS_PROP_NAME = "aeron.CubicCongestionControl.initialRtt";
 
     /**
-     * Default initial RTT measurement in nanoseconds
+     * Default initial RTT measurement in nanoseconds.
      */
     public static final long INITIAL_RTT_NS_DEFAULT = TimeUnit.MICROSECONDS.toNanos(100);
 
@@ -47,7 +47,21 @@ public class CubicCongestionControlConfiguration
      */
     public static final String TCP_MODE_PROP_NAME = "aeron.CubicCongestionControl.tcpMode";
 
+    /**
+     * Should RTT be measured. Default is false.
+     * @see #MEASURE_RTT_PROP_NAME
+     */
     public static final boolean MEASURE_RTT = Boolean.getBoolean(MEASURE_RTT_PROP_NAME);
+
+    /**
+     * Setting to be used for the initial RTT time when not measuring.
+     * @see #INITIAL_RTT_NS_PROP_NAME
+     */
     public static final long INITIAL_RTT_NS = Long.getLong(INITIAL_RTT_NS_PROP_NAME, INITIAL_RTT_NS_DEFAULT);
+
+    /**
+     * Should TCP behaviour mode be on or off. Default is false (off).
+     * @see #TCP_MODE_PROP_NAME
+     */
     public static final boolean TCP_MODE = Boolean.getBoolean(TCP_MODE_PROP_NAME);
 }

@@ -23,10 +23,7 @@
 
 #include "concurrent/Atomic64.h"
 
-namespace aeron
-{
-
-namespace util
+namespace aeron { namespace util
 {
 
 template<typename E>
@@ -42,7 +39,7 @@ std::pair<E *, std::size_t> addToArray(E *oldArray, std::size_t oldLength, E ele
 
     newArray[oldLength] = element;
 
-    return {newArray, newLength};
+    return { newArray, newLength };
 }
 
 template<typename E>
@@ -59,7 +56,7 @@ std::pair<E *, std::size_t> removeFromArray(E *oldArray, std::size_t oldLength, 
         }
     }
 
-    return {newArray, newLength};
+    return { newArray, newLength };
 }
 
 }
@@ -74,7 +71,7 @@ public:
     AtomicArrayUpdater() = default;
     ~AtomicArrayUpdater() = default;
 
-    inline std::pair<E*, std::size_t> load() const
+    inline std::pair<E *, std::size_t> load() const
     {
         do
         {
@@ -83,9 +80,7 @@ public:
             E *array = m_array.first;
             std::size_t length = m_array.second;
 
-            aeron::concurrent::atomic::acquire();
-
-            if (changeNumber == m_beginChange.load(std::memory_order_acquire))
+            if (changeNumber == m_beginChange.load(std::memory_order_acq_rel))
             {
                 return { array, length };
             }
@@ -97,7 +92,7 @@ public:
     {
         std::int64_t changeNumber = m_beginChange + 1;
 
-        m_beginChange.store(changeNumber, std::memory_order_release);
+        m_beginChange.store(changeNumber, std::memory_order_acq_rel);
 
         m_array.first = array;
         m_array.second = length;
@@ -105,10 +100,10 @@ public:
         m_endChange.store(changeNumber, std::memory_order_release);
     }
 
-    std::pair<E*, std::size_t> addElement(E element)
+    std::pair<E *, std::size_t> addElement(E element)
     {
-        std::pair<E*, std::size_t> oldArray = load();
-        std::pair<E*, std::size_t> newArray = aeron::util::addToArray(oldArray.first, oldArray.second, element);
+        std::pair<E *, std::size_t> oldArray = load();
+        std::pair<E *, std::size_t> newArray = aeron::util::addToArray(oldArray.first, oldArray.second, element);
 
         store(newArray.first, newArray.second);
 
@@ -116,16 +111,16 @@ public:
     }
 
     template<typename F>
-    std::pair<E*, std::size_t> removeElement(F &&func)
+    std::pair<E *, std::size_t> removeElement(F &&func)
     {
-        std::pair<E*, std::size_t> oldArray = load();
+        std::pair<E *, std::size_t> oldArray = load();
         const std::size_t length = oldArray.second;
 
         for (std::size_t i = 0; i < length; i++)
         {
             if (func(oldArray.first[i]))
             {
-                std::pair<E*, std::size_t> newArray = aeron::util::removeFromArray(oldArray.first, length, i);
+                std::pair<E *, std::size_t> newArray = aeron::util::removeFromArray(oldArray.first, length, i);
 
                 store(newArray.first, newArray.second);
 
@@ -133,7 +128,7 @@ public:
             }
         }
 
-        return {nullptr, 0};
+        return { nullptr, 0 };
     }
 
 private:
@@ -142,7 +137,6 @@ private:
     std::pair<E*, std::size_t> m_array = { nullptr, 0 };
 };
 
-}
-}
+}}
 
 #endif //AERON_ATOMIC_ARRAY_UPDATER_H

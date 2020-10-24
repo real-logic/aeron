@@ -80,11 +80,9 @@ public:
             E *array = m_array.first;
             std::size_t length = m_array.second;
 
-            aeron::concurrent::atomic::acquire();
-
-            if (changeNumber == m_beginChange.load(std::memory_order_acquire))
+            if (changeNumber == m_beginChange.load(std::memory_order_acq_rel))
             {
-                return {array, length};
+                return { array, length };
             }
         }
         while (true);
@@ -94,7 +92,7 @@ public:
     {
         std::int64_t changeNumber = m_beginChange + 1;
 
-        m_beginChange.store(changeNumber, std::memory_order_release);
+        m_beginChange.store(changeNumber, std::memory_order_acq_rel);
 
         m_array.first = array;
         m_array.second = length;
@@ -115,7 +113,7 @@ public:
     template<typename F>
     std::pair<E *, std::size_t> removeElement(F &&func)
     {
-        std::pair<E*, std::size_t> oldArray = load();
+        std::pair<E *, std::size_t> oldArray = load();
         const std::size_t length = oldArray.second;
 
         for (std::size_t i = 0; i < length; i++)
@@ -130,7 +128,7 @@ public:
             }
         }
 
-        return {nullptr, 0};
+        return { nullptr, 0 };
     }
 
 private:

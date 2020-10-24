@@ -116,7 +116,7 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t 
     publication->conductor_fields.consumer_position = position > publication->conductor_fields.consumer_position ?
         position : publication->conductor_fields.consumer_position;
 
-    if (1 == publication->conductor_fields.subscribable.length)
+    if (1 == publication->conductor_fields.subscribable.length && NULL != publication->mapped_raw_log.mapped_file.addr)
     {
         AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
     }

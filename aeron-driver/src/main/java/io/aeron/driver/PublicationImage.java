@@ -531,16 +531,6 @@ public class PublicationImage
     }
 
     /**
-     * Is this image actively rebuilding and thus should be checked for loss.
-     *
-     * @return true if this image actively rebuilding and thus should be checked for loss.
-     */
-    final boolean isRebuilding()
-    {
-        return isRebuilding;
-    }
-
-    /**
      * Insert frame into term buffer.
      *
      * @param termId         for the data packet to insert into the appropriate term.

@@ -40,8 +40,6 @@ import java.util.ArrayList;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
-import static io.aeron.driver.PublicationImage.State.ACTIVE;
-import static io.aeron.driver.PublicationImage.State.INIT;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
@@ -148,7 +146,7 @@ public class PublicationImage
     private final boolean isReliable;
 
     private boolean isRebuilding = true;
-    private volatile State state = INIT;
+    private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
     private final CachedNanoClock cachedNanoClock;
@@ -431,7 +429,8 @@ public class PublicationImage
      */
     void activate()
     {
-        state(ACTIVE);
+        timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
+        this.state = State.ACTIVE;
     }
 
     /**
@@ -443,7 +442,8 @@ public class PublicationImage
         if (State.ACTIVE == state)
         {
             isRebuilding = false;
-            state(State.DRAINING);
+            timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
+            this.state = State.DRAINING;
         }
     }
 
@@ -615,37 +615,33 @@ public class PublicationImage
     int sendPendingStatusMessage()
     {
         int workCount = 0;
+        final long changeNumber = endSmChange;
 
-        if (ACTIVE == state)
+        if (changeNumber != lastSmChangeNumber)
         {
-            final long changeNumber = endSmChange;
+            final long smPosition = nextSmPosition;
+            final int receiverWindowLength = nextSmReceiverWindowLength;
 
-            if (changeNumber != lastSmChangeNumber)
+            UNSAFE.loadFence();
+
+            if (changeNumber == beginSmChange)
             {
-                final long smPosition = nextSmPosition;
-                final int receiverWindowLength = nextSmReceiverWindowLength;
+                final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
+                final int termOffset = (int)smPosition & termLengthMask;
 
-                UNSAFE.loadFence();
+                channelEndpoint.sendStatusMessage(
+                    imageConnections, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
 
-                if (changeNumber == beginSmChange)
-                {
-                    final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
-                    final int termOffset = (int)smPosition & termLengthMask;
+                statusMessagesSent.incrementOrdered();
 
-                    channelEndpoint.sendStatusMessage(
-                        imageConnections, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
+                lastSmPosition = smPosition;
+                lastSmWindowLimit = smPosition + receiverWindowLength;
+                lastSmChangeNumber = changeNumber;
 
-                    statusMessagesSent.incrementOrdered();
-
-                    lastSmPosition = smPosition;
-                    lastSmWindowLimit = smPosition + receiverWindowLength;
-                    lastSmChangeNumber = changeNumber;
-
-                    updateActiveTransportCount();
-                }
-
-                workCount = 1;
+                updateActiveTransportCount();
             }
+
+            workCount = 1;
         }
 
         return workCount;
@@ -740,7 +736,7 @@ public class PublicationImage
      */
     boolean isAcceptingSubscriptions()
     {
-        return subscriberPositions.length > 0 && (state == ACTIVE || state == INIT);
+        return subscriberPositions.length > 0 && (state == State.ACTIVE || state == State.INIT);
     }
 
     long joinPosition()
@@ -778,8 +774,9 @@ public class PublicationImage
             case LINGER:
                 if (hasNoSubscribers() || ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0))
                 {
-                    state = State.DONE;
                     conductor.cleanupImage(this);
+                    timeOfLastStateChangeNs = timeNs;
+                    state = State.DONE;
                 }
                 break;
         }
@@ -887,12 +884,6 @@ public class PublicationImage
         }
 
         return true;
-    }
-
-    private void state(final State state)
-    {
-        timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
-        this.state = state;
     }
 
     private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)

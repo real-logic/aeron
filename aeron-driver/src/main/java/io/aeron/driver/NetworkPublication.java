@@ -857,6 +857,7 @@ public class NetworkPublication
                 {
                     channelEndpoint.decRef();
                     conductor.cleanupPublication(this);
+                    timeOfLastActivityNs = timeNs;
                     state = State.DONE;
                 }
                 break;

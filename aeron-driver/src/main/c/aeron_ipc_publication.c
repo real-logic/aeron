@@ -190,6 +190,11 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 {
+    if (AERON_IPC_PUBLICATION_STATE_ACTIVE != publication->conductor_fields.state)
+    {
+        return 0;
+    }
+
     int work_count = 0;
     int64_t min_sub_pos = INT64_MAX;
     int64_t max_sub_pos = publication->conductor_fields.consumer_position;

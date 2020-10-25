@@ -932,8 +932,8 @@ void aeron_network_publication_on_time_event(
             aeron_network_publication_check_untethered_subscriptions(conductor, publication, now_ns);
 
             const bool current_connected_status =
-                    aeron_network_publication_has_required_receivers(publication) ||
-                    (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
+                aeron_network_publication_has_required_receivers(publication) ||
+                (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
             aeron_network_publication_update_connected_status(publication, current_connected_status);
 
             const int64_t producer_position = aeron_network_publication_producer_position(publication);

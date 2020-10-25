@@ -38,7 +38,7 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
 {
     struct iovec vec[1];
     vec[0].iov_len = length;
-    vec[0].iov_base = (void *) msg;
+    vec[0].iov_base = (void *)msg;
 
     return aeron_spsc_rb_writev(ring_buffer, msg_type_id, vec, 1);
 }
@@ -132,7 +132,6 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
 
     return AERON_RB_SUCCESS;
 }
-
 
 size_t aeron_spsc_rb_read(
     aeron_spsc_rb_t *ring_buffer, aeron_rb_handler_t handler, void *clientd, size_t message_count_limit)

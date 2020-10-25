@@ -47,8 +47,8 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    buffer_t m_srcBuffer;
+    buffer_t m_buffer = {};
+    buffer_t m_srcBuffer = {};
 };
 
 TEST_F(MpscRbTest, shouldCalculateCapacityForBuffer)
@@ -87,7 +87,7 @@ TEST_F(MpscRbTest, shouldWriteToEmptyBuffer)
 
     ASSERT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
+    auto *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
 
     EXPECT_EQ(record->length, (int32_t)recordLength);
     EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
@@ -141,7 +141,7 @@ TEST_F(MpscRbTest, shouldInsertPaddingRecordPlusMessageOnBufferWrap)
 
     ASSERT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
     EXPECT_EQ(record->msg_type_id, (int32_t)AERON_RB_PADDING_MSG_TYPE_ID);
     EXPECT_EQ(record->length, (int32_t)AERON_RB_ALIGNMENT);
 
@@ -166,7 +166,7 @@ TEST_F(MpscRbTest, shouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqual
 
     ASSERT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
     EXPECT_EQ(record->msg_type_id, (int32_t)AERON_RB_PADDING_MSG_TYPE_ID);
     EXPECT_EQ(record->length, (int32_t)AERON_RB_ALIGNMENT);
 
@@ -178,7 +178,7 @@ TEST_F(MpscRbTest, shouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqual
 
 static void countTimesAsSizeT(int32_t msg_type_id, const void *msg, size_t length, void *clientd)
 {
-    size_t *count = (size_t *)clientd;
+    auto *count = (size_t *)clientd;
 
     (*count)++; /* unused */
 }
@@ -213,7 +213,7 @@ TEST_F(MpscRbTest, shouldReadSingleMessage)
     rb.descriptor->head_position = (int64_t)head;
     rb.descriptor->tail_position = (int64_t)tail;
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
     record->msg_type_id = (int32_t)MSG_TYPE_ID;
     record->length = (int32_t)recordLength;
 
@@ -243,7 +243,7 @@ TEST_F(MpscRbTest, shouldNotReadSingleMessagePartWayThroughWriting)
     rb.descriptor->head_position = (int64_t)head;
     rb.descriptor->tail_position = (int64_t)endTail;
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
     record->msg_type_id = (int32_t)MSG_TYPE_ID;
     record->length = -((int32_t)recordLength);
 
@@ -351,7 +351,7 @@ TEST_F(MpscRbTest, shouldUnblockMessageWithHeader)
     rb.descriptor->head_position = (int64_t)head;
     rb.descriptor->tail_position = (int64_t)tail;
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + head);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer + head);
 
     record->msg_type_id = MSG_TYPE_ID;
     record->length = -(int32_t)message_length;
@@ -376,7 +376,7 @@ TEST_F(MpscRbTest, shouldUnblockGapWithZeros)
     rb.descriptor->head_position = (int64_t)head;
     rb.descriptor->tail_position = (int64_t)tail;
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + (message_length * 2));
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer + (message_length * 2));
 
     record->length = (int32_t)message_length;
 
@@ -397,7 +397,7 @@ TEST_F(MpscRbTest, shouldUnblockGapWithZeros)
 
 TEST(MpscRbConcurrentTest, shouldProvideCorrelationIds)
 {
-    AERON_DECL_ALIGNED(buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t buffer, 16) = {};
     buffer.fill(0);
 
     aeron_mpsc_rb_t rb;
@@ -442,8 +442,8 @@ typedef struct mpsc_concurrent_test_data_stct
 
 static void mpsc_rb_concurrent_handler(int32_t msg_type_id, const void *buffer, size_t length, void *clientd)
 {
-    uint32_t *counts = (uint32_t *)clientd;
-    mpsc_concurrent_test_data_t *data = (mpsc_concurrent_test_data_t *)buffer;
+    auto *counts = (uint32_t *)clientd;
+    auto *data = (mpsc_concurrent_test_data_t *)buffer;
 
     EXPECT_EQ(length, sizeof(mpsc_concurrent_test_data_t));
     ASSERT_EQ(msg_type_id, MSG_TYPE_ID);
@@ -454,7 +454,7 @@ static void mpsc_rb_concurrent_handler(int32_t msg_type_id, const void *buffer, 
 
 TEST(MpscRbConcurrentTest, shouldExchangeMessages)
 {
-    AERON_DECL_ALIGNED(buffer_t mpsc_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t mpsc_buffer, 16) = {};
     mpsc_buffer.fill(0);
 
     aeron_mpsc_rb_t rb;
@@ -487,7 +487,7 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
                     std::this_thread::yield();
                 }
 
-                mpsc_concurrent_test_data_t *data = (mpsc_concurrent_test_data_t *)(buffer.data());
+                auto *data = (mpsc_concurrent_test_data_t *)(buffer.data());
 
                 for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
                 {
@@ -521,4 +521,3 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
         thr.join();
     }
 }
-

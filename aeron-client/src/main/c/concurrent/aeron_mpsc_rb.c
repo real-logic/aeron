@@ -175,7 +175,6 @@ size_t aeron_mpsc_rb_read(
             ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index),
             record_length - AERON_RB_RECORD_HEADER_LENGTH,
             clientd);
-
     }
 
     if (0 != bytes_read)
@@ -286,4 +285,5 @@ bool aeron_mpsc_rb_unblock(aeron_mpsc_rb_t *ring_buffer)
 }
 
 extern int64_t aeron_mpsc_rb_consumer_position(aeron_mpsc_rb_t *ring_buffer);
+
 extern int64_t aeron_mpsc_rb_producer_position(aeron_mpsc_rb_t *ring_buffer);

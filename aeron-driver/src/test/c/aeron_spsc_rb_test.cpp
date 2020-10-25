@@ -46,8 +46,8 @@ public:
     }
 
 protected:
-    buffer_t m_buffer;
-    buffer_t m_srcBuffer;
+    buffer_t m_buffer = {};
+    buffer_t m_srcBuffer = {};
 };
 
 TEST_F(SpscRbTest, shouldCalculateCapacityForBuffer)
@@ -86,7 +86,7 @@ TEST_F(SpscRbTest, shouldWriteToEmptyBuffer)
 
     ASSERT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
+    auto *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
 
     EXPECT_EQ(record->length, (int32_t)recordLength);
     EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
@@ -116,7 +116,7 @@ TEST_F(SpscRbTest, shouldWriteVectorToEmptyBuffer)
 
     ASSERT_EQ(aeron_spsc_rb_writev(&rb, MSG_TYPE_ID, vec, vec_len), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
+    auto *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
 
     EXPECT_EQ(record->length, (int32_t)recordLength);
     EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
@@ -196,7 +196,7 @@ TEST_F(SpscRbTest, shouldInsertPaddingRecordPlusMessageOnBufferWrap)
 
     ASSERT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
     EXPECT_EQ(record->msg_type_id, (int32_t)AERON_RB_PADDING_MSG_TYPE_ID);
     EXPECT_EQ(record->length, (int32_t)AERON_RB_ALIGNMENT);
 
@@ -221,7 +221,7 @@ TEST_F(SpscRbTest, shouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqual
 
     ASSERT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_SUCCESS);
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer + tail);
     EXPECT_EQ(record->msg_type_id, (int32_t)AERON_RB_PADDING_MSG_TYPE_ID);
     EXPECT_EQ(record->length, (int32_t)AERON_RB_ALIGNMENT);
 
@@ -233,7 +233,7 @@ TEST_F(SpscRbTest, shouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqual
 
 static void countTimesAsSizeT(int32_t msg_type_id, const void *msg, size_t length, void *clientd)
 {
-    size_t *count = (size_t *)clientd;
+    auto *count = (size_t *)clientd;
 
     (*count)++; /* unused */
 }
@@ -268,7 +268,7 @@ TEST_F(SpscRbTest, shouldReadSingleMessage)
     rb.descriptor->head_position = (int64_t)head;
     rb.descriptor->tail_position = (int64_t)tail;
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
     record->msg_type_id = (int32_t)MSG_TYPE_ID;
     record->length = (int32_t)recordLength;
 
@@ -293,7 +293,7 @@ TEST_F(SpscRbTest, shouldNotReadSingleMessagePartWayThroughWriting)
     rb.descriptor->head_position = (int64_t)head;
     rb.descriptor->tail_position = (int64_t)endTail;
 
-    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    auto *record = (aeron_rb_record_descriptor_t *)(rb.buffer);
     record->msg_type_id = (int32_t)MSG_TYPE_ID;
     record->length = -((int32_t)recordLength);
 
@@ -372,7 +372,7 @@ TEST_F(SpscRbTest, shouldLimitReadOfMessages)
 
 TEST(SpscRbConcurrentTest, shouldProvideCorrelationIds)
 {
-    AERON_DECL_ALIGNED(buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t buffer, 16) = {};
     buffer.fill(0);
 
     aeron_spsc_rb_t rb;
@@ -410,7 +410,7 @@ TEST(SpscRbConcurrentTest, shouldProvideCorrelationIds)
 
 static void spsc_rb_concurrent_handler(int32_t msg_type_id, const void *buffer, size_t length, void *clientd)
 {
-    size_t *counts = (size_t *)clientd;
+    auto *counts = (size_t *)clientd;
     const int32_t messageNumber = *((int32_t *)(buffer));
 
     EXPECT_EQ(length, (size_t)4);
@@ -421,7 +421,7 @@ static void spsc_rb_concurrent_handler(int32_t msg_type_id, const void *buffer, 
 
 TEST(SpscRbConcurrentTest, shouldExchangeMessages)
 {
-    AERON_DECL_ALIGNED(buffer_t spsc_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t spsc_buffer, 16) = {};
     spsc_buffer.fill(0);
 
     aeron_spsc_rb_t rb;
@@ -447,7 +447,7 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
 
             for (int m = 0; m < NUM_MESSAGES; m++)
             {
-                int32_t *payload = (int32_t *)(buffer.data());
+                auto *payload = (int32_t *)(buffer.data());
                 *payload = m;
 
                 while (AERON_RB_SUCCESS != aeron_spsc_rb_write(&rb, MSG_TYPE_ID, buffer.data(), 4))
@@ -478,7 +478,7 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
 
 TEST(SpscRbConcurrentTest, shouldExchangeVectorMessages)
 {
-    AERON_DECL_ALIGNED(buffer_t spsc_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t spsc_buffer, 16) = {};
     spsc_buffer.fill(0);
 
     aeron_spsc_rb_t rb;
@@ -505,7 +505,7 @@ TEST(SpscRbConcurrentTest, shouldExchangeVectorMessages)
 
             for (int m = 0; m < NUM_MESSAGES; m++)
             {
-                int32_t *payload = (int32_t *)(buffer.data());
+                auto *payload = (int32_t *)(buffer.data());
                 *payload = m;
 
                 vec[0].iov_len = 2;

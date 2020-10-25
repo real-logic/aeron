@@ -1738,31 +1738,19 @@ public class DriverConductor implements Agent
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            final PublicationImage image = publicationImages.get(i);
-            if (image.isRebuilding())
-            {
-                image.trackRebuild(nowNs, statusMessageTimeoutNs);
-            }
+            workCount += publicationImages.get(i).trackRebuild(nowNs, statusMessageTimeoutNs);
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
-            final NetworkPublication publication = networkPublications.get(i);
-            if (publication.state() == NetworkPublication.State.ACTIVE)
-            {
-                workCount += publication.updatePublisherLimit();
-            }
+            workCount += networkPublications.get(i).updatePublisherLimit();
         }
 
         final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            final IpcPublication publication = ipcPublications.get(i);
-            if (publication.state() == IpcPublication.State.ACTIVE)
-            {
-                workCount += publication.updatePublisherLimit();
-            }
+            workCount += ipcPublications.get(i).updatePublisherLimit();
         }
 
         return workCount;

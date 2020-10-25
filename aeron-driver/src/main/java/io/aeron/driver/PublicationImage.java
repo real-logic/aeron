@@ -474,60 +474,60 @@ public class PublicationImage
         trackConnection(transportIndex, remoteAddress, cachedNanoClock.nanoTime());
     }
 
-    /**
-     * Called from the {@link DriverConductor} to track the rebuild os stream which is used for loss detection
-     * and congestion control.
-     *
-     * @param nowNs                  current time.
-     * @param statusMessageTimeoutNs for sending of Status Messages.
-     */
-    final void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
+    final int trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
-        final long hwmPosition = this.hwmPosition.getVolatile();
-        long minSubscriberPosition = Long.MAX_VALUE;
-        long maxSubscriberPosition = 0;
+        int workCount = 0;
 
-        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        if (isRebuilding)
         {
-            final long position = subscriberPosition.getVolatile();
-            minSubscriberPosition = Math.min(minSubscriberPosition, position);
-            maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
+            final long hwmPosition = this.hwmPosition.getVolatile();
+            long minSubscriberPosition = Long.MAX_VALUE;
+            long maxSubscriberPosition = 0;
+
+            for (final ReadablePosition subscriberPosition : subscriberPositions)
+            {
+                final long position = subscriberPosition.getVolatile();
+                minSubscriberPosition = Math.min(minSubscriberPosition, position);
+                maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
+            }
+
+            final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
+            final long scanOutcome = lossDetector.scan(
+                termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
+                rebuildPosition,
+                hwmPosition,
+                nowNs,
+                termLengthMask,
+                positionBitsToShift,
+                initialTermId);
+
+            final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
+            final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
+            this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
+
+            final long ccOutcome = congestionControl.onTrackRebuild(
+                nowNs,
+                minSubscriberPosition,
+                nextSmPosition,
+                hwmPosition,
+                rebuildPosition,
+                newRebuildPosition,
+                lossFound(scanOutcome));
+
+            final int windowLength = CongestionControl.receiverWindowLength(ccOutcome);
+            final int threshold = CongestionControl.threshold(windowLength);
+
+            if (CongestionControl.shouldForceStatusMessage(ccOutcome) ||
+                ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
+                (minSubscriberPosition > (nextSmPosition + threshold)))
+            {
+                cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
+                scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
+                workCount += 1;
+            }
         }
 
-        final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
-
-        final long scanOutcome = lossDetector.scan(
-            termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
-            rebuildPosition,
-            hwmPosition,
-            nowNs,
-            termLengthMask,
-            positionBitsToShift,
-            initialTermId);
-
-        final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
-        final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
-        this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
-
-        final long ccOutcome = congestionControl.onTrackRebuild(
-            nowNs,
-            minSubscriberPosition,
-            nextSmPosition,
-            hwmPosition,
-            rebuildPosition,
-            newRebuildPosition,
-            lossFound(scanOutcome));
-
-        final int windowLength = CongestionControl.receiverWindowLength(ccOutcome);
-        final int threshold = CongestionControl.threshold(windowLength);
-
-        if (CongestionControl.shouldForceStatusMessage(ccOutcome) ||
-            ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
-            (minSubscriberPosition > (nextSmPosition + threshold)))
-        {
-            cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
-            scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
-        }
+        return workCount;
     }
 
     /**

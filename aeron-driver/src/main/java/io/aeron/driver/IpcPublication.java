@@ -286,38 +286,42 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     int updatePublisherLimit()
     {
         int workCount = 0;
-        long minSubscriberPosition = Long.MAX_VALUE;
-        long maxSubscriberPosition = consumerPosition;
 
-        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        if (State.ACTIVE == state)
         {
-            final long position = subscriberPosition.getVolatile();
-            minSubscriberPosition = Math.min(minSubscriberPosition, position);
-            maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
-        }
+            long minSubscriberPosition = Long.MAX_VALUE;
+            long maxSubscriberPosition = consumerPosition;
 
-        if (subscriberPositions.length > 0)
-        {
-            if (maxSubscriberPosition > consumerPosition)
+            for (final ReadablePosition subscriberPosition : subscriberPositions)
             {
-                consumerPosition = maxSubscriberPosition;
+                final long position = subscriberPosition.getVolatile();
+                minSubscriberPosition = Math.min(minSubscriberPosition, position);
+                maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
             }
 
-            final long proposedLimit = minSubscriberPosition + termWindowLength;
-            if (proposedLimit > tripLimit)
+            if (subscriberPositions.length > 0)
             {
-                cleanBufferTo(minSubscriberPosition);
-                publisherLimit.setOrdered(proposedLimit);
-                tripLimit = proposedLimit + tripGain;
+                if (maxSubscriberPosition > consumerPosition)
+                {
+                    consumerPosition = maxSubscriberPosition;
+                }
 
-                workCount = 1;
+                final long proposedLimit = minSubscriberPosition + termWindowLength;
+                if (proposedLimit > tripLimit)
+                {
+                    cleanBufferTo(minSubscriberPosition);
+                    publisherLimit.setOrdered(proposedLimit);
+                    tripLimit = proposedLimit + tripGain;
+
+                    workCount = 1;
+                }
             }
-        }
-        else if (publisherLimit.get() > consumerPosition)
-        {
-            tripLimit = consumerPosition;
-            publisherLimit.setOrdered(consumerPosition);
-            cleanBufferTo(consumerPosition);
+            else if (publisherLimit.get() > consumerPosition)
+            {
+                tripLimit = consumerPosition;
+                publisherLimit.setOrdered(consumerPosition);
+                cleanBufferTo(consumerPosition);
+            }
         }
 
         return workCount;

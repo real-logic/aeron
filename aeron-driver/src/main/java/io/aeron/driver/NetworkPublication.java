@@ -513,29 +513,32 @@ public class NetworkPublication
     {
         int workCount = 0;
 
-        final long senderPosition = this.senderPosition.getVolatile();
-        if (hasRequiredReceivers() || (spiesSimulateConnection && spyPositions.length > 0))
+        if (State.ACTIVE == state)
         {
-            long minConsumerPosition = senderPosition;
-            for (final ReadablePosition spyPosition : spyPositions)
+            final long senderPosition = this.senderPosition.getVolatile();
+            if (hasRequiredReceivers() || (spiesSimulateConnection && spyPositions.length > 0))
             {
-                minConsumerPosition = Math.min(minConsumerPosition, spyPosition.getVolatile());
-            }
+                long minConsumerPosition = senderPosition;
+                for (final ReadablePosition spyPosition : spyPositions)
+                {
+                    minConsumerPosition = Math.min(minConsumerPosition, spyPosition.getVolatile());
+                }
 
-            final long proposedPublisherLimit = minConsumerPosition + termWindowLength;
-            final long publisherLimit = this.publisherLimit.get();
-            if (proposedPublisherLimit > publisherLimit)
+                final long proposedPublisherLimit = minConsumerPosition + termWindowLength;
+                final long publisherLimit = this.publisherLimit.get();
+                if (proposedPublisherLimit > publisherLimit)
+                {
+                    cleanBufferTo(minConsumerPosition - termBufferLength);
+                    this.publisherLimit.setOrdered(proposedPublisherLimit);
+                    workCount = 1;
+                }
+            }
+            else if (publisherLimit.get() > senderPosition)
             {
-                cleanBufferTo(minConsumerPosition - termBufferLength);
-                this.publisherLimit.setOrdered(proposedPublisherLimit);
+                publisherLimit.setOrdered(senderPosition);
+                cleanBufferTo(senderPosition - termBufferLength);
                 workCount = 1;
             }
-        }
-        else if (publisherLimit.get() > senderPosition)
-        {
-            publisherLimit.setOrdered(senderPosition);
-            cleanBufferTo(senderPosition - termBufferLength);
-            workCount = 1;
         }
 
         return workCount;

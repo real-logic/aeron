@@ -50,6 +50,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final long unblockTimeoutNs;
     private final long untetheredWindowLimitTimeoutNs;
     private final long untetheredRestingTimeoutNs;
+    private final String channel;
     private final long tag;
     private final int sessionId;
     private final int streamId;
@@ -79,6 +80,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     IpcPublication(
         final long registrationId,
+        final String channel,
         final MediaDriver.Context ctx,
         final long tag,
         final int sessionId,
@@ -90,6 +92,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final boolean isExclusive)
     {
         this.registrationId = registrationId;
+        this.channel = channel;
         this.tag = tag;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -118,12 +121,17 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         timeOfLastConsumerPositionUpdateNs = ctx.cachedNanoClock().nanoTime();
     }
 
-    int sessionId()
+    public String channel()
+    {
+        return channel;
+    }
+
+    public int sessionId()
     {
         return sessionId;
     }
 
-    int streamId()
+    public int streamId()
     {
         return streamId;
     }

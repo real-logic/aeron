@@ -1541,6 +1541,7 @@ public final class DriverConductor implements Agent
 
         final IpcPublication publication = new IpcPublication(
             registrationId,
+            channel,
             ctx,
             params.entityTag,
             sessionId,

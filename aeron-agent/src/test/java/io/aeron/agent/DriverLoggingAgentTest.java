@@ -36,16 +36,15 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
-import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
@@ -54,8 +53,8 @@ public class DriverLoggingAgentTest
     private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final int STREAM_ID = 1777;
 
-    private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
-    private static final Set<Integer> WAIT_LIST = synchronizedSet(new HashSet<>());
+    private static final Set<DriverEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
+    private static final Set<DriverEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
     private static CountDownLatch latch;
 
     private File testDir;
@@ -76,9 +75,9 @@ public class DriverLoggingAgentTest
 
     @Test
     @Timeout(10)
-    public void logAll() throws InterruptedException
+    public void logAllNetworkChannel() throws InterruptedException
     {
-        testLogMediaDriverEvents("all", EnumSet.of(
+        testLogMediaDriverEvents(NETWORK_CHANNEL, "all", EnumSet.of(
             FRAME_IN,
             FRAME_OUT,
             CMD_IN_ADD_PUBLICATION,
@@ -98,6 +97,26 @@ public class DriverLoggingAgentTest
             CMD_OUT_ON_UNAVAILABLE_COUNTER,
             CMD_OUT_COUNTER_READY,
             CMD_IN_CLIENT_CLOSE));
+    }
+
+    @Test
+    @Timeout(10)
+    public void logAllIpcChannel() throws InterruptedException
+    {
+        testLogMediaDriverEvents(IPC_CHANNEL, "all", EnumSet.of(
+            CMD_IN_ADD_PUBLICATION,
+            CMD_IN_REMOVE_PUBLICATION,
+            CMD_IN_ADD_SUBSCRIPTION,
+            CMD_IN_REMOVE_SUBSCRIPTION,
+            CMD_OUT_PUBLICATION_READY,
+            CMD_OUT_AVAILABLE_IMAGE,
+            CMD_OUT_ON_OPERATION_SUCCESS,
+            REMOVE_PUBLICATION_CLEANUP,
+            CMD_OUT_SUBSCRIPTION_READY,
+            CMD_OUT_COUNTER_READY,
+            CMD_OUT_ON_UNAVAILABLE_COUNTER,
+            CMD_IN_CLIENT_CLOSE
+        ));
     }
 
     @ParameterizedTest
@@ -126,8 +145,10 @@ public class DriverLoggingAgentTest
         }
     }
 
-    private void testLogMediaDriverEvents(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
-        throws InterruptedException
+    private void testLogMediaDriverEvents(
+        final String channel,
+        final String enabledEvents,
+        final EnumSet<DriverEventCode> expectedEvents) throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 
@@ -201,9 +222,10 @@ public class DriverLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            LOGGED_EVENTS.add(msgTypeId);
+            final DriverEventCode code = DriverEventCode.get(msgTypeId);
+            LOGGED_EVENTS.add(code);
 
-            if (WAIT_LIST.remove(msgTypeId))
+            if (WAIT_LIST.remove(code))
             {
                 latch.countDown();
             }

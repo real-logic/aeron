@@ -156,7 +156,9 @@ public final class EventLogAgent
                 if (hasPublicationHook)
                 {
                     builder = builder.visit(to(CleanupInterceptor.CleanupPublication.class)
-                        .on(named("cleanupPublication")));
+                        .on(named("cleanupPublication")))
+                        .visit(to(CleanupInterceptor.CleanupIpcPublication.class)
+                        .on(named("cleanupIpcPublication")));
                 }
                 if (hasSubscriptionHook)
                 {

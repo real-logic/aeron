@@ -44,8 +44,8 @@ TEST_F(FileUtilTest, rawLogCloseShouldUnmapAndDeleteLogFile)
     ASSERT_EQ(0, aeron_raw_log_close(&mapped_raw_log, file));
 
     EXPECT_EQ(nullptr, mapped_raw_log.mapped_file.addr);
-    EXPECT_EQ(0, mapped_raw_log.mapped_file.length);
-    EXPECT_EQ(-1, aeron_file_length(file));
+    EXPECT_EQ((size_t)0, mapped_raw_log.mapped_file.length);
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
 }
 
 TEST_F(FileUtilTest, rawLogFreeShouldUnmapAndDeleteLogFile)
@@ -62,8 +62,8 @@ TEST_F(FileUtilTest, rawLogFreeShouldUnmapAndDeleteLogFile)
     ASSERT_EQ(true, aeron_raw_log_free(&mapped_raw_log, file));
 
     EXPECT_EQ(nullptr, mapped_raw_log.mapped_file.addr);
-    EXPECT_EQ(0, mapped_raw_log.mapped_file.length);
-    EXPECT_EQ(-1, aeron_file_length(file));
+    EXPECT_EQ((size_t)0, mapped_raw_log.mapped_file.length);
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
 }
 
 TEST_F(FileUtilTest, rawLogCloseShouldNotDeleteFileIfUnmapFails)
@@ -80,7 +80,7 @@ TEST_F(FileUtilTest, rawLogCloseShouldNotDeleteFileIfUnmapFails)
 
     mapped_raw_log.mapped_file.addr = mapped_addr;
     ASSERT_EQ(0, aeron_raw_log_close(&mapped_raw_log, file));
-    EXPECT_EQ(-1, aeron_file_length(file));
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
 }
 
 TEST_F(FileUtilTest, rawLogFreeShouldNotDeleteFileIfUnmapFails)
@@ -97,5 +97,5 @@ TEST_F(FileUtilTest, rawLogFreeShouldNotDeleteFileIfUnmapFails)
 
     mapped_raw_log.mapped_file.addr = mapped_addr;
     ASSERT_EQ(true, aeron_raw_log_free(&mapped_raw_log, file));
-    EXPECT_EQ(-1, aeron_file_length(file));
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
 }

@@ -118,49 +118,39 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         timeOfLastConsumerPositionUpdateNs = ctx.cachedNanoClock().nanoTime();
     }
 
-    public int sessionId()
+    int sessionId()
     {
         return sessionId;
     }
 
-    public int streamId()
+    int streamId()
     {
         return streamId;
     }
 
-    public long registrationId()
+    long registrationId()
     {
         return registrationId;
     }
 
-    public long tag()
+    long tag()
     {
         return tag;
     }
 
-    public boolean isExclusive()
+    boolean isExclusive()
     {
         return isExclusive;
     }
 
-    public RawLog rawLog()
+    RawLog rawLog()
     {
         return rawLog;
     }
 
-    public int publisherLimitId()
+    int publisherLimitId()
     {
         return publisherLimit.id();
-    }
-
-    public int termBufferLength()
-    {
-        return termBufferLength;
-    }
-
-    public int mtuLength()
-    {
-        return LogBufferDescriptor.mtuLength(metaDataBuffer);
     }
 
     public boolean free()
@@ -267,12 +257,12 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return reachedEndOfLife;
     }
 
-    public void incRef()
+    void incRef()
     {
         ++refCount;
     }
 
-    public void decRef()
+    void decRef()
     {
         if (0 == --refCount)
         {

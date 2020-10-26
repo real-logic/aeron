@@ -268,84 +268,9 @@ public class NetworkPublication
         return timeOfLastStatusMessageNs;
     }
 
-    public long tag()
-    {
-        return tag;
-    }
-
-    public int termBufferLength()
-    {
-        return termBufferLength;
-    }
-
-    public int mtuLength()
-    {
-        return mtuLength;
-    }
-
-    public long registrationId()
-    {
-        return registrationId;
-    }
-
-    public boolean isExclusive()
-    {
-        return isExclusive;
-    }
-
-    public boolean spiesSimulateConnection()
-    {
-        return spiesSimulateConnection;
-    }
-
-    public final int send(final long nowNs)
-    {
-        final long senderPosition = this.senderPosition.get();
-        final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
-        final int termOffset = (int)senderPosition & termLengthMask;
-
-        if (shouldSendSetupFrame)
-        {
-            setupMessageCheck(nowNs, activeTermId, termOffset);
-        }
-
-        int bytesSent = sendData(nowNs, senderPosition, termOffset);
-
-        if (0 == bytesSent)
-        {
-            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, signalEos && isEndOfStream);
-
-            if (spiesSimulateConnection && hasSpies && !hasReceivers)
-            {
-                final long newSenderPosition = maxSpyPosition(senderPosition);
-                this.senderPosition.setOrdered(newSenderPosition);
-                senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
-            }
-            else
-            {
-                senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
-            }
-        }
-
-        updateHasReceivers(nowNs);
-        retransmitHandler.processTimeouts(nowNs, this);
-
-        return bytesSent;
-    }
-
-    public SendChannelEndpoint channelEndpoint()
-    {
-        return channelEndpoint;
-    }
-
     public String channel()
     {
         return channelEndpoint.originalUriString();
-    }
-
-    public int sessionId()
-    {
-        return sessionId;
     }
 
     public int streamId()
@@ -353,47 +278,9 @@ public class NetworkPublication
         return streamId;
     }
 
-    public void resend(final int termId, final int termOffset, final int length)
+    public int sessionId()
     {
-        final long senderPosition = this.senderPosition.get();
-        final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final long bottomResendWindow = senderPosition - (termBufferLength >> 1);
-
-        if (bottomResendWindow <= resendPosition && resendPosition < senderPosition)
-        {
-            final int activeIndex = indexByPosition(resendPosition, positionBitsToShift);
-            final UnsafeBuffer termBuffer = termBuffers[activeIndex];
-            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-
-            int remainingBytes = length;
-            int bytesSent = 0;
-            int offset = termOffset;
-            do
-            {
-                offset += bytesSent;
-
-                final long scanOutcome = scanForAvailability(termBuffer, offset, Math.min(mtuLength, remainingBytes));
-                final int available = available(scanOutcome);
-                if (available <= 0)
-                {
-                    break;
-                }
-
-                sendBuffer.limit(offset + available).position(offset);
-
-                if (available != channelEndpoint.send(sendBuffer))
-                {
-                    shortSends.increment();
-                    break;
-                }
-
-                bytesSent = available + padding(scanOutcome);
-                remainingBytes -= bytesSent;
-            }
-            while (remainingBytes > 0);
-
-            retransmitsSent.incrementOrdered();
-        }
+        return sessionId;
     }
 
     public void triggerSendSetupFrame()
@@ -494,6 +381,89 @@ public class NetworkPublication
         // handling of RTT measurements would be done in an else clause here.
     }
 
+    public void resend(final int termId, final int termOffset, final int length)
+    {
+        final long senderPosition = this.senderPosition.get();
+        final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long bottomResendWindow = senderPosition - (termBufferLength >> 1);
+
+        if (bottomResendWindow <= resendPosition && resendPosition < senderPosition)
+        {
+            final int activeIndex = indexByPosition(resendPosition, positionBitsToShift);
+            final UnsafeBuffer termBuffer = termBuffers[activeIndex];
+            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
+
+            int remainingBytes = length;
+            int bytesSent = 0;
+            int offset = termOffset;
+            do
+            {
+                offset += bytesSent;
+
+                final long scanOutcome = scanForAvailability(termBuffer, offset, Math.min(mtuLength, remainingBytes));
+                final int available = available(scanOutcome);
+                if (available <= 0)
+                {
+                    break;
+                }
+
+                sendBuffer.limit(offset + available).position(offset);
+
+                if (available != channelEndpoint.send(sendBuffer))
+                {
+                    shortSends.increment();
+                    break;
+                }
+
+                bytesSent = available + padding(scanOutcome);
+                remainingBytes -= bytesSent;
+            }
+            while (remainingBytes > 0);
+
+            retransmitsSent.incrementOrdered();
+        }
+    }
+
+    final int send(final long nowNs)
+    {
+        final long senderPosition = this.senderPosition.get();
+        final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
+        final int termOffset = (int)senderPosition & termLengthMask;
+
+        if (shouldSendSetupFrame)
+        {
+            setupMessageCheck(nowNs, activeTermId, termOffset);
+        }
+
+        int bytesSent = sendData(nowNs, senderPosition, termOffset);
+
+        if (0 == bytesSent)
+        {
+            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, signalEos && isEndOfStream);
+
+            if (spiesSimulateConnection && hasSpies && !hasReceivers)
+            {
+                final long newSenderPosition = maxSpyPosition(senderPosition);
+                this.senderPosition.setOrdered(newSenderPosition);
+                senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
+            }
+            else
+            {
+                senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
+            }
+        }
+
+        updateHasReceivers(nowNs);
+        retransmitHandler.processTimeouts(nowNs, this);
+
+        return bytesSent;
+    }
+
+    SendChannelEndpoint channelEndpoint()
+    {
+        return channelEndpoint;
+    }
+
     RawLog rawLog()
     {
         return rawLog;
@@ -502,6 +472,36 @@ public class NetworkPublication
     int publisherLimitId()
     {
         return publisherLimit.id();
+    }
+
+    long tag()
+    {
+        return tag;
+    }
+
+    int termBufferLength()
+    {
+        return termBufferLength;
+    }
+
+    int mtuLength()
+    {
+        return mtuLength;
+    }
+
+    long registrationId()
+    {
+        return registrationId;
+    }
+
+    boolean isExclusive()
+    {
+        return isExclusive;
+    }
+
+    boolean spiesSimulateConnection()
+    {
+        return spiesSimulateConnection;
     }
 
     /**
@@ -869,7 +869,7 @@ public class NetworkPublication
         return hasSenderReleased;
     }
 
-    public void decRef()
+    void decRef()
     {
         if (0 == --refCount)
         {
@@ -887,7 +887,7 @@ public class NetworkPublication
         }
     }
 
-    public void incRef()
+    void incRef()
     {
         ++refCount;
     }

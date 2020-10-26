@@ -167,7 +167,7 @@ public class PublicationImage
     private final CachedEpochClock cachedEpochClock;
     private final RawLog rawLog;
 
-    public PublicationImage(
+    PublicationImage(
         final long correlationId,
         final MediaDriver.Context ctx,
         final ReceiveChannelEndpoint channelEndpoint,
@@ -531,7 +531,7 @@ public class PublicationImage
     }
 
     /**
-     * Insert frame into term buffer.
+     * Insert frame into term buffer from the {@link Receiver}.
      *
      * @param termId         for the data packet to insert into the appropriate term.
      * @param termOffset     for the start of the packet in the term.
@@ -974,13 +974,10 @@ public class PublicationImage
             }
         }
 
-        if (!rawLog.isInactive())
+        final UnsafeBuffer metaDataBuffer = rawLog.metaData();
+        if (!rawLog.isInactive() && metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
         {
-            final UnsafeBuffer metaDataBuffer = rawLog.metaData();
-            if (metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
-            {
-                LogBufferDescriptor.activeTransportCount(metaDataBuffer, activeTransportCount);
-            }
+            LogBufferDescriptor.activeTransportCount(metaDataBuffer, activeTransportCount);
         }
     }
 

@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '15' ]
-        os: [ 'ubuntu-20.04', 'windows-latest' ]
+        os: [ 'ubuntu-20.04', 'windows-latest', 'macOS-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

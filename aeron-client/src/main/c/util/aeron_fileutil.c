@@ -493,15 +493,13 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 
         if (pre_touch)
         {
-            volatile int32_t value = 0;
-
             for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
             {
                 uint8_t *base_addr = mapped_raw_log->term_buffers[i].addr;
 
                 for (size_t offset = 0; offset < term_length; offset += page_size)
                 {
-                    aeron_cas_int32((volatile int32_t *)(base_addr + offset), value, value);
+                    aeron_cas_int32((volatile int32_t *)(base_addr + offset), 0, 0);
                 }
             }
         }
@@ -539,9 +537,14 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
         mapped_raw_log->mapped_file.addr = NULL;
     }
 
-    if (NULL != filename && remove(filename) < 0)
+    if (NULL != filename && -1 != mapped_raw_log->mapped_file.length)
     {
-        return false;
+        if (remove(filename) < 0 && aeron_file_length(filename) > 0)
+        {
+            return false;
+        }
+
+        mapped_raw_log->mapped_file.length = -1;
     }
 
     return true;

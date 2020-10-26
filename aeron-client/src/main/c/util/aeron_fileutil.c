@@ -537,14 +537,14 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
         mapped_raw_log->mapped_file.addr = NULL;
     }
 
-    if (NULL != filename && -1 != mapped_raw_log->mapped_file.length)
+    if (NULL != filename && mapped_raw_log->mapped_file.length > 0)
     {
         if (remove(filename) < 0 && aeron_file_length(filename) > 0)
         {
             return false;
         }
 
-        mapped_raw_log->mapped_file.length = -1;
+        mapped_raw_log->mapped_file.length = 0;
     }
 
     return true;

@@ -30,7 +30,7 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 /**
  * Proxy for sending commands to the {@link DriverConductor}.
  */
-public class DriverConductorProxy
+public final class DriverConductorProxy
 {
     private final ThreadingMode threadingMode;
     private final Queue<Runnable> commandQueue;
@@ -38,62 +38,12 @@ public class DriverConductorProxy
 
     private DriverConductor driverConductor;
 
-    public DriverConductorProxy(
+    DriverConductorProxy(
         final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
-    }
-
-    public void driverConductor(final DriverConductor driverConductor)
-    {
-        this.driverConductor = driverConductor;
-    }
-
-    public void createPublicationImage(
-        final int sessionId,
-        final int streamId,
-        final int initialTermId,
-        final int activeTermId,
-        final int termOffset,
-        final int termLength,
-        final int mtuLength,
-        final int transportIndex,
-        final InetSocketAddress controlAddress,
-        final InetSocketAddress srcAddress,
-        final ReceiveChannelEndpoint channelEndpoint)
-    {
-        if (notConcurrent())
-        {
-            driverConductor.onCreatePublicationImage(
-                sessionId,
-                streamId,
-                initialTermId,
-                activeTermId,
-                termOffset,
-                termLength,
-                mtuLength,
-                transportIndex,
-                controlAddress,
-                srcAddress,
-                channelEndpoint);
-        }
-        else
-        {
-            offer(() -> driverConductor.onCreatePublicationImage(
-                sessionId,
-                streamId,
-                initialTermId,
-                activeTermId,
-                termOffset,
-                termLength,
-                mtuLength,
-                transportIndex,
-                controlAddress,
-                srcAddress,
-                channelEndpoint));
-        }
     }
 
     public void channelEndpointError(final long statusIndicatorId, final Exception error)
@@ -140,6 +90,56 @@ public class DriverConductorProxy
     public boolean notConcurrent()
     {
         return threadingMode == SHARED || threadingMode == INVOKER;
+    }
+
+    void driverConductor(final DriverConductor driverConductor)
+    {
+        this.driverConductor = driverConductor;
+    }
+
+    void createPublicationImage(
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final int activeTermId,
+        final int termOffset,
+        final int termLength,
+        final int mtuLength,
+        final int transportIndex,
+        final InetSocketAddress controlAddress,
+        final InetSocketAddress srcAddress,
+        final ReceiveChannelEndpoint channelEndpoint)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.onCreatePublicationImage(
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                termOffset,
+                termLength,
+                mtuLength,
+                transportIndex,
+                controlAddress,
+                srcAddress,
+                channelEndpoint);
+        }
+        else
+        {
+            offer(() -> driverConductor.onCreatePublicationImage(
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                termOffset,
+                termLength,
+                mtuLength,
+                transportIndex,
+                controlAddress,
+                srcAddress,
+                channelEndpoint));
+        }
     }
 
     private void offer(final Runnable cmd)

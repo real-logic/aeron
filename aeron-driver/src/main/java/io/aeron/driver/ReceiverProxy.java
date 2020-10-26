@@ -30,7 +30,7 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 /**
  * Proxy for offering into the {@link Receiver} Thread's command queue.
  */
-public class ReceiverProxy
+final class ReceiverProxy
 {
     private final ThreadingMode threadingMode;
     private final Queue<Runnable> commandQueue;
@@ -38,25 +38,24 @@ public class ReceiverProxy
 
     private Receiver receiver;
 
-    public ReceiverProxy(
-        final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
+    ReceiverProxy(final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
     }
 
-    public void receiver(final Receiver receiver)
+    void receiver(final Receiver receiver)
     {
         this.receiver = receiver;
     }
 
-    public Receiver receiver()
+    Receiver receiver()
     {
         return receiver;
     }
 
-    public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
+    void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
         if (notConcurrent())
         {
@@ -68,7 +67,7 @@ public class ReceiverProxy
         }
     }
 
-    public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId, final int sessionId)
+    void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId, final int sessionId)
     {
         if (notConcurrent())
         {
@@ -80,7 +79,7 @@ public class ReceiverProxy
         }
     }
 
-    public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
+    void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
         if (notConcurrent())
         {
@@ -92,7 +91,7 @@ public class ReceiverProxy
         }
     }
 
-    public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId, final int sessionId)
+    void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId, final int sessionId)
     {
         if (notConcurrent())
         {
@@ -104,7 +103,7 @@ public class ReceiverProxy
         }
     }
 
-    public void newPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
+    void newPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         if (notConcurrent())
         {
@@ -116,7 +115,7 @@ public class ReceiverProxy
         }
     }
 
-    public void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         if (notConcurrent())
         {
@@ -128,7 +127,7 @@ public class ReceiverProxy
         }
     }
 
-    public void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         if (notConcurrent())
         {
@@ -140,7 +139,7 @@ public class ReceiverProxy
         }
     }
 
-    public void removeCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    void removeCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
         if (notConcurrent())
         {
@@ -152,8 +151,7 @@ public class ReceiverProxy
         }
     }
 
-    public void addDestination(
-        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)
+    void addDestination(final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)
     {
         if (notConcurrent())
         {
@@ -165,7 +163,7 @@ public class ReceiverProxy
         }
     }
 
-    public void removeDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
+    void removeDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
     {
         if (notConcurrent())
         {
@@ -177,7 +175,7 @@ public class ReceiverProxy
         }
     }
 
-    public void onResolutionChange(
+    void onResolutionChange(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel, final InetSocketAddress newAddress)
     {
         if (notConcurrent())

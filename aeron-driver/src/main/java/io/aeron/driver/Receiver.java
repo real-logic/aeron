@@ -36,7 +36,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer
  */
-public class Receiver implements Agent
+public final class Receiver implements Agent
 {
     private static final PublicationImage[] EMPTY_IMAGES = new PublicationImage[0];
     private final DataTransportPoller dataTransportPoller;
@@ -50,7 +50,7 @@ public class Receiver implements Agent
     private final long reResolutionCheckIntervalNs;
     private long reResolutionDeadlineNs;
 
-    public Receiver(final MediaDriver.Context ctx)
+    Receiver(final MediaDriver.Context ctx)
     {
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
@@ -108,7 +108,7 @@ public class Receiver implements Agent
         return workCount + bytesReceived;
     }
 
-    public void addPendingSetupMessage(
+    void addPendingSetupMessage(
         final int sessionId,
         final int streamId,
         final int transportIndex,
@@ -123,35 +123,33 @@ public class Receiver implements Agent
         pendingSetupMessages.add(cmd);
     }
 
-    public void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.addSubscription(streamId);
     }
 
-    public void onAddSubscription(
-        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
         channelEndpoint.addSubscription(streamId, sessionId);
     }
 
-    public void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.removeSubscription(streamId);
     }
 
-    public void onRemoveSubscription(
-        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
         channelEndpoint.removeSubscription(streamId, sessionId);
     }
 
-    public void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
+    void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         publicationImages = ArrayUtil.add(publicationImages, image);
         channelEndpoint.addPublicationImage(image);
     }
 
-    public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         if (!channelEndpoint.hasDestinationControl())
         {
@@ -171,7 +169,7 @@ public class Receiver implements Agent
         }
     }
 
-    public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
         for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
@@ -189,13 +187,12 @@ public class Receiver implements Agent
         channelEndpoint.close();
     }
 
-    public void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
         channelEndpoint.removeCoolDown(sessionId, streamId);
     }
 
-    public void onAddDestination(
-        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)
+    void onAddDestination(final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)
     {
         transport.openChannel(conductorProxy, channelEndpoint.statusIndicatorCounter());
 
@@ -218,7 +215,7 @@ public class Receiver implements Agent
         }
     }
 
-    public void onRemoveDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
+    void onRemoveDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
     {
         final int transportIndex = channelEndpoint.destination(udpChannel);
         if (ArrayUtil.UNKNOWN_INDEX != transportIndex)
@@ -240,7 +237,7 @@ public class Receiver implements Agent
         }
     }
 
-    public void onResolutionChange(
+    void onResolutionChange(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel channel, final InetSocketAddress newAddress)
     {
         final int transportIndex = channelEndpoint.hasDestinationControl() ? channelEndpoint.destination(channel) : 0;

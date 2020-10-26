@@ -161,7 +161,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Called by the {@link DriverConductor} to determine if the channel endpoint should be closed.
+     * Called by to determine if the channel endpoint should be closed.
      *
      * @return true if ready to be closed.
      */

@@ -54,7 +54,7 @@ class SenderRhsPadding extends SenderHotFields
 /**
  * Agent that iterates over {@link NetworkPublication}s for sending them to registered subscribers.
  */
-public class Sender extends SenderRhsPadding implements Agent
+public final class Sender extends SenderRhsPadding implements Agent
 {
     private NetworkPublication[] networkPublications = new NetworkPublication[0];
 
@@ -68,7 +68,7 @@ public class Sender extends SenderRhsPadding implements Agent
     private final CachedNanoClock cachedNanoClock;
     private final DriverConductorProxy conductorProxy;
 
-    public Sender(final MediaDriver.Context ctx)
+    Sender(final MediaDriver.Context ctx)
     {
         this.controlTransportPoller = ctx.controlTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
@@ -116,44 +116,44 @@ public class Sender extends SenderRhsPadding implements Agent
         return "sender";
     }
 
-    public void onRegisterSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+    void onRegisterSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         channelEndpoint.openChannel(conductorProxy);
         channelEndpoint.registerForRead(controlTransportPoller);
         channelEndpoint.indicateActive();
     }
 
-    public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+    void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
     }
 
-    public void onNewNetworkPublication(final NetworkPublication publication)
+    void onNewNetworkPublication(final NetworkPublication publication)
     {
         networkPublications = ArrayUtil.add(networkPublications, publication);
         publication.channelEndpoint().registerForSend(publication);
     }
 
-    public void onRemoveNetworkPublication(final NetworkPublication publication)
+    void onRemoveNetworkPublication(final NetworkPublication publication)
     {
         networkPublications = ArrayUtil.remove(networkPublications, publication);
         publication.channelEndpoint().unregisterForSend(publication);
         publication.senderRelease();
     }
 
-    public void onAddDestination(
+    void onAddDestination(
         final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         channelEndpoint.addDestination(channelUri, address);
     }
 
-    public void onRemoveDestination(
+    void onRemoveDestination(
         final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         channelEndpoint.removeDestination(channelUri, address);
     }
 
-    public void onResolutionChange(
+    void onResolutionChange(
         final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
     {
         channelEndpoint.resolutionChange(endpoint, newAddress);

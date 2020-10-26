@@ -29,27 +29,26 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 /**
  * Proxy for offering into the Sender Thread's command queue.
  */
-public class SenderProxy
+final class SenderProxy
 {
     private final ThreadingMode threadingMode;
     private final Queue<Runnable> commandQueue;
     private final AtomicCounter failCount;
     private Sender sender;
 
-    public SenderProxy(
-        final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
+    SenderProxy(final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
     }
 
-    public void sender(final Sender sender)
+    void sender(final Sender sender)
     {
         this.sender = sender;
     }
 
-    public void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+    void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         if (notConcurrent())
         {
@@ -61,7 +60,7 @@ public class SenderProxy
         }
     }
 
-    public void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+    void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         if (notConcurrent())
         {
@@ -73,7 +72,7 @@ public class SenderProxy
         }
     }
 
-    public void removeNetworkPublication(final NetworkPublication publication)
+    void removeNetworkPublication(final NetworkPublication publication)
     {
         if (notConcurrent())
         {
@@ -85,7 +84,7 @@ public class SenderProxy
         }
     }
 
-    public void newNetworkPublication(final NetworkPublication publication)
+    void newNetworkPublication(final NetworkPublication publication)
     {
         if (notConcurrent())
         {
@@ -97,7 +96,7 @@ public class SenderProxy
         }
     }
 
-    public void addDestination(
+    void addDestination(
         final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         if (notConcurrent())
@@ -110,7 +109,7 @@ public class SenderProxy
         }
     }
 
-    public void removeDestination(
+    void removeDestination(
         final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         if (notConcurrent())
@@ -123,7 +122,7 @@ public class SenderProxy
         }
     }
 
-    public void onResolutionChange(
+    void onResolutionChange(
         final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
     {
         if (notConcurrent())

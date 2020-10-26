@@ -58,7 +58,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 /**
  * Driver Conductor that takes commands from publishers and subscribers and orchestrates the media driver.
  */
-public class DriverConductor implements Agent
+public final class DriverConductor implements Agent
 {
     private static final long CLOCK_UPDATE_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(1);
 

@@ -241,9 +241,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 {
 }
 
-static void aeron_driver_conductor_name_resolver_on_neighbor_change_null(
-    const struct sockaddr_storage *addr,
-    const int64_t now_ms)
+static void aeron_driver_conductor_name_resolver_on_neighbor_change_null(const struct sockaddr_storage *addr)
 {
 }
 

@@ -298,6 +298,14 @@ TEST_F(DriverAgentTest, shouldNotEnableAnyEventsIfInvalidMask)
     assert_all_events_disabled();
 }
 
+TEST_F(DriverAgentTest, shouldDissectLogHeader)
+{
+    const int64_t time_ns = 3274398573945794359LL;
+    const auto log_header = aeron_driver_agent_dissect_log_header(time_ns);
+    
+    EXPECT_EQ(std::string("[3274398573.945795] DRIVER: "), std::string(log_header));
+}
+
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
     aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
@@ -843,9 +851,7 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborAdded)
     ipv4_addr->sin_port = 5090;
     ipv4_addr->sin_family = AF_INET;
 
-    int64_t now_ns = 4732947234739284798LL;
-
-    aeron_driver_agent_name_resolution_on_neighbor_added(&address, now_ns);
+    aeron_driver_agent_name_resolution_on_neighbor_added(&address);
 
     auto message_handler =
             [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -855,10 +861,10 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborAdded)
 
                 EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED);
 
-                const auto *data = (aeron_driver_agent_name_resolution_neighbor_change_t *)msg;
-                EXPECT_EQ(data->time_ms, 4732947234739284798LL);
+                const auto *data = (aeron_driver_agent_log_header_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
                 const auto *addr =
-                    (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t));
+                    (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_log_header_t));
                 EXPECT_NE(nullptr, addr);
                 EXPECT_EQ(AF_INET, addr->sin_family);
                 EXPECT_EQ(5090, addr->sin_port);
@@ -880,9 +886,7 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
     ipv6_addr->sin6_port = 7070;
     ipv6_addr->sin6_family = AF_INET6;
 
-    int64_t now_ns = 1LL;
-
-    aeron_driver_agent_name_resolution_on_neighbor_removed(&address, now_ns);
+    aeron_driver_agent_name_resolution_on_neighbor_removed(&address);
 
     auto message_handler =
             [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -892,10 +896,10 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
 
                 EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED);
 
-                const auto *data = (aeron_driver_agent_name_resolution_neighbor_change_t *)msg;
-                EXPECT_EQ(data->time_ms, 1LL);
+                const auto *data = (aeron_driver_agent_log_header_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
                 const auto *addr =
-                    (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t));
+                    (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_log_header_t));
                 EXPECT_NE(nullptr, addr);
                 EXPECT_EQ(AF_INET6, addr->sin6_family);
                 EXPECT_EQ(7070, addr->sin6_port);

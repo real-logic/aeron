@@ -63,9 +63,7 @@ typedef struct aeron_driver_context_bindings_clientd_entry_stct
 }
 aeron_driver_context_bindings_clientd_entry_t;
 
-typedef void (*aeron_driver_name_resolver_on_neighbor_change_func_t)(
-        const struct sockaddr_storage *addr,
-        const int64_t now_ms);
+typedef void (*aeron_driver_name_resolver_on_neighbor_change_func_t)(const struct sockaddr_storage *addr);
 
 typedef struct aeron_driver_context_stct
 {

@@ -425,7 +425,7 @@ static int aeron_driver_name_resolver_add_neighbor(
             return -1;
         }
 
-        resolver->neighbor_added_func(&new_neighbor->socket_addr, time_of_last_activity_ms);
+        resolver->neighbor_added_func(&new_neighbor->socket_addr);
 
         memcpy(&new_neighbor->cache_addr, cache_addr, sizeof(new_neighbor->cache_addr));
         new_neighbor->time_of_last_activity_ms = time_of_last_activity_ms;
@@ -866,7 +866,7 @@ static int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolv
 
         if ((entry->time_of_last_activity_ms + resolver->neighbor_timeout_ms) <= now_ms)
         {
-            resolver->neighbor_removed_func(&entry->socket_addr, now_ms);
+            resolver->neighbor_removed_func(&entry->socket_addr);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)resolver->neighbors.array, sizeof(aeron_name_resolver_cache_entry_t), i, last_index);

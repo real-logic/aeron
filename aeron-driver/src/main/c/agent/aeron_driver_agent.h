@@ -74,16 +74,22 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1
 } aeron_driver_agent_event_t;
 
+typedef struct aeron_driver_agent_log_header_stct
+{
+    int64_t time_ns;
+}
+aeron_driver_agent_log_header_t;
+
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
-    int64_t time_ms;
+    int64_t time_ns;
     int64_t cmd_id;
 }
 aeron_driver_agent_cmd_log_header_t;
 
 typedef struct aeron_driver_agent_frame_log_header_stct
 {
-    int64_t time_ms;
+    int64_t time_ns;
     int32_t result;
     int32_t sockaddr_len;
     int32_t message_len;
@@ -92,7 +98,7 @@ aeron_driver_agent_frame_log_header_t;
 
 typedef struct aeron_driver_agent_untethered_subscription_state_change_log_header_stct
 {
-    int64_t time_ms;
+    int64_t time_ns;
     int64_t subscription_id;
     int32_t stream_id;
     int32_t session_id;
@@ -101,21 +107,15 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
-typedef struct aeron_driver_agent_name_resolution_neighbor_change_stct
-{
-    int64_t time_ms;
-}
-aeron_driver_agent_name_resolution_neighbor_change_t;
-
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
 
-const char *aeron_driver_agent_dissect_timestamp(int64_t time_ms);
+const char *aeron_driver_agent_dissect_log_header(int64_t time_ns);
 
-const char *aeron_driver_agent_dissect_log_start(int64_t time_ms);
+const char *aeron_driver_agent_dissect_log_start(int64_t time_ns, int64_t time_ms);
 
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
@@ -140,13 +140,9 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     int32_t stream_id,
     int32_t session_id);
 
-void aeron_driver_agent_name_resolution_on_neighbor_added(
-    const struct sockaddr_storage *addr,
-    int64_t now_ms);
+void aeron_driver_agent_name_resolution_on_neighbor_added(const struct sockaddr_storage *addr);
 
-void aeron_driver_agent_name_resolution_on_neighbor_removed(
-    const struct sockaddr_storage *addr,
-    int64_t now_ms);
+void aeron_driver_agent_name_resolution_on_neighbor_removed(const struct sockaddr_storage *addr);
 
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd);

@@ -23,7 +23,10 @@
 
 #include "concurrent/Atomic64.h"
 
-namespace aeron { namespace util
+namespace aeron
+{
+
+namespace util
 {
 
 template<typename E>

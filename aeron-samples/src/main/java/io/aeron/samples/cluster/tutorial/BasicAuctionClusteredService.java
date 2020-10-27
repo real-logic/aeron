@@ -93,6 +93,7 @@ public class BasicAuctionClusteredService implements ClusteredService
             egressMessageBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
             egressMessageBuffer.putByte(BID_SUCCEEDED_OFFSET, bidSucceeded ? (byte)1 : (byte)0);
 
+            idleStrategy.reset();
             while (session.offer(egressMessageBuffer, 0, EGRESS_MESSAGE_LENGTH) < 0)                 // <5>
             {
                 idleStrategy.idle();                                                                 // <6>
@@ -107,6 +108,7 @@ public class BasicAuctionClusteredService implements ClusteredService
         snapshotBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());    // <1>
         snapshotBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
 
+        idleStrategy.reset();
         while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)     // <2>
         {
             idleStrategy.idle();

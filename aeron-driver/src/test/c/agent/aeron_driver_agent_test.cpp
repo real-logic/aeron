@@ -858,7 +858,7 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborAdded)
                 const auto *data = (aeron_driver_agent_name_resolution_neighbor_change_t *)msg;
                 EXPECT_EQ(data->time_ms, 4732947234739284798LL);
                 const auto *addr =
-                        (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t));
+                    (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t));
                 EXPECT_NE(nullptr, addr);
                 EXPECT_EQ(AF_INET, addr->sin_family);
                 EXPECT_EQ(5090, addr->sin_port);
@@ -895,7 +895,7 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
                 const auto *data = (aeron_driver_agent_name_resolution_neighbor_change_t *)msg;
                 EXPECT_EQ(data->time_ms, 1LL);
                 const auto *addr =
-                        (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_cmd_log_header_t));
+                    (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t));
                 EXPECT_NE(nullptr, addr);
                 EXPECT_EQ(AF_INET6, addr->sin6_family);
                 EXPECT_EQ(7070, addr->sin6_port);

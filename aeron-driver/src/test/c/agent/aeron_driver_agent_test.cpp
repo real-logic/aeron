@@ -207,18 +207,18 @@ TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByResersedValue)
 
 TEST_F(DriverAgentTest, shouldEnableMultipleEventsSplitByComma)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOUR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
-    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_ADDED));
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ERROR));
 }
 
 TEST_F(DriverAgentTest, shouldAllowSpecialEventNamesInTheList)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_NEIGHBOUR_ADDED,admin,FRAME_IN"));
-    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOUR_ADDED));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_NEIGHBOR_REMOVED,admin,FRAME_IN"));
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED));
     assert_admin_events_enabled();
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
 }

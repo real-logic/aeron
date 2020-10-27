@@ -127,9 +127,9 @@ public final class EventLogAgent
         tempBuilder = addDriverUdpChannelTransportInstrumentation(tempBuilder);
         tempBuilder = addDriverUntetheredSubscriptionInstrumentation(tempBuilder);
         tempBuilder = addDriverNameResolutionNeighbourChangeInstrumentation(
-            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOUR_ADDED, "neighbourAdded");
+            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED, "neighborAdded");
         tempBuilder = addDriverNameResolutionNeighbourChangeInstrumentation(
-            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOUR_REMOVED, "neighbourRemoved");
+            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED, "neighborRemoved");
 
         return tempBuilder;
     }

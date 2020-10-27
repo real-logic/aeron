@@ -261,7 +261,7 @@ class DriverEventLoggerTest
     {
         final int recordOffset = 64;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
-        final DriverEventCode eventCode = NAME_RESOLUTION_NEIGHBOUR_ADDED;
+        final DriverEventCode eventCode = NAME_RESOLUTION_NEIGHBOR_REMOVED;
         final int captureLength = 12;
 
         logger.logAddress(eventCode, new InetSocketAddress("localhost", 5656));

@@ -588,9 +588,9 @@ class DriverEventDissectorTest
         encodeSocketAddress(
             buffer, LOG_HEADER_LENGTH + offset, new InetSocketAddress("localhost", 4848));
 
-        DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOUR_ADDED, buffer, offset, builder);
+        DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, buffer, offset, builder);
 
-        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOUR_ADDED.name() +
+        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
             " [17/27]: 127.0.0.1:4848", builder.toString());
     }
 

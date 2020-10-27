@@ -19,8 +19,8 @@ import net.bytebuddy.asm.Advice;
 
 import java.net.InetSocketAddress;
 
-import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOUR_ADDED;
-import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOUR_REMOVED;
+import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED;
+import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 
 /**
@@ -41,15 +41,15 @@ class DriverInterceptor
     static class Neighbour
     {
         @Advice.OnMethodEnter
-        static void neighbourAdded(final long nowMs, final InetSocketAddress address)
+        static void neighborAdded(final long nowMs, final InetSocketAddress address)
         {
-            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOUR_ADDED, address);
+            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, address);
         }
 
         @Advice.OnMethodEnter
-        static void neighbourRemoved(final long nowMs, final InetSocketAddress address)
+        static void neighborRemoved(final long nowMs, final InetSocketAddress address)
         {
-            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOUR_REMOVED, address);
+            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_REMOVED, address);
         }
     }
 }

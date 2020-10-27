@@ -992,15 +992,23 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
 
 #define NANOS_PER_SECOND (1000000000)
 
-const char *aeron_driver_agent_dissect_log_header(const int64_t time_ns)
+const char *aeron_driver_agent_dissect_log_header(
+    const int64_t time_ns,
+    const aeron_driver_agent_event_t event_id,
+    const size_t capture_length,
+    const size_t message_length)
 {
-    static char buffer[80];
+    static char buffer[150];
 
     snprintf(
         buffer,
         sizeof(buffer) - 1,
-        "[%f] %s: ",
-        (double)time_ns / NANOS_PER_SECOND, AERON_DRIVER_AGENT_LOG_CONTEXT);
+        "[%f] %s: %s [%zu/%zu]",
+        (double)time_ns / NANOS_PER_SECOND,
+        AERON_DRIVER_AGENT_LOG_CONTEXT,
+        aeron_driver_agent_event_name(event_id),
+        capture_length,
+        message_length);
     return buffer;
 }
 
@@ -1604,11 +1612,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "[%s] [%d:%d] %s %s: %s\n",
-                aeron_driver_agent_dissect_log_header(hdr->time_ns),
-                hdr->result,
-                (int)hdr->message_len,
-                aeron_driver_agent_event_name(msg_type_id),
+                "%s: %s %s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, (size_t)hdr->message_len),
                 dissect_sockaddr(addr),
                 dissect_frame(frame, (size_t)hdr->message_len));
             break;
@@ -1621,8 +1626,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "[%s] UNTETHERED_SUBSCRIPTION_STATE_CHANGE: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
-                aeron_driver_agent_dissect_log_header(hdr->time_ns),
+                "%s: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->subscription_id,
                 hdr->stream_id,
                 hdr->session_id,
@@ -1640,9 +1645,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "[%s] %s: %s\n",
-                aeron_driver_agent_dissect_log_header(hdr->time_ns),
-                aeron_driver_agent_event_name(msg_type_id),
+                "%s: %s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 dissect_sockaddr(addr));
             break;
         }
@@ -1656,9 +1660,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
                     fprintf(
                         logfp,
-                        "[%s] %s %s\n",
-                        aeron_driver_agent_dissect_log_header(hdr->time_ns),
-                        aeron_driver_agent_event_name(msg_type_id),
+                        "%s: %s\n",
+                        aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                         dissect_cmd_in(
                             hdr->cmd_id,
                             (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
@@ -1670,9 +1673,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
                     fprintf(
                         logfp,
-                        "[%s] %s %s\n",
-                        aeron_driver_agent_dissect_log_header(hdr->time_ns),
-                        aeron_driver_agent_event_name(msg_type_id),
+                        "%s: %s\n",
+                        aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                         dissect_cmd_out(
                             hdr->cmd_id,
                             (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),

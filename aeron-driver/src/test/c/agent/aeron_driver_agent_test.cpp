@@ -301,9 +301,15 @@ TEST_F(DriverAgentTest, shouldNotEnableAnyEventsIfInvalidMask)
 TEST_F(DriverAgentTest, shouldDissectLogHeader)
 {
     const int64_t time_ns = 3274398573945794359LL;
-    const auto log_header = aeron_driver_agent_dissect_log_header(time_ns);
+    const auto id = AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY;
+    const auto capture_length = 59;
+    const auto message_length = 256;
+
+    const auto log_header = aeron_driver_agent_dissect_log_header(time_ns, id, capture_length, message_length);
     
-    EXPECT_EQ(std::string("[3274398573.945795] DRIVER: "), std::string(log_header));
+    EXPECT_EQ(
+        std::string("[3274398573.945795] DRIVER: CMD_OUT_EXCLUSIVE_PUBLICATION_READY [59/256]"),
+        std::string(log_header));
 }
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)

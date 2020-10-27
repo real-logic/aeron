@@ -113,7 +113,12 @@ typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
 
-const char *aeron_driver_agent_dissect_log_header(int64_t time_ns);
+const char *
+aeron_driver_agent_dissect_log_header(
+    int64_t time_ns,
+    aeron_driver_agent_event_t event_id,
+    size_t capture_length,
+    size_t message_length);
 
 const char *aeron_driver_agent_dissect_log_start(int64_t time_ns, int64_t time_ms);
 

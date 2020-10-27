@@ -795,3 +795,115 @@ TEST_F(DriverAgentTest, shouldLogDynamicEventBigMessage)
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);
 }
+
+TEST_F(DriverAgentTest, shouldInitializeNameResolutionOnNeighborAddedInterceptor)
+{
+    aeron_driver_name_resolver_on_neighbor_change_func_t func = m_context->name_resolution_on_neighbor_added_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_NEIGHBOR_ADDED"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->name_resolution_on_neighbor_added_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldKeepOriginalNameResolutionOnNeighborAddedFunctionIfEventNotEnabled)
+{
+    aeron_driver_name_resolver_on_neighbor_change_func_t func = m_context->name_resolution_on_neighbor_added_func;
+
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(m_context->name_resolution_on_neighbor_added_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeNameResolutionOnNeighborRemovedInterceptor)
+{
+    aeron_driver_name_resolver_on_neighbor_change_func_t func = m_context->name_resolution_on_neighbor_removed_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_NEIGHBOR_REMOVED"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->name_resolution_on_neighbor_removed_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldKeepOriginalNameResolutionOnNeighborRemovedFunctionIfEventNotEnabled)
+{
+    aeron_driver_name_resolver_on_neighbor_change_func_t func = m_context->name_resolution_on_neighbor_removed_func;
+
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(m_context->name_resolution_on_neighbor_removed_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborAdded)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    struct sockaddr_storage address = {};
+    auto *ipv4_addr = (struct sockaddr_in *)(&address);
+    ipv4_addr->sin_port = 5090;
+    ipv4_addr->sin_family = AF_INET;
+
+    int64_t now_ns = 4732947234739284798LL;
+
+    aeron_driver_agent_name_resolution_on_neighbor_added(&address, now_ns);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED);
+
+                const auto *data = (aeron_driver_agent_name_resolution_neighbor_change_t *)msg;
+                EXPECT_EQ(data->time_ms, 4732947234739284798LL);
+                const auto *addr =
+                        (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t));
+                EXPECT_NE(nullptr, addr);
+                EXPECT_EQ(AF_INET, addr->sin_family);
+                EXPECT_EQ(5090, addr->sin_port);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    struct sockaddr_storage address = {};
+    auto *ipv6_addr = (struct sockaddr_in6 *)(&address);
+    ipv6_addr->sin6_port = 7070;
+    ipv6_addr->sin6_family = AF_INET6;
+
+    int64_t now_ns = 1LL;
+
+    aeron_driver_agent_name_resolution_on_neighbor_removed(&address, now_ns);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED);
+
+                const auto *data = (aeron_driver_agent_name_resolution_neighbor_change_t *)msg;
+                EXPECT_EQ(data->time_ms, 1LL);
+                const auto *addr =
+                        (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_cmd_log_header_t));
+                EXPECT_NE(nullptr, addr);
+                EXPECT_EQ(AF_INET6, addr->sin6_family);
+                EXPECT_EQ(7070, addr->sin6_port);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}

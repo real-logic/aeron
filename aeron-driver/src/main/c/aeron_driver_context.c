@@ -241,6 +241,12 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 {
 }
 
+static void aeron_driver_conductor_name_resolver_on_neighbor_change_null(
+    const struct sockaddr_storage *addr,
+    const int64_t now_ms)
+{
+}
+
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT false
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
@@ -901,6 +907,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
 
     _context->untethered_subscription_state_change_func = aeron_untethered_subscription_state_change;
+
+    _context->name_resolution_on_neighbor_added_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
+    _context->name_resolution_on_neighbor_removed_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
 
     if ((_context->termination_validator_func = aeron_driver_termination_validator_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR, "deny"))) == NULL)

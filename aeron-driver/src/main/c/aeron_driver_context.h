@@ -63,6 +63,10 @@ typedef struct aeron_driver_context_bindings_clientd_entry_stct
 }
 aeron_driver_context_bindings_clientd_entry_t;
 
+typedef void (*aeron_driver_name_resolver_on_neighbor_change_func_t)(
+        const struct sockaddr_storage *addr,
+        const int64_t now_ms);
+
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                                        /* aeron.dir */
@@ -197,6 +201,9 @@ typedef struct aeron_driver_context_stct
     aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
 
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
+
+    aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_added_func;
+    aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_removed_func;
 
     aeron_driver_termination_validator_func_t termination_validator_func;
     void *termination_validator_state;

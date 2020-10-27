@@ -101,6 +101,12 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
+typedef struct aeron_driver_agent_name_resolution_neighbor_change_stct
+{
+    int64_t time_ms;
+}
+aeron_driver_agent_name_resolution_neighbor_change_t;
+
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
@@ -133,6 +139,14 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     aeron_subscription_tether_state_t new_state,
     int32_t stream_id,
     int32_t session_id);
+
+void aeron_driver_agent_name_resolution_on_neighbor_added(
+    const struct sockaddr_storage *addr,
+    int64_t now_ms);
+
+void aeron_driver_agent_name_resolution_on_neighbor_removed(
+    const struct sockaddr_storage *addr,
+    int64_t now_ms);
 
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd);

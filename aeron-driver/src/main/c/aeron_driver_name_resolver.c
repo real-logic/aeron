@@ -103,6 +103,9 @@ typedef struct aeron_driver_name_resolver_stct
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
 
+    aeron_driver_name_resolver_on_neighbor_change_func_t neighbor_added_func;
+    aeron_driver_name_resolver_on_neighbor_change_func_t neighbor_removed_func;
+
     struct sockaddr_storage received_address;
     uint8_t *aligned_buffer;
     uint8_t buffer[AERON_MAX_UDP_PAYLOAD_LENGTH + AERON_CACHE_LINE_LENGTH];
@@ -175,6 +178,9 @@ int aeron_driver_name_resolver_init(
     {
         goto error_cleanup;
     }
+
+    _driver_resolver->neighbor_added_func = context->name_resolution_on_neighbor_added_func;
+    _driver_resolver->neighbor_removed_func = context->name_resolution_on_neighbor_removed_func;
 
     _driver_resolver->bootstrap_neighbor = bootstrap_neighbor;
     if (NULL != _driver_resolver->bootstrap_neighbor)
@@ -418,6 +424,8 @@ static int aeron_driver_name_resolver_add_neighbor(
         {
             return -1;
         }
+
+        resolver->neighbor_added_func(&new_neighbor->socket_addr, time_of_last_activity_ms);
 
         memcpy(&new_neighbor->cache_addr, cache_addr, sizeof(new_neighbor->cache_addr));
         new_neighbor->time_of_last_activity_ms = time_of_last_activity_ms;
@@ -858,6 +866,8 @@ static int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolv
 
         if ((entry->time_of_last_activity_ms + resolver->neighbor_timeout_ms) <= now_ms)
         {
+            resolver->neighbor_removed_func(&entry->socket_addr, now_ms);
+
             aeron_array_fast_unordered_remove(
                 (uint8_t *)resolver->neighbors.array, sizeof(aeron_name_resolver_cache_entry_t), i, last_index);
             resolver->neighbors.length--;

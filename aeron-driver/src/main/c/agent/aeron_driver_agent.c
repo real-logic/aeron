@@ -846,6 +846,37 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
         sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
 }
 
+void log_name_resolution_neighbor_change(
+        const aeron_driver_agent_event_t id, const struct sockaddr_storage *addr, const int64_t now_ms)
+{
+    const size_t length =
+        sizeof(aeron_driver_agent_name_resolution_neighbor_change_t) + sizeof(struct sockaddr_storage);
+    uint8_t buffer[length];
+    aeron_driver_agent_name_resolution_neighbor_change_t *hdr =
+            (aeron_driver_agent_name_resolution_neighbor_change_t *)buffer;
+
+    hdr->time_ms = now_ms;
+
+    uint8_t *ptr = buffer + sizeof(aeron_driver_agent_name_resolution_neighbor_change_t);
+    memcpy(ptr, addr, sizeof(struct sockaddr_storage));
+
+    aeron_mpsc_rb_write(&logging_mpsc_rb, id, buffer, length);
+}
+
+void aeron_driver_agent_name_resolution_on_neighbor_added(
+    const struct sockaddr_storage *addr,
+    const int64_t now_ms)
+{
+    log_name_resolution_neighbor_change(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED, addr, now_ms);
+}
+
+void aeron_driver_agent_name_resolution_on_neighbor_removed(
+    const struct sockaddr_storage *addr,
+    const int64_t now_ms)
+{
+    log_name_resolution_neighbor_change(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED, addr, now_ms);
+}
+
 int aeron_driver_agent_interceptor_init(
     void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity)
 {
@@ -945,6 +976,16 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     {
         context->untethered_subscription_state_change_func =
             aeron_driver_agent_untethered_subscription_state_change_interceptor;
+    }
+
+    if (enabled_events[AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED])
+    {
+        context->name_resolution_on_neighbor_added_func = aeron_driver_agent_name_resolution_on_neighbor_added;
+    }
+
+    if (enabled_events[AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED])
+    {
+        context->name_resolution_on_neighbor_removed_func = aeron_driver_agent_name_resolution_on_neighbor_removed;
     }
 
     return 0;
@@ -1289,7 +1330,7 @@ static const char *dissect_res_address(int8_t res_type, const uint8_t *address)
     return addr_buffer;
 }
 
-static const char *dissect_sockaddr(const struct sockaddr *addr, size_t sockaddr_len)
+static const char *dissect_sockaddr(const struct sockaddr *addr)
 {
     static char addr_buffer[128], buffer[256];
     unsigned short port = 0;
@@ -1570,7 +1611,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 hdr->result,
                 (int)hdr->message_len,
                 aeron_driver_agent_event_name(msg_type_id),
-                dissect_sockaddr(addr, (size_t)hdr->sockaddr_len),
+                dissect_sockaddr(addr),
                 dissect_frame(frame, (size_t)hdr->message_len));
             break;
         }
@@ -1589,6 +1630,23 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 hdr->session_id,
                 dissect_tether_state(hdr->old_state),
                 dissect_tether_state(hdr->new_state));
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED:
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED:
+        {
+            aeron_driver_agent_name_resolution_neighbor_change_t *hdr =
+                (aeron_driver_agent_name_resolution_neighbor_change_t *)message;
+            const struct sockaddr *addr =
+                    (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+
+            fprintf(
+                logfp,
+                "[%s] %s: %s\n",
+                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
+                aeron_driver_agent_event_name(msg_type_id),
+                dissect_sockaddr(addr));
             break;
         }
 

@@ -527,10 +527,10 @@ private:
     std::int32_t m_channelStatusId;
     std::int32_t m_streamId;
     std::int64_t m_registrationId;
+    std::atomic<bool> m_isClosed = { false };
+    AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray = {};
     char m_paddingBefore[util::BitUtil::CACHE_LINE_LENGTH] = {};
     std::size_t m_roundRobinIndex = 0;
-    AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray = {};
-    std::atomic<bool> m_isClosed = { false };
     char m_paddingAfter[util::BitUtil::CACHE_LINE_LENGTH] = {};
 };
 

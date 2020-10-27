@@ -106,6 +106,7 @@ public class SingleNodeCluster implements AutoCloseable
                 final FragmentHandler fragmentHandler =
                     (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
 
+                idleStrategy.reset();
                 while (snapshotImage.poll(fragmentHandler, 1) <= 0)
                 {
                     idleStrategy.idle();
@@ -304,12 +305,13 @@ public class SingleNodeCluster implements AutoCloseable
 
     void takeSnapshot()
     {
-        final AtomicCounter snapshotCounter = clusteredMediaDriver.consensusModule().context().snapshotCounter();
+        final ConsensusModule.Context consensusModuleContext = clusteredMediaDriver.consensusModule().context();
+        final AtomicCounter snapshotCounter = consensusModuleContext.snapshotCounter();
         final long snapshotCount = snapshotCounter.get();
 
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(
             clusteredMediaDriver.mediaDriver().context().countersManager(),
-            clusteredMediaDriver.consensusModule().context().clusterId());
+            consensusModuleContext.clusterId());
         ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle);
 
         idleStrategy.reset();

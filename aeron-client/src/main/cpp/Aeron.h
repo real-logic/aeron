@@ -17,7 +17,6 @@
 #ifndef INCLUDED_AERON_H
 #define INCLUDED_AERON_H
 
-#include <random>
 #include "ClientConductor.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"
@@ -441,10 +440,6 @@ public:
     static std::string version();
 
 private:
-    std::random_device m_randomDevice;
-    std::default_random_engine m_randomEngine;
-    std::uniform_int_distribution<std::int32_t> m_sessionIdDistribution;
-
     Context m_context;
     MemoryMappedFile::ptr_t m_cncBuffer;
 

@@ -29,8 +29,6 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 static const char *AGENT_NAME = "client-conductor";
 
 Aeron::Aeron(Context &context) :
-    m_randomEngine(m_randomDevice()),
-    m_sessionIdDistribution(-INT_MAX, INT_MAX),
     m_context(context.conclude()),
     m_cncBuffer(mapCncFile(m_context)),
     m_toDriverAtomicBuffer(CncFileDescriptor::createToDriverBuffer(m_cncBuffer)),

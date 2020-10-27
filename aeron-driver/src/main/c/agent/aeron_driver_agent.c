@@ -22,7 +22,6 @@
 #if !defined(_MSC_VER)
 
 #include <pthread.h>
-#include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
@@ -35,7 +34,6 @@
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_dlopen.h"
-#include "aeron_windows.h"
 #include "aeron_alloc.h"
 #include "util/aeron_arrayutil.h"
 

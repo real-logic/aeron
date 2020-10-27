@@ -106,41 +106,109 @@ static const char EVENT_NAMES[AERON_DRIVER_EVENT_NUM_ELEMENTS][64] =
     "NAME_RESOLUTION_NEIGHBOUR_REMOVED"
 };
 
-static const aeron_driver_agent_event_t CMD_IN_EVENTS[] =
+static const bool CMD_IN_EVENTS[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
 {
-    AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION,
-    AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION,
-    AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION,
-    AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION,
-    AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT,
-    AERON_DRIVER_EVENT_CMD_IN_ADD_DESTINATION,
-    AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION,
-    AERON_DRIVER_EVENT_CMD_IN_ADD_EXCLUSIVE_PUBLICATION,
-    AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER,
-    AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER,
-    AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE,
-    AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION,
-    AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION,
-    AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION
+    true, // AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION
+    true, // AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION
+    true, // AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_IN_ADD_DESTINATION
+    true, // AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION
+    true, // AERON_DRIVER_EVENT_CMD_IN_ADD_EXCLUSIVE_PUBLICATION
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER
+    true, // AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE
+    true, // AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION
+    true, // AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER
+    false,
+    false,
+    false
 };
 
-static const size_t CMD_IN_EVENTS_LENGTH = sizeof(CMD_IN_EVENTS) / sizeof(CMD_IN_EVENTS[0]);
-
-static const aeron_driver_agent_event_t CMD_OUT_EVENTS[] =
+static const bool CMD_OUT_EVENTS[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
 {
-    AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY,
-    AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE,
-    AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS,
-    AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE,
-    AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY,
-    AERON_DRIVER_EVENT_CMD_OUT_ERROR,
-    AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY,
-    AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY,
-    AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER,
-    AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY
+    true, // AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS
+    false,
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY
+    true, // AERON_DRIVER_EVENT_CMD_OUT_ERROR
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY
+    true, // AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY
+    true, // AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER
+    false,
+    false,
+    false,
+    true, // AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT
+    false,
+    false,
+    false,
+    false
 };
-
-static const size_t CMD_OUT_EVENTS_LENGTH = sizeof(CMD_OUT_EVENTS) / sizeof(CMD_OUT_EVENTS[0]);
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb()
 {
@@ -230,9 +298,14 @@ static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char
     return AERON_DRIVER_EVENT_UNKNOWN_EVENT;
 }
 
+static inline bool is_valid_event_id(const int id)
+{
+    return id >= 0 && id < AERON_DRIVER_EVENT_NUM_ELEMENTS;
+}
+
 const char *aeron_driver_agent_event_name(const aeron_driver_agent_event_t id)
 {
-    if (id != AERON_DRIVER_EVENT_UNKNOWN_EVENT)
+    if (is_valid_event_id(id))
     {
         return EVENT_NAMES[id];
     }
@@ -241,7 +314,7 @@ const char *aeron_driver_agent_event_name(const aeron_driver_agent_event_t id)
 
 bool aeron_driver_agent_is_event_enabled(const aeron_driver_agent_event_t id)
 {
-    return id != AERON_DRIVER_EVENT_UNKNOWN_EVENT && enabled_events[id];
+    return is_valid_event_id(id) && enabled_events[id];
 }
 
 static void enable_all_events()
@@ -287,21 +360,22 @@ static void enable_admin_events()
     enabled_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE] = true;
 }
 
-static void enable_specific_events(const aeron_driver_agent_event_t *events, const size_t events_length)
+static void enable_specific_events(const bool *events)
 {
-    for (size_t i = 0; i < events_length; i++)
+    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
-        const aeron_driver_agent_event_t id = events[i];
-        enabled_events[id] = true;
+        if (events[i])
+        {
+            enabled_events[i] = true;
+        }
     }
 }
 
-static bool any_event_enabled(const aeron_driver_agent_event_t *events, const size_t events_length)
+static bool any_event_enabled(const bool *events)
 {
-    for (size_t i = 0; i < events_length; i++)
+    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
-        const aeron_driver_agent_event_t id = events[i];
-        if (enabled_events[id])
+        if (events[i] && enabled_events[i])
         {
             return true;
         }
@@ -315,10 +389,10 @@ static aeron_driver_agent_event_t parse_event_name(const char *event_name) {
     if (AERON_DRIVER_EVENT_UNKNOWN_EVENT == event_id)
     {
         const long id = strtol(event_name, NULL, 0);
-        if (id >= 0 && id < AERON_DRIVER_EVENT_NUM_ELEMENTS &&
-            !aeron_driver_agent_is_unknown_event(aeron_driver_agent_event_name((int)id)))
+        if (is_valid_event_id((int)id) &&
+            !aeron_driver_agent_is_unknown_event(aeron_driver_agent_event_name((aeron_driver_agent_event_t)id)))
         {
-            event_id = (int)id;
+            event_id = (aeron_driver_agent_event_t)id;
         }
     }
 
@@ -373,13 +447,13 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
                     {
                         if (mask & 0x1u)
                         {
-                            enable_specific_events(CMD_IN_EVENTS, CMD_IN_EVENTS_LENGTH);
+                            enable_specific_events(CMD_IN_EVENTS);
                             result = true;
                         }
 
                         if (mask & 0x2u)
                         {
-                            enable_specific_events(CMD_OUT_EVENTS, CMD_OUT_EVENTS_LENGTH);
+                            enable_specific_events(CMD_OUT_EVENTS);
                             result = true;
                         }
 
@@ -463,7 +537,7 @@ static void initialize_agent_logging()
     }
 }
 
-static aeron_driver_agent_event_t aeron_driver_agent_command_id_to_driver_event_id(const int32_t msg_type_id)
+static aeron_driver_agent_event_t command_id_to_driver_event_id(const int32_t msg_type_id)
 {
     switch (msg_type_id)
     {
@@ -563,7 +637,7 @@ void encode_conductor_to_driver_command(
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
-    const aeron_driver_agent_event_t event_id = aeron_driver_agent_command_id_to_driver_event_id(msg_type_id);
+    const aeron_driver_agent_event_t event_id = command_id_to_driver_event_id(msg_type_id);
     if (!aeron_driver_agent_is_event_enabled(event_id))
     {
         return;
@@ -607,7 +681,7 @@ void encode_conductor_to_client_command(
 void aeron_driver_agent_conductor_to_client_interceptor(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length)
 {
-    const aeron_driver_agent_event_t event_id = aeron_driver_agent_command_id_to_driver_event_id(msg_type_id);
+    const aeron_driver_agent_event_t event_id = command_id_to_driver_event_id(msg_type_id);
     if (!aeron_driver_agent_is_event_enabled(event_id))
     {
         return;
@@ -857,12 +931,12 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
         context->udp_channel_outgoing_interceptor_bindings = outgoing_bindings;
     }
 
-    if (any_event_enabled(CMD_IN_EVENTS, CMD_IN_EVENTS_LENGTH))
+    if (any_event_enabled(CMD_IN_EVENTS))
     {
         context->to_driver_interceptor_func = aeron_driver_agent_conductor_to_driver_interceptor;
     }
 
-    if (any_event_enabled(CMD_OUT_EVENTS, CMD_OUT_EVENTS_LENGTH))
+    if (any_event_enabled(CMD_OUT_EVENTS))
     {
         context->to_client_interceptor_func = aeron_driver_agent_conductor_to_client_interceptor;
     }
@@ -1480,59 +1554,6 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 {
     switch (msg_type_id)
     {
-        case AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY:
-        case AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE:
-        case AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS:
-        case AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE:
-        case AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY:
-        case AERON_DRIVER_EVENT_CMD_OUT_ERROR:
-        case AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY:
-        case AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY:
-        case AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER:
-        case AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT:
-        {
-            aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)message;
-
-            fprintf(
-                logfp,
-                "[%s] %s %s\n",
-                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
-                aeron_driver_agent_event_name(msg_type_id),
-                dissect_cmd_out(
-                hdr->cmd_id,
-                (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
-                length - sizeof(aeron_driver_agent_cmd_log_header_t)));
-            break;
-        }
-
-        case AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION:
-        case AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION:
-        case AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION:
-        case AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION:
-        case AERON_DRIVER_EVENT_CMD_IN_ADD_DESTINATION:
-        case AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION:
-        case AERON_DRIVER_EVENT_CMD_IN_ADD_EXCLUSIVE_PUBLICATION:
-        case AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER:
-        case AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER:
-        case AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE:
-        case AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION:
-        case AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION:
-        case AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER:
-        {
-            aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)message;
-
-            fprintf(
-                logfp,
-                "[%s] %s %s\n",
-                aeron_driver_agent_dissect_timestamp(hdr->time_ms),
-                aeron_driver_agent_event_name(msg_type_id),
-                dissect_cmd_in(
-                hdr->cmd_id,
-                (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
-                length - sizeof(aeron_driver_agent_cmd_log_header_t)));
-            break;
-        }
-
         case AERON_DRIVER_EVENT_FRAME_IN:
         case AERON_DRIVER_EVENT_FRAME_OUT:
         {
@@ -1572,6 +1593,37 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         }
 
         default:
+            if (is_valid_event_id(msg_type_id))
+            {
+                if (CMD_IN_EVENTS[msg_type_id])
+                {
+                    aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)message;
+
+                    fprintf(
+                        logfp,
+                        "[%s] %s %s\n",
+                        aeron_driver_agent_dissect_timestamp(hdr->time_ms),
+                        aeron_driver_agent_event_name(msg_type_id),
+                        dissect_cmd_in(
+                            hdr->cmd_id,
+                            (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
+                            length - sizeof(aeron_driver_agent_cmd_log_header_t)));
+                }
+                else if (CMD_OUT_EVENTS[msg_type_id])
+                {
+                    aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)message;
+
+                    fprintf(
+                        logfp,
+                        "[%s] %s %s\n",
+                        aeron_driver_agent_dissect_timestamp(hdr->time_ms),
+                        aeron_driver_agent_event_name(msg_type_id),
+                        dissect_cmd_out(
+                            hdr->cmd_id,
+                            (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
+                            length - sizeof(aeron_driver_agent_cmd_log_header_t)));
+                }
+            }
             break;
     }
 }

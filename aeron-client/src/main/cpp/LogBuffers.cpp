@@ -49,15 +49,13 @@ LogBuffers::LogBuffers(const char *filename, bool preTouch)
 
     if (preTouch)
     {
-        volatile std::int32_t value = 0;
-
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
             AtomicBuffer &termBuffer = m_buffers[i];
 
             for (std::int32_t offset = 0; offset < termLength; offset += pageSize)
             {
-                termBuffer.compareAndSetInt32(offset, value, value);
+                termBuffer.compareAndSetInt32(offset, 0, 0);
             }
         }
     }

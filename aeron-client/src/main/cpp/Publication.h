@@ -205,9 +205,8 @@ public:
      */
     inline bool isClosed() const
     {
-        return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
+        return m_isClosed.load(std::memory_order_acquire);
     }
-
 
     /**
      * Get the max possible position the stream can reach given term length.
@@ -429,8 +428,8 @@ public:
             if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
             {
                 throw aeron::util::IllegalStateException(
-                    "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
-                        " > " + std::to_string(length + it->capacity()),
+                "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
+                    " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 
@@ -623,7 +622,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
+        m_isClosed.store(true, std::memory_order_release);
     }
     /// @endcond
 

@@ -987,7 +987,7 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
 
 void ClientConductor::closeAllResources(long long nowMs)
 {
-    std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
+    m_isClosed.store(true, std::memory_order_release);
 
     for (auto &kv : m_publicationByRegistrationId)
     {

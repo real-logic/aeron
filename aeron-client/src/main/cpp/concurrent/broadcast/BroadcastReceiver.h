@@ -32,11 +32,7 @@ public:
         m_mask(m_capacity - 1),
         m_tailIntentCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
         m_tailCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET),
-        m_latestCounterIndex(m_capacity + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET),
-        m_recordOffset(0),
-        m_cursor(0),
-        m_nextRecord(0),
-        m_lappedCount(0)
+        m_latestCounterIndex(m_capacity + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET)
     {
         BroadcastBufferDescriptor::checkCapacity(m_capacity);
 
@@ -52,7 +48,7 @@ public:
 
     inline long lappedCount() const
     {
-        return m_lappedCount;
+        return m_lappedCount.load(std::memory_order_acquire);
     }
 
     inline std::int32_t typeId() const
@@ -87,7 +83,7 @@ public:
 
             if (!validate(cursor))
             {
-                m_lappedCount += 1;
+                m_lappedCount.store(m_lappedCount.load(std::memory_order_relaxed) + 1, std::memory_order_release);
                 cursor = m_buffer.getInt64Volatile(m_latestCounterIndex);
                 recordOffset = static_cast<util::index_t>(cursor & m_mask);
             }
@@ -126,10 +122,10 @@ private:
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
-    util::index_t m_recordOffset;
-    std::int64_t m_cursor;
-    std::int64_t m_nextRecord;
-    std::atomic<long> m_lappedCount;
+    util::index_t m_recordOffset = 0;
+    std::int64_t m_cursor = 0;
+    std::int64_t m_nextRecord = 0;
+    std::atomic<long> m_lappedCount = { 0 };
 
     inline bool validate(std::int64_t cursor) const
     {

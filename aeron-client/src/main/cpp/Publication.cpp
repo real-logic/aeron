@@ -65,7 +65,7 @@ Publication::Publication(
 
 Publication::~Publication()
 {
-    std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
+    m_isClosed.store(true, std::memory_order_release);
     m_conductor.releasePublication(m_registrationId);
 }
 

@@ -460,7 +460,7 @@ public:
      */
     inline bool isClosed() const
     {
-        return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
+        return m_isClosed.load(std::memory_order_acquire);
     }
 
     /// @cond HIDDEN_SYMBOLS

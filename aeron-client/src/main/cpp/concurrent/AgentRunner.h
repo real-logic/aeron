@@ -41,9 +41,6 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
-        m_isStarted(false),
-        m_isRunning(false),
-        m_isClosed(false),
         m_name("aeron-agent")
     {
     }
@@ -56,9 +53,6 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
-        m_isStarted(false),
-        m_isRunning(false),
-        m_isClosed(false),
         m_name(name)
     {
     }
@@ -80,7 +74,7 @@ public:
      */
     inline bool isStarted() const
     {
-        return m_isStarted;
+        return m_isStarted.load(std::memory_order_acquire);
     }
 
     /**
@@ -90,7 +84,7 @@ public:
      */
     inline bool isRunning() const
     {
-        return m_isRunning;
+        return m_isRunning.load(std::memory_order_acquire);
     }
 
     /**
@@ -100,7 +94,7 @@ public:
      */
     inline bool isClosed() const
     {
-        return m_isClosed;
+        return m_isClosed.load(std::memory_order_acquire);
     }
 
     /**
@@ -110,7 +104,7 @@ public:
      */
     inline void start()
     {
-        if (m_isClosed)
+        if (m_isClosed.load(std::memory_order_acquire))
         {
             throw util::IllegalStateException(std::string("AgentRunner closed"), SOURCEINFO);
         }
@@ -139,13 +133,13 @@ public:
      */
     inline void run()
     {
-        m_isRunning = true;
+        m_isRunning.store(true, std::memory_order_release);
         bool isRunning = true;
 
         util::OnScopeExit tidy(
             [&]()
             {
-                m_isRunning = false;
+                m_isRunning.store(false, std::memory_order_release);
             });
 
         try
@@ -202,9 +196,9 @@ private:
     Agent &m_agent;
     IdleStrategy &m_idleStrategy;
     util::exception_handler_t &m_exceptionHandler;
-    std::atomic<bool> m_isStarted;
-    std::atomic<bool> m_isRunning;
-    std::atomic<bool> m_isClosed;
+    std::atomic<bool> m_isStarted = { false };
+    std::atomic<bool> m_isRunning = { false };
+    std::atomic<bool> m_isClosed = { false };
     std::thread m_thread;
     const std::string m_name;
 };

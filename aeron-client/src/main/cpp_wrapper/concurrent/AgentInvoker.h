@@ -33,10 +33,7 @@ class AgentInvoker
 public:
     AgentInvoker(Agent &agent, logbuffer::exception_handler_t &exceptionHandler) :
         m_agent(agent),
-        m_exceptionHandler(exceptionHandler),
-        m_isStarted(false),
-        m_isRunning(false),
-        m_isClosed(false)
+        m_exceptionHandler(exceptionHandler)
     {
     }
 
@@ -144,9 +141,9 @@ public:
 private:
     Agent &m_agent;
     logbuffer::exception_handler_t &m_exceptionHandler;
-    bool m_isStarted;
-    bool m_isRunning;
-    bool m_isClosed;
+    bool m_isStarted = false;
+    bool m_isRunning = false;
+    bool m_isClosed = false;
 };
 
 }}

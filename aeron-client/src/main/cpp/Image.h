@@ -303,7 +303,7 @@ public:
      */
     inline bool isClosed() const
     {
-        return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
+        return m_isClosed.load(std::memory_order_acquire);
     }
 
     /**
@@ -843,7 +843,7 @@ public:
             m_finalPosition = m_subscriberPosition.getVolatile();
             m_isEos = m_finalPosition >= LogBufferDescriptor::endOfStreamPosition(
                 m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
-            std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
+            m_isClosed.store(true, std::memory_order_release);
         }
     }
     /// @endcond

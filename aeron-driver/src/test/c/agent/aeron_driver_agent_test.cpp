@@ -302,8 +302,7 @@ TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
     aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
 
-    EXPECT_EQ(true, aeron_driver_agent_logging_events_init(
-            aeron_driver_agent_event_name(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE)));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("UNTETHERED_SUBSCRIPTION_STATE_CHANGE"));
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
     EXPECT_NE(m_context->untethered_subscription_state_change_func, func);

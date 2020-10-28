@@ -164,7 +164,7 @@ public class TestCluster implements AutoCloseable
             {
                 return clusterMembership;
             }
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
     }
 

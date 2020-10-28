@@ -110,7 +110,7 @@ public:
         }
 
         bool expected = false;
-        if (!std::atomic_compare_exchange_strong(&m_isStarted, &expected, true))
+        if (!m_isStarted.compare_exchange_strong(expected, true, std::memory_order_seq_cst))
         {
             throw util::IllegalStateException(std::string("AgentRunner already started"), SOURCEINFO);
         }
@@ -129,7 +129,7 @@ public:
     }
 
     /**
-     * Run the Agent duty cycle until closed
+     * Run the Agent duty cycle until closed.
      */
     inline void run()
     {
@@ -183,7 +183,7 @@ public:
     inline void close()
     {
         bool expected = false;
-        if (std::atomic_compare_exchange_strong(&m_isClosed, &expected, true))
+        if (m_isClosed.compare_exchange_strong(expected, true, std::memory_order_seq_cst))
         {
             if (m_thread.joinable())
             {

@@ -106,6 +106,7 @@ public class SingleNodeCluster implements AutoCloseable
                 final FragmentHandler fragmentHandler =
                     (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
 
+                idleStrategy.reset();
                 while (snapshotImage.poll(fragmentHandler, 1) <= 0)
                 {
                     idleStrategy.idle();
@@ -251,12 +252,12 @@ public class SingleNodeCluster implements AutoCloseable
 
     public void close()
     {
-        final ErrorHandler errorHandler = clientMediaDriver.context().errorHandler();
+        final ErrorHandler errorHandler = clusteredMediaDriver.mediaDriver().context().errorHandler();
         CloseHelper.close(errorHandler, client);
+        CloseHelper.close(errorHandler, clientMediaDriver);
         CloseHelper.close(errorHandler, clusteredMediaDriver.consensusModule());
         CloseHelper.close(errorHandler, container);
-        CloseHelper.close(errorHandler, clusteredMediaDriver);
-        CloseHelper.close(errorHandler, clientMediaDriver);
+        CloseHelper.close(clusteredMediaDriver); // ErrorHandler will be closed during that call so can't use it
     }
 
     void connectClientToCluster()
@@ -304,12 +305,13 @@ public class SingleNodeCluster implements AutoCloseable
 
     void takeSnapshot()
     {
-        final AtomicCounter snapshotCounter = clusteredMediaDriver.consensusModule().context().snapshotCounter();
+        final ConsensusModule.Context consensusModuleContext = clusteredMediaDriver.consensusModule().context();
+        final AtomicCounter snapshotCounter = consensusModuleContext.snapshotCounter();
         final long snapshotCount = snapshotCounter.get();
 
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(
             clusteredMediaDriver.mediaDriver().context().countersManager(),
-            clusteredMediaDriver.consensusModule().context().clusterId());
+            consensusModuleContext.clusterId());
         ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle);
 
         idleStrategy.reset();

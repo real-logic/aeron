@@ -149,6 +149,7 @@ public class BasicAuctionClusterClient implements EgressListener
         actionBidBuffer.putLong(CUSTOMER_ID_OFFSET, customerId);
         actionBidBuffer.putLong(PRICE_OFFSET, price);
 
+        idleStrategy.reset();
         while (aeronCluster.offer(actionBidBuffer, 0, BID_MESSAGE_LENGTH) < 0)    // <2>
         {
             idleStrategy.idle(aeronCluster.pollEgress());                         // <3>

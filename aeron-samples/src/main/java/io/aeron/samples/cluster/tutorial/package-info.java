@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * Samples for using getting a overview of using Aeron Cluster with the basic tutorial.
+ * Samples for getting an overview of using Aeron Cluster with the basic tutorial.
  */
 package io.aeron.samples.cluster.tutorial;

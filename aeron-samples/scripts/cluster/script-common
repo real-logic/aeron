@@ -16,7 +16,7 @@
 ## limitations under the License.
 ##
 
-if [[ ! -v JAVA_HOME ]]; then
+if [ -z "$JAVA_HOME" ]; then
   echo "Please set the JAVA_HOME environment variable"
   exit 1
 fi

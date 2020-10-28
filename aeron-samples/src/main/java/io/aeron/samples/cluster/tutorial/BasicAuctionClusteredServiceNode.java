@@ -54,12 +54,12 @@ public class BasicAuctionClusteredServiceNode
     private static final int PORT_BASE = 9000;
     private static final int PORTS_PER_NODE = 100;
     private static final int ARCHIVE_CONTROL_REQUEST_PORT_OFFSET = 1;
-    private static final int ARCHIVE_CONTROL_RESPONSE_PORT_OFFSET = 2;
-    static final int CLIENT_FACING_PORT_OFFSET = 3;
-    private static final int MEMBER_FACING_PORT_OFFSET = 4;
-    private static final int LOG_PORT_OFFSET = 5;
-    private static final int TRANSFER_PORT_OFFSET = 6;
-    private static final int LOG_CONTROL_PORT_OFFSET = 7;
+    static final int CLIENT_FACING_PORT_OFFSET = 2;
+    private static final int MEMBER_FACING_PORT_OFFSET = 3;
+    private static final int LOG_PORT_OFFSET = 4;
+    private static final int TRANSFER_PORT_OFFSET = 5;
+    private static final int LOG_CONTROL_PORT_OFFSET = 6;
+    private static final int TERM_LENGTH = 64 * 1024;
 
     static int calculatePort(final int nodeId, final int offset)
     {
@@ -73,7 +73,7 @@ public class BasicAuctionClusteredServiceNode
         final int port = calculatePort(nodeId, portOffset);
         return new ChannelUriStringBuilder()
             .media("udp")
-            .termLength(64 * 1024)
+            .termLength(TERM_LENGTH)
             .endpoint(hostname + ":" + port)
             .build();
     }
@@ -84,7 +84,7 @@ public class BasicAuctionClusteredServiceNode
         final int port = calculatePort(nodeId, portOffset);
         return new ChannelUriStringBuilder()
             .media("udp")
-            .termLength(64 * 1024)
+            .termLength(TERM_LENGTH)
             .controlMode("manual")
             .controlEndpoint(hostname + ":" + port)
             .build();
@@ -134,6 +134,7 @@ public class BasicAuctionClusteredServiceNode
 
         // tag::archive[]
         final Archive.Context archiveContext = new Archive.Context()
+            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, "localhost", ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
@@ -146,7 +147,7 @@ public class BasicAuctionClusteredServiceNode
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(archiveContext.controlChannel())
             .controlRequestStreamId(archiveContext.controlStreamId())
-            .controlResponseChannel(udpChannel(nodeId, "localhost", ARCHIVE_CONTROL_RESPONSE_PORT_OFFSET))
+            .controlResponseChannel("aeron:udp?endpoint=localhost:0|term-length=64k")
             .aeronDirectoryName(aeronDirName);
         // end::archive_client[]
 

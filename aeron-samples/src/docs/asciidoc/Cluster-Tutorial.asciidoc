@@ -380,8 +380,8 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 ----
 
 Because Cluster's Consensus Module requires that we write a log file to support the Raft protocol, we need a client for
-the constructed Archive for it to use. The client needs a channel to receive responses back from the cluster, so again
-we are using the node specific port to prevent collisions.
+the constructed Archive for it to use. The client needs a channel to receive responses back from the cluster, so we are
+using port 0 to prevent collisions and have the port to be assigned by the OS from the ephemeral port range.
 
 ==== Consensus Module
 
@@ -540,9 +540,9 @@ also avoiding using the media drivers that each of the cluster nodes are using.
 cluster events (e.g. new elected leaders).
 
 <3> Specify the channel to receive egress responses back from the cluster. In our case we are using a UDP unicast
-response, which will limit responses to the session that sent the ingress message. We are adjusting the port per client
-to allow for multiple clients on the same machine with multiple media drivers. For a single media driver this would not
-be necessary.
+response, which will limit responses to the session that sent the ingress message. We are using port 0 to allow for
+multiple clients on the same machine with multiple media drivers and to avoid having to specify an actual port per
+client.
 
 +
 

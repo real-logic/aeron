@@ -70,3 +70,6 @@ hs_err_pid*
 /aeron-archive/*.dat
 /aeron-cluster/*.dat
 /aeron-cluster/recording.log
+
+aeron-samples/scripts/cluster/logs/
+aeron-samples/scripts/cluster/node*/

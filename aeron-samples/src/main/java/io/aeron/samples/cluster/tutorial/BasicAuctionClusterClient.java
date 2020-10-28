@@ -190,8 +190,6 @@ public class BasicAuctionClusterClient implements EgressListener
         final BasicAuctionClusterClient client = new BasicAuctionClusterClient(customerId, numOfBids, bidIntervalMs);
 
         // tag::connect[]
-        final int egressPort = 19000 + customerId;
-
         try (
             MediaDriver mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()                      // <1>
                 .threadingMode(ThreadingMode.SHARED)
@@ -200,7 +198,7 @@ public class BasicAuctionClusterClient implements EgressListener
             AeronCluster aeronCluster = AeronCluster.connect(
                 new AeronCluster.Context()
                 .egressListener(client)                                                                         // <2>
-                .egressChannel("aeron:udp?endpoint=localhost:" + egressPort)                                    // <3>
+                .egressChannel("aeron:udp?endpoint=localhost:0")                                                // <3>
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .ingressChannel("aeron:udp")                                                                    // <4>
                 .ingressEndpoints(ingressEndpoints)))                                                           // <5>

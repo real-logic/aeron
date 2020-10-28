@@ -37,21 +37,51 @@ import static java.util.stream.Collectors.joining;
 
 public class AsciidoctorPreprocessTask extends DefaultTask
 {
-    @Input
-    public final String sampleBaseDir = getProject().getProjectDir().getAbsolutePath();
+    private final String sampleBaseDir = getProject().getProjectDir().getAbsolutePath();
 
-    @Input
-    public final String sampleSourceDir = sampleBaseDir + "/src/main/java";
+    private final String sampleSourceDir = sampleBaseDir + "/src/main/java";
 
-    @InputDirectory
-    public final File source = new File(sampleBaseDir, "/src/docs/asciidoc");
+    private final File source = new File(sampleBaseDir, "/src/docs/asciidoc");
 
-    @OutputDirectory
-    public final File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
+    private final File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
 
     // Has a slightly silly name to avoid name clashes in the build script.
+    private String versionText;
+
     @Input
-    public String versionText;
+    public String getSampleBaseDir()
+    {
+        return sampleBaseDir;
+    }
+
+    @Input
+    public String getSampleSourceDir()
+    {
+        return sampleSourceDir;
+    }
+
+    @InputDirectory
+    public File getSource()
+    {
+        return source;
+    }
+
+    @OutputDirectory
+    public File getTarget()
+    {
+        return target;
+    }
+
+    @Input
+    public String getVersionText()
+    {
+        return versionText;
+    }
+
+    public void setVersionText(final String versionText)
+    {
+        this.versionText = versionText;
+    }
 
     @TaskAction
     public void preprocess() throws Exception

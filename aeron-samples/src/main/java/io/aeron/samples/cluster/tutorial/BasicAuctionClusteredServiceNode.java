@@ -134,6 +134,7 @@ public class BasicAuctionClusteredServiceNode
 
         // tag::archive[]
         final Archive.Context archiveContext = new Archive.Context()
+            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, "localhost", ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")

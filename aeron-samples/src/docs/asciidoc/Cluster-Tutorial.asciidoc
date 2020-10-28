@@ -380,8 +380,8 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 ----
 
 Because Cluster's Consensus Module requires that we write a log file to support the Raft protocol, we need a client for
-the constructed Archive for it to use. The client needs a channel to receive responses back from the cluster, so again
-we are using the node specific port to prevent collisions.
+the constructed Archive for it to use. The client needs a channel to receive responses back from the cluster, so we are
+using port 0 to prevent collisions and have the port to be assigned by the OS from the ephemeral port range.
 
 ==== Consensus Module
 

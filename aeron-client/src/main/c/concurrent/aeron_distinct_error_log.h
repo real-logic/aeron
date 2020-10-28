@@ -28,9 +28,9 @@
 #pragma pack(4)
 typedef struct aeron_error_log_entry_stct
 {
-    int32_t length;
-    int32_t observation_count;
-    int64_t last_observation_timestamp;
+    volatile int32_t length;
+    volatile int32_t observation_count;
+    volatile int64_t last_observation_timestamp;
     int64_t first_observation_timestamp;
 }
 aeron_error_log_entry_t;
@@ -60,7 +60,7 @@ aeron_distinct_error_log_observation_list_t;
 typedef struct aeron_distinct_error_log_stct
 {
     uint8_t *buffer;
-    aeron_distinct_error_log_observation_list_t *observation_list;
+    volatile aeron_distinct_error_log_observation_list_t *observation_list;
     size_t buffer_capacity;
     size_t next_offset;
     aeron_clock_func_t clock;
@@ -124,9 +124,9 @@ inline int aeron_distinct_error_log_observation_list_alloc(
 inline aeron_distinct_error_log_observation_list_t *aeron_distinct_error_log_observation_list_load(
     aeron_distinct_error_log_t *log)
 {
-    aeron_distinct_error_log_observation_list_t *list;
+    volatile aeron_distinct_error_log_observation_list_t *list;
     AERON_GET_VOLATILE(list, log->observation_list);
-    return list;
+    return (aeron_distinct_error_log_observation_list_t *)list;
 }
 
 inline void aeron_distinct_error_log_observation_list_store(

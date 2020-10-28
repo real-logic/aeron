@@ -71,15 +71,12 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
         aeron_free((void *)observations[i].description);
     }
 
-    aeron_free(log->observation_list);
+    aeron_free((void *)log->observation_list);
     aeron_mutex_destroy(&log->mutex);
 }
 
 static aeron_distinct_observation_t *aeron_distinct_error_log_find_observation(
-    aeron_distinct_observation_t *observations,
-    size_t num_observations,
-    int error_code,
-    const char *description)
+    aeron_distinct_observation_t *observations, size_t num_observations, int error_code, const char *description)
 {
     for (size_t i = 0; i < num_observations; i++)
     {
@@ -104,10 +101,10 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;
-    aeron_distinct_observation_t *observation = NULL;
+    aeron_distinct_observation_t *observation = aeron_distinct_error_log_find_observation(
+        observations, existing_num_observations, error_code, description);
 
-    if ((observation = aeron_distinct_error_log_find_observation(
-        observations, existing_num_observations, error_code, description)) == NULL)
+    if (NULL == observation)
     {
         char encoded_error[AERON_MAX_PATH];
 
@@ -171,14 +168,13 @@ int aeron_distinct_error_log_record(
         return -1;
     }
 
-    aeron_distinct_observation_t *observation = NULL;
     int64_t timestamp = log->clock();
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = (size_t)list->num_observations;
-    aeron_distinct_observation_t *observations = list->observations;
+    aeron_distinct_observation_t *observation = aeron_distinct_error_log_find_observation(
+        list->observations, num_observations, error_code, description);
 
-    if ((observation = aeron_distinct_error_log_find_observation(
-        observations, num_observations, error_code, description)) == NULL)
+    if (NULL == observation)
     {
         aeron_mutex_lock(&log->mutex);
 
@@ -201,7 +197,6 @@ int aeron_distinct_error_log_record(
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + observation->offset);
 
     int32_t dest;
-
     AERON_GET_AND_ADD_INT32(dest, entry->observation_count, 1);
     AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp);
 

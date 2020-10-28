@@ -826,11 +826,10 @@ Which should show a recording log with a single entry:
 RecordingLog{entries=[Entry{recordingId=0, leadershipTermId=0, termBaseLogPosition=0, logPosition=-1, timestamp=1579569542227, serviceId=-1, type=0, isValid=true, entryIndex=0}], cacheIndex={0=0}}
 ----
 
-We can trigger a snapshot on the leader. This is slightly different to using the `ClusterTool` in that the
-`ClusterControl` needs the Aeron directory for the node's media driver.
+We can trigger a snapshot on the leader.
 
 ----
-> java -cp ../../../aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
+> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar \
   io.aeron.cluster.ClusterTool node2/consensus-module snapshot
 ----
 

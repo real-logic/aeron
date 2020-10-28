@@ -457,7 +457,7 @@ class CatalogTest
 
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(maxCatalogLength));
-            assertEquals("catalog is full, max length reached: " + maxCatalogLength, exception.getMessage());
+            assertEquals("ERROR - catalog is full, max length reached: " + maxCatalogLength, exception.getMessage());
         }
     }
 

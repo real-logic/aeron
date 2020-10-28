@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class RecordingWriterTests
+class RecordingWriterTest
 {
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
@@ -144,7 +144,7 @@ class RecordingWriterTests
                 ArchiveException.class,
                 () -> recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
             assertEquals(GENERIC, exception.errorCode());
-            assertEquals("file closed by interrupt, recording aborted", exception.getMessage());
+            assertEquals("ERROR - file closed by interrupt, recording aborted", exception.getMessage());
             assertTrue(recordingWriter.isClosed());
         }
         finally

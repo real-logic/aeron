@@ -180,4 +180,14 @@ public class AeronException extends RuntimeException
     {
         return category;
     }
+
+    /**
+     * Add the {@link #category()} name to the beginning of the {@link Throwable#getMessage()}.
+     *
+     * {@inheritDoc}
+     */
+    public String getMessage()
+    {
+        return category.name() + " - " + super.getMessage();
+    }
 }

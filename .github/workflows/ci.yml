@@ -108,7 +108,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-centos-build:
-    name: C++ GCC ${{ matrix.version }} (CentOS)
+    name: C++ CentOS devtoolset-${{ matrix.version }}
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

@@ -82,7 +82,7 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
-            std::atomic_thread_fence(std::memory_order_acquire);
+            aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
             {

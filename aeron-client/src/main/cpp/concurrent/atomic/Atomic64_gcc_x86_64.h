@@ -33,7 +33,12 @@ inline void fence()
 
 inline void acquire()
 {
+#if (!defined(__clang__) && defined(__GNUC__) && __GNUC__ < 8)
+    volatile std::int64_t *dummy;
+    asm volatile("movq 0(%%rsp), %0" : "=r" (dummy) :: "memory");
+#else
     std::atomic_thread_fence(std::memory_order_acquire);
+#endif
 }
 
 inline void release()

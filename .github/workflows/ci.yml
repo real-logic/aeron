@@ -113,7 +113,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '9' ]
+        version: [ '7' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

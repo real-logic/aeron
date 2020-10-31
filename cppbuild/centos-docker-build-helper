@@ -26,4 +26,4 @@ yum install -y zulu-8
 # Run the build
 export JAVA_HOME=/usr/lib/jvm/zulu-8
 export GRADLE_OPTS="-Dorg.gradle.daemon=false"
-scl enable devtoolset-${GCC_VERSION} -- ${SOURCE_DIR}/cppbuild/cppbuild --build-archive-api
+scl enable devtoolset-${GCC_VERSION} -- ${SOURCE_DIR}/cppbuild/cppbuild

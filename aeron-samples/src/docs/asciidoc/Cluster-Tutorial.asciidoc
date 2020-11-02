@@ -109,7 +109,7 @@ Raft is primarily a log replication protocol, so Aeron Cluster uses Aeron Archiv
 ==== ConsensusModule
 
 The Consensus Module is the key component with Aeron Cluster and ensures the nodes have a consistent copy of the
-replicated log. The Consensus Module will co-ordinate with the Archive to persist messages, replicate/ack messages
+replicated log. The Consensus Module will coordinate with the Archive to persist messages, replicate/ack messages
 to/from other nodes and deliver messages through to the Clustered Services.
 
 ==== ClusteredServiceContainer

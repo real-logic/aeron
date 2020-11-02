@@ -25,7 +25,7 @@ plugins {
     id 'idea'
     id 'com.github.johnrengelman.shadow' version '6.1.0' apply false
     id 'biz.aQute.bnd.builder' version '5.1.2' apply false
-    id "com.github.ben-manes.versions" version "0.33.0"
+    id "com.github.ben-manes.versions" version "0.34.0"
 }
 
 defaultTasks 'clean', 'build'
@@ -39,8 +39,8 @@ def sbeVersion = '1.20.3'
 def checkstyleVersion = '8.36.2'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.0'
-def mockitoVersion = '3.5.15'
-def byteBuddyVersion = '1.10.17'
+def mockitoVersion = '3.6.0'
+def byteBuddyVersion = '1.10.18'
 def hdrHistogramVersion = '2.1.12'
 
 ext {

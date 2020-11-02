@@ -56,7 +56,7 @@ acknowledgements.
 
 Within Aeron Cluster, replication (ensuring that a follower node has the same state as the leader) and recovery
 (restoring a stopped node to its previous state)footnote:[Where stopping could include crashing or manually shutting
-down] are the same problem or at least at similar enough to use the same mechanism. They rely on three functions.
+down] are the same problem, or at least at similar enough, to use the same mechanism. They rely on three functions.
 Firstly, some known initial state, this could either be the state when first provisioned (a 'null' or empty state), or
 some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by Cluster's
 Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its resulting
@@ -71,14 +71,14 @@ Be careful to ensure determinism in clustered service, common pitfalls include:
 - Timestamps
 - Random Numbers
 - Reading from configuration files.
-- Iterating over some types of collections, eg. HashMaps.
+- Iterating over some types of collections, e.g. HashMaps.
 ====
 
-Timestamps are provide by Aeron Cluster (will be shown later). Random numbers are best avoided or use a seed fixed in
-the initial state or via a message. Configuration changes should be pushed into the application logic via messages.
-Iterating over collections should happen in a known order, with a collection that preserves ordering (e.g. TreeMap,
-LinkedHashMap) through sorting the values from the collection before sending them as messages. Alternatively, the
-Agrona collections can be used with their consistent iteration order and low allocation characteristics.
+Time, as timestamps, is provided by Aeron Cluster (will be shown later). Random numbers are best avoided or use a seed
+fixed in the initial state or via a message. Configuration changes should be pushed into the application logic via
+messages. Iterating over collections should happen in a known order, with a collection that preserves ordering (e.g.
+TreeMap, LinkedHashMap) through sorting the values from the collection before sending them as messages. Alternatively,
+the Agrona collections can be used with their consistent iteration order and low allocation characteristics.
 
 As it may be impractical to replay all data from the "beginning of time" the system should take snapshots periodically,
 e.g. daily or hourly. The frequency of snapshots should be determined by the volume of data into the
@@ -156,10 +156,10 @@ You may wish to open these up in your favourite IDE or editor while we proceed w
 
 == Implementing a Clustered Service
 
-The first step to setting up a cluster is to implement the application logic. For this tutorial we are going implement
-a simple auction service. It will have one auction and will track the best price, and an id for the customer who bid
-that price. To properly demonstrate the state management and recovery features of cluster it is important to have some
-functionality that is stateful, rather than something that is stateless like an echo service.
+The first step to setting up a cluster is to implement the application logic. For this tutorial we are going to
+implement simple auction service. It will have one auction and will track the best price, and an id for the customer
+who bid that price. To properly demonstrate the state management and recovery features of cluster it is important to
+have some functionality that is stateful, rather than something that is stateless like an echo service.
 
 NOTE: In order to understandably show the various features of Cluster, we've kept the various aspects of the code
 (data serialisation, application logic, Cluster integration) very close together. It is unlikely you would do this in a
@@ -289,15 +289,15 @@ also be used to indicate an issue.
 
 === Other events
 
-There a number other events received by the `ClusteredService` interface, such as timer events, clients connecting and
-disconnecting from the cluster, and leadership and role changes. We won't look at these in this tutorial.
+There a number of other events received by the `ClusteredService` interface, such as timer events, clients connecting
+and disconnecting from the cluster, plus leadership and role changes. We won't look at these in this tutorial.
 
 == Configuring a Cluster
 
 Now we have our application implemented we can move onto running it in a cluster. There are a number of moving parts to
 setting up a cluster node, one of the trickiest parts of using Aeron Cluster is getting the configuration correct. We
 are going to start with a static three-node cluster with a simplified configuration where all the components
-(MediaDriver, Archive, ConsensusModule and ClusteredServiceContainer) for a single node withing a single process. Later
+(MediaDriver, Archive, ConsensusModule and ClusteredServiceContainer) for a single node within a single process. Later
 we will then start the cluster as three separate processes.
 
 === Running Multiple Nodes on the Same Host
@@ -324,7 +324,7 @@ While we don't really need 100 ports for each node (closer to 10), it does make 
 each service. Each endpoint will be an offset from the first port in a node's range. E.g. the archive control request
 port has an offset of 1, so for Node 2 it will have port 9201.
 
-To start the cluster node we are going define our own class with a main method.  It will construct and start all of the
+To start the cluster node we are going define our own class with a main method. It will construct and start all of the
 necessary components. As indicated above we are going to give each node of the cluster a unique id (0, 1, and 2). We are
 also going to use this value as the cluster member id.
 
@@ -390,7 +390,7 @@ using port 0 to prevent collisions and have the port to be assigned by the OS fr
 include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredServiceNode.java[tag=consensus_module]
 ----
 
-This is first of the two configuration sections that specific to Cluster. The Consensus Module is responsible for
+This is first of the two configuration sections that are specific to Cluster. The Consensus Module is responsible for
 handling the main aspects of the Raft protocol, e.g. leader election, ensuring consensus-based consistency of the data
 in the log and passing properly replicated messages onto the Cluster Container.
 
@@ -499,7 +499,7 @@ You should also be able to see the stored data for each of the nodes in the work
 basic-auction-client  basic-auction-cluster  logs  node0  node1  node2  script-common
 ----
 
-Lets look briefly how the script launches the code.
+Let's look briefly how the script launches the code.
 
 [source, Bash, indent=0, options="nowrap"]
 ----
@@ -558,13 +558,13 @@ is via UDP.
 ingress channel.
 
 NOTE: This example is using UDP unicast for the ingress and egress channels. It is possible to use multicast, but you
-will need to be in environment where multicast is supported. In cloud deployments UDP multicast is typically not
+will need to be in an environment where multicast is supported. In cloud deployments UDP multicast is typically not
 supported or in very early stages, so unicast is currently recommended in those environments.
 
 === Publishing to the Cluster
 
-Next we are going push messages into the cluster itself. So that the client is able to fail over to different nodes, as
-nodes come and go, in the cluster the Aeron publications are contained in a class called `AeronCluster`. This is the
+Next we are going to push messages into the cluster itself. So that the client is able to fail over to different nodes,
+as nodes come and go, in the cluster the Aeron publications are contained in a class called `AeronCluster`. This is the
 second of the two items that are connected at start up. This class provides an API very similar to the Publication API.
 
 [source, Java, indent=0, options="nowrap"]

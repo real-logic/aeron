@@ -198,19 +198,19 @@ final class ControlSession implements Session
     {
         if (State.CHALLENGED == state)
         {
-            authenticator.onChallengeResponse(controlSessionId, encodedCredentials, cachedEpochClock.time());
             this.correlationId = correlationId;
+            authenticator.onChallengeResponse(controlSessionId, encodedCredentials, cachedEpochClock.time());
         }
     }
 
     void onKeepAlive(@SuppressWarnings("unused") final long correlationId)
     {
-        attemptToGoActive();
+        attemptToActivate();
     }
 
     void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.stopRecording(correlationId, streamId, channel, this);
@@ -219,7 +219,7 @@ final class ControlSession implements Session
 
     void onStopRecordingSubscription(final long correlationId, final long subscriptionId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.stopRecordingSubscription(correlationId, subscriptionId, this);
@@ -233,7 +233,7 @@ final class ControlSession implements Session
         final boolean autoStop,
         final String channel)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.startRecording(correlationId, streamId, sourceLocation, autoStop, channel, this);
@@ -247,7 +247,7 @@ final class ControlSession implements Session
         final int streamId,
         final byte[] channelFragment)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.newListRecordingsForUriSession(
@@ -262,7 +262,7 @@ final class ControlSession implements Session
 
     void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.newListRecordingsSession(correlationId, fromRecordingId, recordCount, this);
@@ -271,7 +271,7 @@ final class ControlSession implements Session
 
     void onListRecording(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.listRecording(correlationId, recordingId, this);
@@ -285,7 +285,7 @@ final class ControlSession implements Session
         final int streamId,
         final byte[] channelFragment)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.findLastMatchingRecording(
@@ -306,11 +306,10 @@ final class ControlSession implements Session
         final int replayStreamId,
         final String replayChannel)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
-            conductor.startReplay(
-                correlationId, recordingId, position, length, replayStreamId, replayChannel, this);
+            conductor.startReplay(correlationId, recordingId, position, length, replayStreamId, replayChannel, this);
         }
     }
 
@@ -323,7 +322,7 @@ final class ControlSession implements Session
         final int replayStreamId,
         final String replayChannel)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.startBoundedReplay(
@@ -340,7 +339,7 @@ final class ControlSession implements Session
 
     void onStopReplay(final long correlationId, final long replaySessionId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.stopReplay(correlationId, replaySessionId, this);
@@ -349,7 +348,7 @@ final class ControlSession implements Session
 
     void onStopAllReplays(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.stopAllReplays(correlationId, recordingId, this);
@@ -364,7 +363,7 @@ final class ControlSession implements Session
         final boolean autoStop,
         final String channel)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.extendRecording(correlationId, recordingId, streamId, sourceLocation, autoStop, channel, this);
@@ -373,7 +372,7 @@ final class ControlSession implements Session
 
     void onGetRecordingPosition(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.getRecordingPosition(correlationId, recordingId, this);
@@ -382,7 +381,7 @@ final class ControlSession implements Session
 
     void onTruncateRecording(final long correlationId, final long recordingId, final long position)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.truncateRecording(correlationId, recordingId, position, this);
@@ -391,7 +390,7 @@ final class ControlSession implements Session
 
     void onGetStopPosition(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.getStopPosition(correlationId, recordingId, this);
@@ -406,7 +405,7 @@ final class ControlSession implements Session
         final int streamId,
         final String channelFragment)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.listRecordingSubscriptions(
@@ -422,7 +421,7 @@ final class ControlSession implements Session
 
     void onStopRecordingByIdentity(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.stopRecordingByIdentity(correlationId, recordingId, this);
@@ -437,7 +436,7 @@ final class ControlSession implements Session
         final String srcControlChannel,
         final String liveDestination)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.replicate(
@@ -455,7 +454,7 @@ final class ControlSession implements Session
 
     void onStopReplication(final long correlationId, final long replicationId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.stopReplication(correlationId, replicationId, this);
@@ -464,7 +463,7 @@ final class ControlSession implements Session
 
     void onGetStartPosition(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.getStartPosition(correlationId, recordingId, this);
@@ -473,7 +472,7 @@ final class ControlSession implements Session
 
     void onDetachSegments(final long correlationId, final long recordingId, final long newStartPosition)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.detachSegments(correlationId, recordingId, newStartPosition, this);
@@ -482,7 +481,7 @@ final class ControlSession implements Session
 
     void onDeleteDetachedSegments(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.deleteDetachedSegments(correlationId, recordingId, this);
@@ -491,7 +490,7 @@ final class ControlSession implements Session
 
     void onPurgeSegments(final long correlationId, final long recordingId, final long newStartPosition)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.purgeSegments(correlationId, recordingId, newStartPosition, this);
@@ -500,7 +499,7 @@ final class ControlSession implements Session
 
     void onAttachSegments(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.attachSegments(correlationId, recordingId, this);
@@ -509,7 +508,7 @@ final class ControlSession implements Session
 
     void onMigrateSegments(final long correlationId, final long srcRecordingId, final long dstRecordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.migrateSegments(correlationId, srcRecordingId, dstRecordingId, this);
@@ -526,7 +525,7 @@ final class ControlSession implements Session
         final String srcControlChannel,
         final String liveDestination)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.replicate(
@@ -635,8 +634,7 @@ final class ControlSession implements Session
         state(State.CHALLENGED);
     }
 
-    @SuppressWarnings("unused")
-    void authenticate(final byte[] encodedPrincipal)
+    void authenticate(@SuppressWarnings("unused") final byte[] encodedPrincipal)
     {
         activityDeadlineMs = Aeron.NULL_VALUE;
         state(State.AUTHENTICATED);
@@ -815,7 +813,7 @@ final class ControlSession implements Session
         return Aeron.NULL_VALUE != activityDeadlineMs && nowMs > activityDeadlineMs;
     }
 
-    private void attemptToGoActive()
+    private void attemptToActivate()
     {
         if (State.AUTHENTICATED == state && null == invalidVersionMessage)
         {

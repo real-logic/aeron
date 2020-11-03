@@ -96,11 +96,6 @@ final class ControlSession implements Session
         return controlSessionId;
     }
 
-    public long correlationId()
-    {
-        return correlationId;
-    }
-
     public void abort()
     {
         state(State.CLOSING);
@@ -167,6 +162,11 @@ final class ControlSession implements Session
         }
 
         return workCount;
+    }
+
+    long correlationId()
+    {
+        return correlationId;
     }
 
     State state()
@@ -770,7 +770,7 @@ final class ControlSession implements Session
                     activityDeadlineMs = Aeron.NULL_VALUE;
                     workCount++;
                 }
-                else if (activityDeadlineMs == Aeron.NULL_VALUE)
+                else if (Aeron.NULL_VALUE == activityDeadlineMs)
                 {
                     activityDeadlineMs = nowMs + connectTimeoutMs;
                 }

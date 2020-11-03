@@ -76,13 +76,6 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (1 == m_step)
     {
-        m_correlationId = m_aeron->nextCorrelationId();
-
-        m_step = 2;
-    }
-
-    if (2 == m_step)
-    {
         std::string controlResponseChannel = m_subscription->tryResolveChannelEndpointPort();
         if (controlResponseChannel.empty())
         {
@@ -90,6 +83,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         }
 
         auto encodedCredentials = m_ctx->credentialsSupplier().m_encodedCredentials();
+        m_correlationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->tryConnect(
             controlResponseChannel,m_ctx->controlResponseStreamId(), encodedCredentials, m_correlationId))
@@ -99,21 +93,20 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         }
 
         m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
-
-        m_step = 3;
+        m_step = 2;
     }
 
-    if (3 == m_step && m_controlResponsePoller)
+    if (2 == m_step && m_controlResponsePoller)
     {
         if (!m_subscription->isConnected())
         {
             return std::shared_ptr<AeronArchive>();
         }
 
-        m_step = 4;
+        m_step = 3;
     }
 
-    if (6 == m_step && m_controlResponsePoller)
+    if (5 == m_step && m_controlResponsePoller)
     {
         if (!m_archiveProxy->tryChallengeResponse(
             m_encodedCredentialsFromChallenge, m_correlationId, m_challengeControlSessionId))
@@ -124,8 +117,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         m_ctx->credentialsSupplier().m_onFree(m_encodedCredentialsFromChallenge);
         m_encodedCredentialsFromChallenge.first = nullptr;
         m_encodedCredentialsFromChallenge.second = 0;
-
-        m_step = 7;
+        m_step = 6;
     }
 
     if (m_controlResponsePoller)
@@ -143,8 +135,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
                 m_correlationId = m_aeron->nextCorrelationId();
                 m_challengeControlSessionId = sessionId;
-
-                m_step = 6;
+                m_step = 5;
             }
             else
             {
@@ -165,7 +156,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                         SOURCEINFO);
                 }
 
-                m_archiveProxy->keepAlive(m_controlResponsePoller->correlationId(), sessionId);
+                m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId);
 
                 std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
                     new RecordingDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));

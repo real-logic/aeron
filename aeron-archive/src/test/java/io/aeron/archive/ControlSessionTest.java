@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.archive.ControlSession.State.CLOSING;
+import static io.aeron.archive.ControlSession.State.DONE;
 import static io.aeron.archive.ControlSession.State.INACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,7 +72,7 @@ public class ControlSessionTest
         session.doWork();
         assertEquals(INACTIVE, session.state());
         session.doWork();
-        assertEquals(CLOSING, session.state());
+        assertEquals(DONE, session.state());
         assertTrue(session.isDone());
     }
 
@@ -90,7 +90,7 @@ public class ControlSessionTest
         session.doWork();
         assertEquals(INACTIVE, session.state());
         session.doWork();
-        assertEquals(CLOSING, session.state());
+        assertEquals(DONE, session.state());
         assertTrue(session.isDone());
     }
 }

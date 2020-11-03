@@ -44,7 +44,7 @@ final class ControlSession implements Session
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED, CLOSING
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED, DONE
     }
 
     private final long controlSessionId;
@@ -98,7 +98,7 @@ final class ControlSession implements Session
 
     public void abort()
     {
-        state(State.CLOSING);
+        state(State.DONE);
         if (null != activeListing)
         {
             activeListing.abort();
@@ -122,7 +122,7 @@ final class ControlSession implements Session
 
     public boolean isDone()
     {
-        return state == State.CLOSING;
+        return state == State.DONE;
     }
 
     public int doWork()
@@ -157,7 +157,7 @@ final class ControlSession implements Session
                 break;
 
             case INACTIVE:
-                state(State.CLOSING);
+                state(State.DONE);
                 break;
         }
 

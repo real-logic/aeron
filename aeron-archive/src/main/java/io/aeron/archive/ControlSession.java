@@ -194,7 +194,6 @@ final class ControlSession implements Session
         this.activeListing = activeListing;
     }
 
-    @SuppressWarnings("unused")
     void onChallengeResponse(final long correlationId, final byte[] encodedCredentials)
     {
         if (State.CHALLENGED == state)
@@ -204,8 +203,7 @@ final class ControlSession implements Session
         }
     }
 
-    @SuppressWarnings("unused")
-    void onKeepAlive(final long correlationId)
+    void onKeepAlive(@SuppressWarnings("unused") final long correlationId)
     {
         attemptToGoActive();
     }

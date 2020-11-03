@@ -2903,7 +2903,7 @@ public class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            if (5 != step)
+            if (4 != step)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
@@ -2954,20 +2954,24 @@ public class AeronArchive implements AutoCloseable
 
             if (1 == step)
             {
-                correlationId = ctx.aeron().nextCorrelationId();
-
-                step(2);
-            }
-
-            if (2 == step)
-            {
                 final String responseChannel = controlResponsePoller.subscription().tryResolveChannelEndpointPort();
                 if (null == responseChannel)
                 {
                     return null;
                 }
 
+                correlationId = ctx.aeron().nextCorrelationId();
                 if (!archiveProxy.tryConnect(responseChannel, ctx.controlResponseStreamId(), correlationId))
+                {
+                    return null;
+                }
+
+                step(2);
+            }
+
+            if (2 == step)
+            {
+                if (!controlResponsePoller.subscription().isConnected())
                 {
                     return null;
                 }
@@ -2975,17 +2979,7 @@ public class AeronArchive implements AutoCloseable
                 step(3);
             }
 
-            if (3 == step)
-            {
-                if (!controlResponsePoller.subscription().isConnected())
-                {
-                    return null;
-                }
-
-                step(4);
-            }
-
-            if (6 == step)
+            if (5 == step)
             {
                 if (!archiveProxy.tryChallengeResponse(
                     encodedCredentialsFromChallenge, correlationId, challengeControlSessionId))
@@ -2993,7 +2987,7 @@ public class AeronArchive implements AutoCloseable
                     return null;
                 }
 
-                step(7);
+                step(6);
             }
 
             controlResponsePoller.poll();
@@ -3009,7 +3003,7 @@ public class AeronArchive implements AutoCloseable
                     correlationId = ctx.aeron().nextCorrelationId();
                     challengeControlSessionId = controlSessionId;
 
-                    step(6);
+                    step(5);
                 }
                 else
                 {
@@ -3028,10 +3022,10 @@ public class AeronArchive implements AutoCloseable
                         throw new ArchiveException("unexpected response: code=" + code);
                     }
 
-                    archiveProxy.keepAlive(controlSessionId, controlResponsePoller.correlationId());
+                    archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE);
                     aeronArchive = new AeronArchive(ctx, controlResponsePoller, archiveProxy, controlSessionId);
 
-                    step(5);
+                    step(4);
                 }
             }
 

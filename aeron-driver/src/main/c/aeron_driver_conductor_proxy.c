@@ -81,7 +81,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     }
     else
     {
-        aeron_command_create_publication_image_t *cmd;
+        aeron_command_create_publication_image_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_create_publication_image_t)) < 0)
         {
@@ -117,7 +117,7 @@ void aeron_driver_conductor_proxy_on_linger_buffer(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -152,7 +152,8 @@ void aeron_driver_conductor_proxy_on_re_resolve(
     }
     else
     {
-        aeron_command_re_resolve_t *cmd;
+        aeron_command_re_resolve_t *cmd = NULL;
+
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_re_resolve_t)) < 0)
         {
             aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
@@ -208,7 +209,8 @@ void aeron_driver_conductor_proxy_on_delete_receive_destination(
     }
     else
     {
-        aeron_command_delete_destination_t *cmd;
+        aeron_command_delete_destination_t *cmd = NULL;
+
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_delete_destination_t)) < 0)
         {
             aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
@@ -236,7 +238,8 @@ void aeron_conductor_proxy_on_delete_send_destination(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
+
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
             aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
@@ -262,7 +265,8 @@ void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
+
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
             aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);

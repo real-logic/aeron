@@ -128,13 +128,13 @@ int aeron_send_channel_endpoint_create(
 
     // TODO: Remove the update and just create in a single shot.
     aeron_channel_endpoint_status_update_label(
-            counters_manager,
-            _endpoint->channel_status.counter_id,
-            AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
-            channel->uri_length,
-            channel->original_uri,
-            bind_addr_and_port_length,
-            bind_addr_and_port);
+        counters_manager,
+        _endpoint->channel_status.counter_id,
+        AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
+        channel->uri_length,
+        channel->original_uri,
+        bind_addr_and_port_length,
+        bind_addr_and_port);
 
     _endpoint->local_sockaddr_indicator.counter_id = aeron_counter_local_sockaddr_indicator_allocate(
         counters_manager,
@@ -239,7 +239,7 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
 
 int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
 {
-    int result = 0;
+    int result;
 
     if (NULL == endpoint->destination_tracker)
     {
@@ -415,9 +415,7 @@ void aeron_send_channel_endpoint_on_rttm(
 }
 
 int aeron_send_channel_endpoint_check_for_re_resolution(
-    aeron_send_channel_endpoint_t *endpoint,
-    int64_t now_ns,
-    aeron_driver_conductor_proxy_t *conductor_proxy)
+    aeron_send_channel_endpoint_t *endpoint, int64_t now_ns, aeron_driver_conductor_proxy_t *conductor_proxy)
 {
     if (endpoint->conductor_fields.udp_channel->is_manual_control_mode)
     {
@@ -438,9 +436,7 @@ int aeron_send_channel_endpoint_check_for_re_resolution(
 }
 
 void aeron_send_channel_endpoint_resolution_change(
-    aeron_send_channel_endpoint_t *endpoint,
-    const char *endpoint_name,
-    struct sockaddr_storage *new_addr)
+    aeron_send_channel_endpoint_t *endpoint, const char *endpoint_name, struct sockaddr_storage *new_addr)
 {
     if (NULL != endpoint->destination_tracker)
     {

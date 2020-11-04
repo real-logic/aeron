@@ -41,7 +41,7 @@ void aeron_driver_sender_proxy_on_add_endpoint(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -71,7 +71,7 @@ void aeron_driver_sender_proxy_on_remove_endpoint(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -101,7 +101,7 @@ void aeron_driver_sender_proxy_on_add_publication(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -131,7 +131,7 @@ void aeron_driver_sender_proxy_on_remove_publication(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -166,7 +166,7 @@ void aeron_driver_sender_proxy_on_add_destination(
     }
     else
     {
-        aeron_command_destination_t *cmd;
+        aeron_command_destination_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_destination_t)) < 0)
         {
@@ -200,7 +200,7 @@ void aeron_driver_sender_proxy_on_remove_destination(
     }
     else
     {
-        aeron_command_destination_t *cmd;
+        aeron_command_destination_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_destination_t)) < 0)
         {
@@ -237,7 +237,7 @@ void aeron_driver_sender_proxy_on_resolution_change(
     }
     else
     {
-        aeron_command_sender_resolution_change_t *cmd;
+        aeron_command_sender_resolution_change_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_sender_resolution_change_t)) < 0)
         {
@@ -269,4 +269,3 @@ void aeron_driver_sender_proxy_on_delete_cmd(aeron_driver_sender_proxy_t *sender
         aeron_driver_sender_proxy_offer(sender_proxy, cmd);
     }
 }
-

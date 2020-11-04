@@ -59,7 +59,7 @@ void aeron_driver_receiver_proxy_on_add_endpoint(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -89,7 +89,7 @@ void aeron_driver_receiver_proxy_on_remove_endpoint(
     }
     else
     {
-        aeron_command_base_t *cmd;
+        aeron_command_base_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
         {
@@ -121,7 +121,7 @@ void aeron_driver_receiver_proxy_on_add_subscription(
     }
     else
     {
-        aeron_command_subscription_t *cmd;
+        aeron_command_subscription_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
@@ -156,7 +156,7 @@ void aeron_driver_receiver_proxy_on_remove_subscription(
     }
     else
     {
-        aeron_command_subscription_t *cmd;
+        aeron_command_subscription_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
@@ -194,7 +194,7 @@ void aeron_driver_receiver_proxy_on_add_subscription_by_session(
     }
     else
     {
-        aeron_command_subscription_t *cmd;
+        aeron_command_subscription_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
@@ -232,7 +232,7 @@ void aeron_driver_receiver_proxy_on_remove_subscription_by_session(
     }
     else
     {
-        aeron_command_subscription_t *cmd;
+        aeron_command_subscription_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
@@ -268,7 +268,7 @@ void aeron_driver_receiver_proxy_on_add_destination(
     }
     else
     {
-        aeron_command_add_rcv_destination_t *cmd;
+        aeron_command_add_rcv_destination_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
@@ -303,7 +303,7 @@ void aeron_driver_receiver_proxy_on_remove_destination(
     }
     else
     {
-        aeron_command_remove_rcv_destination_t *cmd;
+        aeron_command_remove_rcv_destination_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
@@ -338,7 +338,7 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
     }
     else
     {
-        aeron_command_publication_image_t *cmd;
+        aeron_command_publication_image_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_publication_image_t)) < 0)
         {
@@ -373,7 +373,7 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
     }
     else
     {
-        aeron_command_publication_image_t *cmd;
+        aeron_command_publication_image_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_publication_image_t)) < 0)
         {
@@ -410,7 +410,7 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     }
     else
     {
-        aeron_command_remove_cool_down_t *cmd;
+        aeron_command_remove_cool_down_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_remove_cool_down_t)) < 0)
         {
@@ -450,7 +450,7 @@ void aeron_driver_receiver_proxy_on_resolution_change(
     }
     else
     {
-        aeron_command_receiver_resolution_change_t *cmd;
+        aeron_command_receiver_resolution_change_t *cmd = NULL;
 
         if (aeron_alloc((void **)&cmd, sizeof(aeron_command_receiver_resolution_change_t)) < 0)
         {

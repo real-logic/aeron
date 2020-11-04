@@ -333,6 +333,28 @@ public class ArchiveTest
             messageCount);
     }
 
+    @ParameterizedTest
+    @MethodSource("threadingModes")
+    @Timeout(30)
+    void aeronArchiveWithAeronInstanceFromArchive(
+        final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
+    {
+        if (threadingMode.equals(ThreadingMode.INVOKER))
+        {
+            // skip this threading model
+            return;
+        }
+        before(threadingMode, archiveThreadingMode);
+        // the test works fine if provide this.client Aeron instance or don't provide at all
+        final Aeron aeron = archive.context().aeron();
+        try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context().aeron(aeron)))
+        {
+            //do nothing
+            Tests.yield();
+        }
+
+    }
+
     private void preSendChecks(
         final ArchiveProxy archiveProxy,
         final Subscription recordingEvents,

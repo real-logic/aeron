@@ -936,6 +936,17 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void terminationsExpected(final boolean isExpected)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                node.terminationExpected(isExpected);
+            }
+        }
+    }
+
     void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
         final TestNode.TestService service = node.service();
@@ -963,6 +974,17 @@ public class TestCluster implements AutoCloseable
             {
                 client.sendKeepAlive();
                 keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+            }
+        }
+    }
+
+    void awaitSnapshotsLoaded()
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitSnapshotLoadedForService(node);
             }
         }
     }

@@ -198,7 +198,7 @@ inline void defaultOnCloseClientHandler()
  * It can also set up error handling as well as application callbacks for connection information from the
  * Media Driver.
  */
-class CLIENT_EXPORT Context
+class Context
 {
     friend class Aeron;
 

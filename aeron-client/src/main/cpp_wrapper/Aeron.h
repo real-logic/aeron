@@ -28,7 +28,6 @@
 #include "Subscription.h"
 #include "Context.h"
 #include "Counter.h"
-#include "util/Export.h"
 #include "ClientConductor.h"
 
 #include "aeronc.h"
@@ -58,7 +57,7 @@ using AsyncAddCounter = aeron_async_add_counter_t;
  * <p>
  * A client application requires only one Aeron object per Media Driver.
  */
-class CLIENT_EXPORT Aeron
+class Aeron
 {
 public:
     /**

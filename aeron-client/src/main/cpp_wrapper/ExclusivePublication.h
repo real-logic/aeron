@@ -53,7 +53,7 @@ using namespace aeron::concurrent::status;
  * @see Aeron#addExclusivePublication(String, int)
  * @see BufferClaim
  */
-class CLIENT_EXPORT ExclusivePublication
+class ExclusivePublication
 {
 public:
 

@@ -30,7 +30,6 @@
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "concurrent/status/LocalSocketAddressStatus.h"
 #include "util/Exceptions.h"
-#include "util/Export.h"
 
 #include "aeronc.h"
 
@@ -64,7 +63,7 @@ using AsyncDestination = aeron_async_destination_t;
  * @see Aeron#addPublication
  * @see Aeron#findPublication
  */
-class CLIENT_EXPORT Publication
+class Publication
 {
 public:
 

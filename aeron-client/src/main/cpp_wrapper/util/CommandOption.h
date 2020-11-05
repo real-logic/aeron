@@ -23,7 +23,6 @@
 #include <map>
 
 #include "util/Exceptions.h"
-#include "util/Export.h"
 #include "util/StringUtil.h"
 
 namespace aeron { namespace util
@@ -31,7 +30,7 @@ namespace aeron { namespace util
 
 AERON_DECLARE_SOURCED_EXCEPTION (CommandOptionException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
-class CLIENT_EXPORT CommandOption
+class CommandOption
 {
 
 private:

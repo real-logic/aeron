@@ -23,7 +23,6 @@
 #include <iterator>
 
 #include "Image.h"
-#include "util/Export.h"
 #include "concurrent/CountersReader.h"
 #include "Context.h"
 #include "ChannelUri.h"
@@ -72,7 +71,7 @@ public:
  *
  * @see FragmentAssembler
  */
-class CLIENT_EXPORT Subscription
+class Subscription
 {
 public:
     /// @cond HIDDEN_SYMBOLS

@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 public interface ControlledFragmentHandler
 {
     /**
-     * Action to be taken on return from {@link ControlledFragmentHandler#onFragment(DirectBuffer, int, int, Header)}.
+     * Action to be taken on return from {@link #onFragment(DirectBuffer, int, int, Header)}.
      */
     enum Action
     {
@@ -48,7 +48,7 @@ public interface ControlledFragmentHandler
 
         /**
          * Continue processing until fragment limit or no fragments with position commit at end of poll as the in
-         * {@link FragmentHandler#onFragment(DirectBuffer, int, int, Header)}.
+         * {@link #onFragment(DirectBuffer, int, int, Header)}.
          */
         CONTINUE,
     }

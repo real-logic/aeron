@@ -368,7 +368,7 @@ public class Image
                 final Action action = handler.onFragment(
                     termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
 
-                if (action == ABORT)
+                if (ABORT == action)
                 {
                     offset -= alignedLength;
                     break;
@@ -376,11 +376,11 @@ public class Image
 
                 ++fragmentsRead;
 
-                if (action == BREAK)
+                if (BREAK == action)
                 {
                     break;
                 }
-                else if (action == COMMIT)
+                if (COMMIT == action)
                 {
                     initialPosition += (offset - initialOffset);
                     initialOffset = offset;
@@ -529,7 +529,7 @@ public class Image
                 final Action action = handler.onFragment(
                     termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
 
-                if (action == ABORT)
+                if (ABORT == action)
                 {
                     offset -= alignedLength;
                     break;
@@ -537,11 +537,11 @@ public class Image
 
                 ++fragmentsRead;
 
-                if (action == BREAK)
+                if (BREAK == action)
                 {
                     break;
                 }
-                else if (action == COMMIT)
+                if (COMMIT == action)
                 {
                     initialPosition += (offset - initialOffset);
                     initialOffset = offset;
@@ -629,7 +629,7 @@ public class Image
                 final Action action = handler.onFragment(
                     termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
 
-                if (action == ABORT)
+                if (ABORT == action)
                 {
                     break;
                 }
@@ -642,7 +642,7 @@ public class Image
                     resultingPosition = position;
                 }
 
-                if (action == BREAK)
+                if (BREAK == action)
                 {
                     break;
                 }

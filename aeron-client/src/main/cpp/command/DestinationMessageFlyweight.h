@@ -21,6 +21,29 @@
 #include <cstddef>
 #include "CorrelatedMessageFlyweight.h"
 
+/**
+ * Control message for adding or removing a destination for a Publication in multi-destination-cast or a Subscription
+ * in multi-destination Subscription.
+ *
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                          Client ID                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                    Command Correlation ID                     |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                  Registration Correlation ID                  |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel Length                          |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel (ASCII)                        ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ */
+
 namespace aeron { namespace command
 {
 

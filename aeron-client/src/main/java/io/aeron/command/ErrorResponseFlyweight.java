@@ -48,9 +48,9 @@ public class ErrorResponseFlyweight
     /**
      * Wrap the buffer at a given offset for updates.
      *
-     * @param buffer to wrap
+     * @param buffer to wrap.
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public final ErrorResponseFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
@@ -74,7 +74,7 @@ public class ErrorResponseFlyweight
      * Set correlation ID of the offending command.
      *
      * @param correlationId of the offending command.
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public ErrorResponseFlyweight offendingCommandCorrelationId(final long correlationId)
     {
@@ -106,7 +106,7 @@ public class ErrorResponseFlyweight
      * Set the error code for the command.
      *
      * @param code for the error.
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public ErrorResponseFlyweight errorCode(final ErrorCode code)
     {
@@ -139,7 +139,7 @@ public class ErrorResponseFlyweight
      * Set the error message.
      *
      * @param message to associate with the error.
-     * @return flyweight
+     * @return this for a fluent API.
      */
     public ErrorResponseFlyweight errorMessage(final String message)
     {

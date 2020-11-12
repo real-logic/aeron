@@ -15,10 +15,11 @@
  */
 package io.aeron.command;
 
-import io.aeron.ErrorCode;
 import io.aeron.exceptions.ControlProtocolException;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
+import static io.aeron.ErrorCode.MALFORMED_COMMAND;
 import static org.agrona.BitUtil.*;
 
 /**
@@ -31,7 +32,10 @@ import static org.agrona.BitUtil.*;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                         Correlation ID                        |
+ *  |                          Client ID                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        Correlation ID                         |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                        Counter Type ID                        |
@@ -53,7 +57,21 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     private static final int COUNTER_TYPE_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int KEY_LENGTH_OFFSET = COUNTER_TYPE_ID_FIELD_OFFSET + SIZE_OF_INT;
     static final int KEY_BUFFER_OFFSET = KEY_LENGTH_OFFSET + SIZE_OF_INT;
-    private static final int MINIMUM_LENGTH = KEY_LENGTH_OFFSET + SIZE_OF_INT;
+    private static final int MINIMUM_LENGTH = KEY_BUFFER_OFFSET + SIZE_OF_INT;
+
+    /**
+     * Wrap the buffer at a given offset for updates.
+     *
+     * @param buffer to wrap.
+     * @param offset at which the message begins.
+     * @return this for a fluent API.
+     */
+    public CounterMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    {
+        super.wrap(buffer, offset);
+
+        return this;
+    }
 
     /**
      * Get type id field.
@@ -71,10 +89,9 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param typeId field value.
      * @return this for a fluent API.
      */
-    public CounterMessageFlyweight typeId(final long typeId)
+    public CounterMessageFlyweight typeId(final int typeId)
     {
-        buffer.putLong(offset + COUNTER_TYPE_ID_FIELD_OFFSET, typeId);
-
+        buffer.putInt(offset + COUNTER_TYPE_ID_FIELD_OFFSET, typeId);
         return this;
     }
 
@@ -124,7 +141,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int labelBufferOffset()
     {
-        return labelOffset() + SIZE_OF_INT;
+        return labelLengthOffset() + SIZE_OF_INT;
     }
 
     /**
@@ -134,7 +151,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int labelBufferLength()
     {
-        return buffer.getInt(offset + labelOffset());
+        return buffer.getInt(offset + labelLengthOffset());
     }
 
     /**
@@ -148,10 +165,11 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     public CounterMessageFlyweight labelBuffer(
         final DirectBuffer labelBuffer, final int labelOffset, final int labelLength)
     {
-        buffer.putInt(offset + labelOffset(), labelLength);
+        final int labelLengthOffset = labelLengthOffset();
+        buffer.putInt(offset + labelLengthOffset, labelLength);
         if (null != labelBuffer && labelLength > 0)
         {
-            buffer.putBytes(offset + labelBufferOffset(), labelBuffer, labelOffset, labelLength);
+            buffer.putBytes(offset + labelLengthOffset + SIZE_OF_INT, labelBuffer, labelOffset, labelLength);
         }
 
         return this;
@@ -165,13 +183,13 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public CounterMessageFlyweight label(final String label)
     {
-        buffer.putStringAscii(labelOffset(), label);
+        buffer.putStringAscii(offset + labelLengthOffset(), label);
 
         return this;
     }
 
     /**
-     * Get the length of the current message
+     * Get the length of the current message.
      * <p>
      * NB: must be called after the data is written in order to be accurate.
      *
@@ -179,7 +197,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int length()
     {
-        final int labelOffset = labelOffset();
+        final int labelOffset = labelLengthOffset();
         return labelOffset + SIZE_OF_INT + labelBufferLength();
     }
 
@@ -194,25 +212,53 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         if (length < MINIMUM_LENGTH)
         {
             throw new ControlProtocolException(
-                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
+                MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
         }
 
-        final int labelOffset = labelOffset();
-
+        final int labelOffset = labelLengthOffset();
         if ((length - labelOffset) < SIZE_OF_INT)
         {
             throw new ControlProtocolException(
-                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for key: length=" + length);
+                MALFORMED_COMMAND, "command=" + msgTypeId + " too short for key: length=" + length);
         }
 
-        if (length < length())
+        final int encodedLength = length();
+        if (length < encodedLength)
         {
             throw new ControlProtocolException(
-                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for label: length=" + length);
+                MALFORMED_COMMAND,
+                "command=" + msgTypeId + " too short for label: length=" + length + " encodedLength=" + encodedLength);
         }
     }
 
-    private int labelOffset()
+    /**
+     * Compute the length of the command message given key and label length.
+     *
+     * @param keyLength   to be appended.
+     * @param labelLength to be appended.
+     * @return the length of the command message given key and label length.
+     */
+    public static int computeLength(final int keyLength, final int labelLength)
+    {
+        return MINIMUM_LENGTH + align(keyLength, SIZE_OF_INT) + SIZE_OF_INT + labelLength;
+    }
+
+    public String toString()
+    {
+        return "CounterMessageFlyweight{" +
+            "clientId=" + clientId() +
+            ", correlationId=" + correlationId() +
+            ", typeId=" + typeId() +
+            ", keyBufferOffset=" + keyBufferOffset() +
+            ", keyBufferLength=" + keyBufferLength() +
+            ", labelLengthOffset=" + labelLengthOffset() +
+            ", labelBufferOffset=" + labelBufferOffset() +
+            ", labelBufferLength=" + labelBufferLength() +
+            ", length=" + length() +
+            "}";
+    }
+
+    private int labelLengthOffset()
     {
         return KEY_BUFFER_OFFSET + align(keyBufferLength(), SIZE_OF_INT);
     }

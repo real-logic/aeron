@@ -126,8 +126,8 @@ public class DriverLoggingAgentTest
         }
     }
 
-    private void testLogMediaDriverEvents(
-        final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents) throws InterruptedException
+    private void testLogMediaDriverEvents(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
+        throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 
@@ -203,7 +203,7 @@ public class DriverLoggingAgentTest
         {
             LOGGED_EVENTS.add(msgTypeId);
 
-            if (WAIT_LIST.contains(msgTypeId) && WAIT_LIST.remove(msgTypeId))
+            if (WAIT_LIST.remove(msgTypeId))
             {
                 latch.countDown();
             }

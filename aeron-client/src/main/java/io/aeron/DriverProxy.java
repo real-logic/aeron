@@ -18,8 +18,6 @@ package io.aeron;
 import io.aeron.command.*;
 import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.command.ControlProtocolEvents.*;
@@ -33,14 +31,12 @@ import static io.aeron.command.ControlProtocolEvents.*;
  */
 public final class DriverProxy
 {
-    private final MutableDirectBuffer buffer = new ExpandableArrayBuffer(1024);
+    private final long clientId;
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
-    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
-    private final TerminateDriverFlyweight terminateDriver = new TerminateDriverFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     /**
@@ -52,16 +48,7 @@ public final class DriverProxy
     public DriverProxy(final RingBuffer toDriverCommandBuffer, final long clientId)
     {
         this.toDriverCommandBuffer = toDriverCommandBuffer;
-
-        publicationMessage.wrap(buffer, 0);
-        subscriptionMessage.wrap(buffer, 0);
-        correlatedMessage.wrap(buffer, 0);
-        removeMessage.wrap(buffer, 0);
-        destinationMessage.wrap(buffer, 0);
-        counterMessage.wrap(buffer, 0);
-        terminateDriver.wrap(buffer, 0);
-
-        correlatedMessage.clientId(clientId);
+        this.clientId = clientId;
     }
 
     /**
@@ -84,16 +71,21 @@ public final class DriverProxy
     public long addPublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        publicationMessage.correlationId(correlationId);
-        publicationMessage
-            .streamId(streamId)
-            .channel(channel);
-
-        if (!toDriverCommandBuffer.write(ADD_PUBLICATION, buffer, 0, publicationMessage.length()))
+        final int length = PublicationMessageFlyweight.computeLength(channel.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_PUBLICATION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add publication command");
         }
+
+        publicationMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .streamId(streamId)
+            .channel(channel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -108,16 +100,21 @@ public final class DriverProxy
     public long addExclusivePublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        publicationMessage.correlationId(correlationId);
-        publicationMessage
-            .streamId(streamId)
-            .channel(channel);
-
-        if (!toDriverCommandBuffer.write(ADD_EXCLUSIVE_PUBLICATION, buffer, 0, publicationMessage.length()))
+        final int length = PublicationMessageFlyweight.computeLength(channel.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_EXCLUSIVE_PUBLICATION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add exclusive publication command");
         }
+
+        publicationMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .streamId(streamId)
+            .channel(channel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -131,15 +128,19 @@ public final class DriverProxy
     public long removePublication(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        removeMessage
-            .registrationId(registrationId)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(REMOVE_PUBLICATION, buffer, 0, RemoveMessageFlyweight.length()))
+        final int index = toDriverCommandBuffer.tryClaim(REMOVE_PUBLICATION, RemoveMessageFlyweight.length());
+        if (index < 0)
         {
             throw new AeronException("could not write remove publication command");
         }
+
+        removeMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationId(registrationId)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -155,17 +156,22 @@ public final class DriverProxy
     {
         final long registrationId = Aeron.NULL_VALUE;
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        subscriptionMessage.correlationId(correlationId);
-        subscriptionMessage
-            .registrationCorrelationId(registrationId)
-            .streamId(streamId)
-            .channel(channel);
-
-        if (!toDriverCommandBuffer.write(ADD_SUBSCRIPTION, buffer, 0, subscriptionMessage.length()))
+        final int length = SubscriptionMessageFlyweight.computeLength(channel.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_SUBSCRIPTION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add subscription command");
         }
+
+        subscriptionMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationCorrelationId(registrationId)
+            .streamId(streamId)
+            .channel(channel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -179,15 +185,19 @@ public final class DriverProxy
     public long removeSubscription(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+        final int index = toDriverCommandBuffer.tryClaim(REMOVE_SUBSCRIPTION, RemoveMessageFlyweight.length());
+        if (index < 0)
+        {
+            throw new AeronException("could not write remove subscription command");
+        }
 
         removeMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
             .registrationId(registrationId)
+            .clientId(clientId)
             .correlationId(correlationId);
 
-        if (!toDriverCommandBuffer.write(REMOVE_SUBSCRIPTION, buffer, 0, RemoveMessageFlyweight.length()))
-        {
-            throw new AeronException("could not write remove subscription message");
-        }
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -202,16 +212,21 @@ public final class DriverProxy
     public long addDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        destinationMessage
-            .registrationCorrelationId(registrationId)
-            .channel(endpointChannel)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(ADD_DESTINATION, buffer, 0, destinationMessage.length()))
+        final int length = DestinationMessageFlyweight.computeLength(endpointChannel.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_DESTINATION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add destination command");
         }
+
+        destinationMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -226,16 +241,21 @@ public final class DriverProxy
     public long removeDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        destinationMessage
-            .registrationCorrelationId(registrationId)
-            .channel(endpointChannel)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(REMOVE_DESTINATION, buffer, 0, destinationMessage.length()))
+        final int length = DestinationMessageFlyweight.computeLength(endpointChannel.length());
+        final int index = toDriverCommandBuffer.tryClaim(REMOVE_DESTINATION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write remove destination command");
         }
+
+        destinationMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -250,20 +270,24 @@ public final class DriverProxy
     public long addRcvDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        destinationMessage
-            .registrationCorrelationId(registrationId)
-            .channel(endpointChannel)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(ADD_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
+        final int length = DestinationMessageFlyweight.computeLength(endpointChannel.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_RCV_DESTINATION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add rcv destination command");
         }
 
+        destinationMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
+
         return correlationId;
     }
-
 
     /**
      * Remove a destination from the receive channel of an existing MDS Subscription.
@@ -275,16 +299,21 @@ public final class DriverProxy
     public long removeRcvDestination(final long registrationId, final String endpointChannel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        destinationMessage
-            .registrationCorrelationId(registrationId)
-            .channel(endpointChannel)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(REMOVE_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
+        final int length = DestinationMessageFlyweight.computeLength(endpointChannel.length());
+        final int index = toDriverCommandBuffer.tryClaim(REMOVE_RCV_DESTINATION, length);
+        if (index < 0)
         {
             throw new AeronException("could not write remove rcv destination command");
         }
+
+        destinationMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -311,17 +340,22 @@ public final class DriverProxy
         final int labelLength)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        counterMessage
-            .typeId(typeId)
-            .keyBuffer(keyBuffer, keyOffset, keyLength)
-            .labelBuffer(labelBuffer, labelOffset, labelLength)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(ADD_COUNTER, buffer, 0, counterMessage.length()))
+        final int length = CounterMessageFlyweight.computeLength(keyLength, labelLength);
+        final int index = toDriverCommandBuffer.tryClaim(ADD_COUNTER, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add counter command");
         }
+
+        counterMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .keyBuffer(keyBuffer, keyOffset, keyLength)
+            .labelBuffer(labelBuffer, labelOffset, labelLength)
+            .typeId(typeId)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -336,17 +370,22 @@ public final class DriverProxy
     public long addCounter(final int typeId, final String label)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        counterMessage
-            .typeId(typeId)
-            .keyBuffer(null, 0, 0)
-            .label(label)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(ADD_COUNTER, buffer, 0, counterMessage.length()))
+        final int length = CounterMessageFlyweight.computeLength(0, label.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_COUNTER, length);
+        if (index < 0)
         {
             throw new AeronException("could not write add counter command");
         }
+
+        counterMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .keyBuffer(null, 0, 0)
+            .label(label)
+            .typeId(typeId)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -360,15 +399,19 @@ public final class DriverProxy
     public long removeCounter(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        removeMessage
-            .registrationId(registrationId)
-            .correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(REMOVE_COUNTER, buffer, 0, RemoveMessageFlyweight.length()))
+        final int index = toDriverCommandBuffer.tryClaim(REMOVE_COUNTER, RemoveMessageFlyweight.length());
+        if (index < 0)
         {
             throw new AeronException("could not write remove counter command");
         }
+
+        removeMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .registrationId(registrationId)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
@@ -378,8 +421,16 @@ public final class DriverProxy
      */
     public void clientClose()
     {
-        correlatedMessage.correlationId(Aeron.NULL_VALUE);
-        toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
+        final int index = toDriverCommandBuffer.tryClaim(CLIENT_CLOSE, CorrelatedMessageFlyweight.LENGTH);
+        if (index > 0)
+        {
+            new CorrelatedMessageFlyweight()
+                .wrap(toDriverCommandBuffer.buffer(), index)
+                .clientId(clientId)
+                .correlationId(Aeron.NULL_VALUE);
+
+            toDriverCommandBuffer.commit(index);
+        }
     }
 
     /**
@@ -392,9 +443,20 @@ public final class DriverProxy
      */
     public boolean terminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {
-        correlatedMessage.correlationId(Aeron.NULL_VALUE);
-        terminateDriver.tokenBuffer(tokenBuffer, tokenOffset, tokenLength);
+        final int length = TerminateDriverFlyweight.computeLength(tokenLength);
+        final int index = toDriverCommandBuffer.tryClaim(TERMINATE_DRIVER, length);
+        if (index > 0)
+        {
+            new TerminateDriverFlyweight()
+                .wrap(toDriverCommandBuffer.buffer(), index)
+                .tokenBuffer(tokenBuffer, tokenOffset, tokenLength)
+                .clientId(clientId)
+                .correlationId(Aeron.NULL_VALUE);
 
-        return toDriverCommandBuffer.write(TERMINATE_DRIVER, buffer, 0, terminateDriver.length());
+            toDriverCommandBuffer.commit(index);
+            return true;
+        }
+
+        return false;
     }
 }

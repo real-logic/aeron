@@ -15,10 +15,10 @@
  */
 package io.aeron.command;
 
-import io.aeron.ErrorCode;
 import io.aeron.exceptions.ControlProtocolException;
 import org.agrona.MutableDirectBuffer;
 
+import static io.aeron.ErrorCode.MALFORMED_COMMAND;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
@@ -27,10 +27,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                            Client ID                          |
+ * |                         Client ID                             |
  * |                                                               |
  * +---------------------------------------------------------------+
- * |                         Correlation ID                        |
+ * |                       Correlation ID                          |
  * |                                                               |
  * +---------------------------------------------------------------+
  */
@@ -49,11 +49,11 @@ public class CorrelatedMessageFlyweight
     /**
      * Wrap the buffer at a given offset for updates.
      *
-     * @param buffer to wrap
+     * @param buffer to wrap.
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
-    public final CorrelatedMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public CorrelatedMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -118,7 +118,7 @@ public class CorrelatedMessageFlyweight
         if (length < LENGTH)
         {
             throw new ControlProtocolException(
-                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
+                MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
         }
     }
 }

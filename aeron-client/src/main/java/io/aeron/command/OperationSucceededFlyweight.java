@@ -48,7 +48,7 @@ public class OperationSucceededFlyweight
      *
      * @param buffer to wrap.
      * @param offset at which the message begins.
-     * @return for fluent API
+     * @return this for a fluent API.
      */
     public final OperationSucceededFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
@@ -72,7 +72,7 @@ public class OperationSucceededFlyweight
      * Set the correlation id field.
      *
      * @param correlationId field value.
-     * @return this for a fluent API
+     * @return this for a fluent API.
      */
     public OperationSucceededFlyweight correlationId(final long correlationId)
     {

@@ -37,6 +37,7 @@ public class CounterTest
     private static final int COUNTER_TYPE_ID = 1101;
     private static final String COUNTER_LABEL = "counter label";
 
+    private final UnsafeBuffer keyBuffer = new UnsafeBuffer(new byte[8]);
     private final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[COUNTER_LABEL.length()]);
 
     private Aeron clientA;
@@ -81,9 +82,9 @@ public class CounterTest
 
         final Counter counter = clientA.addCounter(
             COUNTER_TYPE_ID,
-            null,
+            keyBuffer,
             0,
-            0,
+            keyBuffer.capacity(),
             labelBuffer,
             0,
             COUNTER_LABEL.length());
@@ -105,9 +106,9 @@ public class CounterTest
 
         final Counter counter = clientA.addCounter(
             COUNTER_TYPE_ID,
-            null,
+            keyBuffer,
             0,
-            0,
+            keyBuffer.capacity(),
             labelBuffer,
             0,
             COUNTER_LABEL.length());
@@ -130,9 +131,9 @@ public class CounterTest
 
         final Counter counter = clientA.addCounter(
             COUNTER_TYPE_ID,
-            null,
+            keyBuffer,
             0,
-            0,
+            keyBuffer.capacity(),
             labelBuffer,
             0,
             COUNTER_LABEL.length());
@@ -167,7 +168,7 @@ public class CounterTest
     }
 
     private void unavailableCounterHandler(
-        @SuppressWarnings("unused") final CountersReader counters, final long registrationId, final int counterId)
+        final CountersReader counters, final long registrationId, final int counterId)
     {
         if (null != readableCounter && readableCounter.registrationId() == registrationId)
         {

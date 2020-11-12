@@ -746,7 +746,6 @@ public class CommonContext implements Cloneable
                 final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
                     CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
                 final long clientId = toDriverBuffer.nextCorrelationId();
-
                 final DriverProxy driverProxy = new DriverProxy(toDriverBuffer, clientId);
 
                 return driverProxy.terminateDriver(tokenBuffer, tokenOffset, tokenLength);

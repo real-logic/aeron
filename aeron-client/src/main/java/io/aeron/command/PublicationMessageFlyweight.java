@@ -15,9 +15,10 @@
  */
 package io.aeron.command;
 
-import io.aeron.ErrorCode;
 import io.aeron.exceptions.ControlProtocolException;
+import org.agrona.MutableDirectBuffer;
 
+import static io.aeron.ErrorCode.MALFORMED_COMMAND;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -27,6 +28,9 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                          Client ID                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                       Correlation ID                          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
@@ -46,6 +50,20 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     private static final int MINIMUM_LENGTH = CHANNEL_OFFSET + SIZE_OF_INT;
 
     private int lengthOfChannel;
+
+    /**
+     * Wrap the buffer at a given offset for updates.
+     *
+     * @param buffer to wrap.
+     * @param offset at which the message begins.
+     * @return this for a fluent API.
+     */
+    public PublicationMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    {
+        super.wrap(buffer, offset);
+
+        return this;
+    }
 
     /**
      * Get the stream id field.
@@ -126,13 +144,24 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
         if (length < MINIMUM_LENGTH)
         {
             throw new ControlProtocolException(
-                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
+                MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
         }
 
         if ((length - MINIMUM_LENGTH) < buffer.getInt(offset + CHANNEL_OFFSET))
         {
             throw new ControlProtocolException(
-                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for channel: length=" + length);
+                MALFORMED_COMMAND, "command=" + msgTypeId + " too short for channel: length=" + length);
         }
+    }
+
+    /**
+     * Compute the length of the command message for a given channel length.
+     *
+     * @param channelLength to be appended to the header.
+     * @return the length of the command message for a given channel length.
+     */
+    public static int computeLength(final int channelLength)
+    {
+        return MINIMUM_LENGTH + channelLength;
     }
 }

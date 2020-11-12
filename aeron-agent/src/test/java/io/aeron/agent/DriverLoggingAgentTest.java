@@ -137,7 +137,7 @@ public class DriverLoggingAgentTest
     {
         try
         {
-            testLogMediaDriverEvents(eventCode.name(), EnumSet.of(eventCode));
+            testLogMediaDriverEvents(NETWORK_CHANNEL, eventCode.name(), EnumSet.of(eventCode));
         }
         finally
         {
@@ -166,8 +166,8 @@ public class DriverLoggingAgentTest
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
 
             try (Aeron aeron = Aeron.connect(clientCtx);
-                Subscription subscription = aeron.addSubscription(NETWORK_CHANNEL, STREAM_ID);
-                Publication publication = aeron.addPublication(NETWORK_CHANNEL, STREAM_ID))
+                Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                Publication publication = aeron.addPublication(channel, STREAM_ID))
             {
                 final UnsafeBuffer offerBuffer = new UnsafeBuffer(new byte[32]);
                 while (publication.offer(offerBuffer) < 0)
@@ -189,7 +189,7 @@ public class DriverLoggingAgentTest
             latch.await();
         }
 
-        assertEquals(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()), LOGGED_EVENTS);
+        assertEquals(expectedEvents, LOGGED_EVENTS);
     }
 
     private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
@@ -199,7 +199,7 @@ public class DriverLoggingAgentTest
         AgentTests.beforeAgent();
 
         latch = new CountDownLatch(expectedEvents.size());
-        WAIT_LIST.addAll(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()));
+        WAIT_LIST.addAll(expectedEvents);
 
         testDir = Paths.get(IoUtil.tmpDirName(), "driver-test").toFile();
         if (testDir.exists())

@@ -390,7 +390,7 @@ final class ControlSession implements Session
 
     void onPurgeRecording(final long correlationId, final long recordingId)
     {
-        attemptToGoActive();
+        attemptToActivate();
         if (State.ACTIVE == state)
         {
             conductor.purgeRecording(correlationId, recordingId, this);

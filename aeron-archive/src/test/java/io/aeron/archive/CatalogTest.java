@@ -145,7 +145,7 @@ class CatalogTest
         final ArchiveException exception = assertThrows(ArchiveException.class,
             () -> new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer));
         assertEquals(
-            "invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
+            "ERROR - invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
             ", was " + recordingTwoId,
             exception.getMessage());
     }
@@ -524,7 +524,7 @@ class CatalogTest
         {
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY, (int)(CAPACITY + 1)));
-            assertEquals("catalog is full, max capacity reached: " + CAPACITY, exception.getMessage());
+            assertEquals("ERROR - catalog is full, max capacity reached: " + CAPACITY, exception.getMessage());
         }
     }
 
@@ -536,7 +536,7 @@ class CatalogTest
             final ArchiveException exception =
                 assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
             assertEquals(String.format(
-                "recording is too big: total recording length is %d bytes, available space is %d bytes",
+                "ERROR - recording is too big: total recording length is %d bytes, available space is %d bytes",
                 Integer.MAX_VALUE, CAPACITY * 2 - 800),
                 exception.getMessage());
         }

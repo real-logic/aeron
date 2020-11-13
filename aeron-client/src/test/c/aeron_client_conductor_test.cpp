@@ -667,10 +667,10 @@ TEST_F(ClientConductorTest, shouldAddCounterSuccessfullyMaxMessageSize)
     aeron_async_add_counter_t *async = nullptr;
     aeron_counter_t *counter = nullptr;
     const size_t key_buffer_length = 256;
-    uint8_t *key_buffer = new uint8_t[key_buffer_length];
+    auto *key_buffer = new uint8_t[key_buffer_length];
     key_buffer[5] = 13;
     const size_t label_buffer_length =
-            MAX_MESSAGE_SIZE - key_buffer_length - 2 * sizeof(int32_t) - sizeof(aeron_counter_command_t);
+        MAX_MESSAGE_SIZE - key_buffer_length - 2 * sizeof(int32_t) - sizeof(aeron_counter_command_t);
     char *label_buffer = allocateStringWithPrefix("label", "=", 'x', label_buffer_length);
 
     ASSERT_EQ(aeron_client_conductor_async_add_counter(

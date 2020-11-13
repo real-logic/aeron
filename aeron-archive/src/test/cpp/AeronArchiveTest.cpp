@@ -1015,13 +1015,13 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subscriptionId = aeronArchive->startRecording(
-            m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
     {
         std::shared_ptr<Subscription> subscription = addSubscription(
-                *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
         std::shared_ptr<Publication> publication = addPublication(
-                *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
 
         sessionId = publication->sessionId();
 
@@ -1047,7 +1047,7 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
     aeronArchive->stopRecording(subscriptionId);
 
     const std::int64_t recordingId = aeronArchive->findLastMatchingRecording(
-            0, "endpoint=localhost:3333", m_recordingStreamId, sessionId);
+        0, "endpoint=localhost:3333", m_recordingStreamId, sessionId);
 
     EXPECT_EQ(recordingIdFromCounter, recordingId);
     EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
@@ -1055,26 +1055,26 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
     aeronArchive->purgeRecording(recordingId);
 
     const std::int32_t count = aeronArchive->listRecording(
-            recordingId,
-            [&](std::int64_t controlSessionId,
-                std::int64_t correlationId,
-                std::int64_t recordingId1,
-                std::int64_t startTimestamp,
-                std::int64_t stopTimestamp,
-                std::int64_t startPosition,
-                std::int64_t newStopPosition,
-                std::int32_t initialTermId,
-                std::int32_t segmentFileLength,
-                std::int32_t termBufferLength,
-                std::int32_t mtuLength,
-                std::int32_t sessionId1,
-                std::int32_t streamId,
-                const std::string &strippedChannel,
-                const std::string &originalChannel,
-                const std::string &sourceIdentity)
-            {
-                FAIL();
-            });
+        recordingId,
+        [&](std::int64_t controlSessionId,
+            std::int64_t correlationId,
+            std::int64_t recordingId1,
+            std::int64_t startTimestamp,
+            std::int64_t stopTimestamp,
+            std::int64_t startPosition,
+            std::int64_t newStopPosition,
+            std::int32_t initialTermId,
+            std::int32_t segmentFileLength,
+            std::int32_t termBufferLength,
+            std::int32_t mtuLength,
+            std::int32_t sessionId1,
+            std::int32_t streamId,
+            const std::string &strippedChannel,
+            const std::string &originalChannel,
+            const std::string &sourceIdentity)
+        {
+            FAIL();
+        });
 
     EXPECT_EQ(count, 0);
 }
@@ -1092,13 +1092,13 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subscriptionId = aeronArchive->startRecording(
-            recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+        recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
     {
         std::shared_ptr<Subscription> subscription = addSubscription(
-                *aeronArchive->context().aeron(), recordingChannel, m_recordingStreamId);
+            *aeronArchive->context().aeron(), recordingChannel, m_recordingStreamId);
         std::shared_ptr<Publication> publication = addPublication(
-                *aeronArchive->context().aeron(), recordingChannel, m_recordingStreamId);
+            *aeronArchive->context().aeron(), recordingChannel, m_recordingStreamId);
 
         sessionId = publication->sessionId();
 
@@ -1126,27 +1126,27 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
     EXPECT_EQ(aeronArchive->getStopPosition(recordingId), stopPosition);
 
     const std::int32_t count = aeronArchive->listRecording(
-            recordingId,
-            [&](std::int64_t controlSessionId,
-                std::int64_t correlationId,
-                std::int64_t recordingId1,
-                std::int64_t startTimestamp,
-                std::int64_t stopTimestamp,
-                std::int64_t startPosition,
-                std::int64_t newStopPosition,
-                std::int32_t initialTermId,
-                std::int32_t segmentFileLength,
-                std::int32_t termBufferLength,
-                std::int32_t mtuLength,
-                std::int32_t sessionId1,
-                std::int32_t streamId,
-                const std::string &strippedChannel,
-                const std::string &originalChannel,
-                const std::string &sourceIdentity)
-            {
-                EXPECT_EQ(recordingId, recordingId1);
-                EXPECT_EQ(streamId, m_recordingStreamId);
-            });
+        recordingId,
+        [&](std::int64_t controlSessionId,
+            std::int64_t correlationId,
+            std::int64_t recordingId1,
+            std::int64_t startTimestamp,
+            std::int64_t stopTimestamp,
+            std::int64_t startPosition,
+            std::int64_t newStopPosition,
+            std::int32_t initialTermId,
+            std::int32_t segmentFileLength,
+            std::int32_t termBufferLength,
+            std::int32_t mtuLength,
+            std::int32_t sessionId1,
+            std::int32_t streamId,
+            const std::string &strippedChannel,
+            const std::string &originalChannel,
+            const std::string &sourceIdentity)
+        {
+            EXPECT_EQ(recordingId, recordingId1);
+            EXPECT_EQ(streamId, m_recordingStreamId);
+        });
 
     EXPECT_EQ(count, 1);
 }

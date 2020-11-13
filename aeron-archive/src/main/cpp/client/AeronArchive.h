@@ -658,8 +658,7 @@ public:
 
     /**
      * Stop recording for a subscriptionId that has been returned from
-     * #startRecording(String, int, SourceLocation) or
-     * #extendRecording(long, String, int, SourceLocation).
+     * #startRecording(String, int, SourceLocation) or #extendRecording(long, String, int, SourceLocation).
      *
      * @param subscriptionId is the Subscription#registrationId for the recording in the archive.
      * @tparam IdleStrategy to use for polling operations.
@@ -683,8 +682,7 @@ public:
 
     /**
      * Try stop a recording for a subscriptionId that has been returned from
-     * #startRecording(String, int, SourceLocation) or
-     * #extendRecording(long, String, int, SourceLocation).
+     * #startRecording(String, int, SourceLocation) or #extendRecording(long, String, int, SourceLocation).
      *
      * @param subscriptionId is the Subscription#registrationId for the recording in the archive.
      * @return true if the recording was stopped or false if the subscription is not currently active.
@@ -827,7 +825,7 @@ public:
      * Stop a replay session.
      *
      * @param replaySessionId to stop replay for.
-     * @tparam IdleStrategy  to use for polling operations.
+     * @tparam IdleStrategy   to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopReplay(std::int64_t replaySessionId)
@@ -849,8 +847,8 @@ public:
     /**
      * Stop all replays matching a recording id. If recording id is #NULL_VALUE then match all replays.
      *
-     * @param recordingId to stop replays for.
-     * @tparam IdleStrategy  to use for polling operations.
+     * @param recordingId   to stop replays for.
+     * @tparam IdleStrategy to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopAllReplays(std::int64_t recordingId)
@@ -1048,8 +1046,8 @@ public:
      * <p>
      * If the recording id is greater than the largest known id then nothing is returned.
      *
-     * @param recordingId at which to begin the listing.
-     * @param consumer    to which the descriptors are dispatched.
+     * @param recordingId   at which to begin the listing.
+     * @param consumer      to which the descriptors are dispatched.
      * @tparam IdleStrategy to use for polling operations.
      * @return the number of descriptors found and consumed.
      */
@@ -1074,7 +1072,7 @@ public:
     /**
      * Get the start position for a recording.
      *
-     * @param recordingId of the active recording for which the position is required.
+     * @param recordingId   of the active recording for which the position is required.
      * @tparam IdleStrategy to use for polling operations.
      * @return the start position
      * @see #getRecordingPosition
@@ -1100,7 +1098,7 @@ public:
     /**
      * Get the position recorded for an active recording. If no active recording then return #NULL_POSITION.
      *
-     * @param recordingId of the active recording for which the position is required.
+     * @param recordingId   of the active recording for which the position is required.
      * @tparam IdleStrategy to use for polling operations.
      * @return the recorded position for the active recording or #NULL_POSITION if recording not active.
      * @see #getStopPosition
@@ -1125,7 +1123,7 @@ public:
     /**
      * Get the stop position for a recording.
      *
-     * @param recordingId of the active recording for which the position is required.
+     * @param recordingId   of the active recording for which the position is required.
      * @tparam IdleStrategy to use for polling operations.
      * @return the stop position, or #NULL_POSITION if still active.
      * @see #getRecordingPosition
@@ -1183,8 +1181,8 @@ public:
      * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
      * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
      *
-     * @param recordingId of the stopped recording to be truncated.
-     * @param position    to which the recording will be truncated.
+     * @param recordingId   of the stopped recording to be truncated.
+     * @param position      to which the recording will be truncated.
      * @tparam IdleStrategy to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
@@ -1209,7 +1207,7 @@ public:
      * Purge a stopped recording, i.e. mark recording as 'RecordingState#INVALID' and delete the corresponding segment
      * files. The space in the Catalog will be reclaimed upon compaction.
      *
-     * @param recordingId      of the stopped recording to be purged.
+     * @param recordingId   of the stopped recording to be purged.
      * @tparam IdleStrategy to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
@@ -1293,7 +1291,7 @@ public:
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param liveDestination    destination for the live stream if merge is required. Empty string for no merge.
-     * @tparam IdleStrategy to use for polling operations.
+     * @tparam IdleStrategy      to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void replicate(
@@ -1344,7 +1342,7 @@ public:
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param liveDestination    destination for the live stream if merge is required. Empty string for no merge.
-     * @tparam IdleStrategy to use for polling operations.
+     * @tparam IdleStrategy      to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void taggedReplicate(
@@ -1411,7 +1409,7 @@ public:
      *
      * @param recordingId      of the recording to detach segments from.
      * @param newStartPosition for the recording after segments are detached.
-     * @tparam IdleStrategy to use for polling operations.
+     * @tparam IdleStrategy    to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)
@@ -1434,7 +1432,7 @@ public:
     /**
      * Delete detached segments which have been previously detached from a recording.
      *
-     * @param recordingId of the recording to delete previously detached segments from.
+     * @param recordingId   of the recording to delete previously detached segments from.
      * @tparam IdleStrategy to use for polling operations.
      * @return the count of segments deleted.
      */
@@ -1464,7 +1462,7 @@ public:
      *
      * @param recordingId      of the recording to purge segments from.
      * @param newStartPosition for the recording after segments are purged.
-     * @tparam IdleStrategy to use for polling operations.
+     * @tparam IdleStrategy    to use for polling operations.
      * @return the count of segments purged.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
@@ -1491,7 +1489,7 @@ public:
      * Segment files must match the existing recording and join exactly to the start position of the recording
      * they are being attached to.
      *
-     * @param recordingId of the recording to attach segments to.
+     * @param recordingId   of the recording to attach segments to.
      * @tparam IdleStrategy to use for polling operations.
      * @return the count of segments attached.
      */
@@ -1523,7 +1521,7 @@ public:
      *
      * @param srcRecordingId source recording from which the segments will be migrated.
      * @param dstRecordingId destination recording to which the segments will be attached.
-     * @tparam IdleStrategy to use for polling operations.
+     * @tparam IdleStrategy  to use for polling operations.
      * @return the count of segments purged.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>

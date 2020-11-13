@@ -176,7 +176,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             return;
         }
@@ -202,7 +202,7 @@ void aeron_driver_agent_conductor_to_client_interceptor(
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             return;
         }
@@ -235,7 +235,7 @@ int aeron_driver_agent_raw_log_map_interceptor(
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_driver_agent_raw_log_op_header_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             return result;
         }

@@ -37,7 +37,6 @@ class ArchiveProxy
 {
 public:
     explicit ArchiveProxy(std::shared_ptr<ExclusivePublication> publication, int retryAttempts = 3) :
-        m_array(),
         m_buffer(m_array.data(), m_array.size()),
         m_publication(std::move(publication)),
         m_retryAttempts(retryAttempts)
@@ -585,9 +584,9 @@ public:
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool purgeRecording(
-            std::int64_t recordingId,
-            std::int64_t correlationId,
-            std::int64_t controlSessionId)
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
     {
         const util::index_t length = purgeRecording(m_buffer, recordingId, correlationId, controlSessionId);
 
@@ -866,7 +865,7 @@ public:
     }
 
 private:
-    std::array<std::uint8_t, PROXY_REQUEST_BUFFER_LENGTH> m_array;
+    std::array<std::uint8_t, PROXY_REQUEST_BUFFER_LENGTH> m_array = {};
     AtomicBuffer m_buffer;
     std::shared_ptr<ExclusivePublication> m_publication;
     const int m_retryAttempts;

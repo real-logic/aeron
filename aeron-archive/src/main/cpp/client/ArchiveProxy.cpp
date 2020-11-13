@@ -463,17 +463,17 @@ util::index_t ArchiveProxy::truncateRecording(
 }
 
 util::index_t ArchiveProxy::purgeRecording(
-        AtomicBuffer &buffer,
-        std::int64_t recordingId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+    AtomicBuffer &buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
 {
     PurgeRecordingRequest request;
 
     wrapAndApplyHeader(request, buffer)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .recordingId(recordingId);
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
 
     return messageAndHeaderLength(request);
 }

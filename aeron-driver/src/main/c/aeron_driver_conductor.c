@@ -1652,7 +1652,7 @@ void aeron_driver_conductor_on_error(
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_error_response_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, response_length) < 0)
         {
             char error_message[AERON_MAX_PATH];
             int os_errno = aeron_errcode();
@@ -1696,7 +1696,7 @@ void aeron_driver_conductor_on_publication_ready(
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, response_length) < 0)
         {
             char error_message[AERON_MAX_PATH];
             int os_errno = aeron_errcode();
@@ -1805,7 +1805,7 @@ void aeron_driver_conductor_on_unavailable_image(
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_image_message_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, response_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, response_length) < 0)
         {
             char error_message[AERON_MAX_PATH];
             int os_errno = aeron_errcode();

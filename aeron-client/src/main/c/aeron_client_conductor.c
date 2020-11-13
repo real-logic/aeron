@@ -811,11 +811,11 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                    err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return;
         }
@@ -898,11 +898,15 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                    err_buffer, sizeof(err_buffer) - 1, "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer,
+                sizeof(err_buffer) - 1,
+                "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)",
+                __FILE__,
+                __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return;
         }
@@ -984,11 +988,11 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_subscription_command_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                    err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return;
         }
@@ -1076,11 +1080,11 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH))
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                    err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return;
         }
@@ -1196,11 +1200,11 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                    err_buffer, sizeof(err_buffer) - 1, "DESTINATION could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "DESTINATION could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return;
         }
@@ -2511,11 +2515,11 @@ int aeron_client_conductor_offer_destination_command(
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
-        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                    err_buffer, sizeof(err_buffer) - 1, "destination could not be sent (%s:%d)", __FILE__, __LINE__);
+                err_buffer, sizeof(err_buffer) - 1, "destination could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return -1;
         }
@@ -2532,13 +2536,16 @@ int aeron_client_conductor_offer_destination_command(
     memcpy(buffer + sizeof(aeron_destination_command_t), uri, uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-            &conductor->to_driver_buffer, command_type, buffer, command_length))
+        &conductor->to_driver_buffer, command_type, buffer, command_length))
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
             char err_buffer[AERON_MAX_PATH];
 
-            snprintf(err_buffer, sizeof(err_buffer) - 1, "destination command could not be sent (%s:%d)",
+            snprintf(
+                err_buffer,
+                sizeof(err_buffer) - 1,
+                "destination command could not be sent (%s:%d)",
                 __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);

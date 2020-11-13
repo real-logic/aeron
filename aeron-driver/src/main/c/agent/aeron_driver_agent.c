@@ -93,8 +93,6 @@ static void *aeron_driver_agent_log_reader(void *arg)
         aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
         aeron_nano_sleep(1000 * 1000);
     }
-
-    return NULL;
 }
 
 void aeron_init_logging_ring_buffer()
@@ -119,8 +117,8 @@ void aeron_free_logging_ring_buffer()
 {
     if (NULL != rb_buffer)
     {
-       aeron_free(rb_buffer);
-       rb_buffer = NULL;
+        aeron_free(rb_buffer);
+        rb_buffer = NULL;
     }
 }
 
@@ -240,7 +238,8 @@ void encode_raw_log_map_operation(
     const aeron_mapped_raw_log_t *mapped_raw_log,
     const int result,
     const char *path,
-    const size_t path_len, char *buffer) {
+    const size_t path_len, char *buffer)
+{
     aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
 
     hdr->time_ms = aeron_epoch_clock();
@@ -251,7 +250,7 @@ void encode_raw_log_map_operation(
     memcpy(buffer + sizeof(aeron_driver_agent_raw_log_op_header_t), path, path_len);
 
     aeron_mpsc_rb_write(
-            &logging_mpsc_rb, AERON_RAW_LOG_MAP_OP, buffer, sizeof(aeron_driver_agent_raw_log_op_header_t) + path_len);
+        &logging_mpsc_rb, AERON_RAW_LOG_MAP_OP, buffer, sizeof(aeron_driver_agent_raw_log_op_header_t) + path_len);
 }
 
 int aeron_driver_agent_raw_log_map_interceptor(

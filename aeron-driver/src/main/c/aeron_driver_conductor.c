@@ -517,7 +517,7 @@ void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *condu
 }
 
 void aeron_driver_conductor_error(
-        aeron_driver_conductor_t *conductor, int error_code, const char *description, const char *message)
+    aeron_driver_conductor_t *conductor, int error_code, const char *description, const char *message)
 {
     aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
     aeron_counter_increment(conductor->errors_counter, 1);
@@ -660,9 +660,9 @@ void aeron_driver_conductor_on_available_image(
 {
     const size_t response_length =
         sizeof(aeron_image_buffers_ready_t) +
-        AERON_ALIGN(log_file_name_length, sizeof(int32_t)) +
-        source_identity_length +
-        (2 * sizeof(int32_t));
+            AERON_ALIGN(log_file_name_length, sizeof(int32_t)) +
+            source_identity_length +
+            (2 * sizeof(int32_t));
 
     if (response_length > sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH))
     {
@@ -679,18 +679,18 @@ void aeron_driver_conductor_on_available_image(
             return;
         }
         on_available_image(
-                conductor,
-                correlation_id,
-                stream_id,
-                session_id,
-                log_file_name,
-                log_file_name_length,
-                subscriber_position_id,
-                subscriber_registration_id,
-                source_identity,
-                source_identity_length,
-                response_length,
-                buffer);
+            conductor,
+            correlation_id,
+            stream_id,
+            session_id,
+            log_file_name,
+            log_file_name_length,
+            subscriber_position_id,
+            subscriber_registration_id,
+            source_identity,
+            source_identity_length,
+            response_length,
+            buffer);
         aeron_free(buffer);
     }
     else
@@ -1149,17 +1149,17 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 }
 
                 if (aeron_ipc_publication_create(
-                        &publication,
-                        conductor->context,
-                        session_id,
-                        stream_id,
-                        registration_id,
-                        &pub_pos_position,
-                        &pub_lmt_position,
-                        initial_term_id,
-                        params,
-                        is_exclusive,
-                        &conductor->system_counters) >= 0)
+                    &publication,
+                    conductor->context,
+                    session_id,
+                    stream_id,
+                    registration_id,
+                    &pub_pos_position,
+                    &pub_lmt_position,
+                    initial_term_id,
+                    params,
+                    is_exclusive,
+                    &conductor->system_counters) >= 0)
                 {
                     aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
 
@@ -1675,7 +1675,7 @@ void aeron_driver_conductor_client_transmit(
     {
         char error_message[AERON_MAX_PATH];
 
-        AERON_FORMAT_BUFFER(error_message, "msg_type_id=%d,  length=%" PRIu32, msg_type_id, (uint32_t) length);
+        AERON_FORMAT_BUFFER(error_message, "msg_type_id=%d,  length=%" PRIu32, msg_type_id, (uint32_t)length);
         aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_GENERIC_ERROR, "failed to transmit message", error_message);
     }
 }
@@ -1731,6 +1731,7 @@ void aeron_driver_conductor_on_error(
         on_error(conductor, error_code, message, length, correlation_id, response_length, buffer);
     }
 }
+
 void on_publication_ready(
     aeron_driver_conductor_t *conductor,
     const int64_t registration_id,

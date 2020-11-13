@@ -92,17 +92,17 @@ final class ArchiveMigrationUtils
                 buffer.putInt(index, 13, LITTLE_ENDIAN); // eventsStreamId
                 index += SIZE_OF_INT;
 
-                buffer.putInt(index, MARK_FILE_HEADER_LENGTH_V2, LITTLE_ENDIAN); // headerLength
+                buffer.putInt(index, MARK_FILE_HEADER_LENGTH_V2, LITTLE_ENDIAN);
                 index += SIZE_OF_INT;
 
-                buffer.putInt(index, errorBufferLength, LITTLE_ENDIAN); // errorBufferLength
+                buffer.putInt(index, errorBufferLength, LITTLE_ENDIAN);
                 index += SIZE_OF_INT;
 
-                index += buffer.putStringAscii(index, controlChannel, LITTLE_ENDIAN); // controlChannel
+                index += buffer.putStringAscii(index, controlChannel, LITTLE_ENDIAN);
 
-                index += buffer.putStringAscii(index, localControlChannel, LITTLE_ENDIAN); // localControlChannel
+                index += buffer.putStringAscii(index, localControlChannel, LITTLE_ENDIAN);
 
-                index += buffer.putStringAscii(index, eventsChannel, LITTLE_ENDIAN); // eventsChannel
+                index += buffer.putStringAscii(index, eventsChannel, LITTLE_ENDIAN);
 
                 // aeronDirectory
                 buffer.putStringAscii(index, aeronDirectory, LITTLE_ENDIAN);
@@ -185,8 +185,7 @@ final class ArchiveMigrationUtils
         if (headerContentLength > MARK_FILE_HEADER_LENGTH_V2)
         {
             throw new ArchiveException(
-                "MarkFile length required " + headerContentLength + " greater than " +
-                    MARK_FILE_HEADER_LENGTH_V2);
+                "MarkFile length required " + headerContentLength + " greater than " + MARK_FILE_HEADER_LENGTH_V2);
         }
 
         return MARK_FILE_HEADER_LENGTH_V2 + errorBufferLength;

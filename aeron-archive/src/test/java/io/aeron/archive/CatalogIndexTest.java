@@ -127,14 +127,14 @@ class CatalogIndexTest
     @Test
     void getThrowsIllegalArgumentExceptionIfRecordingIdIsNegative()
     {
-        assertThrows(IllegalArgumentException.class, () -> catalogIndex.get(-100));
+        assertThrows(IllegalArgumentException.class, () -> catalogIndex.recordingOffset(-100));
     }
 
     @ParameterizedTest
     @ValueSource(longs = { 0, 1, DEFAULT_INDEX_SIZE, DEFAULT_INDEX_SIZE << 1, 100, Long.MAX_VALUE })
     void getReturnsNullValueOnAnEmptyIndex(final long recordingId)
     {
-        assertEquals(NULL_VALUE, catalogIndex.get(recordingId));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(recordingId));
     }
 
     @ParameterizedTest
@@ -143,7 +143,7 @@ class CatalogIndexTest
     {
         catalogIndex.add(200, 0);
 
-        assertEquals(NULL_VALUE, catalogIndex.get(recordingId));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(recordingId));
     }
 
     @ParameterizedTest
@@ -155,7 +155,7 @@ class CatalogIndexTest
             catalogIndex.add(i, i);
         }
 
-        assertEquals(NULL_VALUE, catalogIndex.get(recordingId));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(recordingId));
     }
 
     @ParameterizedTest
@@ -169,7 +169,7 @@ class CatalogIndexTest
         catalogIndex.add(1000, 2_000);
         catalogIndex.add(1001, 2_002);
 
-        assertEquals(recordingOffset, catalogIndex.get(recordingId));
+        assertEquals(recordingOffset, catalogIndex.recordingOffset(recordingId));
     }
 
     @ParameterizedTest
@@ -178,7 +178,7 @@ class CatalogIndexTest
     {
         catalogIndex.add(recordingId, recordingId * 3);
 
-        assertEquals(recordingId * 3, catalogIndex.get(recordingId));
+        assertEquals(recordingId * 3, catalogIndex.recordingOffset(recordingId));
     }
 
     @Test
@@ -188,7 +188,7 @@ class CatalogIndexTest
         catalogIndex.add(1, 20);
         catalogIndex.add(2, 30);
 
-        assertEquals(10, catalogIndex.get(0));
+        assertEquals(10, catalogIndex.recordingOffset(0));
     }
 
     @Test
@@ -198,7 +198,7 @@ class CatalogIndexTest
         catalogIndex.add(5, 20);
         catalogIndex.add(12, 30);
 
-        assertEquals(30, catalogIndex.get(12));
+        assertEquals(30, catalogIndex.recordingOffset(12));
     }
 
     @Test
@@ -217,7 +217,7 @@ class CatalogIndexTest
         }
 
         final long lastValue = values[values.length - 1];
-        assertEquals(DEFAULT_INDEX_SIZE, catalogIndex.get(lastValue));
+        assertEquals(DEFAULT_INDEX_SIZE, catalogIndex.recordingOffset(lastValue));
     }
 
     @Test
@@ -253,7 +253,7 @@ class CatalogIndexTest
         assertEquals(recordingOffset, catalogIndex.remove(recordingId));
         assertEquals(0, catalogIndex.size());
 
-        assertEquals(NULL_VALUE, catalogIndex.get(recordingId));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(recordingId));
     }
 
     @Test
@@ -266,9 +266,9 @@ class CatalogIndexTest
         assertEquals(500, catalogIndex.remove(0));
         assertEquals(2, catalogIndex.size());
 
-        assertEquals(NULL_VALUE, catalogIndex.get(0));
-        assertEquals(1000, catalogIndex.get(1));
-        assertEquals(1500, catalogIndex.get(2));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(0));
+        assertEquals(1000, catalogIndex.recordingOffset(1));
+        assertEquals(1500, catalogIndex.recordingOffset(2));
     }
 
     @Test
@@ -281,9 +281,9 @@ class CatalogIndexTest
         assertEquals(1500, catalogIndex.remove(2));
         assertEquals(2, catalogIndex.size());
 
-        assertEquals(NULL_VALUE, catalogIndex.get(2));
-        assertEquals(500, catalogIndex.get(0));
-        assertEquals(1000, catalogIndex.get(1));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(2));
+        assertEquals(500, catalogIndex.recordingOffset(0));
+        assertEquals(1000, catalogIndex.recordingOffset(1));
     }
 
     @Test
@@ -297,10 +297,10 @@ class CatalogIndexTest
         assertEquals(1000, catalogIndex.remove(10));
         assertEquals(3, catalogIndex.size());
 
-        assertEquals(NULL_VALUE, catalogIndex.get(10));
-        assertEquals(500, catalogIndex.get(0));
-        assertEquals(1500, catalogIndex.get(20));
-        assertEquals(7777, catalogIndex.get(30));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(10));
+        assertEquals(500, catalogIndex.recordingOffset(0));
+        assertEquals(1500, catalogIndex.recordingOffset(20));
+        assertEquals(7777, catalogIndex.recordingOffset(30));
     }
 
     @Test
@@ -314,6 +314,6 @@ class CatalogIndexTest
         assertEquals(DEFAULT_INDEX_SIZE, catalogIndex.remove(DEFAULT_INDEX_SIZE));
         assertEquals(DEFAULT_INDEX_SIZE - 1, catalogIndex.size());
 
-        assertEquals(NULL_VALUE, catalogIndex.get(DEFAULT_INDEX_SIZE));
+        assertEquals(NULL_VALUE, catalogIndex.recordingOffset(DEFAULT_INDEX_SIZE));
     }
 }

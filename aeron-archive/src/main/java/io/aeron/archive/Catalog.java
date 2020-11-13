@@ -342,7 +342,7 @@ final class Catalog implements AutoCloseable
         return alignment;
     }
 
-    int countEntries()
+    int entryCount()
     {
         return catalogIndex.size();
     }
@@ -746,7 +746,7 @@ final class Catalog implements AutoCloseable
 
     int recordingDescriptorOffset(final long recordingId)
     {
-        final long recordingDescriptorOffset = catalogIndex.get(recordingId);
+        final long recordingDescriptorOffset = catalogIndex.recordingOffset(recordingId);
         if (CatalogIndex.NULL_VALUE == recordingDescriptorOffset)
         {
             return -1;
@@ -972,8 +972,8 @@ final class Catalog implements AutoCloseable
                 {
                     throw new ArchiveException(
                         "Found potentially incomplete last fragment straddling page boundary in file: " +
-                            segmentFile.getAbsolutePath() +
-                            "\nRun `ArchiveTool verify` for corrective action!");
+                        segmentFile.getAbsolutePath() +
+                        "\nRun `ArchiveTool verify` for corrective action!");
                 }));
 
             encoder.stopTimestamp(epochClock.time());

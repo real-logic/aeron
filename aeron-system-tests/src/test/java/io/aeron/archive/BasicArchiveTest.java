@@ -379,8 +379,8 @@ public class BasicArchiveTest
                     0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
                 assertEquals(recordingIdFromCounter, recordingId);
 
-                final ArchiveException exception = assertThrows(ArchiveException.class,
-                    () -> aeronArchive.purgeRecording(recordingId));
+                final ArchiveException exception = assertThrows(
+                    ArchiveException.class, () -> aeronArchive.purgeRecording(recordingId));
                 assertThat(exception.getMessage(), endsWith("error: cannot purge active recording " + recordingId));
 
                 final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
@@ -444,11 +444,11 @@ public class BasicArchiveTest
         final long position = 0L;
         final long length = stopPosition - position;
 
-        try (Subscription subscription = aeronArchive.replay(
+        try (Subscription ignore = aeronArchive.replay(
             recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
-            final ArchiveException exception = assertThrows(ArchiveException.class,
-                () -> aeronArchive.purgeRecording(recordingId));
+            final ArchiveException exception = assertThrows(
+                ArchiveException.class, () -> aeronArchive.purgeRecording(recordingId));
             assertThat(exception.getMessage(),
                 endsWith("error: cannot purge recording with active replay " + recordingId));
 

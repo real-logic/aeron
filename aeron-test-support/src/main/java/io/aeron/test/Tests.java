@@ -402,15 +402,15 @@ public class Tests
         }
     }
 
-    public static String generateStringWithSuffix(
-        final String prefix, final String suffix, final int repeatSuffixTimes)
+    public static String generateStringWithSuffix(final String prefix, final String suffix, final int repeatSuffixTimes)
     {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(prefix);
+        final StringBuilder builder = new StringBuilder(prefix);
+
         for (int i = 0; i < repeatSuffixTimes; i++)
         {
             builder.append(suffix);
         }
+
         return builder.toString();
     }
 }

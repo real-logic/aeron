@@ -257,7 +257,7 @@ public class ArchiveTool
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
         {
-            out.println(countEntries(archiveDir));
+            out.println(entryCount(archiveDir));
         }
         else if (args.length == 2 && args[1].equals("max-entries"))
         {
@@ -394,16 +394,16 @@ public class ArchiveTool
     }
 
     /**
-     * Count the number of entries in the {@link Catalog}.
+     * Count of the number of entries in the {@link Catalog}.
      *
      * @param archiveDir containing the {@link Catalog}.
      * @return the number of entries in the {@link Catalog}.
      */
-    public static int countEntries(final File archiveDir)
+    public static int entryCount(final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE))
         {
-            return catalog.countEntries();
+            return catalog.entryCount();
         }
     }
 
@@ -854,8 +854,8 @@ public class ArchiveTool
     {
         return readContinueAnswer(String.format(
             "Last fragment in segment file: %s straddles a page boundary,%n" +
-                "i.e. it is not possible to verify if it was written correctly.%n%n" +
-                "Please choose the corrective action: (y) to truncate the file or (n) to do nothing",
+            "i.e. it is not possible to verify if it was written correctly.%n%n" +
+            "Please choose the corrective action: (y) to truncate the file or (n) to do nothing",
             maxSegmentFile.getAbsolutePath()));
     }
 
@@ -1046,11 +1046,10 @@ public class ArchiveTool
         }
 
         final boolean applyChecksum = options.contains(APPLY_CHECKSUM);
-
         if (applyChecksum)
         {
-            final int recordingDescriptorChecksum =
-                catalog.computeRecordingDescriptorChecksum(recordingDescriptorOffset, headerDecoder.length());
+            final int recordingDescriptorChecksum = catalog.computeRecordingDescriptorChecksum(
+                recordingDescriptorOffset, headerDecoder.length());
             if (recordingDescriptorChecksum != headerDecoder.checksum())
             {
                 out.println("(recordingId=" + recordingId + ") ERR: invalid Catalog checksum: expected=" +
@@ -1061,7 +1060,7 @@ public class ArchiveTool
             }
         }
 
-        if (maxSegmentFile != null)
+        if (null != maxSegmentFile)
         {
             final int streamId = decoder.streamId();
             if (options.contains(VERIFY_ALL_SEGMENT_FILES))

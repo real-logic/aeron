@@ -34,7 +34,6 @@ final class CatalogIndex
         index = new long[DEFAULT_INDEX_SIZE << 1];
     }
 
-
     /**
      * Add mapping between recording id and its file offset to the index.
      *
@@ -55,9 +54,9 @@ final class CatalogIndex
         {
             if (recordingId <= index[nextPosition - 2])
             {
-                throw new IllegalArgumentException(
-                    String.format("recordingId %d is less than or equal to the last recordingId %d",
-                        recordingId, index[nextPosition - 2]));
+                throw new IllegalArgumentException(String.format(
+                    "recordingId %d is less than or equal to the last recordingId %d",
+                    recordingId, index[nextPosition - 2]));
             }
             if (nextPosition == index.length)
             {
@@ -112,7 +111,7 @@ final class CatalogIndex
      * @param recordingId to lookup.
      * @return recording file offset or {@link #NULL_VALUE} if not found.
      */
-    long get(final long recordingId)
+    long recordingOffset(final long recordingId)
     {
         ensurePositive(recordingId, "recordingId");
 

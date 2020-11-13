@@ -25,7 +25,7 @@ import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.CachedEpochClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ class CatalogWithJumboRecordingsAndGapsTest
         new String[]{ "src1", "src2", generateStringWithSuffix("src", "3", 1999) };
 
     private final File archiveDir = ArchiveTests.makeTestDirectory();
-    private final EpochClock epochClock = () -> 1;
+    private final CachedEpochClock epochClock = new CachedEpochClock();
     private long[] recordingIds;
 
     private TestMediaDriver mediaDriver;
@@ -81,7 +81,9 @@ class CatalogWithJumboRecordingsAndGapsTest
     @BeforeEach
     void before()
     {
+        epochClock.update(1);
         recordingIds = new long[NUM_RECORDINGS];
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
             for (int i = 0, current = 0; i < recordingIds.length; i++)
@@ -264,8 +266,7 @@ class CatalogWithJumboRecordingsAndGapsTest
             arguments(5, MAX_SCANS_PER_WORK_CYCLE, MAX_SCANS_PER_WORK_CYCLE),
             arguments(25, 100, 100),
             arguments(10, MAX_SCANS_PER_WORK_CYCLE * 2, MAX_SCANS_PER_WORK_CYCLE * 2),
-            arguments(NUM_RECORDINGS - 10, MAX_SCANS_PER_WORK_CYCLE, 5)
-        );
+            arguments(NUM_RECORDINGS - 10, MAX_SCANS_PER_WORK_CYCLE, 5));
     }
 
     private static List<Arguments> listRecordingsForUriArguments()
@@ -278,7 +279,6 @@ class CatalogWithJumboRecordingsAndGapsTest
             arguments(-1, 10, ORIGINAL_CHANNELS[1], 2, 0),
             arguments(5, MAX_SCANS_PER_WORK_CYCLE, ORIGINAL_CHANNELS[2], 2, 245),
             arguments(10, MAX_SCANS_PER_WORK_CYCLE * 2, ORIGINAL_CHANNELS[2], 2, 243),
-            arguments(NUM_RECORDINGS - 10, MAX_SCANS_PER_WORK_CYCLE, ORIGINAL_CHANNELS[2], 2, 2)
-        );
+            arguments(NUM_RECORDINGS - 10, MAX_SCANS_PER_WORK_CYCLE, ORIGINAL_CHANNELS[2], 2, 2));
     }
 }

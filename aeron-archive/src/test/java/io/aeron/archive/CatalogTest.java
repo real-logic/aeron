@@ -480,7 +480,7 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            assertEquals(2, catalog.countEntries());
+            assertEquals(2, catalog.entryCount());
             assertEquals(capacity, catalog.capacity());
         }
     }
@@ -512,7 +512,7 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            assertEquals(4, catalog.countEntries());
+            assertEquals(4, catalog.entryCount());
             assertEquals(819, catalog.capacity());
         }
     }
@@ -522,8 +522,8 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
-            final ArchiveException exception =
-                assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY, (int)(CAPACITY + 1)));
+            final ArchiveException exception = assertThrows(
+                ArchiveException.class, () -> catalog.growCatalog(CAPACITY, (int)(CAPACITY + 1)));
             assertEquals("ERROR - catalog is full, max capacity reached: " + CAPACITY, exception.getMessage());
         }
     }
@@ -533,8 +533,8 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
-            final ArchiveException exception =
-                assertThrows(ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
+            final ArchiveException exception = assertThrows(
+                ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
             assertEquals(String.format(
                 "ERROR - recording is too big: total recording length is %d bytes, available space is %d bytes",
                 Integer.MAX_VALUE, CAPACITY * 2 - 800),
@@ -842,7 +842,7 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
-            final int entries = catalog.countEntries();
+            final int entries = catalog.entryCount();
 
             assertTrue(catalog.wrapDescriptor(recordingId, unsafeBuffer));
 
@@ -855,7 +855,7 @@ class CatalogTest
             assertTrue(catalog.invalidateRecording(recordingId));
 
             assertEquals(INVALID, recordingDescriptorHeaderDecoder.state());
-            assertEquals(entries - 1, catalog.countEntries());
+            assertEquals(entries - 1, catalog.entryCount());
             assertFalse(catalog.hasRecording(recordingId));
         }
     }

@@ -1210,7 +1210,7 @@ class ArchiveToolTests
             assertNoRecording(catalog, validRecording3);
             assertNoRecording(catalog, validRecording6);
 
-            assertEquals(22, catalog.countEntries());
+            assertEquals(22, catalog.entryCount());
             assertRecording(catalog, validRecording0, VALID, 0, 0, NULL_POSITION, 15, NULL_TIMESTAMP,
                 0, 2, "ch2", "src2");
             assertRecording(catalog, validRecording51, VALID, 0, 0, 64 + PAGE_SIZE, 20, 777,

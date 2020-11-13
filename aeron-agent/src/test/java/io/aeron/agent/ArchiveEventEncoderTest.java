@@ -97,8 +97,7 @@ class ArchiveEventEncoderTest
         final long catalogLength = 128;
         final long newCatalogLength = 1024;
 
-        encodeCatalogResize(
-            buffer, offset, captureLength, length, catalogLength, newCatalogLength);
+        encodeCatalogResize(buffer, offset, captureLength, length, catalogLength, newCatalogLength);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));

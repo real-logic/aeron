@@ -625,8 +625,8 @@ void aeron_driver_conductor_on_available_image(
         source_identity_length +
         (2 * sizeof(int32_t));
 
-    char static_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
-    char *response_buffer = static_buffer;
+    char automatic_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
+    char *response_buffer = automatic_buffer;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH))
     {
@@ -1647,8 +1647,8 @@ void aeron_driver_conductor_on_error(
 {
     const size_t response_length = sizeof(aeron_error_response_t) + length;
 
-    char static_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
-    char *response_buffer = static_buffer;
+    char automatic_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
+    char *response_buffer = automatic_buffer;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_error_response_t) + AERON_MAX_PATH)
     {
@@ -1691,8 +1691,8 @@ void aeron_driver_conductor_on_publication_ready(
 {
     const size_t response_length = sizeof(aeron_publication_buffers_ready_t) + log_file_name_length;
 
-    char static_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
-    char *response_buffer = static_buffer;
+    char automatic_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
+    char *response_buffer = automatic_buffer;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH)
     {
@@ -1800,8 +1800,8 @@ void aeron_driver_conductor_on_unavailable_image(
 {
     const size_t response_length = sizeof(aeron_image_message_t) + channel_length;
 
-    char static_buffer[sizeof(aeron_image_message_t) + AERON_MAX_PATH];
-    char *response_buffer = static_buffer;
+    char automatic_buffer[sizeof(aeron_image_message_t) + AERON_MAX_PATH];
+    char *response_buffer = automatic_buffer;
     char *dynamic_buffer = NULL;
     if (response_length > sizeof(aeron_image_message_t) + AERON_MAX_PATH)
     {

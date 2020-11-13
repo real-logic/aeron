@@ -18,13 +18,10 @@ package io.aeron.archive;
 import org.agrona.IoUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.agrona.concurrent.*;
+import org.junit.jupiter.api.*;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
@@ -52,16 +49,24 @@ class ArchiveMigration_2_3Test
     private static final byte INVALID = (byte)0;
     private static final byte VALID = (byte)1;
 
+    private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+    private final PrintStream originalErr = System.err;
     private final File archiveDir = ArchiveTests.makeTestDirectory();
-
-    private long currentTimeMs = 1;
-    private final EpochClock clock = () -> currentTimeMs;
+    private final CachedEpochClock clock = new CachedEpochClock();
 
     private final ArchiveMigration_2_3 migration = new ArchiveMigration_2_3();
+
+    @BeforeEach
+    void before()
+    {
+        clock.update(1);
+        System.setErr(new PrintStream(errContent));
+    }
 
     @AfterEach
     void after()
     {
+        System.setErr(originalErr);
         IoUtil.delete(archiveDir, false);
     }
 
@@ -76,13 +81,13 @@ class ArchiveMigration_2_3Test
     {
         try (ArchiveMarkFile markFile = createArchiveMarkFileInVersion2(archiveDir, clock);
             Catalog catalog = createCatalogInVersion2(archiveDir, clock, emptyList());
-            FileChannel timestampFile =
-                createMigrationTimestampFile(archiveDir, markFile.decoder().version(), migration.minimumVersion()))
+            FileChannel timestampFile = createMigrationTimestampFile(
+                archiveDir, markFile.decoder().version(), migration.minimumVersion()))
         {
             assertNotNull(timestampFile);
 
-            final FileAlreadyExistsException exception = assertThrows(FileAlreadyExistsException.class,
-                () -> migration.migrate(System.out, markFile, catalog, archiveDir));
+            final FileAlreadyExistsException exception = assertThrows(
+                FileAlreadyExistsException.class, () -> migration.migrate(System.out, markFile, catalog, archiveDir));
             assertThat(
                 exception.getMessage(),
                 containsString(migrationTimestampFileName(VERSION_2_1_0, migration.minimumVersion())));
@@ -239,7 +244,6 @@ class ArchiveMigration_2_3Test
             try
             {
                 final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
-
                 int index = 0;
 
                 // version
@@ -263,5 +267,4 @@ class ArchiveMigration_2_3Test
             }
         }
     }
-
 }

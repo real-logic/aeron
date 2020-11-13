@@ -35,8 +35,7 @@ final class MigrationUtils
     static FileChannel createMigrationTimestampFile(
         final File directory, final int fromVersion, final int toVersion)
     {
-        final String filename =
-            migrationTimestampFileName(fromVersion, toVersion);
+        final String filename = migrationTimestampFileName(fromVersion, toVersion);
         final File timestampFile = new File(directory, filename);
 
         FileChannel fileChannel = null;

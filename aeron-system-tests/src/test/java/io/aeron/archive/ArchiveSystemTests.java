@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveSystemTests
 {
-    static final long MAX_CATALOG_ENTRIES = 128;
+    static final long CATALOG_CAPACITY = 128 * 1024;
     static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     static final int FRAGMENT_LIMIT = 10;
 

@@ -169,25 +169,61 @@ static void initialize_agent_logging()
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
-    uint8_t buffer[MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t)];
+    const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
+
+    char *buffer = NULL;
+    char *dynamic_buffer = NULL;
+    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        {
+            return;
+        }
+        buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
+        buffer = static_buffer;
+    }
+
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
     hdr->time_ms = aeron_epoch_clock();
     hdr->cmd_id = msg_type_id;
     memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_IN, buffer, length + sizeof(aeron_driver_agent_cmd_log_header_t));
+    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_IN, buffer, command_length);
+    aeron_free(dynamic_buffer);
 }
 
 void aeron_driver_agent_conductor_to_client_interceptor(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length)
 {
-    uint8_t buffer[MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t)];
+    const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
+
+    char *buffer = NULL;
+    char *dynamic_buffer = NULL;
+    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        {
+            return;
+        }
+        buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
+        buffer = static_buffer;
+    }
+
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
     hdr->time_ms = aeron_epoch_clock();
     hdr->cmd_id = msg_type_id;
     memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_OUT, buffer, length + sizeof(aeron_driver_agent_cmd_log_header_t));
+    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_OUT, buffer, command_length);
+    aeron_free(dynamic_buffer);
 }
 
 int aeron_driver_agent_raw_log_map_interceptor(
@@ -199,53 +235,71 @@ int aeron_driver_agent_raw_log_map_interceptor(
 {
     int result = aeron_raw_log_map(mapped_raw_log, path, use_sparse_files, term_length, page_size);
 
-    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
-    aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
-    size_t path_len = strlen(path);
+    const size_t path_len = strlen(path);
+    const size_t command_length = sizeof(aeron_driver_agent_raw_log_op_header_t) + path_len;
+
+    char *buffer = NULL;
+    char *dynamic_buffer = NULL;
+    if (command_length > sizeof(aeron_driver_agent_raw_log_op_header_t) + AERON_MAX_PATH)
+    {
+        if(aeron_alloc((void **) &dynamic_buffer, command_length) < 0)
+        {
+            return result;
+        }
+        buffer = dynamic_buffer;
+    }
+    else
+    {
+        char static_buffer[sizeof(aeron_driver_agent_raw_log_op_header_t) + AERON_MAX_PATH];
+        buffer = static_buffer;
+    }
+
+    aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
 
     hdr->time_ms = aeron_epoch_clock();
-    hdr->map_raw.map_raw_log.path_len = (int32_t)path_len;
-    hdr->map_raw.map_raw_log.result = result;
-    hdr->map_raw.map_raw_log.addr = (uintptr_t)mapped_raw_log;
-    memcpy(&hdr->map_raw.map_raw_log.log, mapped_raw_log, sizeof(hdr->map_raw.map_raw_log.log));
-    memcpy(buffer + sizeof(aeron_driver_agent_map_raw_log_op_header_t), path, path_len);
+    hdr->raw_log.raw_log_map.path_len = (int32_t)path_len;
+    hdr->raw_log.raw_log_map.result = result;
+    hdr->raw_log.raw_log_map.addr = (uintptr_t)mapped_raw_log;
+    memcpy(&hdr->raw_log.raw_log_map.log, mapped_raw_log, sizeof(hdr->raw_log.raw_log_map.log));
+    memcpy(buffer + sizeof(aeron_driver_agent_raw_log_op_header_t), path, path_len);
 
     aeron_mpsc_rb_write(
-        &logging_mpsc_rb, AERON_RAW_LOG_MAP_OP, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t) + path_len);
+        &logging_mpsc_rb, AERON_RAW_LOG_MAP_OP, buffer, sizeof(aeron_driver_agent_raw_log_op_header_t) + path_len);
+    aeron_free(dynamic_buffer);
 
     return result;
 }
 
 int aeron_driver_agent_raw_log_close_interceptor(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
-    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
-    aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+    uint8_t buffer[sizeof(aeron_driver_agent_raw_log_op_header_t)];
+    aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
 
     hdr->time_ms = aeron_epoch_clock();
-    hdr->map_raw.map_raw_log_close.addr = (uintptr_t)mapped_raw_log;
-    memcpy(&hdr->map_raw.map_raw_log_close.log, mapped_raw_log, sizeof(hdr->map_raw.map_raw_log.log));
-    hdr->map_raw.map_raw_log_close.result = aeron_raw_log_close(mapped_raw_log, filename);
+    hdr->raw_log.raw_log_close.addr = (uintptr_t)mapped_raw_log;
+    memcpy(&hdr->raw_log.raw_log_close.log, mapped_raw_log, sizeof(hdr->raw_log.raw_log_map.log));
+    hdr->raw_log.raw_log_close.result = aeron_raw_log_close(mapped_raw_log, filename);
 
     aeron_mpsc_rb_write(
-        &logging_mpsc_rb, AERON_RAW_LOG_CLOSE_OP, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
+        &logging_mpsc_rb, AERON_RAW_LOG_CLOSE_OP, buffer, sizeof(aeron_driver_agent_raw_log_op_header_t));
 
-    return hdr->map_raw.map_raw_log_close.result;
+    return hdr->raw_log.raw_log_close.result;
 }
 
 bool aeron_driver_agent_raw_log_free_interceptor(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
-    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
-    aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_raw_log_op_header_t)];
+    aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
 
     hdr->time_ms = aeron_epoch_clock();
-    hdr->map_raw.map_raw_log_free.addr = (uintptr_t)mapped_raw_log;
-    memcpy(&hdr->map_raw.map_raw_log_free.log, mapped_raw_log, sizeof(hdr->map_raw.map_raw_log_free.log));
-    hdr->map_raw.map_raw_log_free.result = aeron_raw_log_free(mapped_raw_log, filename);
+    hdr->raw_log.raw_log_free.addr = (uintptr_t)mapped_raw_log;
+    memcpy(&hdr->raw_log.raw_log_free.log, mapped_raw_log, sizeof(hdr->raw_log.raw_log_free.log));
+    hdr->raw_log.raw_log_free.result = aeron_raw_log_free(mapped_raw_log, filename);
 
     aeron_mpsc_rb_write(
-        &logging_mpsc_rb, AERON_RAW_LOG_FREE_OP, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
+        &logging_mpsc_rb, AERON_RAW_LOG_FREE_OP, buffer, sizeof(aeron_driver_agent_raw_log_op_header_t));
 
-    return hdr->map_raw.map_raw_log_free.result;
+    return hdr->raw_log.raw_log_free.result;
 }
 
 void aeron_driver_agent_log_frame(
@@ -628,7 +682,7 @@ static const char *dissect_command_type_id(int64_t cmd_type_id)
 
 static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t length)
 {
-    static char buffer[256];
+    static char buffer[4096];
 
     buffer[0] = '\0';
     switch (cmd_id)
@@ -761,7 +815,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
 
 static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t length)
 {
-    static char buffer[256];
+    static char buffer[4096];
 
     buffer[0] = '\0';
     switch (cmd_id)
@@ -1227,43 +1281,43 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
         case AERON_RAW_LOG_MAP_OP:
         {
-            aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
-            const char *pathname = (const char *)message + sizeof(aeron_driver_agent_map_raw_log_op_header_t);
+            aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)message;
+            const char *pathname = (const char *)message + sizeof(aeron_driver_agent_raw_log_op_header_t);
 
             fprintf(
                 logfp,
                 "[%s] RAW_LOG_MAP %p, \"%*s\" = %d\n",
                 aeron_driver_agent_dissect_timestamp(hdr->time_ms),
-                (void *)hdr->map_raw.map_raw_log.addr,
-                hdr->map_raw.map_raw_log.path_len,
+                (void *)hdr->raw_log.raw_log_map.addr,
+                hdr->raw_log.raw_log_map.path_len,
                 pathname,
-                hdr->map_raw.map_raw_log.result);
+                hdr->raw_log.raw_log_map.result);
             break;
         }
 
         case AERON_RAW_LOG_CLOSE_OP:
         {
-            aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
+            aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)message;
 
             fprintf(
                 logfp,
                 "[%s] RAW_LOG_CLOSE %p = %d\n",
                 aeron_driver_agent_dissect_timestamp(hdr->time_ms),
-                (void *)hdr->map_raw.map_raw_log_close.addr,
-                hdr->map_raw.map_raw_log_close.result);
+                (void *)hdr->raw_log.raw_log_close.addr,
+                hdr->raw_log.raw_log_close.result);
             break;
         }
 
         case AERON_RAW_LOG_FREE_OP:
         {
-            aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
+            aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)message;
 
             fprintf(
                 logfp,
                 "[%s] RAW_LOG_FREE %p = %s\n",
                 aeron_driver_agent_dissect_timestamp(hdr->time_ms),
-                (void *)hdr->map_raw.map_raw_log_free.addr,
-                hdr->map_raw.map_raw_log_free.result ? "true" : "false");
+                (void *)hdr->raw_log.raw_log_free.addr,
+                hdr->raw_log.raw_log_free.result ? "true" : "false");
             break;
         }
 

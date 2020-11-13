@@ -138,7 +138,7 @@ public class ReplayMergeTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .aeronDirectoryName(mediaDriverContext.aeronDirectoryName())
                 .errorHandler(Tests::onError)
                 .archiveDir(archiveDir)

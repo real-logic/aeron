@@ -21,20 +21,20 @@ import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.AsciiEncoding;
-import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.collections.ArrayUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 
-import static io.aeron.archive.Catalog.INVALID;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
+import static io.aeron.archive.codecs.RecordingState.INVALID;
 
 class ArchiveMigration_0_1 implements ArchiveMigrationStep
 {
@@ -51,38 +51,41 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
         final Catalog catalog,
         final File archiveDir)
     {
-        final FileChannel migrationTimestampFile = MigrationUtils.createMigrationTimestampFile(
-            archiveDir, markFile.decoder().version(), minimumVersion());
-
-        catalog.forEach(
-            (headerEncoder, headerDecoder, encoder, decoder) ->
-            {
-                final String version0Prefix = decoder.recordingId() + "-";
-                final String version0Suffix = ".rec";
-                String[] segmentFiles = archiveDir.list(
-                    (dir, filename) -> filename.startsWith(version0Prefix) && filename.endsWith(version0Suffix));
-
-                if (null == segmentFiles)
+        try (FileChannel ignore = MigrationUtils.createMigrationTimestampFile(
+            archiveDir, markFile.decoder().version(), minimumVersion()))
+        {
+            catalog.forEach(
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, encoder, decoder) ->
                 {
-                    segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
-                }
+                    final String version0Prefix = decoder.recordingId() + "-";
+                    final String version0Suffix = ".rec";
+                    String[] segmentFiles = archiveDir.list(
+                        (dir, filename) -> filename.startsWith(version0Prefix) && filename.endsWith(version0Suffix));
 
-                migrateRecording(
-                    stream,
-                    archiveDir,
-                    segmentFiles,
-                    version0Prefix,
-                    version0Suffix,
-                    headerEncoder,
-                    headerDecoder,
-                    encoder,
-                    decoder);
-            });
+                    if (null == segmentFiles)
+                    {
+                        segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
+                    }
 
-        markFile.encoder().version(minimumVersion());
-        catalog.updateVersion(minimumVersion());
+                    migrateRecording(
+                        stream,
+                        archiveDir,
+                        segmentFiles,
+                        version0Prefix,
+                        version0Suffix,
+                        headerEncoder,
+                        headerDecoder,
+                        encoder,
+                        decoder);
+                });
 
-        CloseHelper.close(migrationTimestampFile);
+            markFile.encoder().version(minimumVersion());
+            catalog.updateVersion(minimumVersion());
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     public void migrateRecording(
@@ -102,7 +105,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
         final long segmentBasePosition = startPosition - (startPosition & (segmentLength - 1));
         final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift((int)segmentLength);
 
-        if (headerDecoder.valid() == INVALID)
+        if (headerDecoder.state() == INVALID)
         {
             return;
         }

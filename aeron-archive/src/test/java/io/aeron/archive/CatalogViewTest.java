@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 
 public class CatalogViewTest
 {
-    private static final long MAX_ENTRIES = 1024;
+    private static final long CAPACITY = 1024 * 1024;
     private static final int TERM_LENGTH = 2 * Catalog.PAGE_SIZE;
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
@@ -49,7 +49,7 @@ public class CatalogViewTest
     {
         clock.update(1);
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null))
         {
             recordingOneId = catalog.addNewRecording(
                 10L, 4L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 7, 1, "channelG", "channelG?tag=f", "sourceA");

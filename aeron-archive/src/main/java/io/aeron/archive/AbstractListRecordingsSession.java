@@ -22,21 +22,28 @@ abstract class AbstractListRecordingsSession implements Session
 {
     static final int MAX_SCANS_PER_WORK_CYCLE = 256;
 
-    final UnsafeBuffer descriptorBuffer;
-    final Catalog catalog;
-    final ControlSession controlSession;
-    final ControlResponseProxy proxy;
-    final long correlationId;
-    boolean isDone = false;
+    private final UnsafeBuffer descriptorBuffer;
+    private final Catalog catalog;
+    private final int count;
+    private final ControlSession controlSession;
+    private final ControlResponseProxy proxy;
+    private final long correlationId;
+    private long recordingId;
+    private int sent;
+    private boolean isDone = false;
 
     AbstractListRecordingsSession(
         final long correlationId,
+        final long fromRecordingId,
+        final int count,
         final Catalog catalog,
         final ControlResponseProxy proxy,
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {
         this.correlationId = correlationId;
+        this.recordingId = fromRecordingId;
+        this.count = count;
         this.controlSession = controlSession;
         this.catalog = catalog;
         this.proxy = proxy;
@@ -60,14 +67,68 @@ abstract class AbstractListRecordingsSession implements Session
 
     public int doWork()
     {
-        int workCount = 0;
-
-        if (!isDone)
+        if (isDone)
         {
-            workCount += sendDescriptors();
+            return 0;
         }
 
-        return workCount;
+        final CatalogIndex catalogIndex = catalog.index();
+        final int lastPosition = catalogIndex.lastPosition();
+        final long[] index = catalogIndex.index();
+        int position = CatalogIndex.find(index, recordingId, lastPosition);
+
+        if (position < 0)
+        {
+            for (int i = 0; i <= lastPosition; i += 2)
+            {
+                if (index[i] >= recordingId)
+                {
+                    position = i;
+                    break;
+                }
+            }
+        }
+
+        final int alreadySent = sent;
+        for (int recordsScanned = 0; sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE; recordsScanned++)
+        {
+            final boolean noMoreRecordings = position < 0 || position > lastPosition;
+            if (noMoreRecordings || catalog.wrapDescriptorAtOffset(descriptorBuffer, (int)index[position + 1]) < 0)
+            {
+                controlSession.sendRecordingUnknown(
+                    correlationId, noMoreRecordings ? recordingId : index[position], proxy);
+                isDone = true;
+                break;
+            }
+
+            if (acceptDescriptor(descriptorBuffer))
+            {
+                if (0 == controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy))
+                {
+                    isDone = controlSession.isDone();
+                    break;
+                }
+
+                ++sent;
+            }
+
+            if (position < lastPosition)
+            {
+                recordingId = index[position + 2];
+            }
+            else
+            {
+                recordingId++;
+            }
+            position += 2;
+        }
+
+        if (sent == count)
+        {
+            isDone = true;
+        }
+
+        return sent - alreadySent;
     }
 
     public void close()
@@ -75,5 +136,5 @@ abstract class AbstractListRecordingsSession implements Session
         controlSession.activeListing(null);
     }
 
-    abstract int sendDescriptors();
+    abstract boolean acceptDescriptor(UnsafeBuffer descriptorBuffer);
 }

@@ -80,6 +80,8 @@ final class ArchiveEventDissector
         new TaggedReplicateRequestDecoder();
     private static final StopRecordingByIdentityRequestDecoder STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER =
         new StopRecordingByIdentityRequestDecoder();
+    private static final PurgeRecordingRequestDecoder PURGE_RECORDING_REQUEST_DECODER =
+        new PurgeRecordingRequestDecoder();
     private static final ControlResponseDecoder CONTROL_RESPONSE_DECODER = new ControlResponseDecoder();
 
     private ArchiveEventDissector()
@@ -386,6 +388,15 @@ final class ArchiveEventDissector
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopRecordingByIdentity(builder);
+                break;
+
+            case CMD_IN_PURGE_RECORDING:
+                PURGE_RECORDING_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + relativeOffset,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendPurgeRecording(builder);
                 break;
 
             default:
@@ -785,4 +796,12 @@ final class ArchiveEventDissector
         builder.append(", liveDestination=");
         TAGGED_REPLICATE_REQUEST_DECODER.getLiveDestination(builder);
     }
+
+    private static void appendPurgeRecording(final StringBuilder builder)
+    {
+        builder.append(": controlSessionId=").append(PURGE_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(PURGE_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(PURGE_RECORDING_REQUEST_DECODER.recordingId());
+    }
+
 }

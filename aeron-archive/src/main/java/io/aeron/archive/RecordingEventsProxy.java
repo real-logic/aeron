@@ -17,15 +17,20 @@ package io.aeron.archive;
 
 import io.aeron.Publication;
 import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.codecs.*;
+import io.aeron.archive.codecs.MessageHeaderEncoder;
+import io.aeron.archive.codecs.RecordingProgressEncoder;
+import io.aeron.archive.codecs.RecordingStartedEncoder;
+import io.aeron.archive.codecs.RecordingStoppedEncoder;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
+import org.agrona.ExpandableArrayBuffer;
 
 class RecordingEventsProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
     private final Publication publication;
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(1024);
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
@@ -50,26 +55,21 @@ class RecordingEventsProxy implements AutoCloseable
         final String channel,
         final String sourceIdentity)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingStartedEncoder.BLOCK_LENGTH +
-            RecordingStartedEncoder.channelHeaderLength() + channel.length() +
-            RecordingStartedEncoder.sourceIdentityHeaderLength() + sourceIdentity.length();
+        recordingStartedEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .recordingId(recordingId)
+            .startPosition(startPosition)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .channel(channel)
+            .sourceIdentity(sourceIdentity);
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer, 0, recordingStartedEncoder.encodedLength());
             if (result > 0)
             {
-                recordingStartedEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .recordingId(recordingId)
-                    .startPosition(startPosition)
-                    .sessionId(sessionId)
-                    .streamId(streamId)
-                    .channel(channel)
-                    .sourceIdentity(sourceIdentity);
-
-                bufferClaim.commit();
                 break;
             }
             else if (Publication.NOT_CONNECTED == result)

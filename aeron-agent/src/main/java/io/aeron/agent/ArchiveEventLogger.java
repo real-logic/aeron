@@ -135,10 +135,9 @@ public final class ArchiveEventLogger
         }
     }
 
-    public void logCatalogResize(
-        final int maxEntries, final long catalogLength, final int newMaxEntries, final long newCatalogLength)
+    public void logCatalogResize(final long catalogLength, final long newCatalogLength)
     {
-        final int length = SIZE_OF_LONG * 2 + 2 * SIZE_OF_INT;
+        final int length = SIZE_OF_LONG * 2;
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
@@ -153,9 +152,7 @@ public final class ArchiveEventLogger
                     index,
                     captureLength,
                     length,
-                    maxEntries,
                     catalogLength,
-                    newMaxEntries,
                     newCatalogLength);
             }
             finally

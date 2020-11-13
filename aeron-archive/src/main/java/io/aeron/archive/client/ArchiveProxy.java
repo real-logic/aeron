@@ -59,6 +59,7 @@ public class ArchiveProxy
     private ExtendRecordingRequest2Encoder extendRecordingRequest2;
     private RecordingPositionRequestEncoder recordingPositionRequest;
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
+    private PurgeRecordingRequestEncoder purgeRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
@@ -762,6 +763,32 @@ public class ArchiveProxy
             .position(position);
 
         return offer(truncateRecordingRequest.encodedLength());
+    }
+
+    /**
+     * Purge a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
+     * and delete the corresponding segment files. The space in the Catalog will be reclaimed upon compaction.
+     *
+     * @param recordingId      of the stopped recording to be purged.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean purgeRecording(
+        final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == purgeRecordingRequest)
+        {
+            purgeRecordingRequest = new PurgeRecordingRequestEncoder();
+        }
+
+        purgeRecordingRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(purgeRecordingRequest.encodedLength());
     }
 
     /**

@@ -1416,6 +1416,36 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+
+    /**
+     * Purge a stopped recording, i.e. mark recording as {@link io.aeron.archive.codecs.RecordingState#INVALID}
+     * and delete the corresponding segment files. The space in the Catalog will be reclaimed upon compaction.
+     *
+     * @param recordingId of the stopped recording to be purged.
+     */
+    public void purgeRecording(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.purgeRecording(recordingId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send invalidate recording request");
+            }
+
+            pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     /**
      * List active recording subscriptions in the archive. These are the result of requesting one of
      * {@link #startRecording(String, int, SourceLocation)} or a

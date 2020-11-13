@@ -192,7 +192,7 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private static void setLogging(final Map<String, String> environment)
     {
-        environment.put("AERON_EVENT_LOG", "0x3");
+        environment.put("AERON_EVENT_LOG", "0xffff");
 
         final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);
         if (null == driverAgentPath)

@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestCluster implements AutoCloseable
 {
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
-    private static final long MAX_CATALOG_ENTRIES = 128;
+    private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
@@ -260,7 +260,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnStart(true);
 
         context.archiveContext
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -328,7 +328,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnShutdown(false);
 
         context.archiveContext
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
@@ -396,7 +396,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnStart(true);
 
         context.archiveContext
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -458,7 +458,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnShutdown(false);
 
         context.archiveContext
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
@@ -519,7 +519,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnStart(true);
 
         context.archiveContext
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
@@ -1191,7 +1191,7 @@ public class TestCluster implements AutoCloseable
             .dirDeleteOnShutdown(false);
 
         nodeCtx.archiveCtx
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .segmentFileLength(256 * 1024)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))

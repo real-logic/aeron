@@ -340,7 +340,7 @@ public:
     }
 
 private:
-    typedef std::array<std::uint8_t, 512> driver_proxy_command_buffer_t;
+    typedef std::array<std::uint8_t, 4096> driver_proxy_command_buffer_t;
 
     ManyToOneRingBuffer &m_toDriverCommandBuffer;
     std::int64_t m_clientId;

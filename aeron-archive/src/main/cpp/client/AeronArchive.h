@@ -1206,6 +1206,30 @@ public:
     }
 
     /**
+     * Purge a stopped recording, i.e. mark recording as 'RecordingState#INVALID' and delete the corresponding segment
+     * files. The space in the Catalog will be reclaimed upon compaction.
+     *
+     * @param recordingId      of the stopped recording to be purged.
+     * @tparam IdleStrategy to use for polling operations.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void purgeRecording(std::int64_t recordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->purgeRecording<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send purge recording request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+    }
+
+    /**
      * List active recording subscriptions in the archive. These are the result of requesting one of
      * #startRecording(String, int, SourceLocation) or a
      * #extendRecording(long, String, int, SourceLocation). The returned subscription id can be used for

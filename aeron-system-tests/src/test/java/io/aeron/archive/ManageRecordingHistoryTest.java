@@ -77,7 +77,7 @@ public class ManageRecordingHistoryTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .segmentFileLength(SEGMENT_LENGTH)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))

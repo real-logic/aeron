@@ -189,21 +189,16 @@ class ArchiveEventLoggerTest
     {
         final int offset = ALIGNMENT * 3;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
-        final int captureLength = SIZE_OF_LONG * 2 + SIZE_OF_INT * 2;
-        final int maxEntries = 21;
+        final int captureLength = SIZE_OF_LONG * 2;
         final long catalogLength = 42;
-        final int newMaxEntries = 121;
         final long newCatalogLength = 142;
 
-        logger.logCatalogResize(maxEntries, catalogLength, newMaxEntries, newCatalogLength);
+        logger.logCatalogResize(catalogLength, newCatalogLength);
 
         verifyLogHeader(logBuffer, offset, toEventCodeId(CATALOG_RESIZE), captureLength, captureLength);
-        assertEquals(maxEntries, logBuffer.getInt(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(catalogLength,
-            logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
-        assertEquals(newMaxEntries, logBuffer.getInt(
-            encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG), LITTLE_ENDIAN));
-        assertEquals(newCatalogLength, logBuffer.getLong(
-            encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG), LITTLE_ENDIAN));
+            logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(newCatalogLength,
+            logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG), LITTLE_ENDIAN));
     }
 }

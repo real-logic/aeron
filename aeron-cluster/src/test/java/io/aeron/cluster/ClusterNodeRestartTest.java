@@ -53,7 +53,7 @@ import static org.mockito.Mockito.*;
 
 public class ClusterNodeRestartTest
 {
-    private static final long MAX_CATALOG_ENTRIES = 1024;
+    private static final long CATALOG_CAPACITY = 1024 * 1024;
     private static final int MESSAGE_LENGTH = SIZE_OF_INT;
     private static final int TIMER_MESSAGE_LENGTH = SIZE_OF_INT + SIZE_OF_LONG + SIZE_OF_LONG;
     private static final int MESSAGE_VALUE_OFFSET = 0;
@@ -653,7 +653,7 @@ public class ClusterNodeRestartTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true),
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .catalogCapacity(CATALOG_CAPACITY)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),

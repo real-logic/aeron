@@ -21,12 +21,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
-    private long recordingId;
-    private int sent = 0;
-    private final int count;
     private final int streamId;
     private final byte[] channelFragment;
-    private final RecordingDescriptorDecoder decoder;
+    private final RecordingDescriptorDecoder descriptorDecoder;
 
     ListRecordingsForUriSession(
         final long correlationId,
@@ -40,60 +37,30 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         final UnsafeBuffer descriptorBuffer,
         final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
-        super(correlationId, catalog, proxy, controlSession, descriptorBuffer);
+        super(
+            correlationId,
+            fromRecordingId,
+            count,
+            catalog,
+            proxy,
+            controlSession,
+            descriptorBuffer
+        );
 
-        this.recordingId = fromRecordingId;
-        this.count = count;
         this.streamId = streamId;
         this.channelFragment = channelFragment;
-        this.decoder = recordingDescriptorDecoder;
+        descriptorDecoder = recordingDescriptorDecoder;
     }
 
-    protected int sendDescriptors()
+    boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)
     {
-        int totalBytesSent = 0;
-        int recordsScanned = 0;
+        descriptorDecoder.wrap(
+            descriptorBuffer,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-        while (sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
-        {
-            if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
-            {
-                controlSession.sendRecordingUnknown(correlationId, recordingId, proxy);
-
-                isDone = true;
-                break;
-            }
-
-            decoder.wrap(
-                descriptorBuffer,
-                RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-                RecordingDescriptorDecoder.BLOCK_LENGTH,
-                RecordingDescriptorDecoder.SCHEMA_VERSION);
-
-            if (Catalog.isValidDescriptor(descriptorBuffer) &&
-                decoder.streamId() == streamId &&
-                Catalog.originalChannelContains(decoder, channelFragment))
-            {
-                final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
-                if (bytesSent == 0)
-                {
-                    isDone = controlSession.isDone();
-                    break;
-                }
-
-                totalBytesSent += bytesSent;
-                ++sent;
-            }
-
-            recordingId++;
-            recordsScanned++;
-        }
-
-        if (sent >= count)
-        {
-            isDone = true;
-        }
-
-        return totalBytesSent;
+        return streamId == descriptorDecoder.streamId() &&
+            Catalog.originalChannelContains(descriptorDecoder, channelFragment);
     }
 }

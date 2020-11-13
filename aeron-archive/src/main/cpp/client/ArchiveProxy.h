@@ -575,6 +575,26 @@ public:
     }
 
     /**
+     * Purge a stopped recording, i.e. mark recording as 'RecordingState#INVALID' and delete the corresponding segment
+     * files. The space in the Catalog will be reclaimed upon compaction.
+     *
+     * @param recordingId      of the stopped recording to be purged.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool purgeRecording(
+            std::int64_t recordingId,
+            std::int64_t correlationId,
+            std::int64_t controlSessionId)
+    {
+        const util::index_t length = purgeRecording(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
      * List registered subscriptions in the archive which have been used to record streams.
      *
      * @param pseudoIndex       in the list of active recording subscriptions.
@@ -1039,6 +1059,12 @@ private:
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t position,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t purgeRecording(
+        AtomicBuffer &buffer,
+        std::int64_t recordingId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

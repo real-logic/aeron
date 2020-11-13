@@ -44,7 +44,7 @@ import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 public class ArchiveCreator
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
-    private static final int MAX_CATALOG_ENTRIES = 128;
+    private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 2;
     private static final int STREAM_ID = 33;
@@ -66,7 +66,7 @@ public class ArchiveCreator
             .dirDeleteOnStart(true);
 
         final Archive.Context archiveContext = new Archive.Context()
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .catalogCapacity(CATALOG_CAPACITY)
             .segmentFileLength(SEGMENT_LENGTH)
             .deleteArchiveOnStart(true)
             .archiveDir(archiveDir)

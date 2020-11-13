@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 public class ListRecordingsForUriSessionTest
 {
-    private static final long MAX_ENTRIES = 1024;
+    private static final long CAPACITY = 1024 * 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     public static final byte[] LOCALHOST_BYTES = "localhost".getBytes(StandardCharsets.US_ASCII);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
@@ -37,7 +37,7 @@ public class ListRecordingsForUriSessionTest
     @BeforeEach
     public void before()
     {
-        catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock, null, null);
+        catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null);
         matchingRecordingIds[0] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "localhost", "localhost?tag=f", "sourceA");
         catalog.addNewRecording(
@@ -76,7 +76,7 @@ public class ListRecordingsForUriSessionTest
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        session.doWork();
+        assertEquals(3, session.doWork());
         verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
@@ -100,7 +100,7 @@ public class ListRecordingsForUriSessionTest
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        session.doWork();
+        assertEquals(2, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
@@ -121,14 +121,14 @@ public class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy))).thenReturn(0);
-        session.doWork();
+        assertEquals(0, session.doWork());
         verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
 
         final MutableLong counter = new MutableLong(fromRecordingId);
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        session.doWork();
+        assertEquals(1, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
@@ -151,8 +151,7 @@ public class ListRecordingsForUriSessionTest
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        session.doWork();
-
+        assertEquals(2, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
         verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlResponseProxy));
     }
@@ -172,7 +171,7 @@ public class ListRecordingsForUriSessionTest
             descriptorBuffer,
             recordingDescriptorDecoder);
 
-        session.doWork();
+        assertEquals(0, session.doWork());
 
         verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
         verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlResponseProxy));
@@ -195,7 +194,7 @@ public class ListRecordingsForUriSessionTest
             descriptorBuffer,
             recordingDescriptorDecoder);
 
-        session.doWork();
+        assertEquals(0, session.doWork());
 
         verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
         verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlResponseProxy));

@@ -833,4 +833,24 @@ class ArchiveEventDissectorTest
             " 24 entries (100 bytes) => 777 entries (10000000000 bytes)",
             builder.toString());
     }
+
+    @Test
+    void controlRequestPurgeRecording()
+    {
+        internalEncodeLogHeader(buffer, 0, 56, 901, () -> 1_125_000_000L);
+        final PurgeRecordingRequestEncoder requestEncoder = new PurgeRecordingRequestEncoder();
+        requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
+            .controlSessionId(15)
+            .correlationId(421)
+            .recordingId(6);
+
+        dissectControlRequest(CMD_IN_PURGE_RECORDING, buffer, 0, builder);
+
+        assertEquals("[1.125] " + CONTEXT + ": " + CMD_IN_PURGE_RECORDING.name() + " [56/901]:" +
+            " controlSessionId=15" +
+            ", correlationId=421" +
+            ", recordingId=6",
+            builder.toString());
+    }
+
 }

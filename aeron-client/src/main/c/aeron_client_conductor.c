@@ -799,29 +799,12 @@ int aeron_client_conductor_linger_or_delete_all_images(
     return 0;
 }
 
-void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
+void on_cmd_add_publication(
+    aeron_client_conductor_t *conductor,
+    aeron_async_add_publication_t *async,
+    const size_t command_length,
+    char *buffer)
 {
-    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_add_publication_t *async = (aeron_async_add_publication_t *)item;
-
-    const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
-
-    char automatic_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
-    char *buffer = automatic_buffer;
-    char *dynamic_buffer = NULL;
-    if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
-    {
-        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
-        {
-            char err_buffer[AERON_MAX_PATH];
-            snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
-            return;
-        }
-        buffer = dynamic_buffer;
-    }
-
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
@@ -832,29 +815,26 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, (size_t)async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-        &conductor->to_driver_buffer,
-        AERON_COMMAND_ADD_PUBLICATION,
-        buffer,
-        command_length))
+            &conductor->to_driver_buffer,
+            AERON_COMMAND_ADD_PUBLICATION,
+            buffer,
+            command_length))
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
             char err_buffer[AERON_MAX_PATH];
 
             snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
+                    err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_free(dynamic_buffer);
             return;
         }
 
         sched_yield();
     }
 
-    aeron_free(dynamic_buffer);
-
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+            ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -866,6 +846,34 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
     async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
+}
+
+void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_publication_t *async = (aeron_async_add_publication_t *)item;
+
+    const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
+
+    if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
+    {
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
+        {
+            char err_buffer[AERON_MAX_PATH];
+            snprintf(
+                err_buffer, sizeof(err_buffer) - 1, "ADD_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
+            return;
+        }
+        on_cmd_add_publication(conductor, async, command_length, buffer);
+        aeron_free(buffer);
+    }
+    else
+    {
+        char buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
+        on_cmd_add_publication(conductor, async, command_length, buffer);
+    }
 }
 
 void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
@@ -886,32 +894,12 @@ void aeron_client_conductor_on_cmd_close_publication(void *clientd, void *item)
     }
 }
 
-void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void *item)
+void on_cmd_add_exclusive_publication(
+    aeron_client_conductor_t *conductor,
+    aeron_async_add_exclusive_publication_t *async,
+    const size_t command_length,
+    char *buffer)
 {
-    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_add_exclusive_publication_t *async = (aeron_async_add_exclusive_publication_t *)item;
-
-    const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
-
-    char automatic_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
-    char *buffer = automatic_buffer;
-    char *dynamic_buffer = NULL;
-    if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
-    {
-        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
-        {
-            char err_buffer[AERON_MAX_PATH];
-            snprintf(
-                err_buffer,
-                sizeof(err_buffer) - 1,
-                "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)",
-                __FILE__,
-                __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
-            return;
-        }
-        buffer = dynamic_buffer;
-    }
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
@@ -922,29 +910,26 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     memcpy(buffer + sizeof(aeron_publication_command_t), async->uri, (size_t)async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-        &conductor->to_driver_buffer,
-        AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION,
-        buffer,
-        command_length))
+            &conductor->to_driver_buffer,
+            AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION,
+            buffer,
+            command_length))
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
             char err_buffer[AERON_MAX_PATH];
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)",
-                __FILE__, __LINE__);
+                     __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_free(dynamic_buffer);
             return;
         }
 
         sched_yield();
     }
 
-    aeron_free(dynamic_buffer);
-
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+            ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -956,6 +941,34 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
     async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
+}
+
+void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_exclusive_publication_t *async = (aeron_async_add_exclusive_publication_t *)item;
+
+    const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
+
+    if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
+    {
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
+        {
+            char err_buffer[AERON_MAX_PATH];
+            snprintf(
+                    err_buffer, sizeof(err_buffer) - 1, "ADD_EXCLUSIVE_PUBLICATION could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
+            return;
+        }
+        on_cmd_add_exclusive_publication(conductor, async, command_length, buffer);
+        aeron_free(buffer);
+    }
+    else
+    {
+        char buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
+        on_cmd_add_exclusive_publication(conductor, async, command_length, buffer);
+    }
 }
 
 void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, void *item)
@@ -976,29 +989,12 @@ void aeron_client_conductor_on_cmd_close_exclusive_publication(void *clientd, vo
     }
 }
 
-void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
+void on_cmd_add_subscription(
+    aeron_client_conductor_t *conductor,
+    aeron_async_add_subscription_t *async,
+    const size_t command_length,
+    char *buffer)
 {
-    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_add_subscription_t *async = (aeron_async_add_subscription_t *)item;
-
-    const size_t command_length = sizeof(aeron_subscription_command_t) + async->uri_length;
-
-    char automatic_buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
-    char *buffer = automatic_buffer;
-    char *dynamic_buffer = NULL;
-    if (command_length > sizeof(aeron_subscription_command_t) + AERON_MAX_PATH)
-    {
-        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
-        {
-            char err_buffer[AERON_MAX_PATH];
-            snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
-            return;
-        }
-        buffer = dynamic_buffer;
-    }
-
     aeron_subscription_command_t *command = (aeron_subscription_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
@@ -1009,29 +1005,26 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     memcpy(buffer + sizeof(aeron_subscription_command_t), async->uri, (size_t)async->uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-        &conductor->to_driver_buffer,
-        AERON_COMMAND_ADD_SUBSCRIPTION,
-        buffer,
-        command_length))
+            &conductor->to_driver_buffer,
+            AERON_COMMAND_ADD_SUBSCRIPTION,
+            buffer,
+            command_length))
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
             char err_buffer[AERON_MAX_PATH];
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)",
-                __FILE__, __LINE__);
+                     __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_free(dynamic_buffer);
             return;
         }
 
         sched_yield();
     }
 
-    aeron_free(dynamic_buffer);
-
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+            ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -1043,6 +1036,35 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
     async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
+}
+
+void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_subscription_t *async = (aeron_async_add_subscription_t *)item;
+
+    const size_t command_length = sizeof(aeron_subscription_command_t) + async->uri_length;
+
+    if (command_length > sizeof(aeron_subscription_command_t) + AERON_MAX_PATH)
+    {
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
+        {
+            char err_buffer[AERON_MAX_PATH];
+            snprintf(
+                    err_buffer, sizeof(err_buffer) - 1, "ADD_SUBSCRIPTION could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
+            return;
+        }
+        on_cmd_add_subscription(conductor, async, command_length, buffer);
+        aeron_free(buffer);
+    }
+    else
+    {
+        char buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
+        on_cmd_add_subscription(conductor, async, command_length, buffer);
+    }
+
 }
 
 void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
@@ -1063,34 +1085,12 @@ void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)
     }
 }
 
-void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
+void on_cmd_add_counter(
+    aeron_client_conductor_t *conductor,
+    aeron_async_add_counter_t *async,
+    const size_t command_length,
+    char *buffer)
 {
-    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_add_counter_t *async = (aeron_async_add_counter_t *)item;
-
-    const size_t command_length =
-        sizeof(aeron_counter_command_t) +
-        sizeof(int32_t) +
-        (size_t)(AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t))) +
-        sizeof(int32_t) +
-        (size_t)async->counter.label_buffer_length;
-
-    char automatic_buffer[sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH)];
-    char *buffer = automatic_buffer;
-    char *dynamic_buffer = NULL;
-    if (command_length > sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH))
-    {
-        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
-        {
-            char err_buffer[AERON_MAX_PATH];
-            snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
-            return;
-        }
-        buffer = dynamic_buffer;
-    }
-
     aeron_counter_command_t *command = (aeron_counter_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
     char *cursor = buffer + sizeof(aeron_counter_command_t);
@@ -1115,19 +1115,16 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
             char err_buffer[AERON_MAX_PATH];
 
             snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)",
-                __FILE__, __LINE__);
+                     __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_free(dynamic_buffer);
             return;
         }
 
         sched_yield();
     }
 
-    aeron_free(dynamic_buffer);
-
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+            ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -1139,6 +1136,39 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
 
     conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
     async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
+}
+
+void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_counter_t *async = (aeron_async_add_counter_t *)item;
+
+    const size_t command_length =
+        sizeof(aeron_counter_command_t) +
+        sizeof(int32_t) +
+        (size_t)(AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t))) +
+        sizeof(int32_t) +
+        (size_t)async->counter.label_buffer_length;
+
+    if (command_length > sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH))
+    {
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
+        {
+            char err_buffer[AERON_MAX_PATH];
+            snprintf(
+                    err_buffer, sizeof(err_buffer) - 1, "ADD_COUNTER could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
+            return;
+        }
+        on_cmd_add_counter(conductor, async, command_length, buffer);
+        aeron_free(buffer);
+    }
+    else
+    {
+        char buffer[sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH)];
+        on_cmd_add_counter(conductor, async, command_length, buffer);
+    }
 }
 
 void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
@@ -1158,12 +1188,61 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
     }
 }
 
+static void on_cmd_destination(
+    aeron_client_conductor_t *conductor,
+    aeron_async_destination_t *async,
+    const int32_t msg_type_id,
+    const int64_t resource_registration_id,
+    const size_t command_length,
+    char *buffer)
+{
+    aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
+
+    command->correlated.correlation_id = async->registration_id;
+    command->correlated.client_id = conductor->client_id;
+    command->registration_id = resource_registration_id;
+    command->channel_length = async->uri_length;
+    memcpy(buffer + sizeof(aeron_destination_command_t), async->uri, (size_t)async->uri_length);
+
+    int ensure_capacity_result = 0, rb_offer_fail_count = 0;
+    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+            &conductor->to_driver_buffer,
+            msg_type_id,
+            buffer,
+            command_length))
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(
+                    err_buffer, sizeof(err_buffer) - 1, "DESTINATION command could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            return;
+        }
+
+        sched_yield();
+    }
+
+    AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+    if (ensure_capacity_result < 0)
+    {
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "DESTINATION registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
+        return;
+    }
+
+    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
+}
+
 static void aeron_client_conductor_on_cmd_destination(const void *clientd, const void *item, int32_t msg_type_id)
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
     aeron_async_destination_t *async = (aeron_async_destination_t *)item;
-
-    int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 
     int64_t resource_registration_id = 0;
     switch (async->resource.base_resource->type)
@@ -1195,67 +1274,25 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
 
     const size_t command_length = sizeof(aeron_destination_command_t) + async->uri_length;
 
-    char automatic_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
-    char *buffer = automatic_buffer;
-    char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
-        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
         {
             char err_buffer[AERON_MAX_PATH];
             snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "DESTINATION could not be sent (%s:%d)", __FILE__, __LINE__);
+                    err_buffer, sizeof(err_buffer) - 1, "DESTINATION could not be sent (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
             return;
         }
-        buffer = dynamic_buffer;
+        on_cmd_destination(conductor, async, msg_type_id, resource_registration_id, command_length, buffer);
+        aeron_free(buffer);
     }
-
-    aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
-
-    command->correlated.correlation_id = async->registration_id;
-    command->correlated.client_id = conductor->client_id;
-    command->registration_id = resource_registration_id;
-    command->channel_length = async->uri_length;
-    memcpy(buffer + sizeof(aeron_destination_command_t), async->uri, (size_t)async->uri_length);
-
-    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-        &conductor->to_driver_buffer,
-        msg_type_id,
-        buffer,
-        command_length))
+    else
     {
-        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
-        {
-            char err_buffer[AERON_MAX_PATH];
-
-            snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "DESTINATION command could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_free(dynamic_buffer);
-            return;
-        }
-
-        sched_yield();
+        char buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
+        on_cmd_destination(conductor, async, msg_type_id, resource_registration_id, command_length, buffer);
     }
-
-    aeron_free(dynamic_buffer);
-
-    AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
-    if (ensure_capacity_result < 0)
-    {
-        char err_buffer[AERON_MAX_PATH];
-
-        snprintf(err_buffer, sizeof(err_buffer) - 1, "DESTINATION registering_resources: %s", aeron_errmsg());
-        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
-        return;
-    }
-
-    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
-    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
-
-    return;
 }
 
 void aeron_client_conductor_on_cmd_add_destination(void *clientd, void *item)
@@ -2500,32 +2537,16 @@ int aeron_client_conductor_offer_remove_command(
     return 0;
 }
 
-int aeron_client_conductor_offer_destination_command(
+int offer_destination_command(
     aeron_client_conductor_t *conductor,
-    int64_t registration_id,
-    int32_t command_type,
+    const int64_t registration_id,
+    const int32_t command_type,
     const char *uri,
-    int64_t *correlation_id)
+    const size_t uri_length,
+    int64_t *correlation_id,
+    const size_t command_length,
+    char *buffer)
 {
-    size_t uri_length = strlen(uri);
-    const size_t command_length = sizeof(aeron_destination_command_t) + uri_length;
-
-    char automatic_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
-    char *buffer = automatic_buffer;
-    char *dynamic_buffer = NULL;
-    if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
-    {
-        if (aeron_alloc((void **)&dynamic_buffer, command_length) < 0)
-        {
-            char err_buffer[AERON_MAX_PATH];
-            snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "destination could not be sent (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
-            return -1;
-        }
-        buffer = dynamic_buffer;
-    }
-
     aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
     int rb_offer_fail_count = 0;
 
@@ -2536,27 +2557,21 @@ int aeron_client_conductor_offer_destination_command(
     memcpy(buffer + sizeof(aeron_destination_command_t), uri, uri_length);
 
     while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-        &conductor->to_driver_buffer, command_type, buffer, command_length))
+            &conductor->to_driver_buffer, command_type, buffer, command_length))
     {
         if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
         {
             char err_buffer[AERON_MAX_PATH];
 
-            snprintf(
-                err_buffer,
-                sizeof(err_buffer) - 1,
-                "destination command could not be sent (%s:%d)",
-                __FILE__, __LINE__);
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "destination command could not be sent (%s:%d)",
+                     __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
             aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
-            aeron_free(dynamic_buffer);
             return -1;
         }
 
         sched_yield();
     }
-
-    aeron_free(dynamic_buffer);
 
     if (NULL != correlation_id)
     {
@@ -2564,6 +2579,40 @@ int aeron_client_conductor_offer_destination_command(
     }
 
     return 0;
+}
+
+int aeron_client_conductor_offer_destination_command(
+    aeron_client_conductor_t *conductor,
+    int64_t registration_id,
+    int32_t command_type,
+    const char *uri,
+    int64_t *correlation_id)
+{
+    size_t uri_length = strlen(uri);
+    const size_t command_length = sizeof(aeron_destination_command_t) + uri_length;
+
+    if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
+    {
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
+        {
+            char err_buffer[AERON_MAX_PATH];
+            snprintf(
+                    err_buffer, sizeof(err_buffer) - 1, "destination could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, ENOMEM, err_buffer);
+            return -1;
+        }
+        int result = offer_destination_command(
+                conductor, registration_id, command_type, uri, uri_length, correlation_id, command_length, buffer);
+        aeron_free(buffer);
+        return result;
+    }
+    else
+    {
+        char buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
+        return offer_destination_command(
+            conductor, registration_id, command_type, uri, uri_length, correlation_id, command_length, buffer);
+    }
 }
 
 extern int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(

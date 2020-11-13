@@ -806,7 +806,8 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
 
     const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
 
-    char *buffer = NULL;
+    char static_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
+    char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
     {
@@ -819,11 +820,6 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
             return;
         }
         buffer = dynamic_buffer;
-    }
-    else
-    {
-        char static_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
-        buffer = static_buffer;
     }
 
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
@@ -897,7 +893,8 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
 
     const size_t command_length = sizeof(aeron_publication_command_t) + async->uri_length;
 
-    char *buffer = NULL;
+    char static_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
+    char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_publication_command_t) + AERON_MAX_PATH)
     {
@@ -910,11 +907,6 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
             return;
         }
         buffer = dynamic_buffer;
-    }
-    else
-    {
-        char static_buffer[sizeof(aeron_publication_command_t) + AERON_MAX_PATH];
-        buffer = static_buffer;
     }
     aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
@@ -987,7 +979,8 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
 
     const size_t command_length = sizeof(aeron_subscription_command_t) + async->uri_length;
 
-    char *buffer = NULL;
+    char static_buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
+    char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_subscription_command_t) + AERON_MAX_PATH)
     {
@@ -1000,11 +993,6 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
             return;
         }
         buffer = dynamic_buffer;
-    }
-    else
-    {
-        char static_buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
-        buffer = static_buffer;
     }
 
     aeron_subscription_command_t *command = (aeron_subscription_command_t *)buffer;
@@ -1083,7 +1071,8 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
         sizeof(int32_t) +
         (size_t)async->counter.label_buffer_length;
 
-    char *buffer = NULL;
+    char static_buffer[sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH)];
+    char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH))
     {
@@ -1096,11 +1085,6 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
             return;
         }
         buffer = dynamic_buffer;
-    }
-    else
-    {
-        char static_buffer[sizeof(aeron_async_add_counter_t) + (2 * sizeof(int32_t)) + (2 * AERON_MAX_PATH)];
-        buffer = static_buffer;
     }
 
     aeron_counter_command_t *command = (aeron_counter_command_t *)buffer;
@@ -1207,7 +1191,8 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
 
     const size_t command_length = sizeof(aeron_destination_command_t) + async->uri_length;
 
-    char *buffer = NULL;
+    char static_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
+    char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
@@ -1220,11 +1205,6 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
             return;
         }
         buffer = dynamic_buffer;
-    }
-    else
-    {
-        char static_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
-        buffer = static_buffer;
     }
 
     aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;
@@ -2526,7 +2506,8 @@ int aeron_client_conductor_offer_destination_command(
     size_t uri_length = strlen(uri);
     const size_t command_length = sizeof(aeron_destination_command_t) + uri_length;
 
-    char *buffer = NULL;
+    char static_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
+    char *buffer = static_buffer;
     char *dynamic_buffer = NULL;
     if (command_length > sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH)
     {
@@ -2539,11 +2520,6 @@ int aeron_client_conductor_offer_destination_command(
             return -1;
         }
         buffer = dynamic_buffer;
-    }
-    else
-    {
-        char static_buffer[sizeof(aeron_destination_command_t) + sizeof(int32_t) + AERON_MAX_PATH];
-        buffer = static_buffer;
     }
 
     aeron_destination_command_t *command = (aeron_destination_command_t *)buffer;

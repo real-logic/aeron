@@ -90,8 +90,11 @@ static void *aeron_driver_agent_log_reader(void *arg)
 {
     while (true)
     {
-        aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
-        aeron_nano_sleep(1000 * 1000);
+        size_t messages_read = aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
+        if (0 == messages_read)
+        {
+            aeron_nano_sleep(1000 * 1000);
+        }
     }
 
     return NULL;

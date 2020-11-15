@@ -17,14 +17,6 @@
 #ifndef AERON_UDP_TRANSPORT_POLLER_H
 #define AERON_UDP_TRANSPORT_POLLER_H
 
-#if defined(HAVE_EPOLL)
-#include <sys/epoll.h>
-#elif defined(HAVE_POLL)
-#include <poll.h>
-#elif defined(HAVE_WSAPOLL)
-#include "aeron_windows.h"
-#endif
-
 #include "aeron_driver_conductor.h"
 
 #define AERON_UDP_TRANSPORT_POLLER_ITERATION_THRESHOLD (5)
@@ -45,13 +37,7 @@ typedef struct aeron_udp_transport_poller_stct
     }
     transports;
 
-#if defined(HAVE_EPOLL)
-    int epoll_fd;
-    struct epoll_event *epoll_events;
-#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
-    struct pollfd *pollfds;
-#endif
-
+    int fd;
     void *bindings_clientd;
 }
 aeron_udp_transport_poller_t;

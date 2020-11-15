@@ -88,6 +88,7 @@ You require the following to build the C++ API for Aeron:
 * C++11 supported compiler for the supported platform
 * C11 supported compiler for the supported platform
 * Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). 
+* JDK 8 or later to compile the SBE schema definitions used by the archive client.
 
 __Note__: Aeron support is available for 64-bit Linux, OSX, and Windows. 
 

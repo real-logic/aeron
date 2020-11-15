@@ -114,9 +114,10 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
         }
     }
 
-    poller->pollfds[index].fd = transport->fd;
-    poller->pollfds[index].events = POLLIN;
-    poller->pollfds[index].revents = 0;
+    struct pollfd *pollfds = (struct pollfd *)poller->bindings_clientd;
+    pollfds[index].fd = transport->fd;
+    pollfds[index].events = POLLIN;
+    pollfds[index].revents = 0;
 #endif
 
     poller->transports.length++;

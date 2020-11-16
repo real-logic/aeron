@@ -290,19 +290,18 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
         if (AERON_HDR_TYPE_PAD != frame->frame_header.type)
         {
             aeron_header_t header =
-            {
-                frame,
-                image->metadata->initial_term_id,
-                image->position_bits_to_shift
-            };
+                {
+                    frame,
+                    image->metadata->initial_term_id,
+                    image->position_bits_to_shift
+                };
 
+            ++fragments_read;
             handler(
                 clientd,
                 term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
-
-            ++fragments_read;
         }
     }
 
@@ -363,12 +362,13 @@ int aeron_image_controlled_poll(
         }
 
         aeron_header_t header =
-        {
-            frame,
-            image->metadata->initial_term_id,
-            image->position_bits_to_shift
-        };
+            {
+                frame,
+                image->metadata->initial_term_id,
+                image->position_bits_to_shift
+            };
 
+        ++fragments_read;
         aeron_controlled_fragment_handler_action_t action = handler(
             clientd,
             term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
@@ -377,11 +377,10 @@ int aeron_image_controlled_poll(
 
         if (AERON_ACTION_ABORT == action)
         {
+            --fragments_read;
             offset -= aligned_frame_length;
             break;
         }
-
-        ++fragments_read;
 
         if (AERON_ACTION_BREAK == action)
         {
@@ -405,7 +404,11 @@ int aeron_image_controlled_poll(
 }
 
 int aeron_image_bounded_poll(
-    aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, int64_t limit_position, size_t fragment_limit)
+    aeron_image_t *image,
+    aeron_fragment_handler_t handler,
+    void *clientd,
+    int64_t limit_position,
+    size_t fragment_limit)
 {
     bool is_closed;
     size_t fragments_read = 0;
@@ -450,18 +453,18 @@ int aeron_image_bounded_poll(
         if (AERON_HDR_TYPE_PAD != frame->frame_header.type)
         {
             aeron_header_t header =
-            {
-                frame,
-                image->metadata->initial_term_id,
-                image->position_bits_to_shift
-            };
+                {
+                    frame,
+                    image->metadata->initial_term_id,
+                    image->position_bits_to_shift
+                };
 
+            ++fragments_read;
             handler(
                 clientd,
                 term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
                 frame_length - AERON_DATA_HEADER_LENGTH,
                 &header);
-            ++fragments_read;
         }
     }
 
@@ -475,8 +478,11 @@ int aeron_image_bounded_poll(
 }
 
 int aeron_image_bounded_controlled_poll(
-    aeron_image_t *image, aeron_controlled_fragment_handler_t handler,
-    void *clientd, int64_t limit_position, size_t fragment_limit)
+    aeron_image_t *image,
+    aeron_controlled_fragment_handler_t handler,
+    void *clientd,
+    int64_t limit_position,
+    size_t fragment_limit)
 {
     bool is_closed;
     size_t fragments_read = 0;
@@ -525,12 +531,13 @@ int aeron_image_bounded_controlled_poll(
         }
 
         aeron_header_t header =
-        {
-            frame,
-            image->metadata->initial_term_id,
-            image->position_bits_to_shift
-        };
+            {
+                frame,
+                image->metadata->initial_term_id,
+                image->position_bits_to_shift
+            };
 
+        ++fragments_read;
         aeron_controlled_fragment_handler_action_t action = handler(
             clientd,
             term_buffer + frame_offset + AERON_DATA_HEADER_LENGTH,
@@ -539,11 +546,10 @@ int aeron_image_bounded_controlled_poll(
 
         if (AERON_ACTION_ABORT == action)
         {
+            --fragments_read;
             offset -= aligned_frame_length;
             break;
         }
-
-        ++fragments_read;
 
         if (AERON_ACTION_BREAK == action)
         {
@@ -632,11 +638,11 @@ int64_t aeron_image_controlled_peek(
         }
 
         aeron_header_t header =
-        {
-            frame,
-            image->metadata->initial_term_id,
-            image->position_bits_to_shift
-        };
+            {
+                frame,
+                image->metadata->initial_term_id,
+                image->position_bits_to_shift
+            };
 
         aeron_controlled_fragment_handler_action_t action = handler(
             clientd,
@@ -758,8 +764,13 @@ bool aeron_image_is_closed(aeron_image_t *image)
 }
 
 extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
+
 extern bool aeron_image_is_in_use_by_subscription(aeron_image_t *image, int64_t last_change_number);
+
 extern int aeron_image_validate_position(aeron_image_t *image, int64_t position);
+
 extern int64_t aeron_image_incr_refcnt(aeron_image_t *image);
+
 extern int64_t aeron_image_decr_refcnt(aeron_image_t *image);
+
 extern int64_t aeron_image_refcnt_volatile(aeron_image_t *image);

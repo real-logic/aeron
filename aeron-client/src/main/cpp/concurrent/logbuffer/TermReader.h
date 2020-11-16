@@ -79,14 +79,13 @@ inline void read(
 
             if (!FrameDescriptor::isPaddingFrame(termBuffer, fragmentOffset))
             {
+                ++outcome.fragmentsRead;
                 header.buffer(termBuffer);
                 header.offset(fragmentOffset);
                 handler(
                     termBuffer,
                     fragmentOffset + DataFrameHeader::LENGTH,
                     frameLength - DataFrameHeader::LENGTH, header);
-
-                ++outcome.fragmentsRead;
             }
         }
     }

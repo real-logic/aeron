@@ -469,6 +469,7 @@ public:
                     continue;
                 }
 
+                ++fragmentsRead;
                 m_header.offset(frameOffset);
 
                 fragmentHandler(
@@ -476,8 +477,6 @@ public:
                     frameOffset + DataFrameHeader::LENGTH,
                     length - DataFrameHeader::LENGTH,
                     m_header);
-
-                ++fragmentsRead;
             }
         }
         catch (const std::exception &ex)
@@ -544,6 +543,7 @@ public:
                     continue;
                 }
 
+                ++fragmentsRead;
                 m_header.offset(frameOffset);
 
                 const ControlledPollAction action = fragmentHandler(
@@ -554,11 +554,10 @@ public:
 
                 if (ControlledPollAction::ABORT == action)
                 {
+                    --fragmentsRead;
                     offset -= alignedLength;
                     break;
                 }
-
-                ++fragmentsRead;
 
                 if (ControlledPollAction::BREAK == action)
                 {
@@ -639,6 +638,7 @@ public:
                     continue;
                 }
 
+                ++fragmentsRead;
                 m_header.offset(frameOffset);
 
                 const ControlledPollAction action = fragmentHandler(
@@ -649,11 +649,10 @@ public:
 
                 if (ControlledPollAction::ABORT == action)
                 {
+                    --fragmentsRead;
                     offset -= alignedLength;
                     break;
                 }
-
-                ++fragmentsRead;
 
                 if (ControlledPollAction::BREAK == action)
                 {

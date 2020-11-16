@@ -332,7 +332,7 @@ class ClientConductor implements Agent
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
                 logBuffers(correlationId, logFileName, subscription.channel()),
-                ctx.errorHandler(),
+                ctx.subscriberErrorHandler(),
                 sourceIdentity,
                 correlationId);
 

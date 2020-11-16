@@ -101,8 +101,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     if (NULL != context->on_available_counter)
     {
         int result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(
-            result, conductor->available_counter_handlers, aeron_on_available_counter_pair_t);
+        AERON_ARRAY_ENSURE_CAPACITY(result, conductor->available_counter_handlers, aeron_on_available_counter_pair_t);
         if (result < 0)
         {
             int errcode = errno;
@@ -632,8 +631,6 @@ void aeron_client_conductor_delete_resource(void *clientd, int64_t key, void *va
             break;
 
         case AERON_CLIENT_TYPE_LOGBUFFER:
-            break;
-
         case AERON_CLIENT_TYPE_DESTINATION:
             break;
     }
@@ -700,8 +697,6 @@ void aeron_client_conductor_force_close_resource(void *clientd, int64_t key, voi
             break;
 
         case AERON_CLIENT_TYPE_LOGBUFFER:
-            break;
-
         case AERON_CLIENT_TYPE_DESTINATION:
             break;
     }
@@ -1063,7 +1058,6 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
         char buffer[sizeof(aeron_subscription_command_t) + AERON_MAX_PATH];
         on_cmd_add_subscription(conductor, async, command_length, buffer);
     }
-
 }
 
 void aeron_client_conductor_on_cmd_close_subscription(void *clientd, void *item)

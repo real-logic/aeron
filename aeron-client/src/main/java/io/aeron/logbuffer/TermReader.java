@@ -71,10 +71,9 @@ public class TermReader
 
                 if (!isPaddingFrame(termBuffer, frameOffset))
                 {
+                    ++fragmentsRead;
                     header.offset(frameOffset);
                     handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
-
-                    ++fragmentsRead;
                 }
             }
         }
@@ -133,10 +132,9 @@ public class TermReader
 
                 if (!isPaddingFrame(termBuffer, frameOffset))
                 {
+                    ++fragmentsRead;
                     header.offset(frameOffset);
                     handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
-
-                    ++fragmentsRead;
                 }
             }
         }

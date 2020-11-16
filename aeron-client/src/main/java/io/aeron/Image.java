@@ -363,6 +363,7 @@ public class Image
                     continue;
                 }
 
+                ++fragmentsRead;
                 header.offset(frameOffset);
 
                 final Action action = handler.onFragment(
@@ -370,11 +371,10 @@ public class Image
 
                 if (ABORT == action)
                 {
+                    --fragmentsRead;
                     offset -= alignedLength;
                     break;
                 }
-
-                ++fragmentsRead;
 
                 if (BREAK == action)
                 {
@@ -453,9 +453,9 @@ public class Image
                     continue;
                 }
 
+                ++fragmentsRead;
                 header.offset(frameOffset);
                 handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
-                ++fragmentsRead;
             }
         }
         catch (final Throwable t)
@@ -524,6 +524,7 @@ public class Image
                     continue;
                 }
 
+                ++fragmentsRead;
                 header.offset(frameOffset);
 
                 final Action action = handler.onFragment(
@@ -531,11 +532,10 @@ public class Image
 
                 if (ABORT == action)
                 {
+                    --fragmentsRead;
                     offset -= alignedLength;
                     break;
                 }
-
-                ++fragmentsRead;
 
                 if (BREAK == action)
                 {

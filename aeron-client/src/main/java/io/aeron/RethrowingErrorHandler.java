@@ -21,7 +21,7 @@ import org.agrona.LangUtil;
 /**
  * Error handler that will rethrow a {@link Throwable} as an unchecked exception.
  */
-public class RethrowingErrorHandler implements ErrorHandler
+public final class RethrowingErrorHandler implements ErrorHandler
 {
     /**
      * Singleton instance to avoid allocation.

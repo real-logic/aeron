@@ -16,9 +16,7 @@
 
 #include "util/aeron_platform.h"
 
-#if defined(AERON_COMPILER_MSVC)
-#include <io.h>
-#else
+#if !defined(AERON_COMPILER_MSVC)
 #include <unistd.h>
 #endif
 
@@ -84,7 +82,7 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
     if (new_capacity > old_capacity)
     {
         if (aeron_array_ensure_capacity(
-            (uint8_t **) &poller->bindings_clientd, sizeof(struct epoll_event), old_capacity, new_capacity) < 0)
+            (uint8_t **)&poller->bindings_clientd, sizeof(struct epoll_event), old_capacity, new_capacity) < 0)
         {
             return -1;
         }

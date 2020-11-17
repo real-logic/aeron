@@ -870,6 +870,6 @@ task copyTestLogs(type: Copy) {
 }
 
 wrapper {
-    gradleVersion = '6.7'
+    gradleVersion = '6.7.1'
     distributionType = 'ALL'
 }

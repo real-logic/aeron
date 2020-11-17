@@ -34,7 +34,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.*;
 import org.agrona.ErrorHandler;
-import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -88,23 +87,15 @@ public class ClientErrorHandlerTest
                 Tests.yield();
             }
 
-            final MutableBoolean isInvoked = new MutableBoolean();
             final RuntimeException expectedException = new RuntimeException("Expected");
             final FragmentHandler handler =
                 (buffer1, offset, length, header) ->
                 {
-                    isInvoked.set(true);
                     throw expectedException;
                 };
 
-            while (true)
+            while (0 == subscriptionOne.poll(handler, 1))
             {
-                subscriptionOne.poll(handler, 1);
-                if (isInvoked.get())
-                {
-                    break;
-                }
-
                 Tests.yield();
             }
 

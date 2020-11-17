@@ -15,9 +15,7 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
-import io.aeron.AeronCounters;
-import io.aeron.CommonContext;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
@@ -675,6 +673,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     new Aeron.Context()
                         .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler)
+                        .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
                         .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
                         .epochClock(epochClock));
 

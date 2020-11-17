@@ -165,12 +165,12 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         if (null != logAdapter.image())
         {
             final int polled = logAdapter.poll(commitPosition.get());
+            workCount += polled;
+
             if (0 == polled && logAdapter.isDone())
             {
                 closeLog();
             }
-
-            workCount += polled;
         }
 
         return workCount;

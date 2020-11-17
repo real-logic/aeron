@@ -47,7 +47,7 @@ public final class EventLogReaderAgent implements Agent, MessageHandler
      */
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
-    private final ManyToOneRingBuffer ringBuffer = EVENT_RING_BUFFER;
+    private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
     private final StringBuilder builder = new StringBuilder();
     private ByteBuffer byteBuffer;
     private FileChannel fileChannel = null;

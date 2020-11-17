@@ -29,19 +29,6 @@ set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 
-if (POLL_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_POLL)
-endif ()
-
-if (EPOLL_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_EPOLL)
-endif ()
-
-if (WSAPOLL_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_WSAPOLL)
-endif ()
-
-
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     target_link_libraries(${name} aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})

@@ -22,6 +22,14 @@
 #include <unistd.h>
 #endif
 
+#if defined(HAVE_EPOLL)
+#include <sys/epoll.h>
+#elif defined(HAVE_POLL)
+#include <poll.h>
+#elif defined(HAVE_WSAPOLL)
+#include "aeron_windows.h"
+#endif
+
 #include "util/aeron_arrayutil.h"
 #include "aeron_alloc.h"
 #include "media/aeron_udp_transport_poller.h"
@@ -36,14 +44,11 @@ int aeron_udp_transport_poller_init(
     poller->transports.capacity = 0;
 
 #if defined(HAVE_EPOLL)
-    if ((poller->epoll_fd = epoll_create1(0)) < 0)
+    if ((poller->fd = epoll_create1(0)) < 0)
     {
         aeron_set_err_from_last_err_code("epoll_create1");
         return -1;
     }
-    poller->epoll_events = NULL;
-#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
-    poller->pollfds = NULL;
 #endif
 
     poller->bindings_clientd = NULL;
@@ -54,11 +59,9 @@ int aeron_udp_transport_poller_close(aeron_udp_transport_poller_t *poller)
 {
     aeron_free(poller->transports.array);
 #if defined(HAVE_EPOLL)
-    close(poller->epoll_fd);
-    aeron_free(poller->epoll_events);
-#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
-    aeron_free(poller->pollfds);
+    close(poller->fd);
 #endif
+    aeron_free(poller->bindings_clientd);
     return 0;
 }
 
@@ -80,7 +83,8 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
 
     if (new_capacity > old_capacity)
     {
-        if (aeron_array_ensure_capacity((uint8_t **)&poller->epoll_events, sizeof(struct epoll_event), old_capacity, new_capacity) < 0)
+        if (aeron_array_ensure_capacity(
+            (uint8_t **) &poller->bindings_clientd, sizeof(struct epoll_event), old_capacity, new_capacity) < 0)
         {
             return -1;
         }
@@ -91,7 +95,7 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
     event.data.fd = transport->fd;
     event.data.ptr = transport;
     event.events = EPOLLIN;
-    int result = epoll_ctl(poller->epoll_fd, EPOLL_CTL_ADD, transport->fd, &event);
+    int result = epoll_ctl(poller->fd, EPOLL_CTL_ADD, transport->fd, &event);
     if (result < 0)
     {
         aeron_set_err_from_last_err_code("epoll_ctl(EPOLL_CTL_ADD)");
@@ -104,15 +108,16 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
     if (new_capacity > old_capacity)
     {
         if (aeron_array_ensure_capacity(
-            (uint8_t **)&poller->pollfds, sizeof(struct pollfd), old_capacity, new_capacity) < 0)
+            (uint8_t **)&poller->bindings_clientd, sizeof(struct pollfd), old_capacity, new_capacity) < 0)
         {
             return -1;
         }
     }
 
-    poller->pollfds[index].fd = transport->fd;
-    poller->pollfds[index].events = POLLIN;
-    poller->pollfds[index].revents = 0;
+    struct pollfd *pollfds = (struct pollfd *)poller->bindings_clientd;
+    pollfds[index].fd = transport->fd;
+    pollfds[index].events = POLLIN;
+    pollfds[index].revents = 0;
 #endif
 
     poller->transports.length++;
@@ -143,7 +148,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
 
 #if defined(HAVE_EPOLL)
         aeron_array_fast_unordered_remove(
-            (uint8_t *)poller->epoll_events,
+            (uint8_t *)poller->bindings_clientd,
             sizeof(struct epoll_event),
             (size_t)index,
             (size_t)last_index);
@@ -153,7 +158,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
         event.data.fd = transport->fd;
         event.data.ptr = transport;
         event.events = EPOLLIN;
-        int result = epoll_ctl(poller->epoll_fd, EPOLL_CTL_DEL, transport->fd, &event);
+        int result = epoll_ctl(poller->fd, EPOLL_CTL_DEL, transport->fd, &event);
         if (result < 0)
         {
             aeron_set_err_from_last_err_code("epoll_ctl(EPOLL_CTL_DEL)");
@@ -162,7 +167,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
 
 #elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
         aeron_array_fast_unordered_remove(
-            (uint8_t *)poller->pollfds,
+            (uint8_t *)poller->bindings_clientd,
             sizeof(struct pollfd),
             (size_t)index,
             (size_t)last_index);
@@ -201,7 +206,8 @@ int aeron_udp_transport_poller_poll(
     else
     {
 #if defined(HAVE_EPOLL)
-        int result = epoll_wait(poller->epoll_fd, poller->epoll_events, (int)poller->transports.length, 0);
+        struct epoll_event *epoll_events = (struct epoll_event *)poller->bindings_clientd;
+        int result = epoll_wait(poller->fd, epoll_events, (int) poller->transports.length, 0);
 
         if (result < 0)
         {
@@ -223,10 +229,10 @@ int aeron_udp_transport_poller_poll(
         {
             for (size_t i = 0, length = (size_t)result; i < length; i++)
             {
-                if (poller->epoll_events[i].events & EPOLLIN)
+                if (epoll_events[i].events & EPOLLIN)
                 {
                     int recv_result = recvmmsg_func(
-                        poller->epoll_events[i].data.ptr, msgvec, vlen, bytes_rcved, recv_func, clientd);
+                        epoll_events[i].data.ptr, msgvec, vlen, bytes_rcved, recv_func, clientd);
 
                     if (recv_result < 0)
                     {
@@ -236,12 +242,13 @@ int aeron_udp_transport_poller_poll(
                     work_count += recv_result;
                 }
 
-                poller->epoll_events[i].events = 0;
+                epoll_events[i].events = 0;
             }
         }
 
 #elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
-        int result = poll(poller->pollfds, (nfds_t)poller->transports.length, 0);
+        struct pollfd *pollfds = (struct pollfd *)poller->bindings_clientd;
+        int result = poll(pollfds, (nfds_t)poller->transports.length, 0);
 
         if (result < 0)
         {
@@ -263,7 +270,7 @@ int aeron_udp_transport_poller_poll(
         {
             for (size_t i = 0, length = poller->transports.length; i < length; i++)
             {
-                if (poller->pollfds[i].revents & POLLIN)
+                if (pollfds[i].revents & POLLIN)
                 {
                     int recv_result = recvmmsg_func(
                         poller->transports.array[i].transport, msgvec, vlen, bytes_rcved, recv_func, clientd);
@@ -276,7 +283,7 @@ int aeron_udp_transport_poller_poll(
                     work_count += recv_result;
                 }
 
-                poller->pollfds[i].revents = 0;
+                pollfds[i].revents = 0;
             }
         }
 #endif

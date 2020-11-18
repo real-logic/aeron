@@ -694,13 +694,13 @@ void aeron_driver_agent_conductor_to_client_interceptor(
         {
             return;
         }
-        encode_conductor_to_client_command(msg_type_id, message, length, command_length, buffer);
+        encode_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
         aeron_free(buffer);
     }
     else
     {
         char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
-        encode_conductor_to_client_command(msg_type_id, message, length, command_length, buffer);
+        encode_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
     }
 }
 

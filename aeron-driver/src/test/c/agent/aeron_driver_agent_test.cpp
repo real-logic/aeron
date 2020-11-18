@@ -306,7 +306,7 @@ TEST_F(DriverAgentTest, shouldDissectLogHeader)
     const auto message_length = 256;
 
     const auto log_header = aeron_driver_agent_dissect_log_header(time_ns, id, capture_length, message_length);
-    
+
     EXPECT_EQ(
         std::string("[3274398573.945795] DRIVER: CMD_OUT_EXCLUSIVE_PUBLICATION_READY [59/256]"),
         std::string(log_header));
@@ -381,7 +381,8 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
 
 TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
 {
-    aeron_init_logging_ring_buffer();
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_ADD_SUBSCRIPTION"));
 
     const size_t length = sizeof(aeron_publication_command_t) + 4;
     char buffer[AERON_MAX_PATH];
@@ -392,7 +393,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
     command->channel_length = 4;
     memcpy(buffer + sizeof(aeron_publication_command_t), "test", 4);
 
-    aeron_driver_agent_conductor_to_driver_interceptor(18, command, length, nullptr);
+    aeron_driver_agent_conductor_to_driver_interceptor(AERON_COMMAND_ADD_SUBSCRIPTION, command, length, nullptr);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -400,12 +401,12 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
             size_t *count = (size_t *)clientd;
             (*count)++;
 
-            EXPECT_EQ(msg_type_id, AERON_CMD_IN);
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION);
 
             char *buffer = (char *)msg;
             aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-            EXPECT_EQ(hdr->cmd_id, 18);
-            EXPECT_NE(hdr->time_ms, 0);
+            EXPECT_EQ(hdr->cmd_id, AERON_COMMAND_ADD_SUBSCRIPTION);
+            EXPECT_NE(hdr->time_ns, 0);
 
             aeron_publication_command_t *payload =
                     (aeron_publication_command_t *) (buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
@@ -427,7 +428,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
 
 TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
 {
-    aeron_init_logging_ring_buffer();
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_ADD_COUNTER"));
 
     const size_t length = MAX_FRAME_LENGTH * 5;
     char buffer[length];
@@ -439,7 +441,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
     memset(buffer + sizeof(aeron_publication_command_t), 'a', 1);
     memset(buffer + length - 1, 'z', 1);
 
-    aeron_driver_agent_conductor_to_driver_interceptor(-10, command, length, nullptr);
+    aeron_driver_agent_conductor_to_driver_interceptor(AERON_COMMAND_ADD_COUNTER, command, length, nullptr);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -447,13 +449,13 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
             size_t *count = (size_t *)clientd;
             (*count)++;
 
-            EXPECT_EQ(msg_type_id, AERON_CMD_IN);
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER);
 
 
             char *buffer = (char *)msg;
             aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-            EXPECT_EQ(hdr->cmd_id, -10);
-            EXPECT_NE(hdr->time_ms, 0);
+            EXPECT_EQ(hdr->cmd_id, AERON_COMMAND_ADD_COUNTER);
+            EXPECT_NE(hdr->time_ns, 0);
 
             const size_t payload_length = MAX_FRAME_LENGTH * 5;
             aeron_publication_command_t *payload =
@@ -477,7 +479,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
 
 TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
 {
-    aeron_init_logging_ring_buffer();
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_OUT_ON_OPERATION_SUCCESS"));
 
     const size_t length = sizeof(aeron_publication_command_t) + 4;
     char buffer[AERON_MAX_PATH];
@@ -488,7 +491,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
     command->channel_length = 4;
     memcpy(buffer + sizeof(aeron_publication_command_t), "test", 4);
 
-    aeron_driver_agent_conductor_to_client_interceptor(nullptr, 18, command, length);
+    aeron_driver_agent_conductor_to_client_interceptor(nullptr, AERON_RESPONSE_ON_OPERATION_SUCCESS, command, length);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -496,12 +499,12 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
             size_t *count = (size_t *)clientd;
             (*count)++;
 
-            EXPECT_EQ(msg_type_id, AERON_CMD_OUT);
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS);
 
             char *buffer = (char *)msg;
             aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-            EXPECT_EQ(hdr->cmd_id, 18);
-            EXPECT_NE(hdr->time_ms, 0);
+            EXPECT_EQ(hdr->cmd_id, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+            EXPECT_NE(hdr->time_ns, 0);
 
             aeron_publication_command_t *payload =
                     (aeron_publication_command_t *) (buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
@@ -523,7 +526,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
 
 TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
 {
-    aeron_init_logging_ring_buffer();
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_OUT_EXCLUSIVE_PUBLICATION_READY"));
 
     const size_t length = MAX_FRAME_LENGTH * 15;
     char buffer[length];
@@ -535,7 +539,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
     memset(buffer + sizeof(aeron_subscription_command_t), 'a', 1);
     memset(buffer + length - 1, 'z', 1);
 
-    aeron_driver_agent_conductor_to_client_interceptor(nullptr, 100, command, length);
+    aeron_driver_agent_conductor_to_client_interceptor(nullptr, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY, command, length);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -543,13 +547,13 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
             size_t *count = (size_t *)clientd;
             (*count)++;
 
-            EXPECT_EQ(msg_type_id, AERON_CMD_OUT);
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY);
 
 
             char *buffer = (char *)msg;
             aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-            EXPECT_EQ(hdr->cmd_id, 100);
-            EXPECT_NE(hdr->time_ms, 0);
+            EXPECT_EQ(hdr->cmd_id, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+            EXPECT_NE(hdr->time_ns, 0);
 
             const size_t payload_length = MAX_FRAME_LENGTH * 15;
             aeron_subscription_command_t *payload =
@@ -571,84 +575,9 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
     EXPECT_EQ(timesCalled, (size_t)1);
 }
 
-TEST_F(DriverAgentTest, shouldLogMapRawLogCommand)
-{
-    aeron_init_logging_ring_buffer();
-
-    aeron_mapped_raw_log_t mapped_raw_log = {};
-    const char *path = ":unknown/path";
-
-    EXPECT_EQ(-1, aeron_driver_agent_raw_log_map_interceptor(&mapped_raw_log, path, false, 1024, 4096));
-
-    auto message_handler =
-            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
-            {
-                size_t *count = (size_t *)clientd;
-                (*count)++;
-
-                EXPECT_EQ(msg_type_id, AERON_RAW_LOG_MAP_OP);
-
-                char *buffer = (char *)msg;
-                aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
-                EXPECT_NE(hdr->time_ms, 0);
-                EXPECT_EQ(hdr->raw_log.raw_log_map.path_len, 13);
-                EXPECT_NE(hdr->raw_log.raw_log_map.addr, (uint64_t)0);
-                EXPECT_EQ(hdr->raw_log.raw_log_map.result, -1);
-                EXPECT_EQ(
-                        strcmp(":unknown/path", buffer + sizeof(aeron_driver_agent_raw_log_op_header_t)),
-                        0);
-            };
-
-    size_t timesCalled = 0;
-    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
-
-    EXPECT_EQ(messagesRead, (size_t)1);
-    EXPECT_EQ(timesCalled, (size_t)1);
-}
-
-TEST_F(DriverAgentTest, shouldLogMapRawLogCommandBigMessage)
-{
-    aeron_init_logging_ring_buffer();
-
-    aeron_mapped_raw_log_t mapped_raw_log = {};
-    const size_t path_length = MAX_FRAME_LENGTH * 11;
-    char path[path_length + 1];
-    memset(path, ':', path_length - 1);
-    path[path_length - 1] = 'X';
-    path[path_length] = '\0';
-
-    EXPECT_EQ(-1, aeron_driver_agent_raw_log_map_interceptor(&mapped_raw_log, path, false, 1024, 4096));
-
-    auto message_handler =
-            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
-            {
-                size_t *count = (size_t *)clientd;
-                (*count)++;
-
-                EXPECT_EQ(msg_type_id, AERON_RAW_LOG_MAP_OP);
-
-                char *buffer = (char *)msg;
-                aeron_driver_agent_raw_log_op_header_t *hdr = (aeron_driver_agent_raw_log_op_header_t *)buffer;
-                EXPECT_NE(hdr->time_ms, 0);
-                EXPECT_EQ(hdr->raw_log.raw_log_map.path_len, MAX_FRAME_LENGTH * 11);
-                EXPECT_NE(hdr->raw_log.raw_log_map.addr, (uint64_t)0);
-                EXPECT_EQ(hdr->raw_log.raw_log_map.result, -1);
-                EXPECT_EQ(
-                        memcmp(":", buffer + sizeof(aeron_driver_agent_raw_log_op_header_t), 1),
-                        0);
-                EXPECT_EQ(memcmp("X", buffer + length -1, 1), 0);
-            };
-
-    size_t timesCalled = 0;
-    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
-
-    EXPECT_EQ(messagesRead, (size_t)1);
-    EXPECT_EQ(timesCalled, (size_t)1);
-}
-
 TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
 {
-    aeron_init_logging_ring_buffer();
+    aeron_driver_agent_logging_ring_buffer_init();
 
     struct sockaddr_storage addr {};
     struct msghdr message;
@@ -681,7 +610,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
 
                 char *buffer = (char *)msg;
                 aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
-                EXPECT_NE(hdr->time_ms, 0);
+                EXPECT_NE(hdr->time_ns, 0);
                 EXPECT_EQ(hdr->result, 500);
                 EXPECT_EQ(hdr->sockaddr_len, (int32_t)sizeof(struct sockaddr_storage));
                 EXPECT_EQ(memcmp(buffer + length - 1, "c", 1), 0);
@@ -696,7 +625,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
 
 TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
 {
-    aeron_init_logging_ring_buffer();
+    aeron_driver_agent_logging_ring_buffer_init();
 
     struct sockaddr_storage addr {};
     struct msghdr message;
@@ -729,78 +658,12 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
 
                 char *buffer = (char *)msg;
                 aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
-                EXPECT_NE(hdr->time_ms, 0);
+                EXPECT_NE(hdr->time_ns, 0);
                 EXPECT_EQ(hdr->result, 1);
                 EXPECT_EQ(hdr->sockaddr_len, (int32_t)sizeof(struct sockaddr_storage));
                 char tmp[MAX_FRAME_LENGTH];
                 memset(tmp, 'x', MAX_FRAME_LENGTH);
                 EXPECT_EQ(memcmp(buffer + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage), tmp, MAX_FRAME_LENGTH), 0);
-            };
-
-    size_t timesCalled = 0;
-    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
-
-    EXPECT_EQ(messagesRead, (size_t)1);
-    EXPECT_EQ(timesCalled, (size_t)1);
-}
-
-TEST_F(DriverAgentTest, shouldLogDynamicEventSmallMessage)
-{
-    aeron_init_logging_ring_buffer();
-
-    const int message_length = 200;
-    char message[message_length];
-    memset(message, 'x', message_length);
-
-    aeron_driver_agent_log_dynamic_event(111, &message, message_length);
-
-    auto message_handler =
-            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
-            {
-                size_t *count = (size_t *)clientd;
-                (*count)++;
-
-                EXPECT_EQ(msg_type_id, AERON_DYNAMIC_DISSECTOR_EVENT);
-                EXPECT_EQ(length, sizeof(aeron_driver_agent_dynamic_event_header_t) + 200);
-
-                char *buffer = (char *)msg;
-                aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
-                EXPECT_NE(hdr->time_ms, 0);
-                EXPECT_EQ(hdr->index, 111);
-                EXPECT_EQ(memcmp(buffer + length - 1, "x", 1), 0);
-            };
-
-    size_t timesCalled = 0;
-    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
-
-    EXPECT_EQ(messagesRead, (size_t)1);
-    EXPECT_EQ(timesCalled, (size_t)1);
-}
-
-TEST_F(DriverAgentTest, shouldLogDynamicEventBigMessage)
-{
-    aeron_init_logging_ring_buffer();
-
-    const int message_length = MAX_FRAME_LENGTH * 3;
-    char message[message_length];
-    memset(message, 'z', message_length);
-
-    aeron_driver_agent_log_dynamic_event(5, &message, message_length);
-
-    auto message_handler =
-            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
-            {
-                size_t *count = (size_t *)clientd;
-                (*count)++;
-
-                EXPECT_EQ(msg_type_id, AERON_DYNAMIC_DISSECTOR_EVENT);
-                EXPECT_EQ(length, sizeof(aeron_driver_agent_dynamic_event_header_t) + MAX_FRAME_LENGTH);
-
-                char *buffer = (char *)msg;
-                aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
-                EXPECT_NE(hdr->time_ms, 0);
-                EXPECT_EQ(hdr->index, 5);
-                EXPECT_EQ(memcmp(buffer + length - 1, "z", 1), 0);
             };
 
     size_t timesCalled = 0;

@@ -173,6 +173,7 @@ int main(int argc, char **argv)
         on_new_length_t lengthGenerator = composeLengthGenerator(settings.randomMessageLength, settings.messageLength);
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
         std::shared_ptr<std::thread> rateReporterThread;
+        Publication *publicationPtr = publication.get();
 
         if (settings.progress)
         {
@@ -195,7 +196,7 @@ int main(int argc, char **argv)
                 srcBuffer.putInt64(0, i);
 
                 offerIdleStrategy.reset();
-                while (publication->offer(srcBuffer, 0, length) < 0L)
+                while (publicationPtr->offer(srcBuffer, 0, length) < 0L)
                 {
                     backPressureCount++;
 

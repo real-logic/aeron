@@ -147,6 +147,7 @@ int main(int argc, char **argv)
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
         fragment_handler_t handler = fragmentAssembler.handler();
+        Subscription *subscriptionPtr = subscription.get();
 
         std::thread rateReporterThread(
             [&]()
@@ -156,7 +157,7 @@ int main(int argc, char **argv)
 
         while (running)
         {
-            idleStrategy.idle(subscription->poll(handler, settings.fragmentCountLimit));
+            idleStrategy.idle(subscriptionPtr->poll(handler, settings.fragmentCountLimit));
         }
 
         std::cout << "Shutting down...\n";

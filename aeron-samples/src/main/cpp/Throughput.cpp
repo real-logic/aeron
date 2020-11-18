@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 
         if (settings.messageLength > publication->maxPayloadLength())
         {
-            std::cerr << "ERROR - try claim limit: messageLength=" << settings.messageLength
+            std::cerr << "ERROR - tryClaim limit: messageLength=" << settings.messageLength
                       << " > maxPayloadLength=" << publication->maxPayloadLength()
                       << ", use publication offer or increase MTU." << std::endl;
             return -1;
@@ -197,7 +197,6 @@ int main(int argc, char **argv)
         fragment_handler_t handler = fragmentAssembler.handler();
 
         std::shared_ptr<std::thread> rateReporterThread;
-
         Publication *publicationPtr = publication.get();
 
         if (settings.progress)
@@ -261,7 +260,6 @@ int main(int argc, char **argv)
 
         running = false;
         rateReporter.halt();
-
         pollThread.join();
 
         if (nullptr != rateReporterThread)

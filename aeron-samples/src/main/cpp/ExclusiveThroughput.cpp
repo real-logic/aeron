@@ -185,12 +185,19 @@ int main(int argc, char **argv)
             publication = aeron.findExclusivePublication(publicationId);
         }
 
+        if (settings.messageLength > publication->maxPayloadLength())
+        {
+            std::cerr << "ERROR - tryClaim limit: messageLength=" << settings.messageLength
+                      << " > maxPayloadLength=" << publication->maxPayloadLength()
+                      << ", use publication offer or increase MTU." << std::endl;
+            return -1;
+        }
+
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
         auto handler = fragmentAssembler.handler();
 
         std::shared_ptr<std::thread> rateReporterThread;
-
         ExclusivePublication *publicationPtr = publication.get();
         Subscription *subscriptionPtr = subscription.get();
 

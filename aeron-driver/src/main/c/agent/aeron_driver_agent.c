@@ -1701,12 +1701,12 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 }
 
 void aeron_driver_agent_remove_publication_cleanup(
-    const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+    const int32_t session_id, const int32_t stream_id, const char *channel, const size_t channel_length)
 {
 }
 
 void aeron_driver_agent_remove_subscription_cleanup(
-    const int64_t registration_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+    const int64_t registration_id, const int32_t stream_id, const char *channel, const size_t channel_length)
 {
 }
 
@@ -1714,7 +1714,7 @@ void aeron_driver_agent_remove_image_cleanup(
     const int64_t correlation_id,
     const int32_t session_id,
     const int32_t stream_id,
-    const size_t channel_length,
-    const char *channel)
+    const char *channel,
+    const size_t channel_length)
 {
 }

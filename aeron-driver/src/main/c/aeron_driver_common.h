@@ -135,20 +135,20 @@ void aeron_command_on_delete_cmd(void *clientd, void *cmd);
 typedef void (*aeron_on_remove_publication_cleanup_func_t)(
     int32_t session_id,
     int32_t stream_id,
-    size_t channel_length,
-    const char *channel);
+    const char *channel,
+    size_t channel_length);
 
 typedef void (*aeron_on_remove_subscription_cleanup_func_t)(
     int64_t registration_id,
     int32_t stream_id,
-    size_t channel_length,
-    const char *channel);
+    const char *channel,
+    size_t channel_length);
 
 typedef void (*aeron_on_remove_image_cleanup_func_t)(
     int64_t correlation_id,
     int32_t session_id,
     int32_t stream_id,
-    size_t channel_length,
-    const char *channel);
+    const char *channel,
+    size_t channel_length);
 
 #endif //AERON_DRIVER_COMMON_H

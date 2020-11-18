@@ -246,15 +246,15 @@ static void aeron_driver_conductor_name_resolver_on_neighbor_change_null(const s
 }
 
 static void aeron_driver_conductor_remove_publication_cleanup_null(
-    const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+    const int32_t session_id, const int32_t stream_id, const char *channel, const size_t channel_length)
 {
 }
 
 static void aeron_driver_conductor_remove_subscription_cleanup_null(
     const int64_t registration_id,
     const int32_t stream_id,
-    const size_t channel_length,
-    const char *channel)
+    const char *channel,
+    const size_t channel_length)
 {
 }
 
@@ -262,8 +262,8 @@ static void aeron_driver_conductor_remove_image_cleanup_null(
     const int64_t correlation_id,
     const int32_t session_id,
     const int32_t stream_id,
-    const size_t channel_length,
-    const char *channel)
+    const char *channel,
+    const size_t channel_length)
 {
 }
 

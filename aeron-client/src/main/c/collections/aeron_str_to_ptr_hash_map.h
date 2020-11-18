@@ -17,15 +17,15 @@
 #ifndef AERON_STR_TO_PTR_HASH_MAP_H
 #define AERON_STR_TO_PTR_HASH_MAP_H
 
-#include <errno.h>
 #include <string.h>
+#include <errno.h>
 
 #include "util/aeron_platform.h"
-#include "collections/aeron_map.h"
-#include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_error.h"
+#include "collections/aeron_map.h"
+#include "aeron_alloc.h"
 
 typedef struct aeron_str_to_ptr_hash_map_key_stct
 {

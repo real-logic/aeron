@@ -138,7 +138,6 @@ AERON_DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException, ExceptionCategory:
 AERON_DECLARE_SOURCED_EXCEPTION(ReentrantException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(UnsupportedOperationException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
-
 inline SourcedException mapErrnoToAeronException(
     int error_code, const char *error_message, const std::string &function, const std::string &file, const int line)
 {
@@ -175,7 +174,7 @@ do                                                                              
 {                                                                                 \
     throw mapErrnoToAeronException(aeron_errcode(), aeron_errmsg(), SOURCEINFO);  \
 }                                                                                 \
-while (0)
+while (0)                                                                         \
 
 class RegistrationException : public SourcedException
 {

@@ -17,13 +17,14 @@
 #ifndef AERON_AERON_BIT_SET_H
 #define AERON_AERON_BIT_SET_H
 
-#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+
 #include "util/aeron_platform.h"
 #include "util/aeron_bitutil.h"
-#include "aeron_alloc.h"
 #include "util/aeron_error.h"
+#include "aeron_alloc.h"
 
 struct aeron_bit_set_stct
 {

@@ -18,12 +18,12 @@
 #define AERON_INT32_TO_TAGGED_PTR_HASH_MAP_H
 
 #include <stdbool.h>
-#include <errno.h>
 #include <string.h>
+#include <errno.h>
 
 #include "util/aeron_platform.h"
-#include "collections/aeron_map.h"
 #include "util/aeron_bitutil.h"
+#include "collections/aeron_map.h"
 #include "aeron_alloc.h"
 
 typedef struct aeron_int64_to_tagged_ptr_entry_stct

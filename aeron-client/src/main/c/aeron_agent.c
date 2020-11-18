@@ -19,17 +19,17 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-#include <stdlib.h>
-#include "concurrent/aeron_thread.h"
-#include "aeron_agent.h"
-#include "aeron_alloc.h"
+
 #include "util/aeron_bitutil.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
+#include "aeron_agent.h"
+#include "aeron_alloc.h"
 
 void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {

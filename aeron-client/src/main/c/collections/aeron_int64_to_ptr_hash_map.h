@@ -20,10 +20,10 @@
 #include <errno.h>
 
 #include "util/aeron_platform.h"
-#include "collections/aeron_map.h"
 #include "util/aeron_bitutil.h"
-#include "aeron_alloc.h"
 #include "util/aeron_error.h"
+#include "collections/aeron_map.h"
+#include "aeron_alloc.h"
 
 typedef struct aeron_int64_to_ptr_hash_map_stct
 {

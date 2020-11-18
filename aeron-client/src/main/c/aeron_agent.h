@@ -18,8 +18,8 @@
 #define AERON_AGENT_H
 
 #include "concurrent/aeron_thread.h"
-#include "aeron_common.h"
 #include "concurrent/aeron_atomic.h"
+#include "aeron_common.h"
 #include "aeronc.h"
 
 typedef int (*aeron_agent_do_work_func_t)(void *);

@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include "util/aeron_platform.h"
 
-#if defined(AERON_COMPILER_MSVC)
+#if defined(_MSC_VER)
 #include <intrin.h>
 #endif
 

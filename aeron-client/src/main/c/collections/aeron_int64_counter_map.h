@@ -21,8 +21,8 @@
 #include <errno.h>
 
 #include "util/aeron_platform.h"
-#include "collections/aeron_map.h"
 #include "util/aeron_bitutil.h"
+#include "collections/aeron_map.h"
 #include "aeron_alloc.h"
 
 typedef struct aeron_int64_counter_map_stct

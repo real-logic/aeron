@@ -883,6 +883,14 @@ void aeron_receive_channel_endpoint_entry_delete(
 
         if (entry->endpoint == image->endpoint)
         {
+            const aeron_receive_channel_endpoint_t *endpoint = image->endpoint;
+            const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+            conductor->context->remove_image_cleanup_func(
+                    image->conductor_fields.managed_resource.registration_id,
+                    image->session_id,
+                    image->stream_id,
+                    udp_channel->original_uri,
+                    udp_channel->uri_length);
             aeron_publication_image_disconnect_endpoint(image);
         }
     }
@@ -911,13 +919,6 @@ void aeron_publication_image_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
     aeron_publication_image_t *image = entry->image;
-    const aeron_udp_channel_t *udp_channel = image->endpoint->conductor_fields.udp_channel;
-    conductor->context->remove_image_cleanup_func(
-        image->conductor_fields.managed_resource.registration_id,
-        image->session_id,
-        image->stream_id,
-        udp_channel->original_uri,
-        udp_channel->uri_length);
 
     for (size_t i = 0, size = conductor->network_subscriptions.length; i < size; i++)
     {

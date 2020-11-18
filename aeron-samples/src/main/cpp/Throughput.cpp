@@ -181,6 +181,14 @@ int main(int argc, char **argv)
             publication = aeron.findPublication(publicationId);
         }
 
+        if (settings.messageLength > publication->maxPayloadLength())
+        {
+            std::cerr << "ERROR - try claim limit: messageLength=" << settings.messageLength
+                      << " > maxPayloadLength=" << publication->maxPayloadLength()
+                      << ", use publication offer or increase MTU." << std::endl;
+            return -1;
+        }
+
         BusySpinIdleStrategy offerIdleStrategy;
         BusySpinIdleStrategy pollIdleStrategy;
 
@@ -200,9 +208,11 @@ int main(int argc, char **argv)
         std::thread pollThread(
             [&subscription, &pollIdleStrategy, &settings, &handler]()
             {
+                Subscription *subscriptionPtr = subscription.get();
+
                 while (isRunning())
                 {
-                    pollIdleStrategy.idle(subscription->poll(handler, settings.fragmentCountLimit));
+                    pollIdleStrategy.idle(subscriptionPtr->poll(handler, settings.fragmentCountLimit));
                 }
             });
 

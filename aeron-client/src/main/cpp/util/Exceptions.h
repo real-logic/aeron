@@ -108,18 +108,18 @@ public:
 };
 
 #define AERON_DECLARE_SOURCED_EXCEPTION(exceptionName, category) \
-class exceptionName : public aeron::util::SourcedException     \
-{                                                              \
-public:                                                        \
-    exceptionName(                                             \
-        const std::string &what,                               \
-        const std::string &function,                           \
-        const std::string &file,                               \
-        const int line) :                                      \
-        SourcedException(category, what, function, file, line) \
-    {                                                          \
-    }                                                          \
-}                                                              \
+class exceptionName : public aeron::util::SourcedException       \
+{                                                                \
+public:                                                          \
+    exceptionName(                                               \
+        const std::string &what,                                 \
+        const std::string &function,                             \
+        const std::string &file,                                 \
+        const int line) :                                        \
+        SourcedException(category, what, function, file, line)   \
+    {                                                            \
+    }                                                            \
+}                                                                \
 
 AERON_DECLARE_SOURCED_EXCEPTION(IOException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(FormatException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);

@@ -405,7 +405,7 @@ public:
             {
                 throw aeron::util::IllegalStateException(
                     "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
-                        " > " + std::to_string(length + it->capacity()),
+                    " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 

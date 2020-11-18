@@ -330,7 +330,10 @@ public:
         const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         std::int64_t position = aeron_exclusive_publication_offer(
-            m_publication, buffer.buffer() + offset, static_cast<std::size_t>(length), reservedValueSupplierCallback,
+            m_publication,
+            buffer.buffer() + offset,
+            static_cast<std::size_t>(length),
+            reservedValueSupplierCallback,
             (void *)&reservedValueSupplier);
 
         if (AERON_PUBLICATION_ERROR == position)

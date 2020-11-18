@@ -245,6 +245,28 @@ static void aeron_driver_conductor_name_resolver_on_neighbor_change_null(const s
 {
 }
 
+static void aeron_driver_conductor_remove_publication_cleanup_null(
+    const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+{
+}
+
+static void aeron_driver_conductor_remove_subscription_cleanup_null(
+    const int64_t registration_id,
+    const int32_t stream_id,
+    const size_t channel_length,
+    const char *channel)
+{
+}
+
+static void aeron_driver_conductor_remove_image_cleanup_null(
+    const int64_t correlation_id,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const size_t channel_length,
+    const char *channel)
+{
+}
+
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT false
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
@@ -903,6 +925,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
+
+    _context->remove_publication_cleanup_func = aeron_driver_conductor_remove_publication_cleanup_null;
+    _context->remove_subscription_cleanup_func = aeron_driver_conductor_remove_subscription_cleanup_null;
+    _context->remove_image_cleanup_func = aeron_driver_conductor_remove_image_cleanup_null;
 
     _context->untethered_subscription_state_change_func = aeron_untethered_subscription_state_change;
 

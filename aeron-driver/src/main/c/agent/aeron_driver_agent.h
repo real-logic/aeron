@@ -149,6 +149,15 @@ void aeron_driver_agent_name_resolution_on_neighbor_added(const struct sockaddr_
 
 void aeron_driver_agent_name_resolution_on_neighbor_removed(const struct sockaddr_storage *addr);
 
+void aeron_driver_agent_remove_publication_cleanup(
+    int32_t session_id, int32_t stream_id, size_t channel_length, const char *channel);
+
+void aeron_driver_agent_remove_subscription_cleanup(
+    int64_t registration_id, int32_t stream_id, size_t channel_length, const char *channel);
+
+void aeron_driver_agent_remove_image_cleanup(
+    int64_t correlation_id, int32_t session_id, int32_t stream_id, size_t channel_length, const char *channel);
+
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd);
 

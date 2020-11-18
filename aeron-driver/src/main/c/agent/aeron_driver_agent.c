@@ -877,7 +877,7 @@ int aeron_driver_agent_interceptor_init(
 
 int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *context)
 {
-    if (enabled_events[AERON_DRIVER_EVENT_FRAME_IN])
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN))
     {
         aeron_udp_channel_interceptor_bindings_t *incoming_bindings = NULL;
 
@@ -922,7 +922,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
         }
     }
 
-    if (enabled_events[AERON_DRIVER_EVENT_FRAME_OUT])
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT))
     {
         aeron_udp_channel_interceptor_bindings_t *outgoing_bindings = NULL;
 
@@ -964,18 +964,33 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
         context->to_client_interceptor_func = aeron_driver_agent_conductor_to_client_interceptor;
     }
 
-    if (enabled_events[AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE])
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP))
+    {
+        context->remove_publication_cleanup_func = aeron_driver_agent_remove_publication_cleanup;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP))
+    {
+        context->remove_subscription_cleanup_func = aeron_driver_agent_remove_subscription_cleanup;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP))
+    {
+        context->remove_image_cleanup_func = aeron_driver_agent_remove_image_cleanup;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE))
     {
         context->untethered_subscription_state_change_func =
             aeron_driver_agent_untethered_subscription_state_change_interceptor;
     }
 
-    if (enabled_events[AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED])
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED))
     {
         context->name_resolution_on_neighbor_added_func = aeron_driver_agent_name_resolution_on_neighbor_added;
     }
 
-    if (enabled_events[AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED])
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED))
     {
         context->name_resolution_on_neighbor_removed_func = aeron_driver_agent_name_resolution_on_neighbor_removed;
     }
@@ -1683,4 +1698,23 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             }
             break;
     }
+}
+
+void aeron_driver_agent_remove_publication_cleanup(
+    const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+{
+}
+
+void aeron_driver_agent_remove_subscription_cleanup(
+    const int64_t registration_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+{
+}
+
+void aeron_driver_agent_remove_image_cleanup(
+    const int64_t correlation_id,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const size_t channel_length,
+    const char *channel)
+{
 }

@@ -198,6 +198,10 @@ typedef struct aeron_driver_context_stct
     aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
     aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
 
+    aeron_on_remove_publication_cleanup_func_t remove_publication_cleanup_func;
+    aeron_on_remove_subscription_cleanup_func_t remove_subscription_cleanup_func;
+    aeron_on_remove_image_cleanup_func_t remove_image_cleanup_func;
+
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_added_func;

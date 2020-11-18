@@ -54,6 +54,9 @@ typedef struct aeron_ipc_publication_stct
     }
     conductor_fields;
 
+    size_t channel_length;
+    char *channel;
+
     char *log_file_name;
     int64_t term_window_length;
     int64_t trip_gain;
@@ -84,7 +87,9 @@ int aeron_ipc_publication_create(
     int32_t initial_term_id,
     aeron_uri_publication_params_t *params,
     bool is_exclusive,
-    aeron_system_counters_t *system_counters);
+    aeron_system_counters_t *system_counters,
+    size_t channel_length,
+    const char *channel);
 
 void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication);
 

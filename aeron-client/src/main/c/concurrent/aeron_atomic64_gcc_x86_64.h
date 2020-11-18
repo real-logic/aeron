@@ -26,7 +26,7 @@ do \
     dst = src; \
     __asm__ volatile("" ::: "memory"); \
 } \
-while (false)
+while (false) \
 
 #define AERON_PUT_ORDERED(dst, src) \
 do \
@@ -34,7 +34,7 @@ do \
     __asm__ volatile("" ::: "memory"); \
     dst = src; \
 } \
-while (false)
+while (false) \
 
 #define AERON_PUT_VOLATILE(dst, src) \
 do \
@@ -43,7 +43,7 @@ do \
     dst = src; \
     __asm__ volatile("lock; addl $0, 0(%%rsp)" ::: "cc", "memory"); \
 } \
-while (false)
+while (false) \
 
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
@@ -53,7 +53,7 @@ do \
         : "=r"(original), "+m"(dst) \
         : "0"(value)); \
 } \
-while (false)
+while (false) \
 
 #define AERON_GET_AND_ADD_INT32(original, dst, value) \
 do \
@@ -63,7 +63,7 @@ do \
         : "=r"(original), "+m"(dst) \
         : "0"(value)); \
 } \
-while (false)
+while (false) \
 
 inline bool aeron_cas_int64(volatile int64_t *dst, int64_t expected, int64_t desired)
 {

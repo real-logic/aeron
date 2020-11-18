@@ -21,14 +21,9 @@
 #include <inttypes.h>
 
 #include "concurrent/aeron_mpsc_rb.h"
-#include "util/aeron_platform.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_cnc_file_descriptor.h"
 #include "command/aeron_control_protocol.h"
-
-#if defined(AERON_COMPILER_MSVC)
-#include <io.h>
-#endif
 
 #include "aeron_alloc.h"
 #include "aeron_context.h"
@@ -187,7 +182,7 @@ do \
         return (r); \
     } \
 } \
-while (false)
+while (false) \
 
 int aeron_context_set_dir(aeron_context_t *context, const char *value)
 {

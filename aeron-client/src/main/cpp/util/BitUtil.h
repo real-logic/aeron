@@ -23,6 +23,8 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
+#pragma intrinsic(_BitScanForward)
+#pragma intrinsic(_BitScanReverse)
 #endif
 
 namespace aeron { namespace util

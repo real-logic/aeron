@@ -24,6 +24,11 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
+#pragma intrinsic(_BitScanForward)
+#pragma intrinsic(_BitScanReverse)
+#if defined(AERON_CPU_X64)
+#pragma intrinsic(_BitScanForward64)
+#endif
 #endif
 
 #define AERON_CACHE_LINE_LENGTH (64u)

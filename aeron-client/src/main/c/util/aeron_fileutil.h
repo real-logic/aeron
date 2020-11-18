@@ -54,8 +54,8 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 #include <io.h>
 #include <direct.h>
 #include <process.h>
-#include <WinSock2.h>
-#include <Windows.h>
+#include <winsock2.h>
+#include <windows.h>
 
 #define S_IRWXU 0
 #define S_IRWXG 0

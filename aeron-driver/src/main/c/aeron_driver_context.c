@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <inttypes.h>
 #include <errno.h>
 
@@ -1245,7 +1244,7 @@ do \
         return (r); \
     } \
 } \
-while (false)
+while (false) \
 
 int aeron_driver_context_set_dir(aeron_driver_context_t *context, const char *value)
 {

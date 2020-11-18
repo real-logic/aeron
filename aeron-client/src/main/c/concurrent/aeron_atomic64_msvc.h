@@ -29,7 +29,7 @@ do \
     dst = src; \
     _ReadWriteBarrier(); \
 } \
-while (false)
+while (false) \
 
 #define AERON_PUT_ORDERED(dst, src) \
 do \
@@ -37,7 +37,7 @@ do \
     _ReadWriteBarrier(); \
     dst = src; \
 } \
-while (false)
+while (false) \
 
 #define AERON_PUT_VOLATILE(dst, src) \
 do \
@@ -47,21 +47,21 @@ do \
     _ReadWriteBarrier(); \
     MemoryBarrier(); \
 } \
-while (false)
+while (false) \
 
 #define AERON_GET_AND_ADD_INT64(original, current, value) \
 do \
 { \
     original = _InlineInterlockedAdd64((long long volatile *)&current, (long long)value) - value; \
 } \
-while (false)
+while (false) \
 
 #define AERON_GET_AND_ADD_INT32(original, current, value) \
 do \
 { \
     original = _InlineInterlockedAdd((long volatile *)&current, (long)value) - value; \
 } \
-while (false)
+while (false) \
 
 inline bool aeron_cas_int64(volatile int64_t *dst, int64_t expected, int64_t desired)
 {

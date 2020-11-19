@@ -169,6 +169,8 @@ int main(int argc, char **argv)
 
     signal(SIGINT, sigIntHandler);
 
+    std::shared_ptr<std::thread> pongThread;
+
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -257,7 +259,7 @@ int main(int argc, char **argv)
 
         fragment_handler_t ping_handler = pingFragmentAssembler.handler();
 
-        std::thread pongThread(
+        pongThread = std::make_shared<std::thread>(
             [&]()
             {
                 while (!pingSubscriptionRef.isConnected())
@@ -271,6 +273,18 @@ int main(int argc, char **argv)
                 while (running)
                 {
                     idleStrategy.idle(image.poll(ping_handler, settings.fragmentCountLimit));
+                }
+            });
+
+        aeron::util::OnScopeExit tidy(
+            [&]()
+            {
+                running = false;
+
+                if (nullptr != pongThread && pongThread->joinable())
+                {
+                    pongThread->join();
+                    pongThread = nullptr;
                 }
             });
 
@@ -332,10 +346,6 @@ int main(int argc, char **argv)
                       << " RTTs/sec" << std::endl;
         }
         while (running && continuationBarrier("Execute again?"));
-
-        running = false;
-
-        pongThread.join();
     }
     catch (const CommandOptionException &e)
     {

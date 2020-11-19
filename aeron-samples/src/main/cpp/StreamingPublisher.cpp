@@ -23,7 +23,6 @@
 
 #include "util/CommandOptionParser.h"
 #include "concurrent/BusySpinIdleStrategy.h"
-#include "concurrent/SleepingIdleStrategy.h"
 #include "Configuration.h"
 #include "RateReporter.h"
 #include "Aeron.h"
@@ -131,6 +130,8 @@ int main(int argc, char **argv)
 
     signal(SIGINT, sigIntHandler);
 
+    std::shared_ptr<std::thread> rateReporterThread;
+
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -172,8 +173,19 @@ int main(int argc, char **argv)
         BusySpinIdleStrategy offerIdleStrategy;
         on_new_length_t lengthGenerator = composeLengthGenerator(settings.randomMessageLength, settings.messageLength);
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
-        std::shared_ptr<std::thread> rateReporterThread;
         Publication *publicationPtr = publication.get();
+
+        aeron::util::OnScopeExit tidy(
+            [&]()
+            {
+                rateReporter.halt();
+
+                if (nullptr != rateReporterThread && rateReporterThread->joinable())
+                {
+                    rateReporterThread->join();
+                    rateReporterThread = nullptr;
+                }
+            });
 
         if (settings.progress)
         {
@@ -228,13 +240,6 @@ int main(int argc, char **argv)
             printingActive = false;
         }
         while (running && continuationBarrier("Execute again?"));
-
-        rateReporter.halt();
-
-        if (nullptr != rateReporterThread)
-        {
-            rateReporterThread->join();
-        }
     }
     catch (const CommandOptionException &e)
     {

@@ -122,6 +122,9 @@ int main(int argc, char **argv)
 
     signal(SIGINT, sigIntHandler);
 
+    std::shared_ptr<std::thread> rateReporterThread;
+    std::shared_ptr<std::thread> pollThread;
+
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -197,9 +200,27 @@ int main(int argc, char **argv)
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
         auto handler = fragmentAssembler.handler();
 
-        std::shared_ptr<std::thread> rateReporterThread;
         ExclusivePublication *publicationPtr = publication.get();
         Subscription *subscriptionPtr = subscription.get();
+
+        aeron::util::OnScopeExit tidy(
+            [&]()
+            {
+                running = false;
+                rateReporter.halt();
+
+                if (nullptr != pollThread && pollThread->joinable())
+                {
+                    pollThread->join();
+                    pollThread = nullptr;
+                }
+
+                if (nullptr != rateReporterThread && rateReporterThread->joinable())
+                {
+                    rateReporterThread->join();
+                    rateReporterThread = nullptr;
+                }
+            });
 
         if (settings.progress)
         {
@@ -209,7 +230,7 @@ int main(int argc, char **argv)
         std::uint64_t failedPolls = 0;
         std::uint64_t successfulPolls = 0;
 
-        std::thread pollThread(
+        pollThread = std::make_shared<std::thread>(
             [&]()
             {
                 while (!subscriptionPtr->isConnected())
@@ -285,16 +306,6 @@ int main(int argc, char **argv)
             printingActive = false;
         }
         while (isRunning() && continuationBarrier("Execute again?"));
-
-        running = false;
-        rateReporter.halt();
-
-        pollThread.join();
-
-        if (nullptr != rateReporterThread)
-        {
-            rateReporterThread->join();
-        }
     }
     catch (const CommandOptionException &e)
     {

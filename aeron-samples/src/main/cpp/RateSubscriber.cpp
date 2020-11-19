@@ -97,6 +97,8 @@ int main(int argc, char **argv)
 
     signal(SIGINT, sigIntHandler);
 
+    std::shared_ptr<std::thread> rateReporterThread;
+
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -149,11 +151,19 @@ int main(int argc, char **argv)
         fragment_handler_t handler = fragmentAssembler.handler();
         Subscription *subscriptionPtr = subscription.get();
 
-        std::thread rateReporterThread(
+        aeron::util::OnScopeExit tidy(
             [&]()
             {
-                rateReporter.run();
+                rateReporter.halt();
+
+                if (nullptr != rateReporterThread && rateReporterThread->joinable())
+                {
+                    rateReporterThread->join();
+                    rateReporterThread = nullptr;
+                }
             });
+
+        rateReporterThread = std::make_shared<std::thread>([&](){ rateReporter.run(); });
 
         while (running)
         {
@@ -161,9 +171,6 @@ int main(int argc, char **argv)
         }
 
         std::cout << "Shutting down...\n";
-
-        rateReporter.halt();
-        rateReporterThread.join();
     }
     catch (const CommandOptionException &e)
     {

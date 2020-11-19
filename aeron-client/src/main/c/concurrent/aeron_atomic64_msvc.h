@@ -44,7 +44,6 @@ do \
 { \
     _ReadWriteBarrier(); \
     dst = src; \
-    _ReadWriteBarrier(); \
     MemoryBarrier(); \
 } \
 while (false) \

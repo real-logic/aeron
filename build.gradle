@@ -862,6 +862,7 @@ task copyTestLogs(type: Copy) {
     from '.'
     include '**/build/test-output/**'
     include '**/*.log'
+    include '**/*.tlog'
     include 'LICENSE'
     exclude 'build'
     into 'build/test_logs'

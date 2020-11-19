@@ -207,6 +207,8 @@ elseif (MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
 
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:/Zc:preprocessor->)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor->)
     if (C_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:/WX>)
     endif (C_WARNINGS_AS_ERRORS)

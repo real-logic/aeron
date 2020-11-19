@@ -22,9 +22,6 @@
 
 namespace aeron { namespace concurrent { namespace atomic {
 
-/**
-* A compiler directive to not reorder instructions.
-*/
 inline void thread_fence()
 {
     std::atomic_thread_fence(std::memory_order_acq_rel);

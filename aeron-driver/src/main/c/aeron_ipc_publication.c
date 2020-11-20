@@ -182,21 +182,23 @@ int aeron_ipc_publication_create(
 
 void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication)
 {
-    aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
-
-    aeron_counters_manager_free(counters_manager, publication->pub_lmt_position.counter_id);
-    aeron_counters_manager_free(counters_manager, publication->pub_pos_position.counter_id);
-
-    for (size_t i = 0, length = subscribable->length; i < length; i++)
-    {
-        aeron_counters_manager_free(counters_manager, subscribable->array[i].counter_id);
-    }
-    aeron_free(subscribable->array);
-
     if (NULL != publication)
     {
+        aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
+
+        aeron_counters_manager_free(counters_manager, publication->pub_lmt_position.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->pub_pos_position.counter_id);
+
+        for (size_t i = 0, length = subscribable->length; i < length; i++)
+        {
+            aeron_counters_manager_free(counters_manager, subscribable->array[i].counter_id);
+        }
+        aeron_free(subscribable->array);
+
         publication->raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         aeron_free(publication->log_file_name);
+
+        aeron_free(publication->channel);
     }
 
     aeron_free(publication);

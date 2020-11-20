@@ -51,7 +51,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
     private int refCount = 0;
-    protected long timeOfLastResolutionNs;
+    private long timeOfLastResolutionNs;
     private final Long2ObjectHashMap<NetworkPublication> publicationBySessionAndStreamId = new Long2ObjectHashMap<>();
     private final MultiSndDestination multiSndDestination;
     private final AtomicCounter statusMessagesReceived;

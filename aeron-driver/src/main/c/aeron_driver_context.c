@@ -265,6 +265,10 @@ static void aeron_driver_conductor_remove_image_cleanup_null(
 {
 }
 
+static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
+{
+}
+
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT false
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
@@ -927,6 +931,11 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->remove_publication_cleanup_func = aeron_driver_conductor_remove_publication_cleanup_null;
     _context->remove_subscription_cleanup_func = aeron_driver_conductor_remove_subscription_cleanup_null;
     _context->remove_image_cleanup_func = aeron_driver_conductor_remove_image_cleanup_null;
+
+    _context->sender_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->sender_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->receiver_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->receiver_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
 
     _context->untethered_subscription_state_change_func = aeron_untethered_subscription_state_change;
 

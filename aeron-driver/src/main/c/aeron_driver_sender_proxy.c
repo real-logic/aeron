@@ -29,6 +29,8 @@ void aeron_driver_sender_proxy_offer(aeron_driver_sender_proxy_t *sender_proxy, 
 void aeron_driver_sender_proxy_on_add_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint)
 {
+    sender_proxy->on_add_endpoint_func(endpoint->conductor_fields.udp_channel);
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
@@ -59,6 +61,8 @@ void aeron_driver_sender_proxy_on_add_endpoint(
 void aeron_driver_sender_proxy_on_remove_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint)
 {
+    sender_proxy->on_remove_endpoint_func(endpoint->conductor_fields.udp_channel);
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_base_t cmd =

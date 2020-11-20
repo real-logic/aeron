@@ -72,7 +72,7 @@ class SocketAddressParser
         if (address.isUnresolved())
         {
             throw new UnknownHostException(
-                "Unresolved - " + uriParamName + "=" + value + ", name-and-port=" + nameAndPort +
+                "unresolved - " + uriParamName + "=" + value + ", name-and-port=" + nameAndPort +
                 ", name-resolver=" + nameResolver.getClass().getName());
         }
 
@@ -118,12 +118,11 @@ class SocketAddressParser
             final int port = AsciiEncoding.parseIntAscii(str, portIndex, length - portIndex);
             final InetAddress inetAddress = nameResolver.resolve(hostname, uriParamName, isReResolution);
 
-            return (null == inetAddress) ?
-                InetSocketAddress.createUnresolved(hostname, port) :
-                new InetSocketAddress(inetAddress, port);
+            return null == inetAddress ?
+                InetSocketAddress.createUnresolved(hostname, port) : new InetSocketAddress(inetAddress, port);
         }
 
-        throw new IllegalArgumentException("'port' part of the address is required for ipv4: " + str);
+        throw new IllegalArgumentException("address 'port' is required for ipv4: " + str);
     }
 
     private static InetSocketAddress tryParseIpV6(
@@ -211,10 +210,9 @@ class SocketAddressParser
             final InetAddress inetAddress = nameResolver.resolve(hostname, uriParamName, isReResolution);
 
             return null == inetAddress ?
-                InetSocketAddress.createUnresolved(hostname, port) :
-                new InetSocketAddress(inetAddress, port);
+                InetSocketAddress.createUnresolved(hostname, port) : new InetSocketAddress(inetAddress, port);
         }
 
-        throw new IllegalArgumentException("'port' part of the address is required for ipv6: " + str);
+        throw new IllegalArgumentException("address 'port' is required for ipv6: " + str);
     }
 }

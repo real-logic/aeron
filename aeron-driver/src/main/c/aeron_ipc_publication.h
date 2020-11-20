@@ -54,7 +54,7 @@ typedef struct aeron_ipc_publication_stct
     }
     conductor_fields;
 
-    size_t channel_length;
+    int32_t channel_length;
     char *channel;
 
     char *log_file_name;

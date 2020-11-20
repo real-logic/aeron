@@ -1666,6 +1666,52 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
+        case AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP:
+        {
+            aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)message;
+            const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
+            fprintf(
+                    logfp,
+                    "%s: sessionId=%d, streamId=%d, uri=%*s\n",
+                    aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                    hdr->session_id,
+                    hdr->stream_id,
+                    hdr->channel_length,
+                    channel);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP:
+        {
+            aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)message;
+            const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
+            fprintf(
+                logfp,
+                "%s: streamId=%d, id=%" PRId64 ", uri=%*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                hdr->stream_id,
+                hdr->id,
+                hdr->channel_length,
+                channel);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP:
+        {
+            aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)message;
+            const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
+            fprintf(
+                logfp,
+                "%s: sessionId=%d, streamId=%d, id=%" PRId64 ", uri=%*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                hdr->session_id,
+                hdr->stream_id,
+                hdr->id,
+                hdr->channel_length,
+                channel);
+            break;
+        }
+
         default:
             if (is_valid_event_id(msg_type_id))
             {
@@ -1700,21 +1746,94 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
     }
 }
 
-void aeron_driver_agent_remove_publication_cleanup(
-    const int32_t session_id, const int32_t stream_id, const char *channel, const size_t channel_length)
+static void encode_remove_resource_cleanup_event(
+    const int64_t id,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const size_t channel_length,
+    const char *channel,
+    const aeron_driver_agent_event_t event_id,
+    const size_t command_length,
+    char *buffer)
 {
+    aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)buffer;
+
+    hdr->time_ns = aeron_nano_clock();
+    hdr->id = id;
+    hdr->stream_id = stream_id;
+    hdr->session_id = session_id;
+    hdr->channel_length = channel_length;
+
+    memcpy(buffer + sizeof(aeron_driver_agent_remove_resource_cleanup_t), channel, channel_length);
+
+    aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, command_length);
+}
+
+static void encode_remove_resource_cleanup(
+    const int64_t id,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const size_t channel_length,
+    const char *channel,
+    const aeron_driver_agent_event_t event_id)
+{
+    const size_t command_length = sizeof(aeron_driver_agent_remove_resource_cleanup_t) + channel_length;
+
+    if (command_length > sizeof(aeron_driver_agent_remove_resource_cleanup_t) + AERON_MAX_PATH)
+    {
+        char *buffer = NULL;
+        if (aeron_alloc((void **)&buffer, command_length) < 0)
+        {
+            return;
+        }
+        encode_remove_resource_cleanup_event(
+            id, session_id, stream_id, channel_length, channel, event_id, command_length, buffer);
+        aeron_free(buffer);
+    }
+    else
+    {
+        char buffer[sizeof(aeron_driver_agent_remove_resource_cleanup_t) + AERON_MAX_PATH];
+        encode_remove_resource_cleanup_event(
+            id, session_id, stream_id, channel_length, channel, event_id, command_length, buffer);
+    }
+}
+
+void aeron_driver_agent_remove_publication_cleanup(
+    const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+{
+    encode_remove_resource_cleanup(
+            AERON_NULL_VALUE,
+            session_id,
+            stream_id,
+            channel_length,
+            channel,
+            AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP);
 }
 
 void aeron_driver_agent_remove_subscription_cleanup(
-    const int64_t registration_id, const int32_t stream_id, const char *channel, const size_t channel_length)
+    const int64_t id, const int32_t stream_id, const size_t channel_length, const char *channel)
 {
+    encode_remove_resource_cleanup(
+            id,
+            AERON_NULL_VALUE,
+            stream_id,
+            channel_length,
+            channel,
+            AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP);
 }
 
 void aeron_driver_agent_remove_image_cleanup(
-    const int64_t correlation_id,
+    const int64_t id,
     const int32_t session_id,
     const int32_t stream_id,
-    const char *channel,
-    const size_t channel_length)
+    const size_t channel_length,
+    const char *channel)
 {
+    encode_remove_resource_cleanup(
+            id,
+            session_id,
+            stream_id,
+            channel_length,
+            channel,
+            AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP);
 }

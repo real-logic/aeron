@@ -780,3 +780,132 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);
 }
+
+TEST_F(DriverAgentTest, shouldInitializeRemovePublicationCleanupInterceptor)
+{
+    const aeron_on_remove_publication_cleanup_func_t func = m_context->remove_publication_cleanup_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("REMOVE_PUBLICATION_CLEANUP"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->remove_publication_cleanup_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldLogRemovePublicationCleanup)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    aeron_driver_agent_remove_publication_cleanup(42, 10, 5,"channel");
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP);
+
+                const auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                EXPECT_EQ(AERON_NULL_VALUE, data->id);
+                EXPECT_EQ(42, data->session_id);
+                EXPECT_EQ(10, data->stream_id);
+                EXPECT_EQ(5, data->channel_length);
+                EXPECT_EQ(memcmp((const char *)msg + sizeof(aeron_driver_agent_remove_resource_cleanup_t), "chann", 5), 0);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeRemoveSubscriptionCleanupInterceptor)
+{
+    const aeron_on_remove_subscription_cleanup_func_t func = m_context->remove_subscription_cleanup_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("REMOVE_SUBSCRIPTION_CLEANUP"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->remove_subscription_cleanup_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldLogRemoveSubscriptionCleanup)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    aeron_driver_agent_remove_subscription_cleanup(1000000000000, -28, 10,"channel 10");
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP);
+
+                const auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                EXPECT_EQ(1000000000000, data->id);
+                EXPECT_EQ(AERON_NULL_VALUE, data->session_id);
+                EXPECT_EQ(-28, data->stream_id);
+                EXPECT_EQ(10, data->channel_length);
+                EXPECT_EQ(memcmp((const char *)msg + sizeof(aeron_driver_agent_remove_resource_cleanup_t), "channel 10", 10), 0);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeRemoveImageCleanupInterceptor)
+{
+    const aeron_on_remove_image_cleanup_func_t func = m_context->remove_image_cleanup_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("REMOVE_IMAGE_CLEANUP"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->remove_image_cleanup_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldLogRemoveImageCleanup)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    const int channel_length = AERON_MAX_PATH * 3;
+    char channel[channel_length + 1];
+    memset(channel, '*', channel_length);
+    channel[channel_length] = '\0';
+
+    aeron_driver_agent_remove_image_cleanup(-2396483568542, 777, 1, channel_length, channel);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP);
+
+                const auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                EXPECT_EQ(-2396483568542, data->id);
+                EXPECT_EQ(777, data->session_id);
+                EXPECT_EQ(1, data->stream_id);
+                const int channel_length = AERON_MAX_PATH * 3;
+                EXPECT_EQ(channel_length, data->channel_length);
+                char channel[channel_length + 1];
+                memset(channel, '*', channel_length);
+                channel[channel_length] = '\0';
+                EXPECT_EQ(memcmp((const char *)msg + sizeof(aeron_driver_agent_remove_resource_cleanup_t), channel, channel_length), 0);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}

@@ -502,7 +502,7 @@ int aeron_confirm_publication_match(
 void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link)
 {
     conductor->context->remove_subscription_cleanup_func(
-        link->registration_id, link->stream_id, link->channel, link->channel_length);
+        link->registration_id, link->stream_id, link->channel_length, link->channel);
 
     aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
 
@@ -731,7 +731,7 @@ void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aer
 {
     aeron_ipc_publication_t *publication = entry->publication;
     conductor->context->remove_publication_cleanup_func(
-        publication->session_id, publication->stream_id, publication->channel, publication->channel_length);
+        publication->session_id, publication->stream_id, publication->channel_length, publication->channel);
 
     for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
     {
@@ -834,7 +834,7 @@ void aeron_driver_conductor_cleanup_network_publication(
 {
     const aeron_udp_channel_t *udp_channel = publication->endpoint->conductor_fields.udp_channel;
     conductor->context->remove_publication_cleanup_func(
-        publication->session_id, publication->stream_id, udp_channel->original_uri, udp_channel->uri_length);
+        publication->session_id, publication->stream_id, udp_channel->uri_length, udp_channel->original_uri);
 
     aeron_driver_sender_proxy_on_remove_publication(conductor->context->sender_proxy, publication);
 }
@@ -886,11 +886,11 @@ void aeron_receive_channel_endpoint_entry_delete(
             const aeron_receive_channel_endpoint_t *endpoint = image->endpoint;
             const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
             conductor->context->remove_image_cleanup_func(
-                    image->conductor_fields.managed_resource.registration_id,
-                    image->session_id,
-                    image->stream_id,
-                    udp_channel->original_uri,
-                    udp_channel->uri_length);
+                image->conductor_fields.managed_resource.registration_id,
+                image->session_id,
+                image->stream_id,
+                udp_channel->uri_length,
+                udp_channel->original_uri);
             aeron_publication_image_disconnect_endpoint(image);
         }
     }

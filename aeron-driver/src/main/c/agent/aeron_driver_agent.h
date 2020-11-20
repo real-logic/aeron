@@ -107,14 +107,23 @@ typedef struct aeron_driver_agent_untethered_subscription_state_change_log_heade
 }
 aeron_driver_agent_untethered_subscription_state_change_log_header_t;
 
+typedef struct aeron_driver_agent_remove_resource_cleanup_stct
+{
+    int64_t time_ns;
+    int64_t id;
+    int32_t stream_id;
+    int32_t session_id;
+    int32_t channel_length;
+}
+aeron_driver_agent_remove_resource_cleanup_t;
+
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
 
-const char *
-aeron_driver_agent_dissect_log_header(
+const char *aeron_driver_agent_dissect_log_header(
     int64_t time_ns,
     aeron_driver_agent_event_t event_id,
     size_t capture_length,
@@ -150,13 +159,13 @@ void aeron_driver_agent_name_resolution_on_neighbor_added(const struct sockaddr_
 void aeron_driver_agent_name_resolution_on_neighbor_removed(const struct sockaddr_storage *addr);
 
 void aeron_driver_agent_remove_publication_cleanup(
-    int32_t session_id, int32_t stream_id, const char *channel, size_t channel_length);
+    int32_t session_id, int32_t stream_id, size_t channel_length, const char *channel);
 
 void aeron_driver_agent_remove_subscription_cleanup(
-    int64_t registration_id, int32_t stream_id, const char *channel, size_t channel_length);
+    int64_t id, int32_t stream_id, size_t channel_length, const char *channel);
 
 void aeron_driver_agent_remove_image_cleanup(
-    int64_t correlation_id, int32_t session_id, int32_t stream_id, const char *channel, size_t channel_length);
+    int64_t id, int32_t session_id, int32_t stream_id, size_t channel_length, const char *channel);
 
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd);

@@ -22,6 +22,9 @@ import io.aeron.ErrorCode;
  */
 public class ControlProtocolException extends AeronException
 {
+    /**
+     * The {@link ErrorCode} indicating more specific issue experienced by the media driver.
+     */
     private final ErrorCode code;
 
     /**

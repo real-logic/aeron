@@ -23,8 +23,19 @@ import io.aeron.*;
  */
 public class RegistrationException extends AeronException
 {
+    /**
+     * The correlation id of the command to register the resource action.
+     */
     private final long correlationId;
+
+    /**
+     * Value of the {@link #errorCode()} encoded as an int.
+     */
     private final int errorCodeValue;
+
+    /**
+     * The {@link ErrorCode} for the specific exception.
+     */
     private final ErrorCode errorCode;
 
     /**
@@ -66,7 +77,7 @@ public class RegistrationException extends AeronException
     }
 
     /**
-     * Value of the errorCode encoded. This can provide additional information when a
+     * Value of the {@link #errorCode()} encoded as an int. This can provide additional information when a
      * {@link ErrorCode#UNKNOWN_CODE_VALUE} is returned.
      *
      * @return value of the errorCode encoded as an int.

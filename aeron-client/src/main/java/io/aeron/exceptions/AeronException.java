@@ -43,6 +43,9 @@ public class AeronException extends RuntimeException
         WARN
     }
 
+    /**
+     * {@link Category} of the exception to help the client decide how they should proceed.
+     */
     private final Category category;
 
     /**

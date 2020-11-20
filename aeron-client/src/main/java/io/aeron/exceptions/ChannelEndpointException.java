@@ -21,6 +21,9 @@ package io.aeron.exceptions;
  */
 public class ChannelEndpointException extends AeronException
 {
+    /**
+     * Counter id for the status indicator of the channel.
+     */
     private final int statusIndicatorId;
 
     /**

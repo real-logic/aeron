@@ -41,7 +41,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int REGISTRATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
-    public static final int MINIMUM_LENGTH = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int MINIMUM_LENGTH = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
 
     /**
      * Wrap the buffer at a given offset for updates.

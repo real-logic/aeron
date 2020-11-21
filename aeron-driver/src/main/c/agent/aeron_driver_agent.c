@@ -403,12 +403,20 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
     if (event_log)
     {
         const size_t event_log_length = strlen(event_log);
-        char event_log_dup[event_log_length + 1];
-        strcpy(event_log_dup, event_log);
-        char *events[AERON_DRIVER_EVENT_NUM_ELEMENTS];
+        char *event_log_dup = NULL;
+        if (aeron_alloc((void **)&event_log_dup, event_log_length + 1) < 0)
+        {
+            fprintf(stderr, "failed to copy logging events\n");
+            return false;
+        }
+        strncpy(event_log_dup, event_log, event_log_length);
+        event_log_dup[event_log_length] = '\0';
 
+        char *events[AERON_DRIVER_EVENT_NUM_ELEMENTS];
         const int num_events =
-                aeron_tokenise(event_log_dup, ',', AERON_DRIVER_EVENT_NUM_ELEMENTS, events);
+            aeron_tokenise(event_log_dup, ',', AERON_DRIVER_EVENT_NUM_ELEMENTS, events);
+
+        aeron_free(event_log_dup);
 
         if (num_events < 0)
         {
@@ -846,9 +854,7 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
 
 void log_name_resolution_neighbor_change(const aeron_driver_agent_event_t id, const struct sockaddr_storage *addr)
 {
-    const size_t length =
-        sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage);
-    uint8_t buffer[length];
+    uint8_t buffer[sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage)];
     aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)buffer;
 
     hdr->time_ns = aeron_nano_clock();
@@ -856,7 +862,8 @@ void log_name_resolution_neighbor_change(const aeron_driver_agent_event_t id, co
     uint8_t *ptr = buffer + sizeof(aeron_driver_agent_log_header_t);
     memcpy(ptr, addr, sizeof(struct sockaddr_storage));
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, id, buffer, length);
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb, id, buffer, sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage));
 }
 
 void aeron_driver_agent_name_resolution_on_neighbor_added(const struct sockaddr_storage *addr)

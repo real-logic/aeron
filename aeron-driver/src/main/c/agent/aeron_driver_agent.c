@@ -1805,7 +1805,7 @@ static void log_remove_resource_cleanup_event(
     hdr->id = id;
     hdr->stream_id = stream_id;
     hdr->session_id = session_id;
-    hdr->channel_length = channel_length;
+    hdr->channel_length = (int32_t)channel_length;
 
     memcpy(buffer + sizeof(aeron_driver_agent_remove_resource_cleanup_t), channel, channel_length);
 

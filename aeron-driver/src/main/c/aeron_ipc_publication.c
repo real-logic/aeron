@@ -96,7 +96,7 @@ int aeron_ipc_publication_create(
 
     strncpy(_pub->channel, channel, channel_length);
     _pub->channel[channel_length] = '\0';
-    _pub->channel_length = channel_length;
+    _pub->channel_length = (int32_t)channel_length;
 
     if (params->has_position)
     {

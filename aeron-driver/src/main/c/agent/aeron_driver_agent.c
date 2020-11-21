@@ -406,13 +406,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
         return false;
     }
 
-    const size_t event_log_length = strlen(event_log);
-    if (event_log_length == 0)
-    {
-        return false;
-    }
-
-    char *event_log_dup = strndup(event_log, event_log_length);
+    char *event_log_dup = strdup(event_log);
     if (NULL == event_log_dup)
     {
         fprintf(stderr, "failed to copy logging events string\n");
@@ -425,7 +419,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
 
     if (num_events < 0)
     {
-        fprintf(stderr, "failed to parse logging events: '%*s'\n", (int)event_log_length, event_log);
+        fprintf(stderr, "failed to parse logging events: '%s'\n", event_log);
         aeron_free(event_log_dup);
         return false;
     }

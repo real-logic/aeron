@@ -909,3 +909,235 @@ TEST_F(DriverAgentTest, shouldLogRemoveImageCleanup)
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);
 }
+
+TEST_F(DriverAgentTest, shouldInitializeSendChannelCreationInterceptor)
+{
+    const aeron_on_endpoint_change_func_t func = m_context->sender_proxy_on_add_endpoint_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("SEND_CHANNEL_CREATION"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->sender_proxy_on_add_endpoint_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeSendChannelCloseInterceptor)
+{
+    const aeron_on_endpoint_change_func_t func = m_context->sender_proxy_on_remove_endpoint_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("SEND_CHANNEL_CLOSE"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->sender_proxy_on_remove_endpoint_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeReceiveChannelCreationInterceptor)
+{
+    const aeron_on_endpoint_change_func_t func = m_context->receiver_proxy_on_add_endpoint_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("RECEIVE_CHANNEL_CREATION"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->receiver_proxy_on_add_endpoint_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeReceiveChannelCloseInterceptor)
+{
+    const aeron_on_endpoint_change_func_t func = m_context->receiver_proxy_on_remove_endpoint_func;
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("RECEIVE_CHANNEL_CLOSE"));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(m_context->receiver_proxy_on_remove_endpoint_func, func);
+}
+
+TEST_F(DriverAgentTest, shouldLogSendChannelCreation)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    struct sockaddr_storage local_address = {};
+    auto *ipv4_addr = (struct sockaddr_in *)(&local_address);
+    ipv4_addr->sin_port = 5090;
+    ipv4_addr->sin_family = AF_INET;
+
+    struct sockaddr_storage remote_address = {};
+    auto *ipv6_addr = (struct sockaddr_in6 *)(&remote_address);
+    ipv6_addr->sin6_port = 7070;
+    ipv6_addr->sin6_family = AF_INET6;
+
+    aeron_udp_channel_t channel = {};
+    channel.local_data = local_address;
+    channel.remote_data = remote_address;
+    channel.multicast_ttl = 42;
+
+    aeron_driver_agent_sender_proxy_on_add_endpoint(&channel);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION);
+
+                const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                const auto *local_addr = (const struct sockaddr_in *)(&data->local_data);
+                EXPECT_NE(nullptr, local_addr);
+                EXPECT_EQ(AF_INET, local_addr->sin_family);
+                EXPECT_EQ(5090, local_addr->sin_port);
+                const auto *remote_addr = (const struct sockaddr_in6 *)(&data->remote_data);
+                EXPECT_EQ(AF_INET6, remote_addr->sin6_family);
+                EXPECT_EQ(7070, remote_addr->sin6_port);
+                EXPECT_EQ(42, data->multicast_ttl);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldLogSendChannelClose)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    struct sockaddr_storage local_address = {};
+    auto *ipv4_addr = (struct sockaddr_in *)(&local_address);
+    ipv4_addr->sin_port = 5090;
+    ipv4_addr->sin_family = AF_INET;
+
+    struct sockaddr_storage remote_address = {};
+    auto *ipv6_addr = (struct sockaddr_in6 *)(&remote_address);
+    ipv6_addr->sin6_port = 7070;
+    ipv6_addr->sin6_family = AF_INET6;
+
+    aeron_udp_channel_t channel = {};
+    channel.local_data = local_address;
+    channel.remote_data = remote_address;
+    channel.multicast_ttl = 42;
+
+    aeron_driver_agent_sender_proxy_on_remove_endpoint(&channel);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE);
+
+                const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                const auto *local_addr = (const struct sockaddr_in *)(&data->local_data);
+                EXPECT_NE(nullptr, local_addr);
+                EXPECT_EQ(AF_INET, local_addr->sin_family);
+                EXPECT_EQ(5090, local_addr->sin_port);
+                const auto *remote_addr = (const struct sockaddr_in6 *)(&data->remote_data);
+                EXPECT_EQ(AF_INET6, remote_addr->sin6_family);
+                EXPECT_EQ(7070, remote_addr->sin6_port);
+                EXPECT_EQ(42, data->multicast_ttl);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldLogReceiveChannelCreation)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    struct sockaddr_storage local_address = {};
+    auto *ipv6_addr = (struct sockaddr_in6 *)(&local_address);
+    ipv6_addr->sin6_port = 5050;
+    ipv6_addr->sin6_family = AF_INET6;
+
+    struct sockaddr_storage remote_address = {};
+    auto *ipv4_addr = (struct sockaddr_in *)(&remote_address);
+    ipv4_addr->sin_port = 9090;
+    ipv4_addr->sin_family = AF_INET;
+
+    aeron_udp_channel_t channel = {};
+    channel.local_data = local_address;
+    channel.remote_data = remote_address;
+    channel.multicast_ttl = 5;
+
+    aeron_driver_agent_receiver_proxy_on_add_endpoint(&channel);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION);
+
+                const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                const auto *local_addr = (const struct sockaddr_in6 *)(&data->local_data);
+                EXPECT_EQ(AF_INET6, local_addr->sin6_family);
+                EXPECT_EQ(5050, local_addr->sin6_port);
+                EXPECT_EQ(5, data->multicast_ttl);
+                const auto *remote_addr = (const struct sockaddr_in *)(&data->remote_data);
+                EXPECT_NE(nullptr, remote_addr);
+                EXPECT_EQ(AF_INET, remote_addr->sin_family);
+                EXPECT_EQ(9090, remote_addr->sin_port);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldLogReceiveChannelClose)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+
+    struct sockaddr_storage local_address = {};
+    auto *ipv6_addr = (struct sockaddr_in6 *)(&local_address);
+    ipv6_addr->sin6_port = 5050;
+    ipv6_addr->sin6_family = AF_INET6;
+
+    struct sockaddr_storage remote_address = {};
+    auto *ipv4_addr = (struct sockaddr_in *)(&remote_address);
+    ipv4_addr->sin_port = 9090;
+    ipv4_addr->sin_family = AF_INET;
+
+    aeron_udp_channel_t channel = {};
+    channel.local_data = local_address;
+    channel.remote_data = remote_address;
+    channel.multicast_ttl = 5;
+
+    aeron_driver_agent_receiver_proxy_on_remove_endpoint(&channel);
+
+    auto message_handler =
+            [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+            {
+                size_t *count = (size_t *)clientd;
+                (*count)++;
+
+                EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE);
+
+                const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+                EXPECT_NE(data->time_ns, 0LL);
+                const auto *local_addr = (const struct sockaddr_in6 *)(&data->local_data);
+                EXPECT_EQ(AF_INET6, local_addr->sin6_family);
+                EXPECT_EQ(5050, local_addr->sin6_port);
+                EXPECT_EQ(5, data->multicast_ttl);
+                const auto *remote_addr = (const struct sockaddr_in *)(&data->remote_data);
+                EXPECT_NE(nullptr, remote_addr);
+                EXPECT_EQ(AF_INET, remote_addr->sin_family);
+                EXPECT_EQ(9090, remote_addr->sin_port);
+            };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}

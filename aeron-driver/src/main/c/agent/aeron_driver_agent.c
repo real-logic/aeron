@@ -616,7 +616,7 @@ static aeron_driver_agent_event_t command_id_to_driver_event_id(const int32_t ms
     }
 }
 
-void encode_conductor_to_driver_command(
+void log_conductor_to_driver_command(
     const aeron_driver_agent_event_t event_id,
     const int32_t msg_type_id,
     const void *message,
@@ -650,17 +650,17 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
         {
             return;
         }
-        encode_conductor_to_driver_command(event_id, msg_type_id, message, length, command_length, buffer);
+        log_conductor_to_driver_command(event_id, msg_type_id, message, length, command_length, buffer);
         aeron_free(buffer);
     }
     else
     {
         char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
-        encode_conductor_to_driver_command(event_id, msg_type_id, message, length, command_length, buffer);
+        log_conductor_to_driver_command(event_id, msg_type_id, message, length, command_length, buffer);
     }
 }
 
-void encode_conductor_to_client_command(
+void log_conductor_to_client_command(
     const aeron_driver_agent_event_t event_id,
     const int32_t msg_type_id,
     const void *message,
@@ -694,13 +694,13 @@ void aeron_driver_agent_conductor_to_client_interceptor(
         {
             return;
         }
-        encode_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
+        log_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
         aeron_free(buffer);
     }
     else
     {
         char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
-        encode_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
+        log_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
     }
 }
 
@@ -977,6 +977,26 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP))
     {
         context->remove_image_cleanup_func = aeron_driver_agent_remove_image_cleanup;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION))
+    {
+        context->sender_proxy_on_add_endpoint_func = aeron_driver_agent_sender_proxy_on_add_endpoint;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE))
+    {
+        context->sender_proxy_on_remove_endpoint_func = aeron_driver_agent_sender_proxy_on_remove_endpoint;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION))
+    {
+        context->receiver_proxy_on_add_endpoint_func = aeron_driver_agent_receiver_proxy_on_add_endpoint;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE))
+    {
+        context->receiver_proxy_on_remove_endpoint_func = aeron_driver_agent_receiver_proxy_on_remove_endpoint;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE))
@@ -1634,38 +1654,6 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
-        case AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE:
-        {
-            aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
-                (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
-
-            fprintf(
-                logfp,
-                "%s: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
-                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
-                hdr->subscription_id,
-                hdr->stream_id,
-                hdr->session_id,
-                dissect_tether_state(hdr->old_state),
-                dissect_tether_state(hdr->new_state));
-            break;
-        }
-
-        case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED:
-        case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED:
-        {
-            aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)message;
-            const struct sockaddr *addr =
-                    (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
-
-            fprintf(
-                logfp,
-                "%s: %s\n",
-                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
-                dissect_sockaddr(addr));
-            break;
-        }
-
         case AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP:
         {
             aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)message;
@@ -1712,6 +1700,54 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
+        case AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION:
+        case AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE:
+        case AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION:
+        case AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE:
+        {
+            aeron_driver_agent_on_endpoint_change_t *hdr = (aeron_driver_agent_on_endpoint_change_t *)message;
+            fprintf(
+                logfp,
+                "%s: localData: %s, remoteData: %s, ttl: %d\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                dissect_sockaddr((const struct sockaddr *) &hdr->local_data),
+                dissect_sockaddr((const struct sockaddr *) &hdr->remote_data),
+                hdr->multicast_ttl);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE:
+        {
+            aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
+                    (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
+
+            fprintf(
+                logfp,
+                "%s: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                hdr->subscription_id,
+                hdr->stream_id,
+                hdr->session_id,
+                dissect_tether_state(hdr->old_state),
+                dissect_tether_state(hdr->new_state));
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED:
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED:
+        {
+            aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)message;
+            const struct sockaddr *addr =
+                    (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+
+            fprintf(
+                logfp,
+                "%s: %s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                dissect_sockaddr(addr));
+            break;
+        }
+
         default:
             if (is_valid_event_id(msg_type_id))
             {
@@ -1746,7 +1782,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
     }
 }
 
-static void encode_remove_resource_cleanup_event(
+static void log_remove_resource_cleanup_event(
     const int64_t id,
     const int32_t session_id,
     const int32_t stream_id,
@@ -1769,7 +1805,7 @@ static void encode_remove_resource_cleanup_event(
     aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, command_length);
 }
 
-static void encode_remove_resource_cleanup(
+static void log_remove_resource_cleanup(
     const int64_t id,
     const int32_t session_id,
     const int32_t stream_id,
@@ -1786,14 +1822,14 @@ static void encode_remove_resource_cleanup(
         {
             return;
         }
-        encode_remove_resource_cleanup_event(
+        log_remove_resource_cleanup_event(
             id, session_id, stream_id, channel_length, channel, event_id, command_length, buffer);
         aeron_free(buffer);
     }
     else
     {
         char buffer[sizeof(aeron_driver_agent_remove_resource_cleanup_t) + AERON_MAX_PATH];
-        encode_remove_resource_cleanup_event(
+        log_remove_resource_cleanup_event(
             id, session_id, stream_id, channel_length, channel, event_id, command_length, buffer);
     }
 }
@@ -1801,25 +1837,25 @@ static void encode_remove_resource_cleanup(
 void aeron_driver_agent_remove_publication_cleanup(
     const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
 {
-    encode_remove_resource_cleanup(
-            AERON_NULL_VALUE,
-            session_id,
-            stream_id,
-            channel_length,
-            channel,
-            AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP);
+    log_remove_resource_cleanup(
+        AERON_NULL_VALUE,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP);
 }
 
 void aeron_driver_agent_remove_subscription_cleanup(
     const int64_t id, const int32_t stream_id, const size_t channel_length, const char *channel)
 {
-    encode_remove_resource_cleanup(
-            id,
-            AERON_NULL_VALUE,
-            stream_id,
-            channel_length,
-            channel,
-            AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP);
+    log_remove_resource_cleanup(
+        id,
+        AERON_NULL_VALUE,
+        stream_id,
+        channel_length,
+        channel,
+        AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP);
 }
 
 void aeron_driver_agent_remove_image_cleanup(
@@ -1829,11 +1865,46 @@ void aeron_driver_agent_remove_image_cleanup(
     const size_t channel_length,
     const char *channel)
 {
-    encode_remove_resource_cleanup(
-            id,
-            session_id,
-            stream_id,
-            channel_length,
-            channel,
-            AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP);
+    log_remove_resource_cleanup(
+        id,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP);
+}
+
+static void log_endpoint_change_event(const aeron_driver_agent_event_t event_id, const void *channel)
+{
+    char buffer[sizeof(aeron_driver_agent_on_endpoint_change_t)];
+    aeron_driver_agent_on_endpoint_change_t *hdr = (aeron_driver_agent_on_endpoint_change_t *)buffer;
+
+    const aeron_udp_channel_t *udp_channel = channel;
+
+    hdr->time_ns = aeron_nano_clock();
+    memcpy(&hdr->local_data, &udp_channel->local_data, AERON_ADDR_LEN(&udp_channel->local_data));
+    memcpy(&hdr->remote_data, &udp_channel->remote_data, AERON_ADDR_LEN(&udp_channel->remote_data));
+    hdr->multicast_ttl = udp_channel->multicast_ttl;
+
+    aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, sizeof(aeron_driver_agent_on_endpoint_change_t));
+}
+
+void aeron_driver_agent_sender_proxy_on_add_endpoint(const void *channel)
+{
+    log_endpoint_change_event(AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION, channel);
+}
+
+void aeron_driver_agent_sender_proxy_on_remove_endpoint(const void *channel)
+{
+    log_endpoint_change_event(AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE, channel);
+}
+
+void aeron_driver_agent_receiver_proxy_on_add_endpoint(const void *channel)
+{
+    log_endpoint_change_event(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION, channel);
+}
+
+void aeron_driver_agent_receiver_proxy_on_remove_endpoint(const void *channel)
+{
+    log_endpoint_change_event(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE, channel);
 }

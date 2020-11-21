@@ -117,6 +117,15 @@ typedef struct aeron_driver_agent_remove_resource_cleanup_stct
 }
 aeron_driver_agent_remove_resource_cleanup_t;
 
+typedef struct aeron_driver_agent_on_endpoint_change_stct
+{
+    int64_t time_ns;
+    struct sockaddr_storage local_data;
+    struct sockaddr_storage remote_data;
+    uint8_t multicast_ttl;
+}
+aeron_driver_agent_on_endpoint_change_t;
+
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
@@ -175,5 +184,13 @@ void aeron_driver_agent_conductor_to_client_interceptor(
 
 void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len);
+
+void aeron_driver_agent_sender_proxy_on_add_endpoint(const void *channel);
+
+void aeron_driver_agent_sender_proxy_on_remove_endpoint(const void *channel);
+
+void aeron_driver_agent_receiver_proxy_on_add_endpoint(const void *channel);
+
+void aeron_driver_agent_receiver_proxy_on_remove_endpoint(const void *channel);
 
 #endif //AERON_DRIVER_AGENT_H

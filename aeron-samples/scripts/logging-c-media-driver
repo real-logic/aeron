@@ -17,6 +17,6 @@
 
 AERON_BUILD_DIR=../../cppbuild/Release
 
-export AERON_EVENT_LOG="0xffff"
+export AERON_EVENT_LOG="all"
 
 ${AERON_BUILD_DIR}/binaries/aeronmd "$@"

@@ -230,6 +230,20 @@ TEST_F(DriverAgentTest, shouldEnableAllEventsUsingMask)
     assert_all_events_enabled();
 }
 
+TEST_F(DriverAgentTest, shouldEnableAllEventsUsingMaskLowerCase)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0xffff"));
+
+    assert_all_events_enabled();
+}
+
+TEST_F(DriverAgentTest, shouldEnableAllEventsUsingMaskMixedCase)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0xfFFf"));
+
+    assert_all_events_enabled();
+}
+
 TEST_F(DriverAgentTest, shouldEnableAllCmdInEventsUsingMask)
 {
     EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x1"));

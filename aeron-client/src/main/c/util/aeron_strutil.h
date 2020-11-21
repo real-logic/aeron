@@ -49,6 +49,10 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
     return hval;
 }
 
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
+
 /*
  * Splits a null terminated string using the delimiter specified, which is replaced with \0 characters.
  * Each of the tokens is stored in reverse order in the tokens array.

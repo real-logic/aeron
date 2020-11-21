@@ -22,11 +22,8 @@ extern "C"
 {
 #include "collections/aeron_array_to_ptr_hash_map.h"
 #include "aeron_alloc.h"
+#include "util/aeron_strutil.h"
 }
-
-#ifdef _MSC_VER
-#define strdup _strdup
-#endif
 
 class ArrToPtrHashMapTest : public testing::Test
 {

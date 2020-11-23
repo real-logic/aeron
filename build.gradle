@@ -31,6 +31,14 @@ plugins {
 defaultTasks 'clean', 'build'
 
 def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+if (buildJavaVersion.indexOf('.') > 0)
+{
+    buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
+}
+if (buildJavaVersion.indexOf('-') > 0)
+{
+    buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
+}
 println "BUILD_JAVA_VERSION=$buildJavaVersion"
 
 def aeronGroup = 'io.aeron'

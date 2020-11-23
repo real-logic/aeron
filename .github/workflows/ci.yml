@@ -42,14 +42,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - name: Setup java 8 to run Gradle script
-        uses: actions/setup-java@v1
-        with:
-          java-version: 8
       - name: Build with Gradle
         run: ./gradlew
-        env:
-          BUILD_JAVA_VERSION: ${{ matrix.java }}
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

@@ -30,6 +30,9 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
+def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+println "BUILD_JAVA_VERSION=$buildJavaVersion"
+
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
@@ -151,6 +154,12 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+        }
     }
 
     group = aeronGroup
@@ -420,7 +429,7 @@ project(':aeron-archive') {
         args = [codecsFile, markCodecsFile]
     }
 
-    def generatedCppDir = file(System.properties['codec.target.dir'] ?: "${rootDir}/cppbuild/Release/generated")
+    def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
     task generateCppCodecs(type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration

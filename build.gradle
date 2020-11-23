@@ -191,7 +191,7 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
-        if (JavaVersion.current().isJava9Compatible()) {
+        if (buildJavaVersion >= 9) {
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.net=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED'])
@@ -202,7 +202,7 @@ subprojects {
     }
 
     tasks.withType(Test) {
-        if (JavaVersion.current().isJava9Compatible()) {
+        if (buildJavaVersion >= 9) {
             jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
@@ -245,12 +245,12 @@ subprojects {
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
-        if (JavaVersion.current().isJava11Compatible()) {
-            options.links("https://docs.oracle.com/en/java/javase/${JavaVersion.current().majorVersion}/docs/api/")
+        if (buildJavaVersion >= 11) {
+            options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         } else {
-            options.links("https://docs.oracle.com/javase/${JavaVersion.current().majorVersion}/docs/api/")
+            options.links("https://docs.oracle.com/javase/${buildJavaVersion}/docs/api/")
         }
-        if (JavaVersion.current().isJava10Compatible()) {
+        if (buildJavaVersion >= 10) {
             options.addBooleanOption 'html5', true
         }
     }

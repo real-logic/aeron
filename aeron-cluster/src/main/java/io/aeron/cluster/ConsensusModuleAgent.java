@@ -1377,20 +1377,15 @@ class ConsensusModuleAgent implements Agent
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
     {
-        if (logPosition < appendPosition)
-        {
-            return new LogReplay(
-                archive,
-                recoveryPlan.log.recordingId,
-                logPosition,
-                appendPosition,
-                recoveryPlan.log.leadershipTermId,
-                recoveryPlan.log.sessionId,
-                logAdapter,
-                ctx);
-        }
-
-        return null;
+        return new LogReplay(
+            archive,
+            recoveryPlan.log.recordingId,
+            logPosition,
+            appendPosition,
+            recoveryPlan.log.leadershipTermId,
+            recoveryPlan.log.sessionId,
+            logAdapter,
+            ctx);
     }
 
     void awaitServicesReadyForReplay(

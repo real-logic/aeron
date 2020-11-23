@@ -118,10 +118,11 @@ class Election
     int doWork(final long nowNs)
     {
         int workCount = ElectionState.INIT == state ? init(nowNs) : 0;
-        workCount += consensusAdapter.poll();
 
         try
         {
+            workCount += consensusAdapter.poll();
+
             switch (state)
             {
                 case CANVASS:
@@ -565,15 +566,19 @@ class Election
 
         if (null == logReplay)
         {
+            workCount += 1;
             logSessionId = consensusModuleAgent.addNewLogPublication();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             thisMember.leadershipTermId(leadershipTermId).logPosition(appendPosition);
 
-            if (null == (logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition)))
+            if (logPosition < appendPosition)
+            {
+                logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition);
+            }
+            else
             {
                 state(LEADER_TRANSITION, nowNs);
-                workCount = 1;
             }
         }
         else
@@ -670,10 +675,14 @@ class Election
 
         if (null == logReplay)
         {
-            if (null == (logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition)))
+            workCount += 1;
+            if (logPosition < appendPosition)
+            {
+                logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition);
+            }
+            else
             {
                 state(nextState, nowNs);
-                workCount = 1;
             }
         }
         else
@@ -872,50 +881,48 @@ class Election
 
     private void state(final ElectionState newState, final long nowNs)
     {
-        if (newState == state)
+        if (newState != state)
         {
-            return;
+            stateChange(state, newState, thisMember.id());
+
+            if (CANVASS == newState)
+            {
+                resetMembers();
+            }
+
+            if (CANVASS == state)
+            {
+                isExtendedCanvass = false;
+            }
+
+            switch (newState)
+            {
+                case INIT:
+                case CANVASS:
+                case NOMINATE:
+                case FOLLOWER_BALLOT:
+                case FOLLOWER_CATCHUP_TRANSITION:
+                case FOLLOWER_CATCHUP:
+                case FOLLOWER_REPLAY:
+                case FOLLOWER_TRANSITION:
+                case FOLLOWER_READY:
+                    consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+                    break;
+
+                case CANDIDATE_BALLOT:
+                    consensusModuleAgent.role(Cluster.Role.CANDIDATE);
+                    break;
+
+                case LEADER_TRANSITION:
+                case LEADER_READY:
+                    consensusModuleAgent.role(Cluster.Role.LEADER);
+                    break;
+            }
+
+            state = newState;
+            ctx.electionStateCounter().setOrdered(newState.code());
+            timeOfLastStateChangeNs = nowNs;
         }
-
-        stateChange(state, newState, thisMember.id());
-
-        if (CANVASS == newState)
-        {
-            resetMembers();
-        }
-
-        if (CANVASS == state)
-        {
-            isExtendedCanvass = false;
-        }
-
-        switch (newState)
-        {
-            case INIT:
-            case CANVASS:
-            case NOMINATE:
-            case FOLLOWER_BALLOT:
-            case FOLLOWER_CATCHUP_TRANSITION:
-            case FOLLOWER_CATCHUP:
-            case FOLLOWER_REPLAY:
-            case FOLLOWER_TRANSITION:
-            case FOLLOWER_READY:
-                consensusModuleAgent.role(Cluster.Role.FOLLOWER);
-                break;
-
-            case CANDIDATE_BALLOT:
-                consensusModuleAgent.role(Cluster.Role.CANDIDATE);
-                break;
-
-            case LEADER_TRANSITION:
-            case LEADER_READY:
-                consensusModuleAgent.role(Cluster.Role.LEADER);
-                break;
-        }
-
-        state = newState;
-        ctx.electionStateCounter().setOrdered(newState.code());
-        timeOfLastStateChangeNs = nowNs;
     }
 
     private void resetCatchup()

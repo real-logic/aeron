@@ -30,16 +30,20 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
-def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
-if (buildJavaVersion.indexOf('.') > 0)
+def getBuildJavaVersion()
 {
-    buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
+    def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+    if (buildJavaVersion.indexOf('.') > 0)
+    {
+        buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
+    }
+    if (buildJavaVersion.indexOf('-') > 0)
+    {
+        buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
+    }
+    Integer.parseInt(buildJavaVersion)
 }
-if (buildJavaVersion.indexOf('-') > 0)
-{
-    buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
-}
-println "BUILD_JAVA_VERSION=$buildJavaVersion"
+int buildJavaVersion = getBuildJavaVersion()
 
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()

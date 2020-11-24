@@ -195,7 +195,8 @@ public:
                     do
                     {
                         waitpid(m_pid, &process_status, WUNTRACED);
-                    } while(0 >= WIFEXITED(process_status));
+                    }
+                    while(0 >= WIFEXITED(process_status));
                 #endif
                 m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
             }

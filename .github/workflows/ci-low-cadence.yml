@@ -89,6 +89,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
           sudo apt-get update
@@ -133,6 +137,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Build
         run: cppbuild/cppbuild --slow-system-tests
       - name: Copy test logs
@@ -174,6 +182,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
           sudo apt-get update

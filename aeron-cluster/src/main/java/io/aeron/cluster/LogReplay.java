@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.CloseHelper;
 
-class LogReplay
+final class LogReplay
 {
     private final long recordingId;
     private final long startPosition;
@@ -62,13 +62,13 @@ class LogReplay
         logSubscription = ctx.aeron().addSubscription(channelUri.toString(), replayStreamId);
     }
 
-    public void close()
+    void close()
     {
         logAdapter.image(null);
         CloseHelper.close(ctx.countedErrorHandler(), logSubscription);
     }
 
-    int doWork(@SuppressWarnings("unused") final long nowMs)
+    int doWork()
     {
         int workCount = 0;
 
@@ -82,25 +82,23 @@ class LogReplay
             replaySessionId = archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
             workCount += 1;
         }
-        else if (!isDone)
+
+        if (null == logAdapter.image())
         {
-            if (null == logAdapter.image())
+            final Image image = logSubscription.imageBySessionId((int)replaySessionId);
+            if (null != image)
             {
-                final Image image = logSubscription.imageBySessionId((int)replaySessionId);
-                if (null != image)
-                {
-                    logAdapter.image(image);
-                    workCount += 1;
-                }
+                logAdapter.image(image);
+                workCount += 1;
             }
-            else
+        }
+        else
+        {
+            workCount += consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
+            if (logAdapter.position() >= stopPosition)
             {
-                workCount += consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
-                if (logAdapter.position() >= stopPosition)
-                {
-                    isDone = true;
-                    workCount += 1;
-                }
+                isDone = true;
+                workCount += 1;
             }
         }
 

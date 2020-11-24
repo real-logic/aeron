@@ -583,7 +583,7 @@ class Election
         }
         else
         {
-            workCount += logReplay.doWork(nowNs);
+            workCount += logReplay.doWork();
             if (logReplay.isDone())
             {
                 cleanupReplay();
@@ -687,7 +687,7 @@ class Election
         }
         else
         {
-            workCount += logReplay.doWork(nowNs);
+            workCount += logReplay.doWork();
             if (logReplay.isDone())
             {
                 cleanupReplay();

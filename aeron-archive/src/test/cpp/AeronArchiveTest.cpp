@@ -189,15 +189,15 @@ public:
                 }
 
                 #if defined(_WIN32)
-                    // FIXME
+                    WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
                 #else
                     int process_status = -1;
                     do
                     {
                         waitpid(m_pid, &process_status, WUNTRACED);
                     } while(0 >= WIFEXITED(process_status));
-                    m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
                 #endif
+                m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
             }
             else
             {

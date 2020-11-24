@@ -99,6 +99,8 @@ public:
 
     void SetUp() final
     {
+        m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
+
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
         char const * const argv[] =
         {
@@ -131,9 +133,9 @@ public:
             "io.aeron.archive.ArchivingMediaDriver",
             nullptr
         };
- 
+
         #if defined(_WIN32)
-        m_pid = spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
+        m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
         #else
         m_pid = -1;
         if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char * const *)&argv[0], nullptr))
@@ -163,14 +165,14 @@ public:
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
 
-        m_stream << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
+        m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
     }
 
     void TearDown() final
     {
         if (0 != m_pid)
         {
-            m_stream << "Shutting down PID " << m_pid << std::endl;
+            m_stream << currentTimeMillis() << " [TearDown] Shutting down PID " << m_pid << std::endl;
 
             const std::string cncFilename = m_context.aeron()->context().cncFileName();
             const std::string aeronPath = aeron::Context::defaultAeronPath();
@@ -178,21 +180,32 @@ public:
 
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
-                m_stream << "Waiting for driver termination" << std::endl;
+                m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
 
                 const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
                 while (test::fileExists(cncFilename.c_str()))
                 {
                     std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
                 }
+
+                #if defined(_WIN32)
+                    // FIXME
+                #else
+                    int process_status = -1;
+                    do
+                    {
+                        waitpid(m_pid, &process_status, WUNTRACED);
+                    } while(0 >= WIFEXITED(process_status));
+                    m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
+                #endif
             }
             else
             {
-                m_stream << "Failed to send driver terminate command" << std::endl;
+                const auto now_ms = currentTimeMillis();
+                m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
+                m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
+                aeron_delete_directory(m_archiveDir.c_str());
             }
-
-            m_stream << "Deleting " << m_archiveDir << std::endl;
-            aeron_delete_directory(m_archiveDir.c_str());
         }
     }
 
@@ -357,7 +370,7 @@ public:
             }
             idleStrategy.idle(fragments);
         }
-        
+
         return true;
     }
 

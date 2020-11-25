@@ -1284,7 +1284,9 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Is ingress to the cluster exclusively from a single thread for this client?
+         * Is ingress to the cluster exclusively from a single thread to this client? Only set this if you are sure
+         * the client will not be used from another thread, e.g. a separate thread calling
+         * {@link AeronCluster#sendKeepAlive()} - which is a really bad design by the way!
          *
          * @param isIngressExclusive true if ingress to the cluster is exclusively from a single thread for this client?
          * @return this for a fluent API.
@@ -1296,9 +1298,9 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Is ingress to the cluster exclusively from a single thread for this client?
+         * Is ingress to the cluster exclusively from a single thread to this client?
          *
-         * @return true if ingress to the cluster exclusively from a single thread for this client?
+         * @return true if ingress to the cluster exclusively from a single thread to this client?
          */
         public boolean isIngressExclusive()
         {

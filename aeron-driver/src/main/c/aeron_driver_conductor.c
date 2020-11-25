@@ -740,7 +740,7 @@ void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aer
     }
 
     aeron_ipc_publication_close(&conductor->counters_manager, publication);
-    publication = NULL;
+    entry->publication = NULL;
 }
 
 bool aeron_ipc_publication_entry_free(aeron_ipc_publication_entry_t *entry)
@@ -927,7 +927,7 @@ void aeron_publication_image_entry_delete(
     }
 
     aeron_publication_image_close(&conductor->counters_manager, image);
-    image = NULL;
+    entry->image = NULL;
 }
 
 bool aeron_publication_image_entry_free(aeron_publication_image_entry_t *entry)

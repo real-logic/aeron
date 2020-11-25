@@ -53,6 +53,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException()
     {
+        super(Category.ERROR.name());
         this.category = Category.ERROR;
     }
 
@@ -63,6 +64,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final Category category)
     {
+        super(category.name());
         this.category = category;
     }
 
@@ -73,7 +75,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final String message)
     {
-        super(message);
+        super(Category.ERROR.name() + " - " + message);
         this.category = Category.ERROR;
     }
 
@@ -84,7 +86,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final Throwable cause)
     {
-        super(cause);
+        super(Category.ERROR.name(), cause);
         this.category = Category.ERROR;
     }
 
@@ -96,7 +98,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final String message, final Category category)
     {
-        super(message);
+        super(category.name() + " - " + message);
         this.category = category;
     }
 
@@ -108,7 +110,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final String message, final Throwable cause)
     {
-        super(message, cause);
+        super(Category.ERROR.name() + " - " + message, cause);
         this.category = Category.ERROR;
     }
 
@@ -120,7 +122,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final Throwable cause, final Category category)
     {
-        super(cause);
+        super(category.name(), cause);
         this.category = category;
     }
 
@@ -133,7 +135,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final String message, final Throwable cause, final Category category)
     {
-        super(message, cause);
+        super(category.name() + " - " + message, cause);
         this.category = category;
     }
 
@@ -149,7 +151,7 @@ public class AeronException extends RuntimeException
     public AeronException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(Category.ERROR.name() + " - " + message, cause, enableSuppression, writableStackTrace);
         this.category = Category.ERROR;
     }
 
@@ -170,7 +172,7 @@ public class AeronException extends RuntimeException
         final boolean writableStackTrace,
         final Category category)
     {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(category.name() + " - " + message, cause, enableSuppression, writableStackTrace);
         this.category = category;
     }
 
@@ -182,15 +184,5 @@ public class AeronException extends RuntimeException
     public Category category()
     {
         return category;
-    }
-
-    /**
-     * Add the {@link #category()} name to the beginning of the {@link Throwable#getMessage()}.
-     *
-     * {@inheritDoc}
-     */
-    public String getMessage()
-    {
-        return category.name() + " - " + super.getMessage();
     }
 }

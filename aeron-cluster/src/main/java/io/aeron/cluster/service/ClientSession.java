@@ -26,7 +26,7 @@ import java.util.Arrays;
 /**
  * Session representing a connected client to the cluster.
  */
-public class ClientSession
+public final class ClientSession
 {
     /**
      * Return value to indicate egress to a session is mocked out by the cluster when in follower mode.

@@ -103,7 +103,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with a detailed message and cause.
+     * Aeron exception with a detailed message, cause, and {@link Category#ERROR}.
      *
      * @param message providing detail on the error.
      * @param cause   of the error.

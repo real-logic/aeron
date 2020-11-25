@@ -21,7 +21,7 @@ package io.aeron.cluster.service;
  * @see io.aeron.cluster.ClusterTool
  * @see ClusterMarkFile
  */
-public class ClusterNodeControlProperties
+public final class ClusterNodeControlProperties
 {
     public final String aeronDirectoryName;
     public final String controlChannel;

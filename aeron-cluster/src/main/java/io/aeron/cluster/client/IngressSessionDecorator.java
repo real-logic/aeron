@@ -30,7 +30,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <b>Note:</b> This class is NOT threadsafe for updating {@link #clusterSessionId(long)} or
  * {@link #leadershipTermId(long)}. Each publisher thread requires its own instance.
  */
-public class IngressSessionDecorator
+public final class IngressSessionDecorator
 {
     /**
      * Length of the session header that will be prepended to the message.

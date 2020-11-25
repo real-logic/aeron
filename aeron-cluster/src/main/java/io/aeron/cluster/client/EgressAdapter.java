@@ -27,7 +27,7 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 /**
  * Adapter for dispatching egress messages from a cluster to a {@link EgressListener}.
  */
-public class EgressAdapter implements FragmentHandler
+public final class EgressAdapter implements FragmentHandler
 {
     private final long clusterSessionId;
     private final int fragmentLimit;

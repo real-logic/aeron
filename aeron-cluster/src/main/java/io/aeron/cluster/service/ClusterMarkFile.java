@@ -41,7 +41,7 @@ import static io.aeron.Aeron.NULL_VALUE;
  * Used to indicate if a cluster service is running and what configuration it is using. Errors encountered by
  * the service are recorded within this file by a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
  */
-public class ClusterMarkFile implements AutoCloseable
+public final class ClusterMarkFile implements AutoCloseable
 {
     public static final int MAJOR_VERSION = 0;
     public static final int MINOR_VERSION = 2;

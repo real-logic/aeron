@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_TYPE_ID;
 
-class ServiceSnapshotLoader implements ControlledFragmentHandler
+final class ServiceSnapshotLoader implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
 

@@ -56,7 +56,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class RecoveryState
+public final class RecoveryState
 {
     /**
      * Type id of a recovery state counter.
@@ -74,6 +74,10 @@ public class RecoveryState
     public static final int CLUSTER_ID_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
     public static final int SERVICE_COUNT_OFFSET = CLUSTER_ID_OFFSET + SIZE_OF_INT;
     public static final int SNAPSHOT_RECORDING_IDS_OFFSET = SERVICE_COUNT_OFFSET + SIZE_OF_INT;
+
+    private RecoveryState()
+    {
+    }
 
     /**
      * Allocate a counter to represent the snapshot services should load on start.

@@ -45,7 +45,7 @@ final class ServiceAdapter implements AutoCloseable
         CloseHelper.close(subscription);
     }
 
-    public int poll()
+    int poll()
     {
         return subscription.poll(fragmentAssembler, 10);
     }

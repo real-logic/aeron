@@ -20,7 +20,7 @@ import io.aeron.cluster.codecs.*;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.IdleStrategy;
 
-class ServiceSnapshotTaker extends SnapshotTaker
+final class ServiceSnapshotTaker extends SnapshotTaker
 {
     private final ClientSessionEncoder clientSessionEncoder = new ClientSessionEncoder();
 

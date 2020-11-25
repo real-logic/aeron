@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 /**
  * Proxy for communicating with the Consensus Module over IPC.
  * <p>
- * This class is not for public use.
+ * <b>Note: </b>This class is not for public use.
  */
 public final class ConsensusModuleProxy implements AutoCloseable
 {
@@ -43,17 +43,25 @@ public final class ConsensusModuleProxy implements AutoCloseable
     private final RemoveMemberEncoder removeMemberEncoder = new RemoveMemberEncoder();
     private final Publication publication;
 
+    /**
+     * Construct a proxy to the consensus module that will send messages over a provided {@link Publication}.
+     *
+     * @param publication for sending messages to the consensus module.
+     */
     public ConsensusModuleProxy(final Publication publication)
     {
         this.publication = publication;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(publication);
     }
 
-    public boolean scheduleTimer(final long correlationId, final long deadlineMs)
+    boolean scheduleTimer(final long correlationId, final long deadline)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;
 
@@ -66,7 +74,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
                 scheduleTimerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
-                    .deadline(deadlineMs);
+                    .deadline(deadline);
 
                 bufferClaim.commit();
 
@@ -80,7 +88,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public boolean cancelTimer(final long correlationId)
+    boolean cancelTimer(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerEncoder.BLOCK_LENGTH;
 
@@ -106,7 +114,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public long offer(
+    long offer(
         final DirectBuffer headerBuffer,
         final int headerOffset,
         final int headerLength,
@@ -117,12 +125,12 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return publication.offer(headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
     }
 
-    public long offer(final DirectBufferVector[] vectors)
+    long offer(final DirectBufferVector[] vectors)
     {
         return publication.offer(vectors, null);
     }
 
-    public long tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
+    long tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
     {
         final long result = publication.tryClaim(length, bufferClaim);
         if (result > 0)
@@ -133,7 +141,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return result;
     }
 
-    public boolean ack(
+    boolean ack(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceAckEncoder.BLOCK_LENGTH;
@@ -164,7 +172,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public boolean closeSession(final long clusterSessionId)
+    boolean closeSession(final long clusterSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CloseSessionEncoder.BLOCK_LENGTH;
 
@@ -190,6 +198,12 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
+    /**
+     * Query for the current cluster members.
+     *
+     * @param correlationId for the request.
+     * @return true of the request was successfully sent, otherwise false.
+     */
     public boolean clusterMembersQuery(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersQueryEncoder.BLOCK_LENGTH;
@@ -217,6 +231,13 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
+    /**
+     * Remove a member by id from the cluster.
+     *
+     * @param memberId  to be removed.
+     * @param isPassive to indicate if the member is passive or not.
+     * @return true of the request was successfully sent, otherwise false.
+     */
     public boolean removeMember(final int memberId, final BooleanType isPassive)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RemoveMemberEncoder.BLOCK_LENGTH;

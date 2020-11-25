@@ -17,10 +17,10 @@ package io.aeron.cluster.service;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SnapshotMark;
 import io.aeron.cluster.codecs.SnapshotMarkerEncoder;
-import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
@@ -29,7 +29,7 @@ import org.agrona.concurrent.IdleStrategy;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Based class of common functions required to take a snapshot of cluster state.
+ * Base class of common functions required to take a snapshot of cluster state.
  */
 public class SnapshotTaker
 {
@@ -145,6 +145,9 @@ public class SnapshotTaker
         }
     }
 
+    /**
+     * Check for thread interrupt and throw an {@link AgentTerminationException} if interrupted.
+     */
     protected static void checkInterruptStatus()
     {
         if (Thread.interrupted())
@@ -153,16 +156,27 @@ public class SnapshotTaker
         }
     }
 
+    /**
+     * Check the result of offering to a publication when writing a snapshot.
+     *
+     * @param result of an offer or try claim to a publication.
+     */
     protected static void checkResult(final long result)
     {
         if (result == Publication.NOT_CONNECTED ||
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new AeronException("unexpected publication state: " + result);
+            throw new ClusterException("unexpected publication state: " + result);
         }
     }
 
+    /**
+     * Check the result of offering to a publication when writing a snapshot and then idle after invoking the client
+     * agent if necessary.
+     *
+     * @param result of an offer or try claim to a publication.
+     */
     protected void checkResultAndIdle(final long result)
     {
         checkResult(result);
@@ -171,6 +185,9 @@ public class SnapshotTaker
         idleStrategy.idle();
     }
 
+    /**
+     * Invoke the Aeron client agent if necessary.
+     */
     protected void invokeAgentClient()
     {
         if (null != aeronAgentInvoker)

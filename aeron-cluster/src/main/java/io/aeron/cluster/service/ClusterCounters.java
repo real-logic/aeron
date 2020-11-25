@@ -28,8 +28,12 @@ import static org.agrona.concurrent.status.CountersReader.*;
  * For allocating and finding cluster associated counters identified by
  * {@link ClusteredServiceContainer.Context#clusterId()}.
  */
-public class ClusterCounters
+public final class ClusterCounters
 {
+    private ClusterCounters()
+    {
+    }
+
     /**
      * Allocate a counter to represent the a component state within a cluster.
      *

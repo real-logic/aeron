@@ -33,13 +33,29 @@ import java.util.concurrent.TimeUnit;
  */
 public class SnapshotTaker
 {
-    protected static final int ENCODED_MARKER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
+    /**
+     * Reusable {@link BufferClaim} to avoid allocation.
+     */
     protected final BufferClaim bufferClaim = new BufferClaim();
+
+    /**
+     * Reusable {@link MessageHeaderEncoder} to avoid allocation.
+     */
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+
+    /**
+     * {@link Publication} to which the snapshot will be written.
+     */
     protected final ExclusivePublication publication;
+
+    /**
+     * {@link IdleStrategy} to be called when back pressure is propagated from the {@link #publication}.
+     */
     protected final IdleStrategy idleStrategy;
-    protected final AgentInvoker aeronAgentInvoker;
+
+    private static final int ENCODED_MARKER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
+    private final AgentInvoker aeronAgentInvoker;
     private final SnapshotMarkerEncoder snapshotMarkerEncoder = new SnapshotMarkerEncoder();
 
     /**

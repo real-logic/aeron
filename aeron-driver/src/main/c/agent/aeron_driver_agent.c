@@ -20,12 +20,10 @@
 #endif
 
 #if !defined(_MSC_VER)
-
 #include <pthread.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-
 #endif
 
 #include <stdio.h>
@@ -102,7 +100,7 @@ static void *aeron_driver_agent_log_reader(void *arg)
 
 void aeron_init_logging_ring_buffer()
 {
-    size_t rb_length = RING_BUFFER_LENGTH + AERON_RB_TRAILER_LENGTH;
+    size_t rb_length = AERON_EVENT_RB_LENGTH + AERON_RB_TRAILER_LENGTH;
 
     if ((rb_buffer = (uint8_t *)malloc(rb_length)) == NULL)
     {
@@ -189,7 +187,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 {
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
+    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH)
     {
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, command_length) < 0)
@@ -201,7 +199,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
     }
     else
     {
-        char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
+        char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH];
         encode_conductor_to_driver_command(msg_type_id, message, length, command_length, buffer);
     }
 }
@@ -222,7 +220,7 @@ void aeron_driver_agent_conductor_to_client_interceptor(
 {
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH)
+    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH)
     {
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, command_length) < 0)
@@ -234,7 +232,7 @@ void aeron_driver_agent_conductor_to_client_interceptor(
     }
     else
     {
-        char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + MAX_CMD_LENGTH];
+        char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH];
         encode_conductor_to_client_command(msg_type_id, message, length, command_length, buffer);
     }
 }
@@ -324,7 +322,7 @@ bool aeron_driver_agent_raw_log_free_interceptor(aeron_mapped_raw_log_t *mapped_
 void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
 {
-    uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage)];
+    uint8_t buffer[AERON_MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage)];
     aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
     size_t length = sizeof(aeron_driver_agent_frame_log_header_t);
 
@@ -343,7 +341,7 @@ void aeron_driver_agent_log_frame(
     length += msghdr->msg_namelen;
 
     ptr += msghdr->msg_namelen;
-    int32_t copy_length = message_len < MAX_FRAME_LENGTH ? message_len : MAX_FRAME_LENGTH;
+    int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
     memcpy(ptr, msghdr->msg_iov[0].iov_base, (size_t)copy_length);
     length += copy_length;
 
@@ -651,9 +649,9 @@ int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_diss
 
 void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length)
 {
-    uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
+    uint8_t buffer[AERON_MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
     aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
-    size_t copy_length = length < MAX_FRAME_LENGTH ? length : MAX_FRAME_LENGTH;
+    size_t copy_length = length < AERON_MAX_FRAME_LENGTH ? length : AERON_MAX_FRAME_LENGTH;
 
     hdr->time_ms = aeron_epoch_clock();
     hdr->index = index;

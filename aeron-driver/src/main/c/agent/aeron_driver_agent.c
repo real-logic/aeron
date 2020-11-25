@@ -382,7 +382,8 @@ static bool any_event_enabled(const bool *events)
     return false;
 }
 
-static aeron_driver_agent_event_t parse_event_name(const char *event_name) {
+static aeron_driver_agent_event_t parse_event_name(const char *event_name)
+{
     aeron_driver_agent_event_t event_id = aeron_driver_agent_event_name_to_id(event_name);
     if (AERON_DRIVER_EVENT_UNKNOWN_EVENT == event_id)
     {
@@ -1044,12 +1045,12 @@ const char *aeron_driver_agent_dissect_log_header(
     snprintf(
         buffer,
         sizeof(buffer) - 1,
-        "[%f] %s: %s [%zu/%zu]",
+        "[%f] %s: %s [%" PRId64 "/%" PRId64 "]",
         (double)time_ns / NANOS_PER_SECOND,
         AERON_DRIVER_AGENT_LOG_CONTEXT,
         aeron_driver_agent_event_name(event_id),
-        capture_length,
-        message_length);
+        (long long)capture_length,
+        (long long)message_length);
     return buffer;
 }
 
@@ -1725,7 +1726,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         case AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE:
         {
             aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
-                    (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
+                (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)message;
 
             fprintf(
                 logfp,
@@ -1744,7 +1745,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)message;
             const struct sockaddr *addr =
-                    (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+                (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
 
             fprintf(
                 logfp,

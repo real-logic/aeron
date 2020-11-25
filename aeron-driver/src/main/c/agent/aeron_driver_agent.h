@@ -72,7 +72,8 @@ typedef enum aeron_driver_agent_event_enum
 
     AERON_DRIVER_EVENT_NUM_ELEMENTS, // number of elements in this enum (including gaps)
     AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1
-} aeron_driver_agent_event_t;
+}
+aeron_driver_agent_event_t;
 
 typedef struct aeron_driver_agent_log_header_stct
 {

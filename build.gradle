@@ -30,6 +30,21 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
+static def getBuildJavaVersion()
+{
+    def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+    if (buildJavaVersion.indexOf('.') > 0)
+    {
+        buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
+    }
+    if (buildJavaVersion.indexOf('-') > 0)
+    {
+        buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
+    }
+    Integer.parseInt(buildJavaVersion)
+}
+int buildJavaVersion = getBuildJavaVersion()
+
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
@@ -153,6 +168,12 @@ subprojects {
         testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+        }
+    }
+
     group = aeronGroup
     version = aeronVersion
 
@@ -170,7 +191,7 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
-        if (JavaVersion.current().isJava9Compatible()) {
+        if (buildJavaVersion >= 9) {
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.net=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED'])
@@ -181,7 +202,7 @@ subprojects {
     }
 
     tasks.withType(Test) {
-        if (JavaVersion.current().isJava9Compatible()) {
+        if (buildJavaVersion >= 9) {
             jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
@@ -224,12 +245,14 @@ subprojects {
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
-        if (JavaVersion.current().isJava11Compatible()) {
-            options.links("https://docs.oracle.com/en/java/javase/${JavaVersion.current().majorVersion}/docs/api/")
+        if (buildJavaVersion >= 16) { // Work around for early access versions for which no JavaDoc is published
+            options.links("https://docs.oracle.com/en/java/javase/15/docs/api/")
+        } else if (buildJavaVersion >= 11) {
+            options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         } else {
-            options.links("https://docs.oracle.com/javase/${JavaVersion.current().majorVersion}/docs/api/")
+            options.links("https://docs.oracle.com/javase/${buildJavaVersion}/docs/api/")
         }
-        if (JavaVersion.current().isJava10Compatible()) {
+        if (buildJavaVersion >= 10) {
             options.addBooleanOption 'html5', true
         }
     }
@@ -420,7 +443,7 @@ project(':aeron-archive') {
         args = [codecsFile, markCodecsFile]
     }
 
-    def generatedCppDir = file(System.properties['codec.target.dir'] ?: "${rootDir}/cppbuild/Release/generated")
+    def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
     task generateCppCodecs(type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration

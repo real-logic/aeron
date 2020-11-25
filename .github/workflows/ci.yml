@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11', '15' ]
+        java: [ '8', '11', '15', '16-ea' ]
         os: [ 'ubuntu-20.04', 'windows-latest' ]
     steps:
       - name: Checkout code
@@ -42,8 +42,20 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
+      - name: Setup BUILD_JAVA_HOME (Linux)
+        if: runner.os == 'Linux'
+        run: echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+      - name: Setup BUILD_JAVA_HOME (Windows)
+        if: runner.os == 'Windows'
+        run: echo "BUILD_JAVA_HOME=$env:JAVA_HOME" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Build with Gradle
         run: ./gradlew
+        env:
+          BUILD_JAVA_VERSION: ${{ matrix.java }}
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -83,6 +95,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ bionic main universe"
@@ -129,6 +145,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Build
         run: cppbuild/centos-docker-build ${{ matrix.version }}
       - name: Copy test logs
@@ -170,6 +190,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -220,6 +244,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -268,6 +296,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install CMake
         run: |
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
@@ -312,6 +344,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install CMake
         run: |
           $client = new-object System.Net.WebClient

@@ -63,15 +63,15 @@ public:
         m_term_tail_counter = &(metadata->term_tail_counters[PARTITION_INDEX]);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_logBuffer.fill(0);
         m_stateBuffer.fill(0);
     }
 
 protected:
-    AERON_DECL_ALIGNED(term_buffer_t m_logBuffer, 16);
-    AERON_DECL_ALIGNED(meta_data_buffer_t m_stateBuffer, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_logBuffer, 16) = {};
+    AERON_DECL_ALIGNED(meta_data_buffer_t m_stateBuffer, 16) = {};
 
     aeron_mapped_buffer_t m_term_buffer = {};
     volatile int64_t *m_term_tail_counter = nullptr;
@@ -102,7 +102,7 @@ TEST_F(CExclusiveTermAppenderTest, shouldAppendFrameToEmptyLog)
     EXPECT_EQ(resultingOffset, alignedFrameLength);
     EXPECT_EQ(*m_term_tail_counter, packRawTail(TERM_ID, tail + alignedFrameLength));
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_logBuffer.data();
+    auto *data_header = (aeron_data_header_t *)m_logBuffer.data();
 
     EXPECT_EQ(data_header->frame_header.frame_length, frameLength);
     EXPECT_EQ(data_header->reserved_value, RESERVED_VALUE);
@@ -188,7 +188,7 @@ TEST_F(CExclusiveTermAppenderTest, shouldPadLogWhenAppendingWithInsufficientRema
     EXPECT_EQ(resultingOffset, AERON_EXCLUSIVE_TERM_APPENDER_FAILED);
     EXPECT_EQ(*m_term_tail_counter, packRawTail(TERM_ID, tailValue + requiredFrameSize));
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *) (m_logBuffer.data() + tailValue);
+    auto *data_header = (aeron_data_header_t *) (m_logBuffer.data() + tailValue);
 
     EXPECT_EQ(data_header->frame_header.frame_length, frameLength);
     EXPECT_EQ(data_header->frame_header.type, AERON_HDR_TYPE_PAD);
@@ -259,7 +259,7 @@ TEST_F(CExclusiveTermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
     EXPECT_EQ(resultingOffset, alignedFrameLength);
     EXPECT_EQ(*m_term_tail_counter, packRawTail(TERM_ID, tail + alignedFrameLength));
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_logBuffer.data();
+    auto *data_header = (aeron_data_header_t *)m_logBuffer.data();
 
     EXPECT_EQ(data_header->frame_header.frame_length, -frameLength);
     EXPECT_EQ(buffer_claim.length, (size_t)msgLength);
@@ -303,7 +303,7 @@ TEST_F(CExclusiveTermAppenderTest, shouldAppendUnfragmentedFromVectorsToEmptyLog
     EXPECT_EQ(resultingOffset, alignedFrameLength);
     EXPECT_EQ(*m_term_tail_counter, packRawTail(TERM_ID, tail + alignedFrameLength));
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_logBuffer.data();
+    auto *data_header = (aeron_data_header_t *)m_logBuffer.data();
     uint8_t *data = m_logBuffer.data() + AERON_DATA_HEADER_LENGTH;
 
     EXPECT_EQ(data_header->frame_header.frame_length, frameLength);

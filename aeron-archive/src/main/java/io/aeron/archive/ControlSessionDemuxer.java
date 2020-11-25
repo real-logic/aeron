@@ -798,7 +798,6 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         if (controlSession == null)
         {
             final String message = "unknown controlSessionId=" + controlSessionId +
-                " for correlationId=" + correlationId +
                 " from source=" + image.sourceIdentity();
 
             throw new ArchiveException(message, correlationId, AeronException.Category.WARN);

@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11', '15' ]
+        java: [ '8', '11', '15', '16-ea' ]
         os: [ 'ubuntu-20.04', 'windows-latest' ]
     steps:
       - name: Checkout code
@@ -36,8 +36,20 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
+      - name: Setup BUILD_JAVA_HOME (Linux)
+        if: runner.os == 'Linux'
+        run: echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+      - name: Setup BUILD_JAVA_HOME (Windows)
+        if: runner.os == 'Windows'
+        run: echo "BUILD_JAVA_HOME=$env:JAVA_HOME" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Build and Run Slow Tests with Gradle
         run: ./gradlew slowTest
+        env:
+          BUILD_JAVA_VERSION: ${{ matrix.java }}
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -77,6 +89,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
           sudo apt-get update
@@ -121,6 +137,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Build
         run: cppbuild/cppbuild --slow-system-tests
       - name: Copy test logs
@@ -162,6 +182,10 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
       - name: Install compiler
         run: |
           sudo apt-get update

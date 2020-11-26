@@ -43,7 +43,7 @@ typedef struct aeron_send_channel_endpoint_stct
         aeron_driver_managed_resource_t managed_resource;
         int32_t refcnt;
         bool has_reached_end_of_life;
-        const aeron_udp_channel_t *udp_channel;
+        aeron_udp_channel_t *udp_channel;
         aeron_send_channel_endpoint_status_t status;
     }
     conductor_fields;

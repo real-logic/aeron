@@ -50,7 +50,7 @@ protected:
     {
         for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
         {
-            const auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
+            auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
             EXPECT_FALSE(aeron_driver_agent_is_event_enabled(event_id));
         }
     }
@@ -59,9 +59,10 @@ protected:
     {
         for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
         {
-            const auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
-            const auto event_name = aeron_driver_agent_event_name(event_id);
-            const bool expected = 0 != strncmp(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
+            auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
+            auto event_name = aeron_driver_agent_event_name(event_id);
+            bool expected = 0 != strncmp(
+                AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
             EXPECT_EQ(expected,aeron_driver_agent_is_event_enabled(event_id));
         }
 
@@ -153,9 +154,9 @@ TEST_F(DriverAgentTest, shouldEnabledAdminLoggingEvents)
 
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(0)));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(9)));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(27)));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(0)));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(9)));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(27)));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NUM_ELEMENTS));
 }
 
@@ -196,7 +197,7 @@ TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByName)
 TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByValue)
 {
     EXPECT_FALSE(aeron_driver_agent_logging_events_init("9"));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<const aeron_driver_agent_event_t>(9)));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(9)));
 }
 
 TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByResersedValue)
@@ -314,12 +315,12 @@ TEST_F(DriverAgentTest, shouldNotEnableAnyEventsIfInvalidMask)
 
 TEST_F(DriverAgentTest, shouldDissectLogHeader)
 {
-    const int64_t time_ns = 3274398573945794359LL;
-    const auto id = AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY;
-    const auto capture_length = 59;
-    const auto message_length = 256;
+    int64_t time_ns = 3274398573945794359LL;
+    auto id = AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY;
+    auto capture_length = 59;
+    auto message_length = 256;
 
-    const auto log_header = aeron_driver_agent_dissect_log_header(time_ns, id, capture_length, message_length);
+    auto log_header = aeron_driver_agent_dissect_log_header(time_ns, id, capture_length, message_length);
 
     EXPECT_EQ(
         std::string("[3274398573.945795] DRIVER: CMD_OUT_EXCLUSIVE_PUBLICATION_READY [59/256]"),
@@ -377,8 +378,7 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
 
-            aeron_driver_agent_untethered_subscription_state_change_log_header_t *data =
-                (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)msg;
+            auto *data = (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)msg;
             EXPECT_EQ(data->new_state, AERON_SUBSCRIPTION_TETHER_ACTIVE);
             EXPECT_EQ(data->old_state, AERON_SUBSCRIPTION_TETHER_RESTING);
             EXPECT_EQ(data->subscription_id, 56);
@@ -400,7 +400,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
 
     const size_t length = sizeof(aeron_publication_command_t) + 4;
     char buffer[AERON_MAX_PATH];
-    aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
+    auto *command = (aeron_publication_command_t *)buffer;
+
     command->correlated.correlation_id = 11;
     command->correlated.client_id = 42;
     command->stream_id = 7;
@@ -418,19 +419,18 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION);
 
             char *buffer = (char *)msg;
-            aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
+            auto *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
             EXPECT_EQ(hdr->cmd_id, AERON_COMMAND_ADD_SUBSCRIPTION);
             EXPECT_NE(hdr->time_ns, 0);
 
-            aeron_publication_command_t *payload =
-                    (aeron_publication_command_t *) (buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
+            auto *payload = (aeron_publication_command_t *)(buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
             EXPECT_EQ(payload->correlated.correlation_id, 11);
             EXPECT_EQ(payload->correlated.client_id, 42);
             EXPECT_EQ(payload->stream_id, 7);
             EXPECT_EQ(payload->channel_length, 4);
             EXPECT_EQ(
-                    strcmp("test", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t)),
-                    0);
+                strcmp("test", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t)),
+                0);
         };
 
     size_t timesCalled = 0;
@@ -447,7 +447,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
 
     const size_t length = AERON_MAX_FRAME_LENGTH * 5;
     char buffer[length];
-    aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
+    auto *command = (aeron_publication_command_t *)buffer;
+
     command->correlated.correlation_id = 118;
     command->correlated.client_id = 9;
     command->stream_id = 42;
@@ -465,22 +466,20 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER);
 
-
             char *buffer = (char *)msg;
-            aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
+            auto *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
             EXPECT_EQ(hdr->cmd_id, AERON_COMMAND_ADD_COUNTER);
             EXPECT_NE(hdr->time_ns, 0);
 
             const size_t payload_length = AERON_MAX_FRAME_LENGTH * 5;
-            aeron_publication_command_t *payload =
-                    (aeron_publication_command_t *) (buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
+            auto *payload = (aeron_publication_command_t *)(buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
             EXPECT_EQ(payload->correlated.correlation_id, 118);
             EXPECT_EQ(payload->correlated.client_id, 9);
             EXPECT_EQ(payload->stream_id, 42);
             EXPECT_EQ(payload->channel_length, (int32_t)(payload_length - sizeof(aeron_publication_command_t)));
             EXPECT_EQ(
-                    memcmp("a", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t), 1),
-                    0);
+                memcmp("a", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t), 1),
+                0);
             EXPECT_EQ(memcmp("z", buffer + length -1, 1), 0);
         };
 
@@ -498,7 +497,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
 
     const size_t length = sizeof(aeron_publication_command_t) + 4;
     char buffer[AERON_MAX_PATH];
-    aeron_publication_command_t *command = (aeron_publication_command_t *)buffer;
+    auto *command = (aeron_publication_command_t *)buffer;
+
     command->correlated.correlation_id = 11;
     command->correlated.client_id = 42;
     command->stream_id = 7;
@@ -516,19 +516,18 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS);
 
             char *buffer = (char *)msg;
-            aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
+            auto *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
             EXPECT_EQ(hdr->cmd_id, AERON_RESPONSE_ON_OPERATION_SUCCESS);
             EXPECT_NE(hdr->time_ns, 0);
 
-            aeron_publication_command_t *payload =
-                    (aeron_publication_command_t *) (buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
+            auto *payload = (aeron_publication_command_t *)(buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
             EXPECT_EQ(payload->correlated.correlation_id, 11);
             EXPECT_EQ(payload->correlated.client_id, 42);
             EXPECT_EQ(payload->stream_id, 7);
             EXPECT_EQ(payload->channel_length, 4);
             EXPECT_EQ(
-                    strcmp("test", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t)),
-                    0);
+                strcmp("test", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t)),
+                0);
         };
 
     size_t timesCalled = 0;
@@ -545,7 +544,8 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
 
     const size_t length = AERON_MAX_FRAME_LENGTH * 15;
     char buffer[length];
-    aeron_subscription_command_t *command = (aeron_subscription_command_t *)buffer;
+    auto *command = (aeron_subscription_command_t *)buffer;
+
     command->correlated.correlation_id = 8;
     command->correlated.client_id = 91;
     command->stream_id = 142;
@@ -563,22 +563,20 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY);
 
-
             char *buffer = (char *)msg;
-            aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
+            auto *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
             EXPECT_EQ(hdr->cmd_id, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
             EXPECT_NE(hdr->time_ns, 0);
 
             const size_t payload_length = AERON_MAX_FRAME_LENGTH * 15;
-            aeron_subscription_command_t *payload =
-                    (aeron_subscription_command_t *) (buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
+            auto *payload = (aeron_subscription_command_t *)(buffer + sizeof(aeron_driver_agent_cmd_log_header_t));
             EXPECT_EQ(payload->correlated.correlation_id, 8);
             EXPECT_EQ(payload->correlated.client_id, 91);
             EXPECT_EQ(payload->stream_id, 142);
             EXPECT_EQ(payload->channel_length, (int32_t)(payload_length - sizeof(aeron_subscription_command_t)));
             EXPECT_EQ(
-                    memcmp("a", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_subscription_command_t), 1),
-                    0);
+                memcmp("a", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_subscription_command_t), 1),
+                0);
             EXPECT_EQ(memcmp("z", buffer + length -1, 1), 0);
         };
 
@@ -606,7 +604,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
     message.msg_iovlen = 1;
     message.msg_iov = &iov;
     message.msg_name = &addr;
-    message.msg_control = NULL;
+    message.msg_control = nullptr;
     message.msg_controllen = 0;
     message.msg_namelen = sizeof(struct sockaddr_storage);
 
@@ -623,7 +621,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
                       sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + 100);
 
             char *buffer = (char *)msg;
-            aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
+            auto *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
             EXPECT_NE(hdr->time_ns, 0);
             EXPECT_EQ(hdr->result, 500);
             EXPECT_EQ(hdr->sockaddr_len, (int32_t)sizeof(struct sockaddr_storage));
@@ -654,7 +652,7 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
     message.msg_iovlen = 1;
     message.msg_iov = &iov;
     message.msg_name = &addr;
-    message.msg_control = NULL;
+    message.msg_control = nullptr;
     message.msg_controllen = 0;
     message.msg_namelen = sizeof(struct sockaddr_storage);
 
@@ -671,14 +669,14 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
                       sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + AERON_MAX_FRAME_LENGTH);
 
             char *buffer = (char *)msg;
-            aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
+            auto *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
             EXPECT_NE(hdr->time_ns, 0);
             EXPECT_EQ(hdr->result, 1);
             EXPECT_EQ(hdr->sockaddr_len, (int32_t)sizeof(struct sockaddr_storage));
             char tmp[AERON_MAX_FRAME_LENGTH];
             memset(tmp, 'x', AERON_MAX_FRAME_LENGTH);
             EXPECT_EQ(memcmp(buffer + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage), tmp, AERON_MAX_FRAME_LENGTH), 0);
-            };
+        };
 
     size_t timesCalled = 0;
     size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
@@ -744,10 +742,9 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborAdded)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED);
 
-            const auto *data = (aeron_driver_agent_log_header_t *)msg;
+            auto *data = (aeron_driver_agent_log_header_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
-            const auto *addr =
-                (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_log_header_t));
+            auto *addr = (const struct sockaddr_in *)((const char *)msg + sizeof(aeron_driver_agent_log_header_t));
             EXPECT_NE(nullptr, addr);
             EXPECT_EQ(AF_INET, addr->sin_family);
             EXPECT_EQ(5090, addr->sin_port);
@@ -779,10 +776,9 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED);
 
-            const auto *data = (aeron_driver_agent_log_header_t *)msg;
+            auto *data = (aeron_driver_agent_log_header_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
-            const auto *addr =
-                (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_log_header_t));
+            auto *addr = (const struct sockaddr_in6 *)((const char *)msg + sizeof(aeron_driver_agent_log_header_t));
             EXPECT_NE(nullptr, addr);
             EXPECT_EQ(AF_INET6, addr->sin6_family);
             EXPECT_EQ(7070, addr->sin6_port);
@@ -819,7 +815,7 @@ TEST_F(DriverAgentTest, shouldLogRemovePublicationCleanup)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP);
 
-            const auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
+            auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
             EXPECT_EQ(AERON_NULL_VALUE, data->id);
             EXPECT_EQ(42, data->session_id);
@@ -859,7 +855,7 @@ TEST_F(DriverAgentTest, shouldLogRemoveSubscriptionCleanup)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP);
 
-            const auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
+            auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
             EXPECT_EQ(1000000000000, data->id);
             EXPECT_EQ(AERON_NULL_VALUE, data->session_id);
@@ -904,12 +900,12 @@ TEST_F(DriverAgentTest, shouldLogRemoveImageCleanup)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP);
 
-            const auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
+            auto *data = (aeron_driver_agent_remove_resource_cleanup_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
             EXPECT_EQ(-2396483568542, data->id);
             EXPECT_EQ(777, data->session_id);
             EXPECT_EQ(1, data->stream_id);
-            const int channel_length = AERON_MAX_PATH * 3;
+            int channel_length = AERON_MAX_PATH * 3;
             EXPECT_EQ(channel_length, data->channel_length);
             char channel[channel_length + 1];
             memset(channel, '*', channel_length);
@@ -993,13 +989,13 @@ TEST_F(DriverAgentTest, shouldLogSendChannelCreation)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION);
 
-            const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+            auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
-            const auto *local_addr = (const struct sockaddr_in *)(&data->local_data);
+            auto *local_addr = (const struct sockaddr_in *)(&data->local_data);
             EXPECT_NE(nullptr, local_addr);
             EXPECT_EQ(AF_INET, local_addr->sin_family);
             EXPECT_EQ(5090, local_addr->sin_port);
-            const auto *remote_addr = (const struct sockaddr_in6 *)(&data->remote_data);
+            auto *remote_addr = (const struct sockaddr_in6 *)(&data->remote_data);
             EXPECT_EQ(AF_INET6, remote_addr->sin6_family);
             EXPECT_EQ(7070, remote_addr->sin6_port);
             EXPECT_EQ(42, data->multicast_ttl);
@@ -1041,13 +1037,13 @@ TEST_F(DriverAgentTest, shouldLogSendChannelClose)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE);
 
-            const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+            auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
-            const auto *local_addr = (const struct sockaddr_in *)(&data->local_data);
+            auto *local_addr = (const struct sockaddr_in *)(&data->local_data);
             EXPECT_NE(nullptr, local_addr);
             EXPECT_EQ(AF_INET, local_addr->sin_family);
             EXPECT_EQ(5090, local_addr->sin_port);
-            const auto *remote_addr = (const struct sockaddr_in6 *)(&data->remote_data);
+            auto *remote_addr = (const struct sockaddr_in6 *)(&data->remote_data);
             EXPECT_EQ(AF_INET6, remote_addr->sin6_family);
             EXPECT_EQ(7070, remote_addr->sin6_port);
             EXPECT_EQ(42, data->multicast_ttl);
@@ -1089,13 +1085,13 @@ TEST_F(DriverAgentTest, shouldLogReceiveChannelCreation)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION);
 
-            const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+            auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
-            const auto *local_addr = (const struct sockaddr_in6 *)(&data->local_data);
+            auto *local_addr = (const struct sockaddr_in6 *)(&data->local_data);
             EXPECT_EQ(AF_INET6, local_addr->sin6_family);
             EXPECT_EQ(5050, local_addr->sin6_port);
             EXPECT_EQ(5, data->multicast_ttl);
-            const auto *remote_addr = (const struct sockaddr_in *)(&data->remote_data);
+            auto *remote_addr = (const struct sockaddr_in *)(&data->remote_data);
             EXPECT_NE(nullptr, remote_addr);
             EXPECT_EQ(AF_INET, remote_addr->sin_family);
             EXPECT_EQ(9090, remote_addr->sin_port);
@@ -1137,13 +1133,13 @@ TEST_F(DriverAgentTest, shouldLogReceiveChannelClose)
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE);
 
-            const auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
+            auto *data = (aeron_driver_agent_on_endpoint_change_t *)msg;
             EXPECT_NE(data->time_ns, 0LL);
-            const auto *local_addr = (const struct sockaddr_in6 *)(&data->local_data);
+            auto *local_addr = (const struct sockaddr_in6 *)(&data->local_data);
             EXPECT_EQ(AF_INET6, local_addr->sin6_family);
             EXPECT_EQ(5050, local_addr->sin6_port);
             EXPECT_EQ(5, data->multicast_ttl);
-            const auto *remote_addr = (const struct sockaddr_in *)(&data->remote_data);
+            auto *remote_addr = (const struct sockaddr_in *)(&data->remote_data);
             EXPECT_NE(nullptr, remote_addr);
             EXPECT_EQ(AF_INET, remote_addr->sin_family);
             EXPECT_EQ(9090, remote_addr->sin_port);

@@ -68,7 +68,7 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
 AERON_EXPORT extern char *optarg;
 AERON_EXPORT extern int optind;
 
-int getopt(int argc, char *const argv[], const char *optstring);
+int getopt(int argc, char *const argv[], const char *opt_string);
 #endif
 
 #endif //AERON_STRUTIL_H

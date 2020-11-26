@@ -123,55 +123,99 @@ int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char
 
 #if defined(_MSC_VER) && !defined(AERON_NO_GETOPT)
 
-/* Taken from https://github.com/iotivity/iotivity/blob/master/resource/c_common/windows/src/getopt.c */
-/* *****************************************************************
-*
-* Copyright 2016 Microsoft
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-******************************************************************/
+// Taken and modified from https://www.codeproject.com/KB/cpp/xgetopt/XGetopt_demo.zip
+// *****************************************************************
+//
+// Author:  Hans Dietrich
+//          hdietrich2@hotmail.com
+//
+// This software is released into the public domain.
+// You are free to use it in any way you like.
+//
+// This software is provided "as is" with no expressed
+// or implied warranty.  I accept no liability for any
+// damage or loss of business that this software may cause.
+//
+// ******************************************************************
+
 AERON_EXPORT char *optarg = NULL;
 AERON_EXPORT int optind = 1;
 
-int getopt(int argc, char *const argv[], const char *optstring)
+int getopt(int argc, char *const argv[], const char *opt_string)
 {
-    if ((optind >= argc) || (argv[optind][0] != '-') || (argv[optind][0] == 0))
+    static char *next = NULL;
+    if (optind == 0)
     {
-        return -1;
+        next = NULL;
     }
 
-    int opt = argv[optind][1];
-    const char *p = strchr(optstring, opt);
+    optarg = NULL;
 
-    if (p == NULL)
+    if (next == NULL || *next == '\0')
+    {
+        if (optind == 0)
+        {
+            optind++;
+        }
+
+        if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
+        {
+            optarg = NULL;
+            if (optind < argc)
+            {
+                optarg = argv[optind];
+            }
+
+            return EOF;
+        }
+
+        if (strcmp(argv[optind], "--") == 0)
+        {
+            optind++;
+            optarg = NULL;
+            if (optind < argc)
+            {
+                optarg = argv[optind];
+            }
+
+            return EOF;
+        }
+
+        next = argv[optind];
+        next++;
+        optind++;
+    }
+
+    char c = *next++;
+    char *cp = strchr(opt_string, c);
+
+    if (cp == NULL || c == ':')
     {
         return '?';
     }
 
-    if (p[1] == ':')
+    cp++;
+    if (*cp == ':')
     {
-        optind++;
-        if (optind >= argc)
+        if (*next != '\0')
+        {
+            optarg = next;
+            next = NULL;
+        }
+        else if (optind < argc)
+        {
+            optarg = argv[optind];
+            optind++;
+        }
+        else
         {
             return '?';
         }
-        optarg = argv[optind];
-        optind++;
     }
 
-    return opt;
+    return c;
 }
+
 #endif
 
 extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);

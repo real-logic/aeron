@@ -166,7 +166,7 @@ public class ClusterTimerTest
         {
             public void onSessionOpen(final ClientSession session, final long timestamp)
             {
-                schedule(1, timestamp + 10);
+                schedule(1, timestamp + 1_000_000); // Too far in the future
                 schedule(1, timestamp + 20);
                 schedule(2, timestamp + 30);
             }

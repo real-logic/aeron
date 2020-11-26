@@ -446,12 +446,23 @@ TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
 {
     char buffer[AERON_MAX_PATH];
 
-    ASSERT_EQ(resolve_host_and_port("127.0.0.1:1234", &m_addr), 0) << aeron_errmsg();
     ASSERT_EQ(resolve_host_and_port("192.168.1.20:55", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET);
     EXPECT_EQ(addr_in->sin_family, AF_INET);
     EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "192.168.1.20");
     EXPECT_EQ(addr_in->sin_port, htons(55));
+}
+
+TEST_F(UriResolverTest, shouldResolveIpv4MaxPort)
+{
+    char buffer[AERON_MAX_PATH];
+
+    const std::string uri = std::string("127.0.0.1:") + std::to_string(UINT16_MAX);
+    ASSERT_EQ(resolve_host_and_port(uri.c_str(), &m_addr), 0) << aeron_errmsg();
+    EXPECT_EQ(m_addr.ss_family, AF_INET);
+    EXPECT_EQ(addr_in->sin_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "127.0.0.1");
+    EXPECT_EQ(addr_in->sin_port, htons(UINT16_MAX));
 }
 
 TEST_F(UriResolverTest, shouldResolveIpv4MulticastDottedDecimalAndPort)
@@ -515,6 +526,12 @@ TEST_F(UriResolverTest, shouldNotResolveInvalidPort)
     EXPECT_EQ(resolve_host_and_port("[::1]", &m_addr), -1);
 
     EXPECT_EQ(resolve_host_and_port("[::1]:", &m_addr), -1);
+}
+
+TEST_F(UriResolverTest, shouldNotResolvePortBeyoundMax)
+{
+    const std::string uri = std::string("127.0.0.1:") + std::to_string(UINT16_MAX + 1);
+    EXPECT_EQ(resolve_host_and_port(uri.c_str(), &m_addr), -1);
 }
 
 TEST_F(UriResolverTest, shouldResolveIpv4Interface)

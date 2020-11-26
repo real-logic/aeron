@@ -78,7 +78,7 @@ final class CommonEventEncoder
     }
 
     static int encodeSocketAddress(
-        final UnsafeBuffer encodingBuffer, final int offset, final InetSocketAddress dstAddress)
+        final UnsafeBuffer encodingBuffer, final int offset, final InetSocketAddress address)
     {
         int relativeOffset = 0;
         /*
@@ -88,10 +88,10 @@ final class CommonEventEncoder
          * - IP address (4 or 16 bytes)
          */
 
-        encodingBuffer.putInt(offset + relativeOffset, dstAddress.getPort(), LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, address.getPort(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        final byte[] addressBytes = dstAddress.getAddress().getAddress();
+        final byte[] addressBytes = address.getAddress().getAddress();
         encodingBuffer.putInt(offset + relativeOffset, addressBytes.length, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 

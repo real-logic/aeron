@@ -501,6 +501,9 @@ int aeron_confirm_publication_match(
 
 void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link)
 {
+    conductor->context->remove_subscription_cleanup_func(
+        link->registration_id, link->stream_id, link->channel_length, link->channel);
+
     aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
 
     link->endpoint = NULL;
@@ -726,13 +729,17 @@ bool aeron_ipc_publication_entry_has_reached_end_of_life(
 
 void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
+    aeron_ipc_publication_t *publication = entry->publication;
+    conductor->context->remove_publication_cleanup_func(
+        publication->session_id, publication->stream_id, publication->channel_length, publication->channel);
+
     for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
     {
         aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
-        aeron_driver_conductor_unlink_subscribable(link, &entry->publication->conductor_fields.subscribable);
+        aeron_driver_conductor_unlink_subscribable(link, &publication->conductor_fields.subscribable);
     }
 
-    aeron_ipc_publication_close(&conductor->counters_manager, entry->publication);
+    aeron_ipc_publication_close(&conductor->counters_manager, publication);
     entry->publication = NULL;
 }
 
@@ -825,6 +832,10 @@ void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, a
 void aeron_driver_conductor_cleanup_network_publication(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
 {
+    const aeron_udp_channel_t *udp_channel = publication->endpoint->conductor_fields.udp_channel;
+    conductor->context->remove_publication_cleanup_func(
+        publication->session_id, publication->stream_id, udp_channel->uri_length, udp_channel->original_uri);
+
     aeron_driver_sender_proxy_on_remove_publication(conductor->context->sender_proxy, publication);
 }
 
@@ -872,6 +883,14 @@ void aeron_receive_channel_endpoint_entry_delete(
 
         if (entry->endpoint == image->endpoint)
         {
+            const aeron_receive_channel_endpoint_t *endpoint = image->endpoint;
+            const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+            conductor->context->remove_image_cleanup_func(
+                image->conductor_fields.managed_resource.registration_id,
+                image->session_id,
+                image->stream_id,
+                udp_channel->uri_length,
+                udp_channel->original_uri);
             aeron_publication_image_disconnect_endpoint(image);
         }
     }
@@ -899,13 +918,15 @@ bool aeron_publication_image_entry_has_reached_end_of_life(
 void aeron_publication_image_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
+    aeron_publication_image_t *image = entry->image;
+
     for (size_t i = 0, size = conductor->network_subscriptions.length; i < size; i++)
     {
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
-        aeron_driver_conductor_unlink_subscribable(link, &entry->image->conductor_fields.subscribable);
+        aeron_driver_conductor_unlink_subscribable(link, &image->conductor_fields.subscribable);
     }
 
-    aeron_publication_image_close(&conductor->counters_manager, entry->image);
+    aeron_publication_image_close(&conductor->counters_manager, image);
     entry->image = NULL;
 }
 
@@ -1159,7 +1180,9 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     initial_term_id,
                     params,
                     is_exclusive,
-                    &conductor->system_counters) >= 0)
+                    &conductor->system_counters,
+                    uri_length,
+                    uri) >= 0)
                 {
                     aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
 

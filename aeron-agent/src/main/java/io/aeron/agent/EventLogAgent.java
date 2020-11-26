@@ -126,6 +126,10 @@ public final class EventLogAgent
         tempBuilder = addDriverReceiverProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverUdpChannelTransportInstrumentation(tempBuilder);
         tempBuilder = addDriverUntetheredSubscriptionInstrumentation(tempBuilder);
+        tempBuilder = addDriverNameResolutionNeighbourChangeInstrumentation(
+            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED, "neighborAdded");
+        tempBuilder = addDriverNameResolutionNeighbourChangeInstrumentation(
+            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED, "neighborRemoved");
 
         return tempBuilder;
     }
@@ -152,7 +156,9 @@ public final class EventLogAgent
                 if (hasPublicationHook)
                 {
                     builder = builder.visit(to(CleanupInterceptor.CleanupPublication.class)
-                        .on(named("cleanupPublication")));
+                        .on(named("cleanupPublication")))
+                        .visit(to(CleanupInterceptor.CleanupIpcPublication.class)
+                        .on(named("cleanupIpcPublication")));
                 }
                 if (hasSubscriptionHook)
                 {
@@ -288,6 +294,22 @@ public final class EventLogAgent
                 builder
                     .visit(to(DriverInterceptor.UntetheredSubscriptionStateChange.class)
                         .on(named("stateChange"))));
+    }
+
+    private static AgentBuilder addDriverNameResolutionNeighbourChangeInstrumentation(
+        final AgentBuilder agentBuilder, final DriverEventCode code, final String methodName)
+    {
+        if (!DRIVER_EVENT_CODES.contains(code))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("Neighbor"))
+            .transform((builder, typeDescription, classLoader, javaModule) ->
+                builder
+                    .visit(to(DriverInterceptor.Neighbour.class)
+                        .on(named(methodName))));
     }
 
     private static AgentBuilder addArchiveInstrumentation(final AgentBuilder agentBuilder)

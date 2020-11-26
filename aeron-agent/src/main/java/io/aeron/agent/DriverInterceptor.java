@@ -17,6 +17,10 @@ package io.aeron.agent;
 
 import net.bytebuddy.asm.Advice;
 
+import java.net.InetSocketAddress;
+
+import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED;
+import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 
 /**
@@ -31,6 +35,21 @@ class DriverInterceptor
             final E oldState, final E newState, final long subscriptionId, final int streamId, final int sessionId)
         {
             LOGGER.logUntetheredSubscriptionStateChange(oldState, newState, subscriptionId, streamId, sessionId);
+        }
+    }
+
+    static class Neighbour
+    {
+        @Advice.OnMethodEnter
+        static void neighborAdded(final long nowMs, final InetSocketAddress address)
+        {
+            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, address);
+        }
+
+        @Advice.OnMethodEnter
+        static void neighborRemoved(final long nowMs, final InetSocketAddress address)
+        {
+            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_REMOVED, address);
         }
     }
 }

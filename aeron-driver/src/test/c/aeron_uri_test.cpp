@@ -23,6 +23,7 @@ extern "C"
 {
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
+#include "util/aeron_strutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_name_resolver.h"
@@ -634,10 +635,6 @@ TEST_F(UriResolverTest, shouldCalculateIpv6PrefixlenFromNetmask)
     EXPECT_EQ(ipv6_prefixlen("FFFF:FF80::"), 25u);
     EXPECT_EQ(ipv6_prefixlen("0000:0000:0000:0000:0000:0000:0000:0000"), 0u);
 }
-
-#ifdef _MSC_VER
-#define strdup _strdup
-#endif
 
 /*
  * WARNING: single threaded only due to global lookup func usage

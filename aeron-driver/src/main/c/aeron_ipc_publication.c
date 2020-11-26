@@ -34,7 +34,9 @@ int aeron_ipc_publication_create(
     int32_t initial_term_id,
     aeron_uri_publication_params_t *params,
     bool is_exclusive,
-    aeron_system_counters_t *system_counters)
+    aeron_system_counters_t *system_counters,
+    const size_t channel_length,
+    const char *channel)
 {
     char path[AERON_MAX_PATH];
     int path_length = aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, registration_id);
@@ -67,6 +69,14 @@ int aeron_ipc_publication_create(
         return -1;
     }
 
+    _pub->channel = NULL;
+    if (aeron_alloc((void **)(&_pub->channel), (size_t)channel_length + 1) < 0)
+    {
+        aeron_free(_pub);
+        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication channel");
+        return -1;
+    }
+
     if (context->raw_log_map_func(
         &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
     {
@@ -83,6 +93,10 @@ int aeron_ipc_publication_create(
     _pub->log_file_name[path_length] = '\0';
     _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
+
+    strncpy(_pub->channel, channel, channel_length);
+    _pub->channel[channel_length] = '\0';
+    _pub->channel_length = (int32_t)channel_length;
 
     if (params->has_position)
     {
@@ -168,21 +182,23 @@ int aeron_ipc_publication_create(
 
 void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication)
 {
-    aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
-
-    aeron_counters_manager_free(counters_manager, publication->pub_lmt_position.counter_id);
-    aeron_counters_manager_free(counters_manager, publication->pub_pos_position.counter_id);
-
-    for (size_t i = 0, length = subscribable->length; i < length; i++)
-    {
-        aeron_counters_manager_free(counters_manager, subscribable->array[i].counter_id);
-    }
-    aeron_free(subscribable->array);
-
     if (NULL != publication)
     {
+        aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
+
+        aeron_counters_manager_free(counters_manager, publication->pub_lmt_position.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->pub_pos_position.counter_id);
+
+        for (size_t i = 0, length = subscribable->length; i < length; i++)
+        {
+            aeron_counters_manager_free(counters_manager, subscribable->array[i].counter_id);
+        }
+        aeron_free(subscribable->array);
+
         publication->raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         aeron_free(publication->log_file_name);
+
+        aeron_free(publication->channel);
     }
 
     aeron_free(publication);

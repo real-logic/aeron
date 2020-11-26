@@ -57,6 +57,7 @@ public class UntetheredSubscriptionTest
 
         ipcPublication = new IpcPublication(
             REGISTRATION_ID,
+            CHANNEL,
             ctx,
             TAG_ID,
             SESSION_ID,

@@ -27,6 +27,8 @@ typedef struct aeron_driver_sender_proxy_stct
 {
     aeron_driver_sender_t *sender;
     aeron_threading_mode_t threading_mode;
+    aeron_on_endpoint_change_func_t on_add_endpoint_func;
+    aeron_on_endpoint_change_func_t on_remove_endpoint_func;
     aeron_spsc_concurrent_array_queue_t *command_queue;
     int64_t *fail_counter;
 }

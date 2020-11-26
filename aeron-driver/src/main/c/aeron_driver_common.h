@@ -132,4 +132,25 @@ inline void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_ad
 
 void aeron_command_on_delete_cmd(void *clientd, void *cmd);
 
+typedef void (*aeron_on_remove_publication_cleanup_func_t)(
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel);
+
+typedef void (*aeron_on_remove_subscription_cleanup_func_t)(
+    int64_t id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel);
+
+typedef void (*aeron_on_remove_image_cleanup_func_t)(
+    int64_t id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel);
+
+typedef void (*aeron_on_endpoint_change_func_t)(const void *channel);
+
 #endif //AERON_DRIVER_COMMON_H

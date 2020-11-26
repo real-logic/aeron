@@ -240,6 +240,27 @@ public final class DriverEventLogger
         }
     }
 
+    public void logAddress(final DriverEventCode code, final InetSocketAddress address)
+    {
+        final int length = socketAddressLength(address);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, address);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
     public static int toEventCodeId(final DriverEventCode code)
     {
         return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);

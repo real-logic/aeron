@@ -92,7 +92,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypePad()
+    void dissectFrameTypePad()
     {
         internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
         final int socketAddressOffset = encodeSocketAddress(
@@ -107,7 +107,7 @@ class DriverEventDissectorTest
         flyweight.termId(16);
         flyweight.termOffset(1045);
 
-        dissectAsFrame(CMD_IN_ADD_COUNTER, buffer, 0, builder);
+        dissectFrame(CMD_IN_ADD_COUNTER, buffer, 0, builder);
 
         assertEquals("[1.0] " + CONTEXT + ": " + CMD_IN_ADD_COUNTER.name() + " [5/5]: 127.0.0.1:8080 " +
             "PAD 00001101 len 100 42:5:16 @1045",
@@ -115,7 +115,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypeData()
+    void dissectFrameTypeData()
     {
         internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
         final int socketAddressOffset = encodeSocketAddress(
@@ -130,7 +130,7 @@ class DriverEventDissectorTest
         flyweight.termId(6);
         flyweight.termOffset(444);
 
-        dissectAsFrame(CMD_IN_ADD_PUBLICATION, buffer, 0, builder);
+        dissectFrame(CMD_IN_ADD_PUBLICATION, buffer, 0, builder);
 
         assertEquals("[1.0] " + CONTEXT + ": " + CMD_IN_ADD_PUBLICATION.name() + " [5/5]: 127.0.0.1:8888 " +
             "DATA 00010111 len 77 12:51:6 @444",
@@ -138,7 +138,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypeStatusMessage()
+    void dissectFrameTypeStatusMessage()
     {
         internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
         final int socketAddressOffset = encodeSocketAddress(
@@ -155,7 +155,7 @@ class DriverEventDissectorTest
         flyweight.receiverWindowLength(2048);
         flyweight.receiverId(11);
 
-        dissectAsFrame(CMD_OUT_ERROR, buffer, 0, builder);
+        dissectFrame(CMD_OUT_ERROR, buffer, 0, builder);
 
         assertEquals("[1.0] " + CONTEXT + ": " + CMD_OUT_ERROR.name() + " [5/5]: 127.0.0.1:8888 " +
             "SM 00000111 len 121 5:8:4 @18 2048 11",
@@ -163,7 +163,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypeNak()
+    void dissectFrameTypeNak()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset = encodeSocketAddress(
@@ -179,7 +179,7 @@ class DriverEventDissectorTest
         flyweight.termOffset(0);
         flyweight.length(999999);
 
-        dissectAsFrame(CMD_OUT_ERROR, buffer, 0, builder);
+        dissectFrame(CMD_OUT_ERROR, buffer, 0, builder);
 
         assertEquals("[3.0] " + CONTEXT + ": " + CMD_OUT_ERROR.name() + " [3/3]: 127.0.0.1:8888 " +
             "NAK 00000010 len 54 5:8:20 @0 999999",
@@ -187,7 +187,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypeSetup()
+    void dissectFrameTypeSetup()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset = encodeSocketAddress(
@@ -206,7 +206,7 @@ class DriverEventDissectorTest
         flyweight.mtuLength(8096);
         flyweight.ttl(20_000);
 
-        dissectAsFrame(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, 0, builder);
+        dissectFrame(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, 0, builder);
 
         assertEquals("[3.0] " + CONTEXT + ": " + CMD_OUT_EXCLUSIVE_PUBLICATION_READY.name() +
             " [3/3]: 127.0.0.1:8888 " +
@@ -215,7 +215,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypeRtt()
+    void dissectFrameTypeRtt()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset = encodeSocketAddress(
@@ -231,7 +231,7 @@ class DriverEventDissectorTest
         flyweight.receptionDelta(354);
         flyweight.receiverId(22);
 
-        dissectAsFrame(CMD_IN_ADD_RCV_DESTINATION, buffer, 0, builder);
+        dissectFrame(CMD_IN_ADD_RCV_DESTINATION, buffer, 0, builder);
 
         assertEquals("[3.0] " + CONTEXT + ": " + CMD_IN_ADD_RCV_DESTINATION.name() + " [3/3]: 127.0.0.1:8888 " +
             "RTT 00010100 len 100 0:1 123456789 354 22",
@@ -239,7 +239,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsFrameTypeUnknown()
+    void dissectFrameTypeUnknown()
     {
         internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset = encodeSocketAddress(
@@ -248,7 +248,7 @@ class DriverEventDissectorTest
         flyweight.wrap(buffer, LOG_HEADER_LENGTH + socketAddressOffset, 300);
         flyweight.headerType(Integer.MAX_VALUE);
 
-        dissectAsFrame(CMD_OUT_ON_OPERATION_SUCCESS, buffer, 0, builder);
+        dissectFrame(CMD_OUT_ON_OPERATION_SUCCESS, buffer, 0, builder);
 
         assertEquals("[3.0] " + CONTEXT + ": " + CMD_OUT_ON_OPERATION_SUCCESS.name() + " [3/3]: 127.0.0.1:8888 " +
             "FRAME_UNKNOWN: " + HDR_TYPE_EXT,
@@ -256,12 +256,12 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsString()
+    void dissectString()
     {
         internalEncodeLogHeader(buffer, 0, 1, 1, () -> 1_100_000_000L);
         buffer.putStringAscii(LOG_HEADER_LENGTH, "Hello, World!");
 
-        DriverEventDissector.dissectAsString(CMD_IN_CLIENT_CLOSE, buffer, 0, builder);
+        DriverEventDissector.dissectString(CMD_IN_CLIENT_CLOSE, buffer, 0, builder);
 
         assertEquals("[1.1] " + CONTEXT + ": " + CMD_IN_CLIENT_CLOSE.name() + " [1/1]: Hello, World!",
             builder.toString());
@@ -269,7 +269,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_PUBLICATION", "CMD_IN_ADD_EXCLUSIVE_PUBLICATION" })
-    void dissectAsCommandPublication(final DriverEventCode eventCode)
+    void dissectCommandPublication(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, 10, 10, () -> 1_780_000_000L);
         final PublicationMessageFlyweight flyweight = new PublicationMessageFlyweight();
@@ -279,7 +279,7 @@ class DriverEventDissectorTest
         flyweight.clientId(eventCode.id());
         flyweight.correlationId(15);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [10/10]: " +
             "3 [" + eventCode.id() + ":15] pub channel",
@@ -288,7 +288,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_SUBSCRIPTION" })
-    void dissectAsCommandSubscription(final DriverEventCode eventCode)
+    void dissectCommandSubscription(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 1_780_000_000L);
         final SubscriptionMessageFlyweight flyweight = new SubscriptionMessageFlyweight();
@@ -299,7 +299,7 @@ class DriverEventDissectorTest
         flyweight.clientId(eventCode.id());
         flyweight.correlationId(6);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
             "31 [90][" + eventCode.id() + ":6] sub channel",
@@ -309,7 +309,7 @@ class DriverEventDissectorTest
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class,
         names = { "CMD_IN_REMOVE_PUBLICATION", "CMD_IN_REMOVE_SUBSCRIPTION", "CMD_IN_REMOVE_COUNTER" })
-    void dissectAsCommandRemoveEvent(final DriverEventCode eventCode)
+    void dissectCommandRemoveEvent(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 87, () -> 21_032_000_000L);
         final RemoveMessageFlyweight flyweight = new RemoveMessageFlyweight();
@@ -318,7 +318,7 @@ class DriverEventDissectorTest
         flyweight.clientId(eventCode.id());
         flyweight.correlationId(16);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/87]: " +
             "11 [" + eventCode.id() + ":16]",
@@ -328,7 +328,7 @@ class DriverEventDissectorTest
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class,
         names = { "CMD_OUT_PUBLICATION_READY", "CMD_OUT_EXCLUSIVE_PUBLICATION_READY" })
-    void dissectAsCommandPublicationReady(final DriverEventCode eventCode)
+    void dissectCommandPublicationReady(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 21_032_000_000L);
         final PublicationBuffersReadyFlyweight flyweight = new PublicationBuffersReadyFlyweight();
@@ -341,7 +341,7 @@ class DriverEventDissectorTest
         flyweight.registrationId(eventCode.id());
         flyweight.logFileName("log.txt");
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.ordinal() + ":42 1 5 [8 " + eventCode.id() + "] log.txt",
@@ -350,7 +350,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_AVAILABLE_IMAGE" })
-    void dissectAsCommandImageReady(final DriverEventCode eventCode)
+    void dissectCommandImageReady(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 21_032_000_000L);
         final ImageBuffersReadyFlyweight flyweight = new ImageBuffersReadyFlyweight();
@@ -363,7 +363,7 @@ class DriverEventDissectorTest
         flyweight.logFileName("log2.txt");
         flyweight.sourceIdentity("source identity");
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.ordinal() + ":22 [0:245] [767] log2.txt source identity",
@@ -372,14 +372,14 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_OPERATION_SUCCESS" })
-    void dissectAsCommandOperationSuccess(final DriverEventCode eventCode)
+    void dissectCommandOperationSuccess(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 111, () -> 21_032_000_000L);
         final OperationSucceededFlyweight flyweight = new OperationSucceededFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.correlationId(eventCode.id());
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/111]: " +
             eventCode.id(),
@@ -388,7 +388,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_KEEPALIVE_CLIENT", "CMD_IN_CLIENT_CLOSE" })
-    void dissectAsCommandCorrelationEvent(final DriverEventCode eventCode)
+    void dissectCommandCorrelationEvent(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 21_032_000_000L);
         final CorrelatedMessageFlyweight flyweight = new CorrelatedMessageFlyweight();
@@ -396,7 +396,7 @@ class DriverEventDissectorTest
         flyweight.clientId(eventCode.id());
         flyweight.correlationId(2);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "[" + eventCode.id() + ":2]",
@@ -405,7 +405,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_UNAVAILABLE_IMAGE" })
-    void dissectAsCommandImage(final DriverEventCode eventCode)
+    void dissectCommandImage(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 99, () -> 21_032_000_000L);
         final ImageMessageFlyweight flyweight = new ImageMessageFlyweight();
@@ -415,7 +415,7 @@ class DriverEventDissectorTest
         flyweight.subscriptionRegistrationId(-19);
         flyweight.channel("the channel");
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/99]: " +
             "300 [" + eventCode.id() + " -19] the channel",
@@ -428,7 +428,7 @@ class DriverEventDissectorTest
         "CMD_IN_REMOVE_DESTINATION",
         "CMD_IN_ADD_RCV_DESTINATION",
         "CMD_IN_REMOVE_RCV_DESTINATION" })
-    void dissectAsCommandDestination(final DriverEventCode eventCode)
+    void dissectCommandDestination(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 77, () -> 21_032_000_000L);
         final DestinationMessageFlyweight flyweight = new DestinationMessageFlyweight();
@@ -438,7 +438,7 @@ class DriverEventDissectorTest
         flyweight.clientId(1010101);
         flyweight.correlationId(404);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/77]: " +
             eventCode.id() + " [1010101:404] dst",
@@ -447,7 +447,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ERROR" })
-    void dissectAsCommandError(final DriverEventCode eventCode)
+    void dissectCommandError(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final ErrorResponseFlyweight flyweight = new ErrorResponseFlyweight();
@@ -456,7 +456,7 @@ class DriverEventDissectorTest
         flyweight.errorCode(ErrorCode.MALFORMED_COMMAND);
         flyweight.errorMessage("Huge stacktrace!");
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id() + " " + ErrorCode.MALFORMED_COMMAND + " Huge stacktrace!",
@@ -465,7 +465,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_COUNTER" })
-    void dissectAsCommandCounter(final DriverEventCode eventCode)
+    void dissectCommandCounter(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final CounterMessageFlyweight flyweight = new CounterMessageFlyweight();
@@ -476,7 +476,7 @@ class DriverEventDissectorTest
         flyweight.clientId(eventCode.id());
         flyweight.correlationId(42);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "3 [" + flyweight.keyBufferOffset() + " 10][" + flyweight.labelBufferOffset() + " 13][" +
@@ -486,7 +486,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_SUBSCRIPTION_READY" })
-    void dissectAsCommandSubscriptionReady(final DriverEventCode eventCode)
+    void dissectCommandSubscriptionReady(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final SubscriptionReadyFlyweight flyweight = new SubscriptionReadyFlyweight();
@@ -494,7 +494,7 @@ class DriverEventDissectorTest
         flyweight.correlationId(42);
         flyweight.channelStatusCounterId(eventCode.id());
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "42 " + eventCode.id(),
@@ -503,7 +503,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_COUNTER_READY", "CMD_OUT_ON_UNAVAILABLE_COUNTER" })
-    void dissectAsCommandCounterUpdate(final DriverEventCode eventCode)
+    void dissectCommandCounterUpdate(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final CounterUpdateFlyweight flyweight = new CounterUpdateFlyweight();
@@ -511,7 +511,7 @@ class DriverEventDissectorTest
         flyweight.correlationId(eventCode.id());
         flyweight.counterId(18);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id() + " 18",
@@ -520,14 +520,14 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_CLIENT_TIMEOUT" })
-    void dissectAsCommandClientTimeout(final DriverEventCode eventCode)
+    void dissectCommandClientTimeout(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final ClientTimeoutFlyweight flyweight = new ClientTimeoutFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.clientId(eventCode.id());
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id(),
@@ -536,7 +536,7 @@ class DriverEventDissectorTest
 
     @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_TERMINATE_DRIVER" })
-    void dissectAsCommandTerminateDriver(final DriverEventCode eventCode)
+    void dissectCommandTerminateDriver(final DriverEventCode eventCode)
     {
         internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final TerminateDriverFlyweight flyweight = new TerminateDriverFlyweight();
@@ -544,7 +544,7 @@ class DriverEventDissectorTest
         flyweight.clientId(eventCode.id());
         flyweight.tokenBuffer(newBuffer(new byte[15]), 4, 11);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id() + " 11",
@@ -552,12 +552,12 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectAsCommandUnknown()
+    void dissectCommandUnknown()
     {
         final DriverEventCode eventCode = SEND_CHANNEL_CREATION;
         internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000L);
 
-        dissectAsCommand(eventCode, buffer, 0, builder);
+        dissectCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.0] " + CONTEXT + ": " + eventCode.name() + " [5/5]: COMMAND_UNKNOWN: " + eventCode,
             builder.toString());
@@ -578,6 +578,20 @@ class DriverEventDissectorTest
         assertEquals("[1.5] " + CONTEXT + ": " + UNTETHERED_SUBSCRIPTION_STATE_CHANGE.name() +
             " [22/88]: subscriptionId=88, streamId=123, sessionId=777, state changed",
             builder.toString());
+    }
+
+    @Test
+    void dissectAddress()
+    {
+        final int offset = 24;
+        internalEncodeLogHeader(buffer, offset, 17, 27, () -> 2_500_000_000L);
+        encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH + offset, new InetSocketAddress("localhost", 4848));
+
+        DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, buffer, offset, builder);
+
+        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
+            " [17/27]: 127.0.0.1:4848", builder.toString());
     }
 
     private DirectBuffer newBuffer(final byte[] bytes)

@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.driver.IpcPublication;
 import io.aeron.driver.SubscriptionLink;
 import io.aeron.driver.NetworkPublication;
 import io.aeron.driver.PublicationImage;
@@ -40,6 +41,15 @@ class CleanupInterceptor
     {
         @Advice.OnMethodEnter
         static void cleanupPublication(final NetworkPublication publication)
+        {
+            LOGGER.logPublicationRemoval(publication.channel(), publication.sessionId(), publication.streamId());
+        }
+    }
+
+    static class CleanupIpcPublication
+    {
+        @Advice.OnMethodEnter
+        static void cleanupIpcPublication(final IpcPublication publication)
         {
             LOGGER.logPublicationRemoval(publication.channel(), publication.sessionId(), publication.streamId());
         }

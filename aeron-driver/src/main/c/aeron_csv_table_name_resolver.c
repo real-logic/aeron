@@ -27,10 +27,6 @@
 #include "util/aeron_arrayutil.h"
 #include "aeron_name_resolver.h"
 
-#ifdef _MSC_VER
-#define strdup _strdup
-#endif
-
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
 #define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (4)
 

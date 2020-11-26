@@ -136,9 +136,9 @@ int main(int argc, char **argv)
 
     printf("Shutting down driver...\n");
 
-    cleanup:
-        aeron_driver_close(driver);
-        aeron_driver_context_close(context);
+cleanup:
+    aeron_driver_close(driver);
+    aeron_driver_context_close(context);
 
     return status;
 }

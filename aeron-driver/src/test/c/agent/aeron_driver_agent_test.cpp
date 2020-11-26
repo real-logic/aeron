@@ -50,7 +50,7 @@ protected:
     {
         for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
         {
-            auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
+            auto event_id = static_cast<aeron_driver_agent_event_t>(i);
             EXPECT_FALSE(aeron_driver_agent_is_event_enabled(event_id));
         }
     }
@@ -59,7 +59,7 @@ protected:
     {
         for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
         {
-            auto event_id = static_cast<const aeron_driver_agent_event_t>(i);
+            auto event_id = static_cast<aeron_driver_agent_event_t>(i);
             auto event_name = aeron_driver_agent_event_name(event_id);
             bool expected = 0 != strncmp(
                 AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);

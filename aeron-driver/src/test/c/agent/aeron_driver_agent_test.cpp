@@ -905,7 +905,8 @@ TEST_F(DriverAgentTest, shouldLogRemoveImageCleanup)
             EXPECT_EQ(-2396483568542, data->id);
             EXPECT_EQ(777, data->session_id);
             EXPECT_EQ(1, data->stream_id);
-            int channel_length = AERON_MAX_PATH * 3;
+
+            const int channel_length = AERON_MAX_PATH * 3;
             EXPECT_EQ(channel_length, data->channel_length);
             char channel[channel_length + 1];
             memset(channel, '*', channel_length);

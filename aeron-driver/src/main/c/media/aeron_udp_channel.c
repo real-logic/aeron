@@ -370,11 +370,11 @@ error_cleanup:
     return -1;
 }
 
-void aeron_udp_channel_delete(const aeron_udp_channel_t *channel)
+void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
 {
     if (NULL != channel)
     {
-        aeron_uri_close((aeron_uri_t *)&channel->uri);
+        aeron_uri_close(&channel->uri);
         aeron_free((void *)channel);
     }
 }

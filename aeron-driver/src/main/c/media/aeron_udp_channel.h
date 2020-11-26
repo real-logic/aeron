@@ -52,7 +52,7 @@ int aeron_udp_channel_parse(
     aeron_udp_channel_t **channel,
     bool is_destination);
 
-void aeron_udp_channel_delete(const aeron_udp_channel_t *channel);
+void aeron_udp_channel_delete(aeron_udp_channel_t *channel);
 
 inline bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel)
 {

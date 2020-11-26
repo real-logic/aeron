@@ -2556,7 +2556,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
 {
     int64_t correlation_id = command->correlated.correlation_id;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
-    size_t uri_length = command->channel_length;
+    size_t uri_length = (size_t)command->channel_length;
     aeron_uri_t aeron_uri_params;
     aeron_uri_publication_params_t params;
 
@@ -2783,7 +2783,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_t aeron_uri_params;
     aeron_uri_subscription_params_t params;
-    size_t uri_length = command->channel_length;
+    size_t uri_length = (size_t)command->channel_length;
 
     if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_subscription_params(&aeron_uri_params, &params, conductor) < 0)
@@ -2957,7 +2957,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_driver_conductor_t *conductor, aeron_subscription_command_t *command)
 {
     aeron_udp_channel_t *udp_channel = NULL;
-    size_t uri_length = command->channel_length;
+    size_t uri_length = (size_t)command->channel_length;
     int64_t correlation_id = command->correlated.correlation_id;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;

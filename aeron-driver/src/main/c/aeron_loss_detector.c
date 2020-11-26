@@ -108,7 +108,7 @@ int aeron_feedback_delay_state_init(
 
     if (!is_seeded)
     {
-        aeron_srand48(aeron_nano_clock());
+        aeron_srand48((uint64_t)aeron_nano_clock());
         is_seeded = true;
     }
 

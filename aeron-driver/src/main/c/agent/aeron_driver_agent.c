@@ -288,7 +288,7 @@ static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char
         const char *name = EVENT_NAMES[i];
         if (0 == strncmp(name, event_name, strlen(name) + 1))
         {
-            return i;
+            return (aeron_driver_agent_event_t)i;
         }
     }
 
@@ -306,6 +306,7 @@ const char *aeron_driver_agent_event_name(const aeron_driver_agent_event_t id)
     {
         return EVENT_NAMES[id];
     }
+
     return AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME;
 }
 
@@ -1045,12 +1046,13 @@ const char *aeron_driver_agent_dissect_log_header(
     snprintf(
         buffer,
         sizeof(buffer) - 1,
-        "[%f] %s: %s [%" PRId64 "/%" PRId64 "]",
+        "[%f] %s: %s [%" PRIu64 "/%" PRIu64 "]",
         (double)time_ns / NANOS_PER_SECOND,
         AERON_DRIVER_AGENT_LOG_CONTEXT,
         aeron_driver_agent_event_name(event_id),
-        (long long)capture_length,
-        (long long)message_length);
+        (uint64_t)capture_length,
+        (uint64_t)message_length);
+
     return buffer;
 }
 

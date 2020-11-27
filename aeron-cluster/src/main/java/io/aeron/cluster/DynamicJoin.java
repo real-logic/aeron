@@ -46,7 +46,6 @@ class DynamicJoin implements AutoCloseable
     }
 
     private final AeronArchive localArchive;
-    private final ConsensusAdapter consensusAdapter;
     private final ConsensusPublisher consensusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
@@ -76,7 +75,6 @@ class DynamicJoin implements AutoCloseable
     DynamicJoin(
         final String consensusEndpoints,
         final AeronArchive localArchive,
-        final ConsensusAdapter consensusAdapter,
         final ConsensusPublisher consensusPublisher,
         final ConsensusModule.Context ctx,
         final ConsensusModuleAgent consensusModuleAgent)
@@ -84,7 +82,6 @@ class DynamicJoin implements AutoCloseable
         final ClusterMember thisMember = ClusterMember.parseEndpoints(-1, ctx.memberEndpoints());
 
         this.localArchive = localArchive;
-        this.consensusAdapter = consensusAdapter;
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
@@ -120,7 +117,6 @@ class DynamicJoin implements AutoCloseable
     int doWork(final long nowNs)
     {
         int workCount = 0;
-        workCount += consensusAdapter.poll();
 
         switch (state)
         {

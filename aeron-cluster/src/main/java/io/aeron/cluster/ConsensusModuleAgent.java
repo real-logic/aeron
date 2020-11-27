@@ -230,7 +230,6 @@ class ConsensusModuleAgent implements Agent
                 CloseHelper.close(errorHandler, serviceProxy);
                 CloseHelper.close(errorHandler, consensusModuleAdapter);
                 CloseHelper.close(errorHandler, archive);
-
             }
 
             state(ConsensusModule.State.CLOSED);
@@ -278,7 +277,6 @@ class ConsensusModuleAgent implements Agent
                 clusterMembers,
                 clusterMemberByIdMap,
                 thisMember,
-                consensusAdapter,
                 consensusPublisher,
                 ctx,
                 this);
@@ -299,6 +297,8 @@ class ConsensusModuleAgent implements Agent
             timeOfLastSlowTickNs = nowNs;
             workCount += slowTickWork(clusterTimeUnit.toMillis(now), nowNs);
         }
+
+        workCount += consensusAdapter.poll();
 
         if (null != dynamicJoin)
         {
@@ -881,6 +881,7 @@ class ConsensusModuleAgent implements Agent
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
             logPublisher.disconnect(ctx.countedErrorHandler());
+            logAdapter.disconnect(ctx.countedErrorHandler());
             stopLogRecording();
 
             idleStrategy.reset();
@@ -1299,9 +1300,9 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void updateMemberDetails(final Election election)
+    private void updateMemberDetails(final ClusterMember newLeader)
     {
-        leaderMember = election.leader();
+        leaderMember = newLeader;
         sessionProxy.leaderMemberId(leaderMember.id()).leadershipTermId(leadershipTermId);
 
         for (final ClusterMember clusterMember : clusterMembers)
@@ -1480,12 +1481,6 @@ class ConsensusModuleAgent implements Agent
             timeOfLastAppendPositionNs = nowNs;
         }
 
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-        election = null;
-        notifiedCommitPosition = termBaseLogPosition;
-        commitPosition.setOrdered(termBaseLogPosition);
-        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
-
         if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
         {
             final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
@@ -1499,6 +1494,13 @@ class ConsensusModuleAgent implements Agent
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
+
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+        notifiedCommitPosition = termBaseLogPosition;
+        commitPosition.setOrdered(termBaseLogPosition);
+        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
+        updateMemberDetails(election.leader());
+        election = null;
 
         return true;
     }
@@ -1532,7 +1534,6 @@ class ConsensusModuleAgent implements Agent
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
-            consensusAdapter,
             consensusPublisher,
             ctx,
             this);
@@ -1817,7 +1818,7 @@ class ConsensusModuleAgent implements Agent
 
     private int consensusWork(final long timestamp, final long nowNs)
     {
-        int workCount = consensusAdapter.poll();
+        int workCount = 0;
 
         if (Cluster.Role.LEADER == role)
         {
@@ -2341,13 +2342,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (0 == clusterMembers.length && null != ctx.clusterConsensusEndpoints())
         {
-            return new DynamicJoin(
-                ctx.clusterConsensusEndpoints(),
-                archive,
-                consensusAdapter,
-                consensusPublisher,
-                ctx,
-                this);
+            return new DynamicJoin(ctx.clusterConsensusEndpoints(), archive, consensusPublisher, ctx, this);
         }
 
         return null;
@@ -2557,7 +2552,6 @@ class ConsensusModuleAgent implements Agent
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
-            consensusAdapter,
             consensusPublisher,
             ctx,
             this);

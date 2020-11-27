@@ -42,7 +42,6 @@ public class ElectionTest
     private final Counter electionStateCounter = mock(Counter.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
     private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
-    private final ConsensusAdapter consensusAdapter = mock(ConsensusAdapter.class);
     private final ConsensusPublisher consensusPublisher = mock(ConsensusPublisher.class);
     private final ConsensusModuleAgent consensusModuleAgent = mock(ConsensusModuleAgent.class);
 
@@ -612,7 +611,6 @@ public class ElectionTest
             clusterMembers,
             idToClusterMemberMap,
             thisMember,
-            consensusAdapter,
             consensusPublisher,
             ctx,
             consensusModuleAgent);
@@ -636,7 +634,6 @@ public class ElectionTest
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
-            consensusAdapter,
             consensusPublisher,
             ctx,
             consensusModuleAgent);

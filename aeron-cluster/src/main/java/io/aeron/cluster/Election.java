@@ -57,7 +57,6 @@ class Election
     private ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
-    private final ConsensusAdapter consensusAdapter;
     private final ConsensusPublisher consensusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
@@ -71,7 +70,6 @@ class Election
         final ClusterMember[] clusterMembers,
         final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap,
         final ClusterMember thisMember,
-        final ConsensusAdapter consensusAdapter,
         final ConsensusPublisher consensusPublisher,
         final ConsensusModule.Context ctx,
         final ConsensusModuleAgent consensusModuleAgent)
@@ -85,7 +83,6 @@ class Election
         this.clusterMembers = clusterMembers;
         this.clusterMemberByIdMap = clusterMemberByIdMap;
         this.thisMember = thisMember;
-        this.consensusAdapter = consensusAdapter;
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
@@ -121,8 +118,6 @@ class Election
 
         try
         {
-            workCount += consensusAdapter.poll();
-
             switch (state)
             {
                 case CANVASS:
@@ -641,7 +636,6 @@ class Election
         {
             if (consensusModuleAgent.electionComplete())
             {
-                consensusModuleAgent.updateMemberDetails(this);
                 state(CLOSED, nowNs);
             }
 
@@ -794,7 +788,6 @@ class Election
         {
             if (consensusModuleAgent.electionComplete())
             {
-                consensusModuleAgent.updateMemberDetails(this);
                 state(CLOSED, nowNs);
             }
         }
@@ -959,6 +952,6 @@ class Election
             " leadershipTermId=" + leadershipTermId +
             " logPosition=" + logPosition +
             " appendPosition=" + appendPosition);
-        */
+         */
     }
 }

@@ -1253,7 +1253,6 @@ class ConsensusModuleAgent implements Agent
 
     int addNewLogPublication()
     {
-        logPublisher.disconnect(ctx.countedErrorHandler());
         logAdapter.disconnect(ctx.countedErrorHandler());
 
         final ExclusivePublication publication = createLogPublication(recoveryPlan);
@@ -1330,7 +1329,6 @@ class ConsensusModuleAgent implements Agent
 
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)
     {
-        logPublisher.disconnect(ctx.countedErrorHandler());
         logAdapter.disconnect(ctx.countedErrorHandler());
 
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());

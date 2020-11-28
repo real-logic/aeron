@@ -56,6 +56,10 @@ class LogPublisher
 
     void publication(final ExclusivePublication publication)
     {
+        if (null != this.publication)
+        {
+            this.publication.close();
+        }
         this.publication = publication;
     }
 

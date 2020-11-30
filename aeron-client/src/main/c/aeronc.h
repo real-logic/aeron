@@ -1156,6 +1156,18 @@ int32_t aeron_publication_stream_id(aeron_publication_t *publication);
  */
 int32_t aeron_publication_session_id(aeron_publication_t *publication);
 
+/**
+ * Get all of the local socket addresses for this publication.  Typically only one representing the control address.
+ *
+ * @see aeron_subscription_local_sockaddrs
+ * @param subscription to query
+ * @param address_vec to hold the received addresses
+ * @param address_vec_len available length of the vector to hold the addresses
+ * @return number of addresses found or -1 if there is an error.
+ */
+int aeron_publication_local_sockaddrs(
+    aeron_publication_t *publication, aeron_iovec_t *address_vec, size_t address_vec_len);
+
 /*
  * Exclusive Publication functions
  */
@@ -1302,6 +1314,19 @@ bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *public
  * @return true if this publication has recently seen an active subscriber otherwise false.
  */
 bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication);
+
+/**
+ * Get all of the local socket addresses for this exclusive publication.  Typically only one representing the control
+ * address.
+ *
+ * @see aeron_subscription_local_sockaddrs
+ * @param subscription to query
+ * @param address_vec to hold the received addresses
+ * @param address_vec_len available length of the vector to hold the addresses
+ * @return number of addresses found or -1 if there is an error.
+ */
+int aeron_exclusive_publication_local_sockaddrs(
+    aeron_exclusive_publication_t *publication, aeron_iovec_t *address_vec, size_t address_vec_len);
 
 /**
  * Subscription functions
@@ -1631,6 +1656,34 @@ int aeron_subscription_async_destination_poll(aeron_async_destination_t *async);
  */
 int aeron_subscription_close(
     aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
+
+/**
+ * Get all of the local socket addresses for this subscription.  Multiple addresses can occur if this is a
+ * multi-destination subscription.  Addresses will a string representation in numeric form.  IPv6 addresses will be
+ * surrounded by '[' and ']' so that the ':' that separate the parts are distinguishable from the port delimiter.
+ * E.g. [fe80::7552:c06e:6bf4:4160]:12345.  As of writing the maximum length for a formatted address is 54 bytes
+ * including the NULL terminator.  Returned strings will be NULL terminated.  If the buffer to hold the address can
+ * not hold enough of the message it will be truncated and the last character will be null.
+ *
+ * @param subscription to query
+ * @param address_vec to hold the received addresses
+ * @param address_vec_len available length of the vector to hold the addresses
+ * @return number of addresses found or -1 if there is an error.
+ */
+int aeron_subscription_local_sockaddrs(
+    aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len);
+
+/**
+ * Retrieves the first local socket address for this subscription.  If this is not MDS then it will be the one
+ * representing endpoint for this subscription.
+ *
+ * @see aeron_subscription_local_sockaddrs
+ * @param subscription to query
+ * @param address for the received address
+ * @param address_len available length for the copied address.
+ * @return -1 on error, 0 if address not found, 1 if address is found.
+ */
+int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, char *address, size_t address_len);
 
 /**
  * Image Functions

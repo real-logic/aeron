@@ -138,6 +138,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_scanner.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_unblocker.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/status/aeron_local_sockaddr.c
     ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.c

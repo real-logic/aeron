@@ -18,6 +18,8 @@
 
 #include "aeron_subscription.h"
 #include "aeron_image.h"
+#include "aeron_counters.h"
+#include "status/aeron_local_sockaddr.h"
 
 int aeron_subscription_create(
     aeron_subscription_t **subscription,
@@ -527,8 +529,49 @@ int64_t aeron_header_position(aeron_header_t *header)
         header->frame->term_id, offset_at_end_of_frame, header->position_bits_to_shift, header->initial_term_id);
 }
 
+int aeron_subscription_local_sockaddrs(
+    aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len)
+{
+    if (NULL == subscription || address_vec == NULL || address_vec_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_local_sockaddr_find_addrs(
+        &subscription->conductor->counters_reader,
+        subscription->channel_status_indicator_id,
+        address_vec,
+        address_vec_len);
+}
+
+int aeron_subscription_resolved_endpoint(
+    aeron_subscription_t *subscription, char *address, size_t address_len)
+{
+    if (NULL == subscription || address == NULL || address_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    aeron_iovec_t addr_vec;
+    addr_vec.iov_base = (uint8_t *)address;
+    addr_vec.iov_len = address_len;
+
+    return aeron_local_sockaddr_find_addrs(
+        &subscription->conductor->counters_reader,
+        subscription->channel_status_indicator_id,
+        &addr_vec,
+        1);
+}
+
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
+
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
+
 extern void aeron_subscription_propose_last_image_change_number(
     aeron_subscription_t *subscription, int64_t change_number);
+
 extern volatile aeron_image_list_t *aeron_client_conductor_subscription_image_list(aeron_subscription_t *subscription);

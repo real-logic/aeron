@@ -568,6 +568,7 @@ private:
         std::int32_t session_id,
         std::int64_t correlation_id)
     {
+        (void)async; // Not used in C++ callback
         on_new_publication_t &handler = *reinterpret_cast<on_new_publication_t *>(clientd);
         handler(std::string(channel), stream_id, session_id, correlation_id);
     }
@@ -579,6 +580,7 @@ private:
         std::int32_t stream_id,
         std::int64_t correlation_id)
     {
+        (void)async; // Not used in C++ callback
         on_new_subscription_t &handler = *reinterpret_cast<on_new_subscription_t *>(clientd);
         handler(std::string(channel), stream_id, correlation_id);
     }

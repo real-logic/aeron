@@ -265,7 +265,7 @@ protected:
 
     template<typename H>
     static void forEachCounter(
-        std::int64_t value,
+        std::int64_t /* value */,
         std::int32_t id,
         std::int32_t typeId,
         const std::uint8_t *key,
@@ -274,7 +274,6 @@ protected:
         std::size_t label_length,
         void *clientd)
     {
-        (void)value; // Not used in C++ callback.
         H &handler = *reinterpret_cast<H *>(clientd);
         AtomicBuffer keyBuffer = { const_cast<std::uint8_t *>(key), key_length };
         std::string labelStr = { const_cast<char *>(label), label_length };

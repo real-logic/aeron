@@ -52,6 +52,11 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
         length += iov[i].iov_len;
     }
 
+    if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
+    {
+        return AERON_RB_ERROR;
+    }
+
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t aligned_record_length = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
     const size_t required_capacity = aligned_record_length + AERON_RB_RECORD_HEADER_LENGTH;
@@ -65,11 +70,6 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     size_t record_index = (size_t)tail & mask;
     const size_t to_buffer_end_length = ring_buffer->capacity - record_index;
     aeron_rb_record_descriptor_t *record_header = NULL, *next_header = NULL;
-
-    if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
-    {
-        return AERON_RB_ERROR;
-    }
 
     if ((int32_t)required_capacity > available_capacity)
     {

@@ -113,14 +113,14 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(aeron_mpsc_rb_t *ring_buffer,
 aeron_rb_write_result_t aeron_mpsc_rb_write(
     aeron_mpsc_rb_t *ring_buffer, int32_t msg_type_id, const void *msg, size_t length)
 {
-    const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
-    const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
-    aeron_rb_write_result_t result = AERON_RB_FULL;
-
     if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
     {
         return AERON_RB_ERROR;
     }
+
+    const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
+    const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
+    aeron_rb_write_result_t result = AERON_RB_FULL;
 
     int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
 

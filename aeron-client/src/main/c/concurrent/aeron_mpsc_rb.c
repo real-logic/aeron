@@ -120,7 +120,6 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
 
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
-    aeron_rb_write_result_t result = AERON_RB_FULL;
 
     int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
 
@@ -128,15 +127,16 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
     {
         aeron_rb_record_descriptor_t *record_header =
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
-        record_header->msg_type_id = msg_type_id;
         AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
+
+        record_header->msg_type_id = msg_type_id;
         memcpy(ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index), msg, length);
         AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
 
-        result = AERON_RB_SUCCESS;
+        return AERON_RB_SUCCESS;
     }
 
-    return result;
+    return AERON_RB_FULL;
 }
 
 size_t aeron_mpsc_rb_read(

@@ -495,7 +495,9 @@ int32_t aeron_publication_session_id(aeron_publication_t *publication)
 }
 
 int aeron_publication_local_sockaddrs(
-    aeron_publication_t *publication, aeron_iovec_t *address_vec, size_t address_vec_len)
+    aeron_publication_t *publication,
+    aeron_iovec_t *address_vec,
+    size_t address_vec_len)
 {
     if (NULL == publication || address_vec == NULL || address_vec_len < 1)
     {

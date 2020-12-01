@@ -580,9 +580,8 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
         return -1;
     }
 
-    aeron_uri_t temp_uri;
+    aeron_uri_t temp_uri = { 0 };
     char resolved_endpoint[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
-    memset(&temp_uri, 0, sizeof(temp_uri));
     int result = -1;
 
     if (aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri) < 0)

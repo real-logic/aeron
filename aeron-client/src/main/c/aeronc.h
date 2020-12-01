@@ -55,14 +55,14 @@ typedef struct aeron_header_values_frame_stct
     int32_t term_id;
     int64_t reserved_value;
 }
-    aeron_header_values_frame_t;
+aeron_header_values_frame_t;
 
 typedef struct aeron_header_values_stct
 {
     aeron_header_values_frame_t frame;
     int32_t initial_term_id;
 }
-    aeron_header_values_t;
+aeron_header_values_t;
 #pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
@@ -515,21 +515,21 @@ typedef struct aeron_on_available_counter_pair_stct
     aeron_on_available_counter_t handler;
     void *clientd;
 }
-    aeron_on_available_counter_pair_t;
+aeron_on_available_counter_pair_t;
 
 typedef struct aeron_on_unavailable_counter_pair_stct
 {
     aeron_on_unavailable_counter_t handler;
     void *clientd;
 }
-    aeron_on_unavailable_counter_pair_t;
+aeron_on_unavailable_counter_pair_t;
 
 typedef struct aeron_on_close_client_pair_stct
 {
     aeron_on_close_client_t handler;
     void *clientd;
 }
-    aeron_on_close_client_pair_t;
+aeron_on_close_client_pair_t;
 
 /**
  * Add a handler to be called when a new counter becomes available.
@@ -613,7 +613,7 @@ typedef struct aeron_counter_value_descriptor_stct
     int64_t owner_id;
     uint8_t pad1[(2 * AERON_COUNTER_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
 }
-    aeron_counter_value_descriptor_t;
+aeron_counter_value_descriptor_t;
 
 typedef struct aeron_counter_metadata_descriptor_stct
 {
@@ -624,7 +624,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
     int32_t label_length;
     uint8_t label[(6 * AERON_COUNTER_CACHE_LINE_LENGTH) - sizeof(int32_t)];
 }
-    aeron_counter_metadata_descriptor_t;
+aeron_counter_metadata_descriptor_t;
 #pragma pack(pop)
 
 
@@ -660,7 +660,7 @@ typedef struct aeron_counters_reader_buffers_stct
     size_t values_length;
     size_t metadata_length;
 }
-    aeron_counters_reader_buffers_t;
+aeron_counters_reader_buffers_t;
 
 /**
  * Get buffer pointers and lengths for the counters reader.
@@ -840,7 +840,7 @@ typedef struct aeron_iovec_stct
     uint8_t *iov_base;
     size_t iov_len;
 }
-    aeron_iovec_t;
+aeron_iovec_t;
 #else
 typedef struct iov aeron_iovec_t;
 #endif
@@ -854,7 +854,7 @@ typedef struct aeron_buffer_claim_stct
     uint8_t *data;
     size_t length;
 }
-    aeron_buffer_claim_t;
+aeron_buffer_claim_t;
 
 /**
  * Commit the given buffer_claim as a complete message available for consumption.
@@ -1180,7 +1180,7 @@ int32_t aeron_publication_stream_id(aeron_publication_t *publication);
 int32_t aeron_publication_session_id(aeron_publication_t *publication);
 
 /**
- * Get all of the local socket addresses for this publication.  Typically only one representing the control address.
+ * Get all of the local socket addresses for this publication. Typically only one representing the control address.
  *
  * @see aeron_subscription_local_sockaddrs
  * @param subscription to query
@@ -1189,7 +1189,9 @@ int32_t aeron_publication_session_id(aeron_publication_t *publication);
  * @return number of addresses found or -1 if there is an error.
  */
 int aeron_publication_local_sockaddrs(
-    aeron_publication_t *publication, aeron_iovec_t *address_vec, size_t address_vec_len);
+    aeron_publication_t *publication,
+    aeron_iovec_t *address_vec,
+    size_t address_vec_len);
 
 /*
  * Exclusive Publication functions
@@ -1339,7 +1341,7 @@ bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *public
 bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication);
 
 /**
- * Get all of the local socket addresses for this exclusive publication.  Typically only one representing the control
+ * Get all of the local socket addresses for this exclusive publication. Typically only one representing the control
  * address.
  *
  * @see aeron_subscription_local_sockaddrs
@@ -1681,16 +1683,16 @@ int aeron_subscription_close(
     aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
 
 /**
- * Get all of the local socket addresses for this subscription.  Multiple addresses can occur if this is a
- * multi-destination subscription.  Addresses will a string representation in numeric form.  IPv6 addresses will be
+ * Get all of the local socket addresses for this subscription. Multiple addresses can occur if this is a
+ * multi-destination subscription. Addresses will a string representation in numeric form. IPv6 addresses will be
  * surrounded by '[' and ']' so that the ':' that separate the parts are distinguishable from the port delimiter.
- * E.g. [fe80::7552:c06e:6bf4:4160]:12345.  As of writing the maximum length for a formatted address is 54 bytes
- * including the NULL terminator.  AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN is defined to provide enough space to fit the
- * returned string. Returned strings will be NULL terminated.  If the buffer to hold the address can not hold enough
+ * E.g. [fe80::7552:c06e:6bf4:4160]:12345. As of writing the maximum length for a formatted address is 54 bytes
+ * including the NULL terminator. AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN is defined to provide enough space to fit the
+ * returned string. Returned strings will be NULL terminated. If the buffer to hold the address can not hold enough
  * of the message it will be truncated and the last character will be null.
  *
  * If the address_vec_len is less the total number of addresses available then the first addresses found up to that
- * length will be placed into the address_vec.  However the function will return the total number of addresses available
+ * length will be placed into the address_vec. However the function will return the total number of addresses available
  * so if if that is larger than the input array then the client code may wish to re-query with a larger array to get
  * them all.
  *
@@ -1703,7 +1705,7 @@ int aeron_subscription_local_sockaddrs(
     aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len);
 
 /**
- * Retrieves the first local socket address for this subscription.  If this is not MDS then it will be the one
+ * Retrieves the first local socket address for this subscription. If this is not MDS then it will be the one
  * representing endpoint for this subscription.
  *
  * @see aeron_subscription_local_sockaddrs
@@ -1791,7 +1793,7 @@ typedef struct aeron_image_constants_stct
      */
     int32_t subscriber_position_id;
 }
-    aeron_image_constants_t;
+aeron_image_constants_t;
 
 /**
  * Fill in a structure with the constants in use by a image.
@@ -2114,7 +2116,7 @@ typedef struct aeron_counter_constants_stct
      */
     int32_t counter_id;
 }
-    aeron_counter_constants_t;
+aeron_counter_constants_t;
 
 /**
  * Fill in a structure with the constants in use by a counter.
@@ -2266,7 +2268,7 @@ int aeron_default_path(char *path, size_t path_length);
 
 /**
  * Gets the registration id for addition of the counter. Note that using this after a call to poll the succeeds or
- * errors is undefined behaviour.  As the async_add_counter_t may have been freed.
+ * errors is undefined behaviour. As the async_add_counter_t may have been freed.
  *
  * @param add_counter used to check for completion.
  * @return registration id for the counter.

@@ -51,6 +51,11 @@ static void aeron_local_sockaddr_find_address_counter_metadata_func(
     int32_t status_indicator_id;
     memcpy(&status_indicator_id, key, sizeof(status_indicator_id));
 
+    if (status_indicator_id != find_addr->channel_status_indicator_id)
+    {
+        return;
+    }
+
     int64_t *status_indicator_addr = aeron_counters_reader_addr(find_addr->reader, status_indicator_id);
     int64_t status;
     AERON_GET_VOLATILE(status, *status_indicator_addr);

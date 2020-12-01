@@ -20,6 +20,7 @@
 #include "aeron_image.h"
 #include "aeron_counters.h"
 #include "status/aeron_local_sockaddr.h"
+#include "uri/aeron_uri.h"
 
 int aeron_subscription_create(
     aeron_subscription_t **subscription,
@@ -565,6 +566,57 @@ int aeron_subscription_resolved_endpoint(
         subscription->channel_status_indicator_id,
         &addr_vec,
         1);
+}
+
+int aeron_subscription_try_resolve_channel_endpoint_port(
+    aeron_subscription_t *subscription,
+    char *address,
+    size_t address_len)
+{
+    if (NULL == subscription || address == NULL || address_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    aeron_uri_t temp_uri;
+    char resolved_endpoint[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+    memset(&temp_uri, 0, sizeof(temp_uri));
+    int result = -1;
+
+    if (aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri) < 0)
+    {
+        goto done;
+    }
+
+    // From here on out we will return an empty string...
+    address[0] = '\0';
+    result = 0;
+
+    if (AERON_URI_UDP != temp_uri.type || NULL == temp_uri.params.udp.endpoint)
+    {
+        goto done;
+    }
+
+    char *port_suffix = strrchr(temp_uri.params.udp.endpoint, ':');
+    if (0 != strcmp(port_suffix, ":0"))
+    {
+        goto done;
+    }
+
+    if (aeron_subscription_resolved_endpoint(subscription, resolved_endpoint, sizeof(resolved_endpoint)) < 0)
+    {
+        goto done;
+    }
+
+    temp_uri.params.udp.endpoint = resolved_endpoint;
+    aeron_uri_sprint(&temp_uri, address, address_len);
+
+done:
+    aeron_uri_close(&temp_uri);
+
+    return result;
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);

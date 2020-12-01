@@ -324,7 +324,21 @@ public:
      */
     std::vector<std::string> localSocketAddresses() const
     {
-        return LocalSocketAddressStatus::findAddresses(m_countersReader, channelStatus(), channelStatusId());
+        std::vector<std::string> localAddresses;
+        uint8_t buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        // Publications only have a single local address.
+        aeron_iovec_t iov;
+        iov.iov_base = buffer;
+        iov.iov_len = sizeof(buffer);
+
+        if (aeron_publication_local_sockaddrs(m_publication, &iov, 1) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        localAddresses.push_back(std::string(reinterpret_cast<char *>(buffer)));
+
+        return localAddresses;
     }
 
     /**

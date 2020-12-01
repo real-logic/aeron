@@ -17,6 +17,7 @@
 #include <functional>
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "EmbeddedMediaDriver.h"
 
@@ -26,13 +27,15 @@ extern "C"
 #include "aeronc.h"
 }
 
-#define PUB_URI_ENDPONT "127.0.0.1:24325"
+#define RESOLVED_ADDRESS_PATTERN "^127\\.0\\.0\\.1:[1-9][0-9]*$"
+#define RESOLVED_IPV6_ADDRESS_PATTERN "^\\[::1\\]:[1-9][0-9]*$"
+#define PUB_URI_ENDPOINT "127.0.0.1"
 #define PUB_URI_CONTROL "127.0.0.1:24326"
-#define PUB_URI "aeron:udp?endpoint=" PUB_URI_ENDPONT "|control=" PUB_URI_CONTROL
+#define PUB_URI "aeron:udp?endpoint=" PUB_URI_ENDPOINT ":0|control=" PUB_URI_CONTROL
+#define PUB_URI_IPV6 "aeron:udp?endpoint=[::1]:0"
 #define STREAM_ID (117)
 
 #define NUM_BUFFERS (4)
-#define CAPACITY (64)
 
 using namespace aeron;
 
@@ -179,20 +182,6 @@ public:
         }
     }
 
-    static void poll_handler(
-        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
-    {
-        auto test = reinterpret_cast<CLocalAddressesTest *>(clientd);
-
-        test->m_poll_handler(buffer, length, header);
-    }
-
-    int poll(aeron_subscription_t *subscription, poll_handler_t &handler, int fragment_limit)
-    {
-        m_poll_handler = handler;
-        return aeron_subscription_poll(subscription, poll_handler, this, (size_t)fragment_limit);
-    }
-
     static void onUnavailableImage(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
     {
         auto test = reinterpret_cast<CLocalAddressesTest *>(clientd);
@@ -213,7 +202,7 @@ protected:
     EmbeddedMediaDriver m_driver;
     aeron_context_t *m_context = nullptr;
     aeron_t *m_aeron = nullptr;
-    uint8_t m_buffers[NUM_BUFFERS][CAPACITY];
+    uint8_t m_buffers[NUM_BUFFERS][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
     aeron_iovec_t m_addrs[NUM_BUFFERS];
 
     poll_handler_t m_poll_handler = nullptr;
@@ -278,10 +267,17 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForSubscription)
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
 
     ASSERT_EQ(1, aeron_subscription_local_sockaddrs(subscription, m_addrs, NUM_BUFFERS));
-    ASSERT_STREQ(PUB_URI_ENDPONT, reinterpret_cast<char *>(m_addrs[0].iov_base));
+    ASSERT_THAT(reinterpret_cast<char *>(m_addrs[0].iov_base), testing::ContainsRegex(RESOLVED_ADDRESS_PATTERN));
 
     ASSERT_EQ(1, aeron_subscription_resolved_endpoint(subscription, reinterpret_cast<char *>(m_buffers[0]), 1024));
-    ASSERT_STREQ(PUB_URI_ENDPONT, reinterpret_cast<char *>(m_buffers[0]));
+    ASSERT_THAT(reinterpret_cast<char *>(m_buffers[0]), testing::ContainsRegex(RESOLVED_ADDRESS_PATTERN));
+
+    std::string resolvedEndpointParam = "endpoint=" + std::string(reinterpret_cast<char *>(m_addrs[0].iov_base));
+    char uriWithResolvedEndpoint[1024];
+    aeron_subscription_try_resolve_channel_endpoint_port(
+        subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint));
+
+    ASSERT_THAT(uriWithResolvedEndpoint, testing::HasSubstr(resolvedEndpointParam));
 
     aeron_subscription_close(subscription, setFlagOnClose, &subscriptionClosedFlag);
 
@@ -290,6 +286,66 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForSubscription)
         std::this_thread::yield();
     }
 }
+
+TEST_F(CLocalAddressesTest, shouldGetIPv6AddressForSubscription)
+{
+    std::atomic<bool> subscriptionClosedFlag(false);
+    aeron_async_add_subscription_t *async;
+    aeron_subscription_t *subscription;
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async, m_aeron, PUB_URI_IPV6, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
+
+    ASSERT_EQ(1, aeron_subscription_local_sockaddrs(subscription, m_addrs, NUM_BUFFERS));
+    ASSERT_THAT(reinterpret_cast<char *>(m_addrs[0].iov_base), testing::ContainsRegex(RESOLVED_IPV6_ADDRESS_PATTERN));
+
+    ASSERT_EQ(1, aeron_subscription_resolved_endpoint(subscription, reinterpret_cast<char *>(m_buffers[0]), 1024));
+    ASSERT_THAT(reinterpret_cast<char *>(m_buffers[0]), testing::ContainsRegex(RESOLVED_IPV6_ADDRESS_PATTERN));
+
+    std::string resolvedEndpointParam = "endpoint=" + std::string(reinterpret_cast<char *>(m_addrs[0].iov_base));
+    char uriWithResolvedEndpoint[1024];
+    aeron_subscription_try_resolve_channel_endpoint_port(
+        subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint));
+
+    ASSERT_THAT(uriWithResolvedEndpoint, testing::HasSubstr(resolvedEndpointParam));
+
+    aeron_subscription_close(subscription, setFlagOnClose, &subscriptionClosedFlag);
+
+    while (!subscriptionClosedFlag)
+    {
+        std::this_thread::yield();
+    }
+}
+
+TEST_F(CLocalAddressesTest, shouldGetEmptyAddressWhenNoWildcardSpecified)
+{
+    std::atomic<bool> subscriptionClosedFlag(false);
+    aeron_async_add_subscription_t *async;
+    aeron_subscription_t *subscription;
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async, m_aeron, "aeron:udp?endpoint=[::1]:12345", STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
+
+    char uriWithResolvedEndpoint[1024];
+
+    ASSERT_EQ(0, aeron_subscription_try_resolve_channel_endpoint_port(
+        subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint)));
+    ASSERT_EQ('\0', uriWithResolvedEndpoint[0]);
+
+    aeron_subscription_close(subscription, setFlagOnClose, &subscriptionClosedFlag);
+
+    while (!subscriptionClosedFlag)
+    {
+        std::this_thread::yield();
+    }
+}
+
 
 TEST_F(CLocalAddressesTest, shouldGetAddressesForMultiDestinationSubscription)
 {

@@ -72,6 +72,7 @@ set(SOURCE
     util/aeron_parse_util.c
     util/aeron_properties_util.c
     util/aeron_strutil.c
+    uri/aeron_uri.c
     aeron_agent.c
     aeron_alloc.c
     aeron_client.c
@@ -139,6 +140,7 @@ set(HEADERS
     util/aeron_platform.h
     util/aeron_properties_util.h
     util/aeron_strutil.h
+    uri/aeron_uri.h
     aeron_agent.h
     aeron_alloc.h
     aeron_client.h

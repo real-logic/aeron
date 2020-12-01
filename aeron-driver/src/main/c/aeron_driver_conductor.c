@@ -462,7 +462,7 @@ static int aeron_driver_conductor_speculate_next_session_id(
 }
 
 int aeron_confirm_publication_match(
-    const aeron_uri_publication_params_t *params,
+    const aeron_driver_uri_publication_params_t *params,
     const int32_t existing_session_id,
     const aeron_logbuffer_metadata_t *logbuffer_metadata)
 {
@@ -1046,7 +1046,7 @@ void aeron_driver_conductor_on_check_managed_resources(
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
-    aeron_uri_publication_params_t *params,
+    aeron_driver_uri_publication_params_t *params,
     int64_t registration_id,
     int32_t stream_id,
     size_t uri_length,
@@ -1218,7 +1218,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     aeron_send_channel_endpoint_t *endpoint,
     size_t uri_length,
     const char *uri,
-    aeron_uri_publication_params_t *params,
+    aeron_driver_uri_publication_params_t *params,
     int64_t registration_id,
     int32_t stream_id,
     bool is_exclusive)
@@ -2558,10 +2558,10 @@ int aeron_driver_conductor_on_add_ipc_publication(
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
     size_t uri_length = (size_t)command->channel_length;
     aeron_uri_t aeron_uri_params;
-    aeron_uri_publication_params_t params;
+    aeron_driver_uri_publication_params_t params;
 
     if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
-        aeron_uri_publication_params(&aeron_uri_params, &params, conductor, is_exclusive) < 0)
+        aeron_uri_driver_publication_params(&aeron_uri_params, &params, conductor, is_exclusive) < 0)
     {
         goto error_cleanup;
     }
@@ -2636,10 +2636,10 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_udp_channel_t *udp_channel = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
     size_t uri_length = (size_t)command->channel_length;
-    aeron_uri_publication_params_t params;
+    aeron_driver_uri_publication_params_t params;
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
-        aeron_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
+        aeron_uri_driver_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
         aeron_udp_channel_delete(udp_channel);
         return -1;
@@ -2786,7 +2786,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     size_t uri_length = (size_t)command->channel_length;
 
     if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
-        aeron_uri_subscription_params(&aeron_uri_params, &params, conductor) < 0)
+        aeron_uri_driver_subscription_params(&aeron_uri_params, &params, conductor) < 0)
     {
         goto error_cleanup;
     }
@@ -2871,7 +2871,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
 
     if (aeron_udp_channel_parse(
         command->channel_length - strlen(AERON_SPY_PREFIX), uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
-        aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
+        aeron_uri_driver_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         return -1;
     }
@@ -2963,7 +2963,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_uri_subscription_params_t params;
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
-        aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
+        aeron_uri_driver_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         aeron_udp_channel_delete(udp_channel);
         return -1;

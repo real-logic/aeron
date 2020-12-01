@@ -17,7 +17,7 @@
 #ifndef AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_H
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_H
 
-#include "uri/aeron_uri.h"
+#include "uri/aeron_uri_driver.h"
 #include "aeron_socket.h"
 #include "aeron_driver_common.h"
 

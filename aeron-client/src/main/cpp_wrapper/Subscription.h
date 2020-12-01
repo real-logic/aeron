@@ -186,34 +186,14 @@ public:
      */
     std::string tryResolveChannelEndpointPort() const
     {
-        const std::int64_t currentChannelStatus = channelStatus();
+        char uri_buffer[1024];
 
-        if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus)
+        if (aeron_subscription_try_resolve_channel_endpoint_port(m_subscription, uri_buffer, sizeof(uri_buffer)) < 0)
         {
-            std::vector<std::string> localSocketAddresses = LocalSocketAddressStatus::findAddresses(
-                m_countersReader, currentChannelStatus, channelStatusId());
-
-            if (1 == localSocketAddresses.size())
-            {
-                std::shared_ptr<ChannelUri> channelUriPtr = ChannelUri::parse(m_channel);
-                std::string endpoint = channelUriPtr->get(ENDPOINT_PARAM_NAME);
-
-                if (!endpoint.empty() && endsWith(endpoint, std::string(":0")))
-                {
-                    std::string &resolvedEndpoint = localSocketAddresses.at(0);
-                    std::size_t i = resolvedEndpoint.find_last_of(':');
-                    std::string newEndpoint = endpoint.substr(0, endpoint.length() - 2) + resolvedEndpoint.substr(i);
-
-                    channelUriPtr->put(ENDPOINT_PARAM_NAME, newEndpoint);
-
-                    return channelUriPtr->toString();
-                }
-            }
-
-            return m_channel;
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return {};
+        return std::string(uri_buffer);
     }
 
     /**
@@ -230,7 +210,15 @@ public:
      */
     std::string resolvedEndpoint() const
     {
-        return LocalSocketAddressStatus::findAddress(m_countersReader, channelStatus(), channelStatusId());
+        char buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+
+        int result = aeron_subscription_resolved_endpoint(m_subscription, buffer, sizeof(buffer));
+        if (result < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return 0 < result ? std::string(buffer) : std::string{};
     }
 
     AsyncDestination *addDestinationAsync(const std::string &endpointChannel)

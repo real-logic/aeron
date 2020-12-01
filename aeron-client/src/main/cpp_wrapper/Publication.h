@@ -28,7 +28,6 @@
 #include "concurrent/logbuffer/TermAppender.h"
 #include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
-#include "concurrent/status/LocalSocketAddressStatus.h"
 #include "util/Exceptions.h"
 
 #include "aeronc.h"

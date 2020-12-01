@@ -43,8 +43,7 @@ static void aeron_local_sockaddr_find_address_counter_metadata_func(
 {
     aeron_lock_sockaddr_find_clientd_t *find_addr = (aeron_lock_sockaddr_find_clientd_t *)clientd;
 
-    if (find_addr->address_vec_len <= find_addr->current_address ||
-        AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID != type_id)
+    if (AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID != type_id)
     {
         return;
     }
@@ -72,15 +71,21 @@ static void aeron_local_sockaddr_find_address_counter_metadata_func(
         return;
     }
 
-    aeron_iovec_t *iov = &find_addr->address_vec[find_addr->current_address];
+    size_t current_address = find_addr->current_address;
+    find_addr->current_address++;
+
+    if (find_addr->address_vec_len <= current_address)
+    {
+        return;
+    }
+
+    aeron_iovec_t *iov = &find_addr->address_vec[current_address];
     size_t buffer_len = iov->iov_len;
     size_t addr_len_sz = (size_t)addr_len;
 
     size_t to_copy = addr_len_sz < (buffer_len - 1) ? addr_len_sz : buffer_len - 1;
     memcpy(iov->iov_base, addr, to_copy);
     iov->iov_base[to_copy] = UINT8_C(0);
-
-    find_addr->current_address++;
 }
 
 int aeron_local_sockaddr_find_addrs(

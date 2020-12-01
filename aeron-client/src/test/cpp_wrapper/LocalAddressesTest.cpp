@@ -73,3 +73,37 @@ TEST_F(LocalAddressesTest, shouldGetLocalAddresses)
 
     invoker.invoke();
 }
+
+TEST_F(LocalAddressesTest, shouldGetLocalAddressesForMds)
+{
+    std::int32_t streamId = 10001;
+    std::string channel = "aeron:udp?control-mode=manual";
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+
+        int numDestinations = 32;
+        for (int i = 0; i < numDestinations; i++)
+        {
+            int64_t destination = sub->addDestination("aeron:udp?endpoint=127.0.0.1:" + std::to_string(9000 + i));
+            POLL_FOR(sub->findDestinationResponse(destination), invoker);
+        }
+        
+        auto subAddresses = sub->localSocketAddresses();
+        ASSERT_EQ(numDestinations, (int)subAddresses.size());
+
+        for (int i = 0; i < numDestinations; i++)
+        {
+            std::string expectedAddress = "127.0.0.1:" + std::to_string(9000 + i);
+            ASSERT_EQ(expectedAddress, subAddresses[i]);
+        }
+    }
+
+    invoker.invoke();
+}

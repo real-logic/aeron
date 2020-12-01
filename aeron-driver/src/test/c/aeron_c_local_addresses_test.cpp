@@ -377,6 +377,8 @@ TEST_F(CLocalAddressesTest, shouldGetAddressesForMultiDestinationSubscription)
     ASSERT_STREQ("127.0.0.1:9091", reinterpret_cast<char *>(m_addrs[1].iov_base));
     ASSERT_STREQ("127.0.0.1:9093", reinterpret_cast<char *>(m_addrs[2].iov_base));
 
+    ASSERT_EQ(3, aeron_subscription_local_sockaddrs(subscription, m_addrs, 2));
+
     aeron_subscription_close(subscription, setFlagOnClose, &subscriptionClosedFlag);
 
     while (!subscriptionClosedFlag)

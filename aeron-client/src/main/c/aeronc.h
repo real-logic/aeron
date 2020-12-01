@@ -1689,6 +1689,11 @@ int aeron_subscription_close(
  * returned string. Returned strings will be NULL terminated.  If the buffer to hold the address can not hold enough
  * of the message it will be truncated and the last character will be null.
  *
+ * If the address_vec_len is less the total number of addresses available then the first addresses found up to that
+ * length will be placed into the address_vec.  However the function will return the total number of addresses available
+ * so if if that is larger than the input array then the client code may wish to re-query with a larger array to get
+ * them all.
+ *
  * @param subscription to query
  * @param address_vec to hold the received addresses
  * @param address_vec_len available length of the vector to hold the addresses

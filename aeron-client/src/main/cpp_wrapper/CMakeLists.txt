@@ -64,7 +64,6 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/ringbuffer/RecordDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/ringbuffer/RingBufferDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/ringbuffer/OneToOneRingBuffer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/LocalSocketAddressStatus.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/ReadablePosition.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/Position.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/UnsafeBufferPosition.h

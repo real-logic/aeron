@@ -168,8 +168,56 @@ public:
      */
     std::vector<std::string> localSocketAddresses() const
     {
-        return aeron::concurrent::status::LocalSocketAddressStatus::findAddresses(
-            m_countersReader, channelStatus(), channelStatusId());
+        const int initialVectorSize = 16;
+        uint8_t buffers[initialVectorSize][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        aeron_iovec_t initialIovecs[initialVectorSize];
+        std::unique_ptr<uint8_t[]> overflowBuffers;
+        std::unique_ptr<aeron_iovec_t[]> overflowIovecs;
+        aeron_iovec_t *iovecs;
+
+        for (size_t i = 0, n = 16; i < n; i++)
+        {
+            initialIovecs[i].iov_base = buffers[i];
+            initialIovecs[i].iov_len = AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
+        }
+        iovecs = initialIovecs;
+
+        int initialResult = aeron_subscription_local_sockaddrs(m_subscription, initialIovecs, 16);
+        if (initialResult < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        if (initialVectorSize < initialResult)
+        {
+            const int overflowVectorSize = initialResult;
+            overflowBuffers = std::unique_ptr<uint8_t[]>(
+                new uint8_t[overflowVectorSize * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN]);
+            overflowIovecs = std::unique_ptr<aeron_iovec_t[]>(new aeron_iovec_t[overflowVectorSize]);
+
+            for (int i = 0; i < initialResult; i++)
+            {
+                overflowIovecs[i].iov_base = &overflowBuffers[i * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+                overflowIovecs[i].iov_len = AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
+            }
+
+            int overflowResult = aeron_subscription_local_sockaddrs(
+                m_subscription, overflowIovecs.get(), (size_t)overflowVectorSize);
+            if (overflowResult < 0)
+            {
+                AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+            }
+
+            iovecs = overflowIovecs.get();
+        }
+
+        std::vector<std::string> localAddresses;
+        for (int i = 0; i < initialResult; i++)
+        {
+            localAddresses.push_back(std::string(reinterpret_cast<char *>(iovecs[i].iov_base)));
+        }
+
+        return localAddresses;
     }
 
     /**

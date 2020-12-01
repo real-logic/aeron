@@ -101,6 +101,7 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(aeron_mpsc_rb_t *ring_buffer,
     {
         aeron_rb_record_descriptor_t *record_header =
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + tail_index);
+        AERON_PUT_ORDERED(record_header->length, -(int32_t)padding);
 
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
         AERON_PUT_ORDERED(record_header->length, (int32_t)padding);

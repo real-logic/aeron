@@ -32,7 +32,7 @@ extern "C"
 #define RESOLVED_IPV6_ADDRESS_PATTERN "^\\[::1\\]:[1-9][0-9]*$"
 #elif defined(GTEST_USES_SIMPLE_RE)
 #define RESOLVED_ADDRESS_PATTERN "^127\\.0\\.0\\.1:\\d*$"
-#define RESOLVED_IPV6_ADDRESS_PATTERN "^[::1]:\\d*$"
+#define RESOLVED_IPV6_ADDRESS_PATTERN "^\\[::1\\]:\\d*$"
 #endif
 #define PUB_URI_ENDPOINT "127.0.0.1"
 #define PUB_URI_CONTROL "127.0.0.1:24326"

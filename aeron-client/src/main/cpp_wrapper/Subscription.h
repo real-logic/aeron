@@ -174,6 +174,7 @@ public:
         std::unique_ptr<uint8_t[]> overflowBuffers;
         std::unique_ptr<aeron_iovec_t[]> overflowIovecs;
         aeron_iovec_t *iovecs;
+        int addressCount = 0;
 
         for (size_t i = 0, n = 16; i < n; i++)
         {
@@ -187,6 +188,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+        addressCount = initialResult;
 
         if (initialVectorSize < initialResult)
         {
@@ -208,11 +210,12 @@ public:
                 AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
             }
 
+            addressCount = overflowResult < initialResult ? overflowResult : initialResult;
             iovecs = overflowIovecs.get();
         }
 
         std::vector<std::string> localAddresses;
-        for (int i = 0; i < initialResult; i++)
+        for (int i = 0; i < addressCount; i++)
         {
             localAddresses.push_back(std::string(reinterpret_cast<char *>(iovecs[i].iov_base)));
         }

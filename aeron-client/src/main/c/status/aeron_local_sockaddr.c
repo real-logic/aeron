@@ -116,5 +116,5 @@ int aeron_local_sockaddr_find_addrs(
         aeron_local_sockaddr_find_address_counter_metadata_func,
         &find_clientd);
 
-    return find_clientd.current_address;
+    return (int)find_clientd.current_address;
 }

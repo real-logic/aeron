@@ -526,7 +526,7 @@ int aeron_uri_ipc_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
         aeron_uri_print_next(&ctx, additional->array[i].key, additional->array[i].value);
     }
 
-    return ctx.offset;
+    return (int)ctx.offset;
 }
 
 int aeron_uri_udp_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
@@ -598,7 +598,7 @@ int aeron_uri_udp_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
         aeron_uri_print_next(&ctx, additional->array[i].key, additional->array[i].value);
     }
 
-    return ctx.offset;
+    return (int)ctx.offset;
 }
 
 int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)

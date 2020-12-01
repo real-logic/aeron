@@ -73,6 +73,22 @@ TEST_F(SpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)
     EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), rb.max_message_length + 1), AERON_RB_ERROR);
 }
 
+TEST_F(SpscRbTest, shouldErrorWhenMessageTypeIsNegative)
+{
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, AERON_RB_PADDING_MSG_TYPE_ID, m_srcBuffer.data(), 5), AERON_RB_ERROR);
+}
+
+TEST_F(SpscRbTest, shouldErrorWhenMessageTypeIsZero)
+{
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, 0, m_srcBuffer.data(), 5), AERON_RB_ERROR);
+}
+
 TEST_F(SpscRbTest, shouldWriteToEmptyBuffer)
 {
     aeron_spsc_rb_t rb;

@@ -23,9 +23,9 @@ import io.aeron.driver.ext.LossGenerator;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.MediaDriverTestWatcher;
-import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
+import static io.aeron.test.driver.LossReportTestUtil.verifyLossOccurredForStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 

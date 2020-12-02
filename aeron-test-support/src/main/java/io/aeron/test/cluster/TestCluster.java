@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.test.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.EgressListener;
@@ -147,7 +148,7 @@ public class TestCluster implements AutoCloseable
         this.appointedLeaderId = appointedLeaderId;
     }
 
-    static void awaitElectionClosed(final TestNode follower)
+    public static void awaitElectionClosed(final TestNode follower)
     {
         while (follower.electionState() != ElectionState.CLOSED)
         {
@@ -155,7 +156,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
+    public static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
     {
         while (true)
         {
@@ -191,7 +192,7 @@ public class TestCluster implements AutoCloseable
         ClusterTests.failOnClusterError();
     }
 
-    static AutoCloseable closeAndDeleteNode(final TestNode node)
+    public static AutoCloseable closeAndDeleteNode(final TestNode node)
     {
         if (node == null)
         {
@@ -201,7 +202,7 @@ public class TestCluster implements AutoCloseable
         return node::closeAndDelete;
     }
 
-    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
+    public static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
     {
         final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
         for (int i = 0; i < 3; i++)
@@ -212,7 +213,7 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    static TestCluster startSingleNodeStaticCluster()
+    public static TestCluster startSingleNodeStaticCluster()
     {
         final TestCluster testCluster = new TestCluster(1, 0, 0);
         testCluster.startStaticNode(0, true);
@@ -220,7 +221,7 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    static TestCluster startCluster(final int staticMemberCount, final int dynamicMemberCount)
+    public static TestCluster startCluster(final int staticMemberCount, final int dynamicMemberCount)
     {
         final TestCluster testCluster = new TestCluster(staticMemberCount, dynamicMemberCount, NULL_VALUE);
         for (int i = 0; i < staticMemberCount; i++)
@@ -231,12 +232,12 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    TestNode startStaticNode(final int index, final boolean cleanStart)
+    public TestNode startStaticNode(final int index, final boolean cleanStart)
     {
         return startStaticNode(index, cleanStart, TestNode.TestService::new);
     }
 
-    TestNode startStaticNode(
+    public TestNode startStaticNode(
         final int index, final boolean cleanStart, final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -269,7 +270,8 @@ public class TestCluster implements AutoCloseable
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
+            .deleteArchiveOnStart(cleanStart)
+            .errorHandler(ClusterTests.errorHandler(index));
 
         context.consensusModuleContext
             .errorHandler(ClusterTests.errorHandler(index))
@@ -299,12 +301,12 @@ public class TestCluster implements AutoCloseable
         return nodes[index];
     }
 
-    TestNode startDynamicNode(final int index, final boolean cleanStart)
+    public TestNode startDynamicNode(final int index, final boolean cleanStart)
     {
         return startDynamicNode(index, cleanStart, TestNode.TestService::new);
     }
 
-    TestNode startDynamicNode(
+    public TestNode startDynamicNode(
         final int index, final boolean cleanStart, final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -367,12 +369,12 @@ public class TestCluster implements AutoCloseable
         return nodes[index];
     }
 
-    TestNode startStaticNodeFromDynamicNode(final int index)
+    public TestNode startStaticNodeFromDynamicNode(final int index)
     {
         return startStaticNodeFromDynamicNode(index, TestNode.TestService::new);
     }
 
-    TestNode startStaticNodeFromDynamicNode(
+    public TestNode startStaticNodeFromDynamicNode(
         final int index, final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -435,7 +437,7 @@ public class TestCluster implements AutoCloseable
         return nodes[index];
     }
 
-    TestBackupNode startClusterBackupNode(final boolean cleanStart)
+    public TestBackupNode startClusterBackupNode(final boolean cleanStart)
     {
         final int index = staticMemberCount + dynamicMemberCount;
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -488,12 +490,12 @@ public class TestCluster implements AutoCloseable
         return backupNode;
     }
 
-    TestNode startStaticNodeFromBackup()
+    public TestNode startStaticNodeFromBackup()
     {
         return startStaticNodeFromBackup(TestNode.TestService::new);
     }
 
-    TestNode startStaticNodeFromBackup(final Supplier<? extends TestNode.TestService> serviceSupplier)
+    public TestNode startStaticNodeFromBackup(final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex + "-driver";
@@ -557,18 +559,18 @@ public class TestCluster implements AutoCloseable
         return nodes[backupNodeIndex];
     }
 
-    void stopNode(final TestNode testNode)
+    public void stopNode(final TestNode testNode)
     {
         testNode.close();
     }
 
-    void stopAllNodes()
+    public void stopAllNodes()
     {
         CloseHelper.close(backupNode);
         CloseHelper.closeAll(nodes);
     }
 
-    void restartAllNodes(final boolean cleanStart)
+    public void restartAllNodes(final boolean cleanStart)
     {
         for (int i = 0; i < staticMemberCount; i++)
         {
@@ -576,27 +578,27 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void shouldPrintClientCloseReason(final boolean shouldPrintClientCloseReason)
+    public void shouldPrintClientCloseReason(final boolean shouldPrintClientCloseReason)
     {
         this.shouldPrintClientCloseReason = shouldPrintClientCloseReason;
     }
 
-    String staticClusterMembers()
+    public String staticClusterMembers()
     {
         return staticClusterMembers;
     }
 
-    AeronCluster client()
+    public AeronCluster client()
     {
         return client;
     }
 
-    ExpandableArrayBuffer msgBuffer()
+    public ExpandableArrayBuffer msgBuffer()
     {
         return msgBuffer;
     }
 
-    void reconnectClient()
+    public void reconnectClient()
     {
         if (null == client)
         {
@@ -613,7 +615,7 @@ public class TestCluster implements AutoCloseable
                 .ingressEndpoints(staticClusterMemberEndpoints));
     }
 
-    AeronCluster connectClient()
+    public AeronCluster connectClient()
     {
         return connectClient(
             new AeronCluster.Context()
@@ -621,7 +623,7 @@ public class TestCluster implements AutoCloseable
                 .egressChannel(EGRESS_CHANNEL));
     }
 
-    AeronCluster connectClient(final AeronCluster.Context clientCtx)
+    public AeronCluster connectClient(final AeronCluster.Context clientCtx)
     {
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 
@@ -647,12 +649,12 @@ public class TestCluster implements AutoCloseable
         return client;
     }
 
-    void closeClient()
+    public void closeClient()
     {
         CloseHelper.close(client);
     }
 
-    void sendMessages(final int messageCount)
+    public void sendMessages(final int messageCount)
     {
         for (int i = 0; i < messageCount; i++)
         {
@@ -668,7 +670,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void sendUnexpectedMessages(final int messageCount)
+    public void sendUnexpectedMessages(final int messageCount)
     {
         final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
         for (int i = 0; i < messageCount; i++)
@@ -684,7 +686,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void pollUntilMessageSent(final int messageLength)
+    public void pollUntilMessageSent(final int messageLength)
     {
         while (true)
         {
@@ -715,7 +717,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitResponseMessageCount(final int messageCount)
+    public void awaitResponseMessageCount(final int messageCount)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long heartbeatDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
@@ -742,7 +744,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitLeadershipEvent(final int count)
+    public void awaitLeadershipEvent(final int count)
     {
         while (newLeaderEvent.get() < count)
         {
@@ -751,7 +753,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitCommitPosition(final TestNode node, final long logPosition)
+    public void awaitCommitPosition(final TestNode node, final long logPosition)
     {
         while (node.commitPosition() < logPosition)
         {
@@ -759,7 +761,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitActiveSessionCount(final TestNode node, final int count)
+    public void awaitActiveSessionCount(final TestNode node, final int count)
     {
         while (node.service().activeSessionCount() != count)
         {
@@ -767,7 +769,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    TestNode findLeader(final int skipIndex)
+    public TestNode findLeader(final int skipIndex)
     {
         for (int i = 0; i < nodes.length; i++)
         {
@@ -786,12 +788,12 @@ public class TestCluster implements AutoCloseable
         return null;
     }
 
-    TestNode findLeader()
+    public TestNode findLeader()
     {
         return findLeader(NULL_VALUE);
     }
 
-    TestNode awaitLeader(final int skipIndex)
+    public TestNode awaitLeader(final int skipIndex)
     {
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
@@ -802,12 +804,12 @@ public class TestCluster implements AutoCloseable
         return leaderNode;
     }
 
-    TestNode awaitLeader()
+    public TestNode awaitLeader()
     {
         return awaitLeader(NULL_VALUE);
     }
 
-    List<TestNode> followers()
+    public List<TestNode> followers()
     {
         final ArrayList<TestNode> followers = new ArrayList<>();
 
@@ -822,7 +824,7 @@ public class TestCluster implements AutoCloseable
         return followers;
     }
 
-    void awaitBackupState(final ClusterBackup.State targetState)
+    public void awaitBackupState(final ClusterBackup.State targetState)
     {
         if (null == backupNode)
         {
@@ -835,7 +837,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitBackupLiveLogPosition(final long position)
+    public void awaitBackupLiveLogPosition(final long position)
     {
         if (null == backupNode)
         {
@@ -859,30 +861,30 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    TestNode node(final int index)
+    public TestNode node(final int index)
     {
         return nodes[index];
     }
 
-    void takeSnapshot(final TestNode leaderNode)
+    public void takeSnapshot(final TestNode leaderNode)
     {
         final AtomicCounter controlToggle = getControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
 
-    void shutdownCluster(final TestNode leaderNode)
+    public void shutdownCluster(final TestNode leaderNode)
     {
         final AtomicCounter controlToggle = getControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
     }
 
-    void abortCluster(final TestNode leaderNode)
+    public void abortCluster(final TestNode leaderNode)
     {
         final AtomicCounter controlToggle = getControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
     }
 
-    void awaitSnapshotCount(final long value)
+    public void awaitSnapshotCount(final long value)
     {
         for (final TestNode node : nodes)
         {
@@ -893,7 +895,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitSnapshotCount(final TestNode node, final long value)
+    public void awaitSnapshotCount(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
         while (snapshotCounter.get() < value)
@@ -906,7 +908,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitNodeTermination(final TestNode node)
+    public void awaitNodeTermination(final TestNode node)
     {
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
         {
@@ -914,7 +916,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitNodeTerminations()
+    public void awaitNodeTerminations()
     {
         for (final TestNode node : nodes)
         {
@@ -925,7 +927,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitServicesMessageCount(final int messageCount)
+    public void awaitServicesMessageCount(final int messageCount)
     {
         for (final TestNode node : nodes)
         {
@@ -936,7 +938,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void terminationsExpected(final boolean isExpected)
+    public void terminationsExpected(final boolean isExpected)
     {
         for (final TestNode node : nodes)
         {
@@ -947,7 +949,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitServiceMessageCount(final TestNode node, final int messageCount)
+    public void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
         final TestNode.TestService service = node.service();
         final EpochClock epochClock = client.context().aeron().context().epochClock();
@@ -978,7 +980,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitSnapshotsLoaded()
+    public void awaitSnapshotsLoaded()
     {
         for (final TestNode node : nodes)
         {
@@ -989,7 +991,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitSnapshotLoadedForService(final TestNode node)
+    public void awaitSnapshotLoadedForService(final TestNode node)
     {
         while (!node.service().wasSnapshotLoaded())
         {
@@ -997,7 +999,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitNeutralControlToggle(final TestNode leaderNode)
+    public void awaitNeutralControlToggle(final TestNode leaderNode)
     {
         final AtomicCounter controlToggle = getControlToggle(leaderNode);
         while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
@@ -1006,7 +1008,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    AtomicCounter getControlToggle(final TestNode leaderNode)
+    public AtomicCounter getControlToggle(final TestNode leaderNode)
     {
         final CountersReader counters = leaderNode.countersReader();
         final int clusterId = leaderNode.consensusModule().context().clusterId();
@@ -1016,12 +1018,12 @@ public class TestCluster implements AutoCloseable
         return controlToggle;
     }
 
-    static String memberSpecificPort(final String channel, final int memberId)
+    public static String memberSpecificPort(final String channel, final int memberId)
     {
         return channel.substring(0, channel.length() - 1) + memberId;
     }
 
-    static String clusterMembers(final int clusterId, final int memberCount)
+    public static String clusterMembers(final int clusterId, final int memberCount)
     {
         final StringBuilder builder = new StringBuilder();
 
@@ -1041,7 +1043,7 @@ public class TestCluster implements AutoCloseable
         return builder.toString();
     }
 
-    static String singleNodeClusterMember(final int clusterId, final int i)
+    public static String singleNodeClusterMember(final int clusterId, final int i)
     {
         return i + "," +
             "localhost:2" + clusterId + "11" + i + ',' +
@@ -1051,7 +1053,7 @@ public class TestCluster implements AutoCloseable
             "localhost:801" + i;
     }
 
-    static String ingressEndpoints(final int clusterId, final int memberCount)
+    public static String ingressEndpoints(final int clusterId, final int memberCount)
     {
         final StringBuilder builder = new StringBuilder();
 
@@ -1125,23 +1127,23 @@ public class TestCluster implements AutoCloseable
         dataCollector.dumpData(testInfo);
     }
 
-    static class ServiceContext
+    public static class ServiceContext
     {
-        final Aeron.Context aeronCtx = new Aeron.Context();
-        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
-        final ClusteredServiceContainer.Context serviceContainerCtx = new ClusteredServiceContainer.Context();
+        public final Aeron.Context aeronCtx = new Aeron.Context();
+        public final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
+        public final ClusteredServiceContainer.Context serviceContainerCtx = new ClusteredServiceContainer.Context();
         TestNode.TestService service;
     }
 
-    static class NodeContext
+    public static class NodeContext
     {
-        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
-        final Archive.Context archiveCtx = new Archive.Context();
-        final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context();
-        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
+        public final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
+        public final Archive.Context archiveCtx = new Archive.Context();
+        public final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context();
+        public final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
     }
 
-    static ServiceContext serviceContext(
+    public static ServiceContext serviceContext(
         final int nodeIndex,
         final int serviceId,
         final NodeContext nodeCtx,
@@ -1176,7 +1178,7 @@ public class TestCluster implements AutoCloseable
         return serviceCtx;
     }
 
-    static NodeContext nodeContext(final int index, final boolean cleanStart)
+    public static NodeContext nodeContext(final int index, final boolean cleanStart)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.test.cluster;
 
 import io.aeron.cluster.service.ClusterClock;
 import org.agrona.concurrent.EpochClock;
@@ -21,12 +21,12 @@ import org.agrona.concurrent.NanoClock;
 
 import java.util.concurrent.TimeUnit;
 
-class TestClusterClock implements ClusterClock, EpochClock, NanoClock
+public class TestClusterClock implements ClusterClock, EpochClock, NanoClock
 {
     private volatile long tick;
     private final TimeUnit timeUnit;
 
-    TestClusterClock(final TimeUnit timeUnit)
+    public TestClusterClock(final TimeUnit timeUnit)
     {
         this.timeUnit = timeUnit;
     }
@@ -46,7 +46,7 @@ class TestClusterClock implements ClusterClock, EpochClock, NanoClock
         return timeUnit.toNanos(tick);
     }
 
-    void update(final long tick, final TimeUnit tickTimeUnit)
+    public void update(final long tick, final TimeUnit tickTimeUnit)
     {
         this.tick = tickTimeUnit.convert(tick, tickTimeUnit);
     }

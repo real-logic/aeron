@@ -23,6 +23,7 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.Tests;
+import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.NoOpIdleStrategy;

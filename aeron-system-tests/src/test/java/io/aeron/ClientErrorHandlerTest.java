@@ -33,6 +33,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.*;
+import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -68,7 +70,8 @@ public class ClientErrorHandlerTest
             .errorHandler(mockErrorHandlerTwo)
             .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(ctx, testWatcher);
+        try (
+            TestMediaDriver ignore = TestMediaDriver.launch(ctx, testWatcher);
             Aeron aeronOne = Aeron.connect(clientCtxOne);
             Aeron aeronTwo = Aeron.connect(clientCtxTwo);
             Publication publication = aeronOne.addPublication(CHANNEL, STREAM_ID);

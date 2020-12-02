@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.test;
+package io.aeron.test.driver;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
-import org.agrona.*;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.SystemUtil;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,6 +91,13 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             throw new RuntimeException("Interrupted while waiting for shutdown", ex);
         }
+    }
+
+    public CountersReader counters()
+    {
+        final Aeron.Context context =
+            new Aeron.Context().aeronDirectoryName(this.context.aeronDirectoryName()).conclude();
+        return new CountersReader(context.countersMetaDataBuffer(), context.countersValuesBuffer());
     }
 
     private void terminateDriver()

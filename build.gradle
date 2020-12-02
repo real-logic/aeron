@@ -772,6 +772,7 @@ project(':aeron-system-tests') {
         testImplementation project(':aeron-test-support')
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
+        testImplementation project(path: ':aeron-cluster')
     }
 
     test {
@@ -785,11 +786,13 @@ project(':aeron-system-tests') {
 project(':aeron-test-support') {
     dependencies {
         api project(':aeron-client')
+        api project(':aeron-cluster')
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         implementation ("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
             exclude group: 'net.bytebuddy'
         }
+        implementation "org.hamcrest:hamcrest:${hamcrestVersion}"
     }
 
     javadoc.enabled = false

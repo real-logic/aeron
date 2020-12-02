@@ -23,6 +23,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
+import io.aeron.test.cluster.TestCluster;
+import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

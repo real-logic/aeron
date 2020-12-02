@@ -27,6 +27,11 @@
 #include "Context.h"
 #include "ChannelUri.h"
 
+extern "C"
+{
+#include "aeron_common.h"
+};
+
 namespace aeron
 {
 
@@ -193,11 +198,12 @@ public:
         if (initialVectorSize < initialResult)
         {
             const int overflowVectorSize = initialResult;
+
             overflowBuffers = std::unique_ptr<uint8_t[]>(
                 new uint8_t[overflowVectorSize * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN]);
             overflowIovecs = std::unique_ptr<aeron_iovec_t[]>(new aeron_iovec_t[overflowVectorSize]);
 
-            for (int i = 0; i < initialResult; i++)
+            for (int i = 0; i < overflowVectorSize; i++)
             {
                 overflowIovecs[i].iov_base = &overflowBuffers[i * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
                 overflowIovecs[i].iov_len = AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
@@ -210,7 +216,7 @@ public:
                 AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
             }
 
-            addressCount = overflowResult < initialResult ? overflowResult : initialResult;
+            addressCount = overflowResult < overflowVectorSize ? overflowResult : overflowVectorSize;
             iovecs = overflowIovecs.get();
         }
 
@@ -237,7 +243,7 @@ public:
      */
     std::string tryResolveChannelEndpointPort() const
     {
-        char uri_buffer[1024];
+        char uri_buffer[AERON_MAX_PATH];
 
         if (aeron_subscription_try_resolve_channel_endpoint_port(m_subscription, uri_buffer, sizeof(uri_buffer)) < 0)
         {

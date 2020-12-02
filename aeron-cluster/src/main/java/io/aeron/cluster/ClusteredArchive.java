@@ -22,8 +22,7 @@ import org.agrona.CloseHelper;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * Clustered media driver which is an aggregate of a {@link MediaDriver}, {@link Archive},
- * and a {@link ConsensusModule}.
+ * Clustered archive which is an aggregate of a {@link ConsensusModule} and an {@link Archive}.
  */
 public class ClusteredArchive implements AutoCloseable
 {
@@ -37,7 +36,7 @@ public class ClusteredArchive implements AutoCloseable
     }
 
     /**
-     * Launch the clustered media driver aggregate and await a shutdown signal.
+     * Launch the clustered archive aggregate and await a shutdown signal.
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
      */
@@ -81,18 +80,9 @@ public class ClusteredArchive implements AutoCloseable
 
         try
         {
-//            final AtomicCounter errorCounter = Objects.requireNonNull(
-//                archiveCtx.errorCounter(), "You must supply an errorCounter for the archive");
-//            final ErrorHandler errorHandler = Objects.requireNonNull(
-//                archiveCtx.errorHandler(), "You must supply an errorHandler for the archive");
+            archive = Archive.launch(archiveCtx.aeronDirectoryName(aeronDirectoryName));
 
-            archive = Archive.launch(archiveCtx
-                .aeronDirectoryName(aeronDirectoryName));
-//                .errorHandler(errorHandler)
-//                .errorCounter(errorCounter));
-
-            consensusModule = ConsensusModule.launch(consensusModuleCtx
-                .aeronDirectoryName(aeronDirectoryName));
+            consensusModule = ConsensusModule.launch(consensusModuleCtx.aeronDirectoryName(aeronDirectoryName));
 
             return new ClusteredArchive(archive, consensusModule);
         }

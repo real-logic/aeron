@@ -156,11 +156,11 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    public static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
+    public static ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
     {
         while (true)
         {
-            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
+            final ClusterMembership clusterMembership = leader.clusterMembership();
             if (clusterMembership.activeMembers.size() == size)
             {
                 return clusterMembership;

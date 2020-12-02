@@ -21,10 +21,7 @@ import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.ClusterTool;
-import io.aeron.cluster.ClusteredArchive;
-import io.aeron.cluster.ConsensusModule;
-import io.aeron.cluster.ElectionState;
+import io.aeron.cluster.*;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -276,9 +273,9 @@ public class TestNode implements AutoCloseable
         return countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
     }
 
-    public ClusterTool.ClusterMembership clusterMembership()
+    public ClusterMembership clusterMembership()
     {
-        final ClusterTool.ClusterMembership clusterMembership = new ClusterTool.ClusterMembership();
+        final ClusterMembership clusterMembership = new ClusterMembership();
         final File clusterDir = clusteredArchive.consensusModule().context().clusterDir();
 
         if (!ClusterTool.listMembers(clusterMembership, clusterDir, TimeUnit.SECONDS.toMillis(3)))

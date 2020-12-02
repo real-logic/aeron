@@ -437,7 +437,7 @@ public class ClusterTool
                 final String activeMembers,
                 final String passiveMembers)
             {
-                if (correlationId == id.longValue())
+                if (correlationId == id.get())
                 {
                     clusterMembership.leaderMemberId = leaderMemberId;
                     clusterMembership.activeMembersStr = activeMembers;
@@ -454,21 +454,15 @@ public class ClusterTool
                 final List<ClusterMember> activeMembers,
                 final List<ClusterMember> passiveMembers)
             {
-                if (correlationId == id.longValue())
+                if (correlationId == id.get())
                 {
                     clusterMembership.currentTimeNs = currentTimeNs;
                     clusterMembership.leaderMemberId = leaderMemberId;
                     clusterMembership.memberId = memberId;
                     clusterMembership.activeMembers = activeMembers;
                     clusterMembership.passiveMembers = passiveMembers;
-
-                    ClusterMember[] activeMemberArray = new ClusterMember[activeMembers.size()];
-                    ClusterMember[] passiveMemberArray = new ClusterMember[passiveMembers.size()];
-                    activeMemberArray = activeMembers.toArray(activeMemberArray);
-                    passiveMemberArray = passiveMembers.toArray(passiveMemberArray);
-
-                    clusterMembership.activeMembersStr = ClusterMember.encodeAsString(activeMemberArray);
-                    clusterMembership.passiveMembersStr = ClusterMember.encodeAsString(passiveMemberArray);
+                    clusterMembership.activeMembersStr = ClusterMember.encodeAsString(activeMembers);
+                    clusterMembership.passiveMembersStr = ClusterMember.encodeAsString(passiveMembers);
                     id.set(NULL_VALUE);
                 }
             }
@@ -481,7 +475,7 @@ public class ClusterTool
                 controlProperties.controlChannel, controlProperties.serviceStreamId), listener))
         {
             id.set(aeron.nextCorrelationId());
-            if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
+            if (consensusModuleProxy.clusterMembersQuery(id.get()))
             {
                 final long startTime = System.currentTimeMillis();
                 do
@@ -495,11 +489,11 @@ public class ClusterTool
                         Thread.yield();
                     }
                 }
-                while (NULL_VALUE != id.longValue());
+                while (NULL_VALUE != id.get());
             }
         }
 
-        return id.longValue() == NULL_VALUE;
+        return id.get() == NULL_VALUE;
     }
 
     public static boolean removeMember(final File clusterDir, final int memberId, final boolean isPassive)
@@ -785,17 +779,6 @@ public class ClusterTool
         {
             IoUtil.unmap(countersReader.valuesBuffer().byteBuffer());
         }
-    }
-
-    public static class ClusterMembership
-    {
-        public int memberId = NULL_VALUE;
-        public int leaderMemberId = NULL_VALUE;
-        public long currentTimeNs = NULL_VALUE;
-        public String activeMembersStr = null;
-        public String passiveMembersStr = null;
-        public List<ClusterMember> activeMembers = null;
-        public List<ClusterMember> passiveMembers = null;
     }
 
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)

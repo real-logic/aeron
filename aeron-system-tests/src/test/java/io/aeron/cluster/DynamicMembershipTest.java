@@ -50,7 +50,7 @@ public class DynamicMembershipTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
+            final ClusterMembership clusterMembership = leader.clusterMembership();
 
             assertEquals(leader.index(), clusterMembership.leaderMemberId);
             assertEquals("", clusterMembership.passiveMembersStr);
@@ -76,7 +76,7 @@ public class DynamicMembershipTest
             awaitElectionClosed(dynamicMember);
             assertEquals(FOLLOWER, dynamicMember.role());
 
-            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
+            final ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
 
             assertEquals(leader.index(), clusterMembership.leaderMemberId);
             assertEquals("", clusterMembership.passiveMembersStr);
@@ -253,7 +253,7 @@ public class DynamicMembershipTest
             cluster.awaitNodeTermination(follower);
             cluster.stopNode(follower);
 
-            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 2);
+            final ClusterMembership clusterMembership = awaitMembershipSize(leader, 2);
             assertEquals(leader.index(), clusterMembership.leaderMemberId);
         }
         catch (final Throwable ex)
@@ -279,7 +279,7 @@ public class DynamicMembershipTest
             cluster.stopNode(initialLeader);
 
             final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 2);
+            final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 2);
 
             assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
             assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
@@ -311,7 +311,7 @@ public class DynamicMembershipTest
             cluster.stopNode(initialLeader);
 
             final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
+            final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
 
             assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
             assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
@@ -344,7 +344,7 @@ public class DynamicMembershipTest
             cluster.stopNode(initialLeader);
 
             final TestNode newLeader = cluster.awaitLeader(initialLeaderIndex);
-            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
+            final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
 
             assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
             assertNotEquals(initialLeaderIndex, clusterMembership.leaderMemberId);
@@ -403,7 +403,7 @@ public class DynamicMembershipTest
             awaitElectionClosed(dynamicMember);
             assertEquals(FOLLOWER, dynamicMember.role());
 
-            final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
+            final ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
 
             assertEquals(leader.index(), clusterMembership.leaderMemberId);
             assertEquals("", clusterMembership.passiveMembersStr);

@@ -22,6 +22,8 @@ import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
+import java.util.List;
+
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -591,10 +593,10 @@ public final class ClusterMember
     }
 
     /**
-     * Encode member endpoints from a cluster members array to a string.
+     * Encode member endpoints from a cluster members array to a String.
      *
-     * @param clusterMembers to fill the details from
-     * @return String representation suitable for use with {@link ClusterMember#parse}
+     * @param clusterMembers to fill the details from.
+     * @return String representation suitable for use with {@link #parse(String)}.
      */
     public static String encodeAsString(final ClusterMember[] clusterMembers)
     {
@@ -608,6 +610,39 @@ public final class ClusterMember
         for (int i = 0, length = clusterMembers.length; i < length; i++)
         {
             final ClusterMember member = clusterMembers[i];
+
+            builder
+                .append(member.id())
+                .append(',')
+                .append(member.endpoints());
+
+            if ((length - 1) != i)
+            {
+                builder.append('|');
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Encode member endpoints from a cluster members {@link List} to a String.
+     *
+     * @param clusterMembers to fill the details from.
+     * @return String representation suitable for use with {@link #parse(String)}.
+     */
+    public static String encodeAsString(final List<ClusterMember> clusterMembers)
+    {
+        if (0 == clusterMembers.size())
+        {
+            return "";
+        }
+
+        final StringBuilder builder = new StringBuilder();
+
+        for (int i = 0, length = clusterMembers.size(); i < length; i++)
+        {
+            final ClusterMember member = clusterMembers.get(i);
 
             builder
                 .append(member.id())

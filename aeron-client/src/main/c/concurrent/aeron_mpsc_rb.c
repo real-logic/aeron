@@ -39,8 +39,9 @@ int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length
     return result;
 }
 
-inline static int32_t aeron_mpsc_rb_claim_capacity(aeron_mpsc_rb_t *ring_buffer, size_t required_capacity)
+inline static int32_t aeron_mpsc_rb_claim_capacity(aeron_mpsc_rb_t *ring_buffer, const size_t record_length)
 {
+    const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
     const size_t mask = ring_buffer->capacity - 1;
     int64_t head = 0;
     int64_t tail = 0;
@@ -120,9 +121,8 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
     }
 
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
-    const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
 
-    int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
+    const int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, record_length);
 
     if (-1 != record_index)
     {

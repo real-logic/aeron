@@ -43,21 +43,8 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
     return aeron_spsc_rb_writev(ring_buffer, msg_type_id, vec, 1);
 }
 
-aeron_rb_write_result_t aeron_spsc_rb_writev(
-    aeron_spsc_rb_t *ring_buffer, int32_t msg_type_id, const struct iovec *iov, int iovcnt)
+inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer, const size_t record_length)
 {
-    size_t length = 0;
-    for (int i = 0; i < iovcnt; i++)
-    {
-        length += iov[i].iov_len;
-    }
-
-    if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
-    {
-        return AERON_RB_ERROR;
-    }
-
-    const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t aligned_record_length = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
     const size_t required_capacity = aligned_record_length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t mask = ring_buffer->capacity - 1;
@@ -69,7 +56,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     size_t padding = 0;
     size_t record_index = (size_t)tail & mask;
     const size_t to_buffer_end_length = ring_buffer->capacity - record_index;
-    aeron_rb_record_descriptor_t *record_header = NULL, *next_header = NULL;
+    aeron_rb_record_descriptor_t *record_header, *next_header = NULL;
 
     if ((int32_t)required_capacity > available_capacity)
     {
@@ -77,7 +64,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
 
         if (required_capacity > (ring_buffer->capacity - (size_t)(tail - head)))
         {
-            return AERON_RB_FULL;
+            return -1;
         }
 
         ring_buffer->descriptor->head_cache_position = head;
@@ -94,7 +81,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
 
             if (required_capacity > head_index)
             {
-                return AERON_RB_FULL;
+                return -1;
             }
 
             AERON_PUT_ORDERED(ring_buffer->descriptor->head_cache_position, head);
@@ -114,23 +101,48 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
         record_index = 0;
     }
 
-    record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
     next_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index + aligned_record_length);
 
-    size_t current_vector_offset = 0;
-    for (int i = 0; i < iovcnt; i++)
-    {
-        uint8_t *offset = ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index) + current_vector_offset;
-        memcpy(offset, iov[i].iov_base, iov[i].iov_len);
-        current_vector_offset += iov[i].iov_len;
-    }
-
     next_header->length = 0;
-    record_header->msg_type_id = msg_type_id;
-    AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
     AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + aligned_record_length + padding);
 
-    return AERON_RB_SUCCESS;
+    return (int32_t)record_index;
+}
+
+aeron_rb_write_result_t aeron_spsc_rb_writev(
+    aeron_spsc_rb_t *ring_buffer, int32_t msg_type_id, const struct iovec *iov, int iovcnt)
+{
+    size_t length = 0;
+    for (int i = 0; i < iovcnt; i++)
+    {
+        length += iov[i].iov_len;
+    }
+
+    if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
+    {
+        return AERON_RB_ERROR;
+    }
+
+    const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
+    const int32_t record_index = aeron_spsc_rb_claim_capacity(ring_buffer, record_length);
+    if (-1 != record_index)
+    {
+        size_t current_vector_offset = 0;
+        for (int i = 0; i < iovcnt; i++)
+        {
+            uint8_t *offset = ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index) + current_vector_offset;
+            memcpy(offset, iov[i].iov_base, iov[i].iov_len);
+            current_vector_offset += iov[i].iov_len;
+        }
+
+        aeron_rb_record_descriptor_t *record_header =
+            (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+        record_header->msg_type_id = msg_type_id;
+        AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
+        return AERON_RB_SUCCESS;
+    }
+
+    return AERON_RB_FULL;
 }
 
 size_t aeron_spsc_rb_read(

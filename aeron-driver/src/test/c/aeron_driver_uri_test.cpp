@@ -29,10 +29,10 @@ extern "C"
 #include "aeron_name_resolver.h"
 }
 
-class UriDriverTest : public testing::Test
+class DriverUriTest : public testing::Test
 {
 public:
-    UriDriverTest()
+    DriverUriTest()
     {
         if (aeron_driver_context_init(&m_context) < 0)
         {
@@ -42,7 +42,7 @@ public:
         m_conductor.context = m_context;
     }
 
-    ~UriDriverTest() override
+    ~DriverUriTest() override
     {
         aeron_uri_close(&m_uri);
         aeron_driver_context_close(m_context);
@@ -56,7 +56,7 @@ protected:
 
 #define AERON_URI_PARSE(uri_str, uri) aeron_uri_parse(strlen(uri_str), uri_str, uri)
 
-TEST_F(UriDriverTest, shouldParseCongestionControlParam)
+TEST_F(DriverUriTest, shouldParseCongestionControlParam)
 {
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|cc=static", &m_uri), 0);
     ASSERT_EQ(m_uri.type, AERON_URI_UDP);
@@ -66,230 +66,230 @@ TEST_F(UriDriverTest, shouldParseCongestionControlParam)
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE);
 }
 
-TEST_F(UriDriverTest, shouldParseNoPublicationParams)
+TEST_F(DriverUriTest, shouldParseNoPublicationParams)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamLingerTimeout)
+TEST_F(DriverUriTest, shouldParsePublicationParamLingerTimeout)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|linger=7777", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.linger_timeout_ns, 7777u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamUdpTermLength)
+TEST_F(DriverUriTest, shouldParsePublicationParamUdpTermLength)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|term-length=131072", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.term_length, 131072u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcTermLength)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcTermLength)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?term-length=262144", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.term_length, 262144u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcTermLengthOddValue)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcTermLengthOddValue)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?term-length=262143", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcTermLength32K)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcTermLength32K)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?term-length=32768", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcTermLength2T)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcTermLength2T)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?term-length=2147483648", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamUdpEndpointAndMtuLength)
+TEST_F(DriverUriTest, shouldParsePublicationParamUdpEndpointAndMtuLength)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|mtu=18432", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.mtu_length, 18432u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcMtuLength32K)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcMtuLength32K)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?mtu=32768", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.mtu_length, 32768u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcMtuLengthNonPowerOf2)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcMtuLengthNonPowerOf2)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?mtu=66560", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcMtuLengthLessThanHeaderLength)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcMtuLengthLessThanHeaderLength)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?mtu=10", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcMtuLengthNotMultipleOfFrameAlignment)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcMtuLengthNotMultipleOfFrameAlignment)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?mtu=255", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamIpcSparse)
+TEST_F(DriverUriTest, shouldParsePublicationParamIpcSparse)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?sparse=true", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.is_sparse, true);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamsForReplayUdp)
+TEST_F(DriverUriTest, shouldParsePublicationParamsForReplayUdp)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|init-term-id=120|term-id=127|term-offset=64", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
     EXPECT_EQ(params.has_position, true);
     EXPECT_EQ(params.initial_term_id, 120l);
     EXPECT_EQ(params.term_id, 127l);
     EXPECT_EQ(params.term_offset, 64u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamsForReplayIpc)
+TEST_F(DriverUriTest, shouldParsePublicationParamsForReplayIpc)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?init-term-id=250|term-id=257|term-offset=128", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
     EXPECT_EQ(params.has_position, true);
     EXPECT_EQ(params.initial_term_id, 250l);
     EXPECT_EQ(params.term_id, 257l);
     EXPECT_EQ(params.term_offset, 128u);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamsForReplayIpcNegativeTermIds)
+TEST_F(DriverUriTest, shouldParsePublicationParamsForReplayIpcNegativeTermIds)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?init-term-id=-257|term-id=-250|term-offset=128", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
     EXPECT_EQ(params.initial_term_id, -257l);
     EXPECT_EQ(params.term_id, -250l);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamsForReplayIpcOddTermOffset)
+TEST_F(DriverUriTest, shouldParsePublicationParamsForReplayIpcOddTermOffset)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?init-term-id=-257|term-id=-250|term-offset=127", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, true), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, true), -1);
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationParamsForReplayIpcTermOffsetBeyondTermLength)
+TEST_F(DriverUriTest, shouldParsePublicationParamsForReplayIpcTermOffsetBeyondTermLength)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE(
         "aeron:ipc?term-length=65536|init-term-id=-257|term-id=-250|term-offset=65537", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, true), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, true), -1);
 }
 
-TEST_F(UriDriverTest, shouldErrorParsingTooLargeTermIdRange)
+TEST_F(DriverUriTest, shouldErrorParsingTooLargeTermIdRange)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE(
         "aeron:ipc?term-length=65536|init-term-id=-2147483648|term-id=0|term-offset=0", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, true), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, true), -1);
     EXPECT_THAT(std::string(aeron_errmsg()), ::testing::StartsWith("Param difference greater than 2^31 - 1"));
 }
 
-TEST_F(UriDriverTest, shouldParsePublicationSessionId)
+TEST_F(DriverUriTest, shouldParsePublicationSessionId)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
     EXPECT_EQ(params.has_session_id, true);
     EXPECT_EQ(params.session_id, 1001);
 }
 
-TEST_F(UriDriverTest, shouldErrorParsingNonNumericSessionId)
+TEST_F(DriverUriTest, shouldErrorParsingNonNumericSessionId)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=foobar", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldErrorParsingOutOfRangeSessionId)
+TEST_F(DriverUriTest, shouldErrorParsingOutOfRangeSessionId)
 {
     aeron_driver_uri_publication_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=2147483648", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
 }
 
-TEST_F(UriDriverTest, shouldParseSubscriptionParamReliable)
+TEST_F(DriverUriTest, shouldParseSubscriptionParamReliable)
 {
-    aeron_uri_subscription_params_t params;
+    aeron_driver_uri_subscription_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|reliable=false", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_subscription_params(&m_uri, &params, &m_conductor), 0);
+    EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
     EXPECT_EQ(params.is_reliable, false);
 }
 
-TEST_F(UriDriverTest, shouldParseSubscriptionParamReliableDefault)
+TEST_F(DriverUriTest, shouldParseSubscriptionParamReliableDefault)
 {
-    aeron_uri_subscription_params_t params;
+    aeron_driver_uri_subscription_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_subscription_params(&m_uri, &params, &m_conductor), 0);
+    EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
     EXPECT_EQ(params.is_reliable, true);
 }
 
-TEST_F(UriDriverTest, shouldParseSubscriptionSessionId)
+TEST_F(DriverUriTest, shouldParseSubscriptionSessionId)
 {
-    aeron_uri_subscription_params_t params;
+    aeron_driver_uri_subscription_params_t params;
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001", &m_uri), 0);
-    EXPECT_EQ(aeron_uri_driver_subscription_params(&m_uri, &params, &m_conductor), 0);
+    EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
     EXPECT_EQ(params.has_session_id, true);
     EXPECT_EQ(params.session_id, 1001);
 }

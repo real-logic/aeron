@@ -251,7 +251,7 @@ SET(SOURCE
     media/aeron_udp_destination_tracker.c
     media/aeron_udp_transport_poller.c
     reports/aeron_loss_reporter.c
-    uri/aeron_uri_driver.c
+    uri/aeron_driver_uri.c
     aeron_congestion_control.c
     aeron_csv_table_name_resolver.c
     aeron_data_packet_dispatcher.c
@@ -291,7 +291,7 @@ SET(HEADERS
     media/aeron_udp_destination_tracker.h
     media/aeron_udp_transport_poller.h
     reports/aeron_loss_reporter.h
-    uri/aeron_uri_driver.h
+    uri/aeron_driver_uri.h
     aeron_congestion_control.h
     aeron_data_packet_dispatcher.h
     aeron_driver.h

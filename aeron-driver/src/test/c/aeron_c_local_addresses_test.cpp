@@ -325,23 +325,24 @@ TEST_F(CLocalAddressesTest, shouldGetIPv6AddressForSubscription)
     }
 }
 
-TEST_F(CLocalAddressesTest, shouldGetEmptyAddressWhenNoWildcardSpecified)
+TEST_F(CLocalAddressesTest, shouldGetOriginalAddressWhenNoWildcardSpecified)
 {
     std::atomic<bool> subscriptionClosedFlag(false);
     aeron_async_add_subscription_t *async;
     aeron_subscription_t *subscription;
+    const char *uri = "aeron:udp?endpoint=[::1]:12345";
 
     ASSERT_TRUE(connect());
 
     ASSERT_EQ(aeron_async_add_subscription(
-        &async, m_aeron, "aeron:udp?endpoint=[::1]:12345", STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+        &async, m_aeron, uri, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
 
     char uriWithResolvedEndpoint[1024];
 
-    ASSERT_EQ(0, aeron_subscription_try_resolve_channel_endpoint_port(
+    ASSERT_LT(0, aeron_subscription_try_resolve_channel_endpoint_port(
         subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint)));
-    ASSERT_EQ('\0', uriWithResolvedEndpoint[0]);
+    ASSERT_STREQ(uri, uriWithResolvedEndpoint);
 
     aeron_subscription_close(subscription, setFlagOnClose, &subscriptionClosedFlag);
 

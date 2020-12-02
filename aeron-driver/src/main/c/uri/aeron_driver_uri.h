@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_URI_DRIVER_H
-#define AERON_AERON_URI_DRIVER_H
+#ifndef AERON_AERON_DRIVER_URI_H
+#define AERON_AERON_DRIVER_URI_H
 
 #include "uri/aeron_uri.h"
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 
-typedef struct aeron_uri_driver_publication_params_stct
+typedef struct aeron_driver_uri_publication_params_stct
 {
     bool has_position;
     bool is_sparse;
@@ -39,7 +39,7 @@ typedef struct aeron_uri_driver_publication_params_stct
 }
 aeron_driver_uri_publication_params_t;
 
-typedef struct aeron_uri_driver_subscription_params_stct
+typedef struct aeron_driver_uri_subscription_params_stct
 {
     bool is_reliable;
     bool is_sparse;
@@ -49,20 +49,20 @@ typedef struct aeron_uri_driver_subscription_params_stct
     bool has_session_id;
     int32_t session_id;
 }
-aeron_uri_subscription_params_t;
+aeron_driver_uri_subscription_params_t;
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
-int aeron_uri_driver_publication_params(
+int aeron_diver_uri_publication_params(
     aeron_uri_t *uri,
     aeron_driver_uri_publication_params_t *params,
     aeron_driver_conductor_t *conductor,
     bool is_exclusive);
 
-int aeron_uri_driver_subscription_params(
+int aeron_driver_uri_subscription_params(
     aeron_uri_t *uri,
-    aeron_uri_subscription_params_t *params,
+    aeron_driver_uri_subscription_params_t *params,
     aeron_driver_conductor_t *conductor);
 
-#endif //AERON_AERON_URI_DRIVER_H
+#endif //AERON_AERON_DRIVER_URI_H

@@ -15,7 +15,7 @@
  */
 
 #include <inttypes.h>
-#include "uri/aeron_uri_driver.h"
+#include "uri/aeron_driver_uri.h"
 #include "util/aeron_arrayutil.h"
 #include "util/aeron_math.h"
 #include "util/aeron_parse_util.h"
@@ -140,7 +140,7 @@ int aeron_uri_publication_session_id_param(
     return 0;
 }
 
-int aeron_uri_subscription_session_id_param(aeron_uri_params_t *uri_params, aeron_uri_subscription_params_t *params)
+int aeron_uri_subscription_session_id_param(aeron_uri_params_t *uri_params, aeron_driver_uri_subscription_params_t *params)
 {
     int result = aeron_uri_get_int32(uri_params, AERON_URI_SESSION_ID_KEY, &params->session_id);
     params->has_session_id = 1 == result;
@@ -148,7 +148,7 @@ int aeron_uri_subscription_session_id_param(aeron_uri_params_t *uri_params, aero
     return result < 0 ? -1 : 0;
 }
 
-int aeron_uri_driver_publication_params(
+int aeron_diver_uri_publication_params(
     aeron_uri_t *uri,
     aeron_driver_uri_publication_params_t *params,
     aeron_driver_conductor_t *conductor,
@@ -319,8 +319,8 @@ int aeron_uri_driver_publication_params(
     return 0;
 }
 
-int aeron_uri_driver_subscription_params(
-    aeron_uri_t *uri, aeron_uri_subscription_params_t *params, aeron_driver_conductor_t *conductor)
+int aeron_driver_uri_subscription_params(
+    aeron_uri_t *uri, aeron_driver_uri_subscription_params_t *params, aeron_driver_conductor_t *conductor)
 {
     aeron_driver_context_t *context = conductor->context;
 

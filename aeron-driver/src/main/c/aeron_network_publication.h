@@ -19,7 +19,7 @@
 
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
-#include "uri/aeron_uri_driver.h"
+#include "uri/aeron_driver_uri.h"
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_counters_manager.h"

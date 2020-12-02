@@ -30,7 +30,7 @@
 extern "C"
 {
 #include "aeron_common.h"
-};
+}
 
 namespace aeron
 {

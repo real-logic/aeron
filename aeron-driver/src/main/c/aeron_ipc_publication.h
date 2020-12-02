@@ -18,7 +18,7 @@
 #define AERON_IPC_PUBLICATION_H
 
 #include "util/aeron_bitutil.h"
-#include "uri/aeron_uri_driver.h"
+#include "uri/aeron_driver_uri.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_system_counters.h"

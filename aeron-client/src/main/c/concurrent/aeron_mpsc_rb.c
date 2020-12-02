@@ -140,6 +140,67 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
     return AERON_RB_FULL;
 }
 
+int32_t aeron_mpsc_rb_try_claim(aeron_mpsc_rb_t *ring_buffer, const int32_t msg_type_id, const size_t length)
+{
+    if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
+    {
+        return AERON_RB_ERROR;
+    }
+
+    const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
+    const int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, record_length);
+    if (-1 != record_index)
+    {
+        aeron_rb_record_descriptor_t *record_header =
+            (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+        AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
+        record_header->msg_type_id = msg_type_id;
+
+        return AERON_RB_MESSAGE_OFFSET(record_index);
+    }
+
+    return AERON_RB_FULL;
+}
+
+int aeron_mpsc_rb_commit(aeron_mpsc_rb_t *ring_buffer, const int32_t offset)
+{
+    const int32_t record_index = offset - AERON_RB_RECORD_HEADER_LENGTH;
+    if (record_index < 0 || record_index > (int32_t)(ring_buffer->capacity - AERON_RB_RECORD_HEADER_LENGTH))
+    {
+        return -1;
+    }
+
+    aeron_rb_record_descriptor_t *record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+    const int32_t length = record_header->length;
+    if (length < 0)
+    {
+        AERON_PUT_ORDERED(record_header->length, -length);
+        return 0;
+    }
+
+    return -1;
+}
+
+int aeron_mpsc_rb_abort(aeron_mpsc_rb_t *ring_buffer, const int32_t offset)
+{
+    const int32_t record_index = offset - AERON_RB_RECORD_HEADER_LENGTH;
+    if (record_index < 0 || record_index > (int32_t)(ring_buffer->capacity - AERON_RB_RECORD_HEADER_LENGTH))
+    {
+        return -1;
+    }
+
+    aeron_rb_record_descriptor_t *record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+    const int32_t length = record_header->length;
+    if (length < 0)
+    {
+        record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
+        AERON_PUT_ORDERED(record_header->length, -length);
+        return 0;
+    }
+
+    return -1;
+}
+
 size_t aeron_mpsc_rb_read(
     aeron_mpsc_rb_t *ring_buffer, aeron_rb_handler_t handler, void *clientd, size_t message_count_limit)
 {

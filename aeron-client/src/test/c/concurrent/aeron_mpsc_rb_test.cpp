@@ -407,6 +407,141 @@ TEST_F(MpscRbTest, shouldUnblockGapWithZeros)
     EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(message_length * 3));
 }
 
+TEST_F(MpscRbTest, tryClaimShouldErrorWhenMessageTypeIsZero)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(AERON_RB_ERROR, aeron_mpsc_rb_try_claim(&rb, 0, 5));
+}
+
+TEST_F(MpscRbTest, tryClaimShouldErrorWhenMessageTypeIsNegative)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(AERON_RB_ERROR, aeron_mpsc_rb_try_claim(&rb, -3, 5));
+}
+
+TEST_F(MpscRbTest, tryClaimShouldErrorWhenLengthExceedMaxMessageSize)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(AERON_RB_ERROR, aeron_mpsc_rb_try_claim(&rb, 6, rb.max_message_length + 1));
+}
+
+TEST_F(MpscRbTest, tryClaimShouldErrorBufferIsFull)
+{
+    aeron_mpsc_rb_t rb;
+    size_t length = 8;
+    size_t head = 0;
+    size_t tail = head + CAPACITY;
+
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+    rb.descriptor->head_position = (int64_t)head;
+    rb.descriptor->tail_position = (int64_t)tail;
+
+    EXPECT_EQ(AERON_RB_FULL, aeron_mpsc_rb_try_claim(&rb, MSG_TYPE_ID, length));
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)tail);
+}
+
+TEST_F(MpscRbTest, tryClaimShouldReturnMessageOffsetUponSuccess)
+{
+    int msg_type_id = 17;
+    size_t length = 100;
+
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ((int32_t)AERON_RB_MESSAGE_OFFSET(0), aeron_mpsc_rb_try_claim(&rb, msg_type_id, length));
+    auto *record_header = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    EXPECT_EQ(msg_type_id, record_header->msg_type_id);
+    EXPECT_EQ(-(int32_t)(length + AERON_RB_RECORD_HEADER_LENGTH), record_header->length);
+}
+
+TEST_F(MpscRbTest, commitShouldReturnErrorIfOffsetIsNegative)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, -2));
+}
+
+TEST_F(MpscRbTest, commitShouldReturnErrorIfOffsetIsExceedsBufferCapacity)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, m_buffer.size() + 1));
+}
+
+TEST_F(MpscRbTest, commitShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, m_buffer.size() - AERON_RB_RECORD_HEADER_LENGTH + 1));
+}
+
+TEST_F(MpscRbTest, commitShouldReturnZeroUponSuccess)
+{
+    size_t tail = 200;
+    size_t length = 50;
+
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+    rb.descriptor->tail_position = (int64_t)tail;
+
+    int32_t offset = aeron_mpsc_rb_try_claim(&rb, MSG_TYPE_ID, length);
+    EXPECT_EQ((int32_t)AERON_RB_MESSAGE_OFFSET(tail), offset);
+
+    EXPECT_EQ(0, aeron_mpsc_rb_commit(&rb, offset));
+    auto *record_header = (aeron_rb_record_descriptor_t *)(rb.buffer + (offset - AERON_RB_RECORD_HEADER_LENGTH));
+    EXPECT_EQ(MSG_TYPE_ID, record_header->msg_type_id);
+    EXPECT_EQ((int32_t)(length + AERON_RB_RECORD_HEADER_LENGTH), record_header->length);
+}
+
+TEST_F(MpscRbTest, abortShouldReturnErrorIfOffsetIsNegative)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, -10));
+}
+
+TEST_F(MpscRbTest, abortShouldReturnErrorIfOffsetIsExceedsBufferCapacity)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, m_buffer.size() + 8));
+}
+
+TEST_F(MpscRbTest, abortShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, m_buffer.size() - 1));
+}
+
+TEST_F(MpscRbTest, abortShouldReturnZeroUponSuccess)
+{
+    size_t length = 32;
+
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
+
+    int32_t offset = aeron_mpsc_rb_try_claim(&rb, MSG_TYPE_ID, length);
+    EXPECT_EQ((int32_t)AERON_RB_MESSAGE_OFFSET(0), offset);
+
+    EXPECT_EQ(0, aeron_mpsc_rb_abort(&rb, offset));
+    auto *record_header = (aeron_rb_record_descriptor_t *)(rb.buffer + (offset - AERON_RB_RECORD_HEADER_LENGTH));
+    EXPECT_EQ(AERON_RB_PADDING_MSG_TYPE_ID, record_header->msg_type_id);
+    EXPECT_EQ((int32_t)(length + AERON_RB_RECORD_HEADER_LENGTH), record_header->length);
+}
+
 #define NUM_MESSAGES_PER_PUBLISHER (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 #define NUM_PUBLISHERS (2)
@@ -515,6 +650,77 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
                     {
                         std::this_thread::yield();
                     }
+                }
+            }));
+    }
+
+    while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
+    {
+        const size_t readCount = aeron_mpsc_rb_read(
+            &rb, mpsc_rb_concurrent_handler, counts, std::numeric_limits<size_t>::max());
+
+        if (0 == readCount)
+        {
+            std::this_thread::yield();
+        }
+
+        msgCount += readCount;
+    }
+
+    for (std::thread &thr: threads)
+    {
+        thr.join();
+    }
+}
+
+TEST(MpscRbConcurrentTest, shouldExchangeMessagesViaTryClaim)
+{
+    AERON_DECL_ALIGNED(buffer_t mpsc_buffer, 16) = {};
+    mpsc_buffer.fill(0);
+
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(aeron_mpsc_rb_init(&rb, mpsc_buffer.data(), mpsc_buffer.size()), 0);
+
+    std::atomic<int> countDown(NUM_PUBLISHERS);
+    std::atomic<unsigned int> publisherId(0);
+
+    std::vector<std::thread> threads;
+    size_t msgCount = 0;
+    uint32_t counts[NUM_PUBLISHERS];
+
+    for (unsigned int &count : counts)
+    {
+        count = 0;
+    }
+
+    for (int i = 0; i < NUM_PUBLISHERS; i++)
+    {
+        threads.push_back(std::thread(
+            [&]()
+            {
+                uint32_t id = publisherId.fetch_add(1);
+
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield();
+                }
+
+
+                for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
+                {
+                    size_t length = sizeof(mpsc_concurrent_test_data_t);
+                    int32_t offset;
+                    while ((offset = aeron_mpsc_rb_try_claim(&rb, MSG_TYPE_ID, length)) < 0)
+                    {
+                        std::this_thread::yield();
+                    }
+
+                    auto *data = (mpsc_concurrent_test_data_t *)(rb.buffer + offset);
+                    data->id = id;
+                    data->num = m;
+
+                    aeron_mpsc_rb_commit(&rb, offset);
                 }
             }));
     }

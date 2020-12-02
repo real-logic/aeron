@@ -15,15 +15,9 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.archive.Archive;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.status.AtomicCounter;
-
-import java.util.Objects;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 

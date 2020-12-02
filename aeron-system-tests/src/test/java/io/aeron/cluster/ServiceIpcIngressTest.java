@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;

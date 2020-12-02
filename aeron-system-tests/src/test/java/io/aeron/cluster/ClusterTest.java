@@ -32,10 +32,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.cluster.ClusterTests.*;
-import static io.aeron.cluster.ClusterTests.startMessageThread;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
+import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 import static io.aeron.test.cluster.TestCluster.startThreeNodeStaticCluster;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;

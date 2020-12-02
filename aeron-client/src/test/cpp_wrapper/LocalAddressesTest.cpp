@@ -81,6 +81,7 @@ TEST_F(LocalAddressesTest, shouldGetLocalAddresses)
         auto subAddresses = sub->localSocketAddresses();
         ASSERT_EQ(1U, subAddresses.size()) << join(subAddresses);
         EXPECT_NE(std::string::npos, channel.find(subAddresses[0]));
+        ASSERT_EQ(channel, sub->tryResolveChannelEndpointPort());
 
         POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
         auto pubAddresses = pub->localSocketAddresses();
@@ -90,6 +91,29 @@ TEST_F(LocalAddressesTest, shouldGetLocalAddresses)
 
     invoker.invoke();
 }
+
+TEST_F(LocalAddressesTest, shouldGetLocalAddressesForIpc)
+{
+    std::int32_t streamId = 10001;
+    std::string channel = "aeron:ipc";
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        auto subAddresses = sub->localSocketAddresses();
+        ASSERT_EQ(0U, subAddresses.size()) << join(subAddresses);
+        ASSERT_EQ(channel, sub->tryResolveChannelEndpointPort());
+    }
+
+    invoker.invoke();
+}
+
 
 TEST_F(LocalAddressesTest, shouldGetLocalAddressesForMds)
 {

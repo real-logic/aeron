@@ -484,8 +484,7 @@ static int aeron_uri_print_next(aeron_uri_print_context_t *print_ctx, const char
 
 int aeron_uri_ipc_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
 {
-    aeron_uri_print_context_t ctx;
-    memset(&ctx, 0, sizeof(ctx));
+    aeron_uri_print_context_t ctx = { 0 };
     ctx.buffer = buffer;
     ctx.buffer_len = buffer_len;
     ctx.offset = 0;
@@ -531,8 +530,7 @@ int aeron_uri_ipc_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
 
 int aeron_uri_udp_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
 {
-    aeron_uri_print_context_t ctx;
-    memset(&ctx, 0, sizeof(ctx));
+    aeron_uri_print_context_t ctx = { 0 };
     ctx.buffer = buffer;
     ctx.buffer_len = buffer_len;
     ctx.offset = 0;

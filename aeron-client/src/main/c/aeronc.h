@@ -55,14 +55,14 @@ typedef struct aeron_header_values_frame_stct
     int32_t term_id;
     int64_t reserved_value;
 }
-aeron_header_values_frame_t;
+    aeron_header_values_frame_t;
 
 typedef struct aeron_header_values_stct
 {
     aeron_header_values_frame_t frame;
     int32_t initial_term_id;
 }
-aeron_header_values_t;
+    aeron_header_values_t;
 #pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
@@ -515,21 +515,21 @@ typedef struct aeron_on_available_counter_pair_stct
     aeron_on_available_counter_t handler;
     void *clientd;
 }
-aeron_on_available_counter_pair_t;
+    aeron_on_available_counter_pair_t;
 
 typedef struct aeron_on_unavailable_counter_pair_stct
 {
     aeron_on_unavailable_counter_t handler;
     void *clientd;
 }
-aeron_on_unavailable_counter_pair_t;
+    aeron_on_unavailable_counter_pair_t;
 
 typedef struct aeron_on_close_client_pair_stct
 {
     aeron_on_close_client_t handler;
     void *clientd;
 }
-aeron_on_close_client_pair_t;
+    aeron_on_close_client_pair_t;
 
 /**
  * Add a handler to be called when a new counter becomes available.
@@ -613,7 +613,7 @@ typedef struct aeron_counter_value_descriptor_stct
     int64_t owner_id;
     uint8_t pad1[(2 * AERON_COUNTER_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
 }
-aeron_counter_value_descriptor_t;
+    aeron_counter_value_descriptor_t;
 
 typedef struct aeron_counter_metadata_descriptor_stct
 {
@@ -624,7 +624,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
     int32_t label_length;
     uint8_t label[(6 * AERON_COUNTER_CACHE_LINE_LENGTH) - sizeof(int32_t)];
 }
-aeron_counter_metadata_descriptor_t;
+    aeron_counter_metadata_descriptor_t;
 #pragma pack(pop)
 
 
@@ -660,7 +660,7 @@ typedef struct aeron_counters_reader_buffers_stct
     size_t values_length;
     size_t metadata_length;
 }
-aeron_counters_reader_buffers_t;
+    aeron_counters_reader_buffers_t;
 
 /**
  * Get buffer pointers and lengths for the counters reader.
@@ -840,7 +840,7 @@ typedef struct aeron_iovec_stct
     uint8_t *iov_base;
     size_t iov_len;
 }
-aeron_iovec_t;
+    aeron_iovec_t;
 #else
 typedef struct iov aeron_iovec_t;
 #endif
@@ -854,7 +854,7 @@ typedef struct aeron_buffer_claim_stct
     uint8_t *data;
     size_t length;
 }
-aeron_buffer_claim_t;
+    aeron_buffer_claim_t;
 
 /**
  * Commit the given buffer_claim as a complete message available for consumption.
@@ -1491,7 +1491,7 @@ typedef struct aeron_subscription_constants_stct
      */
     int32_t channel_status_indicator_id;
 }
-aeron_subscription_constants_t;
+    aeron_subscription_constants_t;
 
 /**
  * Poll the images under the subscription for available message fragments.
@@ -1716,11 +1716,22 @@ int aeron_subscription_local_sockaddrs(
  */
 int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, char *address, size_t address_len);
 
-
+/**
+ * Retrieves the channel URI for this subscription with any wildcard ports filled in. If the channel is not UDP or
+ * does not have a wildcard port (`0`), then it will return the original URI.
+ *
+ * @param subscription to query
+ * @param uri buffer to hold the resolved uri
+ * @param uri_len length of the buffer
+ * @return -1 on failure or the number of bytes written to the buffer (excluding the NULL terminator).  Writing is done
+ * on a per key basis, so if the buffer was truncated before writing completed, it will only include the byte count up
+ * to the key that overflowed. However, the invariant that if the number returned >= uri_len, then output will have been
+ * truncated.
+ */
 int aeron_subscription_try_resolve_channel_endpoint_port(
     aeron_subscription_t *subscription,
-    char *address,
-    size_t address_len);
+    char *uri,
+    size_t uri_len);
 
 /**
  * Image Functions
@@ -1793,7 +1804,7 @@ typedef struct aeron_image_constants_stct
      */
     int32_t subscriber_position_id;
 }
-aeron_image_constants_t;
+    aeron_image_constants_t;
 
 /**
  * Fill in a structure with the constants in use by a image.
@@ -2116,7 +2127,7 @@ typedef struct aeron_counter_constants_stct
      */
     int32_t counter_id;
 }
-aeron_counter_constants_t;
+    aeron_counter_constants_t;
 
 /**
  * Fill in a structure with the constants in use by a counter.

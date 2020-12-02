@@ -99,7 +99,7 @@ int aeron_local_sockaddr_find_addrs(
     aeron_iovec_t *address_vec,
     size_t address_vec_len)
 {
-    int64_t *status_indicator_addr = aeron_counters_reader_addr(reader, channel_status_indicator_id);
+    volatile int64_t *status_indicator_addr = aeron_counters_reader_addr(reader, channel_status_indicator_id);
     int64_t status;
     AERON_GET_VOLATILE(status, *status_indicator_addr);
 

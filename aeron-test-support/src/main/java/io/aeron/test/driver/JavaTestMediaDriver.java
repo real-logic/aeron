@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.test;
+package io.aeron.test.driver;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
 import io.aeron.driver.ext.LossGenerator;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.status.CountersManager;
 
 public final class JavaTestMediaDriver implements TestMediaDriver
 {
@@ -54,6 +55,11 @@ public final class JavaTestMediaDriver implements TestMediaDriver
     public AgentInvoker sharedAgentInvoker()
     {
         return mediaDriver.sharedAgentInvoker();
+    }
+
+    public CountersManager counters()
+    {
+        return mediaDriver.context().countersManager();
     }
 
     public static void enableLossGenerationOnReceive(

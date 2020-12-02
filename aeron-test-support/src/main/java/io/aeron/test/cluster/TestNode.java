@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.test.cluster;
 
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
@@ -21,6 +21,10 @@ import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.ClusterTool;
+import io.aeron.cluster.ClusteredArchive;
+import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.ElectionState;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -30,6 +34,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -46,22 +51,23 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class TestNode implements AutoCloseable
+public class TestNode implements AutoCloseable
 {
-    private final ClusteredMediaDriver clusteredMediaDriver;
+    private final ClusteredArchive clusteredArchive;
     private final ClusteredServiceContainer container;
     private final TestService service;
     private final Context context;
     private boolean isClosed = false;
+    private final TestMediaDriver testMediaDriver;
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
-        clusteredMediaDriver = ClusteredMediaDriver.launch(
-            context.mediaDriverContext,
+        testMediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
+        clusteredArchive = ClusteredArchive.launch(
+            testMediaDriver.aeronDirectoryName(),
             context.archiveContext,
-            context.consensusModuleContext
-                .terminationHook(ClusterTests.dynamicTerminationHook(
-                    context.terminationExpected, context.memberWasTerminated)));
+            context.consensusModuleContext.terminationHook(ClusterTests.dynamicTerminationHook(
+                context.terminationExpected, context.memberWasTerminated)));
 
         container = ClusteredServiceContainer.launch(
             context.serviceContainerContext
@@ -72,22 +78,22 @@ class TestNode implements AutoCloseable
         this.context = context;
 
         dataCollector.add(container.context().clusterDir().toPath());
-        dataCollector.add(clusteredMediaDriver.consensusModule().context().clusterDir().toPath());
-        dataCollector.add(clusteredMediaDriver.archive().context().archiveDir().toPath());
-        dataCollector.add(clusteredMediaDriver.mediaDriver().context().aeronDirectory().toPath());
+        dataCollector.add(clusteredArchive.consensusModule().context().clusterDir().toPath());
+        dataCollector.add(clusteredArchive.archive().context().archiveDir().toPath());
+        dataCollector.add(testMediaDriver.context().aeronDirectory().toPath());
     }
 
-    ConsensusModule consensusModule()
+    public ConsensusModule consensusModule()
     {
-        return clusteredMediaDriver.consensusModule();
+        return clusteredArchive.consensusModule();
     }
 
-    ClusteredServiceContainer container()
+    public ClusteredServiceContainer container()
     {
         return container;
     }
 
-    TestService service()
+    public TestService service()
     {
         return service;
     }
@@ -97,7 +103,7 @@ class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
+            CloseHelper.closeAll(clusteredArchive.consensusModule(), container, clusteredArchive, testMediaDriver);
         }
     }
 
@@ -138,11 +144,11 @@ class TestNode implements AutoCloseable
 
         try
         {
-            if (null != clusteredMediaDriver)
+            if (null != clusteredArchive)
             {
-                clusteredMediaDriver.consensusModule().context().deleteDirectory();
-                clusteredMediaDriver.archive().context().deleteDirectory();
-                clusteredMediaDriver.mediaDriver().context().deleteDirectory();
+                clusteredArchive.consensusModule().context().deleteDirectory();
+                clusteredArchive.archive().context().deleteDirectory();
+                testMediaDriver.context().deleteDirectory();
             }
         }
         catch (final Throwable t)
@@ -168,9 +174,9 @@ class TestNode implements AutoCloseable
         return isClosed;
     }
 
-    Cluster.Role role()
+    public Cluster.Role role()
     {
-        final Counter counter = clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter();
+        final Counter counter = clusteredArchive.consensusModule().context().clusterNodeRoleCounter();
         if (counter.isClosed())
         {
             return Cluster.Role.FOLLOWER;
@@ -181,7 +187,7 @@ class TestNode implements AutoCloseable
 
     ElectionState electionState()
     {
-        final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+        final Counter counter = clusteredArchive.consensusModule().context().electionStateCounter();
         if (counter.isClosed())
         {
             return ElectionState.CLOSED;
@@ -192,7 +198,7 @@ class TestNode implements AutoCloseable
 
     ConsensusModule.State moduleState()
     {
-        final Counter counter = clusteredMediaDriver.consensusModule().context().moduleStateCounter();
+        final Counter counter = clusteredArchive.consensusModule().context().moduleStateCounter();
         if (counter.isClosed())
         {
             return ConsensusModule.State.CLOSED;
@@ -201,9 +207,9 @@ class TestNode implements AutoCloseable
         return ConsensusModule.State.get(counter);
     }
 
-    long commitPosition()
+    public long commitPosition()
     {
-        final Counter counter = clusteredMediaDriver.consensusModule().context().commitPositionCounter();
+        final Counter counter = clusteredArchive.consensusModule().context().commitPositionCounter();
         if (counter.isClosed())
         {
             return NULL_POSITION;
@@ -212,7 +218,7 @@ class TestNode implements AutoCloseable
         return counter.get();
     }
 
-    long appendPosition()
+    public long appendPosition()
     {
         final long recordingId = consensusModule().context().recordingLog().findLastTermRecordingId();
         if (RecordingPos.NULL_RECORDING_ID == recordingId)
@@ -240,7 +246,7 @@ class TestNode implements AutoCloseable
         return role() == Cluster.Role.FOLLOWER;
     }
 
-    void terminationExpected(final boolean terminationExpected)
+    public void terminationExpected(final boolean terminationExpected)
     {
         context.terminationExpected.set(terminationExpected);
     }
@@ -250,30 +256,30 @@ class TestNode implements AutoCloseable
         return context.serviceWasTerminated.get();
     }
 
-    boolean hasMemberTerminated()
+    public boolean hasMemberTerminated()
     {
         return context.memberWasTerminated.get();
     }
 
-    int index()
+    public int index()
     {
         return service.index();
     }
 
     CountersReader countersReader()
     {
-        return clusteredMediaDriver.mediaDriver().context().countersManager();
+        return testMediaDriver.counters();
     }
 
-    long errors()
+    public long errors()
     {
         return countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
     }
 
-    ClusterTool.ClusterMembership clusterMembership()
+    public ClusterTool.ClusterMembership clusterMembership()
     {
         final ClusterTool.ClusterMembership clusterMembership = new ClusterTool.ClusterMembership();
-        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+        final File clusterDir = clusteredArchive.consensusModule().context().clusterDir();
 
         if (!ClusterTool.listMembers(clusterMembership, clusterDir, TimeUnit.SECONDS.toMillis(3)))
         {
@@ -283,9 +289,9 @@ class TestNode implements AutoCloseable
         return clusterMembership;
     }
 
-    void removeMember(final int followerMemberId, final boolean isPassive)
+    public void removeMember(final int followerMemberId, final boolean isPassive)
     {
-        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+        final File clusterDir = clusteredArchive.consensusModule().context().clusterDir();
 
         if (!ClusterTool.removeMember(clusterDir, followerMemberId, isPassive))
         {
@@ -294,7 +300,7 @@ class TestNode implements AutoCloseable
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    static class TestService extends StubClusteredService
+    public static class TestService extends StubClusteredService
     {
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;
         static final int SNAPSHOT_MSG_LENGTH = 1000;
@@ -323,32 +329,32 @@ class TestNode implements AutoCloseable
             return activeSessionCount;
         }
 
-        int messageCount()
+        public int messageCount()
         {
             return messageCount;
         }
 
-        boolean wasSnapshotTaken()
+        public boolean wasSnapshotTaken()
         {
             return wasSnapshotTaken;
         }
 
-        void resetSnapshotTaken()
+        public void resetSnapshotTaken()
         {
             wasSnapshotTaken = false;
         }
 
-        boolean wasSnapshotLoaded()
+        public boolean wasSnapshotLoaded()
         {
             return wasSnapshotLoaded;
         }
 
-        Cluster.Role roleChangedTo()
+        public Cluster.Role roleChangedTo()
         {
             return roleChangedTo;
         }
 
-        Cluster cluster()
+        public Cluster cluster()
         {
             return cluster;
         }

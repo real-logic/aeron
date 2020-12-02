@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.test;
+package io.aeron.test.driver;
 
 import io.aeron.CommonContext;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;

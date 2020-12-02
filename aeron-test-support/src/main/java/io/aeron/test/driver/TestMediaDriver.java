@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.test;
+package io.aeron.test.driver;
 
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.Strings.isEmpty;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -79,4 +80,6 @@ public interface TestMediaDriver extends AutoCloseable
     void close();
 
     AgentInvoker sharedAgentInvoker();
+
+    CountersReader counters();
 }

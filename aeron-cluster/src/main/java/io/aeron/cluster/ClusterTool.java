@@ -787,15 +787,15 @@ public class ClusterTool
         }
     }
 
-    static class ClusterMembership
+    public static class ClusterMembership
     {
-        int memberId = NULL_VALUE;
-        int leaderMemberId = NULL_VALUE;
-        long currentTimeNs = NULL_VALUE;
-        String activeMembersStr = null;
-        String passiveMembersStr = null;
-        List<ClusterMember> activeMembers = null;
-        List<ClusterMember> passiveMembers = null;
+        public int memberId = NULL_VALUE;
+        public int leaderMemberId = NULL_VALUE;
+        public long currentTimeNs = NULL_VALUE;
+        public String activeMembersStr = null;
+        public String passiveMembersStr = null;
+        public List<ClusterMember> activeMembers = null;
+        public List<ClusterMember> passiveMembers = null;
     }
 
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)

@@ -17,7 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.SlowTest;
-
+import io.aeron.test.cluster.TestBackupNode;
+import io.aeron.test.cluster.TestCluster;
+import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 

@@ -16,17 +16,25 @@
 package io.aeron.cluster;
 
 import io.aeron.CommonContext;
-import io.aeron.archive.*;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
-import io.aeron.cluster.service.*;
+import io.aeron.cluster.service.ClientSession;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
-import org.agrona.*;
+import io.aeron.test.cluster.TestCluster;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 

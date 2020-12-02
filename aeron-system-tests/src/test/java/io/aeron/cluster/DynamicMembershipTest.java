@@ -16,13 +16,18 @@
 package io.aeron.cluster;
 
 import io.aeron.test.SlowTest;
+import io.aeron.test.cluster.TestCluster;
+import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.cluster.TestCluster.*;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
+import static io.aeron.test.cluster.TestCluster.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 

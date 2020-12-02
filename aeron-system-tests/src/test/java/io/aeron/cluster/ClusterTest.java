@@ -114,9 +114,7 @@ public class ClusterTest
             cluster.awaitSnapshotCount(1);
 
             cluster.stopAllNodes();
-
             cluster.restartAllNodes(false);
-
             cluster.awaitLeader();
             assertEquals(2, cluster.followers().size());
 
@@ -150,9 +148,7 @@ public class ClusterTest
             assertTrue(cluster.node(2).service().wasSnapshotTaken());
 
             cluster.stopAllNodes();
-
             cluster.restartAllNodes(false);
-
             cluster.awaitLeader();
             assertEquals(2, cluster.followers().size());
 
@@ -186,9 +182,7 @@ public class ClusterTest
             assertFalse(cluster.node(2).service().wasSnapshotTaken());
 
             cluster.stopAllNodes();
-
             cluster.restartAllNodes(false);
-
             cluster.awaitLeader();
             assertEquals(2, cluster.followers().size());
 
@@ -222,9 +216,8 @@ public class ClusterTest
 
             cluster.stopNode(followerB);
 
-            cluster.connectClient();
-
             final int messageCount = 10;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
@@ -323,9 +316,8 @@ public class ClusterTest
             awaitElectionClosed(follower);
             assertEquals(FOLLOWER, follower.role());
 
-            cluster.connectClient();
-
             final int messageCount = 10;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
         }
@@ -353,9 +345,8 @@ public class ClusterTest
 
             assertEquals(FOLLOWER, follower.role());
 
-            cluster.connectClient();
-
             final int messageCount = 10;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
@@ -391,9 +382,8 @@ public class ClusterTest
             awaitElectionClosed(follower);
             assertEquals(FOLLOWER, follower.role());
 
-            cluster.connectClient();
-
             final int messageCount = 10;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
             cluster.awaitServiceMessageCount(follower, messageCount);
@@ -465,9 +455,7 @@ public class ClusterTest
             awaitElectionClosed(newFollower);
 
             cluster.stopNode(secondLeader);
-
             cluster.awaitLeader();
-
             cluster.connectClient();
 
             final int messageCount = 10;
@@ -821,9 +809,11 @@ public class ClusterTest
                 cluster.stopNode(followerB);
                 Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
+                cluster.client().sendKeepAlive();
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
 
+                cluster.client().sendKeepAlive();
                 Tests.sleep(3_000); // keep ingress going so started node has to catchup.
             }
             finally
@@ -863,8 +853,8 @@ public class ClusterTest
             awaitElectionClosed(follower);
             cluster.stopNode(follower);
 
-            cluster.connectClient();
             final int messageCount = 10;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
@@ -985,12 +975,8 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final List<TestNode> followers = cluster.followers();
-            final TestNode followerA = followers.get(0);
-            final TestNode followerB = followers.get(1);
 
             cluster.connectClient();
-
             cluster.sendMessages(2);
             cluster.awaitResponseMessageCount(2);
             cluster.awaitServiceMessageCount(cluster.node(2), 2);
@@ -1110,6 +1096,7 @@ public class ClusterTest
 
             cluster.stopNode(leader0);
             cluster.awaitLeader(leader0.index());
+            cluster.client().sendKeepAlive();
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
@@ -1150,6 +1137,7 @@ public class ClusterTest
             cluster.stopNode(leader0);
             final TestNode leader1 = cluster.awaitLeader(leader0.index());
             cluster.awaitLeadershipEvent(1);
+            cluster.client().sendKeepAlive();
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);

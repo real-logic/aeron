@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
@@ -235,7 +236,10 @@ abstract class ArchiveConductor
             }
 
             ctx.errorCounter().close();
-            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS);
+            if (!ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS))
+            {
+                errorHandler.onError(new TimeoutException("awaiting abort latch"));
+            }
         }
         catch (final InterruptedException ignore)
         {

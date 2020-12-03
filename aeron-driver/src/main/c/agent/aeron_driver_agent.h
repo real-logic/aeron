@@ -70,6 +70,10 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED = 46,
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED = 47,
 
+    // C-specific events. Note: event IDs are dynamic to avoid gaps in the sparse arrays.
+    AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
+    AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT,
+
     AERON_DRIVER_EVENT_NUM_ELEMENTS, // number of elements in this enum (including gaps)
     AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1
 }
@@ -126,6 +130,24 @@ typedef struct aeron_driver_agent_on_endpoint_change_stct
     uint8_t multicast_ttl;
 }
 aeron_driver_agent_on_endpoint_change_t;
+
+typedef void (*aeron_driver_agent_generic_dissector_func_t)(
+    FILE *fpout, const char *log_header_str, const void *message, size_t len);
+
+typedef struct aeron_driver_agent_add_dissector_header_stct
+{
+    int64_t time_ns;
+    int64_t index;
+    aeron_driver_agent_generic_dissector_func_t dissector_func;
+}
+aeron_driver_agent_add_dissector_header_t;
+
+typedef struct aeron_driver_agent_dynamic_event_header_stct
+{
+    int64_t time_ns;
+    int64_t index;
+}
+aeron_driver_agent_dynamic_event_header_t;
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
@@ -193,5 +215,9 @@ void aeron_driver_agent_sender_proxy_on_remove_endpoint(const void *channel);
 void aeron_driver_agent_receiver_proxy_on_add_endpoint(const void *channel);
 
 void aeron_driver_agent_receiver_proxy_on_remove_endpoint(const void *channel);
+
+int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_dissector_func_t func);
+
+void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length);
 
 #endif //AERON_DRIVER_AGENT_H

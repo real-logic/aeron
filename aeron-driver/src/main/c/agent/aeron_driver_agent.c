@@ -43,11 +43,20 @@ struct mmsghdr
 };
 #endif
 
+typedef struct aeron_driver_agent_dynamic_dissector_entry_stct
+{
+    aeron_driver_agent_generic_dissector_func_t dissector_func;
+}
+aeron_driver_agent_dynamic_dissector_entry_t;
+
 static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
 static FILE *logfp = NULL;
 static aeron_thread_t log_reader_thread;
+static aeron_driver_agent_dynamic_dissector_entry_t *dynamic_dissector_entries = NULL;
+static size_t num_dynamic_dissector_entries = 0;
+static int64_t dynamic_dissector_index = 0;
 static bool enabled_events[AERON_DRIVER_EVENT_NUM_ELEMENTS];
 
 static const char EVENT_NAMES[AERON_DRIVER_EVENT_NUM_ELEMENTS][64] =
@@ -99,7 +108,9 @@ static const char EVENT_NAMES[AERON_DRIVER_EVENT_NUM_ELEMENTS][64] =
     "CMD_IN_TERMINATE_DRIVER",
     "UNTETHERED_SUBSCRIPTION_STATE_CHANGE",
     "NAME_RESOLUTION_NEIGHBOR_ADDED",
-    "NAME_RESOLUTION_NEIGHBOR_REMOVED"
+    "NAME_RESOLUTION_NEIGHBOR_REMOVED",
+    "ADD_DYNAMIC_DISSECTOR",
+    "DYNAMIC_DISSECTOR_EVENT"
 };
 
 static const bool CMD_IN_EVENTS[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
@@ -151,6 +162,8 @@ static const bool CMD_IN_EVENTS[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
     true, // AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER
     false,
     false,
+    false,
+    false,
     false
 };
 
@@ -200,6 +213,8 @@ static const bool CMD_OUT_EVENTS[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
     false,
     false,
     true, // AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT
+    false,
+    false,
     false,
     false,
     false,
@@ -440,7 +455,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
             enable_admin_events();
             result = true;
         }
-        else if (0 == strncmp("0x", event_name, 2))
+        else if (0 == strncmp("0x", event_name, 2))  // Legacy mask-based events
         {
             const uint64_t mask = strtoull(event_name, NULL, 0);
             if (0 != mask)
@@ -481,6 +496,12 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
                         enabled_events[AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE] = true;
                         result = true;
                     }
+
+                    if (mask & 0x100u)
+                    {
+                        enabled_events[AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT] = true;
+                        result = true;
+                    }
                 }
             }
             break;
@@ -510,6 +531,9 @@ void aeron_driver_agent_logging_events_free()
     {
         enabled_events[i] = false;
     }
+    dynamic_dissector_entries = NULL;
+    dynamic_dissector_index = 0;
+    num_dynamic_dissector_entries = 0;
 }
 
 static void initialize_agent_logging()
@@ -1759,6 +1783,37 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 dissect_sockaddr(addr));
             break;
         }
+        case AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR:
+        {
+            aeron_driver_agent_add_dissector_header_t *hdr = (aeron_driver_agent_add_dissector_header_t *)message;
+
+            if (aeron_array_ensure_capacity(
+                (uint8_t **)&dynamic_dissector_entries,
+                sizeof(aeron_driver_agent_dynamic_dissector_entry_t),
+                num_dynamic_dissector_entries,
+                hdr->index + 1) >= 0)
+            {
+                dynamic_dissector_entries[hdr->index].dissector_func = hdr->dissector_func;
+                num_dynamic_dissector_entries = hdr->index + 1;
+            }
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT:
+        {
+            aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)message;
+
+            if (hdr->index >= 0 && hdr->index < (int64_t)num_dynamic_dissector_entries &&
+                NULL != dynamic_dissector_entries[hdr->index].dissector_func)
+            {
+                dynamic_dissector_entries[hdr->index].dissector_func(
+                    logfp,
+                    aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                    message,
+                    length);
+            }
+            break;
+        }
 
         default:
             if (is_valid_event_id(msg_type_id))
@@ -1919,4 +1974,51 @@ void aeron_driver_agent_receiver_proxy_on_add_endpoint(const void *channel)
 void aeron_driver_agent_receiver_proxy_on_remove_endpoint(const void *channel)
 {
     log_endpoint_change_event(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE, channel);
+}
+
+int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_dissector_func_t func)
+{
+    if (!aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT))
+    {
+        return -1;
+    }
+
+    uint8_t buffer[sizeof(aeron_driver_agent_add_dissector_header_t)];
+    aeron_driver_agent_add_dissector_header_t *hdr =
+        (aeron_driver_agent_add_dissector_header_t *)buffer;
+
+    hdr->time_ns = aeron_nano_clock();
+    AERON_GET_AND_ADD_INT64(hdr->index, dynamic_dissector_index, 1);
+    hdr->dissector_func = func;
+
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb,
+        AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
+        buffer,
+        sizeof(aeron_driver_agent_add_dissector_header_t));
+
+    return hdr->index;
+
+}
+
+void aeron_driver_agent_log_dynamic_event(const int64_t index, const void *message, const size_t length)
+{
+    if (!aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT))
+    {
+        return;
+    }
+
+    uint8_t buffer[AERON_MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
+    aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
+    size_t copy_length = length < AERON_MAX_FRAME_LENGTH ? length : AERON_MAX_FRAME_LENGTH;
+
+    hdr->time_ns = aeron_nano_clock();
+    hdr->index = index;
+    memcpy(buffer + sizeof(aeron_driver_agent_dynamic_event_header_t), message, copy_length);
+
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb,
+        AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT,
+        buffer,
+        sizeof(aeron_driver_agent_dynamic_event_header_t) + copy_length);
 }

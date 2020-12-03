@@ -551,22 +551,6 @@ static aeron_driver_agent_event_t command_id_to_driver_event_id(const int32_t ms
     }
 }
 
-void log_conductor_to_driver_command(
-    const aeron_driver_agent_event_t event_id,
-    const int32_t msg_type_id,
-    const void *message,
-    const size_t length,
-    const size_t command_length,
-    char *buffer)
-{
-    aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-    hdr->time_ns = aeron_nano_clock();
-    hdr->cmd_id = msg_type_id;
-    memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
-
-    aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, command_length);
-}
-
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
@@ -578,37 +562,17 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
 
-    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH)
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, event_id, command_length);
+    if (offset > 0)
     {
-        char *buffer = NULL;
-        if (aeron_alloc((void **)&buffer, command_length) < 0)
-        {
-            return;
-        }
-        log_conductor_to_driver_command(event_id, msg_type_id, message, length, command_length, buffer);
-        aeron_free(buffer);
-    }
-    else
-    {
-        char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH];
-        log_conductor_to_driver_command(event_id, msg_type_id, message, length, command_length, buffer);
-    }
-}
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)ptr;
+        hdr->time_ns = aeron_nano_clock();
+        hdr->cmd_id = msg_type_id;
+        memcpy(ptr + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
-void log_conductor_to_client_command(
-    const aeron_driver_agent_event_t event_id,
-    const int32_t msg_type_id,
-    const void *message,
-    const size_t length,
-    const size_t command_length,
-    char *buffer)
-{
-    aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-    hdr->time_ns = aeron_nano_clock();
-    hdr->cmd_id = msg_type_id;
-    memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
-
-    aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, command_length);
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
 }
 
 void aeron_driver_agent_conductor_to_client_interceptor(
@@ -621,52 +585,49 @@ void aeron_driver_agent_conductor_to_client_interceptor(
     }
 
     const size_t command_length = sizeof(aeron_driver_agent_cmd_log_header_t) + length;
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, event_id, command_length);
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)ptr;
+        hdr->time_ns = aeron_nano_clock();
+        hdr->cmd_id = msg_type_id;
+        memcpy(ptr + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
-    if (command_length > sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH)
-    {
-        char *buffer = NULL;
-        if (aeron_alloc((void **)&buffer, command_length) < 0)
-        {
-            return;
-        }
-        log_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
-        aeron_free(buffer);
-    }
-    else
-    {
-        char buffer[sizeof(aeron_driver_agent_cmd_log_header_t) + AERON_MAX_CMD_LENGTH];
-        log_conductor_to_client_command(event_id, msg_type_id, message, length, command_length, buffer);
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
     }
 }
 
 void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
 {
-    uint8_t buffer[
-        AERON_MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage)];
-    aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
-    size_t length = sizeof(aeron_driver_agent_frame_log_header_t);
-
-    hdr->time_ns = aeron_nano_clock();
-    hdr->result = (int32_t)result;
-    hdr->sockaddr_len = msghdr->msg_namelen;
-    hdr->message_len = message_len;
-
-    if (msghdr->msg_iovlen > 1)
+    const int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
+    const size_t command_length = sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) +
+        copy_length;
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, msg_type_id, command_length);
+    if (offset > 0)
     {
-        fprintf(stderr, "only aware of 1 iov. %d iovs detected.\n", (int)msghdr->msg_iovlen);
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->result = (int32_t)result;
+        hdr->sockaddr_len = msghdr->msg_namelen;
+        hdr->message_len = message_len;
+
+        if (msghdr->msg_iovlen > 1)
+        {
+            fprintf(stderr, "only aware of 1 iov. %d iovs detected.\n", (int)msghdr->msg_iovlen);
+        }
+
+        ptr += sizeof(aeron_driver_agent_frame_log_header_t);
+        memcpy(ptr, msghdr->msg_name, msghdr->msg_namelen);
+
+        ptr += msghdr->msg_namelen;
+        memcpy(ptr, msghdr->msg_iov[0].iov_base, (size_t)copy_length);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
     }
-
-    uint8_t *ptr = buffer + sizeof(aeron_driver_agent_frame_log_header_t);
-    memcpy(ptr, msghdr->msg_name, msghdr->msg_namelen);
-    length += msghdr->msg_namelen;
-
-    ptr += msghdr->msg_namelen;
-    int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
-    memcpy(ptr, msghdr->msg_iov[0].iov_base, (size_t)copy_length);
-    length += copy_length;
-
-    aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, (size_t)length);
 }
 
 int aeron_driver_agent_outgoing_mmsg(
@@ -760,38 +721,43 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     int32_t stream_id,
     int32_t session_id)
 {
-    uint8_t buffer[sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t)];
-    aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
-        (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)buffer;
-
-    hdr->time_ns = aeron_nano_clock();
-    hdr->subscription_id = tetherable_position->subscription_registration_id;
-    hdr->stream_id = stream_id;
-    hdr->session_id = session_id;
-    hdr->old_state = tetherable_position->state;
-    hdr->new_state = new_state;
-
-    aeron_untethered_subscription_state_change(tetherable_position, now_ns, new_state, stream_id, session_id);
-
-    aeron_mpsc_rb_write(
-        &logging_mpsc_rb,
-        AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
-        buffer,
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
         sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_untethered_subscription_state_change_log_header_t *hdr =
+            (aeron_driver_agent_untethered_subscription_state_change_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->subscription_id = tetherable_position->subscription_registration_id;
+        hdr->stream_id = stream_id;
+        hdr->session_id = session_id;
+        hdr->old_state = tetherable_position->state;
+        hdr->new_state = new_state;
+
+        aeron_untethered_subscription_state_change(tetherable_position, now_ns, new_state, stream_id, session_id);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
 }
 
 void log_name_resolution_neighbor_change(const aeron_driver_agent_event_t id, const struct sockaddr_storage *addr)
 {
-    uint8_t buffer[sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage)];
-    aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)buffer;
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb, id, sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage));
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)ptr;
 
-    hdr->time_ns = aeron_nano_clock();
+        hdr->time_ns = aeron_nano_clock();
 
-    uint8_t *ptr = buffer + sizeof(aeron_driver_agent_log_header_t);
-    memcpy(ptr, addr, sizeof(struct sockaddr_storage));
+        ptr += sizeof(aeron_driver_agent_log_header_t);
+        memcpy(ptr, addr, sizeof(struct sockaddr_storage));
 
-    aeron_mpsc_rb_write(
-        &logging_mpsc_rb, id, buffer, sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage));
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
 }
 
 void aeron_driver_agent_name_resolution_on_neighbor_added(const struct sockaddr_storage *addr)
@@ -1753,29 +1719,6 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
     }
 }
 
-static void log_remove_resource_cleanup_event(
-    const int64_t id,
-    const int32_t session_id,
-    const int32_t stream_id,
-    const size_t channel_length,
-    const char *channel,
-    const aeron_driver_agent_event_t event_id,
-    const size_t command_length,
-    char *buffer)
-{
-    aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)buffer;
-
-    hdr->time_ns = aeron_nano_clock();
-    hdr->id = id;
-    hdr->stream_id = stream_id;
-    hdr->session_id = session_id;
-    hdr->channel_length = (int32_t)channel_length;
-
-    memcpy(buffer + sizeof(aeron_driver_agent_remove_resource_cleanup_t), channel, channel_length);
-
-    aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, command_length);
-}
-
 static void log_remove_resource_cleanup(
     const int64_t id,
     const int32_t session_id,
@@ -1785,23 +1728,21 @@ static void log_remove_resource_cleanup(
     const aeron_driver_agent_event_t event_id)
 {
     const size_t command_length = sizeof(aeron_driver_agent_remove_resource_cleanup_t) + channel_length;
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, event_id, command_length);
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_remove_resource_cleanup_t *hdr = (aeron_driver_agent_remove_resource_cleanup_t *)ptr;
 
-    if (command_length > sizeof(aeron_driver_agent_remove_resource_cleanup_t) + AERON_MAX_PATH)
-    {
-        char *buffer = NULL;
-        if (aeron_alloc((void **)&buffer, command_length) < 0)
-        {
-            return;
-        }
-        log_remove_resource_cleanup_event(
-            id, session_id, stream_id, channel_length, channel, event_id, command_length, buffer);
-        aeron_free(buffer);
-    }
-    else
-    {
-        char buffer[sizeof(aeron_driver_agent_remove_resource_cleanup_t) + AERON_MAX_PATH];
-        log_remove_resource_cleanup_event(
-            id, session_id, stream_id, channel_length, channel, event_id, command_length, buffer);
+        hdr->time_ns = aeron_nano_clock();
+        hdr->id = id;
+        hdr->stream_id = stream_id;
+        hdr->session_id = session_id;
+        hdr->channel_length = (int32_t)channel_length;
+
+        memcpy(ptr + sizeof(aeron_driver_agent_remove_resource_cleanup_t), channel, channel_length);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
     }
 }
 
@@ -1847,17 +1788,22 @@ void aeron_driver_agent_remove_image_cleanup(
 
 static void log_endpoint_change_event(const aeron_driver_agent_event_t event_id, const void *channel)
 {
-    char buffer[sizeof(aeron_driver_agent_on_endpoint_change_t)];
-    aeron_driver_agent_on_endpoint_change_t *hdr = (aeron_driver_agent_on_endpoint_change_t *)buffer;
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, event_id,
+        sizeof(aeron_driver_agent_on_endpoint_change_t));
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_on_endpoint_change_t *hdr = (aeron_driver_agent_on_endpoint_change_t *)ptr;
 
-    const aeron_udp_channel_t *udp_channel = channel;
+        const aeron_udp_channel_t *udp_channel = channel;
 
-    hdr->time_ns = aeron_nano_clock();
-    memcpy(&hdr->local_data, &udp_channel->local_data, AERON_ADDR_LEN(&udp_channel->local_data));
-    memcpy(&hdr->remote_data, &udp_channel->remote_data, AERON_ADDR_LEN(&udp_channel->remote_data));
-    hdr->multicast_ttl = udp_channel->multicast_ttl;
+        hdr->time_ns = aeron_nano_clock();
+        memcpy(&hdr->local_data, &udp_channel->local_data, AERON_ADDR_LEN(&udp_channel->local_data));
+        memcpy(&hdr->remote_data, &udp_channel->remote_data, AERON_ADDR_LEN(&udp_channel->remote_data));
+        hdr->multicast_ttl = udp_channel->multicast_ttl;
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, event_id, buffer, sizeof(aeron_driver_agent_on_endpoint_change_t));
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
 }
 
 void aeron_driver_agent_sender_proxy_on_add_endpoint(const void *channel)
@@ -1887,22 +1833,27 @@ int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_diss
         return -1;
     }
 
-    uint8_t buffer[sizeof(aeron_driver_agent_add_dissector_header_t)];
-    aeron_driver_agent_add_dissector_header_t *hdr =
-        (aeron_driver_agent_add_dissector_header_t *)buffer;
-
-    hdr->time_ns = aeron_nano_clock();
-    AERON_GET_AND_ADD_INT64(hdr->index, dynamic_dissector_index, 1);
-    hdr->dissector_func = func;
-
-    aeron_mpsc_rb_write(
+    int32_t offset = aeron_mpsc_rb_try_claim(
         &logging_mpsc_rb,
         AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
-        buffer,
         sizeof(aeron_driver_agent_add_dissector_header_t));
+    if (offset > 0)
+    {
 
-    return hdr->index;
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
 
+        aeron_driver_agent_add_dissector_header_t *hdr =
+            (aeron_driver_agent_add_dissector_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        AERON_GET_AND_ADD_INT64(hdr->index, dynamic_dissector_index, 1);
+        hdr->dissector_func = func;
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+        return hdr->index;
+    }
+
+    return -1;
 }
 
 void aeron_driver_agent_log_dynamic_event(const int64_t index, const void *message, const size_t length)
@@ -1912,17 +1863,19 @@ void aeron_driver_agent_log_dynamic_event(const int64_t index, const void *messa
         return;
     }
 
-    uint8_t buffer[AERON_MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_dynamic_event_header_t)];
-    aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
-    size_t copy_length = length < AERON_MAX_FRAME_LENGTH ? length : AERON_MAX_FRAME_LENGTH;
-
-    hdr->time_ns = aeron_nano_clock();
-    hdr->index = index;
-    memcpy(buffer + sizeof(aeron_driver_agent_dynamic_event_header_t), message, copy_length);
-
-    aeron_mpsc_rb_write(
-        &logging_mpsc_rb,
+    const size_t copy_length = length < AERON_MAX_FRAME_LENGTH ? length : AERON_MAX_FRAME_LENGTH;
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb,
         AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT,
-        buffer,
         sizeof(aeron_driver_agent_dynamic_event_header_t) + copy_length);
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_dynamic_event_header_t *hdr = (aeron_driver_agent_dynamic_event_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->index = index;
+        memcpy(ptr + sizeof(aeron_driver_agent_dynamic_event_header_t), message, copy_length);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
 }

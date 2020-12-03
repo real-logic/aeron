@@ -1388,7 +1388,7 @@ typedef enum aeron_controlled_fragment_handler_action_en
      */
     AERON_ACTION_CONTINUE = 4
 }
-    aeron_controlled_fragment_handler_action_t;
+aeron_controlled_fragment_handler_action_t;
 
 /**
  * Callback for handling fragments of data being read from a log.

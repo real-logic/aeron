@@ -22,14 +22,23 @@
 
 #define AERON_ERROR_MAX_STACK_DEPTH (16)
 
+typedef struct aeron_error_stack_entry_stct
+{
+    const char *function;
+    const char *filename;
+    int line_number;
+    char message[AERON_MAX_PATH];
+}
+aeron_err_stack_entry_t;
+
 typedef struct aeron_per_thread_error_stct
 {
     int errcode;
     int stack_depth;
-    int errmsg_version;
-    int error_stack_version;
-    char errmsg[AERON_ERROR_MAX_STACK_DEPTH * AERON_MAX_PATH + 128];
-    char error_stack[AERON_ERROR_MAX_STACK_DEPTH][AERON_MAX_PATH];
+    bool errmsg_valid;
+    int stack_overflows;
+    char errmsg[AERON_ERROR_MAX_STACK_DEPTH * (AERON_MAX_PATH * 2)];
+    aeron_err_stack_entry_t error_stack[AERON_ERROR_MAX_STACK_DEPTH];
 }
 aeron_per_thread_error_t;
 
@@ -39,9 +48,13 @@ void aeron_set_err(int errcode, const char *format, ...);
 void aeron_set_errno(int errcode);
 void aeron_set_err_from_last_err_code(const char *format, ...);
 const char *aeron_error_code_str(int errcode);
-void aeron_err_append(int errcode, const char *format, ...);
+//void aeron_err_set(int errcode, const char *format, ...);
+void aeron_err_set(int errcode, const char *function, const char *filename, int line_number, const char *format, ...);
+void aeron_err_append(const char *function, const char *filename, int line_number, const char *format, ...);
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define AERON_ERR(errcode, fmt, ...) aeron_err_append(errcode, "[%s, %s:%d] (%d) " fmt, __PRETTY_FUNCTION__, __FILENAME__, __LINE__, errcode, __VA_ARGS__)
+//#define AERON_SET_ERR(errcode, fmt, ...) aeron_err_set(errcode, "[%s, %s:%d] (%d) " fmt, __PRETTY_FUNCTION__, __FILENAME__, __LINE__, errcode, __VA_ARGS__)
+#define AERON_SET_ERR(errcode, fmt, ...) aeron_err_set(errcode, __PRETTY_FUNCTION__, __FILENAME__, __LINE__, fmt, __VA_ARGS__)
+#define AERON_APPEND_ERR(fmt, ...) aeron_err_append(__PRETTY_FUNCTION__, __FILENAME__, __LINE__, fmt, __VA_ARGS__)
 
 #if defined(AERON_COMPILER_MSVC)
 bool aeron_error_dll_process_attach();

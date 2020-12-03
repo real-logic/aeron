@@ -29,12 +29,49 @@ class ErrorTest : public testing::Test
 
 };
 
+int functionA()
+{
+    AERON_SET_ERR(-EINVAL, "this is the root error: %d", 10);
+    return -1;
+}
+
+int functionB()
+{
+    if (functionA() < 0)
+    {
+        AERON_APPEND_ERR("this is another error: %d", 20);
+        return -1;
+    }
+
+    return 0;
+}
+
+int functionC()
+{
+    if (functionB() < 0)
+    {
+        AERON_APPEND_ERR("this got borked: %d", 30);
+    }
+
+    return 0;
+}
+
+
 TEST_F(ErrorTest, shouldStackErrors)
 {
-    AERON_ERR(-1, "this is first error: %d", 10);
-    AERON_ERR(-2, "this is second error: %d", 20);
-    AERON_ERR(-3, "this is third error: %d", 30);
-    AERON_ERR(-4, "This is another error: %d, %s", 30, "foo");
+    functionC();
+
+    printf("%s\n", aeron_errmsg());
+    fflush(stdout);
+}
+
+TEST_F(ErrorTest, shouldHandleErrorsOverflow)
+{
+    AERON_SET_ERR(EINVAL, "%s", "this is the root error");
+    for (int i = 0; i < AERON_ERROR_MAX_STACK_DEPTH + 10; i++)
+    {
+        AERON_APPEND_ERR("this is a nested error: %d", i);
+    }
 
     printf("%s\n", aeron_errmsg());
     fflush(stdout);

@@ -63,7 +63,7 @@ protected:
             auto event_name = aeron_driver_agent_event_name(event_id);
             bool expected = 0 != strncmp(
                 AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
-            EXPECT_EQ(expected,aeron_driver_agent_is_event_enabled(event_id));
+            EXPECT_EQ(expected, aeron_driver_agent_is_event_enabled(event_id));
         }
 
         EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NUM_ELEMENTS));
@@ -208,7 +208,8 @@ TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByResersedValue)
 
 TEST_F(DriverAgentTest, shouldEnableMultipleEventsSplitByComma)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init(
+        "CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY));
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
@@ -287,6 +288,13 @@ TEST_F(DriverAgentTest, shouldEnableUntetheredStateChangeEventUsingMask)
     EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE));
 }
 
+TEST_F(DriverAgentTest, shouldEnableDynamicDissectorEventUsingMask)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x100"));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT));
+}
+
 TEST_F(DriverAgentTest, shouldEnableMultipleEventsUsingMask)
 {
     EXPECT_TRUE(aeron_driver_agent_logging_events_init("0x8F"));
@@ -308,7 +316,7 @@ TEST_F(DriverAgentTest, shouldStopWhenMaskIsDetected)
 
 TEST_F(DriverAgentTest, shouldNotEnableAnyEventsIfInvalidMask)
 {
-    EXPECT_FALSE(aeron_driver_agent_logging_events_init("0x100,REMOVE_IMAGE_CLEANUP,FRAME_IN"));
+    EXPECT_FALSE(aeron_driver_agent_logging_events_init("0x200,REMOVE_IMAGE_CLEANUP,FRAME_IN"));
 
     assert_all_events_disabled();
 }
@@ -1144,6 +1152,162 @@ TEST_F(DriverAgentTest, shouldLogReceiveChannelClose)
             EXPECT_NE(nullptr, remote_addr);
             EXPECT_EQ(AF_INET, remote_addr->sin_family);
             EXPECT_EQ(9090, remote_addr->sin_port);
+        };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldNotAddDynamicDissectorIfDynamicDissectorEventIsDisabled)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("ADD_DYNAMIC_DISSECTOR"));
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT));
+
+    aeron_driver_agent_generic_dissector_func_t dynamic_dissector =
+        [](FILE *fpout, const char *log_header_str, const void *message, size_t len)
+        {
+
+        };
+
+    EXPECT_EQ(-1, aeron_driver_agent_add_dynamic_dissector(dynamic_dissector));
+
+    auto message_handler =
+        [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+        {
+            size_t *count = (size_t *)clientd;
+            (*count)++;
+        };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)0);
+    EXPECT_EQ(timesCalled, (size_t)0);
+}
+
+TEST_F(DriverAgentTest, shouldAddDynamicDissectorIfDynamicDissectorEventIsEnabled)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("DYNAMIC_DISSECTOR_EVENT"));
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT));
+
+    aeron_driver_agent_generic_dissector_func_t dynamic_dissector =
+        [](FILE *fpout, const char *log_header_str, const void *message, size_t len)
+        {
+
+        };
+
+    EXPECT_EQ(0, aeron_driver_agent_add_dynamic_dissector(dynamic_dissector));
+    EXPECT_EQ(1, aeron_driver_agent_add_dynamic_dissector(dynamic_dissector));
+
+    auto message_handler =
+        [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+        {
+            size_t *count = (size_t *)clientd;
+            (*count)++;
+
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR);
+            EXPECT_EQ(length, sizeof(aeron_driver_agent_add_dissector_header_t));
+
+            char *buffer = (char *)msg;
+            auto *hdr = (aeron_driver_agent_add_dissector_header_t *)buffer;
+            EXPECT_NE(hdr->time_ns, 0);
+            EXPECT_EQ(hdr->index, (int64_t)((*count) - 1));
+            EXPECT_NE(hdr->dissector_func, nullptr);
+        };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 10);
+
+    EXPECT_EQ(messagesRead, (size_t)2);
+    EXPECT_EQ(timesCalled, (size_t)2);
+}
+
+TEST_F(DriverAgentTest, shouldNotLogDynamicEventIfDisabled)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT));
+
+    aeron_driver_agent_log_dynamic_event(5, "test", 4);
+
+    auto message_handler =
+        [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+        {
+            size_t *count = (size_t *)clientd;
+            (*count)++;
+        };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)0);
+    EXPECT_EQ(timesCalled, (size_t)0);
+}
+
+TEST_F(DriverAgentTest, shouldLogDynamicEventSmallMessage)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("DYNAMIC_DISSECTOR_EVENT"));
+
+    const int message_length = 200;
+    char message[message_length];
+    memset(message, 'x', message_length);
+
+    aeron_driver_agent_log_dynamic_event(111, &message, message_length);
+
+    auto message_handler =
+        [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+        {
+            size_t *count = (size_t *)clientd;
+            (*count)++;
+
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT);
+            EXPECT_EQ(length, sizeof(aeron_driver_agent_dynamic_event_header_t) + 200);
+
+            char *buffer = (char *)msg;
+            auto *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
+            EXPECT_NE(hdr->time_ns, 0);
+            EXPECT_EQ(hdr->index, 111);
+            EXPECT_EQ(memcmp(buffer + length - 1, "x", 1), 0);
+        };
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_mpsc_rb_read(aeron_driver_agent_mpsc_rb(), message_handler, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+}
+
+TEST_F(DriverAgentTest, shouldLogDynamicEventBigMessage)
+{
+    aeron_driver_agent_logging_ring_buffer_init();
+    ASSERT_TRUE(aeron_driver_agent_logging_events_init("DYNAMIC_DISSECTOR_EVENT"));
+
+    const int message_length = AERON_MAX_FRAME_LENGTH * 3;
+    char message[message_length];
+    memset(message, 'z', message_length);
+
+    aeron_driver_agent_log_dynamic_event(5, &message, message_length);
+
+    auto message_handler =
+        [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
+        {
+            size_t *count = (size_t *)clientd;
+            (*count)++;
+
+            EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT);
+            EXPECT_EQ(length, sizeof(aeron_driver_agent_dynamic_event_header_t) + AERON_MAX_FRAME_LENGTH);
+
+            char *buffer = (char *)msg;
+            auto *hdr = (aeron_driver_agent_dynamic_event_header_t *)buffer;
+            EXPECT_NE(hdr->time_ns, 0);
+            EXPECT_EQ(hdr->index, 5);
+            EXPECT_EQ(memcmp(buffer + length - 1, "z", 1), 0);
         };
 
     size_t timesCalled = 0;

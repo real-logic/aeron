@@ -22,8 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.file.Path;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -151,7 +150,14 @@ class ClusterToolTest
         String flushAndGetContent()
         {
             printStream.flush();
-            return new String(byteArrayOutputStream.toByteArray(), US_ASCII);
+            try
+            {
+                return byteArrayOutputStream.toString(US_ASCII.name());
+            }
+            catch (final UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
         }
     }
 }

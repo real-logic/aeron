@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @SlowTest
 public class DynamicMembershipTest
 {
-    private TestCluster cluster;
+    private TestCluster cluster = null;
 
     @AfterEach
     void after()

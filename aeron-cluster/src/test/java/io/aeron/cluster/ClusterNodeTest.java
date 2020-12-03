@@ -280,7 +280,7 @@ public class ClusterNodeTest
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,
-                @SuppressWarnings("unused") final Header header)
+                final Header header)
             {
                 clusterSessionId = session.id();
                 msg = buffer.getStringWithoutLengthAscii(offset, length);

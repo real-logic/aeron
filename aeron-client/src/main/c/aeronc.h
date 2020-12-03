@@ -55,14 +55,14 @@ typedef struct aeron_header_values_frame_stct
     int32_t term_id;
     int64_t reserved_value;
 }
-    aeron_header_values_frame_t;
+aeron_header_values_frame_t;
 
 typedef struct aeron_header_values_stct
 {
     aeron_header_values_frame_t frame;
     int32_t initial_term_id;
 }
-    aeron_header_values_t;
+aeron_header_values_t;
 #pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
@@ -93,29 +93,24 @@ typedef struct aeron_controlled_fragment_assembler_stct aeron_controlled_fragmen
 #define AERON_DIR_ENV_VAR "AERON_DIR"
 
 int aeron_context_set_dir(aeron_context_t *context, const char *value);
-
 const char *aeron_context_get_dir(aeron_context_t *context);
 
 #define AERON_DRIVER_TIMEOUT_ENV_VAR "AERON_DRIVER_TIMEOUT"
 
 int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value);
-
 uint64_t aeron_context_get_driver_timeout_ms(aeron_context_t *context);
 
 int aeron_context_set_keepalive_interval_ns(aeron_context_t *context, uint64_t value);
-
 uint64_t aeron_context_get_keepalive_interval_ns(aeron_context_t *context);
 
 #define AERON_CLIENT_RESOURCE_LINGER_DURATION_ENV_VAR "AERON_CLIENT_RESOURCE_LINGER_DURATION"
 
 int aeron_context_set_resource_linger_duration_ns(aeron_context_t *context, uint64_t value);
-
 uint64_t aeron_context_get_resource_linger_duration_ns(aeron_context_t *context);
 
 #define AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR "AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY"
 
 int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool value);
-
 bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context);
 
 /**
@@ -129,9 +124,7 @@ typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *me
 typedef void (*aeron_notification_t)(void *clientd);
 
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd);
-
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
-
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
 
 /**
@@ -156,16 +149,12 @@ typedef void (*aeron_on_new_publication_t)(
     int64_t correlation_id);
 
 int aeron_context_set_on_new_publication(aeron_context_t *context, aeron_on_new_publication_t handler, void *clientd);
-
 aeron_on_new_publication_t aeron_context_get_on_new_publication(aeron_context_t *context);
-
 void *aeron_context_get_on_new_publication_clientd(aeron_context_t *context);
 
 int aeron_context_set_on_new_exclusive_publication(
     aeron_context_t *context, aeron_on_new_publication_t handler, void *clientd);
-
 aeron_on_new_publication_t aeron_context_get_on_new_exclusive_publication(aeron_context_t *context);
-
 void *aeron_context_get_on_new_exclusive_publication_clientd(aeron_context_t *context);
 
 /**
@@ -190,9 +179,7 @@ typedef void (*aeron_on_new_subscription_t)(
 
 int aeron_context_set_on_new_subscription(
     aeron_context_t *context, aeron_on_new_subscription_t handler, void *clientd);
-
 aeron_on_new_subscription_t aeron_context_get_on_new_subscription(aeron_context_t *context);
-
 void *aeron_context_get_on_new_subscription_clientd(aeron_context_t *context);
 
 /**
@@ -227,9 +214,7 @@ typedef void (*aeron_on_available_counter_t)(
 
 int aeron_context_set_on_available_counter(
     aeron_context_t *context, aeron_on_available_counter_t handler, void *clientd);
-
 aeron_on_available_counter_t aeron_context_get_on_available_counter(aeron_context_t *context);
-
 void *aeron_context_get_on_available_counter_clientd(aeron_context_t *context);
 
 /**
@@ -245,9 +230,7 @@ typedef void (*aeron_on_unavailable_counter_t)(
 
 int aeron_context_set_on_unavailable_counter(
     aeron_context_t *context, aeron_on_unavailable_counter_t handler, void *clientd);
-
 aeron_on_unavailable_counter_t aeron_context_get_on_unavailable_counter(aeron_context_t *context);
-
 void *aeron_context_get_on_unavailable_counter_clientd(aeron_context_t *context);
 
 /**
@@ -259,16 +242,13 @@ typedef void (*aeron_on_close_client_t)(void *clientd);
 
 int aeron_context_set_on_close_client(
     aeron_context_t *context, aeron_on_close_client_t handler, void *clientd);
-
 aeron_on_close_client_t aeron_context_get_on_close_client(aeron_context_t *context);
-
 void *aeron_context_get_on_close_client_clientd(aeron_context_t *context);
 
 /**
  * Whether to use an invoker to control the conductor agent or spawn a thread.
  */
 int aeron_context_set_use_conductor_agent_invoker(aeron_context_t *context, bool value);
-
 bool aeron_context_get_use_conductor_agent_invoker(aeron_context_t *context);
 
 /**
@@ -280,9 +260,7 @@ typedef void (*aeron_agent_on_start_func_t)(void *state, const char *role_name);
 
 int aeron_context_set_agent_on_start_function(
     aeron_context_t *context, aeron_agent_on_start_func_t value, void *state);
-
 aeron_agent_on_start_func_t aeron_context_get_agent_on_start_function(aeron_context_t *context);
-
 void *aeron_context_get_agent_on_start_state(aeron_context_t *context);
 
 /**
@@ -515,21 +493,21 @@ typedef struct aeron_on_available_counter_pair_stct
     aeron_on_available_counter_t handler;
     void *clientd;
 }
-    aeron_on_available_counter_pair_t;
+aeron_on_available_counter_pair_t;
 
 typedef struct aeron_on_unavailable_counter_pair_stct
 {
     aeron_on_unavailable_counter_t handler;
     void *clientd;
 }
-    aeron_on_unavailable_counter_pair_t;
+aeron_on_unavailable_counter_pair_t;
 
 typedef struct aeron_on_close_client_pair_stct
 {
     aeron_on_close_client_t handler;
     void *clientd;
 }
-    aeron_on_close_client_pair_t;
+aeron_on_close_client_pair_t;
 
 /**
  * Add a handler to be called when a new counter becomes available.
@@ -613,7 +591,7 @@ typedef struct aeron_counter_value_descriptor_stct
     int64_t owner_id;
     uint8_t pad1[(2 * AERON_COUNTER_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
 }
-    aeron_counter_value_descriptor_t;
+aeron_counter_value_descriptor_t;
 
 typedef struct aeron_counter_metadata_descriptor_stct
 {
@@ -624,7 +602,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
     int32_t label_length;
     uint8_t label[(6 * AERON_COUNTER_CACHE_LINE_LENGTH) - sizeof(int32_t)];
 }
-    aeron_counter_metadata_descriptor_t;
+aeron_counter_metadata_descriptor_t;
 #pragma pack(pop)
 
 
@@ -660,7 +638,7 @@ typedef struct aeron_counters_reader_buffers_stct
     size_t values_length;
     size_t metadata_length;
 }
-    aeron_counters_reader_buffers_t;
+aeron_counters_reader_buffers_t;
 
 /**
  * Get buffer pointers and lengths for the counters reader.
@@ -840,7 +818,7 @@ typedef struct aeron_iovec_stct
     uint8_t *iov_base;
     size_t iov_len;
 }
-    aeron_iovec_t;
+aeron_iovec_t;
 #else
 typedef struct iov aeron_iovec_t;
 #endif
@@ -854,7 +832,7 @@ typedef struct aeron_buffer_claim_stct
     uint8_t *data;
     size_t length;
 }
-    aeron_buffer_claim_t;
+aeron_buffer_claim_t;
 
 /**
  * Commit the given buffer_claim as a complete message available for consumption.
@@ -952,7 +930,7 @@ typedef struct aeron_publication_constants_stct
      */
     int32_t channel_status_indicator_id;
 }
-    aeron_publication_constants_t;
+aeron_publication_constants_t;
 
 /**
  * Non-blocking publish of a buffer containing a message.
@@ -1491,7 +1469,7 @@ typedef struct aeron_subscription_constants_stct
      */
     int32_t channel_status_indicator_id;
 }
-    aeron_subscription_constants_t;
+aeron_subscription_constants_t;
 
 /**
  * Poll the images under the subscription for available message fragments.
@@ -1804,7 +1782,7 @@ typedef struct aeron_image_constants_stct
      */
     int32_t subscriber_position_id;
 }
-    aeron_image_constants_t;
+aeron_image_constants_t;
 
 /**
  * Fill in a structure with the constants in use by a image.
@@ -2127,7 +2105,7 @@ typedef struct aeron_counter_constants_stct
      */
     int32_t counter_id;
 }
-    aeron_counter_constants_t;
+aeron_counter_constants_t;
 
 /**
  * Fill in a structure with the constants in use by a counter.

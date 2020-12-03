@@ -1,4 +1,4 @@
-/*
+
  * Copyright 2014-2020 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -637,10 +637,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
-
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
-
 extern void aeron_subscription_propose_last_image_change_number(
     aeron_subscription_t *subscription, int64_t change_number);
-
 extern volatile aeron_image_list_t *aeron_client_conductor_subscription_image_list(aeron_subscription_t *subscription);

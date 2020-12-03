@@ -18,21 +18,23 @@ package io.aeron.archive;
 import java.io.File;
 import java.util.ArrayDeque;
 
-class DeleteFilesSession implements Session
+class DeleteSegmentsSession implements Session
 {
+    private final long recordingId;
     private final long correlationId;
     private final ArrayDeque<String> files;
     private final File archiveDir;
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
 
-    DeleteFilesSession(
-        final long correlationId,
+    DeleteSegmentsSession(
+        final long recordingId, final long correlationId,
         final ArrayDeque<String> files,
         final File archiveDir,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy)
     {
+        this.recordingId = recordingId;
         this.correlationId = correlationId;
         this.files = files;
         this.archiveDir = archiveDir;
@@ -55,7 +57,7 @@ class DeleteFilesSession implements Session
 
     public long sessionId()
     {
-        return 0;
+        return recordingId;
     }
 
     public int doWork()
@@ -69,7 +71,7 @@ class DeleteFilesSession implements Session
             if (file.exists() && !file.delete())
             {
                 final String errorMessage = "unable to delete segment file: " + file;
-                controlSession.sendErrorResponse(correlationId, errorMessage, controlResponseProxy);
+                controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
             }
 
             workCount += 1;

@@ -863,8 +863,8 @@ abstract class ArchiveConductor
 
             if (!files.isEmpty())
             {
-                addSession(new DeleteFilesSession(
-                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+                addSession(new DeleteSegmentsSession(
+                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy));
             }
 
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
@@ -889,8 +889,8 @@ abstract class ArchiveConductor
 
                     if (!files.isEmpty())
                     {
-                        addSession(new DeleteFilesSession(
-                            correlationId, files, archiveDir, controlSession, controlResponseProxy));
+                        addSession(new DeleteSegmentsSession(
+                            recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy));
                     }
                 }
             }
@@ -1082,8 +1082,8 @@ abstract class ArchiveConductor
             final int count = files.size();
             if (count > 0)
             {
-                addSession(new DeleteFilesSession(
-                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+                addSession(new DeleteSegmentsSession(
+                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy));
             }
 
             controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
@@ -1107,8 +1107,8 @@ abstract class ArchiveConductor
             final int count = files.size();
             if (count > 0)
             {
-                addSession(new DeleteFilesSession(
-                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+                addSession(new DeleteSegmentsSession(
+                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy));
             }
 
             controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
@@ -1225,8 +1225,8 @@ abstract class ArchiveConductor
 
             if (!files.isEmpty())
             {
-                addSession(new DeleteFilesSession(
-                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+                addSession(new DeleteSegmentsSession(
+                    srcRecordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy));
             }
 
             catalog.startPosition(dstRecordingId, startPosition);

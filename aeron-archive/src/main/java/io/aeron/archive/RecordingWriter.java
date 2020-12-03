@@ -168,7 +168,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
 
     void init() throws IOException
     {
-        openRecordingSegmentFile();
+        openRecordingSegmentFile(new File(archiveDir, Archive.segmentFileName(recordingId, segmentBasePosition)));
 
         if (segmentOffset != 0)
         {
@@ -191,14 +191,12 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         }
     }
 
-    private void openRecordingSegmentFile()
+    private void openRecordingSegmentFile(final File segmentFile)
     {
-        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentBasePosition));
-
         RandomAccessFile recordingFile = null;
         try
         {
-            recordingFile = new RandomAccessFile(file, "rw");
+            recordingFile = new RandomAccessFile(segmentFile, "rw");
             recordingFile.setLength(segmentLength);
             recordingFileChannel = recordingFile.getChannel();
             if (forceWrites && null != archiveDirChannel)
@@ -220,6 +218,12 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         segmentOffset = 0;
         segmentBasePosition += segmentLength;
 
-        openRecordingSegmentFile();
+        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentBasePosition));
+        if (file.exists())
+        {
+            throw new ArchiveException("segment file already exists: " + file);
+        }
+
+        openRecordingSegmentFile(file);
     }
 }

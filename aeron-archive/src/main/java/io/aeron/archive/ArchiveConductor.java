@@ -835,6 +835,7 @@ abstract class ArchiveConductor
             final long segmentBasePosition = segmentFileBasePosition(
                 startPosition, position, termLength, segmentLength);
             final int segmentOffset = (int)(position - segmentBasePosition);
+            final ArrayDeque<String> files = new ArrayDeque<>();
 
             if (segmentOffset > 0)
             {
@@ -850,22 +851,27 @@ abstract class ArchiveConductor
             }
             else
             {
-                deleteSegmentFile(correlationId, recordingId, segmentBasePosition, controlSession);
+                files.addLast(segmentFileName(recordingId, segmentBasePosition));
             }
 
             catalog.stopPosition(recordingId, position);
 
             for (long p = segmentBasePosition + segmentLength; p <= stopPosition; p += segmentLength)
             {
-                deleteSegmentFile(correlationId, recordingId, p, controlSession);
+                files.addLast(segmentFileName(recordingId, p));
+            }
+
+            if (!files.isEmpty())
+            {
+                addSession(new DeleteFilesSession(
+                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
             }
 
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
 
-    void purgeRecording(
-        final long correlationId, final long recordingId, final ControlSession controlSession)
+    void purgeRecording(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
             isValidPurge(correlationId, controlSession, recordingId))
@@ -875,9 +881,16 @@ abstract class ArchiveConductor
                 final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
                 if (null != segmentFiles)
                 {
+                    final ArrayDeque<String> files = new ArrayDeque<>();
                     for (final String segmentFile : segmentFiles)
                     {
-                        deleteSegmentFile(correlationId, controlSession, segmentFile);
+                        files.addLast(segmentFile);
+                    }
+
+                    if (!files.isEmpty())
+                    {
+                        addSession(new DeleteFilesSession(
+                            correlationId, files, archiveDir, controlSession, controlResponseProxy));
                     }
                 }
             }
@@ -1063,8 +1076,17 @@ abstract class ArchiveConductor
     {
         if (hasRecording(recordingId, correlationId, controlSession))
         {
-            final long deletedSegmentCount = deleteDetachedSegments(recordingId);
-            controlSession.sendOkResponse(correlationId, deletedSegmentCount, controlResponseProxy);
+            final ArrayDeque<String> files = new ArrayDeque<>();
+            findDetachedSegments(recordingId, files);
+
+            final int count = files.size();
+            if (count > 0)
+            {
+                addSession(new DeleteFilesSession(
+                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+            }
+
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
         }
     }
 
@@ -1078,8 +1100,18 @@ abstract class ArchiveConductor
             isValidDetach(correlationId, controlSession, recordingId, newStartPosition))
         {
             catalog.startPosition(recordingId, newStartPosition);
-            final long deletedSegmentCount = deleteDetachedSegments(recordingId);
-            controlSession.sendOkResponse(correlationId, deletedSegmentCount, controlResponseProxy);
+
+            final ArrayDeque<String> files = new ArrayDeque<>();
+            findDetachedSegments(recordingId, files);
+
+            final int count = files.size();
+            if (count > 0)
+            {
+                addSession(new DeleteFilesSession(
+                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+            }
+
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
         }
     }
 
@@ -1162,14 +1194,15 @@ abstract class ArchiveConductor
             final int segmentLength = recordingSummary.segmentFileLength;
             final long segmentFileBasePosition = segmentFileBasePosition(
                 startPosition, startPosition, recordingSummary.termBufferLength, segmentLength);
+            final ArrayDeque<String> files = new ArrayDeque<>();
 
             while (position >= segmentFileBasePosition)
             {
-                final File srcFile = new File(archiveDir, segmentFileName(srcRecordingId, position));
+                final String segmentFileName = segmentFileName(srcRecordingId, position);
+                final File srcFile = new File(archiveDir, segmentFileName);
                 if (position == recordingSummary.stopPosition)
                 {
-                    //noinspection ResultOfMethodCallIgnored
-                    srcFile.delete();
+                    files.addFirst(segmentFileName);
                     position -= segmentLength;
                     continue;
                 }
@@ -1190,6 +1223,12 @@ abstract class ArchiveConductor
                 position -= segmentLength;
             }
 
+            if (!files.isEmpty())
+            {
+                addSession(new DeleteFilesSession(
+                    correlationId, files, archiveDir, controlSession, controlResponseProxy));
+            }
+
             catalog.startPosition(dstRecordingId, startPosition);
             catalog.stopPosition(srcRecordingId, startPosition);
             controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
@@ -1201,26 +1240,24 @@ abstract class ArchiveConductor
         replicationSessionByIdMap.remove(replicationSession.sessionId());
     }
 
-    private long deleteDetachedSegments(final long recordingId)
+    private void findDetachedSegments(final long recordingId, final ArrayDeque<String> files)
     {
         catalog.recordingSummary(recordingId, recordingSummary);
         final int segmentFile = recordingSummary.segmentFileLength;
         long filenamePosition = recordingSummary.startPosition - segmentFile;
-        long count = 0;
 
         while (filenamePosition >= 0)
         {
-            final File f = new File(archiveDir, segmentFileName(recordingId, filenamePosition));
-            if (!f.delete())
+            final String segmentFileName = segmentFileName(recordingId, filenamePosition);
+            final File file = new File(archiveDir, segmentFileName);
+            if (!file.exists())
             {
                 break;
             }
 
-            count += 1;
+            files.addFirst(segmentFileName);
             filenamePosition -= segmentFile;
         }
-
-        return count;
     }
 
     private int findTermOffsetForStart(
@@ -1886,27 +1923,6 @@ abstract class ArchiveConductor
         }
 
         return true;
-    }
-
-    private void deleteSegmentFile(
-        final long correlationId,
-        final long recordingId,
-        final long segmentBasePosition,
-        final ControlSession controlSession)
-    {
-        deleteSegmentFile(correlationId, controlSession, segmentFileName(recordingId, segmentBasePosition));
-    }
-
-    private void deleteSegmentFile(
-        final long correlationId, final ControlSession controlSession, final String segmentFileName)
-    {
-        final File file = new File(archiveDir, segmentFileName);
-        if (file.exists() && !file.delete())
-        {
-            final String msg = "failed to delete " + file;
-            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
-        }
     }
 
     private Counter getOrAddCounter(final int counterId)

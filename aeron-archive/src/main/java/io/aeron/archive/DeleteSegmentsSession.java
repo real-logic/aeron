@@ -15,7 +15,9 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.ArchiveException;
+import io.aeron.archive.codecs.RecordingSignal;
 import org.agrona.ErrorHandler;
 
 import java.io.File;
@@ -32,7 +34,8 @@ class DeleteSegmentsSession implements Session
     private final ErrorHandler errorHandler;
 
     DeleteSegmentsSession(
-        final long recordingId, final long correlationId,
+        final long recordingId,
+        final long correlationId,
         final ArrayDeque<String> files,
         final File archiveDir,
         final ControlSession controlSession,
@@ -79,6 +82,12 @@ class DeleteSegmentsSession implements Session
                 final String errorMessage = "unable to delete segment file: " + file;
                 controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
                 errorHandler.onError(new ArchiveException("segment delete failed for recording: " + recordingId));
+            }
+
+            if (files.isEmpty())
+            {
+                controlSession.attemptSignal(
+                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
             }
 
             workCount += 1;

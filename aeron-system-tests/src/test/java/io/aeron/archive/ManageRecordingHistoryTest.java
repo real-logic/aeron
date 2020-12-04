@@ -346,7 +346,10 @@ public class ManageRecordingHistoryTest
             final RecordingSignalConsumer consumer =
                 (controlSessionId, correlationId, recordingId, subscriptionId, position, transitionType) ->
                 {
-                    signalRef.set(transitionType);
+                    if (newRecordingId == recordingId)
+                    {
+                        signalRef.set(transitionType);
+                    }
                 };
 
             final RecordingSignalAdapter adapter = new RecordingSignalAdapter(

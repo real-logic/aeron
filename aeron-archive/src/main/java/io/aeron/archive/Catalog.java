@@ -108,8 +108,6 @@ final class Catalog implements AutoCloseable
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     @Deprecated
     static final int DEFAULT_RECORD_LENGTH = 1024;
-    @Deprecated
-    static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final long MAX_CATALOG_LENGTH = Integer.MAX_VALUE;
     static final long DEFAULT_CAPACITY = 1024 * 1024;
     static final long MIN_CAPACITY = CatalogHeaderDecoder.BLOCK_LENGTH;
@@ -690,22 +688,20 @@ final class Catalog implements AutoCloseable
 
     boolean invalidateRecording(final long recordingId)
     {
-        if (recordingId < 0)
+        if (recordingId >= 0)
         {
-            return false;
-        }
+            final long offset = catalogIndex.remove(recordingId);
+            if (CatalogIndex.NULL_VALUE != offset)
+            {
+                fieldAccessBuffer.putInt(
+                    (int)offset + RecordingDescriptorHeaderEncoder.stateEncodingOffset(),
+                    INVALID.value(),
+                    BYTE_ORDER);
 
-        final long offset = catalogIndex.remove(recordingId);
-        if (CatalogIndex.NULL_VALUE != offset)
-        {
-            fieldAccessBuffer.putInt(
-                (int)offset + RecordingDescriptorHeaderEncoder.stateEncodingOffset(),
-                INVALID.value(),
-                BYTE_ORDER);
+                forceWrites(catalogChannel);
 
-            forceWrites(catalogChannel);
-
-            return true;
+                return true;
+            }
         }
 
         return false;

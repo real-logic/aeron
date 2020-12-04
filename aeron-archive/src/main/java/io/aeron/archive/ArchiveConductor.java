@@ -861,13 +861,18 @@ abstract class ArchiveConductor
                 files.addLast(segmentFileName(recordingId, p));
             }
 
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+
             if (!files.isEmpty())
             {
                 addSession(new DeleteSegmentsSession(
                     recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
             }
-
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            else
+            {
+                controlSession.attemptSignal(
+                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+            }
         }
     }
 
@@ -876,32 +881,33 @@ abstract class ArchiveConductor
         if (hasRecording(recordingId, correlationId, controlSession) &&
             isValidPurge(correlationId, controlSession, recordingId))
         {
+            final ArrayDeque<String> files = new ArrayDeque<>();
+
             if (catalog.invalidateRecording(recordingId))
             {
                 final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
                 if (null != segmentFiles)
                 {
-                    final ArrayDeque<String> files = new ArrayDeque<>();
                     for (final String segmentFile : segmentFiles)
                     {
                         files.addLast(segmentFile);
-                    }
-
-                    if (!files.isEmpty())
-                    {
-                        addSession(new DeleteSegmentsSession(
-                            recordingId,
-                            correlationId,
-                            files,
-                            archiveDir,
-                            controlSession,
-                            controlResponseProxy,
-                            errorHandler));
                     }
                 }
             }
 
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
+
+            if (!files.isEmpty())
+            {
+                addSession(new DeleteSegmentsSession(
+                    recordingId,
+                    correlationId,
+                    files,
+                    archiveDir,
+                    controlSession,
+                    controlResponseProxy,
+                    errorHandler));
+            }
         }
     }
 
@@ -1111,13 +1117,13 @@ abstract class ArchiveConductor
             findDetachedSegments(recordingId, files);
 
             final int count = files.size();
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
+
             if (count > 0)
             {
                 addSession(new DeleteSegmentsSession(
                     recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
             }
-
-            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
         }
     }
 
@@ -1229,6 +1235,10 @@ abstract class ArchiveConductor
                 position -= segmentLength;
             }
 
+            catalog.startPosition(dstRecordingId, startPosition);
+            catalog.stopPosition(srcRecordingId, startPosition);
+            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
+
             if (!files.isEmpty())
             {
                 addSession(new DeleteSegmentsSession(
@@ -1240,10 +1250,6 @@ abstract class ArchiveConductor
                     controlResponseProxy,
                     errorHandler));
             }
-
-            catalog.startPosition(dstRecordingId, startPosition);
-            catalog.stopPosition(srcRecordingId, startPosition);
-            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
         }
     }
 

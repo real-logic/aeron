@@ -55,7 +55,7 @@ aeron_rb_record_descriptor_t;
 #define AERON_RB_RECORD_HEADER_LENGTH (sizeof(aeron_rb_record_descriptor_t))
 
 #define AERON_RB_MAX_MESSAGE_LENGTH(capacity) (capacity / 8)
-#define AERON_RB_INVALID_MSG_TYPE_ID(id) (id < -1)
+#define AERON_RB_INVALID_MSG_TYPE_ID(id) (id < 1)
 #define AERON_RB_PADDING_MSG_TYPE_ID (-1)
 
 typedef enum aeron_rb_write_result_stct

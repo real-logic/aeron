@@ -477,21 +477,22 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
                 goto cleanup;
             }
 
-            char buffer[sizeof(aeron_terminate_driver_command_t) + AERON_MAX_PATH];
-            aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)buffer;
+            const size_t command_length = sizeof(aeron_terminate_driver_command_t) + token_length;
+            const int32_t offset = aeron_mpsc_rb_try_claim(&rb, AERON_COMMAND_TERMINATE_DRIVER, command_length);
+            if (offset < 0)
+            {
+                aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "Unable to write to driver ring buffer");
+                result = -1;
+            }
+
+            aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)(rb.buffer + offset);
 
             command->correlated.client_id = aeron_mpsc_rb_next_correlation_id(&rb);
             command->correlated.correlation_id = aeron_mpsc_rb_next_correlation_id(&rb);
             command->token_length = (int32_t)token_length;
             memcpy((void *)(command + 1), token_buffer, token_length);
 
-            size_t command_length = sizeof(aeron_terminate_driver_command_t) + token_length;
-
-            if (AERON_RB_SUCCESS != aeron_mpsc_rb_write(&rb, AERON_COMMAND_TERMINATE_DRIVER, command, command_length))
-            {
-                aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "Unable to write to driver ring buffer");
-                result = -1;
-            }
+            aeron_mpsc_rb_commit(&rb, offset);
 
 cleanup:
             aeron_unmap(&cnc_mmap);

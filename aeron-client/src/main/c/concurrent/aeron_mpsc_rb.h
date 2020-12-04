@@ -36,6 +36,12 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
     const void *msg,
     size_t length);
 
+int32_t aeron_mpsc_rb_try_claim(aeron_mpsc_rb_t *ring_buffer, int32_t msg_type_id, size_t length);
+
+int aeron_mpsc_rb_commit(aeron_mpsc_rb_t *ring_buffer, int32_t offset);
+
+int aeron_mpsc_rb_abort(aeron_mpsc_rb_t *ring_buffer, int32_t offset);
+
 size_t aeron_mpsc_rb_read(
     aeron_mpsc_rb_t *ring_buffer,
     aeron_rb_handler_t handler,

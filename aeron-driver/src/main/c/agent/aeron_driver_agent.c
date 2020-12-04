@@ -970,13 +970,15 @@ const char *aeron_driver_agent_dissect_log_header(
 {
     static char buffer[150];
 
+    const char *event_name = aeron_driver_agent_event_name(event_id);
     snprintf(
         buffer,
         sizeof(buffer) - 1,
-        "[%f] %s: %s [%" PRIu64 "/%" PRIu64 "]",
+        "[%f] %s: %*s [%" PRIu64 "/%" PRIu64 "]",
         (double)time_ns / NANOS_PER_SECOND,
         AERON_DRIVER_AGENT_LOG_CONTEXT,
-        aeron_driver_agent_event_name(event_id),
+        (uint32_t)strlen(event_name),
+        event_name,
         (uint64_t)capture_length,
         (uint64_t)message_length);
 

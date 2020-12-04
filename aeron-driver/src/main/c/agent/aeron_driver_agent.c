@@ -48,6 +48,8 @@ struct mmsghdr
 #define AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT (2)
 #define AERON_DRIVER_AGENT_EVENT_TYPE_OTHER (3)
 
+#define AERON_DRIVER_AGENT_MAX_EVENT_NAME_LENGTH (64)
+
 typedef struct aeron_driver_agent_dynamic_dissector_entry_stct
 {
     aeron_driver_agent_generic_dissector_func_t dissector_func;
@@ -56,7 +58,7 @@ aeron_driver_agent_dynamic_dissector_entry_t;
 
 typedef struct aeron_driver_agent_log_event_stct
 {
-    char name[64];
+    char name[AERON_DRIVER_AGENT_MAX_EVENT_NAME_LENGTH];
     uint8_t type;
     bool enabled;
 }
@@ -934,7 +936,7 @@ const char *aeron_driver_agent_dissect_log_header(
     const size_t capture_length,
     const size_t message_length)
 {
-    static char buffer[150];
+    static char buffer[256];
 
     const char *event_name = aeron_driver_agent_event_name(event_id);
     snprintf(

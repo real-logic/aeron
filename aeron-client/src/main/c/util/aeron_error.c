@@ -86,11 +86,9 @@ const char *aeron_errmsg()
         {
             char *error_message_ptr = error_state->errmsg;
             size_t maxlen = sizeof(error_state->errmsg) - 1;
-            size_t offset = (size_t)snprintf(
-                error_message_ptr, maxlen, "Aeron error: %d, System errno: %d\n", error_state->errcode, errno);
+            size_t offset = 0;
             error_message_ptr[maxlen] = '\0';
-            error_message_ptr = error_message_ptr + offset;
-            
+
             for (int i = 0, n = error_state->stack_depth; i < n; i++)
             {
                 int bytes_written;
@@ -160,6 +158,8 @@ static aeron_per_thread_error_t *get_required_error_state()
         }
     }
 
+    error_state->errmsg_valid = true;
+
     return error_state;
 }
 
@@ -177,6 +177,7 @@ void aeron_set_err(int errcode, const char *format, ...)
     vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
     va_end(args);
     strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
+    error_state->errmsg_valid = true;
 }
 
 void aeron_set_errno(int errcode)

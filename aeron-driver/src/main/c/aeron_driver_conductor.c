@@ -1653,6 +1653,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 correlation_id,
                 status_indicator.counter_id) < 0)
             {
+                AERON_APPEND_ERR("correlation_id = %" PRId64, correlation_id);
                 return NULL;
             }
         }
@@ -2260,7 +2261,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
         const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
 
-        AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
+        AERON_FORMAT_BUFFER(error_message, "(%d) %s\n%s", os_errno, error_description, aeron_errmsg());
         aeron_driver_conductor_on_error(conductor, code, error_message, strlen(error_message), correlation_id);
         aeron_driver_conductor_error(conductor, code, error_description, error_message);
     }

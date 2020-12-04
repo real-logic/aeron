@@ -108,7 +108,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     {
         char encoded_error[AERON_MAX_PATH];
 
-        snprintf(encoded_error, sizeof(encoded_error) - 1, "%d: %s %s", error_code, description, message);
+        snprintf(encoded_error, sizeof(encoded_error) - 1, "%d: %s", error_code, message);
 
         size_t description_length = strlen(description);
         size_t encoded_error_length = strlen(encoded_error);

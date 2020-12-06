@@ -575,15 +575,6 @@ public class ReplicateRecordingTest
     private RecordingSignalAdapter newRecordingSignalAdapter(
         final MutableReference<RecordingSignal> signalRef, final MutableLong recordingIdRef)
     {
-        final ControlEventListener listener =
-            (controlSessionId, correlationId, relevantId, code, errorMessage) ->
-            {
-                if (code == ControlResponseCode.ERROR)
-                {
-                    throw new ArchiveException(errorMessage, (int)relevantId, correlationId);
-                }
-            };
-
-        return newRecordingSignalAdapter(listener, signalRef, recordingIdRef);
+        return newRecordingSignalAdapter(ERROR_CONTROL_LISTENER, signalRef, recordingIdRef);
     }
 }

@@ -88,10 +88,7 @@ public class ClusterTimerTest
         launchReschedulingService(triggeredTimersCounter);
         connectClient();
 
-        while (triggeredTimersCounter.get() < 2)
-        {
-            Tests.yield();
-        }
+        Tests.awaitValue(triggeredTimersCounter, 2);
 
         final CountersReader counters = aeronCluster.context().aeron().countersReader();
         final int clusterId = clusteredMediaDriver.consensusModule().context().clusterId();

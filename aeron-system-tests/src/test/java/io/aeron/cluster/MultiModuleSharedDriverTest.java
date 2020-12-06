@@ -27,6 +27,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
+import io.aeron.test.cluster.StubClusteredService;
 import io.aeron.test.cluster.TestCluster;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;

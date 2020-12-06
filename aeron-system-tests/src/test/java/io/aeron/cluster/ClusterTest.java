@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SlowTest
 public class ClusterTest
 {
-    private TestCluster cluster;
+    private TestCluster cluster = null;
 
     @AfterEach
     void after()

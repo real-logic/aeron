@@ -330,7 +330,7 @@ public final class Archive implements AutoCloseable
          * @see #MAX_CATALOG_ENTRIES_PROP_NAME
          */
         @Deprecated
-        public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
+        public static final long MAX_CATALOG_ENTRIES_DEFAULT = 8 * 1024;
 
         /**
          * Default capacity in bytes of the archive {@link Catalog}. {@link Catalog} will resize itself when this

@@ -34,6 +34,7 @@
 #include "util/aeron_dlopen.h"
 #include "aeron_alloc.h"
 #include "util/aeron_arrayutil.h"
+#include "aeron_windows.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr

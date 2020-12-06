@@ -16,12 +16,12 @@
 #ifndef AERON_CONCURRENT_ERROR_LOG_READER_H
 #define AERON_CONCURRENT_ERROR_LOG_READER_H
 
-#include <functional>
-
-#include "util/Index.h"
-#include "util/BitUtil.h"
 #include "concurrent/AtomicBuffer.h"
-#include "concurrent/errors/ErrorLogDescriptor.h"
+
+extern "C"
+{
+#include "concurrent/aeron_distinct_error_log.h"
+}
 
 namespace aeron { namespace concurrent { namespace errors {
 
@@ -35,42 +35,27 @@ typedef std::function<void(
     std::int64_t lastObservationTimestamp,
     const std::string &encodedException)> error_consumer_t;
 
+void error_log_handler(
+    int32_t observation_count,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    const char *error,
+    size_t error_length,
+    void *clientd)
+{
+    const error_consumer_t &consumer = *reinterpret_cast<const error_consumer_t *>(clientd);
+    std::string encodedException(error, error_length);
+    consumer(observation_count, first_observation_timestamp, last_observation_timestamp, encodedException);
+}
+
 inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, std::int64_t sinceTimestamp)
 {
-    int entries = 0;
-    int offset = 0;
-    const int capacity = buffer.capacity();
-
-    while (offset < capacity)
-    {
-        const std::int32_t length = buffer.getInt32Volatile(offset + ErrorLogDescriptor::LENGTH_OFFSET);
-        if (0 == length)
-        {
-            break;
-        }
-
-        const std::int64_t lastObservationTimestamp =
-            buffer.getInt64Volatile(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET);
-
-        if (lastObservationTimestamp >= sinceTimestamp)
-        {
-            auto& entry = buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
-
-            ++entries;
-
-            consumer(
-                entry.observationCount,
-                entry.firstObservationTimestamp,
-                lastObservationTimestamp,
-                buffer.getStringWithoutLength(
-                    offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET,
-                    static_cast<std::size_t>(length - ErrorLogDescriptor::HEADER_LENGTH)));
-        }
-
-        offset += util::BitUtil::align(length, ErrorLogDescriptor::RECORD_ALIGNMENT);
-    }
-
-    return entries;
+    return aeron_error_log_read(
+        buffer.buffer(),
+        buffer.capacity(),
+        error_log_handler,
+        const_cast<void *>(reinterpret_cast<const void *>(&consumer)),
+        sinceTimestamp);
 }
 
 }}}}

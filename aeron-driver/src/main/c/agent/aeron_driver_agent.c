@@ -945,7 +945,7 @@ const char *aeron_driver_agent_dissect_log_header(
         "[%f] %s: %.*s [%" PRIu64 "/%" PRIu64 "]",
         (double)time_ns / NANOS_PER_SECOND,
         AERON_DRIVER_AGENT_LOG_CONTEXT,
-        (int)strlen(event_name),
+        AERON_DRIVER_AGENT_MAX_EVENT_NAME_LENGTH,
         event_name,
         (uint64_t)capture_length,
         (uint64_t)message_length);

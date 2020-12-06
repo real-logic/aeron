@@ -18,7 +18,7 @@
 #define AERON_IPC_PUBLICATION_H
 
 #include "util/aeron_bitutil.h"
-#include "uri/aeron_uri.h"
+#include "uri/aeron_driver_uri.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_system_counters.h"
@@ -85,7 +85,7 @@ int aeron_ipc_publication_create(
     aeron_position_t *pub_pos_position,
     aeron_position_t *pub_lmt_position,
     int32_t initial_term_id,
-    aeron_uri_publication_params_t *params,
+    aeron_driver_uri_publication_params_t *params,
     bool is_exclusive,
     aeron_system_counters_t *system_counters,
     size_t channel_length,

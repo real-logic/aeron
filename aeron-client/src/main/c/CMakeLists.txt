@@ -58,6 +58,7 @@ set(SOURCE
     concurrent/aeron_term_unblocker.c
     concurrent/aeron_thread.c
     protocol/aeron_udp_protocol.c
+    status/aeron_local_sockaddr.c
     util/aeron_arrayutil.c
     util/aeron_bitutil.c
     util/aeron_clock.c
@@ -71,6 +72,7 @@ set(SOURCE
     util/aeron_parse_util.c
     util/aeron_properties_util.c
     util/aeron_strutil.c
+    uri/aeron_uri.c
     aeron_agent.c
     aeron_alloc.c
     aeron_client.c
@@ -123,6 +125,7 @@ set(HEADERS
     concurrent/aeron_term_unblocker.h
     concurrent/aeron_thread.h
     protocol/aeron_udp_protocol.h
+    status/aeron_local_sockaddr.h
     util/aeron_arrayutil.h
     util/aeron_bitutil.h
     util/aeron_clock.h
@@ -137,6 +140,7 @@ set(HEADERS
     util/aeron_platform.h
     util/aeron_properties_util.h
     util/aeron_strutil.h
+    uri/aeron_uri.h
     aeron_agent.h
     aeron_alloc.h
     aeron_client.h

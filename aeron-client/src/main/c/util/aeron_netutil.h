@@ -22,6 +22,8 @@
 #include "aeron_socket.h"
 #include "aeron_common.h"
 
+// This includes '[' and ']' around the address and the ':<port>'.
+// The system header already includes the null terminator
 #define AERON_NETUTIL_FORMATTED_MAX_LENGTH (INET6_ADDRSTRLEN + 8)
 
 struct ifaddrs;

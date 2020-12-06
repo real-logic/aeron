@@ -47,6 +47,9 @@ aeron_driver_test(driver_conductor_pub_sub_test aeron_driver_conductor_pub_sub_t
 aeron_driver_test(driver_conductor_spy_test aeron_driver_conductor_spy_test.cpp)
 aeron_driver_test(driver_conductor_counter_test aeron_driver_conductor_counter_test.cpp)
 aeron_driver_test(driver_conductor_clock_test aeron_driver_conductor_clock_test.cpp)
+aeron_driver_test(spsc_queue_test aeron_spsc_concurrent_array_queue_test.cpp)
+aeron_driver_test(mpsc_queue_test aeron_mpsc_concurrent_array_queue_test.cpp)
+aeron_driver_test(uri_driver_test aeron_driver_uri_test.cpp)
 aeron_driver_test(uri_test aeron_uri_test.cpp)
 aeron_driver_test(udp_channel_test aeron_udp_channel_test.cpp)
 aeron_driver_test(term_scanner_test aeron_term_scanner_test.cpp)
@@ -72,6 +75,10 @@ set_tests_properties(c_terminate_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_terminate_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_system_test aeron_c_system_test.cpp)
+set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
+
+aeron_driver_test(c_local_addresses_test aeron_c_local_addresses_test.cpp)
 set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
 

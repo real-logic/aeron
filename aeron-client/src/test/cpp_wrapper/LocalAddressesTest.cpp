@@ -42,6 +42,23 @@ public:
         m_driver.stop();
     }
 
+    static std::string join(std::vector<std::string> &strings)
+    {
+        std::stringstream ss;
+        ss << "{";
+        std::for_each(
+            strings.begin(),
+            strings.end(),
+            [&](const std::string &s)
+            {
+                ss << s;
+                ss << ", ";
+            });
+        ss.seekp(-2, std::ios_base::end);
+        ss << "}";
+        return ss.str();
+    }
+
 protected:
     EmbeddedMediaDriver m_driver;
 };
@@ -62,13 +79,71 @@ TEST_F(LocalAddressesTest, shouldGetLocalAddresses)
     {
         POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
         auto subAddresses = sub->localSocketAddresses();
-        ASSERT_EQ(1U, subAddresses.size());
+        ASSERT_EQ(1U, subAddresses.size()) << join(subAddresses);
         EXPECT_NE(std::string::npos, channel.find(subAddresses[0]));
+        ASSERT_EQ(channel, sub->tryResolveChannelEndpointPort());
 
         POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
         auto pubAddresses = pub->localSocketAddresses();
         ASSERT_EQ(1U, pubAddresses.size());
         EXPECT_NE(std::string::npos, channel.find(pubAddresses[0]));
+    }
+
+    invoker.invoke();
+}
+
+TEST_F(LocalAddressesTest, shouldGetLocalAddressesForIpc)
+{
+    std::int32_t streamId = 10001;
+    std::string channel = "aeron:ipc";
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        auto subAddresses = sub->localSocketAddresses();
+        ASSERT_EQ(0U, subAddresses.size()) << join(subAddresses);
+        ASSERT_EQ(channel, sub->tryResolveChannelEndpointPort());
+    }
+
+    invoker.invoke();
+}
+
+
+TEST_F(LocalAddressesTest, shouldGetLocalAddressesForMds)
+{
+    std::int32_t streamId = 10001;
+    std::string channel = "aeron:udp?control-mode=manual";
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+
+        int numDestinations = 32;
+        for (int i = 0; i < numDestinations; i++)
+        {
+            int64_t destination = sub->addDestination("aeron:udp?endpoint=127.0.0.1:" + std::to_string(9000 + i));
+            POLL_FOR(sub->findDestinationResponse(destination), invoker);
+        }
+        
+        auto subAddresses = sub->localSocketAddresses();
+        ASSERT_EQ(numDestinations, (int)subAddresses.size());
+
+        for (int i = 0; i < numDestinations; i++)
+        {
+            std::string expectedAddress = "127.0.0.1:" + std::to_string(9000 + i);
+            ASSERT_EQ(expectedAddress, subAddresses[i]);
+        }
     }
 
     invoker.invoke();

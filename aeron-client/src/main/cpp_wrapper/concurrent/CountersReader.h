@@ -265,7 +265,7 @@ protected:
 
     template<typename H>
     static void forEachCounter(
-        std::int64_t value,
+        std::int64_t /* value */,
         std::int32_t id,
         std::int32_t typeId,
         const std::uint8_t *key,

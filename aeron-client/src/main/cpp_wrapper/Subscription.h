@@ -27,6 +27,11 @@
 #include "Context.h"
 #include "ChannelUri.h"
 
+extern "C"
+{
+#include "aeron_common.h"
+}
+
 namespace aeron
 {
 
@@ -168,8 +173,60 @@ public:
      */
     std::vector<std::string> localSocketAddresses() const
     {
-        return aeron::concurrent::status::LocalSocketAddressStatus::findAddresses(
-            m_countersReader, channelStatus(), channelStatusId());
+        const int initialVectorSize = 16;
+        uint8_t buffers[initialVectorSize][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        aeron_iovec_t initialIovecs[initialVectorSize];
+        std::unique_ptr<uint8_t[]> overflowBuffers;
+        std::unique_ptr<aeron_iovec_t[]> overflowIovecs;
+        aeron_iovec_t *iovecs;
+        int addressCount = 0;
+
+        for (size_t i = 0, n = 16; i < n; i++)
+        {
+            initialIovecs[i].iov_base = buffers[i];
+            initialIovecs[i].iov_len = AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
+        }
+        iovecs = initialIovecs;
+
+        int initialResult = aeron_subscription_local_sockaddrs(m_subscription, initialIovecs, 16);
+        if (initialResult < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+        addressCount = initialResult;
+
+        if (initialVectorSize < initialResult)
+        {
+            const int overflowVectorSize = initialResult;
+
+            overflowBuffers = std::unique_ptr<uint8_t[]>(
+                new uint8_t[overflowVectorSize * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN]);
+            overflowIovecs = std::unique_ptr<aeron_iovec_t[]>(new aeron_iovec_t[overflowVectorSize]);
+
+            for (int i = 0; i < overflowVectorSize; i++)
+            {
+                overflowIovecs[i].iov_base = &overflowBuffers[i * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+                overflowIovecs[i].iov_len = AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
+            }
+
+            int overflowResult = aeron_subscription_local_sockaddrs(
+                m_subscription, overflowIovecs.get(), (size_t)overflowVectorSize);
+            if (overflowResult < 0)
+            {
+                AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+            }
+
+            addressCount = overflowResult < overflowVectorSize ? overflowResult : overflowVectorSize;
+            iovecs = overflowIovecs.get();
+        }
+
+        std::vector<std::string> localAddresses;
+        for (int i = 0; i < addressCount; i++)
+        {
+            localAddresses.push_back(std::string(reinterpret_cast<char *>(iovecs[i].iov_base)));
+        }
+
+        return localAddresses;
     }
 
     /**
@@ -186,34 +243,14 @@ public:
      */
     std::string tryResolveChannelEndpointPort() const
     {
-        const std::int64_t currentChannelStatus = channelStatus();
+        char uri_buffer[AERON_MAX_PATH];
 
-        if (ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE == currentChannelStatus)
+        if (aeron_subscription_try_resolve_channel_endpoint_port(m_subscription, uri_buffer, sizeof(uri_buffer)) < 0)
         {
-            std::vector<std::string> localSocketAddresses = LocalSocketAddressStatus::findAddresses(
-                m_countersReader, currentChannelStatus, channelStatusId());
-
-            if (1 == localSocketAddresses.size())
-            {
-                std::shared_ptr<ChannelUri> channelUriPtr = ChannelUri::parse(m_channel);
-                std::string endpoint = channelUriPtr->get(ENDPOINT_PARAM_NAME);
-
-                if (!endpoint.empty() && endsWith(endpoint, std::string(":0")))
-                {
-                    std::string &resolvedEndpoint = localSocketAddresses.at(0);
-                    std::size_t i = resolvedEndpoint.find_last_of(':');
-                    std::string newEndpoint = endpoint.substr(0, endpoint.length() - 2) + resolvedEndpoint.substr(i);
-
-                    channelUriPtr->put(ENDPOINT_PARAM_NAME, newEndpoint);
-
-                    return channelUriPtr->toString();
-                }
-            }
-
-            return m_channel;
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return {};
+        return std::string(uri_buffer);
     }
 
     /**
@@ -230,7 +267,15 @@ public:
      */
     std::string resolvedEndpoint() const
     {
-        return LocalSocketAddressStatus::findAddress(m_countersReader, channelStatus(), channelStatusId());
+        char buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+
+        int result = aeron_subscription_resolved_endpoint(m_subscription, buffer, sizeof(buffer));
+        if (result < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return 0 < result ? std::string(buffer) : std::string{};
     }
 
     AsyncDestination *addDestinationAsync(const std::string &endpointChannel)

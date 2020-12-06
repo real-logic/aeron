@@ -32,6 +32,7 @@ extern "C"
 #define AERON_CLIENT_ERROR_CLIENT_TIMEOUT (-1001)
 #define AERON_CLIENT_ERROR_CONDUCTOR_SERVICE_TIMEOUT (-1002)
 #define AERON_CLIENT_ERROR_BUFFER_FULL (-1003)
+#define AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN (64)
 
 typedef struct aeron_context_stct aeron_context_t;
 typedef struct aeron_stct aeron_t;
@@ -1156,6 +1157,20 @@ int32_t aeron_publication_stream_id(aeron_publication_t *publication);
  */
 int32_t aeron_publication_session_id(aeron_publication_t *publication);
 
+/**
+ * Get all of the local socket addresses for this publication. Typically only one representing the control address.
+ *
+ * @see aeron_subscription_local_sockaddrs
+ * @param subscription to query
+ * @param address_vec to hold the received addresses
+ * @param address_vec_len available length of the vector to hold the addresses
+ * @return number of addresses found or -1 if there is an error.
+ */
+int aeron_publication_local_sockaddrs(
+    aeron_publication_t *publication,
+    aeron_iovec_t *address_vec,
+    size_t address_vec_len);
+
 /*
  * Exclusive Publication functions
  */
@@ -1302,6 +1317,19 @@ bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *public
  * @return true if this publication has recently seen an active subscriber otherwise false.
  */
 bool aeron_exclusive_publication_is_connected(aeron_exclusive_publication_t *publication);
+
+/**
+ * Get all of the local socket addresses for this exclusive publication. Typically only one representing the control
+ * address.
+ *
+ * @see aeron_subscription_local_sockaddrs
+ * @param subscription to query
+ * @param address_vec to hold the received addresses
+ * @param address_vec_len available length of the vector to hold the addresses
+ * @return number of addresses found or -1 if there is an error.
+ */
+int aeron_exclusive_publication_local_sockaddrs(
+    aeron_exclusive_publication_t *publication, aeron_iovec_t *address_vec, size_t address_vec_len);
 
 /**
  * Subscription functions
@@ -1631,6 +1659,57 @@ int aeron_subscription_async_destination_poll(aeron_async_destination_t *async);
  */
 int aeron_subscription_close(
     aeron_subscription_t *subscription, aeron_notification_t on_close_complete, void *on_close_complete_clientd);
+
+/**
+ * Get all of the local socket addresses for this subscription. Multiple addresses can occur if this is a
+ * multi-destination subscription. Addresses will a string representation in numeric form. IPv6 addresses will be
+ * surrounded by '[' and ']' so that the ':' that separate the parts are distinguishable from the port delimiter.
+ * E.g. [fe80::7552:c06e:6bf4:4160]:12345. As of writing the maximum length for a formatted address is 54 bytes
+ * including the NULL terminator. AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN is defined to provide enough space to fit the
+ * returned string. Returned strings will be NULL terminated. If the buffer to hold the address can not hold enough
+ * of the message it will be truncated and the last character will be null.
+ *
+ * If the address_vec_len is less the total number of addresses available then the first addresses found up to that
+ * length will be placed into the address_vec. However the function will return the total number of addresses available
+ * so if if that is larger than the input array then the client code may wish to re-query with a larger array to get
+ * them all.
+ *
+ * @param subscription to query
+ * @param address_vec to hold the received addresses
+ * @param address_vec_len available length of the vector to hold the addresses
+ * @return number of addresses found or -1 if there is an error.
+ */
+int aeron_subscription_local_sockaddrs(
+    aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len);
+
+/**
+ * Retrieves the first local socket address for this subscription. If this is not MDS then it will be the one
+ * representing endpoint for this subscription.
+ *
+ * @see aeron_subscription_local_sockaddrs
+ * @param subscription to query
+ * @param address for the received address
+ * @param address_len available length for the copied address.
+ * @return -1 on error, 0 if address not found, 1 if address is found.
+ */
+int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, char *address, size_t address_len);
+
+/**
+ * Retrieves the channel URI for this subscription with any wildcard ports filled in. If the channel is not UDP or
+ * does not have a wildcard port (`0`), then it will return the original URI.
+ *
+ * @param subscription to query
+ * @param uri buffer to hold the resolved uri
+ * @param uri_len length of the buffer
+ * @return -1 on failure or the number of bytes written to the buffer (excluding the NULL terminator).  Writing is done
+ * on a per key basis, so if the buffer was truncated before writing completed, it will only include the byte count up
+ * to the key that overflowed. However, the invariant that if the number returned >= uri_len, then output will have been
+ * truncated.
+ */
+int aeron_subscription_try_resolve_channel_endpoint_port(
+    aeron_subscription_t *subscription,
+    char *uri,
+    size_t uri_len);
 
 /**
  * Image Functions
@@ -2178,7 +2257,7 @@ int aeron_default_path(char *path, size_t path_length);
 
 /**
  * Gets the registration id for addition of the counter. Note that using this after a call to poll the succeeds or
- * errors is undefined behaviour.  As the async_add_counter_t may have been freed.
+ * errors is undefined behaviour. As the async_add_counter_t may have been freed.
  *
  * @param add_counter used to check for completion.
  * @return registration id for the counter.

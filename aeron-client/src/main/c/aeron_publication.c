@@ -22,6 +22,7 @@
 #include "aeron_publication.h"
 #include "concurrent/aeron_term_appender.h"
 #include "aeron_log_buffer.h"
+#include "status/aeron_local_sockaddr.h"
 
 int aeron_publication_create(
     aeron_publication_t **publication,
@@ -491,4 +492,23 @@ int32_t aeron_publication_stream_id(aeron_publication_t *publication)
 int32_t aeron_publication_session_id(aeron_publication_t *publication)
 {
     return publication->session_id;
+}
+
+int aeron_publication_local_sockaddrs(
+    aeron_publication_t *publication,
+    aeron_iovec_t *address_vec,
+    size_t address_vec_len)
+{
+    if (NULL == publication || address_vec == NULL || address_vec_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_local_sockaddr_find_addrs(
+        &publication->conductor->counters_reader,
+        publication->channel_status_indicator_id,
+        address_vec,
+        address_vec_len);
 }

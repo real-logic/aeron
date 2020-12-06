@@ -18,6 +18,9 @@
 
 #include "aeron_subscription.h"
 #include "aeron_image.h"
+#include "aeron_counters.h"
+#include "status/aeron_local_sockaddr.h"
+#include "uri/aeron_uri.h"
 
 int aeron_subscription_create(
     aeron_subscription_t **subscription,
@@ -525,6 +528,112 @@ int64_t aeron_header_position(aeron_header_t *header)
 
     return aeron_logbuffer_compute_position(
         header->frame->term_id, offset_at_end_of_frame, header->position_bits_to_shift, header->initial_term_id);
+}
+
+int aeron_subscription_local_sockaddrs(
+    aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len)
+{
+    if (NULL == subscription || address_vec == NULL || address_vec_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    return aeron_local_sockaddr_find_addrs(
+        &subscription->conductor->counters_reader,
+        subscription->channel_status_indicator_id,
+        address_vec,
+        address_vec_len);
+}
+
+int aeron_subscription_resolved_endpoint(
+    aeron_subscription_t *subscription, char *address, size_t address_len)
+{
+    if (NULL == subscription || address == NULL || address_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    aeron_iovec_t addr_vec;
+    addr_vec.iov_base = (uint8_t *)address;
+    addr_vec.iov_len = address_len;
+
+    return aeron_local_sockaddr_find_addrs(
+        &subscription->conductor->counters_reader,
+        subscription->channel_status_indicator_id,
+        &addr_vec,
+        1);
+}
+
+static bool aeron_subscription_uri_contains_wildcard_port(aeron_uri_t *uri)
+{
+    if (AERON_URI_UDP != uri->type || NULL == uri->params.udp.endpoint)
+    {
+        return false;
+    }
+
+    char *port_suffix = strrchr(uri->params.udp.endpoint, ':');
+    return 0 == strcmp(port_suffix, ":0");
+}
+
+static int aeron_subscription_update_uri_with_resolved_endpoint(
+    aeron_subscription_t *subscription,
+    aeron_uri_t *uri,
+    char *address_buffer,
+    size_t address_buffer_len)
+{
+    int result = 1;
+
+    if (aeron_subscription_uri_contains_wildcard_port(uri))
+    {
+        result = aeron_subscription_resolved_endpoint(subscription, address_buffer, address_buffer_len);
+        if (0 < result)
+        {
+            uri->params.udp.endpoint = address_buffer;
+        }
+    }
+
+    return result;
+}
+
+int aeron_subscription_try_resolve_channel_endpoint_port(
+    aeron_subscription_t *subscription,
+    char *uri,
+    size_t uri_len)
+{
+    if (NULL == subscription || uri == NULL || uri_len < 1)
+    {
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    int result = -1;
+    aeron_uri_t temp_uri = { 0 };
+    char resolved_endpoint[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+
+    if (0 <= aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri))
+    {
+        int resolve_result = aeron_subscription_update_uri_with_resolved_endpoint(
+            subscription, &temp_uri, resolved_endpoint, sizeof(resolved_endpoint));
+
+        if (0 < resolve_result)
+        {
+            result = aeron_uri_sprint(&temp_uri, uri, uri_len);
+        }
+        if (0 == resolve_result)
+        {
+            uri[0] = '\0';
+            result = 0;
+        }
+    }
+
+    aeron_uri_close(&temp_uri);
+
+    return result;
 }
 
 extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);

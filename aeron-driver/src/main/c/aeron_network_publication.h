@@ -19,7 +19,7 @@
 
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
-#include "uri/aeron_uri.h"
+#include "uri/aeron_driver_uri.h"
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_counters_manager.h"
@@ -125,7 +125,7 @@ int aeron_network_publication_create(
     aeron_position_t *snd_lmt_position,
     aeron_atomic_counter_t *snd_bpe_counter,
     aeron_flow_control_strategy_t *flow_control_strategy,
-    aeron_uri_publication_params_t *params,
+    aeron_driver_uri_publication_params_t *params,
     bool is_exclusive,
     aeron_system_counters_t *system_counters);
 

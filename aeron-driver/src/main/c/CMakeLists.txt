@@ -138,6 +138,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_scanner.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_unblocker.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_thread.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/status/aeron_local_sockaddr.c
     ${AERON_C_CLIENT_SOURCE_PATH}/protocol/aeron_udp_protocol.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.c
@@ -152,6 +153,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/uri/aeron_uri.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client.c
@@ -249,7 +251,7 @@ SET(SOURCE
     media/aeron_udp_destination_tracker.c
     media/aeron_udp_transport_poller.c
     reports/aeron_loss_reporter.c
-    uri/aeron_uri.c
+    uri/aeron_driver_uri.c
     aeron_congestion_control.c
     aeron_csv_table_name_resolver.c
     aeron_data_packet_dispatcher.c
@@ -289,7 +291,7 @@ SET(HEADERS
     media/aeron_udp_destination_tracker.h
     media/aeron_udp_transport_poller.h
     reports/aeron_loss_reporter.h
-    uri/aeron_uri.h
+    uri/aeron_driver_uri.h
     aeron_congestion_control.h
     aeron_data_packet_dispatcher.h
     aeron_driver.h

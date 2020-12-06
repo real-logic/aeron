@@ -17,8 +17,7 @@
 #ifndef AERON_URI_H
 #define AERON_URI_H
 
-#include "aeron_driver_common.h"
-#include "aeronmd.h"
+#include "aeron_common.h"
 
 typedef struct aeron_uri_param_stct
 {
@@ -64,35 +63,7 @@ aeron_uri_params_t;
 #define AERON_URI_SPIES_SIMULATE_CONNECTION_KEY "ssc"
 #define AERON_URI_ATS_KEY "ats"
 
-typedef struct aeron_uri_publication_params_stct
-{
-    bool has_position;
-    bool is_sparse;
-    bool signal_eos;
-    bool spies_simulate_connection;
-    size_t mtu_length;
-    size_t term_length;
-    size_t term_offset;
-    int32_t initial_term_id;
-    int32_t term_id;
-    uint64_t linger_timeout_ns;
-    bool has_session_id;
-    int32_t session_id;
-    int64_t entity_tag;
-}
-aeron_uri_publication_params_t;
-
-typedef struct aeron_uri_subscription_params_stct
-{
-    bool is_reliable;
-    bool is_sparse;
-    bool is_tether;
-    bool is_rejoin;
-    aeron_inferable_boolean_t group;
-    bool has_session_id;
-    int32_t session_id;
-}
-aeron_uri_subscription_params_t;
+#define AERON_URI_INVALID_TAG (-1)
 
 typedef struct aeron_udp_channel_params_stct
 {
@@ -157,23 +128,11 @@ void aeron_uri_close(aeron_uri_t *params);
 uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
 const char *aeron_uri_find_param_value(const aeron_uri_params_t *uri_params, const char *key);
+int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t *retval);
 int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval);
 int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *retval);
 int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status);
-
-typedef struct aeron_driver_context_stct aeron_driver_context_t;
-typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
-
-int aeron_uri_publication_params(
-    aeron_uri_t *uri,
-    aeron_uri_publication_params_t *params,
-    aeron_driver_conductor_t *context,
-    bool is_exclusive);
-
-int aeron_uri_subscription_params(
-    aeron_uri_t *uri,
-    aeron_uri_subscription_params_t *params,
-    aeron_driver_conductor_t *conductor);
+int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len);
 
 int64_t aeron_uri_parse_tag(const char *tag_str);
 

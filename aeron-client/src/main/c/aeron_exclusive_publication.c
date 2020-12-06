@@ -136,7 +136,7 @@ int64_t aeron_exclusive_publication_offer(
     int64_t new_position = AERON_PUBLICATION_CLOSED;
     bool is_closed;
 
-    if (NULL == publication || buffer == NULL)
+    if (NULL == publication || NULL == buffer)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_exclusive_publication_offer(NULL): %s", strerror(EINVAL));
@@ -215,7 +215,7 @@ int64_t aeron_exclusive_publication_offerv(
     int64_t new_position = AERON_PUBLICATION_CLOSED;
     bool is_closed;
 
-    if (NULL == publication || iov == NULL)
+    if (NULL == publication || NULL == iov)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_exclusive_publication_offerv(NULL): %s", strerror(EINVAL));
@@ -298,7 +298,7 @@ int64_t aeron_exclusive_publication_try_claim(
     int64_t new_position = AERON_PUBLICATION_CLOSED;
     bool is_closed;
 
-    if (NULL == publication || buffer_claim == NULL)
+    if (NULL == publication || NULL == buffer_claim)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_exclusive_publication_try_claim(NULL): %s", strerror(EINVAL));
@@ -584,7 +584,7 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
 int aeron_exclusive_publication_local_sockaddrs(
     aeron_exclusive_publication_t *publication, aeron_iovec_t *address_vec, size_t address_vec_len)
 {
-    if (NULL == publication || address_vec == NULL || address_vec_len < 1)
+    if (NULL == publication || NULL == address_vec || address_vec_len < 1)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));

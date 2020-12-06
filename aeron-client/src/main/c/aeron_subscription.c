@@ -533,7 +533,7 @@ int64_t aeron_header_position(aeron_header_t *header)
 int aeron_subscription_local_sockaddrs(
     aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len)
 {
-    if (NULL == subscription || address_vec == NULL || address_vec_len < 1)
+    if (NULL == subscription || NULL == address_vec || address_vec_len < 1)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
@@ -550,7 +550,7 @@ int aeron_subscription_local_sockaddrs(
 int aeron_subscription_resolved_endpoint(
     aeron_subscription_t *subscription, char *address, size_t address_len)
 {
-    if (NULL == subscription || address == NULL || address_len < 1)
+    if (NULL == subscription || NULL == address || address_len < 1)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
@@ -600,11 +600,9 @@ static int aeron_subscription_update_uri_with_resolved_endpoint(
 }
 
 int aeron_subscription_try_resolve_channel_endpoint_port(
-    aeron_subscription_t *subscription,
-    char *uri,
-    size_t uri_len)
+    aeron_subscription_t *subscription, char *uri, size_t uri_len)
 {
-    if (NULL == subscription || uri == NULL || uri_len < 1)
+    if (NULL == subscription || NULL == uri || uri_len < 1)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "%s", strerror(EINVAL));
@@ -624,6 +622,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
         {
             result = aeron_uri_sprint(&temp_uri, uri, uri_len);
         }
+
         if (0 == resolve_result)
         {
             uri[0] = '\0';

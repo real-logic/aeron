@@ -58,8 +58,10 @@ class ExclusivePublication
 public:
 
     /// @cond HIDDEN_SYMBOLS
-    ExclusivePublication(aeron_t *aeron, aeron_exclusive_publication_t *publication, CountersReader &countersReader) :
-        m_aeron(aeron), m_publication(publication), m_countersReader(countersReader), m_channel()
+    ExclusivePublication(aeron_t *aeron, aeron_exclusive_publication_t *publication) :
+        m_aeron(aeron),
+        m_publication(publication),
+        m_channel()
     {
         if (aeron_exclusive_publication_constants(m_publication, &m_constants) < 0)
         {
@@ -649,7 +651,6 @@ public:
 private:
     aeron_t *m_aeron;
     aeron_exclusive_publication_t *m_publication;
-    CountersReader &m_countersReader;
     aeron_publication_constants_t m_constants;
     std::string m_channel;
     std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;

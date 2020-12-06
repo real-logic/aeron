@@ -67,8 +67,10 @@ class Publication
 public:
 
     /// @cond HIDDEN_SYMBOLS
-    Publication(aeron_t *aeron, aeron_publication_t *publication, CountersReader &countersReader) :
-        m_aeron(aeron), m_publication(publication), m_countersReader(countersReader), m_channel()
+    Publication(aeron_t *aeron, aeron_publication_t *publication) :
+        m_aeron(aeron),
+        m_publication(publication),
+        m_channel()
     {
         if (aeron_publication_constants(m_publication, &m_constants) < 0)
         {
@@ -654,7 +656,6 @@ private:
     aeron_t *m_aeron = nullptr;
     aeron_publication_t *m_publication = nullptr;
     aeron_publication_constants_t m_constants = {};
-    CountersReader &m_countersReader;
     std::string m_channel;
     std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
     std::recursive_mutex m_adminLock;

@@ -233,7 +233,7 @@ public:
         }
         else
         {
-            return std::make_shared<Publication>(m_aeron, publication, m_countersReader);
+            return std::make_shared<Publication>(m_aeron, publication);
         }
     }
 
@@ -346,7 +346,7 @@ public:
         }
         else
         {
-            return std::make_shared<ExclusivePublication>(m_aeron, publication, m_countersReader);
+            return std::make_shared<ExclusivePublication>(m_aeron, publication);
         }
     }
 
@@ -457,8 +457,10 @@ public:
             m_aeron,
             channel.c_str(),
             streamId,
-            onAvailableImageCallback, availableClientd,
-            onUnavailableImageCallback, unavailableClientd) < 0)
+            onAvailableImageCallback,
+            availableClientd,
+            onUnavailableImageCallback,
+            unavailableClientd) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -512,7 +514,7 @@ public:
         else
         {
             addSubscription->m_async = nullptr;
-            return std::make_shared<Subscription>(m_aeron, subscription, addSubscription, m_countersReader);
+            return std::make_shared<Subscription>(m_aeron, subscription, addSubscription);
         }
     }
 

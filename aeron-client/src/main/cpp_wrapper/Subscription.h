@@ -80,15 +80,10 @@ class Subscription
 {
 public:
     /// @cond HIDDEN_SYMBOLS
-    Subscription(
-        aeron_t *aeron,
-        aeron_subscription_t *subscription,
-        AsyncAddSubscription *addSubscription,
-        CountersReader &countersReader) :
+    Subscription(aeron_t *aeron, aeron_subscription_t *subscription, AsyncAddSubscription *addSubscription) :
         m_aeron(aeron),
         m_subscription(subscription),
-        m_addSubscription(addSubscription),
-        m_countersReader(countersReader)
+        m_addSubscription(addSubscription)
     {
         if (aeron_subscription_constants(m_subscription, &m_constants) < 0)
         {
@@ -581,7 +576,6 @@ private:
     aeron_subscription_t *m_subscription = nullptr;
     AsyncAddSubscription *m_addSubscription = nullptr;
     aeron_subscription_constants_t m_constants = {};
-    CountersReader& m_countersReader;
     std::string m_channel;
     std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
     std::recursive_mutex m_adminLock;

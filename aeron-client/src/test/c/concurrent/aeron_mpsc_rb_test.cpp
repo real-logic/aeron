@@ -473,7 +473,7 @@ TEST_F(MpscRbTest, commitShouldReturnErrorIfOffsetIsExceedsBufferCapacity)
     aeron_mpsc_rb_t rb;
     ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, m_buffer.size() + 1));
+    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, (int32_t)(m_buffer.size() + 1)));
 }
 
 TEST_F(MpscRbTest, commitShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
@@ -481,7 +481,7 @@ TEST_F(MpscRbTest, commitShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
     aeron_mpsc_rb_t rb;
     ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, m_buffer.size() - AERON_RB_RECORD_HEADER_LENGTH + 1));
+    EXPECT_EQ(-1, aeron_mpsc_rb_commit(&rb, (int32_t)(m_buffer.size() - AERON_RB_RECORD_HEADER_LENGTH + 1)));
 }
 
 TEST_F(MpscRbTest, commitShouldReturnZeroUponSuccess)
@@ -515,7 +515,7 @@ TEST_F(MpscRbTest, abortShouldReturnErrorIfOffsetIsExceedsBufferCapacity)
     aeron_mpsc_rb_t rb;
     ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, m_buffer.size() + 8));
+    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, (int32_t)(m_buffer.size() + 8)));
 }
 
 TEST_F(MpscRbTest, abortShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
@@ -523,7 +523,7 @@ TEST_F(MpscRbTest, abortShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
     aeron_mpsc_rb_t rb;
     ASSERT_EQ(0, aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, m_buffer.size() - 1));
+    EXPECT_EQ(-1, aeron_mpsc_rb_abort(&rb, (int32_t)(m_buffer.size() - 1)));
 }
 
 TEST_F(MpscRbTest, abortShouldReturnZeroUponSuccess)
@@ -589,7 +589,7 @@ typedef struct mpsc_concurrent_test_data_stct
     uint32_t id;
     uint32_t num;
 }
-    mpsc_concurrent_test_data_t;
+mpsc_concurrent_test_data_t;
 
 static void mpsc_rb_concurrent_handler(int32_t msg_type_id, const void *buffer, size_t length, void *clientd)
 {

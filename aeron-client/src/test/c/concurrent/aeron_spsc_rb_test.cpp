@@ -449,7 +449,7 @@ TEST_F(SpscRbTest, commitShouldReturnErrorIfOffsetIsExceedsBufferCapacity)
     aeron_spsc_rb_t rb;
     ASSERT_EQ(0, aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_spsc_rb_commit(&rb, m_buffer.size() + 1));
+    EXPECT_EQ(-1, aeron_spsc_rb_commit(&rb, (int32_t)(m_buffer.size() + 1)));
 }
 
 TEST_F(SpscRbTest, commitShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
@@ -457,7 +457,7 @@ TEST_F(SpscRbTest, commitShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
     aeron_spsc_rb_t rb;
     ASSERT_EQ(0, aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_spsc_rb_commit(&rb, m_buffer.size() - AERON_RB_RECORD_HEADER_LENGTH + 1));
+    EXPECT_EQ(-1, aeron_spsc_rb_commit(&rb, (int32_t)(m_buffer.size() - AERON_RB_RECORD_HEADER_LENGTH + 1)));
 }
 
 TEST_F(SpscRbTest, commitShouldReturnZeroUponSuccess)
@@ -491,7 +491,7 @@ TEST_F(SpscRbTest, abortShouldReturnErrorIfOffsetIsExceedsBufferCapacity)
     aeron_spsc_rb_t rb;
     ASSERT_EQ(0, aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_spsc_rb_abort(&rb, m_buffer.size() + 8));
+    EXPECT_EQ(-1, aeron_spsc_rb_abort(&rb, (int32_t)(m_buffer.size() + 8)));
 }
 
 TEST_F(SpscRbTest, abortShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
@@ -499,7 +499,7 @@ TEST_F(SpscRbTest, abortShouldReturnErrorIfOffsetIsSmallerThanRecordHeader)
     aeron_spsc_rb_t rb;
     ASSERT_EQ(0, aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()));
 
-    EXPECT_EQ(-1, aeron_spsc_rb_abort(&rb, m_buffer.size() - 1));
+    EXPECT_EQ(-1, aeron_spsc_rb_abort(&rb, (int32_t)(m_buffer.size() - 1)));
 }
 
 TEST_F(SpscRbTest, abortShouldReturnZeroUponSuccess)

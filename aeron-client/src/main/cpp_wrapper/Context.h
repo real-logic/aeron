@@ -562,7 +562,7 @@ private:
 
     static void newPublicationHandlerCallback(
         void *clientd,
-        aeron_async_add_publication_t */* async */,
+        aeron_async_add_publication_t * /* async */,
         const char *channel,
         std::int32_t stream_id,
         std::int32_t session_id,

@@ -169,33 +169,31 @@ public:
     std::vector<std::string> localSocketAddresses() const
     {
         const int initialVectorSize = 16;
-        uint8_t buffers[initialVectorSize][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        std::uint8_t buffers[initialVectorSize][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
         aeron_iovec_t initialIovecs[initialVectorSize];
-        std::unique_ptr<uint8_t[]> overflowBuffers;
+        std::unique_ptr<std::uint8_t[]> overflowBuffers;
         std::unique_ptr<aeron_iovec_t[]> overflowIovecs;
-        aeron_iovec_t *iovecs;
-        int addressCount = 0;
 
         for (size_t i = 0, n = 16; i < n; i++)
         {
             initialIovecs[i].iov_base = buffers[i];
             initialIovecs[i].iov_len = AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
         }
-        iovecs = initialIovecs;
+        aeron_iovec_t *iovecs = initialIovecs;
 
         int initialResult = aeron_subscription_local_sockaddrs(m_subscription, initialIovecs, 16);
         if (initialResult < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        addressCount = initialResult;
+        int addressCount = initialResult;
 
         if (initialVectorSize < initialResult)
         {
             const int overflowVectorSize = initialResult;
 
-            overflowBuffers = std::unique_ptr<uint8_t[]>(
-                new uint8_t[overflowVectorSize * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN]);
+            overflowBuffers = std::unique_ptr<std::uint8_t[]>(
+                new std::uint8_t[overflowVectorSize * AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN]);
             overflowIovecs = std::unique_ptr<aeron_iovec_t[]>(new aeron_iovec_t[overflowVectorSize]);
 
             for (int i = 0; i < overflowVectorSize; i++)
@@ -205,7 +203,7 @@ public:
             }
 
             int overflowResult = aeron_subscription_local_sockaddrs(
-                m_subscription, overflowIovecs.get(), (size_t)overflowVectorSize);
+                m_subscription, overflowIovecs.get(), static_cast<std::size_t>(overflowVectorSize));
             if (overflowResult < 0)
             {
                 AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

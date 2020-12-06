@@ -326,7 +326,7 @@ public:
     std::vector<std::string> localSocketAddresses() const
     {
         std::vector<std::string> localAddresses;
-        uint8_t buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        std::uint8_t buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
         // Publications only have a single local address.
         aeron_iovec_t iov;
         iov.iov_base = buffer;

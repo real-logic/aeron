@@ -96,6 +96,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
         next_header = (aeron_rb_record_descriptor_t *)ring_buffer->buffer;
 
         next_header->length = 0;
+        next_header->msg_type_id = 0;
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
         AERON_PUT_ORDERED(record_header->length, (int32_t)padding);
         record_index = 0;
@@ -104,6 +105,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
     next_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index + aligned_record_length);
 
     next_header->length = 0;
+    next_header->msg_type_id = 0;
     AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + aligned_record_length + padding);
 
     return (int32_t)record_index;

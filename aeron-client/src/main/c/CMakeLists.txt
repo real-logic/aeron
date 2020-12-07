@@ -182,6 +182,15 @@ target_link_libraries(
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 
+target_link_libraries(
+    aeron_static INTERFACE
+    ${CMAKE_DL_LIBS}
+    ${AERON_LIB_M_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS}
+    -rdynamic # Because dlsym() is used to load strategies.
+    )
+
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron aeron_static

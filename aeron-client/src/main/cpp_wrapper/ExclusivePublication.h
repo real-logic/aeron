@@ -371,7 +371,15 @@ public:
      */
     inline std::int64_t offer(const concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
-        return offer(buffer, offset, length, DEFAULT_RESERVED_VALUE_SUPPLIER);
+        std::int64_t position = aeron_exclusive_publication_offer(
+            m_publication, buffer.buffer() + offset, static_cast<std::size_t>(length), NULL, NULL);
+
+        if (AERON_PUBLICATION_ERROR == position)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return position;
     }
 
     /**

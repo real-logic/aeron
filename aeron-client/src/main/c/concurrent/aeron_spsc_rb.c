@@ -139,6 +139,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
         record_header->msg_type_id = msg_type_id;
         AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
+
         return AERON_RB_SUCCESS;
     }
 

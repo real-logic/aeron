@@ -121,7 +121,6 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
     }
 
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
-
     const int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, record_length);
 
     if (-1 != record_index)

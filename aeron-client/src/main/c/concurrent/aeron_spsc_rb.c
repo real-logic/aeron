@@ -90,6 +90,8 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
         padding = to_buffer_end_length;
     }
 
+    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + aligned_record_length + padding);
+
     if (0 != padding)
     {
         record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
@@ -106,7 +108,6 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
 
     next_header->length = 0;
     next_header->msg_type_id = 0;
-    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + aligned_record_length + padding);
 
     return (int32_t)record_index;
 }
@@ -161,10 +162,8 @@ int32_t aeron_spsc_rb_try_claim(aeron_spsc_rb_t *ring_buffer, const int32_t msg_
     {
         aeron_rb_record_descriptor_t *record_header =
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
-        // Plain write into length field is ok here since we are not publishing yet and the header was pre-zeroed
-        // during the capacity claim
-        record_header->length = -(int32_t)record_length;
         record_header->msg_type_id = msg_type_id;
+        AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
 
         return AERON_RB_MESSAGE_OFFSET(record_index);
     }

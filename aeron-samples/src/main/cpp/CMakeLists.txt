@@ -17,7 +17,7 @@
 set(CLIENT_LINK_LIB "aeron_client")
 set(CLIENT_WRAPPER_LINK_LIB "aeron_client_wrapper")
 set(C_CLIENT_LINK_LIB "aeron_static")
-if (LINK_SAMPLES_CLIENT_SHARED)
+if (LINK_SAMPLES_CLIENT_SHARED OR MSVC)
     set(C_CLIENT_LINK_LIB "aeron")
     set(CLIENT_LINK_LIB "aeron_client_shared")
     add_definitions(-DCLIENT_SHARED)

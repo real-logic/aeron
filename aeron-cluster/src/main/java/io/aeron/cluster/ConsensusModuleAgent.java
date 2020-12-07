@@ -1276,40 +1276,7 @@ class ConsensusModuleAgent implements Agent
         final String logChannel = channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel;
         awaitServicesReady(logChannel, logSessionId, logPosition, isStartup);
         leadershipTermId(leadershipTermId);
-
-        if (!isStartup)
-        {
-            for (final ClusterSession session : sessionByIdMap.values())
-            {
-                if (session.state() == OPEN)
-                {
-                    session.connect(aeron);
-                }
-            }
-
-            final long nowNs = clusterClock.timeNanos();
-            for (final ClusterSession session : sessionByIdMap.values())
-            {
-                if (session.state() == OPEN)
-                {
-                    session.timeOfLastActivityNs(nowNs);
-                    session.hasNewLeaderEventPending(true);
-                }
-            }
-        }
-    }
-
-    private void updateMemberDetails(final ClusterMember newLeader)
-    {
-        leaderMember = newLeader;
-        sessionProxy.leaderMemberId(leaderMember.id()).leadershipTermId(leadershipTermId);
-
-        for (final ClusterMember clusterMember : clusterMembers)
-        {
-            clusterMember.isLeader(clusterMember.id() == leaderMember.id());
-        }
-
-        ingressEndpoints = ClusterMember.ingressEndpoints(clusterMembers);
+        prepareSessionsForNewTerm(isStartup);
     }
 
     void liveLogDestination(final String liveLogDestination)
@@ -1359,17 +1326,6 @@ class ConsensusModuleAgent implements Agent
             ctx.logStreamId(),
             isStartup,
             logChannel);
-
-        if (isStartup)
-        {
-            for (final ClusterSession session : sessionByIdMap.values())
-            {
-                if (session.state() == OPEN)
-                {
-                    session.closing(CloseReason.TIMEOUT);
-                }
-            }
-        }
 
         awaitServicesAt(logPosition);
     }
@@ -1693,6 +1649,53 @@ class ConsensusModuleAgent implements Agent
         }
 
         return false;
+    }
+
+    private void prepareSessionsForNewTerm(final boolean isStartup)
+    {
+        if (isStartup)
+        {
+            for (final ClusterSession session : sessionByIdMap.values())
+            {
+                if (session.state() == OPEN)
+                {
+                    session.closing(CloseReason.TIMEOUT);
+                }
+            }
+        }
+        else
+        {
+            for (final ClusterSession session : sessionByIdMap.values())
+            {
+                if (session.state() == OPEN)
+                {
+                    session.connect(aeron);
+                }
+            }
+
+            final long nowNs = clusterClock.timeNanos();
+            for (final ClusterSession session : sessionByIdMap.values())
+            {
+                if (session.state() == OPEN)
+                {
+                    session.timeOfLastActivityNs(nowNs);
+                    session.hasNewLeaderEventPending(true);
+                }
+            }
+        }
+    }
+
+    private void updateMemberDetails(final ClusterMember newLeader)
+    {
+        leaderMember = newLeader;
+        sessionProxy.leaderMemberId(leaderMember.id()).leadershipTermId(leadershipTermId);
+
+        for (final ClusterMember clusterMember : clusterMembers)
+        {
+            clusterMember.isLeader(clusterMember.id() == leaderMember.id());
+        }
+
+        ingressEndpoints = ClusterMember.ingressEndpoints(clusterMembers);
     }
 
     private int slowTickWork(final long nowMs, final long nowNs)

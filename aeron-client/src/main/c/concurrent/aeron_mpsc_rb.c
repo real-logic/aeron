@@ -129,8 +129,8 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
         AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
 
-        record_header->msg_type_id = msg_type_id;
         memcpy(ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index), msg, length);
+        record_header->msg_type_id = msg_type_id;
         AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
 
         return AERON_RB_SUCCESS;

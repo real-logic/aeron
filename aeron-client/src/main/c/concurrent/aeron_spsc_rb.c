@@ -99,6 +99,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
 
         next_header->length = 0;
         next_header->msg_type_id = 0;
+        AERON_PUT_ORDERED(record_header->length, -(int32_t)padding);
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
         AERON_PUT_ORDERED(record_header->length, (int32_t)padding);
         record_index = 0;
@@ -130,6 +131,10 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     const int32_t record_index = aeron_spsc_rb_claim_capacity(ring_buffer, record_length);
     if (-1 != record_index)
     {
+        aeron_rb_record_descriptor_t *record_header =
+            (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+        AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
+
         size_t current_vector_offset = 0;
         for (int i = 0; i < iovcnt; i++)
         {
@@ -138,8 +143,6 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
             current_vector_offset += iov[i].iov_len;
         }
 
-        aeron_rb_record_descriptor_t *record_header =
-            (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
         record_header->msg_type_id = msg_type_id;
         AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
 
@@ -162,8 +165,8 @@ int32_t aeron_spsc_rb_try_claim(aeron_spsc_rb_t *ring_buffer, const int32_t msg_
     {
         aeron_rb_record_descriptor_t *record_header =
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
-        record_header->msg_type_id = msg_type_id;
         AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
+        record_header->msg_type_id = msg_type_id;
 
         return AERON_RB_MESSAGE_OFFSET(record_index);
     }

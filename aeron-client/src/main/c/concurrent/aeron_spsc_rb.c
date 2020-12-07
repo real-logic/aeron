@@ -84,7 +84,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
                 return -1;
             }
 
-            AERON_PUT_ORDERED(ring_buffer->descriptor->head_cache_position, head);
+            ring_buffer->descriptor->head_cache_position = head;
         }
 
         padding = to_buffer_end_length;

@@ -16,8 +16,9 @@
 
 set(CLIENT_LINK_LIB "aeron_client")
 set(CLIENT_WRAPPER_LINK_LIB "aeron_client_wrapper")
-set(C_CLIENT_LINK_LIB "aeron")
-if (LINK_SAMPLES_CLIENT_SHARED)
+set(C_CLIENT_LINK_LIB "aeron_static")
+if (LINK_SAMPLES_CLIENT_SHARED OR MSVC)
+    set(C_CLIENT_LINK_LIB "aeron")
     set(CLIENT_LINK_LIB "aeron_client_shared")
     add_definitions(-DCLIENT_SHARED)
 endif ()
@@ -160,6 +161,25 @@ add_dependencies(PingPong hdr_histogram)
 
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat LossStat DriverTool ExclusiveThroughput PingPong
+        TARGETS
+        AeronStat
+        BasicPublisher
+        TimeTests
+        BasicSubscriber
+        StreamingPublisher
+        RateSubscriber
+        Ping
+        Pong
+        Throughput
+        ErrorStat
+        LossStat
+        DriverTool
+        ExclusiveThroughput
+        PingPong
+        BasicPublisherW
+        BasicSubscriberW
+        PingW
+        PongW
+        RateSubscriberW
         DESTINATION bin)
 endif ()

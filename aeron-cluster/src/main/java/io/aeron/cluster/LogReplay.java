@@ -26,7 +26,6 @@ final class LogReplay
     private final long stopPosition;
     private final long leadershipTermId;
     private final int logSessionId;
-    private final int replayStreamId;
     private final AeronArchive archive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context ctx;
@@ -55,11 +54,10 @@ final class LogReplay
         this.logAdapter = logAdapter;
         this.consensusModuleAgent = logAdapter.consensusModuleAgent();
         this.ctx = ctx;
-        this.replayStreamId = ctx.replayStreamId();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        logSubscription = ctx.aeron().addSubscription(channelUri.toString(), replayStreamId);
+        logSubscription = ctx.aeron().addSubscription(channelUri.toString(), ctx.replayStreamId());
     }
 
     void close()
@@ -75,11 +73,12 @@ final class LogReplay
         if (Aeron.NULL_VALUE == replaySessionId)
         {
             final String channel = logSubscription.channel();
+            final int streamId = logSubscription.streamId();
             consensusModuleAgent.awaitServicesReadyForReplay(
-                channel, replayStreamId, logSessionId, leadershipTermId, startPosition, stopPosition);
+                channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition);
 
             final long length = stopPosition - startPosition;
-            replaySessionId = archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
+            replaySessionId = archive.startReplay(recordingId, startPosition, length, channel, streamId);
             workCount += 1;
         }
 

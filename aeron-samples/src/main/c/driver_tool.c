@@ -27,7 +27,6 @@
 #include "aeron_common.h"
 #include "concurrent/aeron_thread.h"
 #include "util/aeron_strutil.h"
-#include "util/aeron_error.h"
 
 
 typedef struct aeron_driver_tool_settings_stct
@@ -77,7 +76,7 @@ int main(int argc, char **argv)
 
             case 't':
             {
-                aeron_set_errno(0);
+                errno = 0;
                 char *endptr;
                 settings.timeout_ms = strtoll(optarg, &endptr, 10);
                 if (0 != errno || '\0' != endptr[0])

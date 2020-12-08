@@ -22,14 +22,7 @@ if (MSVC AND ${CMAKE_VERSION} VERSION_LESS "3.13.0")
     target_compile_definitions(aeron_client_test PUBLIC "MSVC_FILE_IS_LOWER_CASE")
 endif ()
 
-function(aeron_client_wrapper_test name file)
-    set(wrapper_name "${name}W")
-    add_executable(${wrapper_name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${wrapper_name} aeron_client_wrapper aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
-    add_dependencies(${wrapper_name} gmock)
-    add_test(NAME ${wrapper_name} COMMAND ${wrapper_name})
-
+function(aeron_client_native_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     target_link_libraries(${name} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
@@ -37,10 +30,34 @@ function(aeron_client_wrapper_test name file)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
+function(aeron_client_wrapper_test name file)
+    set(wrapper_name "${name}W")
+    add_executable(${wrapper_name} ${file} ${TEST_HEADERS})
+    target_link_libraries(${wrapper_name} aeron_client_wrapper aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
+    add_dependencies(${wrapper_name} gmock)
+    add_test(NAME ${wrapper_name} COMMAND ${wrapper_name})
+endfunction()
+
 aeron_client_wrapper_test(systemTest SystemTest.cpp)
+aeron_client_native_test(systemTest SystemTest.cpp)
+
 aeron_client_wrapper_test(pubSubTest PubSubTest.cpp)
+aeron_client_native_test(pubSubTest PubSubTest.cpp)
+
 aeron_client_wrapper_test(countersTest CountersTest.cpp)
+aeron_client_native_test(countersTest CountersTest.cpp)
+
 aeron_client_wrapper_test(imagePollTest ImageTest.cpp)
+aeron_client_native_test(imagePollTest ImageTest.cpp)
+
 aeron_client_wrapper_test(localAddresses LocalAddressesTest.cpp)
+aeron_client_native_test(localAddresses LocalAddressesTest.cpp)
+
 aeron_client_wrapper_test(multiDestinationCast MultiDestinationTest.cpp)
+aeron_client_native_test(multiDestinationCast MultiDestinationTest.cpp)
+
 aeron_client_wrapper_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
+aeron_client_native_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
+
+aeron_client_wrapper_test(exceptionsTest ExceptionsTest.cpp)

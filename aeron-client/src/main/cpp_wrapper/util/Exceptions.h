@@ -138,43 +138,39 @@ AERON_DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException, ExceptionCategory:
 AERON_DECLARE_SOURCED_EXCEPTION(ReentrantException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(UnsupportedOperationException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
-inline SourcedException mapErrnoToAeronException(
-    int error_code, const char *error_message, const std::string &function, const std::string &file, const int line)
-{
-    switch (error_code)
-    {
-        case EINVAL:
-            return IllegalArgumentException(error_message, function, file, line);
+#define AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW(code, message)                     \
+do                                                                                  \
+{                                                                                   \
+    switch (code)                                                                   \
+    {                                                                               \
+        case EINVAL:                                                                \
+            throw IllegalArgumentException(message, SOURCEINFO);                    \
+                                                                                    \
+        case EPERM:                                                                 \
+        case AERON_CLIENT_ERROR_BUFFER_FULL:                                        \
+            throw IllegalStateException(message, SOURCEINFO);                       \
+                                                                                    \
+        case EIO:                                                                   \
+        case ENOENT:                                                                \
+            throw IOException(message, SOURCEINFO);                                 \
+                                                                                    \
+        case AERON_CLIENT_ERROR_DRIVER_TIMEOUT:                                     \
+            throw DriverTimeoutException(message, SOURCEINFO);                      \
+                                                                                    \
+        case AERON_CLIENT_ERROR_CLIENT_TIMEOUT:                                     \
+            throw ClientTimeoutException(message, SOURCEINFO);                      \
+                                                                                    \
+        case AERON_CLIENT_ERROR_CONDUCTOR_SERVICE_TIMEOUT:                          \
+            throw ConductorServiceTimeoutException(message, SOURCEINFO);            \
+                                                                                    \
+        case ETIMEDOUT:                                                             \
+        default:                                                                    \
+            throw AeronException(message, SOURCEINFO);                              \
+    }                                                                               \
+}                                                                                   \
+while (0)                                                                           \
 
-        case EPERM:
-        case AERON_CLIENT_ERROR_BUFFER_FULL:
-            return IllegalStateException(error_message, function, file, line);
-
-        case EIO:
-        case ENOENT:
-            return IOException(error_message, function, file, line);
-
-        case AERON_CLIENT_ERROR_DRIVER_TIMEOUT:
-            return DriverTimeoutException(error_message, function, file, line);
-
-        case AERON_CLIENT_ERROR_CLIENT_TIMEOUT:
-            return ClientTimeoutException(error_message, function, file, line);
-
-        case AERON_CLIENT_ERROR_CONDUCTOR_SERVICE_TIMEOUT:
-            return ConductorServiceTimeoutException(error_message, function, file, line);
-
-        case ETIMEDOUT:
-        default:
-            return AeronException(error_message, function, file, line);
-    }
-}
-
-#define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW                            \
-do                                                                                \
-{                                                                                 \
-    throw mapErrnoToAeronException(aeron_errcode(), aeron_errmsg(), SOURCEINFO);  \
-}                                                                                 \
-while (0)                                                                         \
+#define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW(aeron_errcode(), aeron_errmsg())
 
 class RegistrationException : public SourcedException
 {

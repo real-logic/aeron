@@ -555,9 +555,15 @@ private:
 
     static void errorHandlerCallback(void *clientd, int errcode, const char *message)
     {
-        const SourcedException exception = mapErrnoToAeronException(errcode, message, SOURCEINFO);
-        exception_handler_t &handler = *reinterpret_cast<exception_handler_t *>(clientd);
-        handler(exception);
+        try
+        {
+            AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW(errcode, message);
+        }
+        catch (SourcedException &exception)
+        {
+            exception_handler_t &handler = *reinterpret_cast<exception_handler_t *>(clientd);
+            handler(exception);
+        }
     }
 
     static void newPublicationHandlerCallback(

@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2014-2020 Real Logic Limited.
  *
@@ -28,18 +27,13 @@ extern "C"
 
 using namespace aeron::util;
 using testing::MockFunction;
-using testing::_;
 
 class ExceptionsTest : public testing::Test
 {
 public:
-    ExceptionsTest()
-    {
-    }
+    ExceptionsTest() = default;
 
-    ~ExceptionsTest() override
-    {
-    }
+    ~ExceptionsTest() override = default;
 };
 
 TEST_F(ExceptionsTest, shouldThrowAppropriateType)

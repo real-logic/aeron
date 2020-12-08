@@ -89,26 +89,27 @@ TEST_F(FragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
     std::int32_t msgLength = 158;
     fillFrame(FrameDescriptor::UNFRAGMENTED, 0, msgLength, 0);
     bool called = false;
-    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-    {
-        called = true;
-        EXPECT_EQ(offset, DataFrameHeader::LENGTH);
-        EXPECT_EQ(length, msgLength);
-        EXPECT_EQ(header.sessionId(), SESSION_ID);
-        EXPECT_EQ(header.streamId(), STREAM_ID);
-        EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
-        EXPECT_EQ(header.termOffset(), 0);
-        EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
-        EXPECT_EQ(header.flags(), FrameDescriptor::UNFRAGMENTED);
-        EXPECT_EQ(
-            header.position(),
-            LogBufferDescriptor::computePosition(
-                ACTIVE_TERM_ID,
-                BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
-                POSITION_BITS_TO_SHIFT,
-                INITIAL_TERM_ID));
-        verifyPayload(buffer, offset, length);
-    };
+    auto handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            called = true;
+            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(length, msgLength);
+            EXPECT_EQ(header.sessionId(), SESSION_ID);
+            EXPECT_EQ(header.streamId(), STREAM_ID);
+            EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
+            EXPECT_EQ(header.termOffset(), 0);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
+            EXPECT_EQ(header.flags(), FrameDescriptor::UNFRAGMENTED);
+            EXPECT_EQ(
+                header.position(),
+                LogBufferDescriptor::computePosition(
+                    ACTIVE_TERM_ID,
+                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    POSITION_BITS_TO_SHIFT,
+                    INITIAL_TERM_ID));
+            verifyPayload(buffer, offset, length);
+        };
 
     FragmentAssembler adapter(handler);
     adapter.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, msgLength, m_header);
@@ -119,27 +120,28 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-    {
-        called = true;
-        EXPECT_EQ(offset, DataFrameHeader::LENGTH);
-        EXPECT_EQ(length, msgLength * 2);
-        EXPECT_EQ(header.sessionId(), SESSION_ID);
-        EXPECT_EQ(header.streamId(), STREAM_ID);
-        EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
-        EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
-        EXPECT_EQ(header.termOffset(), MTU_LENGTH);
-        EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
-        EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
-        EXPECT_EQ(
-            header.position(),
-            LogBufferDescriptor::computePosition(
-                ACTIVE_TERM_ID,
-                BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
-                POSITION_BITS_TO_SHIFT,
-                INITIAL_TERM_ID));
-        verifyPayload(buffer, offset, length);
-    };
+    auto handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            called = true;
+            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(length, msgLength * 2);
+            EXPECT_EQ(header.sessionId(), SESSION_ID);
+            EXPECT_EQ(header.streamId(), STREAM_ID);
+            EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
+            EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
+            EXPECT_EQ(header.termOffset(), MTU_LENGTH);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
+            EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
+            EXPECT_EQ(
+                header.position(),
+                LogBufferDescriptor::computePosition(
+                    ACTIVE_TERM_ID,
+                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    POSITION_BITS_TO_SHIFT,
+                    INITIAL_TERM_ID));
+            verifyPayload(buffer, offset, length);
+        };
 
     FragmentAssembler adapter(handler);
 
@@ -158,27 +160,28 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-    {
-        called = true;
-        EXPECT_EQ(offset, DataFrameHeader::LENGTH);
-        EXPECT_EQ(length, msgLength * 3);
-        EXPECT_EQ(header.sessionId(), SESSION_ID);
-        EXPECT_EQ(header.streamId(), STREAM_ID);
-        EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
-        EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
-        EXPECT_EQ(header.termOffset(), MTU_LENGTH * 2);
-        EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
-        EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
-        EXPECT_EQ(
-            header.position(),
-            LogBufferDescriptor::computePosition(
-                ACTIVE_TERM_ID,
-                BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
-                POSITION_BITS_TO_SHIFT,
-                INITIAL_TERM_ID));
-        verifyPayload(buffer, offset, length);
-    };
+    auto handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            called = true;
+            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(length, msgLength * 3);
+            EXPECT_EQ(header.sessionId(), SESSION_ID);
+            EXPECT_EQ(header.streamId(), STREAM_ID);
+            EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
+            EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
+            EXPECT_EQ(header.termOffset(), MTU_LENGTH * 2);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
+            EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
+            EXPECT_EQ(
+                header.position(),
+                LogBufferDescriptor::computePosition(
+                    ACTIVE_TERM_ID,
+                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    POSITION_BITS_TO_SHIFT,
+                    INITIAL_TERM_ID));
+            verifyPayload(buffer, offset, length);
+        };
 
     FragmentAssembler adapter(handler);
 
@@ -202,10 +205,11 @@ TEST_F(FragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-    {
-        called = true;
-    };
+    auto handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            called = true;
+        };
 
     FragmentAssembler adapter(handler);
 
@@ -219,10 +223,11 @@ TEST_F(FragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
-    auto handler = [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-    {
-        called = true;
-    };
+    auto handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            called = true;
+        };
 
     FragmentAssembler adapter(handler);
 

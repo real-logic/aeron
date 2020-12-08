@@ -117,10 +117,7 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
             POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
 
             on_reserved_value_supplier_t reservedValueSupplier =
-                [=](
-                    AtomicBuffer &termBuffer,
-                    util::index_t termOffset,
-                    util::index_t length)
+                [=](AtomicBuffer &termBuffer, util::index_t termOffset, util::index_t length)
                 {
                     return reservedValue;
                 };
@@ -158,7 +155,6 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveSubscriptionCallbacks)
     ChannelUriStringBuilder uriBuilder;
     const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
     std::int32_t imageUnavailable = 0;
-
     Context ctx;
 
     MockFunction<void(Image &image)> mockOnAvailableImage;
@@ -283,8 +279,7 @@ TEST_P(PubSubTest, shouldBlockPollSubscription)
         std::int64_t bytesConsumed = 0;
         POLL_FOR(pub->position() <= (
             bytesConsumed += sub->blockPoll(
-                [&](
-                    concurrent::AtomicBuffer &buffer,
+                [&](concurrent::AtomicBuffer &buffer,
                     util::index_t offset,
                     util::index_t length,
                     std::int32_t sessionId,
@@ -380,7 +375,7 @@ TEST_P(PubSubTest, shouldExclusivePublicationTryClaimAndControlledPollSubscripti
                 {
                     seen = true;
                     return message == buffer.getString(offset) ?
-                        ControlledPollAction::COMMIT : ControlledPollAction::ABORT;
+                    ControlledPollAction::COMMIT : ControlledPollAction::ABORT;
                 },
                 1),
             invoker);

@@ -54,7 +54,7 @@ TEST_F(SystemTest, shouldReportClosedIfTimedOut)
     Context ctx;
     ctx.useConductorAgentInvoker(true);
     ctx.errorHandler(
-        [](const std::exception e)
+        [](const std::exception &ignored)
         {
             // Deliberately ignored.
         });

@@ -81,7 +81,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     std::uint8_t key[8];
 
     on_available_counter_t staticAvailableHandler =
-        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        [&](CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             if (counterTypeId == typeId(countersReader, counterId))
             {
@@ -90,7 +90,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
         };
 
     on_available_counter_t staticUnavailableHandler =
-        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        [&](CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             if (counterTypeId == typeId(countersReader, counterId))
             {
@@ -99,7 +99,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
         };
 
     on_available_counter_t dynamicAvailableHandler =
-        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        [&](CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             if (counterTypeId == typeId(countersReader, counterId))
             {
@@ -108,7 +108,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
         };
 
     on_available_counter_t dynamicUnavailableHandler =
-        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        [&](CountersReader &countersReader, std::int64_t registrationId, std::int32_t counterId)
         {
             if (counterTypeId == typeId(countersReader, counterId))
             {
@@ -121,7 +121,7 @@ TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
     ctx.unavailableCounterHandler(staticUnavailableHandler);
     ctx.useConductorAgentInvoker(true);
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
-    AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
     invoker.start();
 
     std::int64_t availableRegId = aeron->addAvailableCounterHandler(dynamicAvailableHandler);
@@ -166,14 +166,15 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
-    auto handler = [&]()
-    {
-        closeCount1++;
-    };
+    auto handler =
+        [&]()
+        {
+            closeCount1++;
+        };
 
     {
         std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
-        AgentInvoker<ClientConductor>& invoker = aeron->conductorAgentInvoker();
+        AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
         invoker.start();
 
         aeron->addCloseClientHandler(handler);

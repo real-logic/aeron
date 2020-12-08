@@ -114,7 +114,6 @@ TEST_F(LocalAddressesTest, shouldGetLocalAddressesForIpc)
     invoker.invoke();
 }
 
-
 TEST_F(LocalAddressesTest, shouldGetLocalAddressesForMds)
 {
     std::int32_t streamId = 10001;

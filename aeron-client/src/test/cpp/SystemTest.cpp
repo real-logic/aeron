@@ -189,7 +189,6 @@ TEST_F(SystemTest, shouldNotSegfaultWhenRemovedByReference)
     aeron->removeUnavailableCounterHandler(dynamicUnavailableHandler);
 }
 
-
 TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 {
     int closeCount1 = 0;

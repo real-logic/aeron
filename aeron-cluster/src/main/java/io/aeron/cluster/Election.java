@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
@@ -697,7 +698,7 @@ class Election
     {
         if (null == logSubscription)
         {
-            createFollowerSubscription();
+            subscribeAsFollower();
 
             final String replayDestination = "aeron:udp?endpoint=" + thisMember.catchupEndpoint();
             logSubscription.asyncAddDestination(replayDestination);
@@ -748,7 +749,7 @@ class Election
     {
         if (null == logSubscription)
         {
-            createFollowerSubscription();
+            subscribeAsFollower();
         }
 
         if (null == liveLogDestination)
@@ -855,7 +856,7 @@ class Election
         liveLogDestination = dstUri;
     }
 
-    private void createFollowerSubscription()
+    private void subscribeAsFollower()
     {
         final String tagsValue = ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId();
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
@@ -869,7 +870,9 @@ class Election
 
         final int streamId = ctx.logStreamId();
         final String logChannel = channelUri.toString();
-        logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
+
+        logSubscription = ctx.aeron().addSubscription(logChannel, ctx.logStreamId());
+        consensusModuleAgent.startLogRecording(logChannel, SourceLocation.REMOTE);
         consensusModuleAgent.awaitServicesReady(
             logChannel, streamId, logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isLeaderStartup);
     }

@@ -1295,14 +1295,18 @@ class ConsensusModuleAgent implements Agent
         return null != replayLogDestination;
     }
 
-    Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)
+    void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
-        logAdapter.disconnect(ctx.countedErrorHandler());
-
-        final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
-        startLogRecording(logChannel, SourceLocation.REMOTE);
-
-        return subscription;
+        final long logRecordingId = recordingLog.findLastTermRecordingId();
+        final int streamId = ctx.logStreamId();
+        if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
+        {
+            logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
+        }
+        else
+        {
+            logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
+        }
     }
 
     void awaitFollowerLogImage(final Subscription subscription, final int logSessionId)
@@ -2735,20 +2739,6 @@ class ConsensusModuleAgent implements Agent
         }
 
         return publication;
-    }
-
-    private void startLogRecording(final String channel, final SourceLocation sourceLocation)
-    {
-        final long logRecordingId = recordingLog.findLastTermRecordingId();
-        final int streamId = ctx.logStreamId();
-        if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
-        {
-            logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
-        }
-        else
-        {
-            logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
-        }
     }
 
     private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)

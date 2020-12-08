@@ -41,6 +41,7 @@ public class ElectionTest
     private static final int LOG_SESSION_ID = 777;
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
+    private final Subscription subscription = mock(Subscription.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
     private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
     private final ConsensusPublisher consensusPublisher = mock(ConsensusPublisher.class);
@@ -58,6 +59,7 @@ public class ElectionTest
     public void before()
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
+        when(aeron.addSubscription(anyString(), anyInt())).thenReturn(subscription);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
         when(consensusModuleAgent.addNewLogPublication()).thenReturn(LOG_SESSION_ID);
         when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
@@ -222,8 +224,6 @@ public class ElectionTest
             leadershipTermId, logPosition, candidateTermId, logPosition, t2, candidateId, logSessionId, false);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
 
-        when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
-            .thenReturn(mock(Subscription.class));
         final long t3 = 3;
         election.doWork(t3);
         election.doWork(t3);
@@ -391,8 +391,6 @@ public class ElectionTest
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
-
-        when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(any())).thenReturn(mock(Subscription.class));
 
         final Election election = newElection(
             nodeIsStart, leadershipTermId, logPosition, clusterMembers, followerMember);

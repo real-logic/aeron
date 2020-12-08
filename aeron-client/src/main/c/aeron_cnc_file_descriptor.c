@@ -48,7 +48,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
     }
 
     char filename[AERON_MAX_PATH];
-    if (AERON_MAX_PATH <= aeron_cnc_filename(dir, filename, AERON_MAX_PATH))
+    if (AERON_MAX_PATH <= aeron_cnc_resolve_filename(dir, filename, AERON_MAX_PATH))
     {
         aeron_set_err(EINVAL, "CNC file path exceeds buffer sizes: %d, %s", AERON_MAX_PATH, filename);
     }
@@ -102,7 +102,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
     return AERON_CNC_LOAD_SUCCESS;
 }
 
-int aeron_cnc_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
+int aeron_cnc_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
 {
 #if defined(_MSC_VER)
     int result = snprintf(filename_buffer, filename_buffer_length, "%s\\" AERON_CNC_FILE, directory);

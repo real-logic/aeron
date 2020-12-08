@@ -25,9 +25,7 @@
 
 #include "aeronc.h"
 #include "aeron_common.h"
-#include "aeron_cnc_file_descriptor.h"
 #include "concurrent/aeron_thread.h"
-#include "concurrent/aeron_mpsc_rb.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_error.h"
 
@@ -108,40 +106,20 @@ int main(int argc, char **argv)
         }
     }
 
-    aeron_cnc_metadata_t *cnc_metadata;
-    aeron_mapped_file_t cnc_file = { 0 };
-    const int64_t deadline_ms = aeron_epoch_clock() + settings.timeout_ms;
+    aeron_cnc_t *aeron_cnc;
+    aeron_cnc_constants_t cnc_constants;
 
-    do
+    if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {
-        aeron_cnc_load_result_t result = aeron_cnc_map_file_and_load_metadata(
-            settings.base_path, &cnc_file, &cnc_metadata);
-
-        if (AERON_CNC_LOAD_SUCCESS == result)
-        {
-            break;
-        }
-        else if (AERON_CNC_LOAD_FAILED == result)
-        {
-            print_error_and_usage(aeron_errmsg());
-            return EXIT_FAILURE;
-        }
-        else
-        {
-            aeron_micro_sleep(16 * 1000);
-        }
-
-        if (deadline_ms <= aeron_epoch_clock())
-        {
-            print_error_and_usage("Timed out trying to get driver's CnC metadata");
-            return EXIT_FAILURE;
-        }
+        print_error_and_usage(aeron_errmsg());
+        return EXIT_FAILURE;
     }
-    while (true);
+
+    aeron_cnc_constants(aeron_cnc, &cnc_constants);
 
     if (settings.pid_only)
     {
-        printf("%" PRId64 "\n", cnc_metadata->pid);
+        printf("%" PRId64 "\n", cnc_constants.pid);
     }
     else if (settings.terminate_driver)
     {
@@ -149,26 +127,19 @@ int main(int argc, char **argv)
     }
     else
     {
-        char cnc_filename[AERON_MAX_PATH];
+        const char *cnc_filename = aeron_cnc_filename(aeron_cnc);
+        int64_t now_ms = aeron_epoch_clock();
+        const int64_t heartbeat_ms = aeron_cnc_to_driver_heartbeat(aeron_cnc);
+
         char now_timestamp_buffer[AERON_MAX_PATH];
         char start_timestamp_buffer[AERON_MAX_PATH];
         char heartbeat_timestamp_buffer[AERON_MAX_PATH];
-
-        aeron_cnc_filename(settings.base_path, cnc_filename, AERON_MAX_PATH);
-
-        int64_t now_ms = aeron_epoch_clock();
-
-        uint8_t *to_driver_buffer = aeron_cnc_to_driver_buffer(cnc_metadata);
-        aeron_mpsc_rb_t to_driver_rb = { 0 };
-        aeron_mpsc_rb_init(&to_driver_rb, to_driver_buffer, cnc_metadata->to_driver_buffer_length);
-        const int64_t heartbeat_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&to_driver_rb);
-
         aeron_format_date(now_timestamp_buffer, sizeof(now_timestamp_buffer), now_ms);
-        aeron_format_date(start_timestamp_buffer, sizeof(start_timestamp_buffer), cnc_metadata->start_timestamp);
+        aeron_format_date(start_timestamp_buffer, sizeof(start_timestamp_buffer), cnc_constants.start_timestamp);
         aeron_format_date(heartbeat_timestamp_buffer, sizeof(heartbeat_timestamp_buffer), heartbeat_ms);
 
         fprintf(stdout, "Command 'n Control cnc_file: %s\n", cnc_filename);
-        fprintf(stdout, "Version: %" PRId32 ", PID: %" PRId64 "\n", cnc_metadata->cnc_version, cnc_metadata->pid);
+        fprintf(stdout, "Version: %" PRId32 ", PID: %" PRId64 "\n", cnc_constants.cnc_version, cnc_constants.pid);
         fprintf(
             stdout,
             "%s (start: %s, activity: %s)\n",
@@ -177,7 +148,7 @@ int main(int argc, char **argv)
             heartbeat_timestamp_buffer);
     }
 
-    aeron_unmap(&cnc_file);
+    aeron_cnc_close(aeron_cnc);
 
     return EXIT_SUCCESS;
 }

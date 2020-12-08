@@ -2312,6 +2312,45 @@ int64_t aeron_async_destination_get_registration_id(aeron_async_destination_t *a
  */
 int aeron_context_request_driver_termination(const char *directory, const uint8_t *token_buffer, size_t token_length);
 
+typedef struct aeron_cnc_stct aeron_cnc_t;
+
+#pragma pack(push)
+#pragma pack(4)
+typedef struct aeron_cnc_constants_stct
+{
+    int32_t cnc_version;
+    int32_t to_driver_buffer_length;
+    int32_t to_clients_buffer_length;
+    int32_t counter_metadata_buffer_length;
+    int32_t counter_values_buffer_length;
+    int32_t error_log_buffer_length;
+    int64_t client_liveness_timeout;
+    int64_t start_timestamp;
+    int64_t pid;
+}
+aeron_cnc_constants_t;
+#pragma pack(pop)
+
+/**
+ * Initialise an aeron_cnc, which gives user level access to the command and control file used to communicate
+ * with the media driver. Will wait until the media driver has loaded and the cnc file is created, up to timeout_ms.
+ * Use a value of 0 for a non-blocking initialisation.
+ *
+ * @param aeron_cnc to hold the loaded aeron_cnc
+ * @param base_path media driver's base path
+ * @param timeout_ms Number of milliseconds to wait before timing out.
+ * @return 0 on success, -1 on failure.
+ */
+int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeout_ms);
+
+int aeron_cnc_constants(aeron_cnc_t *aeron_cnc, aeron_cnc_constants_t *constants);
+
+const char *aeron_cnc_filename(aeron_cnc_t *aeron_cnc);
+
+int64_t aeron_cnc_to_driver_heartbeat(aeron_cnc_t *aeron_cnc);
+
+void aeron_cnc_close(aeron_cnc_t *aeron_cnc);
+
 #ifdef __cplusplus
 }
 #endif

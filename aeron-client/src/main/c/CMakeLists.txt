@@ -77,6 +77,7 @@ set(SOURCE
     aeron_alloc.c
     aeron_client.c
     aeron_client_conductor.c
+    aeron_cnc.c
     aeron_cnc_file_descriptor.c
     aeron_context.c
     aeron_counter.c
@@ -145,6 +146,7 @@ set(HEADERS
     aeron_alloc.h
     aeron_client.h
     aeron_client_conductor.h
+    aeron_cnc.h
     aeron_cnc_file_descriptor.h
     aeron_common.h
     aeron_context.h

@@ -21,6 +21,8 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
+import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -966,7 +968,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         try
         {
-            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS);
+            if (!ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS))
+            {
+                ctx.countedErrorHandler().onError(
+                    new TimeoutException("awaiting abort latch", AeronException.Category.WARN));
+            }
         }
         catch (final InterruptedException ignore)
         {

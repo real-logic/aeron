@@ -2349,6 +2349,20 @@ const char *aeron_cnc_filename(aeron_cnc_t *aeron_cnc);
 
 int64_t aeron_cnc_to_driver_heartbeat(aeron_cnc_t *aeron_cnc);
 
+typedef void (*aeron_error_log_reader_func_t)(
+    int32_t observation_count,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    const char *error,
+    size_t error_length,
+    void *clientd);
+
+size_t aeron_cnc_error_log_read(
+    aeron_cnc_t *aeron_cnc,
+    aeron_error_log_reader_func_t callback,
+    void *clientd,
+    int64_t since_timestamp);
+
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc);
 
 #ifdef __cplusplus

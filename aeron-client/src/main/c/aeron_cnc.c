@@ -18,6 +18,7 @@
 
 #include "aeron_cnc.h"
 #include "concurrent/aeron_thread.h"
+#include "concurrent/aeron_distinct_error_log.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 
@@ -98,6 +99,19 @@ int64_t aeron_cnc_to_driver_heartbeat(aeron_cnc_t *aeron_cnc)
 
     return aeron_mpsc_rb_consumer_heartbeat_time_value(&to_driver_rb);
 }
+
+size_t aeron_cnc_error_log_read(
+    aeron_cnc_t *aeron_cnc,
+    aeron_error_log_reader_func_t callback,
+    void *clientd,
+    int64_t since_timestamp)
+{
+    uint8_t *error_buffer = aeron_cnc_error_log_buffer(aeron_cnc->metadata);
+
+    return aeron_error_log_read(
+        error_buffer, aeron_cnc->metadata->error_log_buffer_length, callback, NULL, 0);
+}
+
 
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc)
 {

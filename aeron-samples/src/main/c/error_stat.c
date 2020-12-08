@@ -119,45 +119,19 @@ int main(int argc, char **argv)
         }
     }
 
-    aeron_cnc_metadata_t *cnc_metadata;
-    aeron_mapped_file_t cnc_file = { 0 };
-    const int64_t deadline_ms = aeron_epoch_clock() + settings.timeout_ms;
+    aeron_cnc_t *aeron_cnc;
 
-    do
+    if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {
-        aeron_cnc_load_result_t result = aeron_cnc_map_file_and_load_metadata(
-            settings.base_path, &cnc_file, &cnc_metadata);
-
-        if (AERON_CNC_LOAD_SUCCESS == result)
-        {
-            break;
-        }
-        else if (AERON_CNC_LOAD_FAILED == result)
-        {
-            print_error_and_usage(aeron_errmsg());
-            return EXIT_FAILURE;
-        }
-        else
-        {
-            aeron_micro_sleep(16 * 1000);
-        }
-
-        if (deadline_ms <= aeron_epoch_clock())
-        {
-            print_error_and_usage("Timed out trying to get driver's CnC metadata");
-            return EXIT_FAILURE;
-        }
+        print_error_and_usage(aeron_errmsg());
+        return EXIT_FAILURE;
     }
-    while (true);
 
-    uint8_t *error_buffer = aeron_cnc_error_log_buffer(cnc_metadata);
-
-    size_t count = aeron_error_log_read(
-        error_buffer, cnc_metadata->error_log_buffer_length, aeron_error_stat_on_observation, NULL, 0);
+    size_t count = aeron_cnc_error_log_read(aeron_cnc, aeron_error_stat_on_observation, NULL, 0);
 
     fprintf(stdout, "\n%" PRIu64 " distinct errors observed.\n", (uint64_t)count);
 
-    aeron_unmap(&cnc_file);
+    aeron_cnc_close(aeron_cnc);
 
     return 0;
 }

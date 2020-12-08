@@ -21,16 +21,18 @@ import org.agrona.CloseHelper;
 
 final class LogReplay
 {
+    private final long recordingId;
     private final long startPosition;
     private final long stopPosition;
     private final long leadershipTermId;
     private final int logSessionId;
+    private final AeronArchive archive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context ctx;
     private final LogAdapter logAdapter;
     private final Subscription logSubscription;
 
-    private boolean awaitServices = true;
+    private boolean isReplayStart = false;
     private boolean isDone = false;
 
     LogReplay(
@@ -43,6 +45,8 @@ final class LogReplay
         final LogAdapter logAdapter,
         final ConsensusModule.Context ctx)
     {
+        this.archive = archive;
+        this.recordingId = recordingId;
         this.startPosition = startPosition;
         this.stopPosition = stopPosition;
         this.leadershipTermId = leadershipTermId;
@@ -53,14 +57,7 @@ final class LogReplay
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        final String channel = channelUri.toString();
-        final int streamId = ctx.replayStreamId();
-        logSubscription = ctx.aeron().addSubscription(channel, streamId);
-
-        final long length = stopPosition - startPosition;
-        final long correlationId = ctx.aeron().nextCorrelationId();
-        archive.archiveProxy().replay(
-            recordingId, startPosition, length, channel, streamId, correlationId, archive.controlSessionId());
+        logSubscription = ctx.aeron().addSubscription(channelUri.toString(), ctx.replayStreamId());
     }
 
     void close()
@@ -73,14 +70,19 @@ final class LogReplay
     {
         int workCount = 0;
 
-        if (awaitServices)
+        if (!isReplayStart)
         {
             final String channel = logSubscription.channel();
             final int streamId = logSubscription.streamId();
             consensusModuleAgent.awaitServicesReady(
                 channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition, true);
 
-            awaitServices = false;
+            final long length = stopPosition - startPosition;
+            final long correlationId = ctx.aeron().nextCorrelationId();
+            archive.archiveProxy().replay(
+                recordingId, startPosition, length, channel, streamId, correlationId, archive.controlSessionId());
+
+            isReplayStart = true;
             workCount += 1;
         }
 

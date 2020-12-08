@@ -412,7 +412,6 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
     }
 
     char filename[AERON_MAX_PATH];
-
     snprintf(filename, sizeof(filename) - 1, "%s%c%s", directory, AERON_FILE_SEP, AERON_CNC_FILE);
 
     int64_t file_length_result = aeron_file_length(filename);

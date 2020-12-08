@@ -39,72 +39,47 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
     long long start_ms = context->epoch_clock();
     long long deadline_ms = start_ms + (long long)context->driver_timeout_ms;
     char filename[AERON_MAX_PATH];
-
-#if defined(_MSC_VER)
-    snprintf(filename, sizeof(filename) - 1, "%s\\" AERON_CNC_FILE, context->aeron_dir);
-#else
-    snprintf(filename, sizeof(filename) - 1, "%s/" AERON_CNC_FILE, context->aeron_dir);
-#endif
+    aeron_cnc_filename(context->aeron_dir, filename, AERON_MAX_PATH);
 
     while (true)
     {
-        while (aeron_file_length(filename) <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)
+        aeron_cnc_metadata_t *metadata;
+        aeron_cnc_load_result_t result = aeron_cnc_map_file_and_load_metadata(context->aeron_dir, cnc_mmap, &metadata);
+        switch (result)
         {
-            if (context->epoch_clock() > deadline_ms)
-            {
-                aeron_set_err(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "CnC file not created: %s", filename);
+            case AERON_CNC_LOAD_FAILED:
                 return -1;
-            }
 
-            aeron_micro_sleep(16 * 1000);
-        }
+            case AERON_CNC_LOAD_AWAIT_FILE:
+                if (context->epoch_clock() > deadline_ms)
+                {
+                    aeron_set_err(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "CnC file not created: %s", filename);
+                    return -1;
+                }
+                aeron_micro_sleep(16 * 1000);
+                continue;
 
-        if (aeron_map_existing_file(cnc_mmap, filename) < 0)
-        {
-            aeron_set_err(aeron_errcode(), "CnC file could not be mmapped: %s", aeron_errmsg());
-            return -1;
-        }
+            case AERON_CNC_LOAD_AWAIT_MMAP:
+                aeron_micro_sleep(1000);
+                continue;
 
-        if (cnc_mmap->length <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)
-        {
-            aeron_unmap(cnc_mmap);
-            aeron_micro_sleep(1000);
-            continue;
-        }
+            case AERON_CNC_LOAD_AWAIT_VERSION:
+                if (context->epoch_clock() > deadline_ms)
+                {
+                    aeron_set_err(AERON_CLIENT_ERROR_CLIENT_TIMEOUT, "CnC file is created but not initialised");
+                    aeron_unmap(cnc_mmap);
+                    return -1;
+                }
+                aeron_micro_sleep(1000);
+                continue;
 
-        aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
-        int32_t cnc_version;
+            case AERON_CNC_LOAD_AWAIT_CNC_DATA:
+                aeron_micro_sleep(1000);
+                continue;
 
-        while (0 == (cnc_version = aeron_cnc_version_volatile(metadata)))
-        {
-            if (context->epoch_clock() > deadline_ms)
-            {
-                aeron_set_err(AERON_CLIENT_ERROR_CLIENT_TIMEOUT, "CnC file is created but not initialised");
-                aeron_unmap(cnc_mmap);
-                return -1;
-            }
-
-            aeron_micro_sleep(1000);
-        }
-
-        if (aeron_semantic_version_major(AERON_CNC_VERSION) != aeron_semantic_version_major(cnc_version))
-        {
-            aeron_set_err(EINVAL, "CnC version not compatible: app=%d.%d.%d file=%d.%d.%d",
-                (int)aeron_semantic_version_major(AERON_CNC_VERSION),
-                (int)aeron_semantic_version_minor(AERON_CNC_VERSION),
-                (int)aeron_semantic_version_patch(AERON_CNC_VERSION),
-                (int)aeron_semantic_version_major(cnc_version),
-                (int)aeron_semantic_version_minor(cnc_version),
-                (int)aeron_semantic_version_patch(cnc_version));
-            aeron_unmap(cnc_mmap);
-            return -1;
-        }
-
-        if (!aeron_cnc_is_file_length_sufficient(cnc_mmap))
-        {
-            aeron_unmap(cnc_mmap);
-            aeron_micro_sleep(1000);
-            continue;
+            case AERON_CNC_LOAD_SUCCESS:
+            default:
+                break;
         }
 
         aeron_mpsc_rb_t rb;

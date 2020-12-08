@@ -14,6 +14,20 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#ifdef HAVE_BSDSTDLIB_H
+#include <bsd/stdlib.h>
+#endif
+#endif
+
+#include <stdio.h>
+#include <stdint.h>
+#include <errno.h>
+
+#include "aeron_common.h"
+#include "util/aeron_error.h"
 #include "aeron_cnc_file_descriptor.h"
 
 int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
@@ -21,6 +35,83 @@ int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
     int32_t cnc_version;
     AERON_GET_VOLATILE(cnc_version, metadata->cnc_version);
     return cnc_version;
+}
+
+aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
+    const char *dir,
+    aeron_mapped_file_t *cnc_mmap,
+    aeron_cnc_metadata_t **metadata)
+{
+    if (NULL == metadata)
+    {
+        aeron_set_err(EINVAL, "CnC metadata pointer must not be NULL");
+    }
+
+    char filename[AERON_MAX_PATH];
+    if (AERON_MAX_PATH <= aeron_cnc_filename(dir, filename, AERON_MAX_PATH))
+    {
+        aeron_set_err(EINVAL, "CNC file path exceeds buffer sizes: %d, %s", AERON_MAX_PATH, filename);
+    }
+
+    if (aeron_file_length(filename) <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)
+    {
+        return AERON_CNC_LOAD_AWAIT_FILE;
+    }
+
+    if (aeron_map_existing_file(cnc_mmap, filename) < 0)
+    {
+        aeron_set_err(aeron_errcode(), "CnC file could not be mmapped: %s", aeron_errmsg());
+        return AERON_CNC_LOAD_FAILED;
+    }
+
+    if (cnc_mmap->length <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)
+    {
+        aeron_unmap(cnc_mmap);
+        return AERON_CNC_LOAD_AWAIT_MMAP;
+    }
+
+    aeron_cnc_metadata_t *_metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
+    int32_t cnc_version;
+
+    if (0 == (cnc_version = aeron_cnc_version_volatile(_metadata)))
+    {
+        aeron_unmap(cnc_mmap);
+        return AERON_CNC_LOAD_AWAIT_VERSION;
+    }
+
+    if (aeron_semantic_version_major(AERON_CNC_VERSION) != aeron_semantic_version_major(cnc_version))
+    {
+        aeron_set_err(EINVAL, "CnC version not compatible: app=%d.%d.%d file=%d.%d.%d",
+            (int)aeron_semantic_version_major(AERON_CNC_VERSION),
+            (int)aeron_semantic_version_minor(AERON_CNC_VERSION),
+            (int)aeron_semantic_version_patch(AERON_CNC_VERSION),
+            (int)aeron_semantic_version_major(cnc_version),
+            (int)aeron_semantic_version_minor(cnc_version),
+            (int)aeron_semantic_version_patch(cnc_version));
+        aeron_unmap(cnc_mmap);
+        return AERON_CNC_LOAD_FAILED;
+    }
+
+    if (!aeron_cnc_is_file_length_sufficient(cnc_mmap))
+    {
+        aeron_unmap(cnc_mmap);
+        return AERON_CNC_LOAD_AWAIT_CNC_DATA;
+    }
+
+    *metadata = _metadata;
+    return AERON_CNC_LOAD_SUCCESS;
+}
+
+int aeron_cnc_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
+{
+#if defined(_MSC_VER)
+    int result = snprintf(filename_buffer, filename_buffer_length, "%s\\" AERON_CNC_FILE, directory);
+#else
+    int result = snprintf(filename_buffer, filename_buffer_length, "%s/" AERON_CNC_FILE, directory);
+#endif
+
+    filename_buffer[filename_buffer_length - 1] = '\0';
+    return result;
 }
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);

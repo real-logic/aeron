@@ -47,6 +47,7 @@ add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(ErrorStat ErrorStat.cpp ${HEADERS})
 add_executable(LossStat LossStat.cpp ${HEADERS})
 add_executable(DriverTool DriverTool.cpp ${HEADERS})
+#add_executable(DriverToolW DriverTool.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
@@ -132,9 +133,14 @@ target_link_libraries(LossStat
     ${CLIENT_LINK_LIB})
 
 target_include_directories(DriverTool
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(DriverTool
-    ${CLIENT_LINK_LIB})
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
+
+#target_include_directories(DriverToolW
+#    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+#target_link_libraries(DriverToolW
+#    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
 target_include_directories(ExclusiveThroughput
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})

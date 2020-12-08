@@ -100,6 +100,24 @@ inline bool aeron_cnc_is_file_length_sufficient(aeron_mapped_file_t *cnc_mmap)
 
 int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata);
 
+typedef enum aeron_cnc_load_result_stct
+{
+    AERON_CNC_LOAD_FAILED = -1,
+    AERON_CNC_LOAD_SUCCESS = 0,
+    AERON_CNC_LOAD_AWAIT_FILE = 1,
+    AERON_CNC_LOAD_AWAIT_MMAP = 2,
+    AERON_CNC_LOAD_AWAIT_VERSION = 3,
+    AERON_CNC_LOAD_AWAIT_CNC_DATA = 4,
+}
+aeron_cnc_load_result_t;
+
+aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
+    const char *dir,
+    aeron_mapped_file_t *mapped_file,
+    aeron_cnc_metadata_t **metadata);
+
+int aeron_cnc_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length);
+
 #define AERON_CNC_VERSION (aeron_semantic_version_compose(0, 2, 0))
 
 #endif //AERON_C_CNC_FILE_DESCRIPTOR_H

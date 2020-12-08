@@ -16,28 +16,42 @@
 
 #include <iostream>
 #include <thread>
-#include <Context.h>
 #include <cstdlib>
 #include <cinttypes>
 
+#include "Context.h"
+#include "util/Exceptions.h"
 #include "util/CommandOptionParser.h"
-#include "Aeron.h"
+
+#include "aeronc.h"
+extern "C"
+{
+#include "aeron_common.h"
+#include "aeron_cnc_file_descriptor.h"
+#include "concurrent/aeron_thread.h"
+#include "concurrent/aeron_mpsc_rb.h"
+}
 
 using namespace aeron;
 using namespace aeron::util;
-using namespace aeron::concurrent;
 using namespace std::chrono;
 
 static const char optHelp = 'h';
 static const char optDirectory = 'd';
 static const char optPidOnly = 'P';
+static const char optTimeout = 't';
 static const char optTerminateDriver = 'T';
 
 struct Settings
 {
-    std::string directory = Context::defaultAeronPath();
+    Settings() : directory(Context::defaultAeronPath()), pidOnly(false), terminateDriver(false)
+    {
+    }
+
+    std::string directory;
     bool pidOnly = false;
     bool terminateDriver = false;
+    long long timeoutMs = 10 * 1000;
 };
 
 Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
@@ -54,6 +68,7 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
     s.pidOnly = cp.getOption(optPidOnly).isPresent();
     s.terminateDriver = cp.getOption(optTerminateDriver).isPresent();
     s.directory = cp.getOption(optDirectory).getParam(0, s.directory);
+    s.timeoutMs = cp.getOption(optTimeout).getParamAsLong(0, 0, 60 * 1000, s.timeoutMs);
 
     return s;
 }
@@ -87,28 +102,41 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optPidOnly,         0, 0, "           Print PID only without anything else."));
     cp.addOption(CommandOption(optTerminateDriver, 0, 0, "           Request driver to terminate."));
     cp.addOption(CommandOption(optDirectory,       1, 1, "basePath   Base Path to shared memory. Default: " + Context::defaultAeronPath()));
+    cp.addOption(CommandOption(optTimeout,         1, 1, "timeout    Number of milliseconds to wait to see if the driver metadata is available.  Default 10,000"));
 
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
 
-        const std::string cncFilename = settings.directory + "/" + CncFileDescriptor::CNC_FILE;
-        MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(cncFilename.c_str());
-
-        const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
-
-        if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
+        aeron_cnc_metadata_t *aeronCncMetadata;
+        aeron_mapped_file_t cncFile = {};
+        std::int64_t deadlineMs = aeron_epoch_clock() + settings.timeoutMs;
+        do
         {
-            std::cerr << "CNC version not supported: "
-                      << " file=" << semanticVersionToString(cncVersion)
-                      << " app=" << semanticVersionToString(CncFileDescriptor::CNC_VERSION) << std::endl;
+            aeron_cnc_load_result_t result = aeron_cnc_map_file_and_load_metadata(
+                settings.directory.data(), &cncFile, &aeronCncMetadata);
 
-            return EXIT_FAILURE;
+            if (AERON_CNC_LOAD_FAILED == result)
+            {
+                AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+            }
+            else if (AERON_CNC_LOAD_SUCCESS == result)
+            {
+                break;
+            }
+            else
+            {
+                aeron_micro_sleep(16 * 1000);
+            }
+
+            if (deadlineMs <= aeron_epoch_clock())
+            {
+                throw TimeoutException("Timed out trying to get driver's CnC metadata", SOURCEINFO);
+            }
         }
+        while (true); // Timeout...
 
-        const std::int64_t pid = CncFileDescriptor::pid(cncFile);
-        AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));
-        ManyToOneRingBuffer ringBuffer(toDriverBuffer);
+        const std::int64_t pid = aeronCncMetadata->pid;
 
         if (settings.pidOnly)
         {
@@ -116,19 +144,30 @@ int main(int argc, char **argv)
         }
         else if (settings.terminateDriver)
         {
-            DriverProxy driverProxy(ringBuffer);
-
-            driverProxy.terminateDriver(nullptr, 0);
+            Context::requestDriverTermination(settings.directory, nullptr, 0);
         }
         else
         {
-            std::cout << "Command 'n Control file: " << cncFilename << std::endl;
-            std::cout << "Version: " << cncVersion << ", PID: " << pid << std::endl;
-            std::cout << formatDate("%H:%M:%S", currentTimeMillis());
-            std::cout << " (start: " << formatDate("%Y-%m-%d %H:%M:%S", CncFileDescriptor::startTimestamp(cncFile));
-            std::cout << ", activity: " << formatDate("%Y-%m-%d %H:%M:%S", ringBuffer.consumerHeartbeatTime());
+            char cncFilename[AERON_MAX_PATH];
+            aeron_cnc_filename(settings.directory.data(), cncFilename, AERON_MAX_PATH);
+
+            system_clock::time_point now = system_clock::now();
+            const milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
+
+            uint8_t *toDriverBuffer = aeron_cnc_to_driver_buffer(aeronCncMetadata);
+            aeron_mpsc_rb_t toDriverRingBuffer = {};
+            aeron_mpsc_rb_init(&toDriverRingBuffer, toDriverBuffer, aeronCncMetadata->to_driver_buffer_length);
+            const int64_t heartbeatTimestamp = aeron_mpsc_rb_consumer_heartbeat_time_value(&toDriverRingBuffer);
+
+            std::cout << "Command 'n Control cncFile: " << cncFilename << std::endl;
+            std::cout << "Version: " << aeronCncMetadata->cnc_version << ", PID: " << pid << std::endl;
+            std::cout << formatDate("%H:%M:%S", ms.count());
+            std::cout << " (start: " << formatDate("%Y-%m-%d %H:%M:%S", aeronCncMetadata->start_timestamp);
+            std::cout << ", activity: " << formatDate("%Y-%m-%d %H:%M:%S", heartbeatTimestamp);
             std::cout << ")" << std::endl;
         }
+
+        aeron_unmap(&cncFile);
     }
     catch (const CommandOptionException &e)
     {

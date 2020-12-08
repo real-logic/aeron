@@ -410,7 +410,8 @@ public class ElectionTest
         final long t3 = t2 + 1;
         election.doWork(t3);
 
-        verify(consensusModuleAgent).awaitServicesReady(any(), anyInt(), anyLong(), eq(leaderIsStart));
+        verify(consensusModuleAgent).awaitServicesReady(
+            anyString(), anyInt(), anyInt(), anyLong(), anyLong(), anyLong(), eq(leaderIsStart));
     }
 
     @Test

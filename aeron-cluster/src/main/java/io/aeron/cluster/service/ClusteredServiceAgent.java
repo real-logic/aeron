@@ -580,7 +580,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         if (newRole != role)
         {
             role = newRole;
-
             activeLifecycleCallbackName = "onRoleChange";
             try
             {
@@ -654,7 +653,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             memberId = activeLog.memberId;
             ctx.clusterMarkFile().memberId(memberId);
-            sessionMessageHeaderEncoder.leadershipTermId(activeLog.leadershipTermId);
             role(Role.get(roleCounter.get()));
 
             final long id = ackId++;

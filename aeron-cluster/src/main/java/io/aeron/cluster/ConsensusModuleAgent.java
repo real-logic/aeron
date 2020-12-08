@@ -1274,7 +1274,8 @@ class ConsensusModuleAgent implements Agent
         createAppendPosition(logSessionId);
 
         final String logChannel = channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel;
-        awaitServicesReady(logChannel, logSessionId, logPosition, isStartup);
+        awaitServicesReady(
+            logChannel, ctx.logStreamId(), logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isStartup);
         leadershipTermId(leadershipTermId);
         prepareSessionsForNewTerm(isStartup);
     }
@@ -1315,19 +1316,33 @@ class ConsensusModuleAgent implements Agent
     }
 
     void awaitServicesReady(
-        final String logChannel, final int logSessionId, final long logPosition, final boolean isStartup)
+        final String logChannel,
+        final int streamId,
+        final int logSessionId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long maxLogPosition,
+        final boolean isStartup)
     {
         serviceProxy.joinLog(
             leadershipTermId,
             logPosition,
-            Long.MAX_VALUE,
+            maxLogPosition,
             memberId,
             logSessionId,
-            ctx.logStreamId(),
+            streamId,
             isStartup,
             logChannel);
 
-        awaitServicesAt(logPosition);
+        expectedAckPosition = logPosition;
+
+        while (!ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
+        {
+            idle(consensusModuleAdapter.poll());
+        }
+
+        ServiceAck.removeHead(serviceAckQueues);
+        ++serviceAckId;
     }
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
@@ -1341,19 +1356,6 @@ class ConsensusModuleAgent implements Agent
             recoveryPlan.log.sessionId,
             logAdapter,
             ctx);
-    }
-
-    void awaitServicesReadyForReplay(
-        final String channel,
-        final int streamId,
-        final int logSessionId,
-        final long leadershipTermId,
-        final long logPosition,
-        final long maxLogPosition)
-    {
-        serviceProxy.joinLog(
-            leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, true, channel);
-        awaitServicesAt(logPosition);
     }
 
     int replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
@@ -2347,19 +2349,6 @@ class ConsensusModuleAgent implements Agent
         }
 
         return null;
-    }
-
-    private void awaitServicesAt(final long logPosition)
-    {
-        expectedAckPosition = logPosition;
-
-        while (!ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
-        {
-            idle(consensusModuleAdapter.poll());
-        }
-
-        ServiceAck.removeHead(serviceAckQueues);
-        ++serviceAckId;
     }
 
     private void captureServiceClientIds()

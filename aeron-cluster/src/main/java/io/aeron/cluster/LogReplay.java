@@ -74,8 +74,8 @@ final class LogReplay
         {
             final String channel = logSubscription.channel();
             final int streamId = logSubscription.streamId();
-            consensusModuleAgent.awaitServicesReadyForReplay(
-                channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition);
+            consensusModuleAgent.awaitServicesReady(
+                channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition, true);
 
             final long length = stopPosition - startPosition;
             replaySessionId = archive.startReplay(recordingId, startPosition, length, channel, streamId);

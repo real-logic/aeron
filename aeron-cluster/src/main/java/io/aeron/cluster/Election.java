@@ -867,9 +867,11 @@ class Election
         channelUri.put(CommonContext.TAGS_PARAM_NAME, tagsValue);
         channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
 
+        final int streamId = ctx.logStreamId();
         final String logChannel = channelUri.toString();
         logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannel);
-        consensusModuleAgent.awaitServicesReady(logChannel, logSessionId, logPosition, isLeaderStartup);
+        consensusModuleAgent.awaitServicesReady(
+            logChannel, streamId, logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isLeaderStartup);
     }
 
     private void state(final ElectionState newState, final long nowNs)

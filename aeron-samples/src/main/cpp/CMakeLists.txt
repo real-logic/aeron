@@ -45,8 +45,6 @@ add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(LossStat LossStat.cpp ${HEADERS})
-add_executable(ErrorStat error_stat.c ${HEADERS})
-add_executable(DriverTool driver_tool.c ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
@@ -121,26 +119,11 @@ target_include_directories(Throughput
 target_link_libraries(Throughput
     ${CLIENT_LINK_LIB})
 
-target_include_directories(ErrorStat
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH})
-target_link_libraries(ErrorStat
-    ${C_CLIENT_LINK_LIB})
 
 target_include_directories(LossStat
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(LossStat
     ${CLIENT_LINK_LIB})
-
-target_include_directories(DriverTool
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH})
-target_link_libraries(DriverTool
-    ${C_CLIENT_LINK_LIB})
-
-
-#target_include_directories(DriverToolW
-#    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
-#target_link_libraries(DriverToolW
-#    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
 target_include_directories(ExclusiveThroughput
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
@@ -177,9 +160,7 @@ if (AERON_INSTALL_TARGETS)
         Ping
         Pong
         Throughput
-        ErrorStat
         LossStat
-        DriverTool
         ExclusiveThroughput
         PingPong
         BasicPublisherW

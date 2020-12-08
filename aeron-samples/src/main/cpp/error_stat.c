@@ -28,24 +28,20 @@
 #include "aeron_cnc_file_descriptor.h"
 #include "concurrent/aeron_thread.h"
 #include "concurrent/aeron_mpsc_rb.h"
+#include "concurrent/aeron_distinct_error_log.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_error.h"
 
-
-typedef struct aeron_driver_tool_settings_stct
+typedef struct aeron_error_stat_setting_stct
 {
     const char *base_path;
-    bool pid_only;
-    bool terminate_driver;
-    long long timeout_ms;
+    int64_t timeout_ms;
 }
-aeron_driver_tool_settings_t;
+aeron_error_stat_setting_t;
 
 const char *usage()
 {
     return
-        "    -P            Print PID only without anything else.\n"
-        "    -T            Request driver to terminate.\n"
         "    -d basePath   Base Path to shared memory. Default: /dev/shm/aeron-mike\n"
         "    -h            Displays help information.\n"
         "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
@@ -56,20 +52,43 @@ void print_error_and_usage(const char *message)
     fprintf(stderr, "%s\n%s", message, usage());
 }
 
+void aeron_error_stat_on_observation(
+    int32_t observation_count,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    const char *error,
+    size_t error_length,
+    void *clientd)
+{
+    char first_timestamp[AERON_MAX_PATH];
+    char last_timestamp[AERON_MAX_PATH];
+
+    aeron_format_date(first_timestamp, sizeof(first_timestamp), first_observation_timestamp);
+    aeron_format_date(last_timestamp, sizeof(last_timestamp), last_observation_timestamp);
+
+    fprintf(
+        stdout,
+        "***\n%d observations from %s to %s for:\n %.*s\n",
+        observation_count,
+        first_timestamp,
+        last_timestamp,
+        (int)error_length,
+        error);
+}
+
+
 int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_driver_tool_settings_t settings = {
+    aeron_error_stat_setting_t settings = {
         .base_path = default_directory,
-        .pid_only = false,
-        .terminate_driver = false,
         .timeout_ms = 1000
     };
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "d:t:PTh")) != -1)
+    while ((opt = getopt(argc, argv, "d:t:h")) != -1)
     {
         switch (opt)
         {
@@ -89,14 +108,6 @@ int main(int argc, char **argv)
                 }
                 break;
             }
-
-            case 'P':
-                settings.pid_only = true;
-                break;
-
-            case 'T':
-                settings.terminate_driver = true;
-                break;
 
             case 'h':
                 print_error_and_usage(argv[0]);
@@ -139,45 +150,14 @@ int main(int argc, char **argv)
     }
     while (true);
 
-    if (settings.pid_only)
-    {
-        printf("%" PRId64 "\n", cnc_metadata->pid);
-    }
-    else if (settings.terminate_driver)
-    {
-        aeron_context_request_driver_termination(settings.base_path, NULL, 0);
-    }
-    else
-    {
-        char cnc_filename[AERON_MAX_PATH];
-        char now_timestamp_buffer[AERON_MAX_PATH];
-        char start_timestamp_buffer[AERON_MAX_PATH];
-        char heartbeat_timestamp_buffer[AERON_MAX_PATH];
+    uint8_t *error_buffer = aeron_cnc_error_log_buffer(cnc_metadata);
 
-        aeron_cnc_filename(settings.base_path, cnc_filename, AERON_MAX_PATH);
+    size_t count = aeron_error_log_read(
+        error_buffer, cnc_metadata->error_log_buffer_length, aeron_error_stat_on_observation, NULL, 0);
 
-        int64_t now_ms = aeron_epoch_clock();
-
-        uint8_t *to_driver_buffer = aeron_cnc_to_driver_buffer(cnc_metadata);
-        aeron_mpsc_rb_t to_driver_rb = { 0 };
-        aeron_mpsc_rb_init(&to_driver_rb, to_driver_buffer, cnc_metadata->to_driver_buffer_length);
-        const int64_t heartbeat_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&to_driver_rb);
-
-        aeron_format_date(now_timestamp_buffer, sizeof(now_timestamp_buffer), now_ms);
-        aeron_format_date(start_timestamp_buffer, sizeof(start_timestamp_buffer), cnc_metadata->start_timestamp);
-        aeron_format_date(heartbeat_timestamp_buffer, sizeof(heartbeat_timestamp_buffer), heartbeat_ms);
-
-        fprintf(stdout, "Command 'n Control cnc_file: %s\n", cnc_filename);
-        fprintf(stdout, "Version: %" PRId32 ", PID: %" PRId64 "\n", cnc_metadata->cnc_version, cnc_metadata->pid);
-        fprintf(
-            stdout,
-            "%s (start: %s, activity: %s)\n",
-            now_timestamp_buffer,
-            start_timestamp_buffer,
-            heartbeat_timestamp_buffer);
-    }
+    fprintf(stdout, "\n%" PRIu64 " distinct errors observed.\n", (uint64_t)count);
 
     aeron_unmap(&cnc_file);
 
-    return EXIT_SUCCESS;
+    return 0;
 }

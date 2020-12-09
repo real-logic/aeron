@@ -17,6 +17,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
+#if !defined(AERON_COMPILER_MSVC)
+#include <unistd.h>
+#endif
+
 #include "util/aeron_math.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"

@@ -16,6 +16,11 @@
 
 #include "util/aeron_platform.h"
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>

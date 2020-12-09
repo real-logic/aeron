@@ -314,7 +314,7 @@ project(':aeron-client') {
 
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -381,7 +381,7 @@ project(':aeron-driver') {
 
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -499,7 +499,7 @@ project(':aeron-archive') {
 
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -606,7 +606,7 @@ project(':aeron-cluster') {
 
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -689,7 +689,7 @@ project(':aeron-agent') {
         }
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -727,7 +727,7 @@ project(':aeron-samples') {
 
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -861,7 +861,7 @@ project(':aeron-all') {
         }
         repositories {
             maven {
-                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword

@@ -18,11 +18,25 @@
 #include <errno.h>
 
 #include "aeron_cnc.h"
+#include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
 #include "concurrent/aeron_distinct_error_log.h"
-#include "aeron_alloc.h"
+#include "concurrent/aeron_mpsc_rb.h"
+#include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_error.h"
+#include "util/aeron_fileutil.h"
 #include "reports/aeron_loss_reporter.h"
+#include "aeron_cnc_file_descriptor.h"
+
+typedef struct aeron_cnc_stct
+{
+    aeron_mapped_file_t cnc_mmap;
+    aeron_cnc_metadata_t *metadata;
+    aeron_counters_reader_t counters_reader;
+    char base_path[AERON_MAX_PATH];
+    char filename[AERON_MAX_PATH];
+}
+aeron_cnc_t;
 
 int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeout_ms)
 {

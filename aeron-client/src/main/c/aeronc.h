@@ -2343,10 +2343,29 @@ aeron_cnc_constants_t;
  */
 int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeout_ms);
 
+/**
+ * Fetch the sets of constant values associated with this command and control file.
+ *
+ * @param aeron_cnc to query
+ * @param constants user supplied structure to hold return values.
+ * @return 0 on success, -1 on failure.
+ */
 int aeron_cnc_constants(aeron_cnc_t *aeron_cnc, aeron_cnc_constants_t *constants);
 
+/**
+ * Get the current file name of the cnc file.
+ *
+ * @param aeron_cnc to query
+ * @return name of the cnc file
+ */
 const char *aeron_cnc_filename(aeron_cnc_t *aeron_cnc);
 
+/**
+ * Gets the timestamp of the last heartbeat sent to the media driver from any client.
+ *
+ * @param aeron_cnc to query
+ * @return last heartbeat timestamp in ms.
+ */
 int64_t aeron_cnc_to_driver_heartbeat(aeron_cnc_t *aeron_cnc);
 
 typedef void (*aeron_error_log_reader_func_t)(
@@ -2357,12 +2376,28 @@ typedef void (*aeron_error_log_reader_func_t)(
     size_t error_length,
     void *clientd);
 
+/**
+ * Reads the current error log for this driver.
+ *
+ * @param aeron_cnc to query
+ * @param callback called for every distinct error observation
+ * @param clientd client data to be passed to the callback
+ * @param since_timestamp only return errors after this timestamp (0 returns all)
+ * @return the number of distinct errors seen
+ */
 size_t aeron_cnc_error_log_read(
     aeron_cnc_t *aeron_cnc,
     aeron_error_log_reader_func_t callback,
     void *clientd,
     int64_t since_timestamp);
 
+/**
+ * Gets a counters reader for this command and control file.  This does not need to be closed manually, resources
+ * are tied to the instance of aeron_cnc.
+ *
+ * @param aeron_cnc to query
+ * @return pointer to a counters reader.
+ */
 aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc);
 
 typedef void (*aeron_loss_reporter_read_entry_func_t)(
@@ -2378,12 +2413,24 @@ typedef void (*aeron_loss_reporter_read_entry_func_t)(
     const char *source,
     int32_t source_length);
 
+/**
+ * Read all of the data loss observations from the report in the same media driver instances as the cnc file.
+ *
+ * @param aeron_cnc to query
+ * @param entry_func callback for each observation found
+ * @param clientd client data to be passed to the callback.
+ * @return -1 on failure, number of observations on success (could be 0).
+ */
 int aeron_cnc_loss_reporter_read(
     aeron_cnc_t *aeron_cnc,
     aeron_loss_reporter_read_entry_func_t entry_func,
     void *clientd);
 
-
+/**
+ * Closes the instance of the aeron cnc and frees its resources.
+ *
+ * @param aeron_cnc to close
+ */
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc);
 
 #ifdef __cplusplus

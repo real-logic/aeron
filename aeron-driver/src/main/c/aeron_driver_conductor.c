@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "util/aeron_platform.h"
+
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>

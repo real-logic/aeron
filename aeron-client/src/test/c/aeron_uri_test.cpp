@@ -299,7 +299,7 @@ TEST_P(UriPrintTest, shouldPrintWithNarrowTruncation)
     EXPECT_EQ(AERON_URI_PARSE(uri, &m_uri), 0);
     ASSERT_GE(aeron_uri_sprint(&m_uri, print_buffer, sizeof(print_buffer)), 5);
 
-    strncpy(temp_buffer, uri, sizeof(temp_buffer));
+    strncpy(temp_buffer, uri, sizeof(temp_buffer) - 1);
     temp_buffer[4] = '\0';
 
     EXPECT_STREQ(temp_buffer, print_buffer);
@@ -314,7 +314,7 @@ TEST_P(UriPrintTest, shouldPrintWithTruncation)
     EXPECT_EQ(AERON_URI_PARSE(uri, &m_uri), 0);
     ASSERT_GT(aeron_uri_sprint(&m_uri, print_buffer, sizeof(print_buffer)), 0);
 
-    strncpy(temp_buffer, uri, sizeof(temp_buffer));
+    strncpy(temp_buffer, uri, sizeof(temp_buffer) - 1);
     temp_buffer[15] = '\0';
 
     EXPECT_STREQ(temp_buffer, print_buffer);

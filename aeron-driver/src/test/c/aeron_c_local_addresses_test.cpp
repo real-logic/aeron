@@ -21,10 +21,11 @@
 
 #include "EmbeddedMediaDriver.h"
 
+#include "aeron_test_base.h"
+
 extern "C"
 {
 #include "concurrent/aeron_atomic.h"
-#include "aeronc.h"
 }
 
 #if defined(GTEST_USES_POSIX_RE)
@@ -44,12 +45,9 @@ extern "C"
 
 using namespace aeron;
 
-class CLocalAddressesTest : public testing::Test
+class CLocalAddressesTest : public CSystemTestBase, public testing::Test
 {
 public:
-    using poll_handler_t = std::function<void(const uint8_t *, size_t, aeron_header_t *)>;
-    using image_handler_t = std::function<void(aeron_subscription_t *, aeron_image_t *)>;
-
     CLocalAddressesTest()
     {
         for (int i = 0; i < NUM_BUFFERS; i++)
@@ -57,95 +55,6 @@ public:
             m_addrs[i].iov_base = m_buffers[i];
             m_addrs[i].iov_len = sizeof(m_buffers[i]);
         }
-
-        m_driver.start();
-    }
-
-    ~CLocalAddressesTest() override
-    {
-        if (m_aeron)
-        {
-            aeron_close(m_aeron);
-        }
-
-        if (m_context)
-        {
-            aeron_context_close(m_context);
-        }
-
-        m_driver.stop();
-    }
-
-    aeron_t *connect()
-    {
-        if (aeron_context_init(&m_context) < 0)
-        {
-            throw std::runtime_error(aeron_errmsg());
-        }
-
-        if (aeron_init(&m_aeron, m_context) < 0)
-        {
-            throw std::runtime_error(aeron_errmsg());
-        }
-
-        if (aeron_start(m_aeron) < 0)
-        {
-            throw std::runtime_error(aeron_errmsg());
-        }
-
-        return m_aeron;
-    }
-
-    static aeron_publication_t *awaitPublicationOrError(aeron_async_add_publication_t *async)
-    {
-        aeron_publication_t *publication = nullptr;
-
-        do
-        {
-            std::this_thread::yield();
-            if (aeron_async_add_publication_poll(&publication, async) < 0)
-            {
-                return nullptr;
-            }
-        }
-        while (!publication);
-
-        return publication;
-    }
-
-    static aeron_exclusive_publication_t *awaitExclusivePublicationOrError(
-        aeron_async_add_exclusive_publication_t *async)
-    {
-        aeron_exclusive_publication_t *publication = nullptr;
-
-        do
-        {
-            std::this_thread::yield();
-            if (aeron_async_add_exclusive_publication_poll(&publication, async) < 0)
-            {
-                return nullptr;
-            }
-        }
-        while (!publication);
-
-        return publication;
-    }
-
-    static aeron_subscription_t *awaitSubscriptionOrError(aeron_async_add_subscription_t *async)
-    {
-        aeron_subscription_t *subscription = nullptr;
-
-        do
-        {
-            std::this_thread::yield();
-            if (aeron_async_add_subscription_poll(&subscription, async) < 0)
-            {
-                return nullptr;
-            }
-        }
-        while (!subscription);
-
-        return subscription;
     }
 
     static int awaitSubscriptionDestinationOrError(aeron_async_destination_t *async)
@@ -162,56 +71,9 @@ public:
         while (true);
     }
 
-    static aeron_counter_t *awaitCounterOrError(aeron_async_add_counter_t *async)
-    {
-        aeron_counter_t *counter = nullptr;
-
-        do
-        {
-            std::this_thread::yield();
-            if (aeron_async_add_counter_poll(&counter, async) < 0)
-            {
-                return nullptr;
-            }
-        }
-        while (!counter);
-
-        return counter;
-    }
-
-    static void awaitConnected(aeron_subscription_t *subscription)
-    {
-        while (!aeron_subscription_is_connected(subscription))
-        {
-            std::this_thread::yield();
-        }
-    }
-
-    static void onUnavailableImage(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
-    {
-        auto test = reinterpret_cast<CLocalAddressesTest *>(clientd);
-
-        if (test->m_onUnavailableImage)
-        {
-            test->m_onUnavailableImage(subscription, image);
-        }
-    }
-
-    static void setFlagOnClose(void *clientd)
-    {
-        std::atomic<bool> *flag = static_cast<std::atomic<bool> *>(clientd);
-        flag->store(true);
-    }
-
 protected:
-    EmbeddedMediaDriver m_driver;
-    aeron_context_t *m_context = nullptr;
-    aeron_t *m_aeron = nullptr;
     uint8_t m_buffers[NUM_BUFFERS][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
     aeron_iovec_t m_addrs[NUM_BUFFERS];
-
-    poll_handler_t m_poll_handler = nullptr;
-    image_handler_t m_onUnavailableImage = nullptr;
 };
 
 TEST_F(CLocalAddressesTest, shouldGetAddressForPublication)

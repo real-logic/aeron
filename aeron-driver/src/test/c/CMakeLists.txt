@@ -23,7 +23,8 @@ set(TEST_HEADERS
     aeron_driver_conductor_test.h
     aeron_receiver_test.h
     EmbeddedMediaDriver.h
-    aeron_test_udp_bindings.h)
+    aeron_test_udp_bindings.h
+    aeron_test_base.h)
 
 set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
@@ -76,7 +77,11 @@ set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_local_addresses_test aeron_c_local_addresses_test.cpp)
-set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
-set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
+set_tests_properties(c_local_addresses_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_local_addresses_test PROPERTIES RUN_SERIAL TRUE)
+
+aeron_driver_test(c_cnc_test aeron_c_cnc_test.cpp)
+set_tests_properties(c_cnc_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_cnc_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(congestion_control_test aeron_congestion_control_test.cpp)

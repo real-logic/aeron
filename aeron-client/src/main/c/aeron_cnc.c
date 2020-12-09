@@ -62,6 +62,13 @@ int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeo
     }
     while (true);
 
+    aeron_counters_reader_init(
+        &_aeron_cnc->counters_reader,
+        aeron_cnc_counters_metadata_buffer(_aeron_cnc->metadata),
+        _aeron_cnc->metadata->counter_metadata_buffer_length,
+        aeron_cnc_counters_values_buffer(_aeron_cnc->metadata),
+        _aeron_cnc->metadata->counter_values_buffer_length);
+
     *aeron_cnc = _aeron_cnc;
     return 0;
 
@@ -112,6 +119,10 @@ size_t aeron_cnc_error_log_read(
         error_buffer, aeron_cnc->metadata->error_log_buffer_length, callback, NULL, 0);
 }
 
+aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc)
+{
+    return &aeron_cnc->counters_reader;
+}
 
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc)
 {

@@ -41,7 +41,6 @@ add_executable(StreamingPublisherW StreamingPublisher.cpp ${HEADERS})
 add_executable(RateSubscriberW RateSubscriber.cpp ${HEADERS})
 add_executable(PongW Pong.cpp ${HEADERS})
 add_executable(PingW Ping.cpp ${HEADERS})
-add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(LossStat LossStat.cpp ${HEADERS})
@@ -136,11 +135,6 @@ target_link_libraries(PingPong
     ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
 
-target_include_directories(AeronStat
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
-target_link_libraries(AeronStat
-    ${CLIENT_LINK_LIB})
-
 target_include_directories(TimeTests
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(TimeTests
@@ -151,7 +145,6 @@ add_dependencies(PingPong hdr_histogram)
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS
-        AeronStat
         BasicPublisher
         TimeTests
         BasicSubscriber

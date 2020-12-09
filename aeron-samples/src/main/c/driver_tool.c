@@ -43,7 +43,7 @@ const char *usage()
     return
         "    -P            Print PID only without anything else.\n"
         "    -T            Request driver to terminate.\n"
-        "    -d basePath   Base Path to shared memory. Default: /dev/shm/aeron-mike\n"
+        "    -d basePath   Base Path to shared memory. Default: /dev/shm/aeron-[user]\n"
         "    -h            Displays help information.\n"
         "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
 }

@@ -2363,6 +2363,8 @@ size_t aeron_cnc_error_log_read(
     void *clientd,
     int64_t since_timestamp);
 
+aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc);
+
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc);
 
 #ifdef __cplusplus

@@ -24,6 +24,8 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <string.h>
+#include <locale.h>
+#include <stdlib.h>
 
 #define AERON_DLL_EXPORTS
 
@@ -46,6 +48,37 @@ void aeron_format_date(char *str, size_t count, int64_t timestamp)
     strftime(tz_buffer, sizeof(tz_buffer) - 1, "%z", &time);
 
     snprintf(str, count, "%s%s%s", time_buffer, msec_buffer, tz_buffer);
+}
+
+static size_t aeron_format_min(size_t a, size_t b)
+{
+    return a < b ? a : b;
+}
+
+static size_t aeron_format_number_next(long long value, const char *sep, char *buffer, size_t buffer_len)
+{
+    if (0 <= value && value < 1000)
+    {
+        return snprintf(buffer, aeron_format_min(4, buffer_len), "%lld", value);
+    }
+    else if (-1000 < value && value < 0)
+    {
+        return snprintf(buffer, aeron_format_min(5, buffer_len), "%lld", value);
+    }
+    else
+    {
+        int printed_len = aeron_format_number_next(value / 1000, sep, buffer, buffer_len);
+        return printed_len + snprintf(
+            buffer + printed_len, aeron_format_min(5, buffer_len - printed_len), "%s%03lld", sep, llabs(value % 1000));
+    }
+}
+
+char *aeron_format_number_to_locale(long long int value, char *buffer, size_t buffer_len)
+{
+    setlocale(LC_NUMERIC, "");
+    aeron_format_number_next(value, localeconv()->thousands_sep, buffer, buffer_len);
+    buffer[buffer_len - 1] = '\0';
+    return buffer;
 }
 
 void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t data_len)

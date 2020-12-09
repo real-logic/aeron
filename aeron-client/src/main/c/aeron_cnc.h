@@ -20,13 +20,14 @@
 #include "aeron_common.h"
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_mpsc_rb.h"
+#include "concurrent/aeron_counters_manager.h"
 #include "aeron_cnc_file_descriptor.h"
 
 typedef struct aeron_cnc_stct
 {
     aeron_mapped_file_t cnc_mmap;
     aeron_cnc_metadata_t *metadata;
-    aeron_mpsc_rb_t to_driver_rb;
+    aeron_counters_reader_t counters_reader;
     char base_path[AERON_MAX_PATH];
 }
 aeron_cnc_t;

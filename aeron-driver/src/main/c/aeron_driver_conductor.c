@@ -428,7 +428,7 @@ int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t *conduct
     const int32_t low = conductor->publication_reserved_session_id_low;
     const int32_t high = conductor->publication_reserved_session_id_high;
 
-    return (low <= conductor->next_session_id && conductor->next_session_id <= high) ?
+    return low <= conductor->next_session_id && conductor->next_session_id <= high ?
         aeron_add_wrap_i32(high, 1) : conductor->next_session_id;
 }
 
@@ -667,9 +667,9 @@ void aeron_driver_conductor_on_available_image(
 {
     const size_t response_length =
         sizeof(aeron_image_buffers_ready_t) +
-            AERON_ALIGN(log_file_name_length, sizeof(int32_t)) +
-            source_identity_length +
-            (2 * sizeof(int32_t));
+        AERON_ALIGN(log_file_name_length, sizeof(int32_t)) +
+        source_identity_length +
+        (2 * sizeof(int32_t));
 
     if (response_length > sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH))
     {
@@ -685,6 +685,7 @@ void aeron_driver_conductor_on_available_image(
             aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
             return;
         }
+
         on_available_image(
             conductor,
             correlation_id,
@@ -846,7 +847,7 @@ void aeron_driver_conductor_cleanup_network_publication(
 void aeron_send_channel_endpoint_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    /* nothing done here. Could linger if needed. */
+    /* Nothing done here. Could linger if needed. */
 }
 
 bool aeron_send_channel_endpoint_entry_has_reached_end_of_life(
@@ -869,7 +870,7 @@ bool aeron_send_channel_endpoint_entry_free(aeron_send_channel_endpoint_entry_t 
 void aeron_receive_channel_endpoint_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    /* nothing done here. could linger if needed. */
+    /* Nothing done here. could linger if needed. */
 }
 
 bool aeron_receive_channel_endpoint_entry_has_reached_end_of_life(
@@ -1472,7 +1473,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_find_receive_channel_en
     return NULL;
 }
 
-/* this should be re-usable if/when we decide to reuse transports with MDS */
+/* This should be re-usable if/when we decide to reuse transports with MDS */
 int aeron_driver_conductor_update_and_check_ats_status(
     aeron_driver_context_t *context, aeron_udp_channel_t *channel, const aeron_udp_channel_t *existing_channel)
 {
@@ -1819,6 +1820,7 @@ void aeron_driver_conductor_on_publication_ready(
             aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
             return;
         }
+
         on_publication_ready(
             conductor,
             registration_id,
@@ -1959,6 +1961,7 @@ void aeron_driver_conductor_on_unavailable_image(
             aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
             return;
         }
+
         on_unavailable_image(
             conductor,
             correlation_id,
@@ -3738,7 +3741,7 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor->context->threading_mode))
     {
         aeron_free(command);
-        /* do not know where it came from originally, so just free command on the conductor duty cycle */
+        /* Do not know where it came from originally, so just free command on the conductor duty cycle */
     }
 }
 

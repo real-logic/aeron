@@ -73,10 +73,21 @@ static size_t aeron_format_number_next(long long value, const char *sep, char *b
     }
 }
 
+/**
+ * Uses locale specific thousands separator to format the number, or "," if none found. Will truncate to buffer_len - 1
+ * and null terminate. Use AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN for the buffer size to prevent truncations. Works for
+ * string lengths up to INT64_MIN.
+ *
+ * @param value Value for format
+ * @param buffer buffer to use
+ * @param buffer_len length of buffer
+ * @return NULL terminated buffer containing formatted string.
+ */
 char *aeron_format_number_to_locale(long long int value, char *buffer, size_t buffer_len)
 {
     setlocale(LC_NUMERIC, "");
-    aeron_format_number_next(value, localeconv()->thousands_sep, buffer, buffer_len);
+    const char *sep = 1 == strlen(localeconv()->thousands_sep) ? localeconv()->thousands_sep : ",";
+    aeron_format_number_next(value, sep, buffer, buffer_len);
     buffer[buffer_len - 1] = '\0';
     return buffer;
 }

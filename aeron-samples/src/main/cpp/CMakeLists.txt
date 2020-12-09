@@ -43,7 +43,6 @@ add_executable(PongW Pong.cpp ${HEADERS})
 add_executable(PingW Ping.cpp ${HEADERS})
 add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
-add_executable(LossStat LossStat.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
@@ -118,12 +117,6 @@ target_include_directories(Throughput
 target_link_libraries(Throughput
     ${CLIENT_LINK_LIB})
 
-
-target_include_directories(LossStat
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
-target_link_libraries(LossStat
-    ${CLIENT_LINK_LIB})
-
 target_include_directories(ExclusiveThroughput
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(ExclusiveThroughput
@@ -153,7 +146,6 @@ if (AERON_INSTALL_TARGETS)
         Ping
         Pong
         Throughput
-        LossStat
         ExclusiveThroughput
         PingPong
         BasicPublisherW

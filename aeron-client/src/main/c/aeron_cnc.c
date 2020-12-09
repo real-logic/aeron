@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include <errno.h>
 
 #include "aeron_cnc.h"
@@ -21,6 +22,7 @@
 #include "concurrent/aeron_distinct_error_log.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
+#include "reports/aeron_loss_reporter.h"
 
 int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeout_ms)
 {
@@ -32,7 +34,8 @@ int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeo
         return AERON_CNC_LOAD_FAILED;
     }
 
-    strncpy(_aeron_cnc->base_path, base_path, sizeof(_aeron_cnc->base_path));
+    strncpy(_aeron_cnc->base_path, base_path, sizeof(_aeron_cnc->base_path) - 1);
+    aeron_cnc_resolve_filename(base_path, _aeron_cnc->filename, sizeof(_aeron_cnc->filename));
 
     int64_t deadline_ms = aeron_epoch_clock() + timeout_ms;
     do
@@ -79,7 +82,7 @@ error:
 
 const char *aeron_cnc_filename(aeron_cnc_t *aeron_cnc)
 {
-    return aeron_cnc->base_path;
+    return aeron_cnc->filename;
 }
 
 int aeron_cnc_constants(aeron_cnc_t *aeron_cnc, aeron_cnc_constants_t *constants)
@@ -122,6 +125,29 @@ size_t aeron_cnc_error_log_read(
 aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc)
 {
     return &aeron_cnc->counters_reader;
+}
+
+int aeron_cnc_loss_reporter_read(
+    aeron_cnc_t *aeron_cnc,
+    aeron_loss_reporter_read_entry_func_t entry_func,
+    void *clientd)
+{
+    char loss_report_filename[AERON_MAX_PATH] = { 0 };
+
+    aeron_loss_reporter_resolve_filename(aeron_cnc->base_path, loss_report_filename, sizeof(loss_report_filename));
+
+    aeron_mapped_file_t loss_mmap;
+    if (aeron_map_existing_file(&loss_mmap, loss_report_filename) < 0) 
+    {
+        aeron_set_err_from_last_err_code("Failed to map loss report");
+        return -1;
+    }
+
+    int result = (int)aeron_loss_reporter_read(loss_mmap.addr, loss_mmap.length, entry_func, clientd);
+
+    aeron_unmap(&loss_mmap);
+
+    return result;
 }
 
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc)

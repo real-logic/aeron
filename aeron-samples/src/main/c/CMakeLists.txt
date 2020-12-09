@@ -77,6 +77,8 @@ target_link_libraries(DriverTool ${CLIENT_LINK_LIB})
 add_executable(ErrorStat error_stat.c ${HEADERS})
 target_link_libraries(ErrorStat ${CLIENT_LINK_LIB})
 
+add_executable(LossStat loss_stat.c ${HEADERS})
+target_link_libraries(LossStat ${CLIENT_LINK_LIB})
 
 
 if (AERON_INSTALL_TARGETS)
@@ -92,5 +94,6 @@ if (AERON_INSTALL_TARGETS)
         AeronStat
         DriverTool
         ErrorStat
+        LossStat
         DESTINATION bin)
 endif ()

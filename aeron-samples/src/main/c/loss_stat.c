@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <errno.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <errno.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -25,19 +26,7 @@
 
 #include "aeronc.h"
 #include "aeron_common.h"
-#include "aeron_cnc_file_descriptor.h"
-#include "concurrent/aeron_thread.h"
-#include "concurrent/aeron_mpsc_rb.h"
-#include "concurrent/aeron_distinct_error_log.h"
 #include "util/aeron_strutil.h"
-#include "util/aeron_error.h"
-
-typedef struct aeron_error_stat_settings_stct
-{
-    const char *base_path;
-    int64_t timeout_ms;
-}
-aeron_error_stat_settings_t;
 
 const char *usage()
 {
@@ -52,28 +41,42 @@ void print_error_and_usage(const char *message)
     fprintf(stderr, "%s\n%s", message, usage());
 }
 
-void aeron_error_stat_on_observation(
-    int32_t observation_count,
+typedef struct aeron_loss_stat_settings_stct
+{
+    const char *base_path;
+    int64_t timeout_ms;
+}
+aeron_loss_stat_settings_t;
+
+void aeron_loss_stat_print_observation(
+    void *clientd,
+    int64_t observation_count,
+    int64_t total_bytes_lost,
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
-    const char *error,
-    size_t error_length,
-    void *clientd)
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel,
+    int32_t channel_length,
+    const char *source,
+    int32_t source_length)
 {
-    char first_timestamp[AERON_MAX_PATH];
-    char last_timestamp[AERON_MAX_PATH];
-
-    aeron_format_date(first_timestamp, sizeof(first_timestamp), first_observation_timestamp);
-    aeron_format_date(last_timestamp, sizeof(last_timestamp), last_observation_timestamp);
-
-    fprintf(
-        stdout,
-        "***\n%d observations from %s to %s for:\n %.*s\n",
-        observation_count,
-        first_timestamp,
-        last_timestamp,
-        (int)error_length,
-        error);
+    char first_timestamp_str[AERON_MAX_PATH];
+    char last_timestamp_str[AERON_MAX_PATH];
+    aeron_format_date(first_timestamp_str, sizeof(first_timestamp_str), first_observation_timestamp);
+    aeron_format_date(last_timestamp_str, sizeof(last_timestamp_str), last_observation_timestamp);
+    printf(
+        "%" PRId64 ",%" PRId64 ",%s,%s,%" PRId32 ",%" PRId32 ",%.*s,%.*s\n", 
+        observation_count, 
+        total_bytes_lost, 
+        first_timestamp_str, 
+        last_timestamp_str,
+        session_id,
+        stream_id,
+        (int)channel_length,
+        channel,
+        (int)source_length,
+        source);
 }
 
 
@@ -81,7 +84,7 @@ int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_error_stat_settings_t settings = {
+    aeron_loss_stat_settings_t settings = {
         .base_path = default_directory,
         .timeout_ms = 1000
     };
@@ -127,11 +130,24 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    size_t count = aeron_cnc_error_log_read(aeron_cnc, aeron_error_stat_on_observation, NULL, 0);
+    int exit_result = EXIT_FAILURE;
+    printf(
+        "%s\n", 
+        "OBSERVATION_COUNT, TOTAL_BYTES_LOST, FIRST_OBSERVATION,"
+        "LAST_OBSERVATION, SESSION_ID, STREAM_ID, CHANNEL, SOURCE");
+    int entries_read = aeron_cnc_loss_reporter_read(aeron_cnc, aeron_loss_stat_print_observation, NULL);
 
-    fprintf(stdout, "\n%" PRIu64 " distinct errors observed.\n", (uint64_t)count);
+    if (entries_read < 0)
+    {
+        printf("%s\n", aeron_errmsg());
+    }
+    else
+    {
+        printf("%d entries read\n", entries_read);
+        exit_result = EXIT_SUCCESS;
+    }
 
     aeron_cnc_close(aeron_cnc);
 
-    return 0;
+    return exit_result;
 }

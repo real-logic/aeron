@@ -20,9 +20,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include "aeronc.h"
 #include "concurrent/aeron_atomic.h"
 #include "util/aeron_error.h"
 #include "util/aeron_bitutil.h"
+
+#define AERON_LOSS_REPORT_FILE "loss-report.dat"
 
 #pragma pack(push)
 #pragma pack(4)
@@ -81,18 +84,7 @@ inline void aeron_loss_reporter_record_observation(
     }
 }
 
-typedef void (*aeron_loss_reporter_read_entry_func_t)(
-    void *clientd,
-    int64_t observation_count,
-    int64_t total_bytes_lost,
-    int64_t first_observation_timestamp,
-    int64_t last_observation_timestamp,
-    int32_t session_id,
-    int32_t stream_id,
-    const char *channel,
-    int32_t channel_length,
-    const char *source,
-    int32_t source_length);
+int aeron_loss_reporter_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length);
 
 size_t aeron_loss_reporter_read(
     const uint8_t *buffer, size_t capacity, aeron_loss_reporter_read_entry_func_t entry_func, void *clientd);

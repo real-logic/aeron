@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "reports/aeron_loss_reporter.h"
 
 int aeron_loss_reporter_init(aeron_loss_reporter_t *reporter, uint8_t *buffer, size_t length)
@@ -82,6 +83,18 @@ extern void aeron_loss_reporter_record_observation(
     aeron_loss_reporter_entry_offset_t offset,
     int64_t bytes_lost,
     int64_t timestamp_ms);
+
+int aeron_loss_reporter_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
+{
+#if defined(_MSC_VER)
+    int result = snprintf(filename_buffer, filename_buffer_length, "%s\\" AERON_LOSS_REPORT_FILE, directory);
+#else
+    int result = snprintf(filename_buffer, filename_buffer_length, "%s/" AERON_LOSS_REPORT_FILE, directory);
+#endif
+
+    filename_buffer[filename_buffer_length - 1] = '\0';
+    return result;
+}
 
 size_t aeron_loss_reporter_read(
     const uint8_t *buffer, size_t capacity, aeron_loss_reporter_read_entry_func_t entry_func, void *clientd)

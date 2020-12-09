@@ -32,8 +32,6 @@
 #include "aeron_system_counters.h"
 #include "aeron_cnc_file_descriptor.h"
 
-#define AERON_LOSS_REPORT_FILE "loss-report.dat"
-
 #define AERON_COMMAND_QUEUE_CAPACITY (256)
 
 #define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (2)

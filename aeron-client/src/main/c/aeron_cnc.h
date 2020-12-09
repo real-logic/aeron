@@ -29,6 +29,7 @@ typedef struct aeron_cnc_stct
     aeron_cnc_metadata_t *metadata;
     aeron_counters_reader_t counters_reader;
     char base_path[AERON_MAX_PATH];
+    char filename[AERON_MAX_PATH];
 }
 aeron_cnc_t;
 

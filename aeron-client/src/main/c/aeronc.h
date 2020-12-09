@@ -2365,6 +2365,25 @@ size_t aeron_cnc_error_log_read(
 
 aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc);
 
+typedef void (*aeron_loss_reporter_read_entry_func_t)(
+    void *clientd,
+    int64_t observation_count,
+    int64_t total_bytes_lost,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel,
+    int32_t channel_length,
+    const char *source,
+    int32_t source_length);
+
+int aeron_cnc_loss_reporter_read(
+    aeron_cnc_t *aeron_cnc,
+    aeron_loss_reporter_read_entry_func_t entry_func,
+    void *clientd);
+
+
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc);
 
 #ifdef __cplusplus

@@ -148,7 +148,6 @@ set(HEADERS
     aeron_alloc.h
     aeron_client.h
     aeron_client_conductor.h
-    aeron_cnc.h
     aeron_cnc_file_descriptor.h
     aeron_common.h
     aeron_context.h

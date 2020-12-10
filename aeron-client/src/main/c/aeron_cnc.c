@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include "aeron_cnc.h"
 #include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
 #include "concurrent/aeron_distinct_error_log.h"

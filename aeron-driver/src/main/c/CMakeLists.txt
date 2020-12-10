@@ -226,7 +226,6 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client_conductor.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_cnc.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_cnc_file_descriptor.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_common.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_context.h

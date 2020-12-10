@@ -38,7 +38,7 @@ typedef struct aeron_driver_tool_settings_stct
 }
 aeron_driver_tool_settings_t;
 
-const char *usage()
+static const char *aeron_driver_tool_usage()
 {
     return
         "    -P            Print PID only without anything else.\n"
@@ -48,9 +48,9 @@ const char *usage()
         "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
 }
 
-void print_error_and_usage(const char *message)
+static void aeron_driver_tool_print_error_and_usage(const char *message)
 {
-    fprintf(stderr, "%s\n%s", message, usage());
+    fprintf(stderr, "%s\n%s", message, aeron_driver_tool_usage());
 }
 
 int main(int argc, char **argv)
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
                 settings.timeout_ms = strtoll(optarg, &endptr, 10);
                 if (0 != errno || '\0' != endptr[0])
                 {
-                    print_error_and_usage("Invalid timeout");
+                    aeron_driver_tool_print_error_and_usage("Invalid timeout");
                     return EXIT_FAILURE;
                 }
                 break;
@@ -96,11 +96,11 @@ int main(int argc, char **argv)
                 break;
 
             case 'h':
-                print_error_and_usage(argv[0]);
+                aeron_driver_tool_print_error_and_usage(argv[0]);
                 return EXIT_SUCCESS;
 
             default:
-                print_error_and_usage("Unknown option");
+                aeron_driver_tool_print_error_and_usage("Unknown option");
                 return EXIT_FAILURE;
         }
     }
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
 
     if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {
-        print_error_and_usage(aeron_errmsg());
+        aeron_driver_tool_print_error_and_usage(aeron_errmsg());
         return EXIT_FAILURE;
     }
 

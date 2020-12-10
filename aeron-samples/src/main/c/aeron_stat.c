@@ -37,7 +37,7 @@ void sigint_handler(int signal)
     AERON_PUT_ORDERED(running, false);
 }
 
-const char *usage()
+static const char *aeron_stat_usage()
 {
     return
         "    -h               Displays help information.\n"
@@ -46,9 +46,9 @@ const char *usage()
         "    -t timeout       Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
 }
 
-void print_error_and_usage(const char *message)
+static void aeron_stat_print_error_and_usage(const char *message)
 {
-    fprintf(stderr, "%s\n%s", message, usage());
+    fprintf(stderr, "%s\n%s", message, aeron_stat_usage());
 }
 
 typedef struct aeron_stat_settings_stct
@@ -59,7 +59,7 @@ typedef struct aeron_stat_settings_stct
 }
 aeron_stat_settings_t;
 
-void aeron_stat_print_counter(
+static void aeron_stat_print_counter(
     int64_t value,
     int32_t id,
     int32_t type_id,
@@ -77,7 +77,7 @@ void aeron_stat_print_counter(
         (int)label_length, label);
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
@@ -104,7 +104,7 @@ int main (int argc, char **argv)
                 settings.timeout_ms = strtoll(optarg, &endptr, 10);
                 if (0 != errno || '\0' != endptr[0])
                 {
-                    print_error_and_usage("Invalid timeout");
+                    aeron_stat_print_error_and_usage("Invalid timeout");
                     return EXIT_FAILURE;
                 }
                 break;
@@ -117,18 +117,18 @@ int main (int argc, char **argv)
                 settings.update_interval_ms = strtoll(optarg, &endptr, 10);
                 if (0 != errno || '\0' != endptr[0])
                 {
-                    print_error_and_usage("Invalid timeout");
+                    aeron_stat_print_error_and_usage("Invalid timeout");
                     return EXIT_FAILURE;
                 }
                 break;
             }
 
             case 'h':
-                print_error_and_usage(argv[0]);
+                aeron_stat_print_error_and_usage(argv[0]);
                 return EXIT_SUCCESS;
 
             default:
-                print_error_and_usage("Unknown option");
+                aeron_stat_print_error_and_usage("Unknown option");
                 return EXIT_FAILURE;
         }
     }
@@ -136,7 +136,7 @@ int main (int argc, char **argv)
     aeron_cnc_t *aeron_cnc;
     if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {
-        print_error_and_usage(aeron_errmsg());
+        aeron_stat_print_error_and_usage(aeron_errmsg());
         return EXIT_FAILURE;
     }
 

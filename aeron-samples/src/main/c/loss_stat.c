@@ -28,7 +28,7 @@
 #include "aeron_common.h"
 #include "util/aeron_strutil.h"
 
-const char *usage()
+static const char *aeron_loss_stat_usage()
 {
     return
         "    -h            Displays help information.\n"
@@ -36,9 +36,9 @@ const char *usage()
         "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
 }
 
-void print_error_and_usage(const char *message)
+static void aeron_loss_stat_print_error_and_usage(const char *message)
 {
-    fprintf(stderr, "%s\n%s", message, usage());
+    fprintf(stderr, "%s\n%s", message, aeron_loss_stat_usage());
 }
 
 typedef struct aeron_loss_stat_settings_stct
@@ -48,7 +48,7 @@ typedef struct aeron_loss_stat_settings_stct
 }
 aeron_loss_stat_settings_t;
 
-void aeron_loss_stat_print_observation(
+static void aeron_loss_stat_print_observation(
     void *clientd,
     int64_t observation_count,
     int64_t total_bytes_lost,
@@ -106,18 +106,18 @@ int main(int argc, char **argv)
                 settings.timeout_ms = strtoll(optarg, &endptr, 10);
                 if (0 != errno || '\0' != endptr[0])
                 {
-                    print_error_and_usage("Invalid timeout");
+                    aeron_loss_stat_print_error_and_usage("Invalid timeout");
                     return EXIT_FAILURE;
                 }
                 break;
             }
 
             case 'h':
-                print_error_and_usage(argv[0]);
+                aeron_loss_stat_print_error_and_usage(argv[0]);
                 return EXIT_SUCCESS;
 
             default:
-                print_error_and_usage("Unknown option");
+                aeron_loss_stat_print_error_and_usage("Unknown option");
                 return EXIT_FAILURE;
         }
     }
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
     if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {
-        print_error_and_usage(aeron_errmsg());
+        aeron_loss_stat_print_error_and_usage(aeron_errmsg());
         return EXIT_FAILURE;
     }
 

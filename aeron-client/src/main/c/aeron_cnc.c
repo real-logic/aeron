@@ -107,7 +107,17 @@ int aeron_cnc_constants(aeron_cnc_t *aeron_cnc, aeron_cnc_constants_t *constants
         return -1;
     }
 
-    memcpy(constants, aeron_cnc->metadata, sizeof(aeron_cnc_constants_t));
+    // A memcpy would be faster, but this allows the metadata to evolve independently of
+    // the constants. This is also not a critical performance path.
+    constants->cnc_version = aeron_cnc->metadata->cnc_version;
+    constants->to_driver_buffer_length = aeron_cnc->metadata->to_driver_buffer_length;
+    constants->to_clients_buffer_length = aeron_cnc->metadata->to_clients_buffer_length;
+    constants->counter_metadata_buffer_length = aeron_cnc->metadata->counter_metadata_buffer_length;
+    constants->counter_values_buffer_length = aeron_cnc->metadata->counter_values_buffer_length;
+    constants->error_log_buffer_length = aeron_cnc->metadata->error_log_buffer_length;
+    constants->client_liveness_timeout = aeron_cnc->metadata->client_liveness_timeout;
+    constants->start_timestamp = aeron_cnc->metadata->start_timestamp;
+    constants->pid = aeron_cnc->metadata->pid;
 
     return 0;
 }

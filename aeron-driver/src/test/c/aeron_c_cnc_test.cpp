@@ -36,13 +36,41 @@ extern "C"
 
 using namespace aeron;
 
-struct CounterIdFilter
+class CounterIdFilter
 {
-    std::int32_t filterId;
+public:
+    CounterIdFilter(std::int32_t filterId) :
+    m_filterId(filterId),
+    m_totalCounters(0),
+    m_foundValue(0),
+    m_matchCount(0)
+    {}
 
-    std::int32_t totalCounters;
-    std::int64_t foundValue;
-    std::int32_t matchCount;
+    void apply(int32_t id, int64_t value)
+    {
+        if (id == m_filterId)
+        {
+            m_foundValue = value;
+            m_matchCount++;
+        }
+        m_totalCounters++;
+    }
+
+    bool matches()
+    {
+        return 0 < m_matchCount;
+    }
+
+    std::int64_t value()
+    {
+        return m_foundValue;
+    }
+
+private:
+    std::int32_t m_filterId;
+    std::int32_t m_totalCounters;
+    std::int64_t m_foundValue;
+    std::int32_t m_matchCount;
 };
 
 class CncTest : public CSystemTestBase, public testing::Test
@@ -122,12 +150,7 @@ protected:
         void *clientd)
     {
         CounterIdFilter *filter = reinterpret_cast<CounterIdFilter *>(clientd);
-        if (filter->filterId == id)
-        {
-            filter->foundValue = value;
-            filter->matchCount++;
-        }
-        filter->totalCounters++;
+        filter->apply(id, value);
     }
 
     static void countingLossReader(
@@ -166,13 +189,11 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
     int errorCallbackCounter = 0;
 
     aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
-    CounterIdFilter filter = {
-        AERON_SYSTEM_COUNTER_ERRORS, 0, 0, 0
-    };
+    CounterIdFilter filter{AERON_SYSTEM_COUNTER_ERRORS};
 
     aeron_counters_reader_foreach_counter(counters, counterFilterCallback, &filter);
-    ASSERT_EQ(0, filter.foundValue);
-    ASSERT_LT(0, filter.totalCounters);
+    ASSERT_TRUE(filter.matches());
+    ASSERT_EQ(0, filter.value());
 
     ASSERT_EQ(0U, aeron_cnc_error_log_read(m_cnc, countingErrorLogCallback, &errorCallbackCounter, 0));
 
@@ -184,12 +205,10 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
         &async, m_aeron, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0) << aeron_errmsg();
     ASSERT_EQ(nullptr, awaitSubscriptionOrError(async));
 
-    filter = {
-        AERON_SYSTEM_COUNTER_ERRORS, 0, 0, 0
-    };
+    filter = CounterIdFilter{AERON_SYSTEM_COUNTER_ERRORS};
 
     int64_t deadline_ms = aeron_epoch_clock() + 1000;
-    while (filter.matchCount < 1)
+    while (filter.value() < 1)
     {
         aeron_counters_reader_foreach_counter(counters, counterFilterCallback, &filter);
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for error counter";
@@ -199,19 +218,11 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
     ASSERT_EQ(1, errorCallbackCounter);
 }
 
-TEST_F(CncTest, shouldGetCountersAndLossReport)
+TEST_F(CncTest, shouldGetLossReport)
 {
     ASSERT_TRUE(connect());
     ASSERT_TRUE(openAeronCnc()) << aeron_errmsg();
     int lossCallbackCounter = 0;
-
-    aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
-    CounterIdFilter filter = {
-        AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS, 0, 0, 0
-    };
-
-    aeron_counters_reader_foreach_counter(counters, counterFilterCallback, &filter);
-    ASSERT_EQ(0, filter.foundValue);
 
     aeron_async_add_subscription_t *async_sub;
     aeron_subscription_t *subscription;

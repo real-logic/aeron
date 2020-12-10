@@ -83,7 +83,7 @@ static size_t aeron_format_number_next(long long value, const char *sep, char *b
  * @param buffer_len length of buffer
  * @return NULL terminated buffer containing formatted string.
  */
-char *aeron_format_number_to_locale(long long int value, char *buffer, size_t buffer_len)
+char *aeron_format_number_to_locale(long long value, char *buffer, size_t buffer_len)
 {
     setlocale(LC_NUMERIC, "");
     const char *sep = 1 == strlen(localeconv()->thousands_sep) ? localeconv()->thousands_sep : ",";

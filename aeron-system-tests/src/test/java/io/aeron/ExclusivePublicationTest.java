@@ -44,8 +44,8 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ExclusivePublicationTest
 {
@@ -175,6 +175,164 @@ public class ExclusivePublicationTest
                     for (int count = 0; count < fragmentsPerThread; count++)
                     {
                         while (publicationTwo.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                        {
+                            Tests.yield();
+                        }
+                    }
+                    return null;
+                });
+            threadPool.shutdown();
+
+            int totalFragmentsRead = 0;
+            do
+            {
+                totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+            }
+            while (totalFragmentsRead < expectedNumberOfFragments);
+
+            assertEquals(expectedNumberOfFragments, messageCount.value);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldOfferTwoBuffersFromIndependentExclusivePublications(final String channel)
+    {
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
+            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
+        {
+            final int expectedNumberOfFragments = 778;
+            int totalFragmentsRead = 0;
+            final MutableInteger messageCount = new MutableInteger();
+            final FragmentHandler fragmentHandler =
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(MESSAGE_LENGTH + SIZE_OF_INT, length);
+                    final int publisherId = buffer.getInt(offset);
+                    if (1 == publisherId)
+                    {
+                        assertEquals(Byte.MIN_VALUE, buffer.getByte(offset + SIZE_OF_INT));
+                    }
+                    else if (2 == publisherId)
+                    {
+                        assertEquals(Byte.MAX_VALUE, buffer.getByte(offset + SIZE_OF_INT));
+                    }
+                    else
+                    {
+                        fail("unknown publisherId=" + publisherId);
+                    }
+                    messageCount.value++;
+                };
+
+            Tests.awaitConnections(subscription, 2);
+
+            final UnsafeBuffer pubOneHeader = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+            pubOneHeader.putInt(0, 1);
+            final UnsafeBuffer pubOnePayload = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+            pubOnePayload.setMemory(0, MESSAGE_LENGTH, Byte.MIN_VALUE);
+            final UnsafeBuffer pubTwoHeader = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+            pubTwoHeader.putInt(0, 2);
+            final UnsafeBuffer pubTwoPayload = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+            pubTwoPayload.setMemory(0, MESSAGE_LENGTH, Byte.MAX_VALUE);
+
+            for (int i = 0; i < expectedNumberOfFragments; i += 2)
+            {
+                while (publicationOne.offer(pubOneHeader, 0, SIZE_OF_INT, pubOnePayload, 0, MESSAGE_LENGTH) < 0L)
+                {
+                    Tests.yield();
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                }
+
+                while (publicationTwo.offer(pubTwoHeader, 0, SIZE_OF_INT, pubTwoPayload, 0, MESSAGE_LENGTH) < 0L)
+                {
+                    Tests.yield();
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                }
+
+                totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+            }
+
+            do
+            {
+                totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+            }
+            while (totalFragmentsRead < expectedNumberOfFragments);
+
+            assertEquals(expectedNumberOfFragments, messageCount.value);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel)
+    {
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
+            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
+        {
+            final int expectedNumberOfFragments = 20_000;
+            final int fragmentsPerThread = expectedNumberOfFragments / 2;
+            final MutableInteger messageCount = new MutableInteger();
+            final FragmentHandler fragmentHandler =
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(MESSAGE_LENGTH + SIZE_OF_INT, length);
+                    final int publisherId = buffer.getInt(offset);
+                    if (1 == publisherId)
+                    {
+                        assertEquals(Byte.MIN_VALUE, buffer.getByte(offset + SIZE_OF_INT));
+                    }
+                    else if (2 == publisherId)
+                    {
+                        assertEquals(Byte.MAX_VALUE, buffer.getByte(offset + SIZE_OF_INT));
+                    }
+                    else
+                    {
+                        fail("unknown publisherId=" + publisherId);
+                    }
+                    messageCount.value++;
+                };
+
+            Tests.awaitConnections(subscription, 2);
+
+            final UnsafeBuffer pubOneHeader = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+            pubOneHeader.putInt(0, 1);
+            final UnsafeBuffer pubOnePayload = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+            pubOnePayload.setMemory(0, MESSAGE_LENGTH, Byte.MIN_VALUE);
+            final UnsafeBuffer pubTwoHeader = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+            pubTwoHeader.putInt(0, 2);
+            final UnsafeBuffer pubTwoPayload = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+            pubTwoPayload.setMemory(0, MESSAGE_LENGTH, Byte.MAX_VALUE);
+
+            final ExecutorService threadPool = Executors.newFixedThreadPool(2);
+            final CountDownLatch latch = new CountDownLatch(2);
+            threadPool.submit(
+                () ->
+                {
+                    latch.countDown();
+                    latch.await();
+                    for (int count = 0; count < fragmentsPerThread; count++)
+                    {
+                        while (publicationOne
+                            .offer(pubOneHeader, 0, SIZE_OF_INT, pubOnePayload, 0, MESSAGE_LENGTH) < 0L)
+                        {
+                            Tests.yield();
+                        }
+                    }
+                    return null;
+                });
+            threadPool.submit(
+                () ->
+                {
+                    latch.countDown();
+                    latch.await();
+                    for (int count = 0; count < fragmentsPerThread; count++)
+                    {
+                        while (publicationTwo
+                            .offer(pubTwoHeader, 0, SIZE_OF_INT, pubTwoPayload, 0, MESSAGE_LENGTH) < 0L)
                         {
                             Tests.yield();
                         }

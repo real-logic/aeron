@@ -67,7 +67,7 @@ static size_t aeron_format_number_next(long long value, const char *sep, char *b
     }
     else
     {
-        int printed_len = aeron_format_number_next(value / 1000, sep, buffer, buffer_len);
+        size_t printed_len = aeron_format_number_next(value / 1000, sep, buffer, buffer_len);
         return printed_len + snprintf(
             buffer + printed_len, aeron_format_min(5, buffer_len - printed_len), "%s%03lld", sep, llabs(value % 1000));
     }

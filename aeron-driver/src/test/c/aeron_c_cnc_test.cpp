@@ -26,27 +26,13 @@
 
 extern "C"
 {
-#if defined(AERON_COMPILER_MSVC)
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
 #include "aeron_socket.h"
 #include "concurrent/aeron_atomic.h"
 #include "aeron_system_counters.h"
 }
 
-#if defined(GTEST_USES_POSIX_RE)
-#define RESOLVED_ADDRESS_PATTERN "^127\\.0\\.0\\.1:[1-9][0-9]*$"
-#define RESOLVED_IPV6_ADDRESS_PATTERN "^\\[::1\\]:[1-9][0-9]*$"
-#elif defined(GTEST_USES_SIMPLE_RE)
-#define RESOLVED_ADDRESS_PATTERN "^127\\.0\\.0\\.1:\\d*$"
-#define RESOLVED_IPV6_ADDRESS_PATTERN "^\\[::1\\]:\\d*$"
-#endif
 #define PUB_URI "aeron:udp?endpoint=127.0.0.1:24325"
 #define STREAM_ID (117)
-
-#define NUM_BUFFERS (4)
 
 using namespace aeron;
 

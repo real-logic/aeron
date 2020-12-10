@@ -611,10 +611,10 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
 
     int result = -1;
     aeron_uri_t temp_uri = { 0 };
-    char resolved_endpoint[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
 
     if (0 <= aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri))
     {
+        char resolved_endpoint[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN] = { 0 };
         int resolve_result = aeron_subscription_update_uri_with_resolved_endpoint(
             subscription, &temp_uri, resolved_endpoint, sizeof(resolved_endpoint));
 
@@ -622,8 +622,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
         {
             result = aeron_uri_sprint(&temp_uri, uri, uri_len);
         }
-
-        if (0 == resolve_result)
+        else if (0 == resolve_result)
         {
             uri[0] = '\0';
             result = 0;

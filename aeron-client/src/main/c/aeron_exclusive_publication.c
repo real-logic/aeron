@@ -525,6 +525,7 @@ int aeron_exclusive_publication_constants(
     constants->initial_term_id = publication->initial_term_id;
     constants->publication_limit_counter_id = publication->position_limit_counter_id;
     constants->channel_status_indicator_id = publication->channel_status_indicator_id;
+
     return 0;
 }
 

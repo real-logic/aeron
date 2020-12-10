@@ -66,10 +66,9 @@ static void aeron_local_sockaddr_find_address_counter_metadata_func(
     }
 
     int32_t addr_len;
-    char *addr;
 
     memcpy(&addr_len, key + sizeof(status_indicator_id), sizeof(addr_len));
-    addr = (char *)(key + sizeof(status_indicator_id) + sizeof(addr_len));
+    char *addr = (char *)(key + sizeof(status_indicator_id) + sizeof(addr_len));
 
     if (addr_len <= 0)
     {
@@ -108,12 +107,14 @@ int aeron_local_sockaddr_find_addrs(
         return 0;
     }
 
-    aeron_lock_sockaddr_find_clientd_t find_clientd;
-    find_clientd.current_address = 0;
-    find_clientd.address_vec = address_vec;
-    find_clientd.address_vec_len = address_vec_len;
-    find_clientd.channel_status_indicator_id = channel_status_indicator_id;
-    find_clientd.reader = reader;
+    aeron_lock_sockaddr_find_clientd_t find_clientd =
+        {
+            .channel_status_indicator_id = channel_status_indicator_id,
+            .address_vec = address_vec,
+            .address_vec_len = address_vec_len,
+            .current_address = 0,
+            .reader = reader
+        };
 
     aeron_counters_reader_foreach_metadata(
         reader->metadata,

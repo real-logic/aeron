@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Publication.BACK_PRESSURED;
 import static io.aeron.Publication.CLOSED;
@@ -133,7 +134,7 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @Timeout(10)
-    public void shouldPublishFromConcurrentExclusivePublications(final String channel)
+    public void shouldPublishFromConcurrentExclusivePublications(final String channel) throws InterruptedException
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
@@ -184,11 +185,19 @@ public class ExclusivePublicationTest
             threadPool.shutdown();
 
             int totalFragmentsRead = 0;
-            do
+            try
             {
-                totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                do
+                {
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                }
+                while (totalFragmentsRead < expectedNumberOfFragments);
             }
-            while (totalFragmentsRead < expectedNumberOfFragments);
+            catch (final Exception ex)
+            {
+                threadPool.shutdownNow();
+                threadPool.awaitTermination(1, TimeUnit.SECONDS);
+            }
 
             assertEquals(expectedNumberOfFragments, messageCount.value);
         }
@@ -267,7 +276,7 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @Timeout(10)
-    public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel)
+    public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel) throws InterruptedException
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
@@ -342,11 +351,19 @@ public class ExclusivePublicationTest
             threadPool.shutdown();
 
             int totalFragmentsRead = 0;
-            do
+            try
             {
-                totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                do
+                {
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+                }
+                while (totalFragmentsRead < expectedNumberOfFragments);
             }
-            while (totalFragmentsRead < expectedNumberOfFragments);
+            catch (final Exception ex)
+            {
+                threadPool.shutdownNow();
+                threadPool.awaitTermination(1, TimeUnit.SECONDS);
+            }
 
             assertEquals(expectedNumberOfFragments, messageCount.value);
         }

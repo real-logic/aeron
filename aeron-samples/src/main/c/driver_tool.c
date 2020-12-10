@@ -19,8 +19,10 @@
 #include <inttypes.h>
 
 #ifndef _MSC_VER
+
 #include <unistd.h>
 #include <getopt.h>
+
 #endif
 
 #include "aeronc.h"
@@ -36,7 +38,7 @@ typedef struct aeron_driver_tool_settings_stct
     bool terminate_driver;
     long long timeout_ms;
 }
-aeron_driver_tool_settings_t;
+    aeron_driver_tool_settings_t;
 
 static const char *aeron_driver_tool_usage()
 {
@@ -57,12 +59,9 @@ int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_driver_tool_settings_t settings = {
-        .base_path = default_directory,
-        .pid_only = false,
-        .terminate_driver = false,
-        .timeout_ms = 1000
-    };
+    aeron_driver_tool_settings_t settings = { 0 };
+    settings.base_path = default_directory;
+    settings.timeout_ms = 1000;
 
     int opt;
 

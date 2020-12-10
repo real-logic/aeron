@@ -81,11 +81,10 @@ int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_stat_settings_t settings = {
-        .base_path = default_directory,
-        .update_interval_ms = 1000,
-        .timeout_ms = 1000
-    };
+    aeron_stat_settings_t settings = { 0 };
+    settings.base_path = default_directory;
+    settings.update_interval_ms = 1000;
+    settings.timeout_ms = 1000;
 
     int opt;
 

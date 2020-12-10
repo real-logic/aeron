@@ -143,7 +143,7 @@ size_t aeron_cnc_error_log_read(
     uint8_t *error_buffer = aeron_cnc_error_log_buffer(aeron_cnc->metadata);
 
     return aeron_error_log_read(
-        error_buffer, aeron_cnc->metadata->error_log_buffer_length, callback, NULL, 0);
+        error_buffer, aeron_cnc->metadata->error_log_buffer_length, callback, clientd, 0);
 }
 
 aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc)

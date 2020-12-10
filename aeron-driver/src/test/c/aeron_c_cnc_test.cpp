@@ -113,7 +113,7 @@ protected:
         return 0 == aeron_cnc_init(&m_cnc, m_driver.directory(), 1000);
     }
 
-    static void noopErrorLogCallback(
+    static void countingErrorLogCallback(
         int32_t observation_count,
         int64_t first_observation_timestamp,
         int64_t last_observation_timestamp,
@@ -121,7 +121,8 @@ protected:
         size_t error_length,
         void *clientd)
     {
-        // No-op
+        int *counter = reinterpret_cast<int *>(clientd);
+        (*counter)++;
     }
 
     static void counterFilterCallback(
@@ -143,7 +144,7 @@ protected:
         filter->totalCounters++;
     }
 
-    static void noopLossReader(
+    static void countingLossReader(
         void *clientd,
         int64_t observation_count,
         int64_t total_bytes_lost,
@@ -156,6 +157,8 @@ protected:
         const char *source,
         int32_t source_length)
     {
+        int *counter = reinterpret_cast<int *>(clientd);
+        (*counter)++;
     }
 };
 
@@ -174,6 +177,7 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
 {
     ASSERT_TRUE(connect());
     ASSERT_TRUE(openAeronCnc()) << aeron_errmsg();
+    int errorCallbackCounter = 0;
 
     aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
     CounterIdFilter filter = {
@@ -184,7 +188,7 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
     ASSERT_EQ(0, filter.foundValue);
     ASSERT_LT(0, filter.totalCounters);
 
-    ASSERT_EQ(0U, aeron_cnc_error_log_read(m_cnc, noopErrorLogCallback, NULL, 0));
+    ASSERT_EQ(0U, aeron_cnc_error_log_read(m_cnc, countingErrorLogCallback, &errorCallbackCounter, 0));
 
     aeron_socket_t fd = bindToLocalUdpSocket(24325);
     ASSERT_LT(0, fd);
@@ -205,13 +209,15 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for error counter";
     }
 
-    ASSERT_EQ(1U, aeron_cnc_error_log_read(m_cnc, noopErrorLogCallback, NULL, 0));
+    ASSERT_EQ(1U, aeron_cnc_error_log_read(m_cnc, countingErrorLogCallback, &errorCallbackCounter, 0));
+    ASSERT_EQ(1, errorCallbackCounter);
 }
 
 TEST_F(CncTest, shouldGetCountersAndLossReport)
 {
     ASSERT_TRUE(connect());
     ASSERT_TRUE(openAeronCnc()) << aeron_errmsg();
+    int lossCallbackCounter = 0;
 
     aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
     CounterIdFilter filter = {
@@ -261,6 +267,7 @@ TEST_F(CncTest, shouldGetCountersAndLossReport)
         total += poll(subscription, handler, 100);
     }
 
-    ASSERT_LT(0, aeron_cnc_loss_reporter_read(m_cnc, noopLossReader, NULL)) << aeron_errmsg();
+    ASSERT_LT(0, aeron_cnc_loss_reporter_read(m_cnc, countingLossReader, &lossCallbackCounter)) << aeron_errmsg();
+    ASSERT_NE(0, lossCallbackCounter);
 }
 

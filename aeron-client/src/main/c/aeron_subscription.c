@@ -612,7 +612,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
     int result = -1;
     aeron_uri_t temp_uri = { 0 };
 
-    if (0 <= aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri))
+    if (aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri) >= 0)
     {
         char resolved_endpoint[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN] = { 0 };
         int resolve_result = aeron_subscription_update_uri_with_resolved_endpoint(

@@ -19,9 +19,9 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -34,6 +34,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static io.aeron.Publication.BACK_PRESSURED;
 import static io.aeron.Publication.CLOSED;
@@ -117,6 +120,70 @@ public class ExclusivePublicationTest
                 totalFragmentsRead += pollFragments(subscription, fragmentHandler);
             }
 
+            do
+            {
+                totalFragmentsRead += pollFragments(subscription, fragmentHandler);
+            }
+            while (totalFragmentsRead < expectedNumberOfFragments);
+
+            assertEquals(expectedNumberOfFragments, messageCount.value);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldPublishFromConcurrentExclusivePublications(final String channel)
+    {
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
+            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
+        {
+            final int expectedNumberOfFragments = 20_000;
+            final int fragmentsPerThread = expectedNumberOfFragments / 2;
+            final MutableInteger messageCount = new MutableInteger();
+            final FragmentHandler fragmentHandler =
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(MESSAGE_LENGTH, length);
+                    messageCount.value++;
+                };
+
+            Tests.awaitConnections(subscription, 2);
+
+            final ExecutorService threadPool = Executors.newFixedThreadPool(2);
+            final CountDownLatch latch = new CountDownLatch(2);
+            threadPool.submit(
+                () ->
+                {
+                    latch.countDown();
+                    latch.await();
+                    for (int count = 0; count < fragmentsPerThread; count++)
+                    {
+                        while (publicationOne.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                        {
+                            Tests.yield();
+                        }
+                    }
+                    return null;
+                });
+            threadPool.submit(
+                () ->
+                {
+                    latch.countDown();
+                    latch.await();
+                    for (int count = 0; count < fragmentsPerThread; count++)
+                    {
+                        while (publicationTwo.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                        {
+                            Tests.yield();
+                        }
+                    }
+                    return null;
+                });
+            threadPool.shutdown();
+
+            int totalFragmentsRead = 0;
             do
             {
                 totalFragmentsRead += pollFragments(subscription, fragmentHandler);

@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include "reports/aeron_loss_reporter.h"
+#include "util/aeron_fileutil.h"
 
 int aeron_loss_reporter_init(aeron_loss_reporter_t *reporter, uint8_t *buffer, size_t length)
 {
@@ -86,14 +87,7 @@ extern void aeron_loss_reporter_record_observation(
 
 int aeron_loss_reporter_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
 {
-#if defined(_MSC_VER)
-    int result = snprintf(filename_buffer, filename_buffer_length, "%s\\" AERON_LOSS_REPORT_FILE, directory);
-#else
-    int result = snprintf(filename_buffer, filename_buffer_length, "%s/" AERON_LOSS_REPORT_FILE, directory);
-#endif
-
-    filename_buffer[filename_buffer_length - 1] = '\0';
-    return result;
+    return aeron_fileutil_resolve(directory, AERON_LOSS_REPORT_FILE, filename_buffer, filename_buffer_length);
 }
 
 size_t aeron_loss_reporter_read(

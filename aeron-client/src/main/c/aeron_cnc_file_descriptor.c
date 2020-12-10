@@ -104,14 +104,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
 
 int aeron_cnc_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
 {
-#if defined(_MSC_VER)
-    int result = snprintf(filename_buffer, filename_buffer_length, "%s\\" AERON_CNC_FILE, directory);
-#else
-    int result = snprintf(filename_buffer, filename_buffer_length, "%s/" AERON_CNC_FILE, directory);
-#endif
-
-    filename_buffer[filename_buffer_length - 1] = '\0';
-    return result;
+    return aeron_fileutil_resolve(directory, AERON_CNC_FILE, filename_buffer, filename_buffer_length);
 }
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);

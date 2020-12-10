@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "aeron_platform.h"
 #include "aeron_error.h"
@@ -188,6 +189,12 @@ int aeron_is_directory(const char *path)
 #include <sys/statvfs.h>
 #include <ftw.h>
 #include <stdio.h>
+
+#ifdef _MSC_VER
+#define AERON_FILE_SEP '\\'
+#else
+#define AERON_FILE_SEP '/'
+#endif
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
@@ -624,4 +631,28 @@ int aeron_default_path(char *path, size_t path_length)
     return snprintf(
         path, path_length, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
 #endif
+}
+
+int aeron_fileutil_resolve(const char *parent, const char *child, char *buffer, size_t buffer_len)
+{
+    int result = snprintf(buffer, buffer_len, "%s%c%s", parent, AERON_FILE_SEP, child);
+    buffer[buffer_len - 1] = '\0';
+
+    if (result < 0)
+    {
+        aeron_set_err(errno, "Failed to format resolved path");
+        return -1;
+    }
+    else if ((int)buffer_len <= result)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Path name was truncated, required: %d, supplied: %d, result: %s",
+            result,
+            (int)buffer_len,
+            buffer);
+        return -1;
+    }
+
+    return result;
 }

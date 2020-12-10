@@ -174,7 +174,8 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 {
-    char buffer[AERON_MAX_PATH];
+    char filename[AERON_MAX_PATH];
+    char buffer[2 * AERON_MAX_PATH];
     const char *dirname = context->aeron_dir;
     aeron_log_func_t log_func = aeron_log_func_none;
 
@@ -195,15 +196,15 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         {
             aeron_mapped_file_t cnc_mmap = { NULL, 0 };
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
-            if (aeron_map_existing_file(&cnc_mmap, buffer) < 0)
+            aeron_cnc_resolve_filename(dirname, filename, sizeof(filename));
+            if (aeron_map_existing_file(&cnc_mmap, filename) < 0)
             {
-                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
+                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file: %s", filename);
                 log_func(buffer);
                 return -1;
             }
 
-            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s exists", filename);
             log_func(buffer);
 
             if (aeron_is_driver_active_with_cnc(
@@ -230,17 +231,25 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         return -1;
     }
 
-    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_PUBLICATIONS_DIR);
-    if (aeron_mkdir(buffer, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_fileutil_resolve(dirname, AERON_PUBLICATIONS_DIR, filename, sizeof(filename)) < 0)
     {
-        aeron_set_err_from_last_err_code("mkdir %s", buffer);
+        aeron_set_err_from_last_err_code("Unable to get publications directory filename");
+        return -1;
+    }
+    if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    {
+        aeron_set_err_from_last_err_code("mkdir %s", filename);
         return -1;
     }
 
-    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_IMAGES_DIR);
-    if (aeron_mkdir(buffer, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_fileutil_resolve(dirname, AERON_IMAGES_DIR, filename, sizeof(filename)) < 0)
     {
-        aeron_set_err_from_last_err_code("mkdir %s", buffer);
+        aeron_set_err_from_last_err_code("Unable to get images directory filename");
+        return -1;
+    }
+    if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    {
+        aeron_set_err_from_last_err_code("mkdir %s", filename);
         return -1;
     }
 
@@ -296,8 +305,11 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
     driver->context->loss_report.length =
         AERON_ALIGN(driver->context->loss_report_length, driver->context->file_page_size);
 
-    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_LOSS_REPORT_FILE);
-
+    if (aeron_loss_reporter_resolve_filename(driver->context->aeron_dir, buffer, sizeof(buffer)) < 0)
+    {
+        aeron_set_err_from_last_err_code("Unable to get loss report filename");
+        return -1;
+    }
     if (aeron_map_new_file(&driver->context->loss_report, buffer, true) < 0)
     {
         aeron_set_err(aeron_errcode(), "could not map loss report file: %s", aeron_errmsg());

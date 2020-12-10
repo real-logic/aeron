@@ -36,12 +36,6 @@
 #define AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT (3 * 1000 * 1000 * 1000LL)
 #define AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT (false)
 
-#ifdef _MSC_VER
-#define AERON_FILE_SEP '\\'
-#else
-#define AERON_FILE_SEP '/'
-#endif
-
 void aeron_default_error_handler(void *clientd, int errcode, const char *message)
 {
     fprintf(stderr, "ERROR: (%d): %s\n", errcode, message);
@@ -412,7 +406,11 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
     }
 
     char filename[AERON_MAX_PATH];
-    snprintf(filename, sizeof(filename) - 1, "%s%c%s", directory, AERON_FILE_SEP, AERON_CNC_FILE);
+    if (aeron_cnc_resolve_filename(directory, filename, sizeof(filename)) < 0)
+    {
+        aeron_set_err_from_last_err_code("Unable to get cnc filename");
+        return -1;
+    }
 
     int64_t file_length_result = aeron_file_length(filename);
     if (file_length_result < 0)

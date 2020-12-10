@@ -110,4 +110,6 @@ int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
 
 bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename);
 
+int aeron_fileutil_resolve(const char *parent, const char *child, char *buffer, size_t buffer_len);
+
 #endif //AERON_FILEUTIL_H

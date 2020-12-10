@@ -156,9 +156,13 @@ int aeron_cnc_loss_reporter_read(
     aeron_loss_reporter_read_entry_func_t entry_func,
     void *clientd)
 {
-    char loss_report_filename[AERON_MAX_PATH] = { 0 };
+    char loss_report_filename[AERON_MAX_PATH];
 
-    aeron_loss_reporter_resolve_filename(aeron_cnc->base_path, loss_report_filename, sizeof(loss_report_filename));
+    if (aeron_loss_reporter_resolve_filename(
+        aeron_cnc->base_path, loss_report_filename, sizeof(loss_report_filename)) < 0)
+    {
+        aeron_set_err_from_last_err_code("Failed to resolve loss report file name");
+    }
 
     aeron_mapped_file_t loss_mmap;
     if (aeron_map_existing_file(&loss_mmap, loss_report_filename) < 0) 

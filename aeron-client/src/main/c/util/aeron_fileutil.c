@@ -30,6 +30,12 @@
 #include "aeron_error.h"
 #include "aeron_fileutil.h"
 
+#ifdef _MSC_VER
+#define AERON_FILE_SEP '\\'
+#else
+#define AERON_FILE_SEP '/'
+#endif
+
 #if defined(AERON_COMPILER_MSVC)
 
 #include <windows.h>
@@ -189,12 +195,6 @@ int aeron_is_directory(const char *path)
 #include <sys/statvfs.h>
 #include <ftw.h>
 #include <stdio.h>
-
-#ifdef _MSC_VER
-#define AERON_FILE_SEP '\\'
-#else
-#define AERON_FILE_SEP '/'
-#endif
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {

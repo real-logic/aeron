@@ -120,7 +120,7 @@ void aeron_uri_close(aeron_uri_t *params)
         else if (params->type == AERON_URI_IPC)
         {
             aeron_free(params->params.ipc.additional_params.array);
-            params->params.udp.additional_params.array = NULL;
+            params->params.ipc.additional_params.array = NULL;
         }
     }
 }

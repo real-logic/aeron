@@ -276,7 +276,8 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @Timeout(10)
-    public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel) throws InterruptedException
+    public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel)
+        throws InterruptedException
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);

@@ -400,13 +400,6 @@ void aeron_publication_image_track_rebuild(
     }
 }
 
-// TODO: Local definition of macro until we merge and share code with the C driver.
-#if defined(__GNUC__)
-#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp, c) (__builtin_expect((exp), c))
-#else
-#define AERON_PUBLICATION_IMAGE_COND_EXPECT(exp, c) (exp)
-#endif
-
 static inline void aeron_publication_image_track_connection(
     aeron_publication_image_t *image,
     aeron_receive_destination_t *destination,
@@ -423,7 +416,7 @@ static inline void aeron_publication_image_track_connection(
         }
     }
 
-    if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection, 0))
+    if (NULL == connection)
     {
         // TODO: Might be useful to prevent inlining
         if (aeron_publication_image_add_destination(image, destination) < 0)
@@ -434,7 +427,7 @@ static inline void aeron_publication_image_track_connection(
         connection = &image->connections.array[image->connections.length - 1];
     }
 
-    if (AERON_PUBLICATION_IMAGE_COND_EXPECT(NULL == connection->control_addr, 0))
+    if (NULL == connection->control_addr)
     {
         // TODO: Might be useful to prevent inlining
         aeron_publication_image_connection_set_control_address(connection, source_addr);

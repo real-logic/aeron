@@ -706,47 +706,47 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
 
 int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *publication)
 {
-    if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE != publication->conductor_fields.state)
-    {
-        return 0;
-    }
-
     int work_count = 0;
-    int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 
-    if (aeron_network_publication_has_required_receivers(publication) ||
-        (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0))
+    if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
     {
-        int64_t min_consumer_position = snd_pos;
-        if (publication->conductor_fields.subscribable.length > 0)
+        int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
+
+        if (aeron_network_publication_has_required_receivers(publication) ||
+            (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0))
         {
-            for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
+            int64_t min_consumer_position = snd_pos;
+            if (publication->conductor_fields.subscribable.length > 0)
             {
-                aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
-                if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+                for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
                 {
-                    int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
-                    min_consumer_position = position < min_consumer_position ? position : min_consumer_position;
+                    aeron_tetherable_position_t *tetherable_position =
+                        &publication->conductor_fields.subscribable.array[i];
+                    if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+                    {
+                        int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
+                        min_consumer_position = position < min_consumer_position ? position : min_consumer_position;
+                    }
                 }
             }
-        }
 
-        int64_t proposed_pub_lmt = min_consumer_position + publication->term_window_length;
-        int64_t publication_limit = aeron_counter_get(publication->pub_lmt_position.value_addr);
-        if (proposed_pub_lmt > publication_limit)
+            int64_t proposed_pub_lmt = min_consumer_position + publication->term_window_length;
+            int64_t publication_limit = aeron_counter_get(publication->pub_lmt_position.value_addr);
+            if (proposed_pub_lmt > publication_limit)
+            {
+                size_t term_length = (size_t)publication->term_length_mask + 1;
+                aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
+                aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt);
+                work_count = 1;
+            }
+        }
+        else if (*publication->pub_lmt_position.value_addr > snd_pos)
         {
             size_t term_length = (size_t)publication->term_length_mask + 1;
-            aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
-            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt);
+            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
+            aeron_network_publication_clean_buffer(publication, snd_pos - term_length);
             work_count = 1;
         }
-    }
-    else if (*publication->pub_lmt_position.value_addr > snd_pos)
-    {
-        size_t term_length = (size_t)publication->term_length_mask + 1;
-        aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
-        aeron_network_publication_clean_buffer(publication, snd_pos - term_length);
-        work_count = 1;
     }
 
     return work_count;

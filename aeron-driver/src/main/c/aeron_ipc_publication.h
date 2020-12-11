@@ -116,10 +116,6 @@ inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *va
 inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
-    int64_t position = aeron_counter_get_volatile(value_addr);
-
-    publication->conductor_fields.consumer_position = position > publication->conductor_fields.consumer_position ?
-        position : publication->conductor_fields.consumer_position;
 
     if (1 == publication->conductor_fields.subscribable.length && NULL != publication->mapped_raw_log.mapped_file.addr)
     {

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <inttypes.h>
+#include <errno.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>

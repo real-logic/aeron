@@ -593,12 +593,6 @@ public class PubAndSubTest
         }
 
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
-
-        verify(fragmentHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(messageLength),
-            any(Header.class));
     }
 
     @ParameterizedTest

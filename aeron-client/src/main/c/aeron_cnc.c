@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
 #include <errno.h>
 
 #include "aeron_alloc.h"
@@ -51,7 +50,7 @@ int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeo
     aeron_cnc_resolve_filename(base_path, _aeron_cnc->filename, sizeof(_aeron_cnc->filename));
 
     int64_t deadline_ms = aeron_epoch_clock() + timeout_ms;
-    do
+    while (true)
     {
         aeron_cnc_load_result_t result = aeron_cnc_map_file_and_load_metadata(
             base_path, &_aeron_cnc->cnc_mmap, &_aeron_cnc->metadata);
@@ -76,7 +75,6 @@ int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeo
             aeron_micro_sleep(16 * 1000);
         }
     }
-    while (true);
 
     aeron_counters_reader_init(
         &_aeron_cnc->counters_reader,
@@ -182,4 +180,3 @@ void aeron_cnc_close(aeron_cnc_t *aeron_cnc)
     aeron_unmap(&aeron_cnc->cnc_mmap);
     aeron_free(aeron_cnc);
 }
-

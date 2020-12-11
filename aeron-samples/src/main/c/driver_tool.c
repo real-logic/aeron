@@ -27,9 +27,7 @@
 
 #include "aeronc.h"
 #include "aeron_common.h"
-#include "concurrent/aeron_thread.h"
 #include "util/aeron_strutil.h"
-
 
 typedef struct aeron_driver_tool_settings_stct
 {
@@ -38,7 +36,7 @@ typedef struct aeron_driver_tool_settings_stct
     bool terminate_driver;
     long long timeout_ms;
 }
-    aeron_driver_tool_settings_t;
+aeron_driver_tool_settings_t;
 
 static const char *aeron_driver_tool_usage()
 {
@@ -59,9 +57,14 @@ int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_driver_tool_settings_t settings = { 0 };
-    settings.base_path = default_directory;
-    settings.timeout_ms = 1000;
+    aeron_driver_tool_settings_t settings =
+        {
+            .base_path = default_directory,
+            .pid_only = false,
+            .terminate_driver = false,
+            .timeout_ms = 1000
+        };
+
 
     int opt;
 
@@ -104,7 +107,7 @@ int main(int argc, char **argv)
         }
     }
 
-    aeron_cnc_t *aeron_cnc;
+    aeron_cnc_t *aeron_cnc = NULL;
     aeron_cnc_constants_t cnc_constants;
 
     if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)

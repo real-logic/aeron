@@ -137,7 +137,7 @@ int main(int argc, char **argv)
     uint64_t warm_up_messages = DEFAULT_NUMBER_OF_WARM_UP_MESSAGES;
     int32_t pong_stream_id = DEFAULT_PONG_STREAM_ID;
     int32_t ping_stream_id = DEFAULT_PING_STREAM_ID;
-    struct hdr_histogram *histogram;
+    struct hdr_histogram *histogram = NULL;
 
     while ((opt = getopt(argc, argv, "hvC:c:L:m:p:C:s:w:")) != -1)
     {

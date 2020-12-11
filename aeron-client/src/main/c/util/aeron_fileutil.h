@@ -71,8 +71,6 @@ int64_t aeron_file_length(const char *path);
 uint64_t aeron_usable_fs_space(const char *path);
 uint64_t aeron_usable_fs_space_disabled(const char *path);
 
-#define AERON_LOG_META_DATA_SECTION_INDEX (AERON_LOGBUFFER_PARTITION_COUNT)
-
 typedef struct aeron_mapped_raw_log_stct
 {
     aeron_mapped_buffer_t term_buffers[AERON_LOGBUFFER_PARTITION_COUNT];
@@ -110,6 +108,6 @@ int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
 
 bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename);
 
-int aeron_fileutil_resolve(const char *parent, const char *child, char *buffer, size_t buffer_len);
+int aeron_file_resolve(const char *parent, const char *child, char *buffer, size_t buffer_len);
 
 #endif //AERON_FILEUTIL_H

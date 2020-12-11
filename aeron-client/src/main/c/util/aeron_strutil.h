@@ -63,7 +63,7 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
  * Returns the number of tokens found.  Or a value < 0 for an error:
  * ERANGE: number of tokens is greater than max_tokens.
  */
-int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char **tokens);
+int aeron_tokenise(char *input, char delimiter, int max_tokens, char **tokens);
 
 #if defined(AERON_DLL_EXPORTS)
 #define AERON_EXPORT __declspec(dllexport)

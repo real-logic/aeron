@@ -139,11 +139,7 @@ uint64_t aeron_usable_fs_space(const char *path)
 {
     ULARGE_INTEGER lpAvailableToCaller, lpTotalNumberOfBytes, lpTotalNumberOfFreeBytes;
 
-    if (!GetDiskFreeSpaceExA(
-        path,
-        &lpAvailableToCaller,
-        &lpTotalNumberOfBytes,
-        &lpTotalNumberOfFreeBytes))
+    if (!GetDiskFreeSpaceExA(path, &lpAvailableToCaller, &lpTotalNumberOfBytes, &lpTotalNumberOfFreeBytes))
     {
         return 0;
     }
@@ -483,8 +479,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
         size_t term_length = (size_t)log_meta_data->term_length;
         size_t page_size = (size_t)log_meta_data->page_size;
 
-        if (aeron_logbuffer_check_term_length(term_length) < 0 ||
-            aeron_logbuffer_check_page_size(page_size) < 0)
+        if (aeron_logbuffer_check_term_length(term_length) < 0 || aeron_logbuffer_check_page_size(page_size) < 0)
         {
             aeron_unmap(&mapped_raw_log->mapped_file);
             return -1;
@@ -633,7 +628,7 @@ int aeron_default_path(char *path, size_t path_length)
 #endif
 }
 
-int aeron_fileutil_resolve(const char *parent, const char *child, char *buffer, size_t buffer_len)
+int aeron_file_resolve(const char *parent, const char *child, char *buffer, size_t buffer_len)
 {
     int result = snprintf(buffer, buffer_len, "%s%c%s", parent, AERON_FILE_SEP, child);
     buffer[buffer_len - 1] = '\0';

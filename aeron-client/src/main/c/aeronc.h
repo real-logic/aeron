@@ -992,9 +992,7 @@ int64_t aeron_publication_offerv(
  * @return the new stream position otherwise a negative error value.
  */
 int64_t aeron_publication_try_claim(
-    aeron_publication_t *publication,
-    size_t length,
-    aeron_buffer_claim_t *buffer_claim);
+    aeron_publication_t *publication, size_t length, aeron_buffer_claim_t *buffer_claim);
 
 /**
  * Get the status of the media channel for this publication.
@@ -1160,11 +1158,11 @@ int32_t aeron_publication_session_id(aeron_publication_t *publication);
 /**
  * Get all of the local socket addresses for this publication. Typically only one representing the control address.
  *
- * @see aeron_subscription_local_sockaddrs
  * @param subscription to query
  * @param address_vec to hold the received addresses
  * @param address_vec_len available length of the vector to hold the addresses
  * @return number of addresses found or -1 if there is an error.
+ * @see aeron_subscription_local_sockaddrs
  */
 int aeron_publication_local_sockaddrs(
     aeron_publication_t *publication,
@@ -1602,6 +1600,12 @@ int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_im
  */
 int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_image_t *image);
 
+/**
+ * Is the subscription closed.
+ *
+ * @param subscription to be checked.
+ * @return true if it has been closed otherwise false.
+ */
 bool aeron_subscription_is_closed(aeron_subscription_t *subscription);
 
 /**
@@ -1707,9 +1711,7 @@ int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, cha
  * truncated.
  */
 int aeron_subscription_try_resolve_channel_endpoint_port(
-    aeron_subscription_t *subscription,
-    char *uri,
-    size_t uri_len);
+    aeron_subscription_t *subscription, char *uri, size_t uri_len);
 
 /**
  * Image Functions

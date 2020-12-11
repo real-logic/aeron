@@ -16,7 +16,6 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include <errno.h>
 #include <inttypes.h>
 
 #ifndef _MSC_VER
@@ -81,10 +80,13 @@ int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_stat_settings_t settings = { 0 };
-    settings.base_path = default_directory;
-    settings.update_interval_ms = 1000;
-    settings.timeout_ms = 1000;
+    aeron_stat_settings_t settings =
+        {
+            .base_path = default_directory,
+            .update_interval_ms = 1000,
+            .timeout_ms = 1000
+        };
+
 
     int opt;
 
@@ -132,7 +134,7 @@ int main(int argc, char **argv)
         }
     }
 
-    aeron_cnc_t *aeron_cnc;
+    aeron_cnc_t *aeron_cnc = NULL;
     if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {
         aeron_stat_print_error_and_usage(aeron_errmsg());
@@ -165,7 +167,7 @@ int main(int argc, char **argv)
 
         aeron_counters_reader_foreach_counter(counters_reader, aeron_stat_print_counter, NULL);
 
-        aeron_micro_sleep(settings.timeout_ms * 1000);
+        aeron_micro_sleep((unsigned int)(settings.timeout_ms * 1000));
     }
 
     aeron_cnc_close(aeron_cnc);

@@ -22,7 +22,6 @@
 #endif
 #endif
 
-#include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
 
@@ -89,6 +88,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
             (int)aeron_semantic_version_minor(cnc_version),
             (int)aeron_semantic_version_patch(cnc_version));
         aeron_unmap(cnc_mmap);
+
         return AERON_CNC_LOAD_FAILED;
     }
 
@@ -104,7 +104,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
 
 int aeron_cnc_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
 {
-    return aeron_fileutil_resolve(directory, AERON_CNC_FILE, filename_buffer, filename_buffer_length);
+    return aeron_file_resolve(directory, AERON_CNC_FILE, filename_buffer, filename_buffer_length);
 }
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);

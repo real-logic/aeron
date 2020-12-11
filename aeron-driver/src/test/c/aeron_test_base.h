@@ -19,6 +19,7 @@
 
 #include "aeronc.h"
 #include "EmbeddedMediaDriver.h"
+
 extern "C"
 {
 #include "util/aeron_env.h"
@@ -151,8 +152,7 @@ public:
         }
     }
 
-    static void poll_handler(
-        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    static void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         auto test = reinterpret_cast<CSystemTestBase *>(clientd);
 
@@ -189,6 +189,5 @@ protected:
     poll_handler_t m_poll_handler = nullptr;
     image_handler_t m_onUnavailableImage = nullptr;
 };
-
 
 #endif //AERON_AERON_TEST_BASE_H

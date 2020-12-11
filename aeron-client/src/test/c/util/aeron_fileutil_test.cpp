@@ -111,7 +111,7 @@ TEST_F(FileUtilTest, resolveShouldConcatPaths)
 #endif
     char result[AERON_MAX_PATH];
 
-    ASSERT_LT(0, aeron_fileutil_resolve(parent, child, result, sizeof(result)));
+    ASSERT_LT(0, aeron_file_resolve(parent, child, result, sizeof(result)));
     ASSERT_STREQ(expected, result);
 }
 
@@ -121,7 +121,7 @@ TEST_F(FileUtilTest, resolveShouldReportTruncatededPaths)
     const char *child = "this_is_the_child";
     char result[10];
 
-    ASSERT_EQ(-1, aeron_fileutil_resolve(parent, child, result, sizeof(result)));
+    ASSERT_EQ(-1, aeron_file_resolve(parent, child, result, sizeof(result)));
     ASSERT_EQ(EINVAL, aeron_errcode());
     ASSERT_EQ('\0', result[sizeof(result) - 1]);
 }

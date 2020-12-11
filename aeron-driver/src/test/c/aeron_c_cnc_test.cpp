@@ -22,8 +22,6 @@
 #include "EmbeddedMediaDriver.h"
 #include "aeron_test_base.h"
 
-#include "util/aeron_platform.h"
-
 extern "C"
 {
 #include "aeron_socket.h"
@@ -39,12 +37,10 @@ using namespace aeron;
 class CounterIdFilter
 {
 public:
-    CounterIdFilter(std::int32_t filterId) :
-    m_filterId(filterId),
-    m_totalCounters(0),
-    m_foundValue(0),
-    m_matchCount(0)
-    {}
+    explicit CounterIdFilter(std::int32_t filterId) :
+        m_filterId(filterId)
+    {
+    }
 
     void apply(int32_t id, int64_t value)
     {
@@ -56,21 +52,21 @@ public:
         m_totalCounters++;
     }
 
-    bool matches()
+    bool matches() const
     {
         return 0 < m_matchCount;
     }
 
-    std::int64_t value()
+    std::int64_t value() const
     {
         return m_foundValue;
     }
 
 private:
-    std::int32_t m_filterId;
-    std::int32_t m_totalCounters;
-    std::int64_t m_foundValue;
-    std::int32_t m_matchCount;
+    std::int32_t m_filterId = 0;
+    std::int32_t m_totalCounters = 0;
+    std::int64_t m_foundValue = 0;
+    std::int32_t m_matchCount = 0;
 };
 
 class CncTest : public CSystemTestBase, public testing::Test
@@ -80,12 +76,11 @@ protected:
         std::vector<std::pair<std::string, std::string>>{
             { "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss" },
             { "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", "rate=0.2|recv-msg-mask=0xF" }
-        }),
-        m_cnc(nullptr), m_socketFd(-1)
+        })
     {
     }
 
-    virtual void TearDown()
+    void TearDown() override
     {
         if (nullptr != m_cnc)
         {
@@ -98,12 +93,12 @@ protected:
     }
 
 protected:
-    aeron_cnc_t *m_cnc;
-    aeron_socket_t m_socketFd;
+    aeron_cnc_t *m_cnc = nullptr;
+    aeron_socket_t m_socketFd = -1;
 
     bool bindToLocalUdpSocket(uint16_t port)
     {
-        sockaddr_in bind_address;
+        sockaddr_in bind_address = {};
         bind_address.sin_family = AF_INET;
         bind_address.sin_port = htons(port);
         inet_pton(AF_INET, "127.0.0.1", &bind_address.sin_addr);
@@ -149,7 +144,7 @@ protected:
         size_t label_length,
         void *clientd)
     {
-        CounterIdFilter *filter = reinterpret_cast<CounterIdFilter *>(clientd);
+        auto *filter = reinterpret_cast<CounterIdFilter *>(clientd);
         filter->apply(id, value);
     }
 
@@ -246,17 +241,18 @@ TEST_F(CncTest, shouldGetLossReport)
                 publication,
                 reinterpret_cast<const uint8_t *>(message),
                 strlen(message),
-                NULL,
-                NULL);
+                nullptr,
+                nullptr);
 
             ASSERT_NE(AERON_PUBLICATION_ERROR, offer) << aeron_errmsg();
         }
         while (offer < 0);
     }
 
-    poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
-    {
-    };
+    poll_handler_t handler =
+        [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+        {
+        };
 
     int total = 0;
     while (total < 100)
@@ -267,4 +263,3 @@ TEST_F(CncTest, shouldGetLossReport)
     ASSERT_LT(0, aeron_cnc_loss_reporter_read(m_cnc, countingLossReader, &lossCallbackCounter)) << aeron_errmsg();
     ASSERT_NE(0, lossCallbackCounter);
 }
-

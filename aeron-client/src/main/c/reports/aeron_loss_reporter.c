@@ -87,7 +87,7 @@ extern void aeron_loss_reporter_record_observation(
 
 int aeron_loss_reporter_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
 {
-    return aeron_fileutil_resolve(directory, AERON_LOSS_REPORT_FILE, filename_buffer, filename_buffer_length);
+    return aeron_file_resolve(directory, AERON_LOSS_REPORT_FILE, filename_buffer, filename_buffer_length);
 }
 
 size_t aeron_loss_reporter_read(

@@ -110,7 +110,7 @@ void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t dat
     str[j] = '\0';
 }
 
-int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char **tokens)
+int aeron_tokenise(char *input, char delimiter, int max_tokens, char **tokens)
 {
     if (NULL == input)
     {

@@ -231,22 +231,24 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         return -1;
     }
 
-    if (aeron_fileutil_resolve(dirname, AERON_PUBLICATIONS_DIR, filename, sizeof(filename)) < 0)
+    if (aeron_file_resolve(dirname, AERON_PUBLICATIONS_DIR, filename, sizeof(filename)) < 0)
     {
         aeron_set_err_from_last_err_code("Unable to get publications directory filename");
         return -1;
     }
+
     if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         aeron_set_err_from_last_err_code("mkdir %s", filename);
         return -1;
     }
 
-    if (aeron_fileutil_resolve(dirname, AERON_IMAGES_DIR, filename, sizeof(filename)) < 0)
+    if (aeron_file_resolve(dirname, AERON_IMAGES_DIR, filename, sizeof(filename)) < 0)
     {
         aeron_set_err_from_last_err_code("Unable to get images directory filename");
         return -1;
     }
+
     if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         aeron_set_err_from_last_err_code("mkdir %s", filename);
@@ -310,6 +312,7 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
         aeron_set_err_from_last_err_code("Unable to get loss report filename");
         return -1;
     }
+
     if (aeron_map_new_file(&driver->context->loss_report, buffer, true) < 0)
     {
         aeron_set_err(aeron_errcode(), "could not map loss report file: %s", aeron_errmsg());

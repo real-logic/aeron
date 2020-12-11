@@ -218,8 +218,7 @@ int main(int argc, char **argv)
     for (uint64_t i = 0; i < messages && is_running(); i++)
     {
         *((uint64_t *)message) = i;
-        while (aeron_publication_offer(
-            publication, message, message_length, NULL, NULL) < 0)
+        while (aeron_publication_offer(publication, message, message_length, NULL, NULL) < 0)
         {
             ++back_pressure_count;
 

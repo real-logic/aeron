@@ -81,9 +81,11 @@ int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
     aeron_default_path(default_directory, AERON_MAX_PATH);
-    aeron_error_stat_settings_t settings = { 0 };
-    settings.base_path = default_directory;
-    settings.timeout_ms = 1000;
+    aeron_error_stat_settings_t settings =
+        {
+            .base_path = default_directory,
+            .timeout_ms = 1000
+        };
 
     int opt;
 
@@ -118,7 +120,7 @@ int main(int argc, char **argv)
         }
     }
 
-    aeron_cnc_t *aeron_cnc;
+    aeron_cnc_t *aeron_cnc = NULL;
 
     if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
     {

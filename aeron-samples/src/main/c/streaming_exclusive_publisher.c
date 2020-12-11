@@ -34,7 +34,6 @@
 #include "util/aeron_strutil.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_agent.h"
-#include "aeron_alloc.h"
 #include "sample_util.h"
 
 #include "samples_configuration.h"

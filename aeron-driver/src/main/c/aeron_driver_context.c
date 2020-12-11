@@ -1086,11 +1086,11 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free((void *)context->shared_idle_strategy_name);
     aeron_free((void *)context->sender_idle_strategy_name);
     aeron_free((void *)context->receiver_idle_strategy_name);
-    aeron_free((void *)context->conductor_idle_strategy_init_args);
-    aeron_free((void *)context->sender_idle_strategy_init_args);
-    aeron_free((void *)context->receiver_idle_strategy_init_args);
-    aeron_free((void *)context->shared_idle_strategy_init_args);
-    aeron_free((void *)context->shared_network_idle_strategy_init_args);
+    aeron_free(context->conductor_idle_strategy_init_args);
+    aeron_free(context->sender_idle_strategy_init_args);
+    aeron_free(context->receiver_idle_strategy_init_args);
+    aeron_free(context->shared_idle_strategy_init_args);
+    aeron_free(context->shared_network_idle_strategy_init_args);
     aeron_free(context->bindings_clientd_entries);
     aeron_clock_cache_free(context->cached_clock);
     aeron_dl_load_libs_delete(context->dynamic_libs);
@@ -1248,6 +1248,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_f
             log_func(buffer);
             return false;
         }
+
         if (aeron_map_existing_file(&cnc_map, filename) < 0)
         {
             snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
@@ -1902,7 +1903,7 @@ int aeron_driver_context_set_sender_idle_strategy_init_args(aeron_driver_context
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    aeron_free((void *)context->sender_idle_strategy_init_args);
+    aeron_free(context->sender_idle_strategy_init_args);
     context->sender_idle_strategy_init_args = NULL == value ? NULL : aeron_strndup(value, AERON_MAX_PATH);
 
     return 0;
@@ -1917,7 +1918,7 @@ int aeron_driver_context_set_conductor_idle_strategy_init_args(aeron_driver_cont
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    aeron_free((void *)context->conductor_idle_strategy_init_args);
+    aeron_free(context->conductor_idle_strategy_init_args);
     context->conductor_idle_strategy_init_args = NULL == value ? NULL : aeron_strndup(value, AERON_MAX_PATH);
 
     return 0;
@@ -1932,7 +1933,7 @@ int aeron_driver_context_set_receiver_idle_strategy_init_args(aeron_driver_conte
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    aeron_free((void *)context->receiver_idle_strategy_init_args);
+    aeron_free(context->receiver_idle_strategy_init_args);
     context->receiver_idle_strategy_init_args = NULL == value ? NULL : aeron_strndup(value, AERON_MAX_PATH);
 
     return 0;
@@ -1947,7 +1948,7 @@ int aeron_driver_context_set_sharednetwork_idle_strategy_init_args(aeron_driver_
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    aeron_free((void *)context->shared_network_idle_strategy_init_args);
+    aeron_free(context->shared_network_idle_strategy_init_args);
     context->shared_network_idle_strategy_init_args = NULL == value ? NULL : aeron_strndup(value, AERON_MAX_PATH);
 
     return 0;
@@ -1962,7 +1963,7 @@ int aeron_driver_context_set_shared_idle_strategy_init_args(aeron_driver_context
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    aeron_free((void *)context->shared_idle_strategy_init_args);
+    aeron_free(context->shared_idle_strategy_init_args);
     context->shared_idle_strategy_init_args = NULL == value ? NULL : aeron_strndup(value, AERON_MAX_PATH);
 
     return 0;

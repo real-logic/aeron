@@ -58,6 +58,7 @@ set(SOURCE
     concurrent/aeron_term_unblocker.c
     concurrent/aeron_thread.c
     protocol/aeron_udp_protocol.c
+    reports/aeron_loss_reporter.c
     status/aeron_local_sockaddr.c
     util/aeron_arrayutil.c
     util/aeron_bitutil.c
@@ -77,6 +78,7 @@ set(SOURCE
     aeron_alloc.c
     aeron_client.c
     aeron_client_conductor.c
+    aeron_cnc.c
     aeron_cnc_file_descriptor.c
     aeron_context.c
     aeron_counter.c
@@ -125,6 +127,7 @@ set(HEADERS
     concurrent/aeron_term_unblocker.h
     concurrent/aeron_thread.h
     protocol/aeron_udp_protocol.h
+    reports/aeron_loss_reporter.h
     status/aeron_local_sockaddr.h
     util/aeron_arrayutil.h
     util/aeron_bitutil.h

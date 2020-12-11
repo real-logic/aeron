@@ -68,6 +68,23 @@ TEST_F(StrUtilTest, shouldHandleMoreThanSpecifiedTokens)
     EXPECT_STREQ(tokens[1], "token_b");
 }
 
+TEST_F(StrUtilTest, shouldFormatNumericStrings)
+{
+    char buffer[AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN];
+
+    EXPECT_STREQ("999", aeron_format_number_to_locale(999, buffer, sizeof(buffer)));
+    EXPECT_STREQ("-999", aeron_format_number_to_locale(-999, buffer, sizeof(buffer)));
+    EXPECT_STREQ("999,999", aeron_format_number_to_locale(999999, buffer, sizeof(buffer)));
+    EXPECT_STREQ("-999,999", aeron_format_number_to_locale(-999999, buffer, sizeof(buffer)));
+    EXPECT_STREQ("999,999,999", aeron_format_number_to_locale(999999999, buffer, sizeof(buffer)));
+    EXPECT_STREQ("-999,999,999", aeron_format_number_to_locale(-999999999, buffer, sizeof(buffer)));
+    EXPECT_STREQ("10,000,000,000", aeron_format_number_to_locale(10000000000, buffer, sizeof(buffer)));
+    EXPECT_STREQ("-999,9", aeron_format_number_to_locale(-999999999, buffer, 7));
+    EXPECT_LT(
+        strlen(aeron_format_number_to_locale(INT64_MIN, buffer, sizeof(buffer))),
+        (size_t)AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN);
+}
+
 TEST_F(StrUtilTest, shouldHandleConsecutiveDelimeters)
 {
     const int max_tokens = 10;

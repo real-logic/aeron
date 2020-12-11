@@ -68,8 +68,32 @@ target_link_libraries(cping
 
 add_dependencies(cping hdr_histogram)
 
+add_executable(AeronStat aeron_stat.c ${HEADERS})
+target_link_libraries(AeronStat ${CLIENT_LINK_LIB})
+
+add_executable(DriverTool driver_tool.c ${HEADERS})
+target_link_libraries(DriverTool ${CLIENT_LINK_LIB})
+
+add_executable(ErrorStat error_stat.c ${HEADERS})
+target_link_libraries(ErrorStat ${CLIENT_LINK_LIB})
+
+add_executable(LossStat loss_stat.c ${HEADERS})
+target_link_libraries(LossStat ${CLIENT_LINK_LIB})
+
+
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS basic_publisher basic_subscriber rate_subscriber streaming_publisher streaming_exclusive_publisher cpong cping
+        TARGETS
+        basic_publisher
+        basic_subscriber
+        rate_subscriber
+        streaming_publisher
+        streaming_exclusive_publisher
+        cpong
+        cping
+        AeronStat
+        DriverTool
+        ErrorStat
+        LossStat
         DESTINATION bin)
 endif ()

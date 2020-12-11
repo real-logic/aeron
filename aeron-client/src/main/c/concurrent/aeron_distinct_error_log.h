@@ -83,14 +83,6 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log);
 int aeron_distinct_error_log_record(
     aeron_distinct_error_log_t *log, int error_code, const char *description, const char *message);
 
-typedef void (*aeron_error_log_reader_func_t)(
-    int32_t observation_count,
-    int64_t first_observation_timestamp,
-    int64_t last_observation_timestamp,
-    const char *error,
-    size_t error_length,
-    void *clientd);
-
 bool aeron_error_log_exists(const uint8_t *buffer, size_t buffer_size);
 
 size_t aeron_error_log_read(

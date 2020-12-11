@@ -24,6 +24,8 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <string.h>
+#include <locale.h>
+#include <stdlib.h>
 
 #define AERON_DLL_EXPORTS
 
@@ -46,6 +48,48 @@ void aeron_format_date(char *str, size_t count, int64_t timestamp)
     strftime(tz_buffer, sizeof(tz_buffer) - 1, "%z", &time);
 
     snprintf(str, count, "%s%s%s", time_buffer, msec_buffer, tz_buffer);
+}
+
+static size_t aeron_format_min(size_t a, size_t b)
+{
+    return a < b ? a : b;
+}
+
+static size_t aeron_format_number_next(long long value, const char *sep, char *buffer, size_t buffer_len)
+{
+    if (0 <= value && value < 1000)
+    {
+        return snprintf(buffer, aeron_format_min(4, buffer_len), "%lld", value);
+    }
+    else if (-1000 < value && value < 0)
+    {
+        return snprintf(buffer, aeron_format_min(5, buffer_len), "%lld", value);
+    }
+    else
+    {
+        size_t printed_len = aeron_format_number_next(value / 1000, sep, buffer, buffer_len);
+        return printed_len + snprintf(
+            buffer + printed_len, aeron_format_min(5, buffer_len - printed_len), "%s%03lld", sep, llabs(value % 1000));
+    }
+}
+
+/**
+ * Uses locale specific thousands separator to format the number, or "," if none found. Will truncate to buffer_len - 1
+ * and null terminate. Use AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN for the buffer size to prevent truncations. Works for
+ * string lengths up to INT64_MIN.
+ *
+ * @param value Value for format
+ * @param buffer buffer to use
+ * @param buffer_len length of buffer
+ * @return NULL terminated buffer containing formatted string.
+ */
+char *aeron_format_number_to_locale(long long value, char *buffer, size_t buffer_len)
+{
+    setlocale(LC_NUMERIC, "");
+    const char *sep = 1 == strlen(localeconv()->thousands_sep) ? localeconv()->thousands_sep : ",";
+    aeron_format_number_next(value, sep, buffer, buffer_len);
+    buffer[buffer_len - 1] = '\0';
+    return buffer;
 }
 
 void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t data_len)

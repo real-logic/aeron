@@ -1231,7 +1231,8 @@ bool aeron_is_driver_active_with_cnc(
 
 bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_func_t log_func)
 {
-    char buffer[AERON_MAX_PATH];
+    char filename[AERON_MAX_PATH];
+    char buffer[2 * AERON_MAX_PATH];
     bool result = false;
 
     if (aeron_is_directory(dirname))
@@ -1241,15 +1242,20 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_f
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron directory %s exists", dirname);
         log_func(buffer);
 
-        snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
-        if (aeron_map_existing_file(&cnc_map, buffer) < 0)
+        if (aeron_cnc_resolve_filename(dirname, filename, sizeof(filename)) < 0)
+        {
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: Unable to resolve cnc filename: %s", aeron_errmsg());
+            log_func(buffer);
+            return false;
+        }
+        if (aeron_map_existing_file(&cnc_map, filename) < 0)
         {
             snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
             log_func(buffer);
             return false;
         }
 
-        snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
+        snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s exists", filename);
         log_func(buffer);
 
         result = aeron_is_driver_active_with_cnc(&cnc_map, timeout_ms, aeron_epoch_clock(), log_func);

@@ -2312,6 +2312,127 @@ int64_t aeron_async_destination_get_registration_id(aeron_async_destination_t *a
  */
 int aeron_context_request_driver_termination(const char *directory, const uint8_t *token_buffer, size_t token_length);
 
+typedef struct aeron_cnc_stct aeron_cnc_t;
+
+#pragma pack(push)
+#pragma pack(4)
+typedef struct aeron_cnc_constants_stct
+{
+    int32_t cnc_version;
+    int32_t to_driver_buffer_length;
+    int32_t to_clients_buffer_length;
+    int32_t counter_metadata_buffer_length;
+    int32_t counter_values_buffer_length;
+    int32_t error_log_buffer_length;
+    int64_t client_liveness_timeout;
+    int64_t start_timestamp;
+    int64_t pid;
+}
+aeron_cnc_constants_t;
+#pragma pack(pop)
+
+/**
+ * Initialise an aeron_cnc, which gives user level access to the command and control file used to communicate
+ * with the media driver. Will wait until the media driver has loaded and the cnc file is created, up to timeout_ms.
+ * Use a value of 0 for a non-blocking initialisation.
+ *
+ * @param aeron_cnc to hold the loaded aeron_cnc
+ * @param base_path media driver's base path
+ * @param timeout_ms Number of milliseconds to wait before timing out.
+ * @return 0 on success, -1 on failure.
+ */
+int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeout_ms);
+
+/**
+ * Fetch the sets of constant values associated with this command and control file.
+ *
+ * @param aeron_cnc to query
+ * @param constants user supplied structure to hold return values.
+ * @return 0 on success, -1 on failure.
+ */
+int aeron_cnc_constants(aeron_cnc_t *aeron_cnc, aeron_cnc_constants_t *constants);
+
+/**
+ * Get the current file name of the cnc file.
+ *
+ * @param aeron_cnc to query
+ * @return name of the cnc file
+ */
+const char *aeron_cnc_filename(aeron_cnc_t *aeron_cnc);
+
+/**
+ * Gets the timestamp of the last heartbeat sent to the media driver from any client.
+ *
+ * @param aeron_cnc to query
+ * @return last heartbeat timestamp in ms.
+ */
+int64_t aeron_cnc_to_driver_heartbeat(aeron_cnc_t *aeron_cnc);
+
+typedef void (*aeron_error_log_reader_func_t)(
+    int32_t observation_count,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    const char *error,
+    size_t error_length,
+    void *clientd);
+
+/**
+ * Reads the current error log for this driver.
+ *
+ * @param aeron_cnc to query
+ * @param callback called for every distinct error observation
+ * @param clientd client data to be passed to the callback
+ * @param since_timestamp only return errors after this timestamp (0 returns all)
+ * @return the number of distinct errors seen
+ */
+size_t aeron_cnc_error_log_read(
+    aeron_cnc_t *aeron_cnc,
+    aeron_error_log_reader_func_t callback,
+    void *clientd,
+    int64_t since_timestamp);
+
+/**
+ * Gets a counters reader for this command and control file.  This does not need to be closed manually, resources
+ * are tied to the instance of aeron_cnc.
+ *
+ * @param aeron_cnc to query
+ * @return pointer to a counters reader.
+ */
+aeron_counters_reader_t *aeron_cnc_counters_reader(aeron_cnc_t *aeron_cnc);
+
+typedef void (*aeron_loss_reporter_read_entry_func_t)(
+    void *clientd,
+    int64_t observation_count,
+    int64_t total_bytes_lost,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel,
+    int32_t channel_length,
+    const char *source,
+    int32_t source_length);
+
+/**
+ * Read all of the data loss observations from the report in the same media driver instances as the cnc file.
+ *
+ * @param aeron_cnc to query
+ * @param entry_func callback for each observation found
+ * @param clientd client data to be passed to the callback.
+ * @return -1 on failure, number of observations on success (could be 0).
+ */
+int aeron_cnc_loss_reporter_read(
+    aeron_cnc_t *aeron_cnc,
+    aeron_loss_reporter_read_entry_func_t entry_func,
+    void *clientd);
+
+/**
+ * Closes the instance of the aeron cnc and frees its resources.
+ *
+ * @param aeron_cnc to close
+ */
+void aeron_cnc_close(aeron_cnc_t *aeron_cnc);
+
 #ifdef __cplusplus
 }
 #endif

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "reports/aeron_loss_reporter.h"
+#include "util/aeron_fileutil.h"
 
 int aeron_loss_reporter_init(aeron_loss_reporter_t *reporter, uint8_t *buffer, size_t length)
 {
@@ -82,6 +84,11 @@ extern void aeron_loss_reporter_record_observation(
     aeron_loss_reporter_entry_offset_t offset,
     int64_t bytes_lost,
     int64_t timestamp_ms);
+
+int aeron_loss_reporter_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length)
+{
+    return aeron_fileutil_resolve(directory, AERON_LOSS_REPORT_FILE, filename_buffer, filename_buffer_length);
+}
 
 size_t aeron_loss_reporter_read(
     const uint8_t *buffer, size_t capacity, aeron_loss_reporter_read_entry_func_t entry_func, void *clientd)

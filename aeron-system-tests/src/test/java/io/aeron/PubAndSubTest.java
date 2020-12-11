@@ -582,8 +582,6 @@ public class PubAndSubTest
 
         Tests.awaitConnected(subscription);
 
-        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
-
         for (int i = 0; i < numMessagesToSendStageTwo; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)

@@ -198,7 +198,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
     {
-        consumerPosition = Math.max(consumerPosition, subscriberPosition.getVolatile());
         subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();
 

@@ -18,7 +18,6 @@
 
 #include "aeron_subscription.h"
 #include "aeron_image.h"
-#include "aeron_counters.h"
 #include "status/aeron_local_sockaddr.h"
 #include "uri/aeron_uri.h"
 
@@ -610,7 +609,8 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
     }
 
     int result = -1;
-    aeron_uri_t temp_uri = { 0 };
+    aeron_uri_t temp_uri;
+    memset(&temp_uri, 0, sizeof(aeron_uri_t));
 
     if (aeron_uri_parse(strlen(subscription->channel), subscription->channel, &temp_uri) >= 0)
     {

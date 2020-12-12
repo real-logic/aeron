@@ -556,9 +556,11 @@ int aeron_subscription_resolved_endpoint(
         return -1;
     }
 
-    aeron_iovec_t addr_vec;
-    addr_vec.iov_base = (uint8_t *)address;
-    addr_vec.iov_len = address_len;
+    aeron_iovec_t addr_vec =
+        {
+            .iov_base = (uint8_t *)address,
+            .iov_len = address_len
+        };
 
     return aeron_local_sockaddr_find_addrs(
         &subscription->conductor->counters_reader,

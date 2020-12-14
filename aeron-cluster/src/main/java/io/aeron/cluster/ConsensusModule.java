@@ -1175,6 +1175,11 @@ public final class ConsensusModule implements AutoCloseable
                 }
             }
 
+            if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
+            {
+                throw new ClusterException("Aeron client must use a RethrowingErrorHandler");
+            }
+
             if (null == aeron.conductorAgentInvoker())
             {
                 throw new ClusterException("Aeron client must use conductor agent invoker");

@@ -2424,9 +2424,7 @@ typedef void (*aeron_loss_reporter_read_entry_func_t)(
  * @return -1 on failure, number of observations on success (could be 0).
  */
 int aeron_cnc_loss_reporter_read(
-    aeron_cnc_t *aeron_cnc,
-    aeron_loss_reporter_read_entry_func_t entry_func,
-    void *clientd);
+    aeron_cnc_t *aeron_cnc, aeron_loss_reporter_read_entry_func_t entry_func, void *clientd);
 
 /**
  * Closes the instance of the aeron cnc and frees its resources.

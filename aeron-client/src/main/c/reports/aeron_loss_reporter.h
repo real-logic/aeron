@@ -31,10 +31,10 @@
 #pragma pack(4)
 typedef struct aeron_loss_reporter_entry_stct
 {
-    int64_t observation_count;
-    int64_t total_bytes_lost;
-    int64_t last_observation_timestamp;
+    volatile int64_t observation_count;
+    volatile int64_t total_bytes_lost;
     int64_t first_observation_timestamp;
+    volatile int64_t last_observation_timestamp;
     int32_t session_id;
     int32_t stream_id;
 }
@@ -78,7 +78,7 @@ inline void aeron_loss_reporter_record_observation(
         aeron_loss_reporter_entry_t *entry = (aeron_loss_reporter_entry_t *)ptr;
         int64_t dest;
 
-        entry->last_observation_timestamp = timestamp_ms;
+        AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp_ms);
         AERON_GET_AND_ADD_INT64(dest, entry->total_bytes_lost, bytes_lost);
         AERON_GET_AND_ADD_INT64(dest, entry->observation_count, 1);
     }

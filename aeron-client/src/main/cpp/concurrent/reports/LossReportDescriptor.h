@@ -61,10 +61,10 @@ namespace LossReportDescriptor
 #pragma pack(4)
 struct LossReportEntryDefn
 {
-    std::int64_t observationCount;
-    std::int64_t totalBytesLost;
+    volatile std::int64_t observationCount;
+    volatile std::int64_t totalBytesLost;
     std::int64_t firstObservationTimestamp;
-    std::int64_t lastObservationTimestamp;
+    volatile std::int64_t lastObservationTimestamp;
     std::int32_t sessionId;
     std::int32_t streamId;
 };

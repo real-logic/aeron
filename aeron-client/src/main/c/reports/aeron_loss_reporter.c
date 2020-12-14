@@ -120,12 +120,18 @@ size_t aeron_loss_reporter_read(
         ptr += sizeof(int32_t);
         const char *source = (const char *)ptr;
 
+        int64_t total_bytes_lost;
+        AERON_GET_VOLATILE(total_bytes_lost, entry->total_bytes_lost);
+
+        int64_t last_observation_timestamp;
+        AERON_GET_VOLATILE(last_observation_timestamp, entry->last_observation_timestamp);
+
         entry_func(
             clientd,
-            entry->observation_count,
-            entry->total_bytes_lost,
+            observation_count,
+            total_bytes_lost,
             entry->first_observation_timestamp,
-            entry->last_observation_timestamp,
+            last_observation_timestamp,
             entry->session_id,
             entry->stream_id,
             channel,

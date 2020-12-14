@@ -79,7 +79,6 @@ static void aeron_loss_stat_print_observation(
         source);
 }
 
-
 int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];

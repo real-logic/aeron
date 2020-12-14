@@ -794,14 +794,7 @@ class Election
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {
-            if (null != liveLogDestination)
-            {
-                logSubscription.asyncRemoveDestination(liveLogDestination);
-                liveLogDestination = null;
-                consensusModuleAgent.liveLogDestination(null);
-            }
-
-            state(CANVASS, nowNs);
+            state(INIT, nowNs);
         }
 
         return 1;

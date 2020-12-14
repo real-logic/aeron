@@ -211,7 +211,7 @@ class ConsensusModuleAgent implements Agent
         if (!aeron.isClosed())
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
-            asyncStopLogRecording();
+            tryStopLogRecording();
 
             if (!ctx.ownsAeronClient())
             {
@@ -844,7 +844,10 @@ class ConsensusModuleAgent implements Agent
         {
             stateChange(state, newState, memberId);
             state = newState;
-            moduleState.set(newState.code());
+            if (!moduleState.isClosed())
+            {
+                moduleState.set(newState.code());
+            }
         }
     }
 
@@ -880,9 +883,22 @@ class ConsensusModuleAgent implements Agent
 
         if (RecordingPos.NULL_RECORDING_ID != recordingId)
         {
-            logPublisher.disconnect(ctx.countedErrorHandler());
+            if (null != liveLogDestination)
+            {
+                logAdapter.asyncRemoveDestination(liveLogDestination);
+                liveLogDestination = null;
+            }
+
+            if (null != replayLogDestination)
+            {
+                logAdapter.asyncRemoveDestination(replayLogDestination);
+                replayLogDestination = null;
+            }
+
             logAdapter.disconnect(ctx.countedErrorHandler());
-            stopLogRecording();
+            logPublisher.disconnect(ctx.countedErrorHandler());
+
+            tryStopLogRecording();
 
             idleStrategy.reset();
             while (AeronArchive.NULL_POSITION == (appendPosition = archive.getStopPosition(recordingId)))
@@ -1706,11 +1722,6 @@ class ConsensusModuleAgent implements Agent
 
     private int slowTickWork(final long nowMs, final long nowNs)
     {
-        if (ConsensusModule.State.CLOSED == state && ctx.shouldTerminateWhenClosed())
-        {
-            throw new AgentTerminationException("module is closed");
-        }
-
         int workCount = aeronClientInvoker.invoke();
         if (aeron.isClosed())
         {
@@ -2394,35 +2405,32 @@ class ConsensusModuleAgent implements Agent
 
     private int updateLeaderPosition(final long nowNs)
     {
-        if (ConsensusModule.State.CLOSED != state)
+        final long appendPosition = this.appendPosition.get();
+        thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
+        final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
+
+        if (commitPosition > this.commitPosition.getWeak() ||
+            nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
         {
-            final long appendPosition = this.appendPosition.get();
-            thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
-            final long commitPosition = min(quorumPosition(clusterMembers, rankedPositions), appendPosition);
-
-            if (commitPosition > this.commitPosition.getWeak() ||
-                nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
+            for (final ClusterMember member : clusterMembers)
             {
-                for (final ClusterMember member : clusterMembers)
+                if (member.id() != memberId)
                 {
-                    if (member.id() != memberId)
-                    {
-                        final ExclusivePublication publication = member.publication();
-                        consensusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
-                    }
+                    final ExclusivePublication publication = member.publication();
+                    consensusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
                 }
-
-                this.commitPosition.setOrdered(commitPosition);
-                timeOfLastLogUpdateNs = nowNs;
-
-                clearUncommittedEntriesTo(commitPosition);
-                if (pendingMemberRemovals > 0)
-                {
-                    handleMemberRemovals(commitPosition);
-                }
-
-                return 1;
             }
+
+            this.commitPosition.setOrdered(commitPosition);
+            timeOfLastLogUpdateNs = nowNs;
+
+            clearUncommittedEntriesTo(commitPosition);
+            if (pendingMemberRemovals > 0)
+            {
+                handleMemberRemovals(commitPosition);
+            }
+
+            return 1;
         }
 
         return 0;
@@ -2430,19 +2438,16 @@ class ConsensusModuleAgent implements Agent
 
     private int updateFollowerPosition(final long nowNs)
     {
-        if (ConsensusModule.State.CLOSED != state)
-        {
-            final ExclusivePublication publication = leaderMember.publication();
-            final long appendPosition = this.appendPosition.get();
+        final ExclusivePublication publication = leaderMember.publication();
+        final long appendPosition = this.appendPosition.get();
 
-            if ((appendPosition != lastAppendPosition ||
-                nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
-                consensusPublisher.appendPosition(publication, leadershipTermId, appendPosition, memberId))
-            {
-                lastAppendPosition = appendPosition;
-                timeOfLastAppendPositionNs = nowNs;
-                return 1;
-            }
+        if ((appendPosition != lastAppendPosition ||
+            nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
+            consensusPublisher.appendPosition(publication, leadershipTermId, appendPosition, memberId))
+        {
+            lastAppendPosition = appendPosition;
+            timeOfLastAppendPositionNs = nowNs;
+            return 1;
         }
 
         return 0;
@@ -2874,48 +2879,19 @@ class ConsensusModuleAgent implements Agent
 
     private void closeAndTerminate()
     {
-        asyncStopLogRecording();
         state(ConsensusModule.State.CLOSED);
+        tryStopLogRecording();
         ctx.terminationHook().run();
+        throw new AgentTerminationException();
     }
 
-    private void stopLogRecording()
-    {
-        if (null != liveLogDestination)
-        {
-            logAdapter.asyncRemoveDestination(liveLogDestination);
-            liveLogDestination = null;
-        }
-
-        if (null != replayLogDestination)
-        {
-            logAdapter.asyncRemoveDestination(replayLogDestination);
-            replayLogDestination = null;
-        }
-
-        if (NULL_VALUE != logSubscriptionId)
-        {
-            try
-            {
-                archive.tryStopRecording(logSubscriptionId);
-            }
-            catch (final Exception ex)
-            {
-                ctx.countedErrorHandler().onError(ex);
-            }
-
-            logSubscriptionId = NULL_VALUE;
-        }
-    }
-
-    private void asyncStopLogRecording()
+    private void tryStopLogRecording()
     {
         if (NULL_VALUE != logSubscriptionId && archive.archiveProxy().publication().isConnected())
         {
             try
             {
-                final long correlationId = aeron.nextCorrelationId();
-                archive.archiveProxy().stopRecording(logSubscriptionId, correlationId, archive.controlSessionId());
+                archive.tryStopRecording(logSubscriptionId);
             }
             catch (final Exception ex)
             {

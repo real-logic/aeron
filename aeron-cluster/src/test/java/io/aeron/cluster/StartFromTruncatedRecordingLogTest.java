@@ -359,7 +359,6 @@ public class StartFromTruncatedRecordingLogTest
                 .ingressChannel("aeron:udp?term-length=64k")
                 .logChannel(memberSpecificPort(LOG_CHANNEL, index))
                 .archiveContext(archiveCtx.clone())
-                .shouldTerminateWhenClosed(false)
                 .deleteDirOnStart(cleanStart));
 
         containers[index] = ClusteredServiceContainer.launch(
@@ -548,11 +547,14 @@ public class StartFromTruncatedRecordingLogTest
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
-            final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
 
-            while (snapshotCounter.get() != count)
+            if (!driver.consensusModule().context().aeron().isClosed())
             {
-                Tests.sleep(1);
+                final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
+                while (snapshotCounter.get() < count)
+                {
+                    Tests.sleep(1);
+                }
             }
         }
     }

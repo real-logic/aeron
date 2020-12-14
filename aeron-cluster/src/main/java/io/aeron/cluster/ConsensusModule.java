@@ -1006,7 +1006,6 @@ public final class ConsensusModule implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
 
-        private boolean shouldTerminateWhenClosed = true;
         private boolean deleteDirOnStart = false;
         private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
         private File clusterDir;
@@ -1320,30 +1319,6 @@ public final class ConsensusModule implements AutoCloseable
         public boolean deleteDirOnStart()
         {
             return deleteDirOnStart;
-        }
-
-        /**
-         * Should the consensus module terminate by {@link AgentTerminationException} when
-         * in {@link ConsensusModule.State#CLOSED} state.
-         *
-         * @param shouldTerminateWhenClosed should the {@link Agent} terminate when closed state is entered?
-         * @return this for a fluent API.
-         */
-        public Context shouldTerminateWhenClosed(final boolean shouldTerminateWhenClosed)
-        {
-            this.shouldTerminateWhenClosed = shouldTerminateWhenClosed;
-            return this;
-        }
-
-        /**
-         * Should the consensus module terminate by {@link AgentTerminationException} when
-         * in {@link ConsensusModule.State#CLOSED} state.
-         *
-         * @return true when the {@link Agent} should terminate when closed state is entered?
-         */
-        public boolean shouldTerminateWhenClosed()
-        {
-            return shouldTerminateWhenClosed;
         }
 
         /**

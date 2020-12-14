@@ -173,8 +173,9 @@ public class TestNode implements AutoCloseable
 
     public Cluster.Role role()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().clusterNodeRoleCounter();
-        if (counter.isClosed())
+        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
+        final Counter counter = context.clusterNodeRoleCounter();
+        if (counter.isClosed() || context.aeron().isClosed())
         {
             return Cluster.Role.FOLLOWER;
         }
@@ -184,8 +185,9 @@ public class TestNode implements AutoCloseable
 
     ElectionState electionState()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().electionStateCounter();
-        if (counter.isClosed())
+        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
+        final Counter counter = context.electionStateCounter();
+        if (counter.isClosed() || context.aeron().isClosed())
         {
             return ElectionState.CLOSED;
         }
@@ -195,8 +197,9 @@ public class TestNode implements AutoCloseable
 
     ConsensusModule.State moduleState()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().moduleStateCounter();
-        if (counter.isClosed())
+        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
+        final Counter counter = context.moduleStateCounter();
+        if (counter.isClosed() || context.aeron().isClosed())
         {
             return ConsensusModule.State.CLOSED;
         }
@@ -206,8 +209,9 @@ public class TestNode implements AutoCloseable
 
     public long commitPosition()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().commitPositionCounter();
-        if (counter.isClosed())
+        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
+        final Counter counter = context.commitPositionCounter();
+        if (counter.isClosed() || context.aeron().isClosed())
         {
             return NULL_POSITION;
         }

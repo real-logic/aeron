@@ -110,9 +110,9 @@ public class LossReportReader
 
             entryConsumer.accept(
                 observationCount,
-                buffer.getLong(offset + TOTAL_BYTES_LOST_OFFSET),
+                buffer.getLongVolatile(offset + TOTAL_BYTES_LOST_OFFSET),
                 buffer.getLong(offset + FIRST_OBSERVATION_OFFSET),
-                buffer.getLong(offset + LAST_OBSERVATION_OFFSET),
+                buffer.getLongVolatile(offset + LAST_OBSERVATION_OFFSET),
                 buffer.getInt(offset + SESSION_ID_OFFSET),
                 buffer.getInt(offset + STREAM_ID_OFFSET),
                 channel,

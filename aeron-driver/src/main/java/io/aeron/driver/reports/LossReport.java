@@ -189,7 +189,7 @@ public class LossReport
          */
         public void recordObservation(final long bytesLost, final long timestampMs)
         {
-            buffer.putLong(offset + LAST_OBSERVATION_OFFSET, timestampMs);
+            buffer.putLongOrdered(offset + LAST_OBSERVATION_OFFSET, timestampMs);
             buffer.getAndAddLong(offset + TOTAL_BYTES_LOST_OFFSET, bytesLost);
             buffer.getAndAddLong(offset + OBSERVATION_COUNT_OFFSET, 1);
         }

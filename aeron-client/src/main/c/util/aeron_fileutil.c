@@ -44,6 +44,8 @@
 #include <io.h>
 #include <direct.h>
 
+#include "aeron_alloc.h"
+
 #define PROT_READ  1
 #define PROT_WRITE 2
 #define MAP_FAILED ((void *)-1)
@@ -152,7 +154,7 @@ int aeron_create_file(const char *path)
     int fd;
     int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
 
-    if (error != NO_ERROR)
+    if (NO_ERROR != error)
     {
         return -1;
     }
@@ -162,27 +164,39 @@ int aeron_create_file(const char *path)
 
 int aeron_delete_directory(const char *dir)
 {
-    SHFILEOPSTRUCT file_op =
+    char *temp = NULL;
+    size_t dir_length = strlen(dir);
+    if (aeron_alloc((void **)&temp, dir_length + 2) < 0)
     {
-        NULL,
-        FO_DELETE,
-        dir,
-        "",
-        FOF_NOCONFIRMATION |
-        FOF_NOERRORUI |
-        FOF_SILENT,
-        false,
-        0,
-        ""
-    };
+        return -1;
+    }
+    
+    strncpy(temp, dir, dir_length + 2);
+    
+    SHFILEOPSTRUCT file_op =
+        {
+            NULL,
+            FO_DELETE,
+            temp,
+            "",
+            FOF_NOCONFIRMATION |
+            FOF_NOERRORUI |
+            FOF_SILENT,
+            false,
+            0,
+            ""
+        };
 
-    return SHFileOperation(&file_op);
+    int result = SHFileOperation(&file_op);
+    aeron_free(temp);
+    
+    return result;
 }
 
 int aeron_is_directory(const char *path)
 {
     const DWORD attributes = GetFileAttributes(path);
-    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+    return INVALID_FILE_ATTRIBUTES != attributes && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 #else

@@ -1177,6 +1177,7 @@ public class ClusterTest
 
             cluster.stopNode(leader0);
             final TestNode leader1 = cluster.awaitLeader(leader0.index());
+            cluster.client().sendKeepAlive();
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
@@ -1187,6 +1188,7 @@ public class ClusterTest
 
             cluster.stopNode(leader1);
             cluster.awaitLeader(leader1.index());
+            cluster.client().sendKeepAlive();
             cluster.startStaticNode(leader1.index(), false);
 
             cluster.sendMessages(numMessages);

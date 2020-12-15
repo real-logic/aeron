@@ -15,8 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.CommonContext;
-import io.aeron.Counter;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -490,10 +489,15 @@ public class StartFromTruncatedRecordingLogTest
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
+            if (driver.consensusModule().context().aeron().isClosed())
+            {
+                continue;
+            }
+
             final Cluster.Role role = Cluster.Role.get(driver.consensusModule().context().clusterNodeRoleCounter());
             final Counter electionStateCounter = driver.consensusModule().context().electionStateCounter();
 
-            if (Cluster.Role.LEADER == role && ElectionState.CLOSED.code() == electionStateCounter.get())
+            if (Cluster.Role.LEADER == role && ElectionState.CLOSED == ElectionState.get(electionStateCounter))
             {
                 leaderMemberId = driver.consensusModule().context().clusterMemberId();
             }
@@ -527,6 +531,11 @@ public class StartFromTruncatedRecordingLogTest
     private AtomicCounter getControlToggle(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+        if (driver.consensusModule().context().aeron().isClosed())
+        {
+            return null;
+        }
+
         final int clusterId = driver.consensusModule().context().clusterId();
         final CountersReader counters = driver.consensusModule().context().aeron().countersReader();
 
@@ -535,9 +544,16 @@ public class StartFromTruncatedRecordingLogTest
 
     private void awaitNeutralCounter(final int index)
     {
-        final AtomicCounter controlToggle = getControlToggle(index);
-        while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
+        while (true)
         {
+            final AtomicCounter controlToggle = getControlToggle(index);
+            assertNotNull(controlToggle);
+
+            if (ClusterControl.ToggleState.get(controlToggle) == ClusterControl.ToggleState.NEUTRAL)
+            {
+                break;
+            }
+
             Tests.yield();
         }
     }
@@ -554,6 +570,10 @@ public class StartFromTruncatedRecordingLogTest
                 while (snapshotCounter.get() < count)
                 {
                     Tests.sleep(1);
+                    if (snapshotCounter.isClosed())
+                    {
+                        throw new IllegalStateException("Snapshot counter is closed");
+                    }
                 }
             }
         }

@@ -113,6 +113,11 @@ public interface Cluster
          */
         public static Role get(final AtomicCounter counter)
         {
+            if (counter.isClosed())
+            {
+                return FOLLOWER;
+            }
+
             return get(counter.get());
         }
     }

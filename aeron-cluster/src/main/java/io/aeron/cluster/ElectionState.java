@@ -76,6 +76,11 @@ public enum ElectionState
      */
     public static ElectionState get(final AtomicCounter counter)
     {
+        if (counter.isClosed())
+        {
+            return CLOSED;
+        }
+
         return get(counter.get());
     }
 }

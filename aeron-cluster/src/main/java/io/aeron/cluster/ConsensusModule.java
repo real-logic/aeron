@@ -126,8 +126,12 @@ public final class ConsensusModule implements AutoCloseable
          */
         public static State get(final AtomicCounter counter)
         {
-            final long code = counter.get();
-            return get(code);
+            if (counter.isClosed())
+            {
+                return CLOSED;
+            }
+
+            return get(counter.get());
         }
 
         /**

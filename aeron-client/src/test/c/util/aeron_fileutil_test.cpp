@@ -115,7 +115,7 @@ TEST_F(FileUtilTest, resolveShouldConcatPaths)
     ASSERT_STREQ(expected, result);
 }
 
-TEST_F(FileUtilTest, resolveShouldReportTruncatededPaths)
+TEST_F(FileUtilTest, resolveShouldReportTruncatedPaths)
 {
     const char *parent = "this_is_the_parent";
     const char *child = "this_is_the_child";

@@ -205,7 +205,10 @@ public:
                 const auto now_ms = currentTimeMillis();
                 m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
                 m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
-                aeron_delete_directory(m_archiveDir.c_str());
+                if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
+                {
+                    m_stream << now_ms << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
+                }
             }
         }
     }

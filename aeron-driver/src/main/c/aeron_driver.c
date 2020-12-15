@@ -194,7 +194,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         }
         else
         {
-            aeron_mapped_file_t cnc_mmap = { NULL, 0 };
+            aeron_mapped_file_t cnc_mmap = { .addr = NULL, .length = 0 };
 
             aeron_cnc_resolve_filename(dirname, filename, sizeof(filename));
             if (aeron_map_existing_file(&cnc_mmap, filename) < 0)
@@ -221,7 +221,10 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
             }
 
             aeron_unmap(&cnc_mmap);
-            aeron_delete_directory(context->aeron_dir);
+            if (aeron_delete_directory(context->aeron_dir) != 0)
+            {
+                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to delete %s", context->aeron_dir);
+            }
         }
     }
 
@@ -1045,7 +1048,10 @@ int aeron_driver_close(aeron_driver_t *driver)
 
     if (driver->context->dirs_delete_on_shutdown)
     {
-        aeron_delete_directory(driver->context->aeron_dir);
+        if (aeron_delete_directory(driver->context->aeron_dir) < 0)
+        {
+
+        }
     }
 
     aeron_free(driver);

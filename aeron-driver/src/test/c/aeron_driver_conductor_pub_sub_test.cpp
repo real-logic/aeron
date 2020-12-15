@@ -202,7 +202,7 @@ class DriverConductorPubSubTest :
 };
 
 INSTANTIATE_TEST_SUITE_P(
-    DriverConductorPubSubParamerisedTest,
+    DriverConductorPubSubParameterisedTest,
     DriverConductorPubSubTest,
     testing::Values(NetworkTestParam::instance(), IpcTestParam::instance()),
     [](const testing::TestParamInfo<ConductorTestParam *> &info)
@@ -477,7 +477,6 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
-
 
 TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpecifiedSessionIdAndDifferentMtu)
 {
@@ -984,10 +983,10 @@ TEST_P(DriverConductorPubSubTest, shouldNotAddDynamicSessionIdInReservedRange)
                 EXPECT_TRUE(
                     msg->session_id < m_conductor.m_conductor.publication_reserved_session_id_low ||
                         m_conductor.m_conductor.publication_reserved_session_id_high < msg->session_id)
-                                << "Session Id [" << msg->session_id << "] should not be in the range: "
-                                << m_conductor.m_conductor.publication_reserved_session_id_low
-                                << " to "
-                                << m_conductor.m_conductor.publication_reserved_session_id_high;
+                            << "Session Id [" << msg->session_id << "] should not be in the range: "
+                            << m_conductor.m_conductor.publication_reserved_session_id_low
+                            << " to "
+                            << m_conductor.m_conductor.publication_reserved_session_id_high;
 
             });
     readAllBroadcastsFromConductor(mock_broadcast_handler);

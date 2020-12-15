@@ -164,28 +164,30 @@ int aeron_create_file(const char *path)
 
 int aeron_delete_directory(const char *dir)
 {
-    char buffer[AERON_MAX_PATH + 2] = { 0 };
+    char dir_buffer[AERON_MAX_PATH + 2] = { 0 };
 
     size_t dir_length = strlen(dir);
-    if (dir_length >= AERON_MAX_PATH)
+    if (dir_length > AERON_MAX_PATH)
     {
         return -1;
     }
 
-    strncpy(buffer, dir, dir_length + 2);
+    memcpy(dir_buffer, dir, dir_length);
+    dir_buffer[dir_length] = '\0';
+    dir_buffer[dir_length + 1] = '\0';
     
     SHFILEOPSTRUCT file_op =
         {
             NULL,
             FO_DELETE,
-            buffer,
-            "",
+            dir_buffer,
+            NULL,
             FOF_NOCONFIRMATION |
             FOF_NOERRORUI |
             FOF_SILENT,
             false,
-            0,
-            ""
+            NULL,
+            NULL
         };
 
     return SHFileOperation(&file_op);

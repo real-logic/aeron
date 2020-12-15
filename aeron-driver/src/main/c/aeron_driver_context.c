@@ -1094,18 +1094,32 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_clock_cache_free(context->cached_clock);
     aeron_dl_load_libs_delete(context->dynamic_libs);
 
+    int result = 0;
     if (context->dirs_delete_on_shutdown)
     {
-        if (aeron_delete_directory(context->aeron_dir) != 0)
+        int delete_result = aeron_delete_directory(context->aeron_dir);
+        if (0 != delete_result)
         {
+            if (-1 == delete_result)
+            {
+                delete_result = EINVAL;
+            }
 
+            errno = delete_result;
+            aeron_set_err(
+                delete_result,
+                "aeron_driver_context_close failed to delete dir: %s %s",
+                strerror(delete_result),
+                context->aeron_dir);
+
+            result = -1;
         }
     }
 
     aeron_free(context->aeron_dir);
     aeron_free(context);
 
-    return 0;
+    return result;
 }
 
 int aeron_driver_validate_unblock_timeout(aeron_driver_context_t *context)

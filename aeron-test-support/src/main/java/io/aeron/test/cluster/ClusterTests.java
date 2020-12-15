@@ -121,7 +121,7 @@ public class ClusterTests
 
     public static void awaitElectionState(final Counter electionStateCounter, final ElectionState state)
     {
-        while (electionStateCounter.get() != state.code())
+        while (ElectionState.get(electionStateCounter) != state)
         {
             Tests.yield();
         }

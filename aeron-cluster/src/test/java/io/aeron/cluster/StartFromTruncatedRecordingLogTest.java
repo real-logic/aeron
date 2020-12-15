@@ -50,12 +50,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SlowTest
 public class StartFromTruncatedRecordingLogTest
@@ -72,6 +75,8 @@ public class StartFromTruncatedRecordingLogTest
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
 
+    private final AtomicLong[] snapshotCounters = new AtomicLong[MEMBER_COUNT];
+    private final Counter[] mockSnapshotCounters = new Counter[MEMBER_COUNT];
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private final ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private final ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
@@ -87,6 +92,12 @@ public class StartFromTruncatedRecordingLogTest
     {
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
+            final AtomicLong atomicLong = new AtomicLong();
+            final Counter mockCounter = mock(Counter.class);
+            snapshotCounters[i] = atomicLong;
+            mockSnapshotCounters[i] = mockCounter;
+            when(mockCounter.incrementOrdered()).thenAnswer(invocation -> atomicLong.getAndIncrement());
+
             echoServices[i] = new EchoService();
             startNode(i, true);
         }
@@ -353,6 +364,7 @@ public class StartFromTruncatedRecordingLogTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(index))
                 .clusterMemberId(index)
+                .snapshotCounter(mockSnapshotCounters[index])
                 .clusterMembers(CLUSTER_MEMBERS)
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
@@ -489,11 +501,6 @@ public class StartFromTruncatedRecordingLogTest
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
-            if (driver.consensusModule().context().aeron().isClosed())
-            {
-                continue;
-            }
-
             final Cluster.Role role = Cluster.Role.get(driver.consensusModule().context().clusterNodeRoleCounter());
             final Counter electionStateCounter = driver.consensusModule().context().electionStateCounter();
 
@@ -562,19 +569,9 @@ public class StartFromTruncatedRecordingLogTest
     {
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
-
-            if (!driver.consensusModule().context().aeron().isClosed())
+            while (snapshotCounters[i].get() < count)
             {
-                final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
-                while (snapshotCounter.get() < count)
-                {
-                    Tests.sleep(1);
-                    if (snapshotCounter.isClosed())
-                    {
-                        throw new IllegalStateException("Snapshot counter is closed");
-                    }
-                }
+                Tests.sleep(1);
             }
         }
     }

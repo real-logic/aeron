@@ -1046,14 +1046,6 @@ int aeron_driver_close(aeron_driver_t *driver)
         }
     }
 
-    if (driver->context->dirs_delete_on_shutdown)
-    {
-        if (aeron_delete_directory(driver->context->aeron_dir) < 0)
-        {
-
-        }
-    }
-
     aeron_free(driver);
 
     return 0;

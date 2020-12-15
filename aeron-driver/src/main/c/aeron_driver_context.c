@@ -1075,7 +1075,6 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_unmap(&context->loss_report);
     aeron_unmap(&context->cnc_map);
 
-    aeron_free((void *)context->aeron_dir);
     aeron_free(context->conductor_idle_strategy_state);
     aeron_free(context->receiver_idle_strategy_state);
     aeron_free(context->sender_idle_strategy_state);
@@ -1094,6 +1093,16 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free(context->bindings_clientd_entries);
     aeron_clock_cache_free(context->cached_clock);
     aeron_dl_load_libs_delete(context->dynamic_libs);
+
+    if (context->dirs_delete_on_shutdown)
+    {
+        if (aeron_delete_directory(context->aeron_dir) != 0)
+        {
+
+        }
+    }
+
+    aeron_free(context->aeron_dir);
     aeron_free(context);
 
     return 0;
@@ -1237,7 +1246,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_f
 
     if (aeron_is_directory(dirname))
     {
-        aeron_mapped_file_t cnc_map = { NULL, 0 };
+        aeron_mapped_file_t cnc_map = { .addr = NULL, .length = 0 };
 
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron directory %s exists", dirname);
         log_func(buffer);

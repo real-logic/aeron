@@ -96,7 +96,7 @@ public class StartFromTruncatedRecordingLogTest
             final Counter mockCounter = mock(Counter.class);
             snapshotCounters[i] = atomicLong;
             mockSnapshotCounters[i] = mockCounter;
-            when(mockCounter.incrementOrdered()).thenAnswer(invocation -> atomicLong.getAndIncrement());
+            when(mockCounter.incrementOrdered()).thenAnswer((invocation) -> atomicLong.getAndIncrement());
 
             echoServices[i] = new EchoService();
             startNode(i, true);

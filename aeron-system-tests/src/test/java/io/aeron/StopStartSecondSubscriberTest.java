@@ -24,14 +24,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test that a second subscriber can be stopped and started again while data is being published.
@@ -172,7 +169,7 @@ public class StopStartSecondSubscriberTest
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
     }
 
-    private void doPublisherWork(final Publication publication, final AtomicBoolean running)
+    private void doPublisherWork(final Publication publication, final AtomicBoolean running, final CountDownLatch latch)
     {
         while (running.get())
         {
@@ -181,6 +178,8 @@ public class StopStartSecondSubscriberTest
                 Tests.yield();
             }
         }
+
+        latch.countDown();
     }
 
     private void shouldReceiveMessagesAfterStopStart(
@@ -189,6 +188,7 @@ public class StopStartSecondSubscriberTest
         final int numMessages = 1;
         final MutableInteger subscriber2AfterRestartCount = new MutableInteger();
         final AtomicBoolean running = new AtomicBoolean(true);
+        final CountDownLatch latch = new CountDownLatch(2);
 
         final FragmentHandler fragmentHandler =
             (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
@@ -200,8 +200,8 @@ public class StopStartSecondSubscriberTest
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         try
         {
-            executor.execute(() -> doPublisherWork(publicationOne, running));
-            executor.execute(() -> doPublisherWork(publicationTwo, running));
+            executor.execute(() -> doPublisherWork(publicationOne, running, latch));
+            executor.execute(() -> doPublisherWork(publicationTwo, running, latch));
 
             final MutableInteger fragmentsReadOne = new MutableInteger();
             final MutableInteger fragmentsReadTwo = new MutableInteger();
@@ -241,6 +241,7 @@ public class StopStartSecondSubscriberTest
                 TimeUnit.MILLISECONDS.toNanos(4900));
 
             running.set(false);
+            latch.await();
 
             assertTrue(subOneCount.get() >= numMessages * 2,
                 "Expecting subscriberOne to receive messages the entire time");
@@ -249,8 +250,13 @@ public class StopStartSecondSubscriberTest
             assertTrue(subscriber2AfterRestartCount.get() >= numMessages,
                 "Expecting subscriberTwo to receive messages after being stopped and started");
         }
+        catch (final InterruptedException ex)
+        {
+            fail("Interrupted", ex);
+        }
         finally
         {
+            running.set(false);
             executor.shutdownNow();
         }
     }

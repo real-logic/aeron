@@ -164,10 +164,10 @@ int aeron_create_file(const char *path)
 
 int aeron_delete_directory(const char *dir)
 {
-    char dir_buffer[AERON_MAX_PATH + 2] = { 0 };
+    char dir_buffer[(AERON_MAX_PATH * 2) + 2] = { 0 };
 
     size_t dir_length = strlen(dir);
-    if (dir_length > AERON_MAX_PATH)
+    if (dir_length > (AERON_MAX_PATH * 2))
     {
         return -1;
     }

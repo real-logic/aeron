@@ -153,47 +153,46 @@ public class ExclusivePublicationTest
             Tests.awaitConnections(subscription, 2);
 
             final ExecutorService threadPool = Executors.newFixedThreadPool(2);
-            final CountDownLatch latch = new CountDownLatch(2);
-            threadPool.submit(
-                () ->
-                {
-                    latch.countDown();
-                    latch.await();
-                    for (int count = 0; count < fragmentsPerThread; count++)
-                    {
-                        while (publicationOne.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
-                        {
-                            Tests.yield();
-                        }
-                    }
-                    return null;
-                });
-            threadPool.submit(
-                () ->
-                {
-                    latch.countDown();
-                    latch.await();
-                    for (int count = 0; count < fragmentsPerThread; count++)
-                    {
-                        while (publicationTwo.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
-                        {
-                            Tests.yield();
-                        }
-                    }
-                    return null;
-                });
-            threadPool.shutdown();
-
-            int totalFragmentsRead = 0;
             try
             {
+                final CountDownLatch latch = new CountDownLatch(2);
+                threadPool.submit(
+                    () ->
+                    {
+                        latch.countDown();
+                        latch.await();
+                        for (int count = 0; count < fragmentsPerThread; count++)
+                        {
+                            while (publicationOne.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                            {
+                                Tests.yield();
+                            }
+                        }
+                        return null;
+                    });
+                threadPool.submit(
+                    () ->
+                    {
+                        latch.countDown();
+                        latch.await();
+                        for (int count = 0; count < fragmentsPerThread; count++)
+                        {
+                            while (publicationTwo.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
+                            {
+                                Tests.yield();
+                            }
+                        }
+                        return null;
+                    });
+
+                int totalFragmentsRead = 0;
                 do
                 {
                     totalFragmentsRead += pollFragments(subscription, fragmentHandler);
                 }
                 while (totalFragmentsRead < expectedNumberOfFragments);
             }
-            catch (final Exception ex)
+            finally
             {
                 threadPool.shutdownNow();
                 threadPool.awaitTermination(1, TimeUnit.SECONDS);
@@ -318,49 +317,49 @@ public class ExclusivePublicationTest
             pubTwoPayload.setMemory(0, MESSAGE_LENGTH, Byte.MAX_VALUE);
 
             final ExecutorService threadPool = Executors.newFixedThreadPool(2);
-            final CountDownLatch latch = new CountDownLatch(2);
-            threadPool.submit(
-                () ->
-                {
-                    latch.countDown();
-                    latch.await();
-                    for (int count = 0; count < fragmentsPerThread; count++)
-                    {
-                        while (publicationOne
-                            .offer(pubOneHeader, 0, SIZE_OF_INT, pubOnePayload, 0, MESSAGE_LENGTH) < 0L)
-                        {
-                            Tests.yield();
-                        }
-                    }
-                    return null;
-                });
-            threadPool.submit(
-                () ->
-                {
-                    latch.countDown();
-                    latch.await();
-                    for (int count = 0; count < fragmentsPerThread; count++)
-                    {
-                        while (publicationTwo
-                            .offer(pubTwoHeader, 0, SIZE_OF_INT, pubTwoPayload, 0, MESSAGE_LENGTH) < 0L)
-                        {
-                            Tests.yield();
-                        }
-                    }
-                    return null;
-                });
-            threadPool.shutdown();
-
-            int totalFragmentsRead = 0;
             try
             {
+                final CountDownLatch latch = new CountDownLatch(2);
+                threadPool.submit(
+                    () ->
+                    {
+                        latch.countDown();
+                        latch.await();
+                        for (int count = 0; count < fragmentsPerThread; count++)
+                        {
+                            while (publicationOne
+                                .offer(pubOneHeader, 0, SIZE_OF_INT, pubOnePayload, 0, MESSAGE_LENGTH) < 0L)
+                            {
+                                Tests.yield();
+                            }
+                        }
+                        return null;
+                    });
+                threadPool.submit(
+                    () ->
+                    {
+                        latch.countDown();
+                        latch.await();
+                        for (int count = 0; count < fragmentsPerThread; count++)
+                        {
+                            while (publicationTwo
+                                .offer(pubTwoHeader, 0, SIZE_OF_INT, pubTwoPayload, 0, MESSAGE_LENGTH) < 0L)
+                            {
+                                Tests.yield();
+                            }
+                        }
+                        return null;
+                    });
+                threadPool.shutdown();
+
+                int totalFragmentsRead = 0;
                 do
                 {
                     totalFragmentsRead += pollFragments(subscription, fragmentHandler);
                 }
                 while (totalFragmentsRead < expectedNumberOfFragments);
             }
-            catch (final Exception ex)
+            finally
             {
                 threadPool.shutdownNow();
                 threadPool.awaitTermination(1, TimeUnit.SECONDS);

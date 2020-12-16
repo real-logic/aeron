@@ -729,14 +729,10 @@ public class PublicationImage
         congestionControl.onRttMeasurement(nowNs, rttInNs, srcAddress);
     }
 
-    /**
-     * Is the image in a state to accept new subscriptions?
-     *
-     * @return true if accepting new subscriptions.
-     */
     boolean isAcceptingSubscriptions()
     {
-        return subscriberPositions.length > 0 && (state == State.ACTIVE || state == State.INIT);
+        return subscriberPositions.length > 0 &&
+            (State.INIT == state || State.ACTIVE == state || (State.DRAINING == state && !isDrained()));
     }
 
     long joinPosition()

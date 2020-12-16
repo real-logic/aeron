@@ -730,18 +730,17 @@ public final class DriverConductor implements Agent
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
         subscriptionLinks.add(subscriptionLink);
+        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (IpcPublication.State.ACTIVE == publication.state() && subscriptionLink.matches(publication))
+            if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
             {
                 final Position subPos = linkIpcSubscription(publication, subscriptionLink);
                 subscriberPositions.add(new SubscriberPosition(subscriptionLink, publication, subPos));
             }
         }
-
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
@@ -769,18 +768,17 @@ public final class DriverConductor implements Agent
             registrationId, udpChannel, streamId, client, params);
 
         subscriptionLinks.add(subscriptionLink);
+        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
             final NetworkPublication publication = networkPublications.get(i);
-            if (NetworkPublication.State.ACTIVE == publication.state() && subscriptionLink.matches(publication))
+            if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
             {
                 final Position subPos = linkSpy(publication, subscriptionLink);
                 subscriberPositions.add(new SubscriberPosition(subscriptionLink, publication, subPos));
             }
         }
-
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
@@ -1308,17 +1306,17 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private void linkMatchingImages(final SubscriptionLink subscription)
+    private void linkMatchingImages(final SubscriptionLink subscriptionLink)
     {
-        final long registrationId = subscription.registrationId();
-        final long clientId = subscription.aeronClient().clientId();
-        final int streamId = subscription.streamId();
-        final String channel = subscription.channel();
+        final long registrationId = subscriptionLink.registrationId();
+        final long clientId = subscriptionLink.aeronClient().clientId();
+        final int streamId = subscriptionLink.streamId();
+        final String channel = subscriptionLink.channel();
 
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (subscription.matches(image) && image.isAcceptingSubscriptions())
+            if (subscriptionLink.matches(image) && image.isAcceptingSubscriptions())
             {
                 final long joinPosition = image.joinPosition();
                 final int sessionId = image.sessionId();
@@ -1333,8 +1331,8 @@ public final class DriverConductor implements Agent
                     joinPosition);
 
                 position.setOrdered(joinPosition);
-                subscription.link(image, position);
-                image.addSubscriber(subscription, position);
+                subscriptionLink.link(image, position);
+                image.addSubscriber(subscriptionLink, position);
 
                 clientProxy.onAvailableImage(
                     image.correlationId(),

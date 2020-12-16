@@ -504,6 +504,12 @@ public class NetworkPublication
         return spiesSimulateConnection;
     }
 
+    boolean isAcceptingSubscriptions()
+    {
+        return State.ACTIVE == state ||
+            (State.DRAINING == state && spyPositions.length > 0 && producerPosition() > senderPosition.getVolatile());
+    }
+
     /**
      * Update the publishers limit for flow control as part of the conductor duty cycle.
      *

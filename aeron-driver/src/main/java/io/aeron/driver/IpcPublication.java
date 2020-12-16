@@ -355,6 +355,11 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return state;
     }
 
+    boolean isAcceptingSubscriptions()
+    {
+        return State.ACTIVE == state || (State.DRAINING == state && !isDrained(producerPosition()));
+    }
+
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)
     {
         final long untetheredWindowLimit = (consumerPosition - termWindowLength) + (termWindowLength >> 2);

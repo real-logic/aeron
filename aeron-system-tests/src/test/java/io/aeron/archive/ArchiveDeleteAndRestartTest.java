@@ -120,7 +120,7 @@ public class ArchiveDeleteAndRestartTest
         final String uri = "aeron:ipc?term-length=16m|init-term-id=502090867|term-offset=0|term-id=502090867";
         final ExclusivePublication recordedPublication1 = client.addExclusivePublication(uri, STREAM_ID);
 
-        aeronArchive.startRecording(uri, STREAM_ID, SourceLocation.LOCAL);
+        final long subscriptionId = aeronArchive.startRecording(uri, STREAM_ID, SourceLocation.LOCAL);
 
         for (int i = 0; i < 10; i++)
         {
@@ -144,6 +144,7 @@ public class ArchiveDeleteAndRestartTest
         }
 
         recordedPublication1.close();
+        aeronArchive.stopRecording(subscriptionId);
 
         while (position1 != aeronArchive.getStopPosition(collector.descriptors.get(0).recordingId))
         {

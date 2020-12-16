@@ -57,6 +57,12 @@ final class LogAdapter implements ControlledFragmentHandler
         }
     }
 
+    void disconnect(final ErrorHandler errorHandler, final long maxLogPosition)
+    {
+        disconnect(errorHandler);
+        logPosition = Math.min(logPosition, maxLogPosition);
+    }
+
     ConsensusModuleAgent consensusModuleAgent()
     {
         return consensusModuleAgent;

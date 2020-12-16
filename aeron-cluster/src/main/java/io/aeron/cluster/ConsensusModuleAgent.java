@@ -1269,9 +1269,57 @@ class ConsensusModuleAgent implements Agent
 
     int addNewLogPublication()
     {
-        logAdapter.disconnect(ctx.countedErrorHandler());
+        logPublicationTag = (int)aeron.nextCorrelationId();
+        logPublicationChannelTag = (int)aeron.nextCorrelationId();
 
-        final ExclusivePublication publication = createLogPublication(recoveryPlan);
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
+        final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
+
+        channelUri.put(ALIAS_PARAM_NAME, "log");
+        channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
+
+        if (channelUri.isUdp())
+        {
+            if (!channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
+            {
+                final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() >> 1), 2L);
+                channelUri.put(FLOW_CONTROL_PARAM_NAME, "min,t:" + timeout + "s");
+            }
+
+            if (!isMulticast)
+            {
+                channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
+            }
+
+            channelUri.put(SPIES_SIMULATE_CONNECTION_PARAM_NAME, Boolean.toString(clusterMembers.length == 1));
+        }
+
+        if (null != recoveryPlan.log)
+        {
+            channelUri.initialPosition(
+                recoveryPlan.appendedLogPosition, recoveryPlan.log.initialTermId, recoveryPlan.log.termBufferLength);
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recoveryPlan.log.mtuLength));
+        }
+
+        final String channel = channelUri.toString();
+        final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
+
+        if (!isMulticast)
+        {
+            for (final ClusterMember member : clusterMembers)
+            {
+                if (member.id() != memberId)
+                {
+                    publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
+                }
+            }
+
+            for (final ClusterMember member : passiveMembers)
+            {
+                publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
+            }
+        }
+
         logPublisher.publication(publication);
 
         return publication.sessionId();
@@ -1425,6 +1473,7 @@ class ConsensusModuleAgent implements Agent
         archive.stopAllReplays(recordingId);
         archive.truncateRecording(recordingId, logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
+        logAdapter.disconnect(ctx.countedErrorHandler(), logPosition);
     }
 
     boolean electionComplete()
@@ -2688,62 +2737,6 @@ class ConsensusModuleAgent implements Agent
         snapshotTaker.snapshot(pendingServiceMessages);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
-    }
-
-    private ExclusivePublication createLogPublication(final RecordingLog.RecoveryPlan plan)
-    {
-        logPublicationTag = (int)aeron.nextCorrelationId();
-        logPublicationChannelTag = (int)aeron.nextCorrelationId();
-
-        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
-
-        channelUri.put(ALIAS_PARAM_NAME, "log");
-        channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
-
-        if (channelUri.isUdp())
-        {
-            if (!channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
-            {
-                final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() >> 1), 2L);
-                final String fc = "min,t:" + timeout + "s";
-                channelUri.put(FLOW_CONTROL_PARAM_NAME, fc);
-            }
-
-            if (!isMulticast)
-            {
-                channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
-            }
-
-            channelUri.put(SPIES_SIMULATE_CONNECTION_PARAM_NAME, Boolean.toString(clusterMembers.length == 1));
-        }
-
-        if (null != plan.log)
-        {
-            channelUri.initialPosition(plan.appendedLogPosition, plan.log.initialTermId, plan.log.termBufferLength);
-            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(plan.log.mtuLength));
-        }
-
-        final String channel = channelUri.toString();
-        final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
-
-        if (!isMulticast)
-        {
-            for (final ClusterMember member : clusterMembers)
-            {
-                if (member.id() != memberId)
-                {
-                    publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
-                }
-            }
-
-            for (final ClusterMember member : passiveMembers)
-            {
-                publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
-            }
-        }
-
-        return publication;
     }
 
     private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)

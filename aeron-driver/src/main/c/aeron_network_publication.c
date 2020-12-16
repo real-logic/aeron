@@ -1021,3 +1021,5 @@ extern bool aeron_network_publication_has_sender_released(aeron_network_publicat
 extern int64_t aeron_network_publication_max_spy_position(aeron_network_publication_t *publication, int64_t snd_pos);
 
 extern size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication);
+
+extern bool aeron_network_publication_is_accepting_subscriptions(aeron_network_publication_t *publication);

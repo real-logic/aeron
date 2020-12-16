@@ -496,3 +496,5 @@ extern bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_
 extern bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publication);
 
 extern size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *publication);
+
+extern bool aeron_ipc_publication_is_accepting_subscriptions(aeron_ipc_publication_t *publication);

@@ -79,8 +79,6 @@ public class MinPositionSubscriptionTest
 
     private void shouldJoinAtSamePosition(final String publicationChannel, final String subscriptionChannel)
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
-
         try (Subscription subscriptionOne = aeron.addSubscription(subscriptionChannel, STREAM_ID);
             Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
         {

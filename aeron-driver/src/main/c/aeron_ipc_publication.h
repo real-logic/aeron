@@ -198,4 +198,11 @@ inline size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *pub
     return publication->conductor_fields.subscribable.length;
 }
 
+inline bool aeron_ipc_publication_is_accepting_subscriptions(aeron_ipc_publication_t *publication)
+{
+    return AERON_IPC_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state ||
+        (AERON_IPC_PUBLICATION_STATE_DRAINING == publication->conductor_fields.state &&
+            !aeron_ipc_publication_is_drained(publication));
+}
+
 #endif //AERON_IPC_PUBLICATION_H

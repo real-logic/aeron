@@ -261,4 +261,13 @@ inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_public
     return publication->conductor_fields.subscribable.length;
 }
 
+inline bool aeron_network_publication_is_accepting_subscriptions(aeron_network_publication_t *publication)
+{
+    return AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state ||
+        (AERON_NETWORK_PUBLICATION_STATE_DRAINING == publication->conductor_fields.state &&
+            publication->conductor_fields.subscribable.length > 0 &&
+            aeron_network_publication_producer_position(publication) >
+                aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
+}
+
 #endif //AERON_NETWORK_PUBLICATION_H

@@ -21,7 +21,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import io.aeron.test.Tests;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.extension.TestWatcher;
 import java.io.File;
 import java.util.Random;
 
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ArchiveDeleteAndRestartTest
@@ -48,8 +46,7 @@ public class ArchiveDeleteAndRestartTest
     private static final int SYNC_LEVEL = 0;
     private static final int PUBLISH_STREAM_ID = 1;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
-    private final Random rnd = new Random();
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final long seed = System.nanoTime();
 
     @RegisterExtension
@@ -67,6 +64,7 @@ public class ArchiveDeleteAndRestartTest
     @BeforeEach
     public void before()
     {
+        final Random rnd = new Random();
         rnd.setSeed(seed);
 
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M

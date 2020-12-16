@@ -38,7 +38,11 @@ public:
 
     ~DriverAgentTest() override
     {
-        aeron_driver_context_close(m_context);
+        if (0 != aeron_driver_context_close(m_context))
+        {
+            fprintf(stderr, "ERROR: driver context close (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        }
+
         aeron_driver_agent_logging_ring_buffer_free();
         aeron_driver_agent_logging_events_free();
     }

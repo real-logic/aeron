@@ -190,7 +190,12 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 
         if (context->dirs_delete_on_start)
         {
-            aeron_delete_directory(context->aeron_dir);
+            if (0 != aeron_delete_directory(context->aeron_dir))
+            {
+                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to delete: %s", context->aeron_dir);
+                log_func(buffer);
+                return -1;
+            }
         }
         else
         {
@@ -224,6 +229,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
             if (aeron_delete_directory(context->aeron_dir) != 0)
             {
                 snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to delete %s", context->aeron_dir);
+                log_func(buffer);
             }
         }
     }

@@ -52,17 +52,29 @@ using namespace aeron::archive::client;
 #ifdef _WIN32
 int aeron_delete_directory(const char *dir)
 {
-    SHFILEOPSTRUCT file_op =
+    char dir_buffer[1024] = { 0 };
+
+    size_t dir_length = strlen(dir);
+    if (dir_length > (1024 - 2))
     {
-        nullptr,
-        FO_DELETE,
-        dir,
-        "",
-        FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
-        false,
-        nullptr,
-        ""
-    };
+        return -1;
+    }
+
+    memcpy(dir_buffer, dir, dir_length);
+    dir_buffer[dir_length] = '\0';
+    dir_buffer[dir_length + 1] = '\0';
+
+    SHFILEOPSTRUCT file_op =
+        {
+            NULL,
+            FO_DELETE,
+            dir_buffer,
+            NULL,
+            FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
+            false,
+            NULL,
+            NULL
+        };
 
     return SHFileOperation(&file_op);
 }
@@ -160,7 +172,7 @@ public:
                 std::memcpy(arr, credentials.data(), credentials.length());
                 arr[credentials.length()] = '\0';
 
-                return { arr, (std::uint32_t)credentials.length() };
+                return { arr, static_cast<std::uint32_t>(credentials.length()) };
             };
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
@@ -196,7 +208,7 @@ public:
                     {
                         waitpid(m_pid, &process_status, WUNTRACED);
                     }
-                    while(0 >= WIFEXITED(process_status));
+                    while (0 >= WIFEXITED(process_status));
                 #endif
                 m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
             }

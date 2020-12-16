@@ -1075,25 +1075,6 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_unmap(&context->loss_report);
     aeron_unmap(&context->cnc_map);
 
-    aeron_free(context->conductor_idle_strategy_state);
-    aeron_free(context->receiver_idle_strategy_state);
-    aeron_free(context->sender_idle_strategy_state);
-    aeron_free(context->shared_idle_strategy_state);
-    aeron_free(context->shared_network_idle_strategy_state);
-    aeron_free((void *)context->conductor_idle_strategy_name);
-    aeron_free((void *)context->shared_network_idle_strategy_name);
-    aeron_free((void *)context->shared_idle_strategy_name);
-    aeron_free((void *)context->sender_idle_strategy_name);
-    aeron_free((void *)context->receiver_idle_strategy_name);
-    aeron_free(context->conductor_idle_strategy_init_args);
-    aeron_free(context->sender_idle_strategy_init_args);
-    aeron_free(context->receiver_idle_strategy_init_args);
-    aeron_free(context->shared_idle_strategy_init_args);
-    aeron_free(context->shared_network_idle_strategy_init_args);
-    aeron_free(context->bindings_clientd_entries);
-    aeron_clock_cache_free(context->cached_clock);
-    aeron_dl_load_libs_delete(context->dynamic_libs);
-
     int result = 0;
     if (context->dirs_delete_on_shutdown)
     {
@@ -1117,6 +1098,25 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     }
 
     aeron_free(context->aeron_dir);
+    aeron_free(context->conductor_idle_strategy_state);
+    aeron_free(context->receiver_idle_strategy_state);
+    aeron_free(context->sender_idle_strategy_state);
+    aeron_free(context->shared_idle_strategy_state);
+    aeron_free(context->shared_network_idle_strategy_state);
+    aeron_free((void *)context->conductor_idle_strategy_name);
+    aeron_free((void *)context->shared_network_idle_strategy_name);
+    aeron_free((void *)context->shared_idle_strategy_name);
+    aeron_free((void *)context->sender_idle_strategy_name);
+    aeron_free((void *)context->receiver_idle_strategy_name);
+    aeron_free(context->conductor_idle_strategy_init_args);
+    aeron_free(context->sender_idle_strategy_init_args);
+    aeron_free(context->receiver_idle_strategy_init_args);
+    aeron_free(context->shared_idle_strategy_init_args);
+    aeron_free(context->shared_network_idle_strategy_init_args);
+    aeron_free(context->bindings_clientd_entries);
+    aeron_clock_cache_free(context->cached_clock);
+    aeron_dl_load_libs_delete(context->dynamic_libs);
+
     aeron_free(context);
 
     return result;

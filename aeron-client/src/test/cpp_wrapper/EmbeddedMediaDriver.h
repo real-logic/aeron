@@ -44,8 +44,15 @@ class EmbeddedMediaDriver
 public:
     ~EmbeddedMediaDriver()
     {
-        aeron_driver_close(m_driver);
-        aeron_driver_context_close(m_context);
+        if (0 != aeron_driver_close(m_driver))
+        {
+            fprintf(stderr, "ERROR: driver close (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        }
+
+        if (0 != aeron_driver_context_close(m_context))
+        {
+            fprintf(stderr, "ERROR: driver context close (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        }
     }
 
     void driverLoop()

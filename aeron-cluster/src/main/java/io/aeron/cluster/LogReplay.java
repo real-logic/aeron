@@ -17,23 +17,20 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.CloseHelper;
 
 final class LogReplay
 {
-    private final long recordingId;
     private final long startPosition;
     private final long stopPosition;
     private final long leadershipTermId;
     private final int logSessionId;
-    private final AeronArchive archive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context ctx;
     private final LogAdapter logAdapter;
     private final Subscription logSubscription;
-
-    private boolean isReplayStart = false;
-    private boolean isDone = false;
 
     LogReplay(
         final AeronArchive archive,
@@ -45,8 +42,6 @@ final class LogReplay
         final LogAdapter logAdapter,
         final ConsensusModule.Context ctx)
     {
-        this.archive = archive;
-        this.recordingId = recordingId;
         this.startPosition = startPosition;
         this.stopPosition = stopPosition;
         this.leadershipTermId = leadershipTermId;
@@ -57,12 +52,20 @@ final class LogReplay
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        logSubscription = ctx.aeron().addSubscription(channelUri.toString(), ctx.replayStreamId());
+        final String channel = channelUri.toString();
+        final int streamId = ctx.replayStreamId();
+        final long length = stopPosition - startPosition;
+        final long correlationId = ctx.aeron().nextCorrelationId();
+
+        logSubscription = ctx.aeron().addSubscription(channel, streamId);
+
+        archive.archiveProxy().replay(
+            recordingId, startPosition, length, channel, streamId, correlationId, archive.controlSessionId());
     }
 
     void close()
     {
-        logAdapter.image(null);
+        logAdapter.disconnect(ctx.countedErrorHandler());
         CloseHelper.close(ctx.countedErrorHandler(), logSubscription);
     }
 
@@ -70,27 +73,21 @@ final class LogReplay
     {
         int workCount = 0;
 
-        if (!isReplayStart)
-        {
-            final String channel = logSubscription.channel();
-            final int streamId = logSubscription.streamId();
-            consensusModuleAgent.awaitServicesReady(
-                channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition, true);
-
-            final long length = stopPosition - startPosition;
-            final long correlationId = ctx.aeron().nextCorrelationId();
-            archive.archiveProxy().replay(
-                recordingId, startPosition, length, channel, streamId, correlationId, archive.controlSessionId());
-
-            isReplayStart = true;
-            workCount += 1;
-        }
-
         if (null == logAdapter.image())
         {
             final Image image = logSubscription.imageBySessionId(logSessionId);
             if (null != image)
             {
+                if (image.joinPosition() != startPosition)
+                {
+                    throw new ClusterException("Image did not join at start position", AeronException.Category.WARN);
+                }
+
+                final String channel = logSubscription.channel();
+                final int streamId = logSubscription.streamId();
+                consensusModuleAgent.awaitServicesReady(
+                    channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition, true);
+
                 logAdapter.image(image);
                 workCount += 1;
             }
@@ -98,11 +95,6 @@ final class LogReplay
         else
         {
             workCount += consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
-            if (logAdapter.position() >= stopPosition)
-            {
-                isDone = true;
-                workCount += 1;
-            }
         }
 
         return workCount;
@@ -110,6 +102,6 @@ final class LogReplay
 
     boolean isDone()
     {
-        return isDone;
+        return logAdapter.image() != null && logAdapter.position() >= stopPosition;
     }
 }

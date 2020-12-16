@@ -731,14 +731,14 @@ abstract class ArchiveConductor
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
-            final String msg = "max concurrent recordings reached of " + maxConcurrentRecordings;
+            final String msg = "max concurrent recordings reached at " + maxConcurrentRecordings;
             controlSession.sendErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
             return null;
         }
 
         if (!catalog.hasRecording(recordingId))
         {
-            final String msg = "unknown recording id " + recordingId;
+            final String msg = "unknown recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
             return null;
         }
@@ -754,7 +754,7 @@ abstract class ArchiveConductor
 
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
-            final String msg = "cannot extend active recording for " + recordingId;
+            final String msg = "cannot extend active recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
             return null;
         }

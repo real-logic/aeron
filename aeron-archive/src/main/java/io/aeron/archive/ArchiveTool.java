@@ -52,6 +52,7 @@ import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.checksum.Checksums.newInstance;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.*;
@@ -113,15 +114,15 @@ public class ArchiveTool
         }
 
         final PrintStream out = System.out;
-        if (args.length == 2 && args[1].equals("describe"))
+        if (args.length == 2 && "describe".equals(args[1]))
         {
             describe(out, archiveDir);
         }
-        else if (args.length == 3 && args[1].equals("describe"))
+        else if (args.length == 3 && "describe".equals(args[1]))
         {
             describeRecording(out, archiveDir, Long.parseLong(args[2]));
         }
-        else if (args.length >= 2 && args[1].equals("dump"))
+        else if (args.length >= 2 && "dump".equals(args[1]))
         {
             dump(
                 out,
@@ -129,15 +130,15 @@ public class ArchiveTool
                 args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE,
                 ArchiveTool::continueOnFrameLimit);
         }
-        else if (args.length == 2 && args[1].equals("errors"))
+        else if (args.length == 2 && "errors".equals(args[1]))
         {
             printErrors(out, archiveDir);
         }
-        else if (args.length == 2 && args[1].equals("pid"))
+        else if (args.length == 2 && "pid".equals(args[1]))
         {
             out.println(pid(archiveDir));
         }
-        else if (args.length >= 2 && args[1].equals("verify"))
+        else if (args.length >= 2 && "verify".equals(args[1]))
         {
             final boolean hasErrors;
 
@@ -232,7 +233,7 @@ public class ArchiveTool
                 System.exit(-1);
             }
         }
-        else if (args.length >= 3 && args[1].equals("checksum"))
+        else if (args.length >= 3 && "checksum".equals(args[1]))
         {
             if (args.length == 3)
             {
@@ -255,19 +256,19 @@ public class ArchiveTool
                 }
             }
         }
-        else if (args.length == 2 && args[1].equals("count-entries"))
+        else if (args.length == 2 && "count-entries".equals(args[1]))
         {
             out.println(entryCount(archiveDir));
         }
-        else if (args.length == 2 && args[1].equals("max-entries"))
+        else if (args.length == 2 && "max-entries".equals(args[1]))
         {
             out.println(maxEntries(archiveDir));
         }
-        else if (args.length == 3 && args[1].equals("max-entries"))
+        else if (args.length == 3 && "max-entries".equals(args[1]))
         {
             out.println(maxEntries(archiveDir, Long.parseLong(args[2])));
         }
-        else if (args.length == 2 && args[1].equals("migrate"))
+        else if (args.length == 2 && "migrate".equals(args[1]))
         {
             out.print("WARNING: please ensure archive is not running and that a backup has been taken of " +
                 "the archive directory before attempting migration(s).");
@@ -277,7 +278,7 @@ public class ArchiveTool
                 migrate(out, archiveDir);
             }
         }
-        else if (args.length == 2 && args[1].equals("compact"))
+        else if (args.length == 2 && "compact".equals(args[1]))
         {
             out.print("WARNING: Compacting the Catalog is non-recoverable operation! All recordings in state " +
                 "`INVALID` will be deleted along with the corresponding segment files.");
@@ -285,6 +286,15 @@ public class ArchiveTool
             if (readContinueAnswer("Continue? (y/n)"))
             {
                 compact(out, archiveDir);
+            }
+        }
+        else if (args.length == 2 && "delete-orphaned-segments".equals(args[1]))
+        {
+            out.print("WARNING: All orphaned segment files will be deleted.");
+
+            if (readContinueAnswer("Continue? (y/n)"))
+            {
+                deleteOrphanedSegments(out, archiveDir);
             }
         }
         else
@@ -655,6 +665,34 @@ public class ArchiveTool
     public static void compact(final PrintStream out, final File archiveDir)
     {
         compact(out, archiveDir, INSTANCE);
+    }
+
+    /**
+     * Delete orphaned recording segments that have been detached, i.e. outside the start and stop recording range,
+     * but are not deleted.
+     *
+     * @param out        stream to print results and errors to.
+     * @param archiveDir that contains {@link MarkFile}, {@link Catalog}, and recordings.
+     */
+    public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir)
+    {
+        deleteOrphanedSegments(out, archiveDir, INSTANCE);
+    }
+
+    static void deleteOrphanedSegments(final PrintStream out, final File archiveDir, final EpochClock epochClock)
+    {
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            catalog.forEach(
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    final String[] segmentFiles = listSegmentFiles(archiveDir, descriptorDecoder.recordingId());
+                    if (null != segmentFiles && 0 != segmentFiles.length)
+                    {
+                        deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, segmentFiles);
+                    }
+                });
+        }
     }
 
     static void compact(final PrintStream out, final File archiveDir, final EpochClock epochClock)
@@ -1431,6 +1469,52 @@ public class ArchiveTool
         }
     }
 
+    private static void deleteOrphanedSegmentFiles(
+        final PrintStream out,
+        final File archiveDir,
+        final RecordingDescriptorDecoder descriptorDecoder,
+        final String[] segmentFiles)
+    {
+        final long minBaseOffset = segmentFileBasePosition(
+            descriptorDecoder.startPosition(),
+            descriptorDecoder.startPosition(),
+            descriptorDecoder.termBufferLength(),
+            descriptorDecoder.segmentFileLength());
+
+        final long maxBaseOffset = NULL_POSITION == descriptorDecoder.stopPosition() ? NULL_POSITION :
+            segmentFileBasePosition(
+            descriptorDecoder.startPosition(),
+            descriptorDecoder.stopPosition(),
+            descriptorDecoder.termBufferLength(),
+            descriptorDecoder.segmentFileLength());
+
+        for (final String segmentFile : segmentFiles)
+        {
+            boolean delete;
+            try
+            {
+                final long offset = parseSegmentFilePosition(segmentFile);
+                delete = offset < minBaseOffset || NULL_POSITION != maxBaseOffset && offset > maxBaseOffset;
+            }
+            catch (final RuntimeException ex)
+            {
+                delete = true; // invalid file name
+            }
+
+            if (delete)
+            {
+                try
+                {
+                    Files.deleteIfExists(archiveDir.toPath().resolve(segmentFile));
+                }
+                catch (final IOException ex)
+                {
+                    ex.printStackTrace(out);
+                }
+            }
+        }
+    }
+
     private static void printHelp()
     {
         System.out.format(
@@ -1444,6 +1528,8 @@ public class ArchiveTool
             "  compact: compacts Catalog file by removing entries in state `INVALID` and deleting the%n" +
             "     corresponding segment files.%n%n" +
             "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
+            "  delete-orphaned-segments: deletes orphaned recording segments that have been detached,%n" +
+            "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
             "  describe [recordingId]: prints out descriptor(s) in the catalog.%n%n" +
             "  dump [data fragment limit per recording]: prints descriptor(s)%n" +
             "     in the catalog and associated recorded data.%n%n" +

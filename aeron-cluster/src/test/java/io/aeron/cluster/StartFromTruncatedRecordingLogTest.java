@@ -69,10 +69,8 @@ public class StartFromTruncatedRecordingLogTest
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL = "aeron:udp?term-length=256k";
-    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
-        "aeron:udp?term-length=64k|endpoint=localhost:8010";
-    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
-        "aeron:udp?term-length=64k|endpoint=localhost:0";
+    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:ipc?term-length=64k";
+    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL = "aeron:ipc?term-length=64k";
 
     private final AtomicLong[] snapshotCounters = new AtomicLong[MEMBER_COUNT];
     private final Counter[] mockSnapshotCounters = new Counter[MEMBER_COUNT];
@@ -334,9 +332,9 @@ public class StartFromTruncatedRecordingLogTest
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
+            .controlRequestChannel(ARCHIVE_CONTROL_REQUEST_CHANNEL)
             .controlRequestStreamId(100 + index)
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
@@ -454,11 +452,6 @@ public class StartFromTruncatedRecordingLogTest
                 }
             }
         }
-    }
-
-    private static String memberSpecificPort(final String channel, final int memberId)
-    {
-        return channel.substring(0, channel.length() - 1) + memberId;
     }
 
     private static String clusterMembersString()

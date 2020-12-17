@@ -864,8 +864,8 @@ class Election
         final int streamId = ctx.logStreamId();
         final String logChannel = channelUri.toString();
 
-        logSubscription = ctx.aeron().addSubscription(logChannel, ctx.logStreamId());
-        consensusModuleAgent.startLogRecording(logChannel, SourceLocation.REMOTE);
+        logSubscription = ctx.aeron().addSubscription(logChannel, streamId);
+        consensusModuleAgent.startLogRecording(logChannel, streamId, SourceLocation.REMOTE);
         consensusModuleAgent.awaitServicesReady(
             logChannel, streamId, logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isLeaderStartup);
     }

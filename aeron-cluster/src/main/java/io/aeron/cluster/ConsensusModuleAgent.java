@@ -1334,12 +1334,13 @@ class ConsensusModuleAgent implements Agent
         channelUri.put(ALIAS_PARAM_NAME, "log");
 
         final String recordingChannel = channelUri.toString();
-        startLogRecording(recordingChannel, SourceLocation.LOCAL);
+        final int streamId = ctx.logStreamId();
+        startLogRecording(recordingChannel, streamId, SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
 
         final String logChannel = channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel;
         awaitServicesReady(
-            logChannel, ctx.logStreamId(), logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isStartup);
+            logChannel, streamId, logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isStartup);
         leadershipTermId(leadershipTermId);
         prepareSessionsForNewTerm(isStartup);
     }
@@ -1359,10 +1360,9 @@ class ConsensusModuleAgent implements Agent
         return null != replayLogDestination;
     }
 
-    void startLogRecording(final String channel, final SourceLocation sourceLocation)
+    void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
         final long logRecordingId = recordingLog.findLastTermRecordingId();
-        final int streamId = ctx.logStreamId();
         if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
         {
             logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);

@@ -111,8 +111,6 @@ public class ClusterTimerTest
         forceCloseForRestart();
         final long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
-        triggeredTimersCounter.set(0);
-
         launchClusteredMediaDriver(false);
         launchReschedulingService(triggeredTimersCounter);
         connectClient();
@@ -283,11 +281,6 @@ public class ClusterTimerTest
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 
-    private AeronCluster connectToCluster()
-    {
-        return AeronCluster.connect();
-    }
-
     private void forceCloseForRestart()
     {
         CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
@@ -295,14 +288,11 @@ public class ClusterTimerTest
 
     private void connectClient()
     {
-        aeronCluster = null;
-        aeronCluster = connectToCluster();
+        aeronCluster = AeronCluster.connect();
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)
     {
-        clusteredMediaDriver = null;
-
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .warnIfDirectoryExists(initialLaunch)

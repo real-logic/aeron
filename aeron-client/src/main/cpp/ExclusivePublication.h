@@ -586,15 +586,38 @@ public:
      * Add a destination manually to a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to add
+     * @return correlation id for the add command
      */
-    void addDestination(const std::string &endpointChannel);
+    std::int64_t addDestination(const std::string &endpointChannel);
 
     /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to remove
+     * @return correlation id for the remove command
      */
-    void removeDestination(const std::string &endpointChannel);
+    std::int64_t removeDestination(const std::string &endpointChannel);
+
+    /**
+     * Retrieve the status of the associated add or remove destination operation with the given correlationId.
+     *
+     * This method is non-blocking.
+     *
+     * The value returned is dependent on what has occurred with respect to the media driver:
+     *
+     * - If the correlationId is unknown, then an exception is thrown.
+     * - If the media driver has not answered the add/remove command, then a false is returned.
+     * - If the media driver has successfully added or removed the destination then true is returned.
+     * - If the media driver has returned an error, this method will throw the error returned.
+     *
+     * @see Publication::addDestination
+     * @see Publication::removeDestination
+     *
+     * @param correlationId of the add/remove command returned by Publication::addDestination
+     * or Publication::removeDestination
+     * @return true for added or false if not.
+     */
+    bool findDestinationResponse(std::int64_t correlationId);
 
     /// @cond HIDDEN_SYMBOLS
     inline void close()

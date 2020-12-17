@@ -20,7 +20,8 @@
 #include "ClientConductor.h"
 #include "concurrent/status/LocalSocketAddressStatus.h"
 
-namespace aeron {
+namespace aeron
+{
 
 ExclusivePublication::ExclusivePublication(
     ClientConductor &conductor,
@@ -28,7 +29,7 @@ ExclusivePublication::ExclusivePublication(
     std::int64_t registrationId,
     std::int32_t streamId,
     std::int32_t sessionId,
-    UnsafeBufferPosition& publicationLimit,
+    UnsafeBufferPosition &publicationLimit,
     std::int32_t channelStatusId,
     std::shared_ptr<LogBuffers> logBuffers) :
     m_conductor(conductor),
@@ -42,7 +43,8 @@ ExclusivePublication::ExclusivePublication(
     m_maxPayloadLength(LogBufferDescriptor::mtuLength(m_logMetaDataBuffer) - DataFrameHeader::LENGTH),
     m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(logBuffers->atomicBuffer(0).capacity())),
     m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(logBuffers->atomicBuffer(0).capacity())),
-    m_activePartitionIndex(LogBufferDescriptor::indexByTermCount(LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer))),
+    m_activePartitionIndex(
+        LogBufferDescriptor::indexByTermCount(LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer))),
     m_publicationLimit(publicationLimit),
     m_channelStatusId(channelStatusId),
     m_logBuffers(std::move(logBuffers)),
@@ -51,7 +53,7 @@ ExclusivePublication::ExclusivePublication(
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
         /*
-         * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication
+         * Perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication
          * for locality.
          */
         m_appenders[i] = std::unique_ptr<ExclusiveTermAppender>(new ExclusiveTermAppender(
@@ -73,24 +75,29 @@ ExclusivePublication::~ExclusivePublication()
     m_conductor.releaseExclusivePublication(m_registrationId);
 }
 
-void ExclusivePublication::addDestination(const std::string& endpointChannel)
+std::int64_t ExclusivePublication::addDestination(const std::string &endpointChannel)
 {
     if (isClosed())
     {
         throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
     }
 
-    m_conductor.addDestination(m_registrationId, endpointChannel);
+    return m_conductor.addDestination(m_registrationId, endpointChannel);
 }
 
-void ExclusivePublication::removeDestination(const std::string& endpointChannel)
+std::int64_t ExclusivePublication::removeDestination(const std::string &endpointChannel)
 {
     if (isClosed())
     {
         throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
     }
 
-    m_conductor.removeDestination(m_registrationId, endpointChannel);
+    return m_conductor.removeDestination(m_registrationId, endpointChannel);
+}
+
+bool ExclusivePublication::findDestinationResponse(std::int64_t correlationId)
+{
+    return m_conductor.findDestinationResponse(correlationId);
 }
 
 std::int64_t ExclusivePublication::channelStatus() const

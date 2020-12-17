@@ -68,12 +68,11 @@ public class StartFromTruncatedRecordingLogTest
     private static final int MESSAGE_COUNT = 10;
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
-    private static final String LOG_CHANNEL =
-        "aeron:udp?term-length=256k|control-mode=manual|control=localhost:25550";
+    private static final String LOG_CHANNEL = "aeron:udp?term-length=256k";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
-        "aeron:udp?term-length=64k|endpoint=localhost:8020";
+        "aeron:udp?term-length=64k|endpoint=localhost:0";
 
     private final AtomicLong[] snapshotCounters = new AtomicLong[MEMBER_COUNT];
     private final Counter[] mockSnapshotCounters = new Counter[MEMBER_COUNT];
@@ -203,7 +202,7 @@ public class StartFromTruncatedRecordingLogTest
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
-            Tests.sleep(100);
+            Tests.sleep(10);
         }
 
         return leaderMemberId;
@@ -368,7 +367,7 @@ public class StartFromTruncatedRecordingLogTest
                 .clusterMembers(CLUSTER_MEMBERS)
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
-                .logChannel(memberSpecificPort(LOG_CHANNEL, index))
+                .logChannel(LOG_CHANNEL)
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
 
@@ -397,7 +396,7 @@ public class StartFromTruncatedRecordingLogTest
             new AeronCluster.Context()
                 .egressListener(egressMessageListener)
                 .ingressChannel("aeron:udp?term-length=64k")
-                .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:9020")
+                .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
                 .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
@@ -428,7 +427,14 @@ public class StartFromTruncatedRecordingLogTest
     {
         while (responseCount.get() < messageCount)
         {
-            Tests.yield();
+            Thread.yield();
+            if (Thread.currentThread().isInterrupted())
+            {
+                final String msg = "messageCount=" + messageCount + " responseCount=" + responseCount;
+                Tests.unexpectedInterruptStackTrace(msg);
+                fail("unexpected interrupt - " + msg);
+            }
+
             client.pollEgress();
         }
 
@@ -436,7 +442,16 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (echoServices[i].messageCount() < messageCount)
             {
-                Tests.yield();
+                Thread.yield();
+                if (Thread.currentThread().isInterrupted())
+                {
+                    final String msg =
+                        "memberId=" + i +
+                        " messageCount=" + messageCount +
+                        " serviceMessageCount=" + echoServices[i].messageCount();
+                    Tests.unexpectedInterruptStackTrace(msg);
+                    fail("unexpected interrupt - " + msg);
+                }
             }
         }
     }
@@ -500,13 +515,13 @@ public class StartFromTruncatedRecordingLogTest
 
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
-            final Cluster.Role role = Cluster.Role.get(driver.consensusModule().context().clusterNodeRoleCounter());
-            final Counter electionStateCounter = driver.consensusModule().context().electionStateCounter();
+            final ConsensusModule.Context context = clusteredMediaDrivers[i].consensusModule().context();
+            final Cluster.Role role = Cluster.Role.get(context.clusterNodeRoleCounter());
+            final Counter electionStateCounter = context.electionStateCounter();
 
             if (Cluster.Role.LEADER == role && ElectionState.CLOSED == ElectionState.get(electionStateCounter))
             {
-                leaderMemberId = driver.consensusModule().context().clusterMemberId();
+                leaderMemberId = context.clusterMemberId();
             }
         }
 
@@ -515,9 +530,9 @@ public class StartFromTruncatedRecordingLogTest
 
     private void takeSnapshot(final int index)
     {
-        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-        final CountersReader counters = driver.consensusModule().context().aeron().countersReader();
-        final int clusterId = driver.consensusModule().context().clusterId();
+        final ConsensusModule.Context context = clusteredMediaDrivers[index].consensusModule().context();
+        final CountersReader counters = context.aeron().countersReader();
+        final int clusterId = context.clusterId();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters, clusterId);
 
         assertNotNull(controlToggle);
@@ -537,16 +552,13 @@ public class StartFromTruncatedRecordingLogTest
 
     private AtomicCounter getControlToggle(final int index)
     {
-        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-        if (driver.consensusModule().context().aeron().isClosed())
+        final ConsensusModule.Context context = clusteredMediaDrivers[index].consensusModule().context();
+        if (context.aeron().isClosed())
         {
             return null;
         }
 
-        final int clusterId = driver.consensusModule().context().clusterId();
-        final CountersReader counters = driver.consensusModule().context().aeron().countersReader();
-
-        return ClusterControl.findControlToggle(counters, clusterId);
+        return ClusterControl.findControlToggle(context.aeron().countersReader(), context.clusterId());
     }
 
     private void awaitNeutralCounter(final int index)

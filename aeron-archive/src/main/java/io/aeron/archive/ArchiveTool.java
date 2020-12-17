@@ -1434,29 +1434,29 @@ public class ArchiveTool
     private static void printHelp()
     {
         System.out.format(
-            "Usage: <archive-dir> <command> (items in square brackets are optional)%n" +
-            "  describe [recordingId]: prints out descriptor(s) in the catalog.%n" +
+            "Usage: <archive-dir> <command> (items in square brackets are optional)%n%n" +
+            "  capacity [capacity in bytes]: gets or increases catalog capacity.%n%n" +
+            "  checksum className [recordingId] [-a]: computes and persists checksums.%n" +
+            "     checksums are computed using the specified Checksum implementation%n" +
+            "     (e.g. io.aeron.archive.checksum.Crc32).%n" +
+            "     Only the last segment file of each recording is processed by default,%n" +
+            "     unless flag '-a' is specified in which case all of the segment files are processed.%n%n" +
+            "  compact: compacts Catalog file by removing entries in state `INVALID` and deleting the%n" +
+            "     corresponding segment files.%n%n" +
+            "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
+            "  describe [recordingId]: prints out descriptor(s) in the catalog.%n%n" +
             "  dump [data fragment limit per recording]: prints descriptor(s)%n" +
-            "     in the catalog and associated recorded data.%n" +
-            "  errors: prints errors for the archive and media driver.%n" +
-            "  pid: prints just PID of archive.%n" +
+            "     in the catalog and associated recorded data.%n%n" +
+            "  errors: prints errors for the archive and media driver.%n%n" +
+            "  max-entries [number of entries]: *** DEPRECATED: use `capacity` instead. ***%n%n" +
+            "  migrate: migrates archive MarkFile, Catalog, and recordings to the latest version.%n%n" +
+            "  pid: prints just PID of archive.%n%n" +
             "  verify [recordingId] [-a] [-checksum className]: verifies descriptor(s) in the catalog%n" +
             "     checking recording files availability and contents. Only the last segment file is%n" +
             "     verified unless flag '-a' is specified, i.e. meaning verify all segment files.%n" +
             "     To perform checksum for each data frame specify the '-checksum' flag together with%n" +
             "     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32).%n" +
-            "     Faulty entries are marked as unusable.%n" +
-            "  checksum className [recordingId] [-a]: computes and persists checksums.%n" +
-            "     checksums are computed using the specified Checksum implementation%n" +
-            "     (e.g. io.aeron.archive.checksum.Crc32).%n" +
-            "     Only the last segment file of each recording is processed by default,%n" +
-            "     unless flag '-a' is specified in which case all of the segment files are processed.%n" +
-            "  count-entries: queries the number of `VALID` recording entries in the catalog.%n" +
-            "  max-entries [number of entries]: DEPRECATED: use `capacity` instead.%n" +
-            "  capacity [capacity in bytes]: gets or increases catalog capacity.%n" +
-            "  compact: compact Catalog file by removing entries in state `INVALID` and delete the corresponding" +
-            "     segment files.%n" +
-            "  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.%n");
+            "     Faulty entries are marked as `INVALID`.%n%n");
         System.out.flush();
     }
 }
